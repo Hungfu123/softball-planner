@@ -19,9 +19,6 @@ export function GameDayCard({ gameDay, onDelete, onEdit }: Props) {
   const gamesWithOpponent = gameDay.games.filter(g => g.opponentTeam)
   const openGames = totalGames - gamesWithOpponent.length
 
-  const hasContent = gamesWithOpponent.length > 0 || gameDay.games.some(g => g.scoreUs != null)
-  const borderClass = hasContent ? 'border-navy-100' : 'border-gray-200'
-
   return (
     <Link
       to={`/gameday/${gameDay.id}`}
