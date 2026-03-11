@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: softball
+      POSTGRES_USER: softball
+      POSTGRES_PASSWORD: softball
+    ports:
+      - "5432:5432"
+    volumes:
+      - softball-data:/var/lib/postgresql/data
+
+volumes:
+  softball-data:
