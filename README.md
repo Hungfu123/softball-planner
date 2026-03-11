@@ -1,6 +1,6 @@
-# Softball Lineup Planner
+# Softball Planner
 
-Lineup-Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positionen und Statistiken.
+Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positionen, Statistiken und mehr.
 
 ## Warum diese App?
 
@@ -30,7 +30,6 @@ Lineup-Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, 
 - Spieler aus dem Pool per Klick ins Lineup aufnehmen
 - Positionen zuweisen: P, C, 1B, 2B, 3B, SS, LF, CF, RF, EH
 - Batting Order per Drag & Drop oder Pfeiltasten festlegen
-- Bereits vergebene Feldpositionen werden automatisch aus der Auswahl entfernt
 - Designated Hitter (DH): Einen Bankspieler als Schlagmann fuer einen Feldspieler zuweisen
 - Max 10 Spieler pro Lineup, max 1 DH pro Spiel
 - Feldansicht: SVG-Baseballfeld zeigt die aktuelle Aufstellung visuell
@@ -42,14 +41,12 @@ Lineup-Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, 
 ### Lineup kopieren & tauschen
 - Lineup von einem vorherigen Spiel der Saison uebernehmen
 - Quick-Action: Ein Klick kopiert das letzte Spiel direkt
-- Alternativ: Beliebiges Spiel aus der Saison waehlen (nach Spieltag gruppiert)
 - Lineups zwischen Spielen eines Spieltags tauschen (inkl. Staff und Gegner)
 
 ### Statistiken & Hinweise
 - Spieler-Pool sortiert nach Einsaetzen (wer am wenigsten gespielt hat, steht oben)
 - Spieler ohne Einsatz werden rot hervorgehoben
 - Orangener Punkt am Tab wenn Lineup unvollstaendig (< 9 Feldpositionen)
-- Orangener Punkt am Spieler-Button wenn weniger als 9 Spieler verfuegbar
 
 ### Liga-Tabelle
 - Mannschaften pro Saison verwalten
@@ -65,14 +62,45 @@ Lineup-Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, 
 - Direkt als PDF druckbar
 - Datenbank als JSON exportieren/importieren
 
+## Tech-Stack
+
+| Bereich | Technologie |
+|---------|-------------|
+| Frontend | React, TypeScript, Vite, Tailwind CSS v4 |
+| Backend | Spring Boot, Java 21, Spring Security |
+| Datenbank | PostgreSQL |
+| Migrationen | Flyway |
+| Tests | JUnit, Testcontainers (PostgreSQL) |
+| Drag & Drop | @dnd-kit/core, @dnd-kit/sortable |
+| Routing | React Router DOM |
+
 ## Lokal starten
 
+### Voraussetzungen
+- Java 21
+- Node.js
+- Docker
+
+### 1. Datenbank starten
+
 ```bash
-# Backend
+docker compose up -d
+```
+
+Startet PostgreSQL auf Port 5432 (User: `softball`, Passwort: `softball`, DB: `softball`).
+
+### 2. Backend starten
+
+```bash
 cd backend
 ./mvnw spring-boot:run
+```
 
-# Frontend (in neuem Terminal)
+Flyway erstellt beim ersten Start automatisch alle Tabellen.
+
+### 3. Frontend starten (Entwicklung)
+
+```bash
 cd frontend
 npm install
 npm run dev
@@ -84,12 +112,29 @@ Der Vite Dev-Server proxied `/api` automatisch ans Backend.
 ### Login
 Standard-Passwort: siehe `app.auth.password` in `application.properties`.
 
-## Tech-Stack
+## Tests
 
-| Bereich | Technologie |
-|---------|-------------|
-| Frontend | React, TypeScript, Vite, Tailwind CSS v4 |
-| Backend | Spring Boot, Java 21, Spring Security |
-| Datenbank | H2 (Dev), PostgreSQL (Prod) |
-| Drag & Drop | @dnd-kit/core, @dnd-kit/sortable |
-| Routing | React Router DOM |
+```bash
+cd backend
+./mvnw test
+```
+
+Integration-Tests laufen gegen eine echte PostgreSQL via Testcontainers (Docker muss laufen).
+
+## Deployment
+
+Die App laeuft auf **Render.com** (Backend + Frontend als Docker-Image) mit **Neon.tech** (PostgreSQL).
+
+### Wie es funktioniert
+- Push auf `master` → Render baut und deployed automatisch
+- Dockerfile baut Frontend + Backend in ein JAR
+- Flyway migriert die Datenbank beim Start
+- Umgebungsvariablen auf Render: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`
+
+### Produktions-Build lokal testen
+
+```bash
+cd backend
+./mvnw package -DskipTests
+java -jar target/lineup-planner-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
+```
