@@ -25,7 +25,7 @@ export function CollapsibleSection({ title, defaultOpen = false, count, children
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`}
+          className={`text-softball-red-500 transition-transform ${open ? 'rotate-90' : ''}`}
         >
           <path d="M9 18l6-6-6-6" />
         </svg>

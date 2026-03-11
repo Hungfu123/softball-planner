@@ -17,7 +17,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', onConf
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-          <button onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600">
+          <button onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
           </button>
         </div>
@@ -30,13 +30,13 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', onConf
         <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
+            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
           >
             Abbrechen
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500"
+            className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 cursor-pointer"
           >
             {confirmLabel}
           </button>

@@ -1,22 +1,22 @@
 const API = '/api'
 
 function getAuthHeaders(): Record<string, string> {
-  const creds = sessionStorage.getItem('auth')
+  const creds = localStorage.getItem('auth')
   if (!creds) return {}
   return { Authorization: `Basic ${creds}` }
 }
 
 export function setAuth(password: string) {
   const creds = btoa(`admin:${password}`)
-  sessionStorage.setItem('auth', creds)
+  localStorage.setItem('auth', creds)
 }
 
 export function clearAuth() {
-  sessionStorage.removeItem('auth')
+  localStorage.removeItem('auth')
 }
 
 export function hasAuth(): boolean {
-  return sessionStorage.getItem('auth') !== null
+  return localStorage.getItem('auth') !== null
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -107,6 +107,8 @@ export const getLeagueTeams = (seasonId: number) =>
   request<LeagueTeamResponse[]>(`/seasons/${seasonId}/teams`)
 export const createLeagueTeam = (seasonId: number, name: string) =>
   request<LeagueTeamResponse>(`/seasons/${seasonId}/teams`, { method: 'POST', body: JSON.stringify({ name }) })
+export const updateLeagueTeam = (teamId: number, name: string) =>
+  request<LeagueTeamResponse>(`/teams/${teamId}`, { method: 'PUT', body: JSON.stringify({ name }) })
 export const deleteLeagueTeam = (teamId: number) =>
   request<void>(`/teams/${teamId}`, { method: 'DELETE' })
 

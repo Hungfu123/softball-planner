@@ -32,20 +32,16 @@ export function PlusCircle({ size = 20, className }: IconProps) {
 
 export function Pencil({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M21.73 2.27a2.83 2.83 0 0 0-4 0L6.5 13.5 5 19l5.5-1.5L21.73 6.27a2.83 2.83 0 0 0 0-4zM15.5 4.5l4 4" />
     </svg>
   )
 }
 
 export function TrashBin({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M3 6h18" />
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M10 2a2 2 0 0 0-2 2v1H3.5a.75.75 0 0 0 0 1.5h1.02l.863 12.08A2.5 2.5 0 0 0 7.878 21h8.244a2.5 2.5 0 0 0 2.495-2.42L19.48 6.5h1.02a.75.75 0 0 0 0-1.5H16V4a2 2 0 0 0-2-2h-4zm4 3V4a.5.5 0 0 0-.5-.5h-3A.5.5 0 0 0 10 4v1h4z" clipRule="evenodd" />
     </svg>
   )
 }
@@ -113,21 +109,16 @@ export function AlertTriangle({ size = 20, className }: IconProps) {
 
 export function ExportDoc({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6" />
-      <line x1="9" y1="13" x2="15" y2="13" />
-      <line x1="9" y1="17" x2="15" y2="17" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path fillRule="evenodd" d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.414a1 1 0 0 0-.293-.707l-6.414-6.414A1 1 0 0 0 12.586 1H6zm7 1.5V8a1 1 0 0 0 1 1h4.5L13 3.5zM8.5 13a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 8.5 13zm0 4a.75.75 0 0 1 .75-.75h5.5a.75.75 0 0 1 0 1.5h-5.5A.75.75 0 0 1 8.5 17z" clipRule="evenodd" />
     </svg>
   )
 }
 
 export function CarIcon({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M5 17h14M5 17a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-3h8l2 3h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2M5 17a2 2 0 1 0 4 0M19 17a2 2 0 1 0-4 0" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M8.04 4a2 2 0 0 0-1.9 1.37L4.56 9H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h.17a3 3 0 0 0 5.66 0h6.34a3 3 0 0 0 5.66 0H21a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-1.56l-1.58-3.63A2 2 0 0 0 16.04 4H8.04zM7 17a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm13 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
     </svg>
   )
 }

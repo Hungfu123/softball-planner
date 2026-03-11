@@ -362,6 +362,69 @@ class LeagueTeamIntegrationTest {
     }
 
     @Test
+    void renameTeam_success() throws Exception {
+        final MvcResult t = mockMvc.perform(post("/api/seasons/" + season.getId() + "/teams")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Berlin Bears"))))
+            .andReturn();
+        final Long teamId = objectMapper.readTree(t.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(put("/api/teams/" + teamId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Berlin Sluggers"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Berlin Sluggers"))
+            .andExpect(jsonPath("$.id").value(teamId));
+
+        // Verify persisted
+        mockMvc.perform(get("/api/seasons/" + season.getId() + "/teams"))
+            .andExpect(jsonPath("$[?(@.name == 'Berlin Sluggers')]").exists())
+            .andExpect(jsonPath("$[?(@.name == 'Berlin Bears')]").doesNotExist());
+    }
+
+    @Test
+    void renameTeam_duplicateName_returns400() throws Exception {
+        mockMvc.perform(post("/api/seasons/" + season.getId() + "/teams")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(Map.of("name", "Bears"))));
+
+        final MvcResult t2 = mockMvc.perform(post("/api/seasons/" + season.getId() + "/teams")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Eagles"))))
+            .andReturn();
+        final Long eaglesId = objectMapper.readTree(t2.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(put("/api/teams/" + eaglesId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Bears"))))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void renameTeam_sameNameCaseChange_succeeds() throws Exception {
+        final MvcResult t = mockMvc.perform(post("/api/seasons/" + season.getId() + "/teams")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "bears"))))
+            .andReturn();
+        final Long teamId = objectMapper.readTree(t.getResponse().getContentAsString()).get("id").asLong();
+
+        // Rename to same name with different casing should succeed
+        mockMvc.perform(put("/api/teams/" + teamId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Bears"))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Bears"));
+    }
+
+    @Test
+    void renameTeam_notFound_returns404() throws Exception {
+        mockMvc.perform(put("/api/teams/99999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Whatever"))))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void setScore_negativeValue_returns400() throws Exception {
         mockMvc.perform(put("/api/games/" + game1Id + "/score")
                 .contentType(MediaType.APPLICATION_JSON)

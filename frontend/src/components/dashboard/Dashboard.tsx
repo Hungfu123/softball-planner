@@ -82,6 +82,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="bg-white rounded-2xl shadow-sm p-5">
       <SeasonSelector
         seasons={seasons}
         selectedId={selectedSeasonId}
@@ -95,13 +96,17 @@ export function Dashboard() {
           setStats([])
         }}
       />
+      </div>
 
       {selectedSeasonId && (
         <>
           {/* Game Days */}
-          <section>
+          <section className="bg-white rounded-2xl shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-950">Spieltage</h2>
+              <h2 className="text-lg font-semibold text-gray-950 flex items-center gap-2">
+                <span className="w-1 h-5 bg-softball-red-500 rounded-full" />
+                Spieltage
+              </h2>
               {gameDays.length > 0 && (
                 <span className="text-sm text-gray-400">{gameDays.length} gesamt</span>
               )}
@@ -207,6 +212,7 @@ export function Dashboard() {
 
           {/* Liga + Stats side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="bg-white rounded-2xl shadow-sm p-5">
             <Standings
               seasonId={selectedSeasonId}
               gameDays={gameDays}
@@ -214,9 +220,11 @@ export function Dashboard() {
                 api.getGameDays(selectedSeasonId).then(setGameDays)
               }}
             />
+            </div>
             {stats.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm p-5">
               <CollapsibleSection title="Saison-Statistik" count={stats.length} defaultOpen>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
@@ -252,6 +260,7 @@ export function Dashboard() {
                   </div>
                 </div>
               </CollapsibleSection>
+              </div>
             )}
           </div>
         </>

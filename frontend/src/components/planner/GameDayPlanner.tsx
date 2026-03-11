@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useBlocker } from 'react-router-dom'
+import { useParams, useBlocker } from 'react-router-dom'
 import { useGameDay } from '@/hooks/useGameDay'
 import { useLineup } from '@/hooks/useLineup'
 import { useStaff } from '@/hooks/useStaff'
@@ -18,7 +18,8 @@ import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, CarIcon } from '@/icons'
-import type { Player, GameDayResponse } from '@/types'
+import type { Player, GameDayResponse, Season } from '@/types'
+import { generatePdf } from '@/utils/pdfExport'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -36,6 +37,7 @@ export function GameDayPlanner() {
   const [showCopyLineup, setShowCopyLineup] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
+  const [season, setSeason] = useState<Season | null>(null)
 
   const activeGame = gameDay?.games[activeTab]
 
@@ -60,10 +62,11 @@ export function GameDayPlanner() {
     }
   }, [activeGame?.id, loadLineup, loadStaff])
 
-  // Fetch season game days for copy lineup feature
+  // Fetch season game days for copy lineup feature + season for PDF export
   useEffect(() => {
     if (gameDay?.seasonId) {
       api.getGameDays(gameDay.seasonId).then(setSeasonGameDays)
+      api.getSeasons().then(seasons => setSeason(seasons.find(s => s.id === gameDay.seasonId) ?? null))
     }
   }, [gameDay?.seasonId])
 
@@ -91,6 +94,22 @@ export function GameDayPlanner() {
 
   const handleAddPlayer = (player: Player) => {
     lineup.addPlayer(player)
+  }
+
+  const handleExportPdf = async () => {
+    if (!gameDay) return
+    try {
+      const gameData = await Promise.all(
+        gameDay.games.map(async g => ({
+          game: g,
+          lineup: await api.getLineup(g.id),
+          staff: await api.getStaff(g.id),
+        }))
+      )
+      generatePdf(gameDay, gameData, season)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
   }
 
   const handleSetAvailablePlayers = async (playerIds: number[]) => {
@@ -144,60 +163,61 @@ export function GameDayPlanner() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="group/header flex items-start gap-2">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-950">
-              {gameDay.label || 'Spieltag'} — {formatDate(gameDay.date)}
-            </h1>
-            {gameDay.location && (
-              <p className="text-sm text-gray-600">@ {gameDay.location}</p>
-            )}
-          </div>
-          <button
-            onClick={() => setShowEditModal(true)}
-            className="mt-1 p-1.5 rounded-lg text-gray-400 opacity-0 group-hover/header:opacity-100 hover:text-navy-800 hover:bg-navy-50 transition-all"
-            title="Spieltag bearbeiten"
-          >
-            <Pencil size={16} />
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowPlayersModal(true)}
-            title="Wer ist am Spieltag dabei?"
-            className={`px-3 py-2 text-sm rounded-lg border font-medium cursor-pointer ${
-              availablePlayers.length === 0
-                ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
-                : 'border-gray-200 hover:border-navy-300 hover:bg-navy-50 hover:text-navy-700'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              Anwesend ({availablePlayers.length})
-              {availablePlayers.length > 0 && availablePlayers.length < 9 && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
+      <div className="bg-white rounded-2xl shadow-sm p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="group/header flex items-start gap-2">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-950">
+                {gameDay.label || 'Spieltag'} — {formatDate(gameDay.date)}
+              </h1>
+              {gameDay.location && (
+                <p className="text-sm text-gray-600">@ {gameDay.location}</p>
               )}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
-            title="Fahrten planen"
-            className={`p-2 rounded-lg border cursor-pointer ${
-              activeSection === 'carpool'
-                ? 'border-navy-300 bg-navy-50 text-navy-700'
-                : 'border-gray-200 hover:border-navy-300 hover:bg-navy-50 hover:text-navy-700'
-            }`}
-          >
-            <CarIcon size={20} />
-          </button>
-          <Link
-            to={`/gameday/${gameDayId}/export`}
-            target="_blank"
-            className="p-2 rounded-lg border border-gray-200 hover:border-navy-300 hover:bg-navy-50 hover:text-navy-700 cursor-pointer"
-            title="Lineup-Sheet"
-          >
-            <ExportDoc size={20} />
-          </Link>
+            </div>
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="mt-1 p-1.5 rounded-lg text-softball-red-500 opacity-0 group-hover/header:opacity-100 hover:text-softball-red-700 hover:bg-softball-red-50 transition-all cursor-pointer"
+              title="Spieltag bearbeiten"
+            >
+              <Pencil size={16} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPlayersModal(true)}
+              title="Wer ist am Spieltag dabei?"
+              className={`px-3 py-2 text-sm rounded-lg border font-medium cursor-pointer ${
+                availablePlayers.length === 0
+                  ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
+                  : 'border-navy-200 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors'
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                Anwesend ({availablePlayers.length})
+                {availablePlayers.length > 0 && availablePlayers.length < 9 && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
+                )}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
+              title="Fahrten planen"
+              className={`p-2 rounded-lg border cursor-pointer ${
+                activeSection === 'carpool'
+                  ? 'border-navy-600 bg-navy-50 text-navy-700'
+                  : 'border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors'
+              }`}
+            >
+              <CarIcon size={20} />
+            </button>
+            <button
+              onClick={handleExportPdf}
+              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors cursor-pointer"
+              title="Als PDF exportieren"
+            >
+              <ExportDoc size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -214,6 +234,7 @@ export function GameDayPlanner() {
       ) : (
       <>
       {/* Tabs */}
+      <div className="bg-white rounded-2xl shadow-sm px-4 pt-2">
       <GameTabs
         games={gameDay.games}
         activeIndex={activeTab}
@@ -266,6 +287,7 @@ export function GameDayPlanner() {
           await refreshStats()
         }}
       />
+      </div>
 
       {availablePlayers.length === 0 ? (
         /* Empty state: no players assigned yet */

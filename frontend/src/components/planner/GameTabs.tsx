@@ -47,15 +47,15 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
     g.opponentTeam ? `Spiel ${g.gameNumber} (vs ${g.opponentTeam.name})` : `Spiel ${g.gameNumber}`
 
   return (
-    <div className="flex border-b border-gray-200 overflow-visible">
+    <div className="flex border-b border-gray-200 overflow-visible items-stretch">
       {games.map((game, i) => (
         <div key={game.id} className="relative group flex items-center">
           <button
             onClick={() => onSelect(i)}
-            className={`relative px-2 sm:px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
+            className={`group/tab relative px-2 sm:px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
               i === activeIndex
                 ? 'text-navy-800'
-                : 'text-gray-500 hover:text-gray-700'
+                : 'text-gray-400 hover:text-navy-800 hover:bg-navy-50 rounded-t-lg'
             }`}
           >
             <div className="flex items-center gap-1.5">
@@ -117,9 +117,9 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                 )
               )}
             </div>
-            {i === activeIndex && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy-800 rounded-t" />
-            )}
+            <span className={`absolute bottom-0 left-0 right-0 h-0.5 rounded-t transition-colors ${
+              i === activeIndex ? 'bg-navy-800' : 'bg-transparent group-hover/tab:bg-navy-300'
+            }`} />
           </button>
 
           {/* Team Picker Popover */}
@@ -155,7 +155,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
             <div className="relative">
               <button
                 onClick={e => { e.stopPropagation(); setMenuGameId(menuGameId === game.id ? null : game.id) }}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
                 title="Lineup tauschen"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -178,7 +178,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                       key={target.id}
                       disabled={swapping}
                       onClick={() => handleSwap(game.id, target.id)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 disabled:opacity-50"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer transition-colors"
                     >
                       {gameLabel(target)}
                     </button>

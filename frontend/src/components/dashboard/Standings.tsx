@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { StandingEntry, GameDayResponse, GameResponse, LeagueTeamResponse, LeagueResultResponse } from '@/types'
+import { Pencil } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import * as api from '@/api/client'
@@ -16,6 +17,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
   const [leagueResults, setLeagueResults] = useState<LeagueResultResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTeam, setDeleteTeam] = useState<{ id: number; name: string } | null>(null)
+  const [editingTeam, setEditingTeam] = useState<{ id: number; name: string } | null>(null)
   const [newTeamName, setNewTeamName] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -56,6 +58,18 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
     }
   }
 
+  const handleRenameTeam = async () => {
+    if (!editingTeam || !editingTeam.name.trim()) return
+    try {
+      await api.updateLeagueTeam(editingTeam.id, editingTeam.name.trim())
+      setEditingTeam(null)
+      reloadAll()
+      onGameDaysChanged()
+    } catch {
+      // revert on error
+    }
+  }
+
   if (loading) return null
 
   const gamesWithOpponent = gameDays.flatMap(gd => gd.games.filter(g => g.opponentTeam))
@@ -66,9 +80,12 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
     <section className="space-y-6">
       {/* Standings Table */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-950 mb-4">Liga-Tabelle</h2>
+        <h2 className="text-lg font-semibold text-gray-950 mb-4 flex items-center gap-2">
+          <span className="w-1 h-5 bg-softball-red-500 rounded-full" />
+          Liga-Tabelle
+        </h2>
         {standings.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -91,12 +108,33 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                     <tr
                       key={s.team.id}
                       className={`border-b border-gray-100 last:border-0 ${
-                        s.team.ownTeam ? 'bg-navy-50/50 font-medium' : 'hover:bg-gray-50'
+                        s.team.ownTeam ? 'bg-navy-50 font-semibold border-l-2 border-l-navy-600' : 'hover:bg-gray-50'
                       }`}
                     >
                       <td className="px-4 py-2.5 text-gray-400 font-mono">{i + 1}</td>
                       <td className="px-4 py-2.5 text-gray-900">
-                        {s.team.name}
+                        {!s.team.ownTeam && editingTeam?.id === s.team.id ? (
+                          <input
+                            autoFocus
+                            value={editingTeam.name}
+                            onChange={e => setEditingTeam({ ...editingTeam, name: e.target.value })}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRenameTeam()
+                              if (e.key === 'Escape') setEditingTeam(null)
+                            }}
+                            onBlur={handleRenameTeam}
+                            className="border border-navy-300 rounded px-2 py-0.5 text-sm outline-none focus:border-navy-600 w-full"
+                          />
+                        ) : (
+                          <span
+                            onClick={!s.team.ownTeam ? () => setEditingTeam({ id: s.team.id, name: s.team.name }) : undefined}
+                            className={!s.team.ownTeam ? 'group/name inline-flex items-center gap-1.5 cursor-pointer hover:text-navy-700' : ''}
+                            title={!s.team.ownTeam ? 'Klicken zum Umbenennen' : undefined}
+                          >
+                            {s.team.name}
+                            {!s.team.ownTeam && <Pencil size={13} className="opacity-0 group-hover/name:opacity-60 transition-opacity text-navy-600" />}
+                          </span>
+                        )}
                       </td>
                       <td className="text-center px-3 py-2.5 font-mono">{s.games}</td>
                       <td className="text-center px-3 py-2.5 font-mono text-green-700">{s.wins}</td>

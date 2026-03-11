@@ -20,24 +20,24 @@ export function GameDayCard({ gameDay, onDelete, onEdit }: Props) {
   const openGames = totalGames - gamesWithOpponent.length
 
   const hasContent = gamesWithOpponent.length > 0 || gameDay.games.some(g => g.scoreUs != null)
-  const borderClass = hasContent ? 'border-blue-200' : 'border-gray-200'
+  const borderClass = hasContent ? 'border-navy-100' : 'border-gray-200'
 
   return (
     <Link
       to={`/gameday/${gameDay.id}`}
-      className={`block bg-white border ${borderClass} rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative`}
+      className="block bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-navy-600 hover:bg-navy-50/50 transition-all group relative"
     >
       <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(gameDay.id) }}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
           title="Bearbeiten"
         >
           <Pencil size={16} />
         </button>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(gameDay.id) }}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
           title="Löschen"
         >
           <TrashBin size={16} />

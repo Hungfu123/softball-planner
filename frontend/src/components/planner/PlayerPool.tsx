@@ -48,6 +48,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd 
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1">
+          <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
           <button
             onClick={() => setTab('pool')}
             className={`text-sm font-semibold uppercase tracking-wide px-2 py-0.5 rounded cursor-pointer transition-colors ${
@@ -75,7 +76,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd 
       </div>
 
       {tab === 'pool' ? (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           {/* Free players — prominent, clickable */}
           {freePlayers.map(player => {
             const st = statsMap.get(player.id)
@@ -89,8 +90,8 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd 
                 onClick={() => onAdd(player)}
                 className={`pool-chip w-full flex items-center gap-2 px-3 py-2 text-left border-b border-gray-100 last:border-0 ${
                   noGames
-                    ? 'bg-softball-red-50 hover:bg-softball-red-100'
-                    : 'hover:bg-gray-50'
+                    ? 'bg-softball-red-50 hover:bg-navy-100'
+                    : 'hover:bg-navy-50'
                 } cursor-pointer`}
               >
                 <span className={`flex-1 text-sm font-medium truncate ${

@@ -67,7 +67,10 @@ export function LineupEditor({
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Lineup</h2>
+        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
+          <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
+          Lineup
+        </h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500 font-mono">{filledCount}/10</span>
           {entries.length > 0 && onClear && (
@@ -98,7 +101,7 @@ export function LineupEditor({
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map(e => e.player.id)} strategy={verticalListSortingStrategy}>
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-100">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
               {entries.map((entry, index) => {
                 const isFieldPos = !!entry.position && FIELD_POS_SET.has(entry.position)
 

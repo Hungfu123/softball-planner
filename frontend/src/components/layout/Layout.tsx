@@ -15,7 +15,7 @@ export function Layout() {
 
   return (
     <ToastCtx.Provider value={toast}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-100">
         <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -33,7 +33,7 @@ export function Layout() {
               {isHome && (
                 <Link
                   to="/players"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-navy-800 hover:bg-navy-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-softball-red-600 hover:bg-softball-red-500 transition-colors"
                 >
                   <UsersIcon size={16} />
                   <span className="hidden sm:inline">Spieler</span>

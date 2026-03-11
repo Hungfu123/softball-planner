@@ -42,7 +42,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
           <select
             value={selectedId ?? ''}
             onChange={e => onSelect(Number(e.target.value))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white hover:border-navy-300 hover:bg-navy-50 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer transition-colors"
           >
             {seasons.map(s => (
               <option key={s.id} value={s.id}>{s.name} {s.year}</option>
@@ -59,14 +59,14 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                 const s = seasons.find(x => x.id === selectedId)
                 if (s) { setName(s.name); setYear(s.year); setShowEditModal(true) }
               }}
-              className="p-2 text-gray-400 hover:text-navy-800 rounded-lg hover:bg-navy-50"
+              className="p-2 text-navy-600 hover:text-navy-800 hover:bg-navy-50 rounded-lg cursor-pointer"
               title="Saison bearbeiten"
             >
               <Pencil size={16} />
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-softball-red-50"
+              className="p-2 text-navy-600 hover:text-softball-red-600 hover:bg-softball-red-50 rounded-lg cursor-pointer"
               title="Saison löschen"
             >
               <TrashBin size={16} />
@@ -76,7 +76,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
 
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors"
         >
           <PlusCircle size={16} /> Neue Saison
         </button>

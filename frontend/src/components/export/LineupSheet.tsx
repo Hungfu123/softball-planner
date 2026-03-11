@@ -1,13 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import * as api from '@/api/client'
-import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, Season } from '@/types'
-
-interface GameData {
-  game: { id: number; gameNumber: number; opponentTeam: { id: number; name: string } | null; scoreUs: number | null; scoreThem: number | null }
-  lineup: LineupEntryResponse[]
-  staff: GameStaffResponse[]
-}
+import { generatePdf, type GameData } from '@/utils/pdfExport'
+import type { GameDayResponse, Season } from '@/types'
 
 export function LineupSheet() {
   const { id } = useParams<{ id: string }>()
@@ -59,12 +54,11 @@ export function LineupSheet() {
     <div className="max-w-md mx-auto p-4">
       {/* Controls */}
       <div className="no-print flex items-center justify-end gap-3 mb-4">
-        <span className="text-xs text-gray-400">Tipp: Im Druckdialog Kopf-/Fußzeilen deaktivieren</span>
         <button
-          onClick={() => window.print()}
+          onClick={() => generatePdf(gameDay, games, season)}
           className="px-3 py-1.5 text-xs text-white bg-navy-800 rounded-lg hover:shadow-md hover:scale-105 cursor-pointer transition-all"
         >
-          Drucken
+          Als PDF
         </button>
       </div>
 
