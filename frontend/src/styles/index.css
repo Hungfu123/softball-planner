@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-50: #F0F1FA;
+  --color-navy-100: #E8EAF6;
+  --color-navy-600: #2D3BA0;
+  --color-navy-700: #1E2A8F;
+  --color-navy-800: #111B6B;
+  --color-navy-900: #0A0F5C;
+
+  --color-softball-red-50: #FFF5F5;
+  --color-softball-red-100: #FEE2E2;
+  --color-softball-red-500: #E63946;
+  --color-softball-red-600: #CC2936;
+  --color-softball-red-700: #B91C2A;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-900);
+  scrollbar-gutter: stable;
+}
+
+button, a, [role="button"] {
+  transition: transform 150ms ease, opacity 150ms ease,
+              box-shadow 150ms ease, background-color 150ms ease;
+}
+
+button:active:not(:disabled), [role="button"]:active {
+  transform: scale(0.95);
+  transition-duration: 50ms;
+}
+
+.lineup-row {
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.pool-chip {
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.cursor-pencil {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/%3E%3C/svg%3E") 2 18, auto;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@page {
+  margin: 10mm;
+}
+
+@media print {
+  body { background: white; }
+  .no-print { display: none !important; }
+}

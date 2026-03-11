@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
+  <!-- Private project: use Maven Central directly, not corporate Nexus -->
+</settings>

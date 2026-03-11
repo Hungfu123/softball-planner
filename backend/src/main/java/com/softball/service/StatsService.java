@@ -1,0 +1,69 @@
+package com.softball.service;
+
+import com.softball.dto.SeasonPlayerStats;
+import com.softball.entity.*;
+import com.softball.exception.ResourceNotFoundException;
+import com.softball.repository.LineupEntryRepository;
+import com.softball.repository.SeasonRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+public class StatsService {
+
+    private final SeasonRepository seasonRepository;
+    private final LineupEntryRepository lineupEntryRepository;
+
+    public StatsService(final SeasonRepository seasonRepository, final LineupEntryRepository lineupEntryRepository) {
+        this.seasonRepository = seasonRepository;
+        this.lineupEntryRepository = lineupEntryRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<SeasonPlayerStats> getSeasonStats(final Long seasonId) {
+        final Season season = seasonRepository.findByIdWithGameDaysAndGames(seasonId)
+            .orElseThrow(() -> new ResourceNotFoundException("Season", seasonId));
+
+        final Map<Long, String> playerNames = new HashMap<>();
+        final Map<Long, Double> playerGames = new HashMap<>();
+        final Map<Long, Map<String, Long>> playerPositions = new HashMap<>();
+
+        for (final GameDay gameDay : season.getGameDays()) {
+            for (final Game game : gameDay.getGames()) {
+                final List<LineupEntry> entries = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(game.getId());
+                for (final LineupEntry entry : entries) {
+                    final Long pid = entry.getPlayer().getId();
+                    final Position pos = entry.getPosition();
+
+                    playerNames.putIfAbsent(pid, entry.getPlayer().getName());
+                    playerGames.merge(pid, pos != null ? pos.getGameWeight() : 1.0, Double::sum);
+                    if (pos != null) {
+                        playerPositions.computeIfAbsent(pid, k -> new HashMap<>())
+                            .merge(pos.displayName(), 1L, Long::sum);
+                    }
+
+                    if (entry.getDhBatterPlayer() != null) {
+                        final Long dhPid = entry.getDhBatterPlayer().getId();
+                        playerNames.putIfAbsent(dhPid, entry.getDhBatterPlayer().getName());
+                        playerGames.merge(dhPid, 0.5, Double::sum);
+                        playerPositions.computeIfAbsent(dhPid, k -> new HashMap<>())
+                            .merge("DH", 1L, Long::sum);
+                    }
+                }
+            }
+        }
+
+        return playerNames.entrySet().stream()
+            .map(e -> new SeasonPlayerStats(
+                e.getKey(),
+                e.getValue(),
+                playerGames.getOrDefault(e.getKey(), 0.0),
+                playerPositions.getOrDefault(e.getKey(), Map.of())
+            ))
+            .sorted(Comparator.comparingDouble(SeasonPlayerStats::totalGames).reversed())
+            .collect(Collectors.toList());
+    }
+}

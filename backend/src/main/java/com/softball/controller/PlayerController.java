@@ -1,0 +1,43 @@
+package com.softball.controller;
+
+import com.softball.dto.CreatePlayerRequest;
+import com.softball.dto.PlayerResponse;
+import com.softball.service.PlayerService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/players")
+public class PlayerController {
+
+    private final PlayerService playerService;
+
+    public PlayerController(final PlayerService playerService) {
+        this.playerService = playerService;
+    }
+
+    @GetMapping
+    public List<PlayerResponse> getAll() {
+        return playerService.findAll().stream().map(PlayerResponse::from).toList();
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public PlayerResponse create(@Valid @RequestBody final CreatePlayerRequest request) {
+        return PlayerResponse.from(playerService.create(request.name()));
+    }
+
+    @PutMapping("/{id}")
+    public PlayerResponse update(@PathVariable final Long id, @Valid @RequestBody final CreatePlayerRequest request) {
+        return PlayerResponse.from(playerService.update(id, request.name()));
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable final Long id) {
+        playerService.delete(id);
+    }
+}
