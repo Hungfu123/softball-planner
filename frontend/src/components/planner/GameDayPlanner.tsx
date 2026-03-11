@@ -18,7 +18,7 @@ import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, CarIcon } from '@/icons'
-import type { Player, GameDayResponse, LeagueTeamResponse } from '@/types'
+import type { Player, GameDayResponse } from '@/types'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -285,7 +285,7 @@ export function GameDayPlanner() {
           {/* Main Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Lineup + Save + Field */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-4 order-1">
               <LineupEditor
                 entries={lineup.entries}
                 poolPlayers={poolPlayers}
@@ -305,10 +305,14 @@ export function GameDayPlanner() {
                 onSave={handleSave}
                 className="lg:block hidden"
               />
+
+              <div className="hidden lg:block">
+                <FieldView entries={lineup.entries} />
+              </div>
             </div>
 
             {/* Right: Pool + Coaches + Bench */}
-            <div className="space-y-4">
+            <div className="space-y-4 order-2">
               <PlayerPool
                 allAvailablePlayers={availablePlayers}
                 lineupPlayerIds={lineupUsedIds}
@@ -325,8 +329,8 @@ export function GameDayPlanner() {
               <BenchDisplay players={benchPlayers} />
             </div>
 
-            {/* Field — below everything on mobile, below lineup on desktop */}
-            <div className="lg:col-span-2">
+            {/* Field — mobile only, after pool/coaches/bench */}
+            <div className="order-3 lg:hidden">
               <FieldView entries={lineup.entries} />
             </div>
           </div>
@@ -334,7 +338,6 @@ export function GameDayPlanner() {
           {/* Mobile: Sticky Save Button */}
           <SaveButton
             hasChanges={lineup.hasChanges}
-            hasPendingEntries={lineup.hasPendingEntries}
             saving={lineup.saving}
             onSave={handleSave}
             className="lg:hidden sticky bottom-4"
