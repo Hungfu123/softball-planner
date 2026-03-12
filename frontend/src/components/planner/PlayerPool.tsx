@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import type { Player, GameDayPlayerStats } from '@/types'
+import type { Player, GameDayPlayerStats, TrainingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 
