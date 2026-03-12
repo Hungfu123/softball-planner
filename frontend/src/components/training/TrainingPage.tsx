@@ -8,7 +8,7 @@ import type { TrainingResponse } from '@/types'
 
 export function TrainingPage() {
   const {
-    trainings, attendance, stats, periods, activePeriodId, loading,
+    trainings, attendance, periods, activePeriodId, loading,
     loadAll, loadPeriods, selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, importCsv,
   } = useTraining()
   const { players, loading: playersLoading, update: updatePlayer } = usePlayers()
