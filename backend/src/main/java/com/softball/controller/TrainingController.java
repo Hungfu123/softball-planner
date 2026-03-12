@@ -56,6 +56,12 @@ public class TrainingController {
         trainingService.delete(id);
     }
 
+    @GetMapping("/attendance/all")
+    public java.util.Map<Long, List<TrainingAttendanceResponse>> getAllAttendance(
+            @RequestParam(required = false) final Long periodId) {
+        return trainingService.getAllAttendance(periodId);
+    }
+
     @GetMapping("/{id}/attendance")
     public List<TrainingAttendanceResponse> getAttendance(@PathVariable final Long id) {
         return trainingService.getAttendance(id);

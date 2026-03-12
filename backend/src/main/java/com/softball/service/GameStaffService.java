@@ -1,6 +1,7 @@
 package com.softball.service;
 
 import com.softball.dto.GameStaffRequest;
+import com.softball.dto.GameStaffResponse;
 import com.softball.entity.*;
 import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,16 @@ public class GameStaffService {
     @Transactional(readOnly = true)
     public List<GameStaff> getStaff(final Long gameId) {
         return gameStaffRepository.findByGameId(gameId);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, List<GameStaffResponse>> getStaffForGames(final List<Long> gameIds) {
+        if (gameIds.isEmpty()) return Map.of();
+        return gameStaffRepository.findByGameIdIn(gameIds).stream()
+            .collect(Collectors.groupingBy(
+                s -> s.getGame().getId(),
+                Collectors.mapping(GameStaffResponse::from, Collectors.toList())
+            ));
     }
 
     @Transactional

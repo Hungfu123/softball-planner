@@ -49,6 +49,11 @@ export interface GameStaffResponse {
   role: string
 }
 
+export interface GameDayLineupsResponse {
+  lineups: Record<string, LineupEntryResponse[]>
+  staff: Record<string, GameStaffResponse[]>
+}
+
 export interface GameDayPlayerStats {
   playerId: number
   playerName: string

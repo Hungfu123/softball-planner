@@ -183,6 +183,24 @@ public class TrainingService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public Map<Long, List<TrainingAttendanceResponse>> getAllAttendance(final Long periodId) {
+        final List<Training> trainings = periodId != null
+            ? trainingRepository.findByPeriodIdOrderByDateDesc(periodId)
+            : trainingRepository.findAllByOrderByDateDesc();
+
+        final List<Long> trainingIds = trainings.stream().map(Training::getId).toList();
+        if (trainingIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return attendanceRepository.findByTrainingIdIn(trainingIds).stream()
+            .collect(Collectors.groupingBy(
+                a -> a.getTraining().getId(),
+                Collectors.mapping(TrainingAttendanceResponse::from, Collectors.toList())
+            ));
+    }
+
     @Transactional
     public List<TrainingAttendanceResponse> setAttendance(final Long trainingId,
                                                            final List<SetAttendanceRequest.AttendanceEntry> entries) {

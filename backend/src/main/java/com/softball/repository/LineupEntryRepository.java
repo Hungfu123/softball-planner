@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface LineupEntryRepository extends JpaRepository<LineupEntry, Long> {
     List<LineupEntry> findByGameIdOrderByBattingOrderAsc(Long gameId);
+    List<LineupEntry> findByGameIdInOrderByBattingOrderAsc(List<Long> gameIds);
     void deleteByGameId(Long gameId);
 }

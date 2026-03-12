@@ -15,18 +15,16 @@ export function LineupSheet() {
       const gd = await api.getGameDay(Number(id))
       setGameDay(gd)
 
-      const [gameData, seasons] = await Promise.all([
-        Promise.all(
-          gd.games.map(async g => ({
-            game: g,
-            lineup: await api.getLineup(g.id),
-            staff: await api.getStaff(g.id),
-          }))
-        ),
+      const [{ lineups, staff }, seasons] = await Promise.all([
+        api.getGameDayLineups(gd.id),
         api.getSeasons(),
       ])
       setSeason(seasons.find(s => s.id === gd.seasonId) ?? null)
-      setGames(gameData)
+      setGames(gd.games.map(g => ({
+        game: g,
+        lineup: lineups[String(g.id)] ?? [],
+        staff: staff[String(g.id)] ?? [],
+      })))
       setLoading(false)
     }
     load()

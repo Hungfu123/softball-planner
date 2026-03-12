@@ -48,7 +48,8 @@ import type {
   TrainingResponse,
   TrainingAttendanceResponse,
   TrainingStatsResponse,
-  TrainingPeriodResponse
+  TrainingPeriodResponse,
+  GameDayLineupsResponse
 } from '@/types'
 
 // Players
@@ -92,6 +93,8 @@ export const setAvailablePlayers = (gameDayId: number, playerIds: number[]) =>
   })
 export const getGameDayStats = (id: number) =>
   request<GameDayPlayerStats[]>(`/gamedays/${id}/stats`)
+export const getGameDayLineups = (id: number) =>
+  request<GameDayLineupsResponse>(`/gamedays/${id}/lineups`)
 export const deleteGameDay = (id: number) =>
   request<void>(`/gamedays/${id}`, { method: 'DELETE' })
 
@@ -170,6 +173,8 @@ export const deleteTraining = (id: number) =>
   request<void>(`/trainings/${id}`, { method: 'DELETE' })
 export const getAttendance = (trainingId: number) =>
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`)
+export const getAllAttendance = (periodId?: number) =>
+  request<Record<string, TrainingAttendanceResponse[]>>(periodId ? `/trainings/attendance/all?periodId=${periodId}` : '/trainings/attendance/all')
 export const setAttendance = (trainingId: number, entries: { playerId: number; present: boolean }[]) =>
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
 export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) =>

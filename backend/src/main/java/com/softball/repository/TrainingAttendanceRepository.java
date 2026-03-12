@@ -9,5 +9,7 @@ public interface TrainingAttendanceRepository extends JpaRepository<TrainingAtte
 
     List<TrainingAttendance> findByTrainingId(Long trainingId);
 
+    List<TrainingAttendance> findByTrainingIdIn(List<Long> trainingIds);
+
     void deleteByTrainingId(Long trainingId);
 }

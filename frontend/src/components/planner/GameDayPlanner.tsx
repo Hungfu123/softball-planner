@@ -105,13 +105,12 @@ export function GameDayPlanner() {
   const handleExportPdf = async () => {
     if (!gameDay) return
     try {
-      const gameData = await Promise.all(
-        gameDay.games.map(async g => ({
-          game: g,
-          lineup: await api.getLineup(g.id),
-          staff: await api.getStaff(g.id),
-        }))
-      )
+      const { lineups, staff } = await api.getGameDayLineups(gameDay.id)
+      const gameData = gameDay.games.map(g => ({
+        game: g,
+        lineup: lineups[String(g.id)] ?? [],
+        staff: staff[String(g.id)] ?? [],
+      }))
       generatePdf(gameDay, gameData, season)
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')

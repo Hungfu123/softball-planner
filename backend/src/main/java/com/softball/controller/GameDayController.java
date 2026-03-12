@@ -1,25 +1,34 @@
 package com.softball.controller;
 
-import com.softball.dto.CreateGameDayRequest;
-import com.softball.dto.GameDayPlayerStats;
-import com.softball.dto.GameDayResponse;
-import com.softball.dto.SetAvailablePlayersRequest;
-import com.softball.dto.UpdateGameDayRequest;
+import com.softball.dto.*;
+import com.softball.entity.GameDay;
+import com.softball.entity.GameStaff;
+import com.softball.entity.LineupEntry;
 import com.softball.service.GameDayService;
+import com.softball.service.GameStaffService;
+import com.softball.service.LineupService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
 public class GameDayController {
 
     private final GameDayService gameDayService;
+    private final LineupService lineupService;
+    private final GameStaffService gameStaffService;
 
-    public GameDayController(final GameDayService gameDayService) {
+    public GameDayController(final GameDayService gameDayService,
+                             final LineupService lineupService,
+                             final GameStaffService gameStaffService) {
         this.gameDayService = gameDayService;
+        this.lineupService = lineupService;
+        this.gameStaffService = gameStaffService;
     }
 
     @GetMapping("/seasons/{seasonId}/gamedays")
@@ -49,6 +58,17 @@ public class GameDayController {
     public GameDayResponse setAvailablePlayers(@PathVariable final Long id,
                                                @Valid @RequestBody final SetAvailablePlayersRequest request) {
         return gameDayService.setAvailablePlayers(id, request.playerIds());
+    }
+
+    @GetMapping("/gamedays/{id}/lineups")
+    public GameDayLineupsResponse getLineups(@PathVariable final Long id) {
+        final GameDay gameDay = gameDayService.findById(id);
+        final List<Long> gameIds = gameDay.getGames().stream().map(g -> g.getId()).toList();
+
+        final Map<Long, List<LineupEntryResponse>> lineups = lineupService.getLineupsForGames(gameIds);
+        final Map<Long, List<GameStaffResponse>> staff = gameStaffService.getStaffForGames(gameIds);
+
+        return new GameDayLineupsResponse(lineups, staff);
     }
 
     @GetMapping("/gamedays/{id}/stats")
