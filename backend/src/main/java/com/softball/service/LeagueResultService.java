@@ -4,7 +4,7 @@ import com.softball.dto.CreateLeagueResultRequest;
 import com.softball.entity.LeagueResult;
 import com.softball.entity.LeagueTeam;
 import com.softball.entity.Season;
-import com.softball.exception.LineupValidationException;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.LeagueResultRepository;
 import org.slf4j.Logger;
@@ -84,16 +84,16 @@ public class LeagueResultService {
 
     private void validate(final LeagueTeam homeTeam, final LeagueTeam awayTeam, final Long seasonId) {
         if (homeTeam.getId().equals(awayTeam.getId())) {
-            throw new LineupValidationException("Home- und Away-Team muessen unterschiedlich sein");
+            throw new BusinessValidationException("Home- und Away-Team muessen unterschiedlich sein");
         }
         if (!homeTeam.getSeason().getId().equals(seasonId)) {
-            throw new LineupValidationException("Home-Team gehoert nicht zur selben Saison");
+            throw new BusinessValidationException("Home-Team gehoert nicht zur selben Saison");
         }
         if (!awayTeam.getSeason().getId().equals(seasonId)) {
-            throw new LineupValidationException("Away-Team gehoert nicht zur selben Saison");
+            throw new BusinessValidationException("Away-Team gehoert nicht zur selben Saison");
         }
         if (homeTeam.isOwnTeam() || awayTeam.isOwnTeam()) {
-            throw new LineupValidationException("Liga-Ergebnisse duerfen nicht das eigene Team enthalten. Eigene Ergebnisse werden ueber die Spiele erfasst.");
+            throw new BusinessValidationException("Liga-Ergebnisse duerfen nicht das eigene Team enthalten. Eigene Ergebnisse werden ueber die Spiele erfasst.");
         }
     }
 }

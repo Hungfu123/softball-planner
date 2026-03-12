@@ -1,6 +1,7 @@
 export interface Player {
   id: number
   name: string
+  regular: boolean
 }
 
 export interface Season {
@@ -113,3 +114,37 @@ export const DIRECTION_LABELS = {
   there: 'Nur Hinweg',
   back: 'Nur Rückweg',
 } as const
+
+// Training
+export interface TrainingPeriodResponse {
+  id: number
+  name: string
+  startDate: string
+  endDate: string
+}
+
+export type TrainingType = 'REGULAR' | 'PITCHER_CATCHER'
+
+export interface TrainingResponse {
+  id: number
+  date: string
+  time: string | null
+  location: string | null
+  cancelled: boolean
+  attendeeCount: number
+  periodId: number | null
+  type: TrainingType
+}
+
+export interface TrainingAttendanceResponse {
+  player: Player
+  present: boolean
+}
+
+export interface TrainingStatsResponse {
+  playerId: number
+  playerName: string
+  attended: number
+  totalTrainings: number
+  regular: boolean
+}

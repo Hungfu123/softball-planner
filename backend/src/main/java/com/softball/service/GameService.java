@@ -1,7 +1,7 @@
 package com.softball.service;
 
 import com.softball.entity.*;
-import com.softball.exception.LineupValidationException;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.GameRepository;
 import com.softball.repository.GameStaffRepository;
@@ -44,11 +44,11 @@ public class GameService {
         } else {
             final LeagueTeam team = leagueTeamService.findById(opponentTeamId);
             if (team.isOwnTeam()) {
-                throw new LineupValidationException("Das eigene Team kann nicht als Gegner gesetzt werden");
+                throw new BusinessValidationException("Das eigene Team kann nicht als Gegner gesetzt werden");
             }
             final Long gameSeasonId = game.getGameDay().getSeason().getId();
             if (!team.getSeason().getId().equals(gameSeasonId)) {
-                throw new LineupValidationException("Team " + opponentTeamId + " gehoert nicht zur selben Saison wie das Spiel");
+                throw new BusinessValidationException("Team " + opponentTeamId + " gehoert nicht zur selben Saison wie das Spiel");
             }
             game.setOpponentTeam(team);
         }
@@ -60,13 +60,13 @@ public class GameService {
         final Game game = findById(gameId);
 
         if ((scoreUs == null) != (scoreThem == null)) {
-            throw new LineupValidationException("scoreUs und scoreThem muessen beide gesetzt oder beide null sein");
+            throw new BusinessValidationException("scoreUs und scoreThem muessen beide gesetzt oder beide null sein");
         }
         if (scoreUs != null && scoreUs < 0) {
-            throw new LineupValidationException("scoreUs darf nicht negativ sein");
+            throw new BusinessValidationException("scoreUs darf nicht negativ sein");
         }
         if (scoreThem != null && scoreThem < 0) {
-            throw new LineupValidationException("scoreThem darf nicht negativ sein");
+            throw new BusinessValidationException("scoreThem darf nicht negativ sein");
         }
 
         game.setScoreUs(scoreUs);
@@ -77,14 +77,14 @@ public class GameService {
     @Transactional
     public List<Game> swapGames(final Long gameId1, final Long gameId2) {
         if (gameId1.equals(gameId2)) {
-            throw new LineupValidationException("Kann ein Spiel nicht mit sich selbst tauschen");
+            throw new BusinessValidationException("Kann ein Spiel nicht mit sich selbst tauschen");
         }
 
         final Game gameA = findById(gameId1);
         final Game gameB = findById(gameId2);
 
         if (!gameA.getGameDay().getId().equals(gameB.getGameDay().getId())) {
-            throw new LineupValidationException("Games gehoeren nicht zum selben Spieltag");
+            throw new BusinessValidationException("Games gehoeren nicht zum selben Spieltag");
         }
 
         log.info("Swap Games {} und {} (Spieltag {})", gameId1, gameId2, gameA.getGameDay().getId());

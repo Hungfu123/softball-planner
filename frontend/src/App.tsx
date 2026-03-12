@@ -5,6 +5,7 @@ import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
 import { LineupSheet } from '@/components/export/LineupSheet'
+import { TrainingPage } from '@/components/training/TrainingPage'
 import { LoginPage } from '@/components/auth/LoginPage'
 import { setAuth, hasAuth, clearAuth } from '@/api/client'
 
@@ -13,6 +14,7 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: '/', element: <Dashboard /> },
+      { path: '/training', element: <TrainingPage /> },
       { path: '/players', element: <PlayerManager /> },
       { path: '/gameday/:id', element: <GameDayPlanner /> },
     ],

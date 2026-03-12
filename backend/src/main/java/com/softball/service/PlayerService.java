@@ -29,9 +29,14 @@ public class PlayerService {
         return playerRepository.save(new Player(name));
     }
 
-    public Player update(final Long id, final String name) {
+    public Player update(final Long id, final String name, final Boolean regular) {
         final Player player = findById(id);
-        player.setName(name);
+        if (name != null && !name.isBlank()) {
+            player.setName(name);
+        }
+        if (regular != null) {
+            player.setRegular(regular);
+        }
         return playerRepository.save(player);
     }
 

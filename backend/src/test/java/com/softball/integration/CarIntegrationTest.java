@@ -141,6 +141,12 @@ class CarIntegrationTest {
     }
 
     @Test
+    void deleteCar_notFound_returns404() throws Exception {
+        mockMvc.perform(delete("/api/cars/99999"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void createCar_driverNotAvailable_returns400() throws Exception {
         final Player unavailable = playerRepository.save(new Player("Unbekannt"));
 

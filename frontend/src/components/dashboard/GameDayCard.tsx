@@ -24,7 +24,7 @@ export function GameDayCard({ gameDay, onDelete, onEdit }: Props) {
       to={`/gameday/${gameDay.id}`}
       className="block bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-navy-600 hover:bg-navy-50/50 transition-all group relative"
     >
-      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+      <div className="absolute top-3 right-3 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(gameDay.id) }}
           className="p-1.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"

@@ -3,7 +3,7 @@ package com.softball.service;
 import com.softball.dto.CreateCarRequest;
 import com.softball.dto.UpdateCarRequest;
 import com.softball.entity.*;
-import com.softball.exception.LineupValidationException;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.CarRepository;
 import com.softball.repository.GameDayRepository;
@@ -51,14 +51,14 @@ public class CarService {
             .map(Player::getId)
             .collect(Collectors.toSet());
         if (!availableIds.contains(driver.getId())) {
-            throw new LineupValidationException("Fahrer " + driver.getId() + " ist nicht fuer diesen Spieltag eingetragen");
+            throw new BusinessValidationException("Fahrer " + driver.getId() + " ist nicht fuer diesen Spieltag eingetragen");
         }
 
         // Fahrer darf nicht schon Fahrer eines anderen Autos sein
         final List<Car> existingCars = carRepository.findByGameDay_Id(gameDayId);
         for (final Car car : existingCars) {
             if (car.getDriver().getId().equals(driver.getId())) {
-                throw new LineupValidationException("Spieler " + driver.getId() + " ist bereits Fahrer eines Autos");
+                throw new BusinessValidationException("Spieler " + driver.getId() + " ist bereits Fahrer eines Autos");
             }
         }
 
@@ -70,7 +70,7 @@ public class CarService {
     public Car updateCar(final Long gameDayId, final Long carId, final UpdateCarRequest request) {
         final Car car = findById(carId);
         if (!car.getGameDay().getId().equals(gameDayId)) {
-            throw new LineupValidationException("Auto " + carId + " gehoert nicht zu Spieltag " + gameDayId);
+            throw new BusinessValidationException("Auto " + carId + " gehoert nicht zu Spieltag " + gameDayId);
         }
 
         if (request.totalSeats() != null) {

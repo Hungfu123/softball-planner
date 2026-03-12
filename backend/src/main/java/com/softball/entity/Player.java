@@ -15,6 +15,9 @@ public class Player {
     @Column(nullable = false)
     private String name;
 
+    @Column(nullable = false)
+    private boolean regular = false;
+
     public Player() {}
 
     public Player(String name) {
@@ -25,4 +28,6 @@ public class Player {
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public boolean isRegular() { return regular; }
+    public void setRegular(boolean regular) { this.regular = regular; }
 }

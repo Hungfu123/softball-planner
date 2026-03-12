@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { ChevronLeft, UsersIcon } from '@/icons'
+import { ChevronLeft } from '@/icons'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
 import { createContext, useContext } from 'react'
@@ -8,10 +8,19 @@ import type { ToastContext } from '@/hooks/useToast'
 const ToastCtx = createContext<ToastContext | null>(null)
 export const useToastContext = () => useContext(ToastCtx)!
 
+const TABS = [
+  { path: '/', label: 'Spielbetrieb' },
+  { path: '/training', label: 'Training' },
+  { path: '/players', label: 'Spieler' },
+] as const
+
 export function Layout() {
   const toast = useToast()
   const location = useLocation()
-  const isHome = location.pathname === '/'
+
+  const isSubPage = location.pathname.startsWith('/gameday/')
+  const activeTab = TABS.find(t => t.path === location.pathname)?.path
+    ?? (location.pathname === '/' ? '/' : undefined)
 
   return (
     <ToastCtx.Provider value={toast}>
@@ -19,7 +28,7 @@ export function Layout() {
         <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {!isHome && (
+              {isSubPage && (
                 <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg">
                   <ChevronLeft size={24} />
                 </Link>
@@ -29,17 +38,23 @@ export function Layout() {
                 <span className="font-bold text-lg hidden sm:block">SOFTBALL LINEUP</span>
               </Link>
             </div>
-            <nav className="flex items-center gap-2">
-              {isHome && (
-                <Link
-                  to="/players"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-softball-red-600 hover:bg-softball-red-500 transition-colors"
-                >
-                  <UsersIcon size={16} />
-                  <span className="hidden sm:inline">Spieler</span>
-                </Link>
-              )}
-            </nav>
+            {!isSubPage && (
+              <nav className="flex items-center gap-1">
+                {TABS.map(tab => (
+                  <Link
+                    key={tab.path}
+                    to={tab.path}
+                    className={`px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                      activeTab === tab.path
+                        ? 'bg-white/15 text-white border-b-2 border-white'
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {tab.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
         </header>
 

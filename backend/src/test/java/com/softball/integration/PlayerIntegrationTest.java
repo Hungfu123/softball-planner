@@ -70,6 +70,28 @@ class PlayerIntegrationTest {
     }
 
     @Test
+    void createPlayer_blankName_returns400() throws Exception {
+        mockMvc.perform(post("/api/players")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", ""))))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updatePlayer_notFound_returns404() throws Exception {
+        mockMvc.perform(put("/api/players/99999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Test"))))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deletePlayer_notFound_returns404() throws Exception {
+        mockMvc.perform(delete("/api/players/99999"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void deletePlayer() throws Exception {
         final Player player = playerRepository.save(new Player("Max"));
 

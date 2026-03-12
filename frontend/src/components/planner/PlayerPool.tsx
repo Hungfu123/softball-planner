@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import type { Player, GameDayPlayerStats } from '@/types'
+import { useState, useMemo } from 'react'
+import type { Player, GameDayPlayerStats, TrainingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 
 interface Props {
   allAvailablePlayers: Player[]
   lineupPlayerIds: Set<number>
   stats: GameDayPlayerStats[]
+  trainingStats?: TrainingStatsResponse[]
   onAdd: (player: Player) => void
 }
 
@@ -25,9 +26,18 @@ function gameCountBadge(gc: number): string {
   return 'bg-emerald-100 text-emerald-700'
 }
 
-export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd }: Props) {
-  const [tab, setTab] = useState<'pool' | 'overview'>('pool')
+export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, trainingStats, onAdd }: Props) {
+  const [tab, setTab] = useState<'pool' | 'overview' | 'training'>('pool')
   const statsMap = new Map(stats.map(s => [s.playerId, s]))
+
+  // Filter training stats to available players only, sorted by attendance desc
+  const availableTrainingStats = useMemo(() => {
+    if (!trainingStats?.length) return []
+    const availableIds = new Set(allAvailablePlayers.map(p => p.id))
+    return trainingStats
+      .filter(s => availableIds.has(s.playerId))
+      .sort((a, b) => b.attended - a.attended)
+  }, [trainingStats, allAvailablePlayers])
 
   const sortByGames = (a: Player, b: Player) => {
     const ga = statsMap.get(a.id)?.gameCount ?? 0
@@ -69,9 +79,21 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd 
           >
             Übersicht
           </button>
+          {trainingStats && trainingStats.length > 0 && (
+            <button
+              onClick={() => setTab('training')}
+              className={`text-sm font-semibold uppercase tracking-wide px-2 py-0.5 rounded cursor-pointer transition-colors ${
+                tab === 'training'
+                  ? 'text-navy-700 bg-navy-50'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Training
+            </button>
+          )}
         </div>
         <span className="text-sm text-gray-500 font-mono">
-          {tab === 'pool' ? freePlayers.length : allAvailablePlayers.length}
+          {tab === 'pool' ? freePlayers.length : tab === 'training' ? availableTrainingStats.length : allAvailablePlayers.length}
         </span>
       </div>
 
@@ -148,7 +170,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd 
             )
           })}
         </div>
-      ) : (
+      ) : tab === 'overview' ? (
         <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
           {allSorted.map(player => {
             const st = statsMap.get(player.id)
@@ -176,6 +198,34 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, onAdd 
               </div>
             )
           })}
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
+          {availableTrainingStats.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten vorhanden.</p>
+          ) : (
+            availableTrainingStats.map(s => {
+              const pct = s.totalTrainings > 0 ? Math.round((s.attended / s.totalTrainings) * 100) : 0
+              const maxAttended = Math.max(...availableTrainingStats.map(st => st.attended), 1)
+              const barWidth = Math.round((s.attended / maxAttended) * 100)
+              return (
+                <div key={s.playerId} className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-gray-900 w-20 truncate">
+                    {s.playerName}
+                  </span>
+                  <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${s.regular ? 'bg-navy-800' : 'bg-gray-400'}`}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] text-gray-500 tabular-nums w-14 text-right shrink-0">
+                    {s.attended}/{s.totalTrainings} ({pct}%)
+                  </span>
+                </div>
+              )
+            })
+          )}
         </div>
       )}
     </div>

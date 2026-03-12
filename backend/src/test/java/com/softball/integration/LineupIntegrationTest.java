@@ -536,6 +536,33 @@ class LineupIntegrationTest {
     }
 
     @Test
+    void setLineup_moreThan10Entries_returns400() throws Exception {
+        // Create 11 players and make them all available
+        final var players = new java.util.ArrayList<Player>();
+        players.add(player1);
+        players.add(player2);
+        players.add(player3);
+        for (int i = 4; i <= 11; i++) {
+            players.add(playerRepository.save(new Player("Player" + i)));
+        }
+        mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(Map.of("playerIds",
+                players.stream().map(Player::getId).toList()))));
+
+        // Create lineup with 11 entries
+        final var lineup = new java.util.ArrayList<Map<String, Object>>();
+        for (int i = 0; i < 11; i++) {
+            lineup.add(Map.of("playerId", players.get(i).getId(), "battingOrder", i + 1));
+        }
+
+        mockMvc.perform(put("/api/games/" + gameId + "/lineup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(lineup)))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void stats_nullPositionCountsAsFullGame() throws Exception {
         final String lineup = objectMapper.writeValueAsString(List.of(
             Map.of("playerId", player1.getId(), "battingOrder", 1),

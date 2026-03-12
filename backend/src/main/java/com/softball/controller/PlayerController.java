@@ -2,6 +2,7 @@ package com.softball.controller;
 
 import com.softball.dto.CreatePlayerRequest;
 import com.softball.dto.PlayerResponse;
+import com.softball.dto.UpdatePlayerRequest;
 import com.softball.service.PlayerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,8 +32,8 @@ public class PlayerController {
     }
 
     @PutMapping("/{id}")
-    public PlayerResponse update(@PathVariable final Long id, @Valid @RequestBody final CreatePlayerRequest request) {
-        return PlayerResponse.from(playerService.update(id, request.name()));
+    public PlayerResponse update(@PathVariable final Long id, @Valid @RequestBody final UpdatePlayerRequest request) {
+        return PlayerResponse.from(playerService.update(id, request.name(), request.regular()));
     }
 
     @DeleteMapping("/{id}")

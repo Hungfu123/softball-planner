@@ -155,7 +155,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
             <div className="relative">
               <button
                 onClick={e => { e.stopPropagation(); setMenuGameId(menuGameId === game.id ? null : game.id) }}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
                 title="Lineup tauschen"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

@@ -77,7 +77,7 @@ class PlayerServiceTest {
         when(playerRepository.findById(1L)).thenReturn(Optional.of(testPlayer));
         when(playerRepository.save(any(Player.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        final Player updated = playerService.update(1L, "Maximilian");
+        final Player updated = playerService.update(1L, "Maximilian", null);
 
         assertThat(updated.getName()).isEqualTo("Maximilian");
     }

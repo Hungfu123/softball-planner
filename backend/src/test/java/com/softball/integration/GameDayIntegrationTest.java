@@ -275,6 +275,18 @@ class GameDayIntegrationTest {
     }
 
     @Test
+    void getGameDay_notFound_returns404() throws Exception {
+        mockMvc.perform(get("/api/gamedays/99999"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteGameDay_notFound_returns404() throws Exception {
+        mockMvc.perform(delete("/api/gamedays/99999"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
     void updateGameDay() throws Exception {
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -6,6 +6,7 @@ backend/.idea/
 
 # Frontend
 frontend/node_modules/
+frontend/node/
 frontend/dist/
 
 # IDE
@@ -23,3 +24,6 @@ CLAUDE.md
 
 # Env
 .env
+
+# Misc
+*.deb

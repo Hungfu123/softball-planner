@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/data")
-public class DataExportController {
+public class DataController {
 
     private final DataExportService dataExportService;
     private final DataImportService dataImportService;
 
-    public DataExportController(final DataExportService dataExportService, final DataImportService dataImportService) {
+    public DataController(final DataExportService dataExportService, final DataImportService dataImportService) {
         this.dataExportService = dataExportService;
         this.dataImportService = dataImportService;
     }

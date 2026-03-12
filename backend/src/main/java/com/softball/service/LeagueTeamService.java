@@ -6,7 +6,7 @@ import com.softball.entity.Game;
 import com.softball.entity.LeagueResult;
 import com.softball.entity.LeagueTeam;
 import com.softball.entity.Season;
-import com.softball.exception.LineupValidationException;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.GameRepository;
 import com.softball.repository.LeagueResultRepository;
@@ -48,7 +48,7 @@ public class LeagueTeamService {
 
         // Name muss in der Season eindeutig sein (case-insensitive)
         if (leagueTeamRepository.findBySeason_IdAndNameIgnoreCase(seasonId, name).isPresent()) {
-            throw new LineupValidationException("Team '" + name + "' existiert bereits in dieser Saison");
+            throw new BusinessValidationException("Team '" + name + "' existiert bereits in dieser Saison");
         }
 
         log.info("Team erstellen: Saison={}, Name={}, ownTeam={}", seasonId, name, ownTeam);
@@ -64,7 +64,7 @@ public class LeagueTeamService {
             final Optional<LeagueTeam> existing = leagueTeamRepository.findBySeason_IdAndNameIgnoreCase(
                 team.getSeason().getId(), name);
             if (existing.isPresent() && !existing.get().getId().equals(teamId)) {
-                throw new LineupValidationException("Team '" + name + "' existiert bereits in dieser Saison");
+                throw new BusinessValidationException("Team '" + name + "' existiert bereits in dieser Saison");
             }
             team.setName(name);
         }
@@ -79,7 +79,7 @@ public class LeagueTeamService {
     public void delete(final Long teamId) {
         final LeagueTeam team = findById(teamId);
         if (team.isOwnTeam()) {
-            throw new LineupValidationException("Das eigene Team kann nicht geloescht werden");
+            throw new BusinessValidationException("Das eigene Team kann nicht geloescht werden");
         }
         log.info("Team loeschen: {} ({})", team.getName(), teamId);
 

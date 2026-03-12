@@ -24,8 +24,8 @@ export function usePlayers() {
     return p
   }
 
-  const update = async (id: number, name: string) => {
-    const p = await api.updatePlayer(id, name)
+  const update = async (id: number, data: { name?: string; regular?: boolean }) => {
+    const p = await api.updatePlayer(id, data)
     setPlayers(prev => prev.map(x => x.id === id ? p : x).sort((a, b) => a.name.localeCompare(b.name)))
     return p
   }

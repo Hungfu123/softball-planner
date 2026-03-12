@@ -3,6 +3,7 @@ package com.softball.service;
 import com.softball.dto.GameDayPlayerStats;
 import com.softball.dto.GameDayResponse;
 import com.softball.entity.*;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.GameDayRepository;
 import com.softball.repository.LineupEntryRepository;
@@ -57,7 +58,7 @@ public class GameDayService {
     public GameDayResponse create(final Long seasonId, final LocalDate date, final String label, final String location) {
         log.info("Spieltag erstellen: Saison={}, Datum={}, Ort={}", seasonId, date, location);
         if (gameDayRepository.existsBySeasonAndDate(seasonId, date)) {
-            throw new IllegalArgumentException("Es gibt bereits einen Spieltag am " + date + " in dieser Saison");
+            throw new BusinessValidationException("Es gibt bereits einen Spieltag am " + date + " in dieser Saison");
         }
         final Season season = seasonService.findById(seasonId);
         final GameDay gameDay = new GameDay(date, label, location, season);
@@ -82,7 +83,7 @@ public class GameDayService {
         final GameDay gameDay = findById(id);
         if (date != null && !date.equals(gameDay.getDate())) {
             if (gameDayRepository.existsBySeasonAndDate(gameDay.getSeason().getId(), date)) {
-                throw new IllegalArgumentException("Es gibt bereits einen Spieltag am " + date + " in dieser Saison");
+                throw new BusinessValidationException("Es gibt bereits einen Spieltag am " + date + " in dieser Saison");
             }
             gameDay.setDate(date);
         }

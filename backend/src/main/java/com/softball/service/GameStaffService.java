@@ -2,7 +2,7 @@ package com.softball.service;
 
 import com.softball.dto.GameStaffRequest;
 import com.softball.entity.*;
-import com.softball.exception.LineupValidationException;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.GameRepository;
 import com.softball.repository.GameStaffRepository;
@@ -63,20 +63,20 @@ public class GameStaffService {
 
     private void validate(final Long gameId, final List<GameStaffRequest> staffRequests) {
         if (staffRequests.size() > 2) {
-            throw new LineupValidationException("Maximal 2 Base Coaches erlaubt");
+            throw new BusinessValidationException("Maximal 2 Base Coaches erlaubt");
         }
 
         final Set<Long> playerIds = new HashSet<>();
         for (final GameStaffRequest req : staffRequests) {
             if (!playerIds.add(req.playerId())) {
-                throw new LineupValidationException("Spieler " + req.playerId() + " ist doppelt als Coach eingetragen");
+                throw new BusinessValidationException("Spieler " + req.playerId() + " ist doppelt als Coach eingetragen");
             }
         }
 
         final Set<String> roles = new HashSet<>();
         for (final GameStaffRequest req : staffRequests) {
             if (!roles.add(req.role())) {
-                throw new LineupValidationException("Rolle " + req.role() + " ist doppelt vergeben");
+                throw new BusinessValidationException("Rolle " + req.role() + " ist doppelt vergeben");
             }
             parseStaffRole(req.role());
         }
@@ -86,7 +86,7 @@ public class GameStaffService {
             .collect(Collectors.toSet());
         for (final GameStaffRequest req : staffRequests) {
             if (lineupPlayerIds.contains(req.playerId())) {
-                throw new LineupValidationException("Spieler " + req.playerId() + " ist bereits im Lineup");
+                throw new BusinessValidationException("Spieler " + req.playerId() + " ist bereits im Lineup");
             }
         }
     }
@@ -95,7 +95,7 @@ public class GameStaffService {
         try {
             return StaffRole.valueOf(role);
         } catch (final IllegalArgumentException e) {
-            throw new LineupValidationException("Ungueltige Rolle: " + role + ". Erlaubt: BASE_COACH_1ST, BASE_COACH_3RD");
+            throw new BusinessValidationException("Ungueltige Rolle: " + role + ". Erlaubt: BASE_COACH_1ST, BASE_COACH_3RD");
         }
     }
 }

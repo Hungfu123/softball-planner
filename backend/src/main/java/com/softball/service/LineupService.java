@@ -2,7 +2,7 @@ package com.softball.service;
 
 import com.softball.dto.LineupEntryRequest;
 import com.softball.entity.*;
-import com.softball.exception.LineupValidationException;
+import com.softball.exception.BusinessValidationException;
 import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.GameRepository;
 import com.softball.repository.GameStaffRepository;
@@ -69,7 +69,7 @@ public class LineupService {
 
     private void validate(final Game game, final List<LineupEntryRequest> entries) {
         if (entries.size() > MAX_LINEUP_SIZE) {
-            throw new LineupValidationException("Lineup darf maximal " + MAX_LINEUP_SIZE + " Spieler haben");
+            throw new BusinessValidationException("Lineup darf maximal " + MAX_LINEUP_SIZE + " Spieler haben");
         }
 
         validateNoDuplicatePlayers(entries);
@@ -84,7 +84,7 @@ public class LineupService {
         final Set<Long> playerIds = new HashSet<>();
         for (final LineupEntryRequest entry : entries) {
             if (!playerIds.add(entry.playerId())) {
-                throw new LineupValidationException("Spieler " + entry.playerId() + " ist doppelt im Lineup");
+                throw new BusinessValidationException("Spieler " + entry.playerId() + " ist doppelt im Lineup");
             }
         }
     }
@@ -93,14 +93,14 @@ public class LineupService {
         final Set<Integer> battingOrders = new HashSet<>();
         for (final LineupEntryRequest entry : entries) {
             if (!battingOrders.add(entry.battingOrder())) {
-                throw new LineupValidationException("Batting Order " + entry.battingOrder() + " ist doppelt vergeben");
+                throw new BusinessValidationException("Batting Order " + entry.battingOrder() + " ist doppelt vergeben");
             }
         }
 
         final List<Integer> sorted = battingOrders.stream().sorted().toList();
         for (int i = 0; i < sorted.size(); i++) {
             if (sorted.get(i) != i + 1) {
-                throw new LineupValidationException("Batting Order muss sequenziell sein (1, 2, 3, ...), fehlt: " + (i + 1));
+                throw new BusinessValidationException("Batting Order muss sequenziell sein (1, 2, 3, ...), fehlt: " + (i + 1));
             }
         }
     }
@@ -113,7 +113,7 @@ public class LineupService {
             }
             final Position pos = parsePosition(entry.position());
             if (pos.isFieldPosition() && !usedFieldPositions.add(pos)) {
-                throw new LineupValidationException("Position " + pos.displayName() + " ist doppelt vergeben");
+                throw new BusinessValidationException("Position " + pos.displayName() + " ist doppelt vergeben");
             }
         }
     }
@@ -127,17 +127,17 @@ public class LineupService {
             if (entry.dhBatterPlayerId() != null) {
                 dhBatterCount++;
                 if (entry.position() == null) {
-                    throw new LineupValidationException("DH-Batter darf nur fuer Feldspieler gesetzt werden, nicht ohne Position");
+                    throw new BusinessValidationException("DH-Batter darf nur fuer Feldspieler gesetzt werden, nicht ohne Position");
                 }
                 final Position pos = parsePosition(entry.position());
                 if (!pos.isFieldPosition()) {
-                    throw new LineupValidationException("DH-Batter darf nur fuer Feldspieler gesetzt werden, nicht fuer " + pos.displayName());
+                    throw new BusinessValidationException("DH-Batter darf nur fuer Feldspieler gesetzt werden, nicht fuer " + pos.displayName());
                 }
                 if (lineupPlayerIds.contains(entry.dhBatterPlayerId())) {
-                    throw new LineupValidationException("DH-Batter " + entry.dhBatterPlayerId() + " darf nicht selbst im Lineup sein");
+                    throw new BusinessValidationException("DH-Batter " + entry.dhBatterPlayerId() + " darf nicht selbst im Lineup sein");
                 }
                 if (dhBatterCount > 1) {
-                    throw new LineupValidationException("Maximal 1 DH-Batter pro Lineup erlaubt");
+                    throw new BusinessValidationException("Maximal 1 DH-Batter pro Lineup erlaubt");
                 }
             }
         }
@@ -149,7 +149,7 @@ public class LineupService {
             .collect(Collectors.toSet());
         for (final LineupEntryRequest entry : entries) {
             if (staffPlayerIds.contains(entry.playerId())) {
-                throw new LineupValidationException("Spieler " + entry.playerId() + " ist bereits als Base Coach eingeteilt");
+                throw new BusinessValidationException("Spieler " + entry.playerId() + " ist bereits als Base Coach eingeteilt");
             }
         }
     }
@@ -162,10 +162,10 @@ public class LineupService {
                 .collect(Collectors.toSet());
             for (final LineupEntryRequest entry : entries) {
                 if (!availableIds.contains(entry.playerId())) {
-                    throw new LineupValidationException("Spieler " + entry.playerId() + " ist nicht fuer diesen Spieltag eingetragen");
+                    throw new BusinessValidationException("Spieler " + entry.playerId() + " ist nicht fuer diesen Spieltag eingetragen");
                 }
                 if (entry.dhBatterPlayerId() != null && !availableIds.contains(entry.dhBatterPlayerId())) {
-                    throw new LineupValidationException("DH-Batter " + entry.dhBatterPlayerId() + " ist nicht fuer diesen Spieltag eingetragen");
+                    throw new BusinessValidationException("DH-Batter " + entry.dhBatterPlayerId() + " ist nicht fuer diesen Spieltag eingetragen");
                 }
             }
         }
@@ -175,7 +175,7 @@ public class LineupService {
         try {
             return Position.fromString(position);
         } catch (final IllegalArgumentException e) {
-            throw new LineupValidationException("Ungueltige Position: " + position + ". Erlaubt: P, C, 1B, 2B, 3B, SS, LF, CF, RF, EH");
+            throw new BusinessValidationException("Ungueltige Position: " + position + ". Erlaubt: P, C, 1B, 2B, 3B, SS, LF, CF, RF, EH");
         }
     }
 }
