@@ -18,7 +18,7 @@ import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, CarIcon } from '@/icons'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse } from '@/types'
+import type { Player, GameDayResponse, Season } from '@/types'
 import { generatePdf } from '@/utils/pdfExport'
 import * as api from '@/api/client'
 
@@ -38,8 +38,6 @@ export function GameDayPlanner() {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
-  const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
-
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -70,11 +68,6 @@ export function GameDayPlanner() {
       api.getSeason(gameDay.seasonId).then(setSeason)
     }
   }, [gameDay?.seasonId])
-
-  // Fetch training stats (no period filter = all)
-  useEffect(() => {
-    api.getTrainingStats().then(setTrainingStats)
-  }, [])
 
   const handleSave = async () => {
     if (!activeGame) return
@@ -344,7 +337,7 @@ export function GameDayPlanner() {
                 allAvailablePlayers={availablePlayers}
                 lineupPlayerIds={lineupUsedIds}
                 stats={adjustedStats}
-                trainingStats={trainingStats}
+                gameDayDate={gameDay.date}
                 onAdd={handleAddPlayer}
               />
 

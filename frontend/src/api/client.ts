@@ -180,8 +180,13 @@ export const setAttendance = (trainingId: number, entries: { playerId: number; p
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
 export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) =>
   request<TrainingResponse[]>('/trainings/bulk', { method: 'POST', body: JSON.stringify(data) })
-export const getTrainingStats = (periodId?: number) =>
-  request<TrainingStatsResponse[]>(periodId ? `/trainings/stats?periodId=${periodId}` : '/trainings/stats')
+export const getTrainingStats = (periodId?: number, since?: string) => {
+  const params = new URLSearchParams()
+  if (periodId) params.set('periodId', String(periodId))
+  if (since) params.set('since', since)
+  const qs = params.toString()
+  return request<TrainingStatsResponse[]>(`/trainings/stats${qs ? `?${qs}` : ''}`)
+}
 
 export const importTrainingCsv = (csv: string, periodName?: string) =>
   request<{ trainingsCreated: number; trainingsSkipped: number; playersNotFound: number }>('/trainings/import', {
@@ -193,5 +198,7 @@ export const getTrainingPeriods = () =>
   request<TrainingPeriodResponse[]>('/trainings/periods')
 export const createTrainingPeriod = (data: { name: string; startDate: string; endDate: string }) =>
   request<TrainingPeriodResponse>('/trainings/periods', { method: 'POST', body: JSON.stringify(data) })
+export const renameTrainingPeriod = (id: number, name: string) =>
+  request<TrainingPeriodResponse>(`/trainings/periods/${id}`, { method: 'PUT', body: JSON.stringify({ name }) })
 export const deleteTrainingPeriod = (id: number) =>
   request<void>(`/trainings/periods/${id}`, { method: 'DELETE' })

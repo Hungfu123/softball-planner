@@ -125,6 +125,11 @@ export function useTraining() {
     await loadAll(activePeriodId)
   }
 
+  const renamePeriod = async (periodId: number, name: string) => {
+    await api.renameTrainingPeriod(periodId, name)
+    await loadPeriods()
+  }
+
   const deletePeriod = async (periodId: number) => {
     await api.deleteTrainingPeriod(periodId)
     await loadPeriods()
@@ -166,6 +171,7 @@ export function useTraining() {
     createBulk,
     deleteTraining,
     cancelTraining,
+    renamePeriod,
     deletePeriod,
     importCsv,
   }

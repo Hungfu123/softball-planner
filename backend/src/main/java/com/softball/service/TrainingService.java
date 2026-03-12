@@ -226,13 +226,14 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingStatsResponse> getStats(final Long periodId) {
+    public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since) {
         final List<Training> allTrainings = periodId != null
             ? trainingRepository.findByPeriodIdOrderByDateDesc(periodId)
             : trainingRepository.findAllByOrderByDateDesc();
 
         final List<Training> nonCancelledTrainings = allTrainings.stream()
             .filter(t -> !t.isCancelled())
+            .filter(t -> since == null || !t.getDate().isBefore(since))
             .toList();
 
         // Count attended trainings per player (only non-cancelled)
@@ -420,6 +421,17 @@ public class TrainingService {
             throw new IllegalArgumentException("Startdatum darf nicht nach dem Enddatum liegen");
         }
         return TrainingPeriodResponse.from(periodRepository.save(new TrainingPeriod(name, startDate, endDate)));
+    }
+
+    @Transactional
+    public TrainingPeriodResponse renamePeriod(final Long periodId, final String name) {
+        final TrainingPeriod period = periodRepository.findById(periodId)
+            .orElseThrow(() -> new ResourceNotFoundException("TrainingPeriod", periodId));
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name darf nicht leer sein");
+        }
+        period.setName(name.trim());
+        return TrainingPeriodResponse.from(periodRepository.save(period));
     }
 
     @Transactional

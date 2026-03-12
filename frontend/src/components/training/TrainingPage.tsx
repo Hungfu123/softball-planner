@@ -2,14 +2,14 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
-import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, UploadIcon } from '@/icons'
+import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, Pencil, UploadIcon } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import type { TrainingResponse } from '@/types'
 
 export function TrainingPage() {
   const {
     trainings, attendance, periods, activePeriodId, loading,
-    loadAll, loadPeriods, selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, deletePeriod, importCsv,
+    loadAll, loadPeriods, selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, renamePeriod, deletePeriod, importCsv,
   } = useTraining()
   const { players, loading: playersLoading, update: updatePlayer } = usePlayers()
   const toast = useToastContext()
@@ -18,9 +18,10 @@ export function TrainingPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [headerMenuId, setHeaderMenuId] = useState<number | null>(null)
   const [statsOpen, setStatsOpen] = useState(false)
-  const [statsFilter, setStatsFilter] = useState<'8weeks' | 'season' | 'all'>('8weeks')
+  const [statsFilter, setStatsFilter] = useState<'8weeks' | '12weeks' | 'season' | 'all'>('8weeks')
   const [showImportModal, setShowImportModal] = useState(false)
   const [deletePeriodId, setDeletePeriodId] = useState<number | null>(null)
+  const [renamingPeriod, setRenamingPeriod] = useState<{ id: number; name: string } | null>(null)
   const [hoveredPlayer, setHoveredPlayer] = useState<number | null>(null)
   const [hoveredTraining, setHoveredTraining] = useState<number | null>(null)
 
@@ -184,6 +185,11 @@ export function TrainingPage() {
       cutoff.setDate(cutoff.getDate() - 56) // 8 weeks
       return pastOnly.filter(t => new Date(t.date) >= cutoff)
     }
+    if (statsFilter === '12weeks') {
+      const cutoff = new Date()
+      cutoff.setDate(cutoff.getDate() - 84) // 12 weeks
+      return pastOnly.filter(t => new Date(t.date) >= cutoff)
+    }
     // 'season' = from first training in current view, up to today
     return pastOnly
   })()
@@ -241,13 +247,25 @@ export function TrainingPage() {
                     ))}
                   </select>
                   {activePeriodId && (
-                    <button
-                      onClick={() => setDeletePeriodId(activePeriodId)}
-                      className="p-1.5 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-softball-red-50 cursor-pointer"
-                      title="Zeitraum löschen"
-                    >
-                      <XMark size={16} />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          const p = periods.find(p => p.id === activePeriodId)
+                          if (p) setRenamingPeriod({ id: p.id, name: p.name })
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-navy-600 rounded-lg hover:bg-navy-50 cursor-pointer"
+                        title="Zeitraum umbenennen"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => setDeletePeriodId(activePeriodId)}
+                        className="p-1.5 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-softball-red-50 cursor-pointer"
+                        title="Zeitraum löschen"
+                      >
+                        <XMark size={16} />
+                      </button>
+                    </>
                   )}
                 </div>
               )}
@@ -281,13 +299,25 @@ export function TrainingPage() {
                   ))}
                 </select>
                 {activePeriodId && (
-                  <button
-                    onClick={() => setDeletePeriodId(activePeriodId)}
-                    className="p-1.5 text-gray-400 hover:text-softball-red-600 cursor-pointer"
-                    title="Zeitraum löschen"
-                  >
-                    <XMark size={16} />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        const p = periods.find(p => p.id === activePeriodId)
+                        if (p) setRenamingPeriod({ id: p.id, name: p.name })
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-navy-600 cursor-pointer"
+                      title="Zeitraum umbenennen"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => setDeletePeriodId(activePeriodId)}
+                      className="p-1.5 text-gray-400 hover:text-softball-red-600 cursor-pointer"
+                      title="Zeitraum löschen"
+                    >
+                      <XMark size={16} />
+                    </button>
+                  </>
                 )}
               </div>
             )}
@@ -463,7 +493,7 @@ export function TrainingPage() {
       <section>
         <button
           onClick={() => setStatsOpen(!statsOpen)}
-          className="flex items-center gap-3 mb-4 group"
+          className="flex items-center gap-3 mb-4 group cursor-pointer"
         >
           <div className="w-1 h-8 bg-softball-red-600 rounded-full" />
           <h2 className="text-xl font-bold text-gray-950">Statistik</h2>
@@ -476,6 +506,7 @@ export function TrainingPage() {
             <div className="flex gap-1.5">
               {([
                 ['8weeks', 'Letzte 8 Wochen'],
+                ['12weeks', 'Letzte 12 Wochen'],
                 ['season', 'Seit Beginn'],
                 ['all', 'Alle'],
               ] as const).map(([key, label]) => (
@@ -525,9 +556,7 @@ export function TrainingPage() {
                       </span>
                       <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${
-                            s.regular ? 'bg-navy-800' : 'bg-gray-400'
-                          }`}
+                          className="h-full rounded-full transition-all bg-navy-800"
                           style={{ width: `${barWidth}%` }}
                         />
                       </div>
@@ -576,6 +605,52 @@ export function TrainingPage() {
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
         />
+      )}
+
+      {/* Rename Period Modal */}
+      {renamingPeriod && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setRenamingPeriod(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-900">Zeitraum umbenennen</h2>
+              <button onClick={() => setRenamingPeriod(null)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
+                <XMark size={20} />
+              </button>
+            </div>
+            <div className="px-4 py-4">
+              <input
+                type="text"
+                value={renamingPeriod.name}
+                onChange={e => setRenamingPeriod({ ...renamingPeriod, name: e.target.value })}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && renamingPeriod.name.trim()) {
+                    renamePeriod(renamingPeriod.id, renamingPeriod.name.trim())
+                      .then(() => { setRenamingPeriod(null); toast.show('Zeitraum umbenannt') })
+                      .catch((err: Error) => toast.show(err.message, 'error'))
+                  }
+                }}
+              />
+            </div>
+            <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
+              <button onClick={() => setRenamingPeriod(null)} className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer">
+                Abbrechen
+              </button>
+              <button
+                onClick={() => {
+                  renamePeriod(renamingPeriod.id, renamingPeriod.name.trim())
+                    .then(() => { setRenamingPeriod(null); toast.show('Zeitraum umbenannt') })
+                    .catch((err: Error) => toast.show(err.message, 'error'))
+                }}
+                disabled={!renamingPeriod.name.trim()}
+                className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-navy-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete Period Confirm */}
@@ -1018,7 +1093,7 @@ function ImportTrainingModal({
 
         <div className="px-4 py-4 space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Zeitraum-Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Zeitraum-Name *</label>
             <input
               type="text"
               value={periodName}
@@ -1086,8 +1161,8 @@ function ImportTrainingModal({
             Abbrechen
           </button>
           <button
-            onClick={() => onSubmit(csv, periodName.trim() || undefined)}
-            disabled={!csv.trim()}
+            onClick={() => onSubmit(csv, periodName.trim())}
+            disabled={!csv.trim() || !periodName.trim()}
             className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-navy-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             Importieren

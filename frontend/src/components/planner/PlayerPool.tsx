@@ -1,12 +1,13 @@
-import { useState, useMemo } from 'react'
-import type { Player, GameDayPlayerStats, TrainingStatsResponse } from '@/types'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import type { Player, GameDayPlayerStats } from '@/types'
 import { PlusCircle } from '@/icons'
+import * as api from '@/api/client'
 
 interface Props {
   allAvailablePlayers: Player[]
   lineupPlayerIds: Set<number>
   stats: GameDayPlayerStats[]
-  trainingStats?: TrainingStatsResponse[]
+  gameDayDate: string
   onAdd: (player: Player) => void
 }
 
@@ -26,9 +27,28 @@ function gameCountBadge(gc: number): string {
   return 'bg-emerald-100 text-emerald-700'
 }
 
-export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, trainingStats, onAdd }: Props) {
+type TrainingFilter = '12weeks' | 'all'
+
+function sinceDate(filter: TrainingFilter, refDate: string): string | undefined {
+  if (filter === 'all') return undefined
+  const d = new Date(refDate + 'T00:00:00')
+  d.setDate(d.getDate() - 84)
+  return d.toISOString().slice(0, 10)
+}
+
+export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDayDate, onAdd }: Props) {
   const [tab, setTab] = useState<'pool' | 'overview' | 'training'>('pool')
+  const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('12weeks')
+  const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const statsMap = new Map(stats.map(s => [s.playerId, s]))
+
+  const loadTrainingStats = useCallback((filter: TrainingFilter) => {
+    api.getTrainingStats(undefined, sinceDate(filter, gameDayDate)).then(setTrainingStats)
+  }, [gameDayDate])
+
+  useEffect(() => {
+    if (tab === 'training') loadTrainingStats(trainingFilter)
+  }, [tab, trainingFilter, loadTrainingStats])
 
   // Filter training stats to available players only, sorted by attendance desc
   const availableTrainingStats = useMemo(() => {
@@ -56,45 +76,32 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, traini
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1">
-          <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
-          <button
-            onClick={() => setTab('pool')}
-            className={`text-sm font-semibold uppercase tracking-wide px-2 py-0.5 rounded cursor-pointer transition-colors ${
-              tab === 'pool'
-                ? 'text-navy-700 bg-navy-50'
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            Pool
-          </button>
-          <button
-            onClick={() => setTab('overview')}
-            className={`text-sm font-semibold uppercase tracking-wide px-2 py-0.5 rounded cursor-pointer transition-colors ${
-              tab === 'overview'
-                ? 'text-navy-700 bg-navy-50'
-                : 'text-gray-400 hover:text-gray-600'
-            }`}
-          >
-            Übersicht
-          </button>
-          {trainingStats && trainingStats.length > 0 && (
+      <div className="flex items-center gap-3 mb-2">
+        <span className="w-1 h-6 bg-softball-red-600 rounded-full shrink-0" />
+        <nav className="flex items-center gap-4 flex-1 min-w-0">
+          {([
+            ['pool', 'Spieler', freePlayers.length],
+            ['overview', 'Übersicht', allAvailablePlayers.length],
+            ['training', 'Training', availableTrainingStats.length],
+          ] as const).map(([key, label, count]) => (
             <button
-              onClick={() => setTab('training')}
-              className={`text-sm font-semibold uppercase tracking-wide px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                tab === 'training'
-                  ? 'text-navy-700 bg-navy-50'
-                  : 'text-gray-400 hover:text-gray-600'
+              key={key}
+              onClick={() => setTab(key)}
+              className={`text-sm font-bold uppercase tracking-wide cursor-pointer transition-colors ${
+                tab === key
+                  ? 'text-gray-950'
+                  : 'text-gray-300 hover:text-gray-500'
               }`}
             >
-              Training
+              {label}
+              {tab === key && (
+                <span className="ml-1 text-xs font-mono text-gray-400">
+                  ({count})
+                </span>
+              )}
             </button>
-          )}
-        </div>
-        <span className="text-sm text-gray-500 font-mono">
-          {tab === 'pool' ? freePlayers.length : tab === 'training' ? availableTrainingStats.length : allAvailablePlayers.length}
-        </span>
+          ))}
+        </nav>
       </div>
 
       {tab === 'pool' ? (
@@ -201,11 +208,25 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, traini
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
+          <div className="flex gap-1 mb-1">
+            {([['12weeks', '12 Wo.'], ['all', 'Gesamt']] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setTrainingFilter(key)}
+                className={`text-[11px] px-2 py-0.5 rounded-full font-medium cursor-pointer transition-colors ${
+                  trainingFilter === key
+                    ? 'bg-navy-800 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {availableTrainingStats.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten vorhanden.</p>
           ) : (
             availableTrainingStats.map(s => {
-              const pct = s.totalTrainings > 0 ? Math.round((s.attended / s.totalTrainings) * 100) : 0
               const maxAttended = Math.max(...availableTrainingStats.map(st => st.attended), 1)
               const barWidth = Math.round((s.attended / maxAttended) * 100)
               return (
@@ -215,12 +236,12 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, traini
                   </span>
                   <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${s.regular ? 'bg-navy-800' : 'bg-gray-400'}`}
+                      className="h-full rounded-full bg-navy-800"
                       style={{ width: `${barWidth}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-gray-500 tabular-nums w-14 text-right shrink-0">
-                    {s.attended}/{s.totalTrainings} ({pct}%)
+                  <span className="text-[11px] font-mono text-gray-500 tabular-nums w-6 text-right shrink-0">
+                    {s.attended}
                   </span>
                 </div>
               )

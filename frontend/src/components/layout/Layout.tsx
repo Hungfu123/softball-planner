@@ -38,23 +38,21 @@ export function Layout() {
                 <span className="font-bold text-lg hidden sm:block">SOFTBALL LINEUP</span>
               </Link>
             </div>
-            {!isSubPage && (
-              <nav className="flex items-center gap-1">
-                {TABS.map(tab => (
-                  <Link
-                    key={tab.path}
-                    to={tab.path}
-                    className={`px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                      activeTab === tab.path
-                        ? 'bg-white/15 text-white border-b-2 border-white'
-                        : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {tab.label}
-                  </Link>
-                ))}
-              </nav>
-            )}
+            <nav className="flex items-center gap-0.5">
+              {TABS.map(tab => (
+                <Link
+                  key={tab.path}
+                  to={tab.path}
+                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ${
+                    activeTab === tab.path
+                      ? 'bg-softball-red-600 text-white shadow-lg shadow-softball-red-600/25'
+                      : 'text-white/60 hover:text-white hover:bg-white/8'
+                  }`}
+                >
+                  {tab.label}
+                </Link>
+              ))}
+            </nav>
           </div>
         </header>
 

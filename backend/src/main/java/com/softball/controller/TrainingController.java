@@ -74,8 +74,9 @@ public class TrainingController {
     }
 
     @GetMapping("/stats")
-    public List<TrainingStatsResponse> getStats(@RequestParam(required = false) final Long periodId) {
-        return trainingService.getStats(periodId);
+    public List<TrainingStatsResponse> getStats(@RequestParam(required = false) final Long periodId,
+                                                 @RequestParam(required = false) final java.time.LocalDate since) {
+        return trainingService.getStats(periodId, since);
     }
 
     // --- Period endpoints ---
@@ -89,6 +90,12 @@ public class TrainingController {
     @ResponseStatus(HttpStatus.CREATED)
     public TrainingPeriodResponse createPeriod(@Valid @RequestBody final CreateTrainingPeriodRequest request) {
         return trainingService.createPeriod(request.name(), request.startDate(), request.endDate());
+    }
+
+    @PutMapping("/periods/{id}")
+    public TrainingPeriodResponse updatePeriod(@PathVariable final Long id,
+                                                @RequestBody final java.util.Map<String, String> body) {
+        return trainingService.renamePeriod(id, body.get("name"));
     }
 
     @DeleteMapping("/periods/{id}")

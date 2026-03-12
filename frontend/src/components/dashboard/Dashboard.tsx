@@ -106,10 +106,16 @@ export function Dashboard() {
               <h2 className="text-lg font-semibold text-gray-950 flex items-center gap-2">
                 <span className="w-1 h-5 bg-softball-red-500 rounded-full" />
                 Spieltage
+                {gameDays.length > 0 && (
+                  <span className="text-sm font-normal text-gray-400">{gameDays.length} gesamt</span>
+                )}
               </h2>
-              {gameDays.length > 0 && (
-                <span className="text-sm text-gray-400">{gameDays.length} gesamt</span>
-              )}
+              <button
+                onClick={() => setShowNewGameDay(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-softball-red-600 text-white hover:bg-softball-red-500 font-medium text-sm cursor-pointer transition-colors"
+              >
+                <PlusCircle size={16} /> Neuer Spieltag
+              </button>
             </div>
 
             {gameDays.length === 0 ? (
@@ -143,13 +149,6 @@ export function Dashboard() {
                 )}
               </>
             )}
-
-            <button
-              onClick={() => setShowNewGameDay(true)}
-              className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-softball-red-600 text-white hover:bg-softball-red-500 font-medium text-sm cursor-pointer"
-            >
-              <PlusCircle size={18} /> Neuer Spieltag
-            </button>
 
             {showNewGameDay && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowNewGameDay(false)}>
