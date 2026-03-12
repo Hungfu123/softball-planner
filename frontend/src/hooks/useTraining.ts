@@ -126,6 +126,17 @@ export function useTraining() {
     await loadAll(activePeriodId)
   }
 
+  const deletePeriod = async (periodId: number) => {
+    await api.deleteTrainingPeriod(periodId)
+    await loadPeriods()
+    if (activePeriodId === periodId) {
+      setActivePeriodId(null)
+      await loadAll(null)
+    } else {
+      await loadAll(activePeriodId)
+    }
+  }
+
   const importCsv = async (csv: string, periodName?: string) => {
     const result = await api.importTrainingCsv(csv, periodName)
     const newPeriods = await loadPeriods()
@@ -156,6 +167,7 @@ export function useTraining() {
     createBulk,
     deleteTraining,
     cancelTraining,
+    deletePeriod,
     importCsv,
   }
 }

@@ -18,6 +18,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <skip.frontend>false</skip.frontend>
         <mockito.version>5.15.2</mockito.version>
         <byte-buddy.version>1.17.1</byte-buddy.version>
         <testcontainers.version>1.21.0</testcontainers.version>
@@ -90,6 +91,7 @@
                 <configuration>
                     <workingDirectory>${project.basedir}/../frontend</workingDirectory>
                     <nodeVersion>v22.14.0</nodeVersion>
+                    <skip>${skip.frontend}</skip>
                 </configuration>
                 <executions>
                     <execution>

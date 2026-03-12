@@ -106,10 +106,11 @@ public class TrainingService {
             .map(DayOfWeek::of)
             .collect(Collectors.toSet());
 
-        // Create or skip period
+        // Find existing period by name, or create new one
         TrainingPeriod period = null;
         if (periodName != null && !periodName.isBlank()) {
-            period = periodRepository.save(new TrainingPeriod(periodName.trim(), startDate, endDate));
+            period = periodRepository.findByNameIgnoreCase(periodName.trim())
+                .orElseGet(() -> periodRepository.save(new TrainingPeriod(periodName.trim(), startDate, endDate)));
         }
 
         // Collect all candidate dates
@@ -306,15 +307,15 @@ public class TrainingService {
             createdTrainings.add(training);
         }
 
-        // Create period if requested and trainings were created
+        // Find existing period or create new one, then assign to created trainings
         if (periodName != null && !periodName.isBlank() && !createdTrainings.isEmpty()) {
             final LocalDate minDate = createdTrainings.stream()
                 .map(Training::getDate).min(LocalDate::compareTo).orElseThrow();
             final LocalDate maxDate = createdTrainings.stream()
                 .map(Training::getDate).max(LocalDate::compareTo).orElseThrow();
 
-            final TrainingPeriod period = periodRepository.save(
-                new TrainingPeriod(periodName.trim(), minDate, maxDate));
+            final TrainingPeriod period = periodRepository.findByNameIgnoreCase(periodName.trim())
+                .orElseGet(() -> periodRepository.save(new TrainingPeriod(periodName.trim(), minDate, maxDate)));
 
             for (final Training training : createdTrainings) {
                 training.setPeriod(period);

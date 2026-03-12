@@ -8,4 +8,6 @@ import java.util.List;
 public interface TrainingPeriodRepository extends JpaRepository<TrainingPeriod, Long> {
 
     List<TrainingPeriod> findAllByOrderByStartDateDesc();
+
+    java.util.Optional<TrainingPeriod> findByNameIgnoreCase(String name);
 }

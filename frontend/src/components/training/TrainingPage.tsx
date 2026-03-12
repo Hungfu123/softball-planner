@@ -2,29 +2,25 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
-import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, CalendarIcon, UploadIcon } from '@/icons'
+import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, UploadIcon } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import type { TrainingResponse } from '@/types'
 
 export function TrainingPage() {
   const {
     trainings, attendance, periods, activePeriodId, loading,
-    loadAll, loadPeriods, selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, importCsv,
+    loadAll, loadPeriods, selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, deletePeriod, importCsv,
   } = useTraining()
   const { players, loading: playersLoading, update: updatePlayer } = usePlayers()
   const toast = useToastContext()
 
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newDate, setNewDate] = useState('')
-  const [newTime, setNewTime] = useState('')
-  const [newLocation, setNewLocation] = useState('')
-  const [newType, setNewType] = useState<'REGULAR' | 'PITCHER_CATCHER'>('REGULAR')
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [headerMenuId, setHeaderMenuId] = useState<number | null>(null)
   const [statsOpen, setStatsOpen] = useState(false)
   const [statsFilter, setStatsFilter] = useState<'8weeks' | 'season' | 'all'>('8weeks')
-  const [showBulkModal, setShowBulkModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
+  const [deletePeriodId, setDeletePeriodId] = useState<number | null>(null)
   const [hoveredPlayer, setHoveredPlayer] = useState<number | null>(null)
   const [hoveredTraining, setHoveredTraining] = useState<number | null>(null)
 
@@ -116,30 +112,20 @@ export function TrainingPage() {
     return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`
   }
 
-  const handleCreate = async () => {
-    if (!newDate) return
+  const handleCreateSingle = async (data: { date: string; time?: string; location?: string; type?: string }) => {
     try {
-      await createTraining({
-        date: newDate,
-        time: newTime || undefined,
-        location: newLocation || undefined,
-        type: newType,
-      })
-      setShowCreateForm(false)
-      setNewDate('')
-      setNewTime('')
-      setNewLocation('')
-      setNewType('REGULAR')
+      await createTraining(data)
+      setShowCreateModal(false)
       toast.show('Training erstellt')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
   }
 
-  const handleBulkCreate = async (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) => {
+  const handleCreateBulk = async (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) => {
     try {
       await createBulk(data)
-      setShowBulkModal(false)
+      setShowCreateModal(false)
       toast.show('Trainings erstellt')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
@@ -243,16 +229,27 @@ export function TrainingPage() {
             {/* Desktop: all buttons inline */}
             <div className="hidden sm:flex items-center gap-2">
               {periods.length > 0 && (
-                <select
-                  value={activePeriodId ?? ''}
-                  onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
-                >
-                  <option value="">Alle Zeiträume</option>
-                  {periods.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={activePeriodId ?? ''}
+                    onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
+                  >
+                    <option value="">Alle Zeiträume</option>
+                    {periods.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  {activePeriodId && (
+                    <button
+                      onClick={() => setDeletePeriodId(activePeriodId)}
+                      className="p-1.5 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-softball-red-50 cursor-pointer"
+                      title="Zeitraum löschen"
+                    >
+                      <XMark size={16} />
+                    </button>
+                  )}
+                </div>
               )}
               <button
                 onClick={() => setShowImportModal(true)}
@@ -261,13 +258,7 @@ export function TrainingPage() {
                 <UploadIcon size={16} /> CSV Import
               </button>
               <button
-                onClick={() => setShowBulkModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-navy-50 hover:border-navy-600 cursor-pointer"
-              >
-                <CalendarIcon size={16} /> Wöchentlich
-              </button>
-              <button
-                onClick={() => setShowCreateForm(true)}
+                onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-softball-red-600 text-white text-sm font-medium hover:bg-softball-red-500 cursor-pointer"
               >
                 <PlusCircle size={16} /> Neues Training
@@ -278,16 +269,27 @@ export function TrainingPage() {
           {/* Mobile: stacked controls */}
           <div className="flex sm:hidden flex-wrap items-center gap-2">
             {periods.length > 0 && (
-              <select
-                value={activePeriodId ?? ''}
-                onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 outline-none cursor-pointer"
-              >
-                <option value="">Alle Zeiträume</option>
-                {periods.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-1 flex-1 min-w-0">
+                <select
+                  value={activePeriodId ?? ''}
+                  onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
+                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 outline-none cursor-pointer"
+                >
+                  <option value="">Alle Zeiträume</option>
+                  {periods.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                {activePeriodId && (
+                  <button
+                    onClick={() => setDeletePeriodId(activePeriodId)}
+                    className="p-1.5 text-gray-400 hover:text-softball-red-600 cursor-pointer"
+                    title="Zeitraum löschen"
+                  >
+                    <XMark size={16} />
+                  </button>
+                )}
+              </div>
             )}
             <button
               onClick={() => setShowImportModal(true)}
@@ -297,14 +299,7 @@ export function TrainingPage() {
               <UploadIcon size={18} />
             </button>
             <button
-              onClick={() => setShowBulkModal(true)}
-              className="p-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-navy-50 cursor-pointer"
-              title="Wöchentlich"
-            >
-              <CalendarIcon size={18} />
-            </button>
-            <button
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => setShowCreateModal(true)}
               className="p-2.5 rounded-lg bg-softball-red-600 text-white hover:bg-softball-red-500 cursor-pointer"
               title="Neues Training"
             >
@@ -323,7 +318,7 @@ export function TrainingPage() {
             <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
             <p className="mb-4">Noch keine Trainings erstellt.</p>
             <button
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-softball-red-600 text-white text-sm font-medium hover:bg-navy-500 cursor-pointer"
             >
               <PlusCircle size={16} /> Neues Training
@@ -547,19 +542,13 @@ export function TrainingPage() {
         )}
       </section>
 
-      {/* Create Training Modal */}
-      {showCreateForm && (
+      {/* Create Training Modal (Einzeln + Wöchentlich) */}
+      {showCreateModal && (
         <CreateTrainingModal
-          date={newDate}
-          time={newTime}
-          location={newLocation}
-          type={newType}
-          onDateChange={setNewDate}
-          onTimeChange={setNewTime}
-          onLocationChange={setNewLocation}
-          onTypeChange={setNewType}
-          onSubmit={handleCreate}
-          onClose={() => setShowCreateForm(false)}
+          periods={periods}
+          onCreateSingle={handleCreateSingle}
+          onCreateBulk={handleCreateBulk}
+          onClose={() => setShowCreateModal(false)}
         />
       )}
 
@@ -579,21 +568,32 @@ export function TrainingPage() {
         />
       )}
 
-      {/* Bulk Training Modal */}
-      {showBulkModal && (
-        <BulkTrainingModal
-          onSubmit={handleBulkCreate}
-          onClose={() => setShowBulkModal(false)}
-        />
-      )}
-
-      {/* Delete Confirm */}
+      {/* Delete Training Confirm */}
       {deleteId && (
         <ConfirmModal
           title="Training loeschen"
           message="Dieses Training wirklich loeschen? Alle Anwesenheitsdaten gehen verloren."
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
+        />
+      )}
+
+      {/* Delete Period Confirm */}
+      {deletePeriodId && (
+        <ConfirmModal
+          title="Zeitraum loeschen"
+          message={`Zeitraum "${periods.find(p => p.id === deletePeriodId)?.name}" loeschen? Die Trainings bleiben erhalten, werden aber keinem Zeitraum mehr zugeordnet.`}
+          onConfirm={async () => {
+            try {
+              await deletePeriod(deletePeriodId)
+              setDeletePeriodId(null)
+              toast.show('Zeitraum gelöscht')
+            } catch (e: unknown) {
+              toast.show((e as Error).message, 'error')
+              setDeletePeriodId(null)
+            }
+          }}
+          onCancel={() => setDeletePeriodId(null)}
         />
       )}
     </div>
@@ -662,54 +662,113 @@ function countBulkTrainings(weekdays: number[], startDate: string, endDate: stri
   return count
 }
 
-function BulkTrainingModal({
-  onSubmit,
+function CreateTrainingModal({
+  periods,
+  onCreateSingle,
+  onCreateBulk,
   onClose,
 }: {
-  onSubmit: (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) => void
+  periods: { id: number; name: string }[]
+  onCreateSingle: (data: { date: string; time?: string; location?: string; type?: string }) => void
+  onCreateBulk: (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) => void
   onClose: () => void
 }) {
+  const [mode, setMode] = useState<'single' | 'weekly'>('single')
+
+  // Shared state
+  const [time, setTime] = useState('')
+  const [location, setLocation] = useState('')
+  const [type, setType] = useState<'REGULAR' | 'PITCHER_CATCHER'>('REGULAR')
+
+  // Single mode
+  const [date, setDate] = useState('')
+
+  // Weekly mode
   const [weekdays, setWeekdays] = useState<number[]>([])
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [time, setTime] = useState('')
-  const [location, setLocation] = useState('')
-  const [periodName, setPeriodName] = useState('')
-  const [type, setType] = useState<'REGULAR' | 'PITCHER_CATCHER'>('REGULAR')
+  const [periodSelect, setPeriodSelect] = useState<'existing' | 'new'>(periods.length > 0 ? 'existing' : 'new')
+  const [selectedPeriodName, setSelectedPeriodName] = useState(periods.length > 0 ? periods[0].name : '')
+  const [newPeriodName, setNewPeriodName] = useState('')
+
+  const periodName = periodSelect === 'existing' ? selectedPeriodName : newPeriodName
 
   const toggleDay = (day: number) => {
     setWeekdays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])
   }
 
   const trainingCount = countBulkTrainings(weekdays, startDate, endDate)
-  const canSubmit = weekdays.length > 0 && startDate && endDate && trainingCount > 0
+
+  // Validation
+  const today = new Date().toISOString().slice(0, 10)
+  const dateInPast = mode === 'single' && date && date < today
+  const endBeforeStart = mode === 'weekly' && startDate && endDate && endDate < startDate
+  const missingPeriodName = mode === 'weekly' && periodSelect === 'new' && !newPeriodName.trim()
+  const spanTooLong = mode === 'weekly' && startDate && endDate && !endBeforeStart &&
+    (new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24) > 365
+
+  const canSubmitSingle = !!date
+  const canSubmitWeekly = weekdays.length > 0 && startDate && endDate && trainingCount > 0 && !endBeforeStart && !missingPeriodName
+
+  const handleSubmit = () => {
+    if (mode === 'single') {
+      onCreateSingle({
+        date,
+        time: time || undefined,
+        location: location || undefined,
+        type: type !== 'REGULAR' ? type : undefined,
+      })
+    } else {
+      onCreateBulk({
+        weekdays,
+        startDate,
+        endDate,
+        time: time || undefined,
+        location: location || undefined,
+        periodName: periodName.trim() || undefined,
+        type: type !== 'REGULAR' ? type : undefined,
+      })
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-sm"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">Woechentliches Training</h2>
+          <h2 className="text-lg font-bold text-gray-900">Neues Training</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
           </button>
         </div>
 
         <div className="px-4 py-4 space-y-3">
-          {/* Period name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Zeitraum-Name</label>
-            <input
-              type="text"
-              value={periodName}
-              onChange={e => setPeriodName(e.target.value)}
-              placeholder="z.B. Wintersaison 2025/26"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-              autoFocus
-            />
-            <p className="text-xs text-gray-400 mt-1">Zum Filtern und Gruppieren der Trainings</p>
+          {/* Mode toggle */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMode('single')}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
+                mode === 'single'
+                  ? 'bg-navy-800 text-white border-navy-800'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400'
+              }`}
+            >
+              Einzeln
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('weekly')}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
+                mode === 'weekly'
+                  ? 'bg-navy-800 text-white border-navy-800'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400'
+              }`}
+            >
+              Wöchentlich
+            </button>
           </div>
 
           {/* Type toggle */}
@@ -741,52 +800,137 @@ function BulkTrainingModal({
             </div>
           </div>
 
-          {/* Weekday chips */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Wochentage *</label>
-            <div className="flex gap-1.5">
-              {WEEKDAY_LABELS.map((label, i) => {
-                const day = i + 1 // 1=Mo ... 7=So
-                const selected = weekdays.includes(day)
-                return (
+          {/* Single mode: date */}
+          {mode === 'single' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
+              <input
+                type="date"
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                autoFocus
+              />
+              {dateInPast && (
+                <p className="text-xs text-amber-600 mt-1">Datum liegt in der Vergangenheit (Nachtragen?)</p>
+              )}
+            </div>
+          )}
+
+          {/* Weekly mode: period, weekdays, date range */}
+          {mode === 'weekly' && (
+            <>
+              {/* Period selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Zeitraum</label>
+                <div className="flex gap-1.5 mb-2">
+                  {periods.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setPeriodSelect('existing'); if (!selectedPeriodName) setSelectedPeriodName(periods[0].name) }}
+                      className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
+                        periodSelect === 'existing' ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Bestehend
+                    </button>
+                  )}
                   <button
-                    key={day}
                     type="button"
-                    onClick={() => toggleDay(day)}
-                    className={`flex-1 py-1.5 text-xs font-medium rounded-lg border cursor-pointer transition-colors ${
-                      selected
-                        ? 'bg-navy-800 text-white border-navy-800'
-                        : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400 hover:text-navy-700'
+                    onClick={() => setPeriodSelect('new')}
+                    className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
+                      periodSelect === 'new' ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    {label}
+                    Neu
                   </button>
-                )
-              })}
-            </div>
-          </div>
+                </div>
+                {periodSelect === 'existing' && (
+                  <>
+                    <select
+                      value={selectedPeriodName}
+                      onChange={e => setSelectedPeriodName(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
+                    >
+                      {periods.map(p => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">Bestehende Daten werden aktualisiert, Anwesenheit bleibt erhalten.</p>
+                  </>
+                )}
+                {periodSelect === 'new' && (
+                  <>
+                    <input
+                      type="text"
+                      value={newPeriodName}
+                      onChange={e => setNewPeriodName(e.target.value)}
+                      placeholder="z.B. Sommersaison 2026"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                    />
+                    {newPeriodName.trim() ? (
+                      <p className="text-xs text-gray-400 mt-1">Neuer Zeitraum wird erstellt.</p>
+                    ) : (
+                      <p className="text-xs text-softball-red-600 mt-1">Name ist erforderlich.</p>
+                    )}
+                  </>
+                )}
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Startdatum *</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-              autoFocus
-            />
-          </div>
+              {/* Weekday chips */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Wochentage *</label>
+                <div className="flex gap-1.5">
+                  {WEEKDAY_LABELS.map((label, i) => {
+                    const day = i + 1
+                    const selected = weekdays.includes(day)
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => toggleDay(day)}
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-lg border cursor-pointer transition-colors ${
+                          selected
+                            ? 'bg-navy-800 text-white border-navy-800'
+                            : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400 hover:text-navy-700'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Enddatum *</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Startdatum *</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                />
+              </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Enddatum *</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                />
+                {endBeforeStart && (
+                  <p className="text-xs text-softball-red-600 mt-1">Enddatum muss nach dem Startdatum liegen.</p>
+                )}
+                {spanTooLong && (
+                  <p className="text-xs text-amber-600 mt-1">Zeitraum ist länger als 1 Jahr.</p>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Shared: time + location */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit</label>
             <input
@@ -808,8 +952,8 @@ function BulkTrainingModal({
             />
           </div>
 
-          {/* Preview count */}
-          {trainingCount > 0 && (
+          {/* Preview count (weekly mode) */}
+          {mode === 'weekly' && trainingCount > 0 && (
             <p className="text-sm text-navy-700 font-medium bg-navy-50 rounded-lg px-3 py-2">
               {trainingCount} {trainingCount === 1 ? 'Training wird' : 'Trainings werden'} erstellt
             </p>
@@ -824,16 +968,8 @@ function BulkTrainingModal({
             Abbrechen
           </button>
           <button
-            onClick={() => onSubmit({
-              weekdays,
-              startDate,
-              endDate,
-              time: time || undefined,
-              location: location || undefined,
-              periodName: periodName.trim() || undefined,
-              type: type !== 'REGULAR' ? type : undefined,
-            })}
-            disabled={!canSubmit}
+            onClick={handleSubmit}
+            disabled={mode === 'single' ? !canSubmitSingle : !canSubmitWeekly}
             className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-navy-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             Erstellen
@@ -844,113 +980,6 @@ function BulkTrainingModal({
   )
 }
 
-function CreateTrainingModal({
-  date, time, location, type,
-  onDateChange, onTimeChange, onLocationChange, onTypeChange,
-  onSubmit, onClose,
-}: {
-  date: string
-  time: string
-  location: string
-  type: 'REGULAR' | 'PITCHER_CATCHER'
-  onDateChange: (v: string) => void
-  onTimeChange: (v: string) => void
-  onLocationChange: (v: string) => void
-  onTypeChange: (v: 'REGULAR' | 'PITCHER_CATCHER') => void
-  onSubmit: () => void
-  onClose: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-sm"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">Neues Training</h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
-            <XMark size={20} />
-          </button>
-        </div>
-
-        <div className="px-4 py-4 space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Typ</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => onTypeChange('REGULAR')}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
-                  type === 'REGULAR'
-                    ? 'bg-navy-800 text-white border-navy-800'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400'
-                }`}
-              >
-                Normal
-              </button>
-              <button
-                type="button"
-                onClick={() => onTypeChange('PITCHER_CATCHER')}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
-                  type === 'PITCHER_CATCHER'
-                    ? 'bg-softball-red-600 text-white border-softball-red-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-softball-red-400'
-                }`}
-              >
-                P/C Training
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Datum *</label>
-            <input
-              type="date"
-              value={date}
-              onChange={e => onDateChange(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-              autoFocus
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Uhrzeit</label>
-            <input
-              type="time"
-              value={time}
-              onChange={e => onTimeChange(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ort</label>
-            <input
-              type="text"
-              value={location}
-              onChange={e => onLocationChange(e.target.value)}
-              placeholder="z.B. Sportplatz"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
-          >
-            Abbrechen
-          </button>
-          <button
-            onClick={onSubmit}
-            disabled={!date}
-            className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-navy-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            Erstellen
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function ImportTrainingModal({
   onSubmit,
