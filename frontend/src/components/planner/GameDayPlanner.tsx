@@ -67,7 +67,7 @@ export function GameDayPlanner() {
   useEffect(() => {
     if (gameDay?.seasonId) {
       api.getGameDays(gameDay.seasonId).then(setSeasonGameDays)
-      api.getSeasons().then(seasons => setSeason(seasons.find(s => s.id === gameDay.seasonId) ?? null))
+      api.getSeason(gameDay.seasonId).then(setSeason)
     }
   }, [gameDay?.seasonId])
 

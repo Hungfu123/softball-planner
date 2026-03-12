@@ -28,6 +28,11 @@ public class SeasonController {
         return seasonService.findAll().stream().map(SeasonResponse::from).toList();
     }
 
+    @GetMapping("/{id}")
+    public SeasonResponse getById(@PathVariable final Long id) {
+        return SeasonResponse.from(seasonService.findById(id));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SeasonResponse create(@Valid @RequestBody final CreateSeasonRequest request) {

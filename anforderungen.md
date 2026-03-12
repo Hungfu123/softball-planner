@@ -39,6 +39,7 @@
 - Spieler erstellen, umbenennen, löschen
 - Pool-Ansicht: freie Spieler sortiert nach Spielanzahl
 - Übersicht-Tab: alle Spieler mit Positionen + Spielanzahl
+- Trainingsbeteiligung-Tab: Balkendiagramm pro verfügbarem Spieler
 - Farbcodierte Badges (rot=0, amber=1, blau=2, grün=3+)
 - Bench-Anzeige (verfügbar aber nicht aufgestellt)
 
@@ -56,6 +57,29 @@
 - Dateiname: Lineup_[Ort]_[Saison_Jahr].pdf
 - Daten-Export/-Import (JSON Backup)
 
+### Training-Tracking
+- Anwesenheits-Matrix (Spieler × Trainings), Tap togglet ✓/—
+- Sticky linke Spalte, horizontales Scrollen
+- Trainingstypen: Normal (Navy) und P/C (Rot)
+- Training anlegen: Einzeln oder Wöchentlich (kombiniertes Modal mit Validierung)
+- Zeiträume: erstellen, auswählen, löschen (mit Bestätigungsdialog)
+- Bulk-Create: upsert bestehende Trainings, Anwesenheit bleibt erhalten
+- Training absagen, löschen
+- CSV-Import (Google Sheets kompatibel, Drag & Drop)
+- Stammspieler automatisch als anwesend bei neuem Training
+- Statistik: Balkendiagramm, Filter (Letzte 8 Wochen / Seit Beginn / Alle)
+- Animierter Ladebalken
+- Batch-API: Anwesenheit aller Trainings in einem Call
+
+### Navigation
+- Tabs: **Spielbetrieb** | **Training** | **Spieler**
+- Aktiver Tab mit visueller Markierung
+
+### API-Optimierungen
+- Batch-Endpoint: Training-Anwesenheit (1 statt N Calls)
+- Batch-Endpoint: Spieltag Lineups+Staff (1 statt 2N Calls)
+- Einzeln-Endpoint: Season per ID (statt alle laden)
+
 ### UI/UX
 - Farbhierarchie: Navy=primär, Weiß=sekundär, Rot=Akzent
 - Weiße Karten mit shadow-sm auf grauem Hintergrund
@@ -70,68 +94,16 @@
 
 ---
 
-## In Entwicklung
-
-### Training-Tracking
-**Ziel:** Excel + WhatsApp-Ablesen ersetzen durch schnelle In-App-Erfassung
-
-#### Backend
-- `Training` Entity: Datum, Uhrzeit (optional), Ort (optional), abgesagt-Flag
-- `TrainingAttendance` Entity: Training + Spieler + anwesend (boolean)
-- `regular` Flag auf Player (Stammspieler)
-- Endpoints: CRUD Trainings, Attendance setzen/lesen, Statistiken
-- Automatisches Vorausfüllen: Stammspieler = anwesend bei neuem Training
-- Abgesagte Trainings zählen nicht in Statistik
-
-#### Frontend — Matrix-Ansicht
-- Eine Tabelle, alle Trainings auf einen Blick (wie Excel)
-- Sticky linke Spalte: Spielernamen bleiben sichtbar beim Scrollen
-- Spalten: je ein Trainingsdatum, neueste rechts
-- Zellen: Tap togglet ✓/— (anwesend/nicht da)
-- Auto-Save bei jedem Toggle
-- Abgesagte Trainings: grau/durchgestrichen
-- Summenzeile unten: Anwesende pro Training
-- Summe rechts: Gesamt-Anwesenheit pro Spieler
-
-#### Neues Training anlegen
-- Tap auf Datum-Spalte: alle Stammspieler automatisch ✓
-- "Neues Training" Button: Datum (Pflicht), Uhrzeit + Ort (optional)
-- Ganzes Training absagen oder löschen
-
-#### Statistik-Ansicht (unterhalb Matrix)
-- Balkendiagramm pro Spieler
-- Sortiert nach Anwesenheit absteigend
-- Prozent-Anzeige (anwesend / mögliche Trainings)
-- Stammspieler visuell hervorgehoben
-
-#### Stammspieler-Markierung
-- Toggle in Spieler-Verwaltung: Spieler als "Stamm" markieren
-- Stammspieler werden bei neuem Training automatisch als anwesend eingetragen
-- Gilt ab sofort (nicht rückwirkend)
-
-### Navigation-Umbau
-- Tabs in der Header-Leiste: **Spielbetrieb** | **Training** | **Spieler**
-- Spielbetrieb = aktuelles Dashboard (Saison, Spieltage, Liga)
-- Training = Matrix + Statistik (neu)
-- Spieler = Spieler-Verwaltung (existiert)
-- Aktiver Tab mit visueller Markierung
-
----
-
 ## Geplant (noch nicht begonnen)
-
-### Verfügbarkeits-Historie
-- Gesamtübersicht: wer war wie oft da (Training + Spieltage kombiniert)
-- Zuverlässigkeits-Score pro Spieler pro Saison
-- Verlauf über Zeit (Trend: wird mehr/weniger aktiv)
 
 ### Lineup Auto-Generate
 - Automatischer Lineup-Vorschlag basierend auf:
-  - Wer hat am wenigsten gespielt (Fairness)
   - Trainingsanwesenheit (wer oft trainiert, wird bevorzugt)
-  - Positions-Rotation (nicht immer gleiche Position)
+  - Jeder spielt mindestens 1 Spiel
+  - Positions-History aus vorherigen Spielen berücksichtigen
+  - Spiel 2 baut auf Spiel 1 auf (kein Doppelt-Sitzen)
+- Nur Positionen 1-9 (ohne EH)
 - Vorschlag als Basis, manuell anpassbar
-- Sortierung im Pool berücksichtigt Trainingsquote
 
 ### Dark Mode
 - Dunkles Theme (Navy-basiert)

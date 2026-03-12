@@ -63,6 +63,7 @@ export const deletePlayer = (id: number) =>
 
 // Seasons
 export const getSeasons = () => request<Season[]>('/seasons')
+export const getSeason = (id: number) => request<Season>(`/seasons/${id}`)
 export const createSeason = (name: string, year: number) =>
   request<Season>('/seasons', { method: 'POST', body: JSON.stringify({ name, year }) })
 export const updateSeason = (id: number, name: string, year: number) =>
