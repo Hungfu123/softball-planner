@@ -427,12 +427,12 @@ public class TrainingService {
         if (!periodRepository.existsById(periodId)) {
             throw new ResourceNotFoundException("TrainingPeriod", periodId);
         }
-        // Unlink trainings from this period (don't delete the trainings themselves)
+        // Delete all trainings (and their attendance) in this period
         final List<Training> trainings = trainingRepository.findByPeriodIdOrderByDateDesc(periodId);
         for (final Training training : trainings) {
-            training.setPeriod(null);
+            attendanceRepository.deleteByTrainingId(training.getId());
         }
-        trainingRepository.saveAll(trainings);
+        trainingRepository.deleteAll(trainings);
         periodRepository.deleteById(periodId);
     }
 

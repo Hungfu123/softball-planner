@@ -581,8 +581,8 @@ export function TrainingPage() {
       {/* Delete Period Confirm */}
       {deletePeriodId && (
         <ConfirmModal
-          title="Zeitraum loeschen"
-          message={`Zeitraum "${periods.find(p => p.id === deletePeriodId)?.name}" loeschen? Die Trainings bleiben erhalten, werden aber keinem Zeitraum mehr zugeordnet.`}
+          title="Zeitraum löschen"
+          message={`Zeitraum "${periods.find(p => p.id === deletePeriodId)?.name}" und alle zugehörigen Trainings löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
           onConfirm={async () => {
             try {
               await deletePeriod(deletePeriodId)
