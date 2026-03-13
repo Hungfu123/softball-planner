@@ -137,7 +137,6 @@ class TrainingAttendanceServiceTest {
         final List<TrainingAttendanceResponse> result = service.setAttendance(1L, entries);
 
         verify(attendanceRepository).deleteByTrainingId(1L);
-        verify(trainingRepository).flush();
         assertThat(result).hasSize(2);
     }
 

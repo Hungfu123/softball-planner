@@ -2,6 +2,7 @@ package com.softball.adapter.out.persistence.repository;
 
 import com.softball.adapter.out.persistence.entity.TrainingAttendanceEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
@@ -13,7 +14,11 @@ public interface SpringTrainingAttendanceRepository extends JpaRepository<Traini
     @Query("SELECT ta FROM TrainingAttendanceEntity ta JOIN FETCH ta.training JOIN FETCH ta.player WHERE ta.training.id IN :trainingIds")
     List<TrainingAttendanceEntity> findByTrainingIdIn(List<Long> trainingIds);
 
+    @Modifying
+    @Query("DELETE FROM TrainingAttendanceEntity ta WHERE ta.training.id = :trainingId")
     void deleteByTrainingId(Long trainingId);
 
+    @Modifying
+    @Query("DELETE FROM TrainingAttendanceEntity ta WHERE ta.training.id IN :trainingIds")
     void deleteByTrainingIdIn(List<Long> trainingIds);
 }

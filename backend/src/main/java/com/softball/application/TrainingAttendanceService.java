@@ -64,7 +64,6 @@ public class TrainingAttendanceService {
         final Training training = findTraining(trainingId);
 
         attendanceRepository.deleteByTrainingId(trainingId);
-        trainingRepository.flush();
         training.getAttendances().clear();
 
         final List<Long> playerIds = entries.stream().map(SetAttendanceRequest.AttendanceEntry::playerId).toList();
