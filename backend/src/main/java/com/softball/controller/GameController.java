@@ -4,6 +4,7 @@ import com.softball.dto.*;
 import com.softball.service.GameService;
 import com.softball.service.GameStaffService;
 import com.softball.service.LineupService;
+import com.softball.service.LineupSuggestionService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,12 +17,15 @@ public class GameController {
     private final GameService gameService;
     private final LineupService lineupService;
     private final GameStaffService gameStaffService;
+    private final LineupSuggestionService lineupSuggestionService;
 
     public GameController(final GameService gameService, final LineupService lineupService,
-                          final GameStaffService gameStaffService) {
+                          final GameStaffService gameStaffService,
+                          final LineupSuggestionService lineupSuggestionService) {
         this.gameService = gameService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
+        this.lineupSuggestionService = lineupSuggestionService;
     }
 
     @PutMapping("/{id}/opponent")
@@ -42,6 +46,11 @@ public class GameController {
     @PutMapping("/{id}/lineup")
     public List<LineupEntryResponse> setLineup(@PathVariable final Long id, @RequestBody List<@Valid LineupEntryRequest> entries) {
         return lineupService.setLineup(id, entries).stream().map(LineupEntryResponse::from).toList();
+    }
+
+    @GetMapping("/{id}/lineup/suggest")
+    public List<LineupSuggestionEntry> suggestLineup(@PathVariable final Long id) {
+        return lineupSuggestionService.suggest(id);
     }
 
     @GetMapping("/{id}/staff")

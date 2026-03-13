@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Player, LocalLineupEntry, LineupEntryResponse } from '@/types'
+import type { Player, LocalLineupEntry, LineupEntryResponse, LineupSuggestionEntry } from '@/types'
 import * as api from '@/api/client'
 
 interface GameLineupState {
@@ -149,6 +149,33 @@ export function useLineup() {
     setEntries([])
   }, [])
 
+  const applySuggestion = useCallback((suggestions: LineupSuggestionEntry[], availablePlayers: Player[]) => {
+    const playerMap = new Map(availablePlayers.map(p => [p.id, p]))
+    // Build full lineup from suggestion, keeping DH info from existing entries
+    setEntries(prev => {
+      const prevMap = new Map(prev.map(e => [e.player.id, e]))
+      const result: LocalLineupEntry[] = []
+
+      for (const s of suggestions) {
+        const player = playerMap.get(s.playerId) ?? prevMap.get(s.playerId)?.player
+        if (!player) continue
+        const existing = prevMap.get(s.playerId)
+        result.push({
+          player,
+          position: s.position,
+          dhBatterId: existing?.dhBatterId ?? null,
+          dhBatterName: existing?.dhBatterName ?? null,
+        })
+      }
+
+      return result.slice(0, 10)
+    })
+  }, [])
+
+  const invalidateCache = useCallback(() => {
+    cache.current.clear()
+  }, [])
+
   const removeUnavailable = useCallback((availableIds: Set<number>) => {
     setEntries(prev => prev
       .filter(e => availableIds.has(e.player.id))
@@ -165,5 +192,6 @@ export function useLineup() {
     entries, saving, hasChanges, activeGameId,
     load, addPlayer, removePlayer, setPosition, setDhBatter,
     moveUp, moveDown, reorder, save, importEntries, clearAll, removeUnavailable,
+    applySuggestion, invalidateCache,
   }
 }

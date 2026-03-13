@@ -17,7 +17,7 @@ import { CopyLineupModal } from './CopyLineupModal'
 import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, CarIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon } from '@/icons'
 import type { Player, GameDayResponse, Season } from '@/types'
 import { generatePdf } from '@/utils/pdfExport'
 import * as api from '@/api/client'
@@ -36,6 +36,11 @@ export function GameDayPlanner() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showCopyLineup, setShowCopyLineup] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [showAutoAllConfirm, setShowAutoAllConfirm] = useState(false)
+  const [showAutoSingleConfirm, setShowAutoSingleConfirm] = useState(false)
+  const [autoAllLoading, setAutoAllLoading] = useState(false)
+  const [autoSingleLoading, setAutoSingleLoading] = useState(false)
+  const [showExportConfirm, setShowExportConfirm] = useState(false)
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
   const activeGame = gameDay?.games[activeTab]
@@ -110,6 +115,73 @@ export function GameDayPlanner() {
     }
   }
 
+  const triggerAutoGenerate = () => {
+    if (!activeGame) return
+    if (lineup.entries.length > 0) {
+      setShowAutoSingleConfirm(true)
+    } else {
+      handleAutoGenerate()
+    }
+  }
+
+  const handleAutoGenerate = async () => {
+    if (!activeGame) return
+    setShowAutoSingleConfirm(false)
+    setAutoSingleLoading(true)
+    try {
+      const suggestions = await api.suggestLineup(activeGame.id)
+      lineup.applySuggestion(suggestions, availablePlayers)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setAutoSingleLoading(false)
+    }
+  }
+
+  const handleAutoAll = async () => {
+    if (!gameDay) return
+    setShowAutoAllConfirm(false)
+    setAutoAllLoading(true)
+    try {
+      const result = await api.suggestAllLineups(gameDay.id)
+      // Capture current game ID before async operations (prevents stale closure)
+      const currentGameId = activeGame?.id
+      // Invalidate lineup cache so tab switches reload from backend
+      lineup.invalidateCache()
+      // Reload current game lineup from backend
+      if (currentGameId) {
+        await lineup.load(currentGameId)
+      }
+      await refreshStats()
+      // Show toast with undo action
+      const oldLineups = result.oldLineups
+      const gameDayIdForUndo = gameDay.id
+      toast.show('Alle Spiele aufgestellt', 'success', {
+        duration: 10000,
+        action: {
+          label: 'Rückgängig',
+          onClick: async () => {
+            try {
+              await api.undoAllLineups(gameDayIdForUndo, oldLineups)
+              lineup.invalidateCache()
+              if (currentGameId) {
+                await lineup.load(currentGameId)
+              }
+              await refreshStats()
+              toast.show('Rückgängig gemacht')
+            } catch (err: unknown) {
+              toast.show((err as Error).message, 'error')
+            }
+          },
+        },
+      })
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setAutoAllLoading(false)
+    }
+  }
+
   const handleSetAvailablePlayers = async (playerIds: number[]) => {
     try {
       await setAvailablePlayers(playerIds)
@@ -181,6 +253,17 @@ export function GameDayPlanner() {
             </button>
           </div>
           <div className="flex items-center gap-2">
+            {availablePlayers.length > 0 && (
+              <button
+                onClick={() => setShowAutoAllConfirm(true)}
+                disabled={autoAllLoading}
+                className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                title="Alle Spiele automatisch aufstellen"
+              >
+                <DiceIcon size={16} />
+                <span className="hidden sm:inline">Alle aufstellen</span>
+              </button>
+            )}
             <button
               onClick={() => setShowPlayersModal(true)}
               title="Wer ist am Spieltag dabei?"
@@ -209,7 +292,7 @@ export function GameDayPlanner() {
               <CarIcon size={20} />
             </button>
             <button
-              onClick={handleExportPdf}
+              onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
               className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors cursor-pointer"
               title="Als PDF exportieren"
             >
@@ -316,6 +399,8 @@ export function GameDayPlanner() {
                 onMoveDown={lineup.moveDown}
                 onReorder={lineup.reorder}
                 onClear={() => setShowClearConfirm(true)}
+                onAutoGenerate={triggerAutoGenerate}
+                autoGenerateLoading={autoSingleLoading}
                 onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
               />
 
@@ -413,6 +498,44 @@ export function GameDayPlanner() {
             setShowClearConfirm(false)
           }}
           onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
+
+      {showAutoSingleConfirm && (
+        <ConfirmModal
+          title="Positionen neu würfeln"
+          message={
+            lineup.hasChanges
+              ? 'Es gibt ungespeicherte Änderungen. Positionen basierend auf dem letzten Speicherstand neu zuweisen?'
+              : 'Positionen automatisch neu zuweisen?'
+          }
+          confirmLabel="Würfeln"
+          onConfirm={handleAutoGenerate}
+          onCancel={() => setShowAutoSingleConfirm(false)}
+        />
+      )}
+
+      {showAutoAllConfirm && (
+        <ConfirmModal
+          title="Alle aufstellen"
+          message={
+            lineup.hasChanges
+              ? 'Es gibt ungespeicherte Änderungen im aktuellen Lineup. Alle Spiele automatisch aufstellen und speichern?'
+              : 'Alle Spiele automatisch aufstellen und speichern?'
+          }
+          confirmLabel="Aufstellen"
+          onConfirm={handleAutoAll}
+          onCancel={() => setShowAutoAllConfirm(false)}
+        />
+      )}
+
+      {showExportConfirm && (
+        <ConfirmModal
+          title="PDF exportieren"
+          message="Es gibt ungespeicherte Änderungen. Das PDF enthält den letzten Speicherstand."
+          confirmLabel="Trotzdem exportieren"
+          onConfirm={() => { setShowExportConfirm(false); handleExportPdf() }}
+          onCancel={() => setShowExportConfirm(false)}
         />
       )}
 

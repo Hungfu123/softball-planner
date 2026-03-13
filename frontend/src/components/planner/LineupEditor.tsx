@@ -14,7 +14,7 @@ import {
 import { LineupRow } from './LineupRow'
 import type { LocalLineupEntry, Player } from '@/types'
 import { POSITIONS, FIELD_POSITIONS } from '@/types'
-import { CrossBones, TrashBin } from '@/icons'
+import { CrossBones, TrashBin, DiceIcon } from '@/icons'
 
 interface Props {
   entries: LocalLineupEntry[]
@@ -27,6 +27,8 @@ interface Props {
   onReorder: (oldIndex: number, newIndex: number) => void
   onClear?: () => void
   onCopyOtherGame?: () => void
+  onAutoGenerate?: () => void
+  autoGenerateLoading?: boolean
 }
 
 const FIELD_POS_SET = new Set<string>(FIELD_POSITIONS)
@@ -35,7 +37,7 @@ const SELECTABLE_POSITIONS = (POSITIONS as readonly string[]).filter(p => p !== 
 
 export function LineupEditor({
   entries, poolPlayers, onRemove, onSetPosition, onSetDhBatter,
-  onMoveUp, onMoveDown, onReorder, onClear, onCopyOtherGame,
+  onMoveUp, onMoveDown, onReorder, onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -73,6 +75,16 @@ export function LineupEditor({
         </h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500 font-mono">{filledCount}/10</span>
+          {onAutoGenerate && (
+            <button
+              onClick={onAutoGenerate}
+              disabled={autoGenerateLoading}
+              className="p-1 rounded text-gray-300 hover:text-navy-700 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              title="Positionen zufällig befüllen — für alle Spiele gleichzeitig 'Alle aufstellen' nutzen"
+            >
+              <DiceIcon size={14} />
+            </button>
+          )}
           {entries.length > 0 && onClear && (
             <button
               onClick={onClear}

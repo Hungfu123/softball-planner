@@ -49,7 +49,9 @@ import type {
   TrainingAttendanceResponse,
   TrainingStatsResponse,
   TrainingPeriodResponse,
-  GameDayLineupsResponse
+  GameDayLineupsResponse,
+  LineupSuggestionEntry,
+  SuggestAllLineupsResponse,
 } from '@/types'
 
 // Players
@@ -109,6 +111,27 @@ export const setLineup = (
   method: 'PUT',
   body: JSON.stringify(entries),
 })
+
+// Lineup Suggestions
+export const suggestLineup = (gameId: number) =>
+  request<LineupSuggestionEntry[]>(`/games/${gameId}/lineup/suggest`)
+export const suggestAllLineups = (gameDayId: number) =>
+  request<SuggestAllLineupsResponse>(`/gamedays/${gameDayId}/lineup/suggest-all`, { method: 'POST' })
+export const undoAllLineups = (gameDayId: number, oldLineups: Record<string, LineupEntryResponse[]>) => {
+  const converted: Record<string, { playerId: number; position: string | null; battingOrder: number; dhBatterPlayerId: number | null }[]> = {}
+  for (const [gameId, entries] of Object.entries(oldLineups)) {
+    converted[gameId] = entries.map(e => ({
+      playerId: e.player.id,
+      position: e.position,
+      battingOrder: e.battingOrder,
+      dhBatterPlayerId: e.dhBatterPlayer?.id ?? null,
+    }))
+  }
+  return request<void>(`/gamedays/${gameDayId}/lineup/undo`, {
+    method: 'POST',
+    body: JSON.stringify({ oldLineups: converted }),
+  })
+}
 
 // League Teams
 export const getLeagueTeams = (seasonId: number) =>

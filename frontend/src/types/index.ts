@@ -84,6 +84,19 @@ export const STAFF_ROLES = {
   BASE_COACH_3RD: '3rd Base Coach',
 } as const
 
+// Lineup Suggestions
+export interface LineupSuggestionEntry {
+  playerId: number
+  playerName: string
+  position: string
+  battingOrder: number
+}
+
+export interface SuggestAllLineupsResponse {
+  oldLineups: Record<string, LineupEntryResponse[]>
+  newLineups: Record<string, LineupSuggestionEntry[]>
+}
+
 // Carpool
 export interface CarResponse {
   id: number

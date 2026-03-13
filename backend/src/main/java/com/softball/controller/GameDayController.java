@@ -7,6 +7,7 @@ import com.softball.entity.LineupEntry;
 import com.softball.service.GameDayService;
 import com.softball.service.GameStaffService;
 import com.softball.service.LineupService;
+import com.softball.service.LineupSuggestionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +23,16 @@ public class GameDayController {
     private final GameDayService gameDayService;
     private final LineupService lineupService;
     private final GameStaffService gameStaffService;
+    private final LineupSuggestionService lineupSuggestionService;
 
     public GameDayController(final GameDayService gameDayService,
                              final LineupService lineupService,
-                             final GameStaffService gameStaffService) {
+                             final GameStaffService gameStaffService,
+                             final LineupSuggestionService lineupSuggestionService) {
         this.gameDayService = gameDayService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
+        this.lineupSuggestionService = lineupSuggestionService;
     }
 
     @GetMapping("/seasons/{seasonId}/gamedays")
@@ -74,6 +78,17 @@ public class GameDayController {
     @GetMapping("/gamedays/{id}/stats")
     public List<GameDayPlayerStats> getStats(@PathVariable final Long id) {
         return gameDayService.getStats(id);
+    }
+
+    @PostMapping("/gamedays/{id}/lineup/suggest-all")
+    public SuggestAllResponse suggestAll(@PathVariable final Long id) {
+        return lineupSuggestionService.suggestAndSaveAll(id);
+    }
+
+    @PostMapping("/gamedays/{id}/lineup/undo")
+    public Map<Long, List<LineupEntryResponse>> undoSuggestAll(@PathVariable final Long id,
+                                                                @RequestBody final UndoSuggestAllRequest request) {
+        return lineupSuggestionService.undoSuggestAll(id, request.oldLineups());
     }
 
     @DeleteMapping("/gamedays/{id}")
