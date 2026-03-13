@@ -76,7 +76,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
 
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-300 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors"
         >
           <PlusCircle size={16} /> Neue Saison
         </button>
