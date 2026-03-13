@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { TrainingResponse, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import * as api from '@/api/client'
 
@@ -9,6 +9,9 @@ export function useTraining() {
   const [periods, setPeriods] = useState<TrainingPeriodResponse[]>([])
   const [activePeriodId, setActivePeriodId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Debounce: pending attendance saves per trainingId
+  const pendingFlush = useRef(new Map<number, { timer: ReturnType<typeof setTimeout>; entries: { playerId: number; present: boolean }[] }>())
 
   const loadPeriods = useCallback(async () => {
     const data = await api.getTrainingPeriods()
@@ -52,14 +55,28 @@ export function useTraining() {
     await loadAll(periodId)
   }, [loadAll])
 
-  const toggleAttendance = async (trainingId: number, playerId: number) => {
+  const flushAttendance = useCallback((trainingId: number, entries: { playerId: number; present: boolean }[]) => {
+    api.setAttendance(trainingId, entries).catch(() => {
+      // On failure, reload to get correct state
+      loadAll(activePeriodId)
+    })
+  }, [loadAll, activePeriodId])
+
+  const flushAllPending = useCallback(() => {
+    pendingFlush.current.forEach(({ timer, entries }, trainingId) => {
+      clearTimeout(timer)
+      api.setAttendance(trainingId, entries).catch(() => {})
+    })
+    pendingFlush.current.clear()
+  }, [])
+
+  // Flush on unmount
+  useEffect(() => flushAllPending, [flushAllPending])
+
+  const toggleAttendance = (trainingId: number, playerId: number) => {
     const trainingMap = attendance.get(trainingId) ?? new Map<number, boolean>()
     const current = trainingMap.get(playerId) ?? false
     const newVal = !current
-
-    // Save previous state for rollback
-    const prevAttendance = attendance
-    const prevTrainings = trainings
 
     // Optimistic update
     const newTrainingMap = new Map(trainingMap)
@@ -77,20 +94,22 @@ export function useTraining() {
       )
     )
 
-    // Build full entries for PUT
+    // Build full entries for debounced PUT
     const entries = Array.from(newTrainingMap.entries()).map(([pid, present]) => ({
       playerId: pid,
       present,
     }))
 
-    try {
-      await api.setAttendance(trainingId, entries)
-    } catch (err) {
-      // Rollback on failure
-      setAttendance(prevAttendance)
-      setTrainings(prevTrainings)
-      throw err
-    }
+    // Cancel previous timer for this training
+    const existing = pendingFlush.current.get(trainingId)
+    if (existing) clearTimeout(existing.timer)
+
+    // Debounce: send after 500ms of no more clicks
+    const timer = setTimeout(() => {
+      pendingFlush.current.delete(trainingId)
+      flushAttendance(trainingId, entries)
+    }, 500)
+    pendingFlush.current.set(trainingId, { timer, entries })
   }
 
   const createTraining = async (data: { date: string; time?: string; location?: string; type?: string }) => {
