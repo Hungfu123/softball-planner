@@ -113,18 +113,30 @@ public class GameDayService {
         final Collection<Player> available = gameDayWithPlayers.getAvailablePlayers();
         final List<Game> games = gameDayWithGames.getGames();
 
+        // Batch-load all lineup entries for all games (avoids N+1)
+        final List<Long> gameIds = games.stream().map(Game::getId).toList();
+        final List<LineupEntry> allEntries = lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds);
+        final Map<Long, List<LineupEntry>> entriesByGame = allEntries.stream()
+            .collect(Collectors.groupingBy(e -> e.getGame().getId()));
+
+        // Map game ID -> game number for position lookups
+        final Map<Long, Integer> gameNumberById = games.stream()
+            .collect(Collectors.toMap(Game::getId, Game::getGameNumber));
+
         return available.stream()
-            .map(player -> buildPlayerStats(player, games))
+            .map(player -> buildPlayerStats(player, games, entriesByGame, gameNumberById))
             .sorted(Comparator.comparingDouble(GameDayPlayerStats::gameCount))
             .collect(Collectors.toList());
     }
 
-    private GameDayPlayerStats buildPlayerStats(final Player player, final List<Game> games) {
+    private GameDayPlayerStats buildPlayerStats(final Player player, final List<Game> games,
+                                                 final Map<Long, List<LineupEntry>> entriesByGame,
+                                                 final Map<Long, Integer> gameNumberById) {
         double gameCount = 0;
         final List<GameDayPlayerStats.GamePosition> positions = new ArrayList<>();
 
         for (final Game game : games) {
-            final List<LineupEntry> entries = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(game.getId());
+            final List<LineupEntry> entries = entriesByGame.getOrDefault(game.getId(), List.of());
             for (final LineupEntry entry : entries) {
                 if (entry.getPlayer().getId().equals(player.getId())) {
                     final Position pos = entry.getPosition();

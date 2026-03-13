@@ -95,8 +95,16 @@ export function useTraining() {
   }
 
   const createTraining = async (data: { date: string; time?: string; location?: string; type?: string }) => {
-    await api.createTraining(data)
-    await loadAll(activePeriodId)
+    const created = await api.createTraining(data)
+    setTrainings(prev => [...prev, created].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()))
+    // Stats + attendance need refresh since auto-fill may have added regular players
+    const pid = activePeriodId ?? undefined
+    api.getTrainingStats(pid).then(setStats)
+    api.getAttendance(created.id).then(entries => {
+      const playerMap = new Map<number, boolean>()
+      entries.forEach(e => playerMap.set(e.player.id, e.present))
+      setAttendance(prev => new Map(prev).set(created.id, playerMap))
+    })
   }
 
   const createBulk = async (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string }) => {
@@ -117,12 +125,15 @@ export function useTraining() {
 
   const deleteTraining = async (id: number) => {
     await api.deleteTraining(id)
-    await loadAll(activePeriodId)
+    setTrainings(prev => prev.filter(t => t.id !== id))
+    setAttendance(prev => { const m = new Map(prev); m.delete(id); return m })
+    api.getTrainingStats(activePeriodId ?? undefined).then(setStats)
   }
 
   const cancelTraining = async (id: number) => {
-    await api.updateTraining(id, { cancelled: true })
-    await loadAll(activePeriodId)
+    const updated = await api.updateTraining(id, { cancelled: true })
+    setTrainings(prev => prev.map(t => t.id === id ? updated : t))
+    api.getTrainingStats(activePeriodId ?? undefined).then(setStats)
   }
 
   const renamePeriod = async (periodId: number, name: string) => {

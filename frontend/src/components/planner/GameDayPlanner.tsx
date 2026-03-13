@@ -391,7 +391,7 @@ export function GameDayPlanner() {
 
       {showCopyLineup && activeGame && (
         <CopyLineupModal
-          seasonId={gameDay.seasonId}
+          gameDays={seasonGameDays}
           currentGameId={activeGame.id}
           availablePlayerIds={new Set(availablePlayers.map(p => p.id))}
           onImport={entries => {

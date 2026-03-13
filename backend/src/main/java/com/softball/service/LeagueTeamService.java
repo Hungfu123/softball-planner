@@ -85,10 +85,8 @@ public class LeagueTeamService {
 
         // Alle Games die dieses Team als Gegner haben -> opponentTeam auf null setzen
         final List<Game> gamesWithTeam = gameRepository.findByOpponentTeam_Id(teamId);
-        for (final Game game : gamesWithTeam) {
-            game.setOpponentTeam(null);
-            gameRepository.save(game);
-        }
+        gamesWithTeam.forEach(game -> game.setOpponentTeam(null));
+        gameRepository.saveAll(gamesWithTeam);
 
         // Alle LeagueResults loeschen wo dieses Team beteiligt ist
         leagueResultRepository.deleteAll(leagueResultRepository.findByHomeTeam_IdOrAwayTeam_Id(teamId, teamId));

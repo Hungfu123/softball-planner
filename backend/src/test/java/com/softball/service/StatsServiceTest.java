@@ -51,11 +51,9 @@ class StatsServiceTest {
         season.setGameDays(Set.of(gd1, gd2));
         when(seasonRepository.findByIdWithGameDaysAndGames(1L)).thenReturn(Optional.of(season));
 
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of(
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(any())).thenReturn(List.of(
             new LineupEntry(g1, player1, Position.SS, 1),
-            new LineupEntry(g1, player2, Position.EH, 2)
-        ));
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(20L)).thenReturn(List.of(
+            new LineupEntry(g1, player2, Position.EH, 2),
             new LineupEntry(g2, player1, Position.P, 1),
             new LineupEntry(g2, player2, Position.CF, 2)
         ));

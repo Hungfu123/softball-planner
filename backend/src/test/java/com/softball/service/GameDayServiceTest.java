@@ -32,13 +32,10 @@ class GameDayServiceTest {
     private LineupEntryRepository lineupEntryRepository;
 
     @Mock
-    private GameStaffRepository gameStaffRepository;
-
-    @Mock
-    private CarRepository carRepository;
-
-    @Mock
     private SeasonService seasonService;
+
+    @Mock
+    private AvailabilityService availabilityService;
 
     @InjectMocks
     private GameDayService gameDayService;
@@ -81,11 +78,9 @@ class GameDayServiceTest {
         gameDay.setGames(List.of(game1, game2));
 
         mockGameDayQueries(gameDay);
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of(
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L, 20L))).thenReturn(List.of(
             new LineupEntry(game1, player1, Position.SS, 1),
-            new LineupEntry(game1, player2, Position.EH, 2)
-        ));
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(20L)).thenReturn(List.of(
+            new LineupEntry(game1, player2, Position.EH, 2),
             new LineupEntry(game2, player1, Position.P, 1)
         ));
 
@@ -111,7 +106,7 @@ class GameDayServiceTest {
 
         mockGameDayQueries(gameDay);
         // player1 plays SS, player3 (from bench) is DH batter for player1
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of(
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L))).thenReturn(List.of(
             new LineupEntry(game1, player1, Position.SS, 1, player3),
             new LineupEntry(game1, player2, Position.P, 2)
         ));
@@ -137,7 +132,7 @@ class GameDayServiceTest {
         gameDay.setGames(List.of(game1));
 
         mockGameDayQueries(gameDay);
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L))).thenReturn(List.of());
 
         final List<GameDayPlayerStats> stats = gameDayService.getStats(1L);
 
@@ -156,12 +151,10 @@ class GameDayServiceTest {
         gameDay.setGames(List.of(game1, game2));
 
         mockGameDayQueries(gameDay);
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of(
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L, 20L))).thenReturn(List.of(
             new LineupEntry(game1, player1, Position.SS, 1),
             new LineupEntry(game1, player2, Position.P, 2),
-            new LineupEntry(game1, player3, Position.EH, 3)
-        ));
-        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(20L)).thenReturn(List.of(
+            new LineupEntry(game1, player3, Position.EH, 3),
             new LineupEntry(game2, player1, Position.CF, 1)
         ));
 

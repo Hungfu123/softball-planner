@@ -31,9 +31,20 @@ public class StatsService {
         final Map<Long, Double> playerGames = new HashMap<>();
         final Map<Long, Map<String, Long>> playerPositions = new HashMap<>();
 
+        // Batch-load all lineup entries for all games in the season (avoids N+1)
+        final List<Long> allGameIds = season.getGameDays().stream()
+            .flatMap(gd -> gd.getGames().stream())
+            .map(Game::getId)
+            .toList();
+        final List<LineupEntry> allEntries = allGameIds.isEmpty()
+            ? List.of()
+            : lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(allGameIds);
+        final Map<Long, List<LineupEntry>> entriesByGame = allEntries.stream()
+            .collect(java.util.stream.Collectors.groupingBy(e -> e.getGame().getId()));
+
         for (final GameDay gameDay : season.getGameDays()) {
             for (final Game game : gameDay.getGames()) {
-                final List<LineupEntry> entries = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(game.getId());
+                final List<LineupEntry> entries = entriesByGame.getOrDefault(game.getId(), List.of());
                 for (final LineupEntry entry : entries) {
                     final Long pid = entry.getPlayer().getId();
                     final Position pos = entry.getPosition();

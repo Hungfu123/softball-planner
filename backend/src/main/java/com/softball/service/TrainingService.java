@@ -206,10 +206,9 @@ public class TrainingService {
                                                            final List<SetAttendanceRequest.AttendanceEntry> entries) {
         final Training training = findById(trainingId);
 
-        // Remove existing attendance and flush to avoid unique constraint violations
-        attendanceRepository.deleteByTrainingId(trainingId);
+        // Clear via collection — orphanRemoval handles the DB deletes
         training.getAttendances().clear();
-        attendanceRepository.flush();
+        trainingRepository.flush();
 
         // Add new attendance
         for (final SetAttendanceRequest.AttendanceEntry entry : entries) {
@@ -236,18 +235,35 @@ public class TrainingService {
             .filter(t -> since == null || !t.getDate().isBefore(since))
             .toList();
 
-        // Count attended trainings per player (only non-cancelled)
-        final Map<Long, Long> attendedCountByPlayer = nonCancelledTrainings.stream()
-            .flatMap(t -> t.getAttendances().stream())
-            .filter(TrainingAttendance::isPresent)
-            .collect(Collectors.groupingBy(
-                a -> a.getPlayer().getId(),
-                Collectors.counting()
-            ));
-
         final long totalNonCancelled = nonCancelledTrainings.size();
 
-        return playerRepository.findAll().stream()
+        // Batch-load attendance for all relevant trainings (avoids N+1)
+        final List<Long> trainingIds = nonCancelledTrainings.stream().map(Training::getId).toList();
+        final Map<Long, Long> attendedCountByPlayer;
+        if (trainingIds.isEmpty()) {
+            attendedCountByPlayer = Map.of();
+        } else {
+            attendedCountByPlayer = attendanceRepository.findByTrainingIdIn(trainingIds).stream()
+                .filter(TrainingAttendance::isPresent)
+                .collect(Collectors.groupingBy(
+                    a -> a.getPlayer().getId(),
+                    Collectors.counting()
+                ));
+        }
+
+        // Only include players who have attendance data or are regular
+        final Set<Long> relevantPlayerIds = new HashSet<>(attendedCountByPlayer.keySet());
+        final List<Player> regularPlayers = playerRepository.findByRegularTrue();
+        regularPlayers.forEach(p -> relevantPlayerIds.add(p.getId()));
+
+        // Batch-load only relevant players (not findAll)
+        final Map<Long, Player> playerMap = new java.util.HashMap<>();
+        regularPlayers.forEach(p -> playerMap.put(p.getId(), p));
+        if (!relevantPlayerIds.isEmpty()) {
+            playerRepository.findAllById(relevantPlayerIds).forEach(p -> playerMap.put(p.getId(), p));
+        }
+
+        return playerMap.values().stream()
             .map(player -> new TrainingStatsResponse(
                 player.getId(),
                 player.getName(),
@@ -449,9 +465,7 @@ public class TrainingService {
     }
 
     private void autoFillRegularPlayers(final Training training) {
-        final List<Player> regularPlayers = playerRepository.findAll().stream()
-            .filter(Player::isRegular)
-            .toList();
+        final List<Player> regularPlayers = playerRepository.findByRegularTrue();
         for (final Player player : regularPlayers) {
             final TrainingAttendance attendance = new TrainingAttendance(training, player, true);
             attendanceRepository.save(attendance);

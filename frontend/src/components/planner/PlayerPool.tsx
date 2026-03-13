@@ -40,11 +40,17 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
   const [tab, setTab] = useState<'pool' | 'overview' | 'training'>('pool')
   const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('12weeks')
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
+  const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const statsMap = new Map(stats.map(s => [s.playerId, s]))
 
   const loadTrainingStats = useCallback((filter: TrainingFilter) => {
-    api.getTrainingStats(undefined, sinceDate(filter, gameDayDate)).then(setTrainingStats)
-  }, [gameDayDate])
+    const cacheKey = `${filter}-${gameDayDate}`
+    if (loadedFilter === cacheKey) return // already loaded
+    api.getTrainingStats(undefined, sinceDate(filter, gameDayDate)).then(data => {
+      setTrainingStats(data)
+      setLoadedFilter(cacheKey)
+    })
+  }, [gameDayDate, loadedFilter])
 
   useEffect(() => {
     if (tab === 'training') loadTrainingStats(trainingFilter)

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { XMark } from '@/icons'
 import type { GameDayResponse, LocalLineupEntry } from '@/types'
 import * as api from '@/api/client'
 
 interface Props {
-  seasonId: number
+  gameDays: GameDayResponse[]
   currentGameId: number
   availablePlayerIds: Set<number>
   onImport: (entries: LocalLineupEntry[]) => void
@@ -12,18 +12,9 @@ interface Props {
 }
 
 export function CopyLineupModal({
-  seasonId, currentGameId, availablePlayerIds, onImport, onClose,
+  gameDays, currentGameId, availablePlayerIds, onImport, onClose,
 }: Props) {
-  const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
-  const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState(false)
-
-  useEffect(() => {
-    api.getGameDays(seasonId).then(gds => {
-      setGameDays(gds)
-      setLoading(false)
-    })
-  }, [seasonId])
 
   const formatDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
@@ -63,9 +54,7 @@ export function CopyLineupModal({
         </div>
 
         <div className="overflow-y-auto flex-1 p-3">
-          {loading ? (
-            <p className="text-center text-gray-400 py-8 text-sm">Laden...</p>
-          ) : grouped.length === 0 ? (
+          {grouped.length === 0 ? (
             <p className="text-center text-gray-400 py-8 text-sm">Keine anderen Spiele vorhanden.</p>
           ) : (
             <div className="space-y-3">

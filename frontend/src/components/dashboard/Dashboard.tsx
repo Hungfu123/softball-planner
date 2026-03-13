@@ -217,6 +217,7 @@ export function Dashboard() {
               gameDays={gameDays}
               onGameDaysChanged={() => {
                 api.getGameDays(selectedSeasonId).then(setGameDays)
+                api.getSeasonStats(selectedSeasonId).then(setStats)
               }}
             />
             </div>

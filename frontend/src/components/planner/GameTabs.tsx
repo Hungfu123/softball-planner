@@ -18,7 +18,12 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
   const [scoreGameId, setScoreGameId] = useState<number | null>(null)
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
   const [swapping, setSwapping] = useState(false)
+  const [leagueTeams, setLeagueTeams] = useState<LeagueTeamResponse[]>([])
   const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    api.getLeagueTeams(seasonId).then(setLeagueTeams)
+  }, [seasonId])
 
   const handleSwap = async (gameId1: number, gameId2: number) => {
     setSwapping(true)
@@ -126,6 +131,8 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           {pickerGameId === game.id && (
             <TeamPicker
               seasonId={seasonId}
+              teams={leagueTeams}
+              onTeamsChanged={setLeagueTeams}
               currentTeam={game.opponentTeam}
               onSelect={async (team) => {
                 setPickerGameId(null)
@@ -275,26 +282,22 @@ function ScoreEditor({ scoreUs, scoreThem, onSave, onClose }: {
 }
 
 // --- Team Picker Popover ---
-function TeamPicker({ seasonId, currentTeam, onSelect, onClose }: {
+function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, onClose }: {
   seasonId: number
+  teams: LeagueTeamResponse[]
+  onTeamsChanged: (teams: LeagueTeamResponse[]) => void
   currentTeam: LeagueTeamResponse | null
   onSelect: (team: LeagueTeamResponse | null) => void
   onClose: () => void
 }) {
-  const [teams, setTeams] = useState<LeagueTeamResponse[]>([])
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    api.getLeagueTeams(seasonId).then(t => { setTeams(t); setLoading(false) })
-  }, [seasonId])
-
-  useEffect(() => {
     inputRef.current?.focus()
-  }, [loading])
+  }, [])
 
   // Close on click outside
   useEffect(() => {
@@ -316,6 +319,7 @@ function TeamPicker({ seasonId, currentTeam, onSelect, onClose }: {
     setCreating(true)
     try {
       const team = await api.createLeagueTeam(seasonId, search.trim())
+      onTeamsChanged([...teams, team])
       onSelect(team)
     } finally {
       setCreating(false)
@@ -343,8 +347,8 @@ function TeamPicker({ seasonId, currentTeam, onSelect, onClose }: {
       </div>
 
       <div className="max-h-48 overflow-y-auto">
-        {loading ? (
-          <div className="px-3 py-2 text-xs text-gray-400">Laden...</div>
+        {teams.length === 0 ? (
+          <div className="px-3 py-2 text-xs text-gray-400">Keine Teams vorhanden</div>
         ) : (
           <>
             {/* Remove opponent option */}
