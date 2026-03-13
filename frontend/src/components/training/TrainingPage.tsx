@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
-import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, Pencil, UploadIcon } from '@/icons'
+import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, Pencil, UploadIcon, ExportDoc } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import type { TrainingResponse } from '@/types'
 
@@ -106,6 +106,36 @@ export function TrainingPage() {
     const map = attendance.get(t.id)
     if (!map) return 0
     return Array.from(map.values()).filter(Boolean).length
+  }
+
+  const exportCsv = () => {
+    const nonCancelled = trainings.filter(t => !t.cancelled)
+    if (nonCancelled.length === 0) return
+
+    const formatDate = (d: string) => {
+      const [y, m, day] = d.split('-')
+      return `${day}.${m}.${y}`
+    }
+
+    const header = ['', ...nonCancelled.map(t => formatDate(t.date))]
+    const rows = sortedPlayers.map(p => {
+      const cells = nonCancelled.map(t => {
+        const map = attendance.get(t.id)
+        const present = map?.get(p.id)
+        return present === true ? 'TRUE' : present === false ? 'FALSE' : ''
+      })
+      return [p.name, ...cells]
+    })
+
+    const csv = [header, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const periodName = activePeriodId ? periods.find(p => p.id === activePeriodId)?.name : null
+    a.download = `training${periodName ? '_' + periodName : ''}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const formatDate = (dateStr: string) => {
@@ -270,8 +300,15 @@ export function TrainingPage() {
                 </div>
               )}
               <button
+                onClick={exportCsv}
+                disabled={trainings.filter(t => !t.cancelled).length === 0}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
+              >
+                <ExportDoc size={16} /> CSV Export
+              </button>
+              <button
                 onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-navy-50 hover:border-navy-600 cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
               >
                 <UploadIcon size={16} /> CSV Import
               </button>
@@ -322,8 +359,16 @@ export function TrainingPage() {
               </div>
             )}
             <button
+              onClick={exportCsv}
+              disabled={trainings.filter(t => !t.cancelled).length === 0}
+              className="p-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
+              title="CSV Export"
+            >
+              <ExportDoc size={18} />
+            </button>
+            <button
               onClick={() => setShowImportModal(true)}
-              className="p-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-navy-50 cursor-pointer"
+              className="p-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
               title="CSV Import"
             >
               <UploadIcon size={18} />
