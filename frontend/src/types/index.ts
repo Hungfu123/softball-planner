@@ -33,6 +33,7 @@ export interface GameResponse {
   scoreUs: number | null
   scoreThem: number | null
   gameDayId: number
+  lineupEntryCount: number
 }
 
 export interface LineupEntryResponse {

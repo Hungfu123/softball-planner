@@ -1,8 +1,8 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,26 +36,26 @@ class LeagueResultIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private LeagueTeamRepository leagueTeamRepository;
+    private SpringLeagueTeamRepository leagueTeamRepository;
 
     @Autowired
-    private LeagueResultRepository leagueResultRepository;
+    private SpringLeagueResultRepository leagueResultRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
-    private Season season;
+    private SeasonEntity season;
     private Long teamAId, teamBId, ownTeamId;
 
     @BeforeEach
     void setUp() throws Exception {
-        season = seasonRepository.save(new Season("Saison 2026", 2026));
+        season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
 
         // Eigenes Team
         final MvcResult ownResult = mockMvc.perform(post("/api/seasons/" + season.getId() + "/teams")
@@ -220,7 +220,7 @@ class LeagueResultIntegrationTest {
 
     @Test
     void createResult_teamFromOtherSeason_returns400() throws Exception {
-        final Season otherSeason = seasonRepository.save(new Season("Andere Saison", 2025));
+        final SeasonEntity otherSeason = seasonRepository.save(new SeasonEntity("Andere Saison", 2025));
         final MvcResult t = mockMvc.perform(post("/api/seasons/" + otherSeason.getId() + "/teams")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("name", "Wrong Team"))))

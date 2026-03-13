@@ -1,9 +1,9 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,38 +38,38 @@ class LineupIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private LineupEntryRepository lineupEntryRepository;
+    private SpringLineupEntryRepository lineupEntryRepository;
 
     @Autowired
-    private GameStaffRepository gameStaffRepository;
+    private SpringGameStaffRepository gameStaffRepository;
 
     @Autowired
-    private LeagueTeamRepository leagueTeamRepository;
+    private SpringLeagueTeamRepository leagueTeamRepository;
 
-    private Season season;
-    private Player player1, player2, player3;
+    private SeasonEntity season;
+    private PlayerEntity player1, player2, player3;
     private Long gameId;
     private Long gameId2;
     private Long gameDayId;
 
     @BeforeEach
     void setUp() throws Exception {
-        season = seasonRepository.save(new Season("Saison 2026", 2026));
-        player1 = playerRepository.save(new Player("Max"));
-        player2 = playerRepository.save(new Player("Lisa"));
-        player3 = playerRepository.save(new Player("Tom"));
+        season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
+        player1 = playerRepository.save(new PlayerEntity("Max"));
+        player2 = playerRepository.save(new PlayerEntity("Lisa"));
+        player3 = playerRepository.save(new PlayerEntity("Tom"));
 
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -344,8 +344,8 @@ class LineupIntegrationTest {
 
     @Test
     void setLineup_multipleDhBatters_returns400() throws Exception {
-        final Player player4 = playerRepository.save(new Player("Anna"));
-        final Player player5 = playerRepository.save(new Player("Jan"));
+        final PlayerEntity player4 = playerRepository.save(new PlayerEntity("Anna"));
+        final PlayerEntity player5 = playerRepository.save(new PlayerEntity("Jan"));
         mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(Map.of("playerIds",
@@ -427,7 +427,7 @@ class LineupIntegrationTest {
     @Test
     void swapGames_differentGameDays_returns400() throws Exception {
         // Create a second game day with its own games
-        final Season season = seasonRepository.findAll().getFirst();
+        final SeasonEntity season = seasonRepository.findAll().getFirst();
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("date", "2026-04-15"))))
@@ -538,17 +538,17 @@ class LineupIntegrationTest {
     @Test
     void setLineup_moreThan10Entries_returns400() throws Exception {
         // Create 11 players and make them all available
-        final var players = new java.util.ArrayList<Player>();
+        final var players = new java.util.ArrayList<PlayerEntity>();
         players.add(player1);
         players.add(player2);
         players.add(player3);
         for (int i = 4; i <= 11; i++) {
-            players.add(playerRepository.save(new Player("Player" + i)));
+            players.add(playerRepository.save(new PlayerEntity("Player" + i)));
         }
         mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(Map.of("playerIds",
-                players.stream().map(Player::getId).toList()))));
+                players.stream().map(PlayerEntity::getId).toList()))));
 
         // Create lineup with 11 entries
         final var lineup = new java.util.ArrayList<Map<String, Object>>();

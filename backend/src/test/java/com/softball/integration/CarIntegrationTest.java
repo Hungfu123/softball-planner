@@ -1,9 +1,9 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,30 +38,30 @@ class CarIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private CarRepository carRepository;
+    private SpringCarRepository carRepository;
 
-    private Player player1, player2, player3, player4;
+    private PlayerEntity player1, player2, player3, player4;
     private Long gameDayId;
 
     @BeforeEach
     void setUp() throws Exception {
-        final Season season = seasonRepository.save(new Season("Saison 2026", 2026));
-        player1 = playerRepository.save(new Player("Max"));
-        player2 = playerRepository.save(new Player("Lisa"));
-        player3 = playerRepository.save(new Player("Tom"));
-        player4 = playerRepository.save(new Player("Anna"));
+        final SeasonEntity season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
+        player1 = playerRepository.save(new PlayerEntity("Max"));
+        player2 = playerRepository.save(new PlayerEntity("Lisa"));
+        player3 = playerRepository.save(new PlayerEntity("Tom"));
+        player4 = playerRepository.save(new PlayerEntity("Anna"));
 
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -148,7 +148,7 @@ class CarIntegrationTest {
 
     @Test
     void createCar_driverNotAvailable_returns400() throws Exception {
-        final Player unavailable = playerRepository.save(new Player("Unbekannt"));
+        final PlayerEntity unavailable = playerRepository.save(new PlayerEntity("Unbekannt"));
 
         mockMvc.perform(post("/api/gamedays/" + gameDayId + "/cars")
                 .contentType(MediaType.APPLICATION_JSON)

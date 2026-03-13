@@ -1,8 +1,9 @@
 package com.softball.service;
 
-import com.softball.entity.Player;
-import com.softball.exception.ResourceNotFoundException;
-import com.softball.repository.PlayerRepository;
+import com.softball.domain.model.Player;
+import com.softball.domain.port.out.PlayerRepository;
+import com.softball.application.PlayerService;
+import com.softball.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

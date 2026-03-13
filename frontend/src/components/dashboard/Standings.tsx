@@ -407,6 +407,7 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
+  const [openUp, setOpenUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -420,7 +421,13 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
   }, [open])
 
   useEffect(() => {
-    if (open) inputRef.current?.focus()
+    if (open) {
+      inputRef.current?.focus()
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect()
+        setOpenUp(rect.bottom + 250 > window.innerHeight)
+      }
+    }
   }, [open])
 
   const filtered = teams.filter(t =>
@@ -455,7 +462,7 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-52">
+        <div className={`absolute left-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-52 ${openUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
           <div className="p-2">
             <input
               ref={inputRef}

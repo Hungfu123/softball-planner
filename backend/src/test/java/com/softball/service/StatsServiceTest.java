@@ -1,9 +1,10 @@
 package com.softball.service;
 
-import com.softball.dto.SeasonPlayerStats;
-import com.softball.entity.*;
-import com.softball.repository.LineupEntryRepository;
-import com.softball.repository.SeasonRepository;
+import com.softball.adapter.dto.SeasonPlayerStats;
+import com.softball.domain.model.*;
+import com.softball.domain.port.out.LineupEntryRepository;
+import com.softball.domain.port.out.SeasonRepository;
+import com.softball.application.StatsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,17 +36,16 @@ class StatsServiceTest {
         final Player player2 = new Player("Lisa");
         player2.setId(2L);
 
-        final Season season = new Season("Saison 2026", 2026);
-        season.setId(1L);
+        final Season season = new Season(1L, "Saison 2026", 2026);
 
         final GameDay gd1 = new GameDay(LocalDate.of(2026, 3, 15), null, null, season);
-        final Game g1 = new Game(1, gd1);
-        g1.setId(10L);
+        final Game g1 = new Game(10L, 1);
+        g1.setGameDay(gd1);
         gd1.setGames(List.of(g1));
 
         final GameDay gd2 = new GameDay(LocalDate.of(2026, 3, 22), null, null, season);
-        final Game g2 = new Game(1, gd2);
-        g2.setId(20L);
+        final Game g2 = new Game(20L, 1);
+        g2.setGameDay(gd2);
         gd2.setGames(List.of(g2));
 
         season.setGameDays(Set.of(gd1, gd2));
@@ -73,8 +73,7 @@ class StatsServiceTest {
 
     @Test
     void getSeasonStats_emptySeasonReturnsEmptyList() {
-        final Season season = new Season("Empty", 2026);
-        season.setId(1L);
+        final Season season = new Season(1L, "Empty", 2026);
         season.setGameDays(Set.of());
         when(seasonRepository.findByIdWithGameDaysAndGames(1L)).thenReturn(Optional.of(season));
 

@@ -2,8 +2,7 @@ package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.TestcontainersConfig;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,22 +34,22 @@ class SeasonIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private LeagueTeamRepository leagueTeamRepository;
+    private SpringLeagueTeamRepository leagueTeamRepository;
 
     @Autowired
-    private LineupEntryRepository lineupEntryRepository;
+    private SpringLineupEntryRepository lineupEntryRepository;
 
     @Autowired
-    private GameStaffRepository gameStaffRepository;
+    private SpringGameStaffRepository gameStaffRepository;
 
     @AfterEach
     void tearDown() {

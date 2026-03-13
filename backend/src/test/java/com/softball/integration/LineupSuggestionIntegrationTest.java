@@ -1,9 +1,9 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,26 +37,26 @@ class LineupSuggestionIntegrationTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
-    @Autowired private SeasonRepository seasonRepository;
-    @Autowired private PlayerRepository playerRepository;
-    @Autowired private GameDayRepository gameDayRepository;
-    @Autowired private GameRepository gameRepository;
-    @Autowired private LineupEntryRepository lineupEntryRepository;
-    @Autowired private GameStaffRepository gameStaffRepository;
-    @Autowired private LeagueTeamRepository leagueTeamRepository;
+    @Autowired private SpringSeasonRepository seasonRepository;
+    @Autowired private SpringPlayerRepository playerRepository;
+    @Autowired private SpringGameDayRepository gameDayRepository;
+    @Autowired private SpringGameRepository gameRepository;
+    @Autowired private SpringLineupEntryRepository lineupEntryRepository;
+    @Autowired private SpringGameStaffRepository gameStaffRepository;
+    @Autowired private SpringLeagueTeamRepository leagueTeamRepository;
 
-    private Season season;
-    private final List<Player> players = new ArrayList<>();
+    private SeasonEntity season;
+    private final List<PlayerEntity> players = new ArrayList<>();
     private Long gameDayId;
     private Long gameId1;
     private Long gameId2;
 
     @BeforeEach
     void setUp() throws Exception {
-        season = seasonRepository.save(new Season("Saison 2026", 2026));
+        season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
 
         for (int i = 1; i <= 10; i++) {
-            players.add(playerRepository.save(new Player("Player" + i)));
+            players.add(playerRepository.save(new PlayerEntity("Player" + i)));
         }
 
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
@@ -72,7 +72,7 @@ class LineupSuggestionIntegrationTest {
         mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(Map.of("playerIds",
-                players.stream().map(Player::getId).toList()))));
+                players.stream().map(PlayerEntity::getId).toList()))));
     }
 
     @AfterEach

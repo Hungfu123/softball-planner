@@ -1,9 +1,9 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,33 +38,33 @@ class LeagueTeamIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private LeagueTeamRepository leagueTeamRepository;
+    private SpringLeagueTeamRepository leagueTeamRepository;
 
     @Autowired
-    private LineupEntryRepository lineupEntryRepository;
+    private SpringLineupEntryRepository lineupEntryRepository;
 
     @Autowired
-    private GameStaffRepository gameStaffRepository;
+    private SpringGameStaffRepository gameStaffRepository;
 
-    private Season season;
+    private SeasonEntity season;
     private Long gameDayId;
     private Long game1Id, game2Id, game3Id;
 
     @BeforeEach
     void setUp() throws Exception {
-        season = seasonRepository.save(new Season("Saison 2026", 2026));
+        season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
 
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -281,7 +281,7 @@ class LeagueTeamIntegrationTest {
 
     @Test
     void setOpponent_teamFromOtherSeason_returns400() throws Exception {
-        final Season otherSeason = seasonRepository.save(new Season("Andere Saison", 2025));
+        final SeasonEntity otherSeason = seasonRepository.save(new SeasonEntity("Andere Saison", 2025));
         final MvcResult t = mockMvc.perform(post("/api/seasons/" + otherSeason.getId() + "/teams")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("name", "Wrong Team"))))

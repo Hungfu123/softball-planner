@@ -2,8 +2,8 @@ package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.TestcontainersConfig;
-import com.softball.entity.Player;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,24 +37,24 @@ class TrainingIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
-    private TrainingRepository trainingRepository;
+    private SpringTrainingRepository trainingRepository;
 
     @Autowired
-    private TrainingAttendanceRepository trainingAttendanceRepository;
+    private SpringTrainingAttendanceRepository trainingAttendanceRepository;
 
-    private Player regularPlayer;
-    private Player nonRegularPlayer;
+    private PlayerEntity regularPlayer;
+    private PlayerEntity nonRegularPlayer;
 
     @BeforeEach
     void setUp() {
-        regularPlayer = new Player("Max");
+        regularPlayer = new PlayerEntity("Max");
         regularPlayer.setRegular(true);
         regularPlayer = playerRepository.save(regularPlayer);
 
-        nonRegularPlayer = new Player("Lisa");
+        nonRegularPlayer = new PlayerEntity("Lisa");
         nonRegularPlayer.setRegular(false);
         nonRegularPlayer = playerRepository.save(nonRegularPlayer);
     }

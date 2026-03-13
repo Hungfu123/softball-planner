@@ -1,9 +1,9 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,25 +37,25 @@ class DataExportIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private LineupEntryRepository lineupEntryRepository;
+    private SpringLineupEntryRepository lineupEntryRepository;
 
     @Autowired
-    private GameStaffRepository gameStaffRepository;
+    private SpringGameStaffRepository gameStaffRepository;
 
     @Autowired
-    private LeagueTeamRepository leagueTeamRepository;
+    private SpringLeagueTeamRepository leagueTeamRepository;
 
     @AfterEach
     void tearDown() {
@@ -71,10 +71,10 @@ class DataExportIntegrationTest {
     @Test
     void exportAndImport_roundTrip() throws Exception {
         // Setup: Spieler, Saison, Spieltag, Lineup
-        final Player player1 = playerRepository.save(new Player("Max"));
-        final Player player2 = playerRepository.save(new Player("Lisa"));
-        final Player player3 = playerRepository.save(new Player("Tom"));
-        final Season season = seasonRepository.save(new Season("Saison 2026", 2026));
+        final PlayerEntity player1 = playerRepository.save(new PlayerEntity("Max"));
+        final PlayerEntity player2 = playerRepository.save(new PlayerEntity("Lisa"));
+        final PlayerEntity player3 = playerRepository.save(new PlayerEntity("Tom"));
+        final SeasonEntity season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
 
         final MvcResult gdResult = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -1,9 +1,9 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.entity.Season;
-import com.softball.repository.*;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,31 +38,31 @@ class SeasonStatsIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private SeasonRepository seasonRepository;
+    private SpringSeasonRepository seasonRepository;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
-    private GameDayRepository gameDayRepository;
+    private SpringGameDayRepository gameDayRepository;
 
     @Autowired
-    private GameRepository gameRepository;
+    private SpringGameRepository gameRepository;
 
     @Autowired
-    private LineupEntryRepository lineupEntryRepository;
+    private SpringLineupEntryRepository lineupEntryRepository;
 
     @Autowired
-    private GameStaffRepository gameStaffRepository;
+    private SpringGameStaffRepository gameStaffRepository;
 
-    private Season season;
-    private Player player1, player2;
+    private SeasonEntity season;
+    private PlayerEntity player1, player2;
 
     @BeforeEach
     void setUp() {
-        season = seasonRepository.save(new Season("Saison 2026", 2026));
-        player1 = playerRepository.save(new Player("Max"));
-        player2 = playerRepository.save(new Player("Lisa"));
+        season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
+        player1 = playerRepository.save(new PlayerEntity("Max"));
+        player2 = playerRepository.save(new PlayerEntity("Lisa"));
     }
 
     @AfterEach

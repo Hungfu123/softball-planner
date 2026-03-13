@@ -1,8 +1,8 @@
 package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.softball.entity.Player;
-import com.softball.repository.PlayerRepository;
+import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ class PlayerIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private PlayerRepository playerRepository;
+    private SpringPlayerRepository playerRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -58,7 +58,7 @@ class PlayerIntegrationTest {
 
     @Test
     void updatePlayer() throws Exception {
-        final Player player = playerRepository.save(new Player("Max"));
+        final PlayerEntity player = playerRepository.save(new PlayerEntity("Max"));
 
         mockMvc.perform(put("/api/players/" + player.getId())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -93,7 +93,7 @@ class PlayerIntegrationTest {
 
     @Test
     void deletePlayer() throws Exception {
-        final Player player = playerRepository.save(new Player("Max"));
+        final PlayerEntity player = playerRepository.save(new PlayerEntity("Max"));
 
         mockMvc.perform(delete("/api/players/" + player.getId()))
             .andExpect(status().isNoContent());

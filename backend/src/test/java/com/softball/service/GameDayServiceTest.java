@@ -1,9 +1,13 @@
 package com.softball.service;
 
-import com.softball.dto.GameDayPlayerStats;
-import com.softball.dto.GameDayResponse;
-import com.softball.entity.*;
-import com.softball.repository.*;
+import com.softball.adapter.dto.GameDayPlayerStats;
+import com.softball.adapter.dto.GameDayResponse;
+import com.softball.domain.model.*;
+import com.softball.domain.port.out.GameDayRepository;
+import com.softball.domain.port.out.LineupEntryRepository;
+import com.softball.application.AvailabilityService;
+import com.softball.application.GameDayService;
+import com.softball.application.SeasonService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,9 +30,6 @@ class GameDayServiceTest {
     private GameDayRepository gameDayRepository;
 
     @Mock
-    private PlayerRepository playerRepository;
-
-    @Mock
     private LineupEntryRepository lineupEntryRepository;
 
     @Mock
@@ -45,8 +46,7 @@ class GameDayServiceTest {
 
     @BeforeEach
     void setUp() {
-        testSeason = new Season("Saison 2026", 2026);
-        testSeason.setId(1L);
+        testSeason = new Season(1L, "Saison 2026", 2026);
 
         player1 = new Player("Max");
         player1.setId(1L);
@@ -176,8 +176,8 @@ class GameDayServiceTest {
     }
 
     private Game createGame(final int gameNumber, final Long id, final GameDay gameDay) {
-        final Game game = new Game(gameNumber, gameDay);
-        game.setId(id);
+        final Game game = new Game(id, gameNumber);
+        game.setGameDay(gameDay);
         return game;
     }
 
