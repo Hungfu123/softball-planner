@@ -92,6 +92,7 @@ public class CarService {
         carRepository.deleteById(carId);
     }
 
+    @Transactional(readOnly = true)
     public Car findById(final Long id) {
         return carRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Car", id));

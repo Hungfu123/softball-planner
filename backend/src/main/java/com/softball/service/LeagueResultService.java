@@ -77,6 +77,7 @@ public class LeagueResultService {
         leagueResultRepository.deleteById(resultId);
     }
 
+    @Transactional(readOnly = true)
     public LeagueResult findById(final Long id) {
         return leagueResultRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("LeagueResult", id));

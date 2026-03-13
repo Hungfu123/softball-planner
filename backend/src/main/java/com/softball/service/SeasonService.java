@@ -26,10 +26,12 @@ public class SeasonService {
         this.leagueTeamRepository = leagueTeamRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Season> findAll() {
         return seasonRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Season findById(final Long id) {
         return seasonRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Season", id));

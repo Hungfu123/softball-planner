@@ -22,9 +22,10 @@ export function useTraining() {
     if (!initialLoadDone.current) setLoading(true)
     try {
       const pid = periodId ?? undefined
-      const [trainingsData, statsData] = await Promise.all([
+      const [trainingsData, statsData, allAttendanceData] = await Promise.all([
         api.getTrainings(pid),
         api.getTrainingStats(pid),
+        api.getAllAttendance(pid),
       ])
 
       const sorted = trainingsData.sort(
@@ -33,8 +34,6 @@ export function useTraining() {
       setTrainings(sorted)
       setStats(statsData)
 
-      // Batch attendance: single call instead of N+1
-      const allAttendanceData = await api.getAllAttendance(pid)
       const attendanceMap = new Map<number, Map<number, boolean>>()
       for (const [trainingId, entries] of Object.entries(allAttendanceData)) {
         const playerMap = new Map<number, boolean>()

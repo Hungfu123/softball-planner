@@ -107,11 +107,17 @@ public class DataImportService {
             importGameDetails(game, ge, season, playerIdMap, teamByName);
         }
 
-        if (gde.cars() != null) {
+        if (gde.cars() != null && !gde.cars().isEmpty()) {
+            final List<Long> driverIds = gde.cars().stream()
+                .map(ce -> playerIdMap.get(ce.driverPlayerId()))
+                .filter(Objects::nonNull)
+                .toList();
+            final Map<Long, Player> driverMap = playerRepository.findAllById(driverIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Player::getId, p -> p));
             for (final CarExport ce : gde.cars()) {
                 final Long newDriverId = playerIdMap.get(ce.driverPlayerId());
                 if (newDriverId != null) {
-                    final Player driver = playerRepository.findById(newDriverId).orElseThrow();
+                    final Player driver = driverMap.get(newDriverId);
                     carRepository.save(new Car(savedGameDay, driver, ce.totalSeats(), ce.direction()));
                 }
             }
@@ -131,18 +137,38 @@ public class DataImportService {
             gameRepository.save(game);
         }
 
+        // Batch-load all players needed for lineup + staff
+        final java.util.Set<Long> neededPlayerIds = new java.util.HashSet<>();
         for (final LineupExport le : ge.lineup()) {
-            final Long newPlayerId = playerIdMap.get(le.playerId());
-            if (newPlayerId == null) {
+            final Long newId = playerIdMap.get(le.playerId());
+            if (newId == null) {
                 throw new IllegalStateException("Spieler-Mapping fehlt fuer ID: " + le.playerId());
             }
-            final Player player = playerRepository.findById(newPlayerId).orElseThrow();
+            neededPlayerIds.add(newId);
+            if (le.dhBatterPlayerId() != null) {
+                final Long dhId = playerIdMap.get(le.dhBatterPlayerId());
+                if (dhId != null) neededPlayerIds.add(dhId);
+            }
+        }
+        for (final StaffExport ste : ge.staff()) {
+            final Long newId = playerIdMap.get(ste.playerId());
+            if (newId == null) {
+                throw new IllegalStateException("Spieler-Mapping fehlt fuer ID: " + ste.playerId());
+            }
+            neededPlayerIds.add(newId);
+        }
+        final Map<Long, Player> playerMap = playerRepository.findAllById(neededPlayerIds).stream()
+            .collect(java.util.stream.Collectors.toMap(Player::getId, p -> p));
+
+        for (final LineupExport le : ge.lineup()) {
+            final Long newPlayerId = playerIdMap.get(le.playerId());
+            final Player player = playerMap.get(newPlayerId);
             final Position position = le.position() != null ? Position.fromString(le.position()) : null;
             Player dhBatterPlayer = null;
             if (le.dhBatterPlayerId() != null) {
                 final Long newDhBatterId = playerIdMap.get(le.dhBatterPlayerId());
                 if (newDhBatterId != null) {
-                    dhBatterPlayer = playerRepository.findById(newDhBatterId).orElseThrow();
+                    dhBatterPlayer = playerMap.get(newDhBatterId);
                 }
             }
             lineupEntryRepository.save(new LineupEntry(game, player, position, le.battingOrder(), dhBatterPlayer));
@@ -150,10 +176,7 @@ public class DataImportService {
 
         for (final StaffExport ste : ge.staff()) {
             final Long newPlayerId = playerIdMap.get(ste.playerId());
-            if (newPlayerId == null) {
-                throw new IllegalStateException("Spieler-Mapping fehlt fuer ID: " + ste.playerId());
-            }
-            final Player player = playerRepository.findById(newPlayerId).orElseThrow();
+            final Player player = playerMap.get(newPlayerId);
             final StaffRole role = StaffRole.valueOf(ste.role());
             gameStaffRepository.save(new GameStaff(game, player, role));
         }

@@ -5,6 +5,8 @@ import com.softball.exception.ResourceNotFoundException;
 import com.softball.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -16,10 +18,12 @@ public class PlayerService {
         this.playerRepository = playerRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<Player> findAll() {
         return playerRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Player findById(final Long id) {
         return playerRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Player", id));

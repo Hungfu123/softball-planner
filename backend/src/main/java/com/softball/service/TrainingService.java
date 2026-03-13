@@ -60,6 +60,7 @@ public class TrainingService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public Training findById(final Long id) {
         return trainingRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Training", id));
@@ -210,14 +211,23 @@ public class TrainingService {
         training.getAttendances().clear();
         trainingRepository.flush();
 
+        // Batch-load all players upfront
+        final List<Long> playerIds = entries.stream().map(SetAttendanceRequest.AttendanceEntry::playerId).toList();
+        final Map<Long, Player> playerMap = playerRepository.findAllById(playerIds).stream()
+            .collect(Collectors.toMap(Player::getId, p -> p));
+        if (playerMap.size() != playerIds.size()) {
+            throw new ResourceNotFoundException("Einige Spieler wurden nicht gefunden");
+        }
+
         // Add new attendance
+        final List<TrainingAttendance> newAttendances = new ArrayList<>();
         for (final SetAttendanceRequest.AttendanceEntry entry : entries) {
-            final Player player = playerRepository.findById(entry.playerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Player", entry.playerId()));
+            final Player player = playerMap.get(entry.playerId());
             final TrainingAttendance attendance = new TrainingAttendance(training, player, entry.present());
-            attendanceRepository.save(attendance);
+            newAttendances.add(attendance);
             training.getAttendances().add(attendance);
         }
+        attendanceRepository.saveAll(newAttendances);
 
         return training.getAttendances().stream()
             .map(TrainingAttendanceResponse::from)
@@ -401,6 +411,7 @@ public class TrainingService {
                                           final List<String> playerNames,
                                           final Map<String, Player> playersByName,
                                           final Set<String> notFoundPlayerNames) {
+        final List<TrainingAttendance> attendances = new ArrayList<>();
         for (int i = 0; i < playerNames.size(); i++) {
             final String playerName = playerNames.get(i);
             if (playerName.isEmpty()) {
@@ -416,10 +427,10 @@ public class TrainingService {
             final String value = (i + 1 < columns.length) ? columns[i + 1].trim() : "";
             final boolean present = "TRUE".equalsIgnoreCase(value);
 
-            final TrainingAttendance attendance = new TrainingAttendance(training, player, present);
-            attendanceRepository.save(attendance);
-            training.getAttendances().add(attendance);
+            attendances.add(new TrainingAttendance(training, player, present));
         }
+        attendanceRepository.saveAll(attendances);
+        training.getAttendances().addAll(attendances);
     }
 
     // --- Period management ---
@@ -466,10 +477,10 @@ public class TrainingService {
 
     private void autoFillRegularPlayers(final Training training) {
         final List<Player> regularPlayers = playerRepository.findByRegularTrue();
-        for (final Player player : regularPlayers) {
-            final TrainingAttendance attendance = new TrainingAttendance(training, player, true);
-            attendanceRepository.save(attendance);
-            training.getAttendances().add(attendance);
-        }
+        final List<TrainingAttendance> attendances = regularPlayers.stream()
+            .map(player -> new TrainingAttendance(training, player, true))
+            .toList();
+        attendanceRepository.saveAll(attendances);
+        training.getAttendances().addAll(attendances);
     }
 }

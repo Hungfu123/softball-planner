@@ -64,7 +64,7 @@ export function TrainingPage() {
   }, [headerMenuId])
 
   useEffect(() => {
-    loadPeriods().then(() => loadAll())
+    Promise.all([loadPeriods(), loadAll()])
   }, [loadAll, loadPeriods])
 
   // Auto-scroll to right after loading

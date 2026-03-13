@@ -31,6 +31,7 @@ public class GameService {
         this.leagueTeamService = leagueTeamService;
     }
 
+    @Transactional(readOnly = true)
     public Game findById(final Long id) {
         return gameRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Game", id));

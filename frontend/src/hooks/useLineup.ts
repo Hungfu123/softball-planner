@@ -27,8 +27,8 @@ export function useLineup() {
     const prevId = activeIdRef.current
     if (prevId !== null && prevId !== gameId) {
       cache.current.set(prevId, {
-        entries: entriesRef.current,
-        savedEntries: savedRef.current,
+        entries: [...entriesRef.current],
+        savedEntries: [...savedRef.current],
       })
     }
     activeIdRef.current = gameId

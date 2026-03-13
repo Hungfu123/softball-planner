@@ -94,6 +94,7 @@ public class LeagueTeamService {
         leagueTeamRepository.deleteById(teamId);
     }
 
+    @Transactional(readOnly = true)
     public LeagueTeam findById(final Long id) {
         return leagueTeamRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("LeagueTeam", id));

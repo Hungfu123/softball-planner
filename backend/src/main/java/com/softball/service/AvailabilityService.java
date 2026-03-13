@@ -101,12 +101,16 @@ public class AvailabilityService {
     private void renumberBattingOrder(final Long gameId) {
         final List<LineupEntry> remaining = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId);
         int order = 1;
+        boolean changed = false;
         for (final LineupEntry entry : remaining) {
             if (entry.getBattingOrder() != order) {
                 entry.setBattingOrder(order);
-                lineupEntryRepository.save(entry);
+                changed = true;
             }
             order++;
+        }
+        if (changed) {
+            lineupEntryRepository.saveAll(remaining);
         }
     }
 
@@ -120,11 +124,13 @@ public class AvailabilityService {
     }
 
     private void cascadeRemoveFromCars(final Long gameDayId, final Set<Long> removedPlayerIds) {
-        for (final Car car : carRepository.findByGameDay_Id(gameDayId)) {
-            if (removedPlayerIds.contains(car.getDriver().getId())) {
-                log.info("Auto {} geloescht weil Fahrer {} entfernt wurde", car.getId(), car.getDriver().getName());
-                carRepository.delete(car);
-            }
+        final List<Car> carsToRemove = carRepository.findByGameDay_Id(gameDayId).stream()
+            .filter(car -> removedPlayerIds.contains(car.getDriver().getId()))
+            .toList();
+        if (!carsToRemove.isEmpty()) {
+            carsToRemove.forEach(car -> log.info("Auto {} geloescht weil Fahrer {} entfernt wurde",
+                car.getId(), car.getDriver().getName()));
+            carRepository.deleteAll(carsToRemove);
         }
     }
 }

@@ -232,8 +232,9 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
           {availableTrainingStats.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten vorhanden.</p>
           ) : (
-            availableTrainingStats.map(s => {
+            (() => {
               const maxAttended = Math.max(...availableTrainingStats.map(st => st.attended), 1)
+              return availableTrainingStats.map(s => {
               const barWidth = Math.round((s.attended / maxAttended) * 100)
               return (
                 <div key={s.playerId} className="flex items-center gap-2">
@@ -252,6 +253,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                 </div>
               )
             })
+            })()
           )}
         </div>
       )}

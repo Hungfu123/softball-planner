@@ -255,12 +255,14 @@ class TrainingIntegrationTest {
     }
 
     @Test
-    void stats_noTrainings_returnsPlayersWithZeros() throws Exception {
+    void stats_noTrainings_returnsOnlyRegularPlayersWithZeros() throws Exception {
+        // Without trainings, only regular players appear in stats
         mockMvc.perform(get("/api/trainings/stats"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(2))
-            .andExpect(jsonPath("$[?(@.playerName == 'Max')].attended").value(0))
-            .andExpect(jsonPath("$[?(@.playerName == 'Max')].totalTrainings").value(0));
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].playerName").value("Max"))
+            .andExpect(jsonPath("$[0].attended").value(0))
+            .andExpect(jsonPath("$[0].totalTrainings").value(0));
     }
 
     @Test

@@ -235,8 +235,9 @@ export function Dashboard() {
                         </tr>
                       </thead>
                       <tbody>
-                        {stats.map(s => {
+                        {(() => {
                           const maxGames = Math.max(...stats.map(st => st.totalGames), 1)
+                          return stats.map(s => {
                           const entries = Object.entries(s.positionCounts)
                           entries.sort((a, b) => b[1] - a[1])
                           const positions = entries.length === 0 ? '—' : entries.map(([pos, count]) => `${pos} (${count}x)`).join(', ')
@@ -254,7 +255,8 @@ export function Dashboard() {
                               <td className="px-4 py-2.5 text-gray-600">{positions}</td>
                             </tr>
                           )
-                        })}
+                        })
+                        })()}
                       </tbody>
                     </table>
                   </div>
