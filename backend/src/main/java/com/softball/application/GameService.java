@@ -110,8 +110,6 @@ public class GameService {
         lineupEntryRepository.deleteByGameId(gameId2);
         gameStaffRepository.deleteByGameId(gameId1);
         gameStaffRepository.deleteByGameId(gameId2);
-        lineupEntryRepository.flush();
-        gameStaffRepository.flush();
 
         swapGameFields(gameA, gameB);
 

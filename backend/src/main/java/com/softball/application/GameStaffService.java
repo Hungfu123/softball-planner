@@ -63,7 +63,6 @@ public class GameStaffService {
         validate(game.getId(), staffRequests);
 
         gameStaffRepository.deleteByGameId(game.getId());
-        gameStaffRepository.flush();
 
         return staffRequests.stream().map(req -> {
             final Player player = playerRepository.findById(req.playerId())

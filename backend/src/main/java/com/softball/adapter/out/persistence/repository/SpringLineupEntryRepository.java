@@ -2,6 +2,7 @@ package com.softball.adapter.out.persistence.repository;
 
 import com.softball.adapter.out.persistence.entity.LineupEntryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
@@ -13,5 +14,7 @@ public interface SpringLineupEntryRepository extends JpaRepository<LineupEntryEn
     @Query("SELECT le FROM LineupEntryEntity le JOIN FETCH le.player LEFT JOIN FETCH le.dhBatterPlayer JOIN FETCH le.game WHERE le.game.id IN :gameIds ORDER BY le.battingOrder ASC")
     List<LineupEntryEntity> findByGameIdInOrderByBattingOrderAsc(List<Long> gameIds);
 
+    @Modifying
+    @Query("DELETE FROM LineupEntryEntity le WHERE le.game.id = :gameId")
     void deleteByGameId(Long gameId);
 }

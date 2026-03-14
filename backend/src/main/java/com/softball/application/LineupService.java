@@ -64,7 +64,6 @@ public class LineupService {
         validate(game, entries);
 
         lineupEntryRepository.deleteByGameId(game.getId());
-        lineupEntryRepository.flush();
 
         // Batch-load all referenced players in one query (avoids N+1)
         final Set<Long> allPlayerIds = new LinkedHashSet<>();
