@@ -98,6 +98,13 @@ export function GameDayPlanner() {
 
   const handleAddPlayer = (player: Player) => {
     lineup.addPlayer(player)
+    // Auto-remove from coach slot if player was a base coach
+    if (staffPlayerIds.has(player.id)) {
+      const remaining = staff.staff
+        .filter(s => s.player.id !== player.id)
+        .map(s => ({ playerId: s.player.id, role: s.role }))
+      handleStaffSave(remaining)
+    }
   }
 
   const handleExportPdf = async () => {
@@ -360,6 +367,7 @@ export function GameDayPlanner() {
           } : gd)
         }}
         onSwapped={async () => {
+          lineup.invalidateCache()
           await reload()
           if (activeGame) {
             loadLineup(activeGame.id)
