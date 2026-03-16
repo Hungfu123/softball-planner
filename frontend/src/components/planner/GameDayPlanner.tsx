@@ -17,9 +17,9 @@ import { CopyLineupModal } from './CopyLineupModal'
 import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon } from '@/icons'
 import type { Player, GameDayResponse, Season } from '@/types'
-import { generatePdf } from '@/utils/pdfExport'
+import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -107,16 +107,31 @@ export function GameDayPlanner() {
     }
   }
 
+  const loadGameData = async () => {
+    if (!gameDay) return null
+    const { lineups, staff } = await api.getGameDayLineups(gameDay.id)
+    return gameDay.games.map(g => ({
+      game: g,
+      lineup: lineups[String(g.id)] ?? [],
+      staff: staff[String(g.id)] ?? [],
+    }))
+  }
+
   const handleExportPdf = async () => {
     if (!gameDay) return
     try {
-      const { lineups, staff } = await api.getGameDayLineups(gameDay.id)
-      const gameData = gameDay.games.map(g => ({
-        game: g,
-        lineup: lineups[String(g.id)] ?? [],
-        staff: staff[String(g.id)] ?? [],
-      }))
-      generatePdf(gameDay, gameData, season)
+      const gameData = await loadGameData()
+      if (gameData) generatePdf(gameDay, gameData, season)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleExportScoring = async () => {
+    if (!gameDay) return
+    try {
+      const gameData = await loadGameData()
+      if (gameData) generateScoringPdf(gameDay, gameData, season)
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -297,6 +312,13 @@ export function GameDayPlanner() {
               }`}
             >
               <CarIcon size={20} />
+            </button>
+            <button
+              onClick={handleExportScoring}
+              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors cursor-pointer"
+              title="Scoring-Sheet drucken"
+            >
+              <ClipboardIcon size={20} />
             </button>
             <button
               onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
