@@ -19,6 +19,7 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 ### Spieler-Verwaltung
 - Globale Spielerliste pflegen (erstellen, umbenennen, loeschen)
 - Spieler werden saisonuebergreifend verwendet
+- Default Batting Order: Jedem Spieler eine Standard-Schlagposition (1-10) zuweisen — beim Hinzufuegen zur Lineup wird er automatisch an dieser Position eingefuegt
 
 ### Spieltag-Planung
 - Spieltage mit Datum, Label und Ort anlegen und bearbeiten
@@ -37,6 +38,10 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 ### Base Coaches
 - 1st Base Coach und 3rd Base Coach pro Spiel zuweisen
 - Coaches bleiben im Spieler-Pool verfuegbar
+
+### Lineup Auto-Generate
+- Zufaellige Aufstellung generieren basierend auf verfuegbaren Spielern
+- Priorisiert Spieler mit hoeherem Trainingsbesuch
 
 ### Lineup kopieren & tauschen
 - Lineup von einem vorherigen Spiel der Saison uebernehmen
@@ -57,8 +62,15 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 - Fahrer und Sitzplaetze pro Spieltag planen
 - Hin- und Rueckfahrt getrennt oder zusammen
 
+### Training
+- Trainings-Zeitraeume verwalten (z.B. Wintertraining, Saisonvorbereitung)
+- Trainings anlegen mit Datum, Uhrzeit und Ort
+- Anwesenheit pro Training erfassen
+- Trainingstypen: Regular und Pitcher/Catcher
+- Trainingsbeteiligung als CSV exportieren
+
 ### Export
-- Druckoptimiertes Lineup-Sheet pro Spieltag
+- Druckoptimiertes Lineup-Sheet und Scoring-Sheet pro Spieltag (zentriert, PDF-optimiert)
 - Direkt als PDF druckbar
 - Datenbank als JSON exportieren/importieren
 
@@ -84,7 +96,7 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 ### 1. Datenbank starten
 
 ```bash
-docker compose up -d
+docker compose up -d db
 ```
 
 Startet PostgreSQL auf Port 5432 (User: `softball`, Passwort: `softball`, DB: `softball`).
@@ -93,17 +105,17 @@ Startet PostgreSQL auf Port 5432 (User: `softball`, Passwort: `softball`, DB: `s
 
 ```bash
 cd backend
-./mvnw spring-boot:run
+./mvnw spring-boot:run -s .mvn/local-settings.xml
 ```
 
-Flyway erstellt beim ersten Start automatisch alle Tabellen.
+Nutzt `local-settings.xml` statt der globalen Maven-Settings. Flyway erstellt beim ersten Start automatisch alle Tabellen.
 
 ### 3. Frontend starten (Entwicklung)
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npx vite
 ```
 
 Frontend: `http://localhost:5173` · Backend: `http://localhost:8080`
