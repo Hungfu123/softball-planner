@@ -203,6 +203,74 @@ class LineupSuggestionEngineTest {
         assertThat(count.get(1L)).isZero();
     }
 
+    // --- defaultBattingOrder tests ---
+
+    @Test
+    void defaultBattingOrder_determinesBattingOrder() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        players.put(1L, new Player(1L, "Player 1", true, 3));
+        players.put(2L, new Player(2L, "Player 2", true, 1));
+        players.put(3L, new Player(3L, "Player 3", true, 2));
+        players.put(4L, new Player(4L, "Player 4", true, 5));
+        players.put(5L, new Player(5L, "Player 5", true, 4));
+        players.put(6L, new Player(6L, "Player 6", true, 6));
+        players.put(7L, new Player(7L, "Player 7", true, 7));
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(42));
+
+        assertThat(result).hasSize(7);
+        // Batting order should follow defaultBattingOrder: 2, 3, 1, 5, 4, 6, 7
+        assertThat(result.get(0).playerId()).isEqualTo(2L);
+        assertThat(result.get(1).playerId()).isEqualTo(3L);
+        assertThat(result.get(2).playerId()).isEqualTo(1L);
+        assertThat(result.get(3).playerId()).isEqualTo(5L);
+        assertThat(result.get(4).playerId()).isEqualTo(4L);
+        assertThat(result.get(5).playerId()).isEqualTo(6L);
+        assertThat(result.get(6).playerId()).isEqualTo(7L);
+    }
+
+    @Test
+    void defaultBattingOrder_nullsAtEnd() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        players.put(1L, new Player(1L, "Player 1", true, 2));
+        players.put(2L, new Player(2L, "Player 2", true, null));
+        players.put(3L, new Player(3L, "Player 3", true, 1));
+        players.put(4L, new Player(4L, "Player 4", true, null));
+        players.put(5L, new Player(5L, "Player 5", true, 3));
+        players.put(6L, new Player(6L, "Player 6", true, null));
+        players.put(7L, new Player(7L, "Player 7", true, null));
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(42));
+
+        assertThat(result).hasSize(7);
+        // Ranked players first in order: 3(order=1), 1(order=2), 5(order=3)
+        assertThat(result.get(0).playerId()).isEqualTo(3L);
+        assertThat(result.get(1).playerId()).isEqualTo(1L);
+        assertThat(result.get(2).playerId()).isEqualTo(5L);
+        // Remaining 4 are unranked — positions are still there
+        final Set<Long> unranked = new HashSet<>();
+        for (int i = 3; i < 7; i++) unranked.add(result.get(i).playerId());
+        assertThat(unranked).containsExactlyInAnyOrder(2L, 4L, 6L, 7L);
+    }
+
+    @Test
+    void noDefaultBattingOrder_shufflesRandomly() {
+        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L);
+
+        // Run twice with different seeds — should produce different orders
+        final List<SuggestionResult> result1 = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(1));
+        final List<SuggestionResult> result2 = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(999));
+
+        // At least the batting order IDs should differ (extremely likely with different seeds)
+        final List<Long> ids1 = result1.stream().map(SuggestionResult::playerId).toList();
+        final List<Long> ids2 = result2.stream().map(SuggestionResult::playerId).toList();
+        assertThat(ids1).isNotEqualTo(ids2);
+    }
+
     // --- helpers ---
 
     private Map<Long, Player> createPlayers(final Long... ids) {

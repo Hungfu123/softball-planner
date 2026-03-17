@@ -41,4 +41,10 @@ public class PlayerController {
     public void delete(@PathVariable final Long id) {
         playerService.delete(id);
     }
+
+    @PutMapping("/batting-order")
+    public List<PlayerResponse> updateBattingOrder(@RequestBody final List<Long> orderedPlayerIds) {
+        return playerService.updateBattingOrder(orderedPlayerIds).stream()
+            .map(PlayerResponse::from).toList();
+    }
 }

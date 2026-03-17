@@ -43,7 +43,7 @@ public class DataExportService {
     public DataExport exportAll() {
         log.info("Daten-Export gestartet");
         final List<PlayerExport> players = playerRepository.findAll().stream()
-            .map(p -> new PlayerExport(p.getId(), p.getName()))
+            .map(p -> new PlayerExport(p.getId(), p.getName(), p.getDefaultBattingOrder()))
             .toList();
 
         final List<SeasonExport> seasons = seasonRepository.findAll().stream()

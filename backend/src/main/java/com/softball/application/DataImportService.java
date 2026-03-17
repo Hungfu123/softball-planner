@@ -51,8 +51,10 @@ public class DataImportService {
         final Map<Long, Long> playerIdMap = new HashMap<>();
 
         for (final PlayerExport pe : data.players()) {
-            final Player player = playerRepository.save(new Player(pe.name()));
-            playerIdMap.put(pe.id(), player.getId());
+            final Player player = new Player(pe.name());
+            player.setDefaultBattingOrder(pe.defaultBattingOrder());
+            final Player saved = playerRepository.save(player);
+            playerIdMap.put(pe.id(), saved.getId());
         }
 
         for (final SeasonExport se : data.seasons()) {

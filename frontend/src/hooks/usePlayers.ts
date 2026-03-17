@@ -35,5 +35,11 @@ export function usePlayers() {
     setPlayers(prev => prev.filter(x => x.id !== id))
   }
 
-  return { players, loading, create, update, remove, reload: load }
+  const reorderBattingOrder = async (orderedIds: number[]) => {
+    const updated = await api.updateBattingOrder(orderedIds)
+    setPlayers(updated.sort((a, b) => a.name.localeCompare(b.name)))
+    return updated
+  }
+
+  return { players, loading, create, update, remove, reorderBattingOrder, reload: load }
 }

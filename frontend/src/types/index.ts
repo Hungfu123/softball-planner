@@ -2,6 +2,7 @@ export interface Player {
   id: number
   name: string
   regular: boolean
+  defaultBattingOrder: number | null
 }
 
 export interface Season {

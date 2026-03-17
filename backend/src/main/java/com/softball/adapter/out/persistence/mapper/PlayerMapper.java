@@ -9,8 +9,7 @@ public class PlayerMapper {
 
     public Player toDomain(final PlayerEntity entity) {
         if (entity == null) return null;
-        final Player player = new Player(entity.getId(), entity.getName(), entity.isRegular());
-        return player;
+        return new Player(entity.getId(), entity.getName(), entity.isRegular(), entity.getDefaultBattingOrder());
     }
 
     public PlayerEntity toEntity(final Player domain) {
@@ -19,11 +18,13 @@ public class PlayerMapper {
         entity.setId(domain.getId());
         entity.setName(domain.getName());
         entity.setRegular(domain.isRegular());
+        entity.setDefaultBattingOrder(domain.getDefaultBattingOrder());
         return entity;
     }
 
     public void updateEntity(final PlayerEntity entity, final Player domain) {
         entity.setName(domain.getName());
         entity.setRegular(domain.isRegular());
+        entity.setDefaultBattingOrder(domain.getDefaultBattingOrder());
     }
 }

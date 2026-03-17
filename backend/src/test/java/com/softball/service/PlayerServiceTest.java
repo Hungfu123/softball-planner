@@ -99,4 +99,21 @@ class PlayerServiceTest {
         assertThatThrownBy(() -> playerService.delete(99L))
             .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    @Test
+    void updateBattingOrder_setsOrderByIndex() {
+        final Player p1 = new Player(1L, "Alice", true);
+        final Player p2 = new Player(2L, "Bob", true);
+        final Player p3 = new Player(3L, "Charlie", true);
+        when(playerRepository.findAll()).thenReturn(List.of(p1, p2, p3));
+        when(playerRepository.save(any(Player.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        final List<Player> result = playerService.updateBattingOrder(List.of(3L, 1L));
+
+        // Player 3 = order 1, Player 1 = order 2, Player 2 = null
+        assertThat(p3.getDefaultBattingOrder()).isEqualTo(1);
+        assertThat(p1.getDefaultBattingOrder()).isEqualTo(2);
+        assertThat(p2.getDefaultBattingOrder()).isNull();
+        verify(playerRepository, times(3)).save(any(Player.class));
+    }
 }

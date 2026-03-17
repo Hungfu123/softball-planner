@@ -65,14 +65,19 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
       .sort((a, b) => b.attended - a.attended)
   }, [trainingStats, allAvailablePlayers])
 
-  const sortByGames = (a: Player, b: Player) => {
+  const sortByOrder = (a: Player, b: Player) => {
+    const aOrder = a.defaultBattingOrder
+    const bOrder = b.defaultBattingOrder
+    if (aOrder != null && bOrder != null) return aOrder - bOrder
+    if (aOrder != null) return -1
+    if (bOrder != null) return 1
     const ga = statsMap.get(a.id)?.gameCount ?? 0
     const gb = statsMap.get(b.id)?.gameCount ?? 0
     return ga - gb
   }
 
-  const freePlayers = allAvailablePlayers.filter(p => !lineupPlayerIds.has(p.id)).sort(sortByGames)
-  const lineupPlayers = allAvailablePlayers.filter(p => lineupPlayerIds.has(p.id)).sort(sortByGames)
+  const freePlayers = allAvailablePlayers.filter(p => !lineupPlayerIds.has(p.id)).sort(sortByOrder)
+  const lineupPlayers = allAvailablePlayers.filter(p => lineupPlayerIds.has(p.id)).sort(sortByOrder)
 
   const allSorted = [...allAvailablePlayers].sort((a, b) => {
     const ga = statsMap.get(a.id)?.gameCount ?? 0
@@ -129,6 +134,11 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                     : 'hover:bg-navy-50'
                 } cursor-pointer`}
               >
+                {player.defaultBattingOrder != null && (
+                  <span className="text-[11px] font-mono font-semibold text-gray-400 shrink-0">
+                    #{player.defaultBattingOrder}
+                  </span>
+                )}
                 <span className={`flex-1 text-sm font-medium truncate ${
                   noGames ? 'text-softball-red-700' : 'text-gray-900'
                 }`}>
@@ -166,6 +176,11 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                 key={player.id}
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-left border-b border-gray-50 last:border-0 bg-gray-50/50 cursor-not-allowed"
               >
+                {player.defaultBattingOrder != null && (
+                  <span className="text-[11px] font-mono font-semibold text-gray-300 shrink-0">
+                    #{player.defaultBattingOrder}
+                  </span>
+                )}
                 <span className="flex-1 text-sm text-gray-400 truncate">
                   {player.name}
                 </span>

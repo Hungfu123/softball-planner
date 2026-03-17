@@ -50,4 +50,20 @@ public class PlayerService {
         }
         playerRepository.deleteById(id);
     }
+
+    @Transactional
+    public List<Player> updateBattingOrder(final List<Long> orderedPlayerIds) {
+        final List<Player> allPlayers = playerRepository.findAll();
+
+        for (final Player player : allPlayers) {
+            final int index = orderedPlayerIds.indexOf(player.getId());
+            player.setDefaultBattingOrder(index >= 0 ? index + 1 : null);
+        }
+
+        for (final Player player : allPlayers) {
+            playerRepository.save(player);
+        }
+
+        return allPlayers;
+    }
 }

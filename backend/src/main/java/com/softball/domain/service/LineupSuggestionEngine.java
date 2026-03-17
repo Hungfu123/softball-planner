@@ -58,9 +58,24 @@ public class LineupSuggestionEngine {
             .limit(positionsToFill.size())
             .collect(Collectors.toCollection(ArrayList::new));
 
-        // Shuffle positions and players randomly
+        // Shuffle positions randomly, but sort players by defaultBattingOrder
         Collections.shuffle(positionsToFill, random);
-        Collections.shuffle(assignablePool, random);
+
+        // Sort assignable pool: players with defaultBattingOrder first (ascending), then rest randomized
+        final boolean anyHasOrder = assignablePool.stream()
+            .anyMatch(id -> playerMap.get(id) != null && playerMap.get(id).getDefaultBattingOrder() != null);
+
+        if (anyHasOrder) {
+            // Shuffle first so unranked players get a random order
+            Collections.shuffle(assignablePool, random);
+            // Stable sort: ranked players bubble to front in order, unranked stay shuffled
+            assignablePool.sort(Comparator.comparingInt((Long id) -> {
+                final Player p = playerMap.get(id);
+                return (p != null && p.getDefaultBattingOrder() != null) ? p.getDefaultBattingOrder() : Integer.MAX_VALUE;
+            }));
+        } else {
+            Collections.shuffle(assignablePool, random);
+        }
 
         final Map<Long, Position> newAssignments = new LinkedHashMap<>();
         for (int i = 0; i < positionsToFill.size() && i < assignablePool.size(); i++) {
@@ -76,8 +91,19 @@ public class LineupSuggestionEngine {
                 entry.getPosition() != null ? entry.getPosition().displayName() : null, order++));
         }
 
+        // Sort assignments by defaultBattingOrder (ranked first, unranked at end)
         final List<Map.Entry<Long, Position>> assignmentList = new ArrayList<>(newAssignments.entrySet());
-        Collections.shuffle(assignmentList, random);
+        if (anyHasOrder) {
+            // Shuffle first so unranked players get a random batting order
+            Collections.shuffle(assignmentList, random);
+            // Stable sort: ranked players sorted by order, unranked stay shuffled at end
+            assignmentList.sort(Comparator.comparingInt(e -> {
+                final Player p = playerMap.get(e.getKey());
+                return (p != null && p.getDefaultBattingOrder() != null) ? p.getDefaultBattingOrder() : Integer.MAX_VALUE;
+            }));
+        } else {
+            Collections.shuffle(assignmentList, random);
+        }
         for (final var entry : assignmentList) {
             final Player player = playerMap.get(entry.getKey());
             if (player != null) {

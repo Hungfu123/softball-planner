@@ -62,6 +62,8 @@ export const updatePlayer = (id: number, data: { name?: string; regular?: boolea
   request<Player>(`/players/${id}`, { method: 'PUT', body: JSON.stringify(data) })
 export const deletePlayer = (id: number) =>
   request<void>(`/players/${id}`, { method: 'DELETE' })
+export const updateBattingOrder = (orderedPlayerIds: number[]) =>
+  request<Player[]>('/players/batting-order', { method: 'PUT', body: JSON.stringify(orderedPlayerIds) })
 
 // Seasons
 export const getSeasons = () => request<Season[]>('/seasons')

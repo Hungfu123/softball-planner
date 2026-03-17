@@ -18,6 +18,9 @@ public class PlayerEntity {
     @Column(nullable = false)
     private boolean regular = false;
 
+    @Column(name = "default_batting_order")
+    private Integer defaultBattingOrder;
+
     public PlayerEntity() {}
 
     public PlayerEntity(String name) {
@@ -30,4 +33,6 @@ public class PlayerEntity {
     public void setName(String name) { this.name = name; }
     public boolean isRegular() { return regular; }
     public void setRegular(boolean regular) { this.regular = regular; }
+    public Integer getDefaultBattingOrder() { return defaultBattingOrder; }
+    public void setDefaultBattingOrder(Integer defaultBattingOrder) { this.defaultBattingOrder = defaultBattingOrder; }
 }

@@ -7,7 +7,7 @@ public record DataExport(
     List<PlayerExport> players,
     List<SeasonExport> seasons
 ) {
-    public record PlayerExport(Long id, String name) {}
+    public record PlayerExport(Long id, String name, Integer defaultBattingOrder) {}
 
     public record SeasonExport(Long id, String name, Integer year, List<GameDayExport> gameDays,
                                List<LeagueResultExport> leagueResults) {}

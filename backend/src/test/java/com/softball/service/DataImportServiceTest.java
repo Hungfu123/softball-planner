@@ -85,7 +85,7 @@ class DataImportServiceTest {
     @Test
     void importAll_createsPlayers() {
         final DataExport data = new DataExport(
-            List.of(new PlayerExport(1L, "Alice"), new PlayerExport(2L, "Bob")),
+            List.of(new PlayerExport(1L, "Alice", null), new PlayerExport(2L, "Bob", null)),
             List.of()
         );
 
@@ -131,7 +131,7 @@ class DataImportServiceTest {
     @Test
     void importAll_importsLineupWithPlayerMapping() {
         final DataExport data = new DataExport(
-            List.of(new PlayerExport(1L, "Alice")),
+            List.of(new PlayerExport(1L, "Alice", null)),
             List.of(new SeasonExport(1L, "2025", 2025,
                 List.of(new GameDayExport(LocalDate.of(2025, 6, 1), "Tag 1", "Feld",
                     List.of(),
@@ -190,7 +190,7 @@ class DataImportServiceTest {
     @Test
     void importAll_importsStaff() {
         final DataExport data = new DataExport(
-            List.of(new PlayerExport(1L, "Coach")),
+            List.of(new PlayerExport(1L, "Coach", null)),
             List.of(new SeasonExport(1L, "2025", 2025,
                 List.of(new GameDayExport(LocalDate.of(2025, 6, 1), "Tag 1", "Feld",
                     List.of(),
