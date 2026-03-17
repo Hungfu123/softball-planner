@@ -56,7 +56,12 @@ export function useLineup() {
     setEntries(prev => {
       if (prev.length >= 10) return prev
       if (prev.some(e => e.player.id === player.id)) return prev
-      return [...prev, { player, position: null, dhBatterId: null, dhBatterName: null }]
+      const newEntry = { player, position: null, dhBatterId: null, dhBatterName: null }
+      if (player.defaultBattingOrder) {
+        const insertAt = Math.min(player.defaultBattingOrder - 1, prev.length)
+        return [...prev.slice(0, insertAt), newEntry, ...prev.slice(insertAt)]
+      }
+      return [...prev, newEntry]
     })
   }, [])
 
