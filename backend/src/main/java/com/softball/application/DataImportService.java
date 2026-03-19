@@ -83,7 +83,8 @@ public class DataImportService {
                                final Map<Long, Long> playerIdMap, final Map<String, LeagueTeam> teamByName) {
         final GameDay gameDay = new GameDay(gde.date(), gde.label(), gde.location(), season);
 
-        for (int i = 1; i <= 3; i++) {
+        final int gameCount = gde.games().isEmpty() ? 3 : gde.games().size();
+        for (int i = 1; i <= gameCount; i++) {
             final Game game = new Game();
             game.setGameNumber(i);
             game.setGameDay(gameDay);

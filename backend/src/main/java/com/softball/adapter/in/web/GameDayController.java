@@ -44,7 +44,7 @@ public class GameDayController {
     @ResponseStatus(HttpStatus.CREATED)
     public GameDayResponse create(@PathVariable final Long seasonId,
                                   @Valid @RequestBody final CreateGameDayRequest request) {
-        return gameDayService.create(seasonId, request.date(), request.label(), request.location());
+        return gameDayService.create(seasonId, request.date(), request.label(), request.location(), request.numberOfGames());
     }
 
     @GetMapping("/gamedays/{id}")

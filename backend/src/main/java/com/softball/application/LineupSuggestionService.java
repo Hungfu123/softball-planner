@@ -162,7 +162,7 @@ public class LineupSuggestionService {
         final Map<Long, List<GameStaff>> staffByGame = allStaff.stream()
             .collect(Collectors.groupingBy(s -> s.getGame().getId()));
 
-        final List<TrainingStatsResponse> trainingStats = trainingStatsService.getStats(null, null);
+        final List<TrainingStatsResponse> trainingStats = trainingStatsService.getStats(null, null, null);
         final Map<Long, Long> attendanceByPlayer = trainingStats.stream()
             .collect(Collectors.toMap(TrainingStatsResponse::playerId, TrainingStatsResponse::attended));
 

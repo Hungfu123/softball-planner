@@ -46,7 +46,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
   const loadTrainingStats = useCallback((filter: TrainingFilter) => {
     const cacheKey = `${filter}-${gameDayDate}`
     if (loadedFilter === cacheKey) return // already loaded
-    api.getTrainingStats(undefined, sinceDate(filter, gameDayDate)).then(data => {
+    api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), gameDayDate).then(data => {
       setTrainingStats(data)
       setLoadedFilter(cacheKey)
     })
@@ -91,10 +91,10 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
         <span className="w-1 h-6 bg-softball-red-600 rounded-full shrink-0" />
         <nav className="flex items-center gap-4 flex-1 min-w-0">
           {([
-            ['pool', 'Spieler', freePlayers.length],
-            ['overview', 'Übersicht', allAvailablePlayers.length],
-            ['training', 'Training', availableTrainingStats.length],
-          ] as const).map(([key, label, count]) => (
+            ['pool', 'Spieler', freePlayers.length, false],
+            ['overview', 'Übersicht', allAvailablePlayers.length, false],
+            ['training', 'Training', availableTrainingStats.length, true],
+          ] as const).map(([key, label, count, mobileOnly]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -102,7 +102,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                 tab === key
                   ? 'text-gray-950'
                   : 'text-gray-300 hover:text-gray-500'
-              }`}
+              } ${mobileOnly ? 'lg:hidden' : ''}`}
             >
               {label}
               {tab === key && (
@@ -135,7 +135,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                 } cursor-pointer`}
               >
                 {player.defaultBattingOrder != null && (
-                  <span className="text-[11px] font-mono font-semibold text-gray-400 shrink-0">
+                  <span className="text-[11px] font-mono font-semibold text-gray-400 shrink-0 lg:hidden">
                     #{player.defaultBattingOrder}
                   </span>
                 )}
@@ -177,7 +177,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-left border-b border-gray-50 last:border-0 bg-gray-50/50 cursor-not-allowed"
               >
                 {player.defaultBattingOrder != null && (
-                  <span className="text-[11px] font-mono font-semibold text-gray-300 shrink-0">
+                  <span className="text-[11px] font-mono font-semibold text-gray-300 shrink-0 lg:hidden">
                     #{player.defaultBattingOrder}
                   </span>
                 )}

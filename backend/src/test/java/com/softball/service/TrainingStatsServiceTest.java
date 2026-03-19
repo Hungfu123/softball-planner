@@ -44,7 +44,7 @@ class TrainingStatsServiceTest {
         when(playerRepository.findByRegularTrue()).thenReturn(List.of(regular));
         when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(regular));
 
-        final List<TrainingStatsResponse> result = service.getStats(null, null);
+        final List<TrainingStatsResponse> result = service.getStats(null, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().attended()).isZero();
@@ -63,7 +63,7 @@ class TrainingStatsServiceTest {
         when(playerRepository.findByRegularTrue()).thenReturn(List.of(player));
         when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(player));
 
-        final List<TrainingStatsResponse> result = service.getStats(null, null);
+        final List<TrainingStatsResponse> result = service.getStats(null, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().totalTrainings()).isEqualTo(1); // nur t1
@@ -82,7 +82,7 @@ class TrainingStatsServiceTest {
         when(playerRepository.findByRegularTrue()).thenReturn(List.of(player));
         when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(player));
 
-        final List<TrainingStatsResponse> result = service.getStats(null, LocalDate.of(2025, 3, 1));
+        final List<TrainingStatsResponse> result = service.getStats(null, LocalDate.of(2025, 3, 1), null);
 
         assertThat(result.getFirst().totalTrainings()).isEqualTo(1); // nur recent
     }
@@ -92,7 +92,7 @@ class TrainingStatsServiceTest {
         when(trainingRepository.findByPeriodIdOrderByDateDesc(5L)).thenReturn(List.of());
         when(playerRepository.findByRegularTrue()).thenReturn(List.of());
 
-        service.getStats(5L, null);
+        service.getStats(5L, null, null);
 
         verify(trainingRepository).findByPeriodIdOrderByDateDesc(5L);
         verify(trainingRepository, never()).findAllByOrderByDateDesc();
@@ -115,13 +115,68 @@ class TrainingStatsServiceTest {
         when(playerRepository.findByRegularTrue()).thenReturn(List.of(alice, bob));
         when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(alice, bob));
 
-        final List<TrainingStatsResponse> result = service.getStats(null, null);
+        final List<TrainingStatsResponse> result = service.getStats(null, null, null);
 
         final var aliceStats = result.stream().filter(s -> s.playerId() == 1L).findFirst().orElseThrow();
         final var bobStats = result.stream().filter(s -> s.playerId() == 2L).findFirst().orElseThrow();
         assertThat(aliceStats.attended()).isEqualTo(2);
         assertThat(bobStats.attended()).isEqualTo(1);
         assertThat(aliceStats.totalTrainings()).isEqualTo(2);
+    }
+
+    @Test
+    void getStats_untilFilter_excludesFutureTrainings() {
+        final var past = training(1L, LocalDate.of(2025, 6, 1), false);
+        final var future = training(2L, LocalDate.of(2025, 9, 1), false);
+        when(trainingRepository.findAllByOrderByDateDesc()).thenReturn(List.of(past, future));
+
+        final Player player = new Player(1L, "Alice", true);
+        final var attendance1 = new TrainingAttendance(past, player, true);
+        final var attendance2 = new TrainingAttendance(future, player, true);
+        when(attendanceRepository.findByTrainingIdIn(List.of(1L))).thenReturn(List.of(attendance1));
+        when(playerRepository.findByRegularTrue()).thenReturn(List.of(player));
+        when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(player));
+
+        final List<TrainingStatsResponse> result = service.getStats(null, null, LocalDate.of(2025, 7, 1));
+
+        assertThat(result.getFirst().totalTrainings()).isEqualTo(1); // nur past
+        assertThat(result.getFirst().attended()).isEqualTo(1);
+    }
+
+    @Test
+    void getStats_sinceAndUntilTogether_filtersRange() {
+        final var old = training(1L, LocalDate.of(2025, 1, 1), false);
+        final var mid = training(2L, LocalDate.of(2025, 6, 1), false);
+        final var future = training(3L, LocalDate.of(2025, 12, 1), false);
+        when(trainingRepository.findAllByOrderByDateDesc()).thenReturn(List.of(old, mid, future));
+
+        final Player player = new Player(1L, "Alice", true);
+        final var attendance = new TrainingAttendance(mid, player, true);
+        when(attendanceRepository.findByTrainingIdIn(List.of(2L))).thenReturn(List.of(attendance));
+        when(playerRepository.findByRegularTrue()).thenReturn(List.of(player));
+        when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(player));
+
+        final List<TrainingStatsResponse> result = service.getStats(null, LocalDate.of(2025, 3, 1), LocalDate.of(2025, 9, 1));
+
+        assertThat(result.getFirst().totalTrainings()).isEqualTo(1); // nur mid
+        assertThat(result.getFirst().attended()).isEqualTo(1);
+    }
+
+    @Test
+    void getStats_untilIncludesBoundaryDate() {
+        final var onDate = training(1L, LocalDate.of(2025, 6, 15), false);
+        final var afterDate = training(2L, LocalDate.of(2025, 6, 16), false);
+        when(trainingRepository.findAllByOrderByDateDesc()).thenReturn(List.of(onDate, afterDate));
+
+        final Player player = new Player(1L, "Alice", true);
+        final var attendance = new TrainingAttendance(onDate, player, true);
+        when(attendanceRepository.findByTrainingIdIn(List.of(1L))).thenReturn(List.of(attendance));
+        when(playerRepository.findByRegularTrue()).thenReturn(List.of(player));
+        when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(player));
+
+        final List<TrainingStatsResponse> result = service.getStats(null, null, LocalDate.of(2025, 6, 15));
+
+        assertThat(result.getFirst().totalTrainings()).isEqualTo(1); // onDate included, afterDate excluded
     }
 
     @Test
@@ -136,7 +191,7 @@ class TrainingStatsServiceTest {
         when(playerRepository.findByRegularTrue()).thenReturn(List.of());
         when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(guest));
 
-        final List<TrainingStatsResponse> result = service.getStats(null, null);
+        final List<TrainingStatsResponse> result = service.getStats(null, null, null);
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().playerName()).isEqualTo("Guest");

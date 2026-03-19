@@ -55,7 +55,7 @@ class GameDayServiceTest {
     }
 
     @Test
-    void create_createsGameDayWith3Games() {
+    void create_createsGameDayWith3GamesDefault() {
         when(seasonService.findById(1L)).thenReturn(testSeason);
         when(gameDayRepository.save(any(GameDay.class))).thenAnswer(inv -> {
             final GameDay gd = inv.getArgument(0);
@@ -63,11 +63,27 @@ class GameDayServiceTest {
             return gd;
         });
 
-        final GameDayResponse response = gameDayService.create(1L, LocalDate.of(2026, 3, 15), "Spieltag 1", null);
+        final GameDayResponse response = gameDayService.create(1L, LocalDate.of(2026, 3, 15), "Spieltag 1", null, null);
 
         assertThat(response.games()).hasSize(3);
         assertThat(response.games().get(0).gameNumber()).isEqualTo(1);
         assertThat(response.games().get(2).gameNumber()).isEqualTo(3);
+    }
+
+    @Test
+    void create_createsGameDayWithCustomGameCount() {
+        when(seasonService.findById(1L)).thenReturn(testSeason);
+        when(gameDayRepository.save(any(GameDay.class))).thenAnswer(inv -> {
+            final GameDay gd = inv.getArgument(0);
+            gd.setId(1L);
+            return gd;
+        });
+
+        final GameDayResponse response = gameDayService.create(1L, LocalDate.of(2026, 3, 15), "Turnier Tag 1", null, 5);
+
+        assertThat(response.games()).hasSize(5);
+        assertThat(response.games().get(0).gameNumber()).isEqualTo(1);
+        assertThat(response.games().get(4).gameNumber()).isEqualTo(5);
     }
 
     @Test

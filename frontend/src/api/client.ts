@@ -82,10 +82,10 @@ export const getStandings = (id: number) =>
 // Game Days
 export const getGameDays = (seasonId: number) =>
   request<GameDayResponse[]>(`/seasons/${seasonId}/gamedays`)
-export const createGameDay = (seasonId: number, date: string, label?: string, location?: string) =>
+export const createGameDay = (seasonId: number, date: string, label?: string, location?: string, numberOfGames?: number) =>
   request<GameDayResponse>(`/seasons/${seasonId}/gamedays`, {
     method: 'POST',
-    body: JSON.stringify({ date, label: label || null, location: location || null }),
+    body: JSON.stringify({ date, label: label || null, location: location || null, numberOfGames: numberOfGames || null }),
   })
 export const getGameDay = (id: number) =>
   request<GameDayResponse>(`/gamedays/${id}`)
@@ -205,10 +205,11 @@ export const setAttendance = (trainingId: number, entries: { playerId: number; p
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
 export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) =>
   request<TrainingResponse[]>('/trainings/bulk', { method: 'POST', body: JSON.stringify(data) })
-export const getTrainingStats = (periodId?: number, since?: string) => {
+export const getTrainingStats = (periodId?: number, since?: string, until?: string) => {
   const params = new URLSearchParams()
   if (periodId) params.set('periodId', String(periodId))
   if (since) params.set('since', since)
+  if (until) params.set('until', until)
   const qs = params.toString()
   return request<TrainingStatsResponse[]>(`/trainings/stats${qs ? `?${qs}` : ''}`)
 }

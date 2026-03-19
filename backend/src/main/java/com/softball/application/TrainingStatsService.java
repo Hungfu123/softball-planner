@@ -30,7 +30,7 @@ public class TrainingStatsService {
     }
 
     @Transactional(readOnly = true)
-    public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since) {
+    public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since, final LocalDate until) {
         final List<Training> allTrainings = periodId != null
             ? trainingRepository.findByPeriodIdOrderByDateDesc(periodId)
             : trainingRepository.findAllByOrderByDateDesc();
@@ -38,6 +38,7 @@ public class TrainingStatsService {
         final List<Training> nonCancelledTrainings = allTrainings.stream()
             .filter(t -> !t.isCancelled())
             .filter(t -> since == null || !t.getDate().isBefore(since))
+            .filter(t -> until == null || !t.getDate().isAfter(until))
             .toList();
 
         final long totalNonCancelled = nonCancelledTrainings.size();

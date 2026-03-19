@@ -33,9 +33,18 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
   const contentRight = contentLeft + contentWidth
 
   // Games
-  for (const { game, lineup, staff } of games) {
-    // Check if we need a new page
-    if (y > 260) {
+  for (let gameIndex = 0; gameIndex < games.length; gameIndex++) {
+    const { game, lineup, staff } = games[gameIndex]
+    // Page break after every 3 games or when running out of space
+    if (gameIndex > 0 && gameIndex % 3 === 0) {
+      doc.addPage()
+      y = 15
+      // Repeat header on new page
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text(title + location, pageWidth / 2, y, { align: 'center' })
+      y += 10
+    } else if (y > 260) {
       doc.addPage()
       y = 15
     }
@@ -154,10 +163,18 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
     const { game, lineup, staff } = games[gi]
     const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
 
-    // Estimate height: header ~8 + table ~(rows+2)*6
+    // Page break after every 3 games or when running out of space
     const rowCount = sorted.length || 1
     const estimatedHeight = 10 + (rowCount + 2) * 6
-    if (y + estimatedHeight > pageHeight - 8) {
+    if (gi > 0 && gi % 3 === 0) {
+      doc.addPage()
+      y = 10
+      // Repeat header on new page
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text(headerTitle, pageWidth / 2, y, { align: 'center' })
+      y += 6
+    } else if (y + estimatedHeight > pageHeight - 8) {
       doc.addPage()
       y = 10
     }

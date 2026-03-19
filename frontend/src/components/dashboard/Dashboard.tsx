@@ -24,6 +24,7 @@ export function Dashboard() {
   const [newGdDate, setNewGdDate] = useState('')
   const [newGdLabel, setNewGdLabel] = useState('')
   const [newGdLocation, setNewGdLocation] = useState('')
+  const [newGdGameCount, setNewGdGameCount] = useState(3)
 
   useEffect(() => {
     if (seasons.length > 0 && !selectedSeasonId) {
@@ -44,12 +45,13 @@ export function Dashboard() {
   const handleCreateGameDay = async () => {
     if (!selectedSeasonId || !newGdDate) return
     try {
-      const gd = await api.createGameDay(selectedSeasonId, newGdDate, newGdLabel, newGdLocation)
+      const gd = await api.createGameDay(selectedSeasonId, newGdDate, newGdLabel, newGdLocation, newGdGameCount)
       setGameDays(prev => [...prev, gd])
       setShowNewGameDay(false)
       setNewGdDate('')
       setNewGdLabel('')
       setNewGdLocation('')
+      setNewGdGameCount(3)
       toast.show('Spieltag erstellt')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
@@ -168,6 +170,17 @@ export function Dashboard() {
                         onChange={e => setNewGdDate(e.target.value)}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                         autoFocus
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Anzahl Spiele</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={newGdGameCount}
+                        onChange={e => setNewGdGameCount(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                       />
                     </div>
                     <div>

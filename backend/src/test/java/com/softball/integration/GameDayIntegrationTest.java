@@ -96,6 +96,30 @@ class GameDayIntegrationTest {
     }
 
     @Test
+    void createGameDay_withCustomGameCount() throws Exception {
+        mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "date", "2026-04-01", "numberOfGames", 5))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.games.length()").value(5))
+            .andExpect(jsonPath("$.games[0].gameNumber").value(1))
+            .andExpect(jsonPath("$.games[4].gameNumber").value(5));
+    }
+
+    @Test
+    void createGameDay_with2Games() throws Exception {
+        mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "date", "2026-04-02", "numberOfGames", 2))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.games.length()").value(2))
+            .andExpect(jsonPath("$.games[0].gameNumber").value(1))
+            .andExpect(jsonPath("$.games[1].gameNumber").value(2));
+    }
+
+    @Test
     void setAvailablePlayers_andRetrieve() throws Exception {
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)

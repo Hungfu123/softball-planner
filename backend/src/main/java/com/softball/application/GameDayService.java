@@ -55,15 +55,17 @@ public class GameDayService {
     }
 
     @Transactional
-    public GameDayResponse create(final Long seasonId, final LocalDate date, final String label, final String location) {
-        log.info("Spieltag erstellen: Saison={}, Datum={}, Ort={}", seasonId, date, location);
+    public GameDayResponse create(final Long seasonId, final LocalDate date, final String label, final String location,
+                                   final Integer numberOfGames) {
+        log.info("Spieltag erstellen: Saison={}, Datum={}, Ort={}, Spiele={}", seasonId, date, location, numberOfGames);
         if (gameDayRepository.existsBySeasonAndDate(seasonId, date)) {
             throw new BusinessValidationException("Es gibt bereits einen Spieltag am " + date + " in dieser Saison");
         }
         final Season season = seasonService.findById(seasonId);
         final GameDay gameDay = new GameDay(date, label, location, season);
 
-        for (int i = 1; i <= 3; i++) {
+        final int count = (numberOfGames != null) ? numberOfGames : 3;
+        for (int i = 1; i <= count; i++) {
             final Game game = new Game();
             game.setGameNumber(i);
             game.setGameDay(gameDay);

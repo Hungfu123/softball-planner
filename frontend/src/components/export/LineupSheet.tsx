@@ -70,8 +70,8 @@ export function LineupSheet() {
 
       {/* Games — stacked, tight */}
       <div className="space-y-5">
-        {games.map(({ game, lineup, staff }) => (
-          <div key={game.id} className="break-inside-avoid">
+        {games.map(({ game, lineup, staff }, index) => (
+          <div key={game.id} className={`break-inside-avoid${index > 0 && index % 3 === 0 ? ' break-before-page' : ''}`}>
             <h2 className="text-xs font-bold text-gray-800 border-b-2 border-navy-800 pb-0.5">
               Spiel {game.gameNumber}
               {game.opponentTeam && <span className="font-normal text-gray-600"> vs {game.opponentTeam.name}</span>}

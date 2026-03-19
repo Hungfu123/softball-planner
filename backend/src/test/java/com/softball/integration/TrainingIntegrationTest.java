@@ -319,6 +319,52 @@ class TrainingIntegrationTest {
     }
 
     @Test
+    void stats_untilFilter_excludesFutureTrainings() throws Exception {
+        // Create 3 trainings: March 1, March 15, March 30
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-03-01"))))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-03-15"))))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-03-30"))))
+            .andExpect(status().isCreated());
+
+        // With until=2026-03-20, only 2 trainings should be counted (March 1, March 15)
+        mockMvc.perform(get("/api/trainings/stats").param("until", "2026-03-20"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.playerName == 'Max')].totalTrainings").value(2));
+    }
+
+    @Test
+    void stats_sinceAndUntilTogether() throws Exception {
+        // Create 3 trainings: Jan 10, Mar 10, Jun 10
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-01-10"))))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-03-10"))))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-06-10"))))
+            .andExpect(status().isCreated());
+
+        // With since=2026-02-01 and until=2026-04-01, only March 10 should count
+        mockMvc.perform(get("/api/trainings/stats")
+                .param("since", "2026-02-01")
+                .param("until", "2026-04-01"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.playerName == 'Max')].totalTrainings").value(1));
+    }
+
+    @Test
     void playerRegularFlag_updateAndVerify() throws Exception {
         // Verify initial regular flag
         mockMvc.perform(get("/api/players"))

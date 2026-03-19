@@ -16,7 +16,7 @@ public class GameEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Min(1) @Max(3)
+    @Min(1) @Max(10)
     @Column(nullable = false)
     private Integer gameNumber;
 

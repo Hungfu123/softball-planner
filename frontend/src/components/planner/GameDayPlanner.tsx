@@ -18,7 +18,7 @@ import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon } from '@/icons'
-import type { Player, GameDayResponse, Season } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
 import * as api from '@/api/client'
 
@@ -43,6 +43,7 @@ export function GameDayPlanner() {
   const [showExportConfirm, setShowExportConfirm] = useState(false)
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
+  const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -73,6 +74,15 @@ export function GameDayPlanner() {
       api.getSeason(gameDay.seasonId).then(setSeason)
     }
   }, [gameDay?.seasonId])
+
+  // Fetch training stats (last 12 weeks before game day)
+  useEffect(() => {
+    if (gameDay?.date) {
+      const d = new Date(gameDay.date + 'T00:00:00')
+      d.setDate(d.getDate() - 84)
+      api.getTrainingStats(undefined, d.toISOString().slice(0, 10), gameDay.date).then(setTrainingStats)
+    }
+  }, [gameDay?.date])
 
   const handleSave = async () => {
     if (!activeGame) return
@@ -415,10 +425,10 @@ export function GameDayPlanner() {
         </div>
       ) : (
         <>
-          {/* Main Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left: Lineup + Save + Field */}
-            <div className="lg:col-span-2 space-y-4 order-1">
+          {/* Main Layout — 3 columns on desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-4 lg:gap-5">
+            {/* Col 1: Lineup + Save */}
+            <div className="space-y-4 order-1">
               <LineupEditor
                 entries={lineup.entries}
                 poolPlayers={poolPlayers}
@@ -440,13 +450,9 @@ export function GameDayPlanner() {
                 onSave={handleSave}
                 className="lg:block hidden"
               />
-
-              <div className="hidden lg:block">
-                <FieldView entries={lineup.entries} />
-              </div>
             </div>
 
-            {/* Right: Pool + Coaches + Bench */}
+            {/* Col 2: Pool */}
             <div className="space-y-4 order-2">
               <PlayerPool
                 allAvailablePlayers={availablePlayers}
@@ -455,18 +461,78 @@ export function GameDayPlanner() {
                 gameDayDate={gameDay.date}
                 onAdd={handleAddPlayer}
               />
+            </div>
+
+            {/* Col 3: Training + Coaches — desktop only */}
+            <div className="hidden lg:block space-y-4 order-3">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="w-1 h-6 bg-softball-red-600 rounded-full shrink-0" />
+                  <span className="text-sm font-bold uppercase tracking-wide text-gray-950">
+                    Training
+                  </span>
+                  <span className="ml-auto text-[11px] font-mono text-gray-400">letzte 12 Wo.</span>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
+                  {(() => {
+                    const availableIds = new Set(availablePlayers.map(p => p.id))
+                    const filtered = trainingStats
+                      .filter(s => availableIds.has(s.playerId))
+                      .sort((a, b) => b.attended - a.attended)
+                    const maxAttended = Math.max(...filtered.map(s => s.attended), 1)
+
+                    return filtered.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten.</p>
+                    ) : (
+                      filtered.map(s => {
+                        const barWidth = Math.round((s.attended / maxAttended) * 100)
+                        return (
+                          <div key={s.playerId} className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-900 w-16 truncate">
+                              {s.playerName}
+                            </span>
+                            <div className="flex-1 h-3.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-navy-800"
+                                style={{ width: `${barWidth}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-mono text-gray-500 tabular-nums w-6 text-right shrink-0">
+                              {s.attended}
+                            </span>
+                          </div>
+                        )
+                      })
+                    )
+                  })()}
+                </div>
+              </div>
 
               <CoachSlots
                 staff={staff.staff}
                 availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
                 onSave={handleStaffSave}
               />
+            </div>
 
+            {/* Row 2: Field spans col 1+2, Bank in col 3 — desktop */}
+            <div className="hidden lg:block lg:col-span-2 order-4">
+              <FieldView entries={lineup.entries} />
+            </div>
+            <div className="hidden lg:block order-5">
               <BenchDisplay players={benchPlayers} />
             </div>
 
-            {/* Field — mobile only, after pool/coaches/bench */}
-            <div className="order-3 lg:hidden">
+            {/* Mobile: Coaches + Bench + Field after pool */}
+            <div className="lg:hidden space-y-4 order-3">
+              <CoachSlots
+                staff={staff.staff}
+                availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
+                onSave={handleStaffSave}
+              />
+              <BenchDisplay players={benchPlayers} />
+            </div>
+            <div className="order-4 lg:hidden">
               <FieldView entries={lineup.entries} />
             </div>
           </div>

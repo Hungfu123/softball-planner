@@ -74,6 +74,22 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 - Direkt als PDF druckbar
 - Datenbank als JSON exportieren/importieren
 
+## Architektur
+
+Das Backend folgt einer **Onion / Hexagonal Architecture** mit klarer Schichtentrennung:
+
+![Architektur](docs/architecture.svg)
+
+| Schicht | Inhalt |
+|---------|--------|
+| **Domain** (innen) | 16 Models, 12 Repository-Ports, 3 Domain Services (LineupValidator, LineupSuggestionEngine, StandingsCalculator) |
+| **Application** (mitte) | 19 Services in 4 Gruppen: Game & Lineup, Training, Season & Liga, Daten & Stammdaten |
+| **Adapter** (aussen) | 9 REST-Controller (Inbound), 12 Repository-Adapter + Entities + Mappers (Outbound/JPA) |
+
+> Abhaengigkeiten zeigen immer nach innen. Repository-Adapter implementieren Domain-Ports (Dependency Inversion).
+
+Die editierbare Version des Diagramms liegt unter [`docs/architecture.excalidraw`](docs/architecture.excalidraw) und kann in [excalidraw.com](https://excalidraw.com) geoeffnet werden.
+
 ## Tech-Stack
 
 | Bereich | Technologie |
