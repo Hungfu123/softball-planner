@@ -43,7 +43,7 @@ export function Dashboard() {
   }, [selectedSeasonId, toast])
 
   const handleCreateGameDay = async () => {
-    if (!selectedSeasonId || !newGdDate) return
+    if (!selectedSeasonId || !newGdDate || !newGdGameCount) return
     try {
       const gd = await api.createGameDay(selectedSeasonId, newGdDate, newGdLabel, newGdLocation, newGdGameCount)
       setGameDays(prev => [...prev, gd])
@@ -175,11 +175,16 @@ export function Dashboard() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Anzahl Spiele</label>
                       <input
-                        type="number"
-                        min={1}
-                        max={10}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={newGdGameCount}
-                        onChange={e => setNewGdGameCount(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          if (val === '') { setNewGdGameCount('' as any); return; }
+                          setNewGdGameCount(Math.max(1, Math.min(10, Number(val))));
+                        }}
+                        onBlur={() => { if (!newGdGameCount) setNewGdGameCount(1); }}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                       />
                     </div>
@@ -211,7 +216,7 @@ export function Dashboard() {
                     </button>
                     <button
                       onClick={handleCreateGameDay}
-                      disabled={!newGdDate}
+                      disabled={!newGdDate || !newGdGameCount}
                       className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50"
                     >
                       Erstellen

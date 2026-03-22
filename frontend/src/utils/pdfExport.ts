@@ -148,8 +148,8 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
     })
 
   const margin = 10
-  const offWidth = 10
-  const defWidth = 10
+  const offWidth = 8
+  const defWidth = 13.4
 
   // --- Page header ---
   let y = 10
@@ -272,10 +272,6 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
         // Position column with subtle background
         if (data.column.index === 9 && data.section !== 'head') {
           data.cell.styles.fillColor = [230, 230, 230]
-        }
-        // Lighter background for defense columns to visually separate
-        if (data.section === 'body' && data.column.index >= 10 && data.column.index <= 16 && data.row.index < rows.length - 1) {
-          data.cell.styles.fillColor = [245, 245, 245]
         }
       },
     })
