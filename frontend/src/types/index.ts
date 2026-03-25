@@ -54,6 +54,7 @@ export interface GameStaffResponse {
 export interface GameDayLineupsResponse {
   lineups: Record<string, LineupEntryResponse[]>
   staff: Record<string, GameStaffResponse[]>
+  substitutions: Record<string, SubstitutionResponse[]>
 }
 
 export interface GameDayPlayerStats {
@@ -75,6 +76,19 @@ export interface LocalLineupEntry {
   position: string | null
   dhBatterId: number | null
   dhBatterName: string | null
+}
+
+export interface SubstitutionResponse {
+  id: number
+  playerOut: Player
+  playerIn: Player
+  inning: number
+}
+
+export interface LocalSubstitution {
+  playerOut: Player
+  playerIn: Player
+  inning: number
 }
 
 export const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH', 'DH'] as const

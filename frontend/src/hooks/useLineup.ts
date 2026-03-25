@@ -1,26 +1,34 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Player, LocalLineupEntry, LineupEntryResponse, LineupSuggestionEntry } from '@/types'
+import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry } from '@/types'
 import * as api from '@/api/client'
 
 interface GameLineupState {
   entries: LocalLineupEntry[]
   savedEntries: LineupEntryResponse[]
+  substitutions: LocalSubstitution[]
+  savedSubstitutions: SubstitutionResponse[]
 }
 
 export function useLineup() {
   const [entries, setEntries] = useState<LocalLineupEntry[]>([])
   const [savedEntries, setSavedEntries] = useState<LineupEntryResponse[]>([])
+  const [substitutions, setSubstitutions] = useState<LocalSubstitution[]>([])
+  const [savedSubstitutions, setSavedSubstitutions] = useState<SubstitutionResponse[]>([])
   const [saving, setSaving] = useState(false)
 
   // Refs for caching: track current values without stale closures
   const entriesRef = useRef(entries)
   const savedRef = useRef(savedEntries)
+  const subsRef = useRef(substitutions)
+  const savedSubsRef = useRef(savedSubstitutions)
   const activeIdRef = useRef<number | null>(null)
   const cache = useRef<Map<number, GameLineupState>>(new Map())
 
   // Keep refs in sync
   entriesRef.current = entries
   savedRef.current = savedEntries
+  subsRef.current = substitutions
+  savedSubsRef.current = savedSubstitutions
 
   const load = useCallback(async (gameId: number) => {
     // Save current game state to cache before switching
@@ -29,6 +37,8 @@ export function useLineup() {
       cache.current.set(prevId, {
         entries: [...entriesRef.current],
         savedEntries: [...savedRef.current],
+        substitutions: [...subsRef.current],
+        savedSubstitutions: [...savedSubsRef.current],
       })
     }
     activeIdRef.current = gameId
@@ -38,17 +48,28 @@ export function useLineup() {
     if (cached) {
       setEntries(cached.entries)
       setSavedEntries(cached.savedEntries)
+      setSubstitutions(cached.substitutions)
+      setSavedSubstitutions(cached.savedSubstitutions)
       return
     }
 
     // Load from backend
-    const data = await api.getLineup(gameId)
+    const [data, subsData] = await Promise.all([
+      api.getLineup(gameId),
+      api.getSubstitutions(gameId),
+    ])
     setSavedEntries(data)
     setEntries(data.map(e => ({
       player: e.player,
       position: e.position,
       dhBatterId: e.dhBatterPlayer?.id ?? null,
       dhBatterName: e.dhBatterPlayer?.name ?? null,
+    })))
+    setSavedSubstitutions(subsData)
+    setSubstitutions(subsData.map(s => ({
+      playerOut: s.playerOut,
+      playerIn: s.playerIn,
+      inning: s.inning,
     })))
   }, [])
 
@@ -70,6 +91,8 @@ export function useLineup() {
       .filter(e => e.player.id !== playerId)
       .map(e => e.dhBatterId === playerId ? { ...e, dhBatterId: null, dhBatterName: null } : e)
     )
+    // Also remove substitutions involving this player
+    setSubstitutions(prev => prev.filter(s => s.playerOut.id !== playerId))
   }, [])
 
   const setPosition = useCallback((playerId: number, position: string) => {
@@ -115,6 +138,14 @@ export function useLineup() {
     })
   }, [])
 
+  const addSubstitution = useCallback((playerOut: Player, playerIn: Player, inning: number) => {
+    setSubstitutions(prev => [...prev, { playerOut, playerIn, inning }])
+  }, [])
+
+  const removeSubstitution = useCallback((index: number) => {
+    setSubstitutions(prev => prev.filter((_, i) => i !== index))
+  }, [])
+
   const save = useCallback(async (gameId: number) => {
     const toSave = entries
       .map((e, i) => ({
@@ -124,25 +155,49 @@ export function useLineup() {
         dhBatterPlayerId: e.dhBatterId,
       }))
 
+    const subsToSave = substitutions.map(s => ({
+      playerOutId: s.playerOut.id,
+      playerInId: s.playerIn.id,
+      inning: s.inning,
+    }))
+
     setSaving(true)
     try {
+      // Sequential: lineup first, then substitutions (validation depends on lineup)
       const saved = await api.setLineup(gameId, toSave)
+      const savedSubs = await api.setSubstitutions(gameId, subsToSave)
       setSavedEntries(saved)
+      setSavedSubstitutions(savedSubs)
       // Update cache after save
-      cache.current.set(gameId, { entries, savedEntries: saved })
+      cache.current.set(gameId, {
+        entries,
+        savedEntries: saved,
+        substitutions,
+        savedSubstitutions: savedSubs,
+      })
       return true
     } finally {
       setSaving(false)
     }
-  }, [entries])
+  }, [entries, substitutions])
 
   const hasChanges = (() => {
     if (entries.length !== savedEntries.length) return true
-    return entries.some((e, i) => {
+    const lineupChanged = entries.some((e, i) => {
       const s = savedEntries[i]
       if (!s || e.player.id !== s.player.id || e.position !== s.position) return true
       const savedDh = s.dhBatterPlayer?.id ?? null
       return e.dhBatterId !== savedDh
+    })
+    if (lineupChanged) return true
+
+    if (substitutions.length !== savedSubstitutions.length) return true
+    return substitutions.some((sub, i) => {
+      const saved = savedSubstitutions[i]
+      if (!saved) return true
+      return sub.playerOut.id !== saved.playerOut.id
+        || sub.playerIn.id !== saved.playerIn.id
+        || sub.inning !== saved.inning
     })
   })()
 
@@ -152,6 +207,7 @@ export function useLineup() {
 
   const clearAll = useCallback(() => {
     setEntries([])
+    setSubstitutions([])
   }, [])
 
   const applySuggestion = useCallback((suggestions: LineupSuggestionEntry[], availablePlayers: Player[]) => {
@@ -189,14 +245,17 @@ export function useLineup() {
         : e
       )
     )
+    setSubstitutions(prev => prev.filter(s =>
+      availableIds.has(s.playerOut.id) && availableIds.has(s.playerIn.id)
+    ))
   }, [])
 
   const activeGameId = activeIdRef.current
 
   return {
-    entries, saving, hasChanges, activeGameId,
+    entries, substitutions, saving, hasChanges, activeGameId,
     load, addPlayer, removePlayer, setPosition, setDhBatter,
     moveUp, moveDown, reorder, save, importEntries, clearAll, removeUnavailable,
-    applySuggestion, invalidateCache,
+    applySuggestion, invalidateCache, addSubstitution, removeSubstitution,
   }
 }

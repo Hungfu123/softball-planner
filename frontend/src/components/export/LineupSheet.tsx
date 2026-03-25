@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import * as api from '@/api/client'
 import { generatePdf, type GameData } from '@/utils/pdfExport'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { GameDayResponse, Season } from '@/types'
 
 export function LineupSheet() {
@@ -15,7 +16,7 @@ export function LineupSheet() {
       const gd = await api.getGameDay(Number(id))
       setGameDay(gd)
 
-      const [{ lineups, staff }, seasons] = await Promise.all([
+      const [{ lineups, staff, substitutions }, seasons] = await Promise.all([
         api.getGameDayLineups(gd.id),
         api.getSeasons(),
       ])
@@ -24,6 +25,7 @@ export function LineupSheet() {
         game: g,
         lineup: lineups[String(g.id)] ?? [],
         staff: staff[String(g.id)] ?? [],
+        substitutions: substitutions?.[String(g.id)] ?? [],
       })))
       setLoading(false)
     }
@@ -40,7 +42,7 @@ export function LineupSheet() {
   }, [loading, gameDay, season])
 
   if (loading || !gameDay) {
-    return <div className="p-8 text-center text-gray-500">Laden...</div>
+    return <div className="p-8"><LoadingSkeleton /></div>
   }
 
   const formatDate = (d: string) =>

@@ -52,6 +52,7 @@ import type {
   GameDayLineupsResponse,
   LineupSuggestionEntry,
   SuggestAllLineupsResponse,
+  SubstitutionResponse,
 } from '@/types'
 
 // Players
@@ -112,6 +113,17 @@ export const setLineup = (
 ) => request<LineupEntryResponse[]>(`/games/${gameId}/lineup`, {
   method: 'PUT',
   body: JSON.stringify(entries),
+})
+
+// Substitutions
+export const getSubstitutions = (gameId: number) =>
+  request<SubstitutionResponse[]>(`/games/${gameId}/substitutions`)
+export const setSubstitutions = (
+  gameId: number,
+  subs: { playerOutId: number; playerInId: number; inning: number }[],
+) => request<SubstitutionResponse[]>(`/games/${gameId}/substitutions`, {
+  method: 'PUT',
+  body: JSON.stringify(subs),
 })
 
 // Lineup Suggestions

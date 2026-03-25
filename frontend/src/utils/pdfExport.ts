@@ -1,11 +1,12 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, Season } from '@/types'
+import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season } from '@/types'
 
 export interface GameData {
   game: { id: number; gameNumber: number; opponentTeam: { id: number; name: string } | null; scoreUs: number | null; scoreThem: number | null }
   lineup: LineupEntryResponse[]
   staff: GameStaffResponse[]
+  substitutions: SubstitutionResponse[]
 }
 
 export function generatePdf(gameDay: GameDayResponse, games: GameData[], season: Season | null) {
@@ -62,12 +63,21 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
     doc.line(contentLeft, y + 1, contentRight, y + 1)
     y += 4
 
-    // Staff
+    // Staff (with substitution info if a coach gets subbed in)
     if (staff.length > 0) {
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(120, 120, 120)
-      const staffText = staff.map(s => `${s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'}: ${s.player.name}`).join('  ·  ')
+      const { substitutions: gameSubs } = games[gameIndex]
+      const subInIds = new Map(gameSubs.map(s => [s.playerIn.id, s]))
+      const staffText = staff.map(s => {
+        const roleLabel = s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'
+        const sub = subInIds.get(s.player.id)
+        if (sub) {
+          return `${roleLabel}: ${s.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
+        }
+        return `${roleLabel}: ${s.player.name}`
+      }).join('  ·  ')
       doc.text(staffText, contentLeft, y)
       doc.setTextColor(0, 0, 0)
       y += 3
@@ -85,9 +95,23 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
 
     // Lineup table
     const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
+    const { substitutions } = games[gameIndex]
+    const subsByPlayerOut = new Map<number, SubstitutionResponse[]>()
+    for (const sub of substitutions) {
+      const arr = subsByPlayerOut.get(sub.playerOut.id) ?? []
+      arr.push(sub)
+      subsByPlayerOut.set(sub.playerOut.id, arr)
+    }
+
     const rows = sorted.map(entry => {
       let name = entry.player.name
       if (entry.dhBatterPlayer) name += ` (DH: ${entry.dhBatterPlayer.name})`
+      const subs = subsByPlayerOut.get(entry.player.id)
+      if (subs) {
+        for (const sub of subs.sort((a, b) => a.inning - b.inning)) {
+          name += `  (${sub.playerIn.name} ab ${sub.inning + 1}. Inning)`
+        }
+      }
       return [String(entry.battingOrder), name, entry.position ?? '']
     })
 
@@ -114,6 +138,7 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       if (e.dhBatterPlayer) gameUsedIds.add(e.dhBatterPlayer.id)
     }
     for (const s of staff) gameUsedIds.add(s.player.id)
+    for (const sub of substitutions) gameUsedIds.add(sub.playerIn.id)
     const bench = gameDay.availablePlayers.filter(p => !gameUsedIds.has(p.id))
     if (bench.length > 0) {
       doc.setFontSize(7)
@@ -160,11 +185,18 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
   y += 6
 
   for (let gi = 0; gi < games.length; gi++) {
-    const { game, lineup, staff } = games[gi]
+    const { game, lineup, staff, substitutions } = games[gi]
     const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
+    const subsByPlayerOut = new Map<number, SubstitutionResponse[]>()
+    for (const sub of substitutions) {
+      const arr = subsByPlayerOut.get(sub.playerOut.id) ?? []
+      arr.push(sub)
+      subsByPlayerOut.set(sub.playerOut.id, arr)
+    }
 
     // Page break after every 3 games or when running out of space
-    const rowCount = sorted.length || 1
+    const subRowCount = substitutions.length
+    const rowCount = (sorted.length || 1) + subRowCount
     const estimatedHeight = 10 + (rowCount + 2) * 6
     if (gi > 0 && gi % 3 === 0) {
       doc.addPage()
@@ -194,7 +226,15 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
       doc.setFontSize(6)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(100, 100, 100)
-      const staffText = staff.map(s => `${s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'}: ${s.player.name}`).join('  ·  ')
+      const scoringSubInIds = new Map(substitutions.map(s => [s.playerIn.id, s]))
+      const staffText = staff.map(s => {
+        const roleLabel = s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'
+        const sub = scoringSubInIds.get(s.player.id)
+        if (sub) {
+          return `${roleLabel}: ${s.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
+        }
+        return `${roleLabel}: ${s.player.name}`
+      }).join('  ·  ')
       doc.text(staffText, margin, y)
       doc.setTextColor(0, 0, 0)
       y += 2
@@ -215,12 +255,22 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
 
     // Combined table: #, Name, Offense 1-7, Pos, Defense 1-7
     const head = [['#', 'Name', '1', '2', '3', '4', '5', '6', '7', 'Pos', '1', '2', '3', '4', '5', '6', '7']]
-    const rows = sorted.map(entry => {
+    const rows: string[][] = []
+    const subRowIndices = new Set<number>()
+    for (const entry of sorted) {
       const name = entry.dhBatterPlayer
         ? `${entry.player.name} (DH: ${entry.dhBatterPlayer.name})`
         : entry.player.name
-      return [String(entry.battingOrder), name, ...Array(7).fill(''), entry.position ?? '', ...Array(7).fill('')]
-    })
+      rows.push([String(entry.battingOrder), name, ...Array(7).fill(''), entry.position ?? '', ...Array(7).fill('')])
+      // Add substitution rows
+      const subs = subsByPlayerOut.get(entry.player.id)
+      if (subs) {
+        for (const sub of subs.sort((a, b) => a.inning - b.inning)) {
+          subRowIndices.add(rows.length)
+          rows.push(['', `${sub.playerIn.name} (ab ${sub.inning + 1}. Inning)`, ...Array(7).fill(''), entry.position ?? '', ...Array(7).fill('')])
+        }
+      }
+    }
     // Runs row at bottom
     rows.push(['', 'Runs', ...Array(7).fill(''), '', ...Array(7).fill('')])
 
@@ -269,6 +319,12 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
           data.cell.styles.fontStyle = 'bold'
           data.cell.styles.fillColor = [245, 245, 245]
         }
+        // Substitution rows — lighter style
+        if (data.section === 'body' && subRowIndices.has(data.row.index)) {
+          data.cell.styles.textColor = [100, 100, 100]
+          data.cell.styles.fontSize = 6
+          data.cell.styles.fillColor = [250, 250, 250]
+        }
         // Position column with subtle background
         if (data.column.index === 9 && data.section !== 'head') {
           data.cell.styles.fillColor = [230, 230, 230]
@@ -285,6 +341,7 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
       if (e.dhBatterPlayer) gameUsedIds.add(e.dhBatterPlayer.id)
     }
     for (const s of staff) gameUsedIds.add(s.player.id)
+    for (const sub of substitutions) gameUsedIds.add(sub.playerIn.id)
     const bench = gameDay.availablePlayers.filter(p => !gameUsedIds.has(p.id))
     if (bench.length > 0) {
       doc.setFontSize(6)

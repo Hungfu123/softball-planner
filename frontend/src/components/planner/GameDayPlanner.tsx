@@ -14,12 +14,14 @@ import { BenchDisplay } from './BenchDisplay'
 import { SaveButton } from './SaveButton'
 import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
+import { SubstitutionEditor } from './SubstitutionEditor'
 import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon } from '@/icons'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -119,11 +121,12 @@ export function GameDayPlanner() {
 
   const loadGameData = async () => {
     if (!gameDay) return null
-    const { lineups, staff } = await api.getGameDayLineups(gameDay.id)
+    const { lineups, staff, substitutions } = await api.getGameDayLineups(gameDay.id)
     return gameDay.games.map(g => ({
       game: g,
       lineup: lineups[String(g.id)] ?? [],
       staff: staff[String(g.id)] ?? [],
+      substitutions: substitutions?.[String(g.id)] ?? [],
     }))
   }
 
@@ -232,7 +235,7 @@ export function GameDayPlanner() {
   }
 
   if (loading || !gameDay) {
-    return <div className="text-center py-12 text-gray-500">Laden...</div>
+    return <LoadingSkeleton />
   }
 
   const lineupPlayerIds = new Set(lineup.entries.map(e => e.player.id))
@@ -444,6 +447,15 @@ export function GameDayPlanner() {
                 onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
               />
 
+              <SubstitutionEditor
+                substitutions={lineup.substitutions}
+                lineupEntries={lineup.entries}
+                poolPlayers={poolPlayers}
+                staff={staff.staff}
+                onAdd={lineup.addSubstitution}
+                onRemove={lineup.removeSubstitution}
+              />
+
               <SaveButton
                 hasChanges={lineup.hasChanges}
                 saving={lineup.saving}
@@ -491,7 +503,7 @@ export function GameDayPlanner() {
                             <span className="text-xs font-medium text-gray-900 w-16 truncate">
                               {s.playerName}
                             </span>
-                            <div className="flex-1 h-3.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-navy-800"
                                 style={{ width: `${barWidth}%` }}

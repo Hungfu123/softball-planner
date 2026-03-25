@@ -8,6 +8,7 @@ import com.softball.application.GameDayService;
 import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
 import com.softball.application.LineupSuggestionService;
+import com.softball.application.SubstitutionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -24,15 +25,18 @@ public class GameDayController {
     private final LineupService lineupService;
     private final GameStaffService gameStaffService;
     private final LineupSuggestionService lineupSuggestionService;
+    private final SubstitutionService substitutionService;
 
     public GameDayController(final GameDayService gameDayService,
                              final LineupService lineupService,
                              final GameStaffService gameStaffService,
-                             final LineupSuggestionService lineupSuggestionService) {
+                             final LineupSuggestionService lineupSuggestionService,
+                             final SubstitutionService substitutionService) {
         this.gameDayService = gameDayService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
         this.lineupSuggestionService = lineupSuggestionService;
+        this.substitutionService = substitutionService;
     }
 
     @GetMapping("/seasons/{seasonId}/gamedays")
@@ -71,8 +75,9 @@ public class GameDayController {
 
         final Map<Long, List<LineupEntryResponse>> lineups = lineupService.getLineupsForGames(gameIds);
         final Map<Long, List<GameStaffResponse>> staff = gameStaffService.getStaffForGames(gameIds);
+        final Map<Long, List<SubstitutionResponse>> substitutions = substitutionService.getSubstitutionsForGames(gameIds);
 
-        return new GameDayLineupsResponse(lineups, staff);
+        return new GameDayLineupsResponse(lineups, staff, substitutions);
     }
 
     @GetMapping("/gamedays/{id}/stats")
