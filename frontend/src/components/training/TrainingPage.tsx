@@ -9,7 +9,7 @@ import type { TrainingResponse } from '@/types'
 export function TrainingPage() {
   const {
     trainings, attendance, periods, activePeriodId, loading,
-    loadAll, loadPeriods, selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, renamePeriod, deletePeriod, importCsv,
+    selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, renamePeriod, deletePeriod, importCsv,
   } = useTraining()
   const { players, loading: playersLoading, update: updatePlayer } = usePlayers()
   const toast = useToastContext()
