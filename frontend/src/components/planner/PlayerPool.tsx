@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import type { Player, GameDayPlayerStats, TrainingStatsResponse } from '@/types'
+import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 
@@ -41,20 +41,34 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
   const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('12weeks')
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
+  const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
+  const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
   const statsMap = new Map(stats.map(s => [s.playerId, s]))
 
-  const loadTrainingStats = useCallback((filter: TrainingFilter) => {
-    const cacheKey = `${filter}-${gameDayDate}`
+  // Load training periods once
+  useEffect(() => {
+    api.getTrainingPeriods().then(setTrainingPeriods)
+  }, [])
+
+  const loadTrainingStats = useCallback((filter: TrainingFilter, periodId: number | null) => {
+    const cacheKey = periodId ? `period-${periodId}` : `${filter}-${gameDayDate}`
     if (loadedFilter === cacheKey) return // already loaded
-    api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), gameDayDate).then(data => {
-      setTrainingStats(data)
-      setLoadedFilter(cacheKey)
-    })
+    if (periodId) {
+      api.getTrainingStats(periodId).then(data => {
+        setTrainingStats(data)
+        setLoadedFilter(cacheKey)
+      })
+    } else {
+      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), gameDayDate).then(data => {
+        setTrainingStats(data)
+        setLoadedFilter(cacheKey)
+      })
+    }
   }, [gameDayDate, loadedFilter])
 
   useEffect(() => {
-    if (tab === 'training') loadTrainingStats(trainingFilter)
-  }, [tab, trainingFilter, loadTrainingStats])
+    if (tab === 'training') loadTrainingStats(trainingFilter, selectedPeriodId)
+  }, [tab, trainingFilter, selectedPeriodId, loadTrainingStats])
 
   // Filter training stats to available players only, sorted by attendance desc
   const availableTrainingStats = useMemo(() => {
@@ -229,8 +243,21 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
-          <div className="flex gap-1 mb-1">
-            {([['12weeks', '12 Wo.'], ['all', 'Gesamt']] as const).map(([key, label]) => (
+          <div className="flex items-center gap-1 mb-1 flex-wrap">
+            <select
+              value={selectedPeriodId ?? ''}
+              onChange={e => {
+                setSelectedPeriodId(e.target.value ? Number(e.target.value) : null)
+                setLoadedFilter(null)
+              }}
+              className="text-[11px] font-medium text-gray-600 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer hover:border-gray-400 transition-colors focus:outline-none focus:border-navy-600"
+            >
+              <option value="">Zeitraum</option>
+              {trainingPeriods.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            {!selectedPeriodId && ([['12weeks', '12 Wo.'], ['all', 'Gesamt']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTrainingFilter(key)}
@@ -245,7 +272,13 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
             ))}
           </div>
           {availableTrainingStats.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten vorhanden.</p>
+            <div className="text-center py-6 text-gray-400">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto mb-2 opacity-40">
+                <path d="M4 4l16 16M20 4L4 20" strokeLinecap="round" />
+                <circle cx="8" cy="8" r="2" /><circle cx="16" cy="16" r="2" />
+              </svg>
+              <p className="text-sm">Keine Trainingsdaten vorhanden.</p>
+            </div>
           ) : (
             (() => {
               const maxAttended = Math.max(...availableTrainingStats.map(st => st.attended), 1)

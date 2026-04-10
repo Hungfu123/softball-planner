@@ -63,14 +63,19 @@ export function TrainingPage() {
     return () => document.removeEventListener('mousedown', handler)
   }, [headerMenuId])
 
-  useEffect(() => {
-    Promise.all([loadPeriods(), loadAll()])
-  }, [loadAll, loadPeriods])
+  // Initial load (with auto-period selection) is handled by useTraining hook
 
-  // Auto-scroll to right after loading
+  // Auto-scroll to the training closest to today's date
   useEffect(() => {
-    if (!loading && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth
+    if (!loading && scrollContainerRef.current && trainings.length > 0) {
+      const today = new Date().toISOString().slice(0, 10)
+      let targetIndex = trainings.length - 1 // fallback: last column
+      for (let i = 0; i < trainings.length; i++) {
+        if (trainings[i].date >= today) { targetIndex = i; break }
+      }
+      const colWidth = 56 // w-14
+      const container = scrollContainerRef.current
+      container.scrollLeft = targetIndex * colWidth - container.clientWidth / 2 + colWidth / 2
     }
   }, [loading, trainings.length])
 

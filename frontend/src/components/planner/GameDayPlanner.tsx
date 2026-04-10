@@ -19,7 +19,7 @@ import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon } from '@/icons'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import * as api from '@/api/client'
@@ -46,6 +46,8 @@ export function GameDayPlanner() {
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
+  const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
+  const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -77,14 +79,22 @@ export function GameDayPlanner() {
     }
   }, [gameDay?.seasonId])
 
-  // Fetch training stats (last 12 weeks before game day)
+  // Fetch training periods for dropdown
   useEffect(() => {
-    if (gameDay?.date) {
+    api.getTrainingPeriods().then(setTrainingPeriods)
+  }, [])
+
+  // Fetch training stats — by period or last 12 weeks
+  useEffect(() => {
+    if (!gameDay?.date) return
+    if (selectedPeriodId) {
+      api.getTrainingStats(selectedPeriodId).then(setTrainingStats)
+    } else {
       const d = new Date(gameDay.date + 'T00:00:00')
       d.setDate(d.getDate() - 84)
       api.getTrainingStats(undefined, d.toISOString().slice(0, 10), gameDay.date).then(setTrainingStats)
     }
-  }, [gameDay?.date])
+  }, [gameDay?.date, selectedPeriodId])
 
   const handleSave = async () => {
     if (!activeGame) return
@@ -483,7 +493,16 @@ export function GameDayPlanner() {
                   <span className="text-sm font-bold uppercase tracking-wide text-gray-950">
                     Training
                   </span>
-                  <span className="ml-auto text-[11px] font-mono text-gray-400">letzte 12 Wo.</span>
+                  <select
+                    value={selectedPeriodId ?? ''}
+                    onChange={e => setSelectedPeriodId(e.target.value ? Number(e.target.value) : null)}
+                    className="ml-auto text-[11px] font-mono text-gray-500 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer hover:border-gray-400 transition-colors focus:outline-none focus:border-navy-600"
+                  >
+                    <option value="">letzte 12 Wo.</option>
+                    {trainingPeriods.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
                   {(() => {

@@ -50,6 +50,29 @@ export function useTraining() {
     }
   }, [])
 
+  // Find the period that contains today's date
+  const findCurrentPeriod = useCallback((allPeriods: TrainingPeriodResponse[]) => {
+    const today = new Date().toISOString().slice(0, 10)
+    return allPeriods.find(p => p.startDate <= today && today <= p.endDate) ?? null
+  }, [])
+
+  // Initial load: auto-select period containing today
+  const didInitialLoad = useRef(false)
+  useEffect(() => {
+    if (didInitialLoad.current) return
+    didInitialLoad.current = true
+    ;(async () => {
+      const allPeriods = await loadPeriods()
+      const current = findCurrentPeriod(allPeriods)
+      if (current) {
+        setActivePeriodId(current.id)
+        await loadAll(current.id)
+      } else {
+        await loadAll()
+      }
+    })()
+  }, [loadPeriods, loadAll, findCurrentPeriod])
+
   const selectPeriod = useCallback(async (periodId: number | null) => {
     setActivePeriodId(periodId)
     await loadAll(periodId)
