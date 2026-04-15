@@ -1,0 +1,11 @@
+Der Trainer hat folgenden bestehenden Trainingsplan:
+
+{existingPlan}
+
+Der Trainer möchte folgende Änderungen:
+
+{userEdits}
+
+Bitte strukturiere den Plan neu unter Berücksichtigung der gewünschten Änderungen. Behalte die gleiche Struktur bei (sections mit drillId, sectionType, title, durationMinutes, etc.). Passe Zeitangaben, Rotationen und Tipps entsprechend an.
+
+Antworte auf Deutsch.

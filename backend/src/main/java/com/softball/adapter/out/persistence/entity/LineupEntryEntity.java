@@ -22,7 +22,7 @@ public class LineupEntryEntity {
     @JsonIgnore
     private GameEntity game;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     private PlayerEntity player;
 
@@ -34,7 +34,7 @@ public class LineupEntryEntity {
     @Column(name = "batting_order", nullable = false)
     private Integer battingOrder;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dh_batter_player_id")
     private PlayerEntity dhBatterPlayer;
 

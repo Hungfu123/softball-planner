@@ -182,3 +182,68 @@ export interface TrainingStatsResponse {
   totalTrainings: number
   regular: boolean
 }
+
+// Drills & Training Plans
+export type DrillCategory =
+  | 'WARMUP' | 'CONDITIONING' | 'THROWING' | 'BASERUNNING'
+  | 'CATCHER' | 'FIRST_BASE' | 'SECOND_BASE' | 'SS' | 'THIRD_BASE'
+  | 'OUTFIELD' | 'SITUATIONAL' | 'HITTING' | 'FIELDING' | 'RELAY'
+  | 'DOUBLE_PLAY' | 'BUNT_DEFENSE' | 'COMINGS' | 'PITCHER'
+
+export type TrainingFocus =
+  | 'WERFEN' | 'INFIELD_DEFENSE' | 'OUTFIELD' | 'BASERUNNING' | 'SITUATIONAL' | 'CATCHER' | 'RELAY' | 'ALLROUND'
+
+export interface DrillResponse {
+  id: string
+  name: string
+  categories: DrillCategory[]
+  minPlayers: number
+  equipment: string[]
+  description: string
+  hasImage: boolean
+  pdfPage: number | null
+  rotation: string | null
+  variants: string | null
+}
+
+export interface TrainingPlanSectionResponse {
+  drillId: string | null
+  sectionType: string | null
+  title: string | null
+  durationMinutes: number | null
+  rounds: number | null
+  adaptationNotes: string | null
+  rotationPlan: string | null
+  setupNotes: string | null
+  tips: string | null
+  groupSetup: string | null
+  userNotes: string | null
+  parallelGroup: number | null
+  playersPerGroup: number | null
+}
+
+export interface TrainingPlanContentResponse {
+  sections: TrainingPlanSectionResponse[]
+  groupDistributionHint: string | null
+  overallNotes: string | null
+}
+
+export interface TrainingPlanResponse {
+  id: number
+  trainingId: number
+  playerCount: number
+  focus: string
+  durationMinutes: number
+  availablePositions: string
+  content: TrainingPlanContentResponse | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GeneratePlanRequest {
+  trainingId: number
+  playerCount: number
+  availablePositions: string[]
+  focus: string
+  durationMinutes: number
+}

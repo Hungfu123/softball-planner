@@ -61,21 +61,20 @@ export function GameDayPlanner() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [lineup.hasChanges])
 
-  const loadLineup = lineup.load
-  const loadStaff = staff.load
-
   useEffect(() => {
     if (activeGame) {
-      loadLineup(activeGame.id)
-      loadStaff(activeGame.id)
+      lineup.load(activeGame.id)
+      staff.load(activeGame.id)
     }
-  }, [activeGame?.id, loadLineup, loadStaff])
+  }, [activeGame?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch season game days for copy lineup feature + season for PDF export
+  // Fetch season game days + season in one batch
   useEffect(() => {
     if (gameDay?.seasonId) {
-      api.getGameDays(gameDay.seasonId).then(setSeasonGameDays)
-      api.getSeason(gameDay.seasonId).then(setSeason)
+      Promise.all([
+        api.getGameDays(gameDay.seasonId),
+        api.getSeason(gameDay.seasonId),
+      ]).then(([gd, s]) => { setSeasonGameDays(gd); setSeason(s) })
     }
   }, [gameDay?.seasonId])
 
@@ -234,7 +233,7 @@ export function GameDayPlanner() {
       const availableSet = new Set(playerIds)
       lineup.removeUnavailable(availableSet)
       if (activeGame) {
-        loadStaff(activeGame.id)
+        staff.load(activeGame.id)
       }
       await refreshStats()
       setShowPlayersModal(false)
@@ -376,8 +375,8 @@ export function GameDayPlanner() {
           setActiveTab(i)
           const game = gameDay.games[i]
           if (game) {
-            loadLineup(game.id)
-            loadStaff(game.id)
+            lineup.load(game.id)
+            staff.load(game.id)
           }
         }}
         gameCompletions={(() => {
@@ -415,8 +414,8 @@ export function GameDayPlanner() {
           lineup.invalidateCache()
           await reload()
           if (activeGame) {
-            loadLineup(activeGame.id)
-            loadStaff(activeGame.id)
+            lineup.load(activeGame.id)
+            staff.load(activeGame.id)
           }
           await refreshStats()
         }}

@@ -53,6 +53,10 @@ import type {
   LineupSuggestionEntry,
   SuggestAllLineupsResponse,
   SubstitutionResponse,
+  DrillResponse,
+  TrainingPlanResponse,
+  TrainingPlanContentResponse,
+  GeneratePlanRequest,
 } from '@/types'
 
 // Players
@@ -195,8 +199,6 @@ export const getCars = (gameDayId: number) =>
   request<CarResponse[]>(`/gamedays/${gameDayId}/cars`)
 export const createCar = (gameDayId: number, data: { driverPlayerId: number; totalSeats: number; direction: string }) =>
   request<CarResponse>(`/gamedays/${gameDayId}/cars`, { method: 'POST', body: JSON.stringify(data) })
-export const updateCar = (gameDayId: number, carId: number, data: { totalSeats?: number; direction?: string }) =>
-  request<CarResponse>(`/gamedays/${gameDayId}/cars/${carId}`, { method: 'PUT', body: JSON.stringify(data) })
 export const deleteCar = (carId: number) =>
   request<void>(`/cars/${carId}`, { method: 'DELETE' })
 
@@ -234,9 +236,45 @@ export const importTrainingCsv = (csv: string, periodName?: string) =>
 // Training Periods
 export const getTrainingPeriods = () =>
   request<TrainingPeriodResponse[]>('/trainings/periods')
-export const createTrainingPeriod = (data: { name: string; startDate: string; endDate: string }) =>
-  request<TrainingPeriodResponse>('/trainings/periods', { method: 'POST', body: JSON.stringify(data) })
 export const renameTrainingPeriod = (id: number, name: string) =>
   request<TrainingPeriodResponse>(`/trainings/periods/${id}`, { method: 'PUT', body: JSON.stringify({ name }) })
 export const deleteTrainingPeriod = (id: number) =>
   request<void>(`/trainings/periods/${id}`, { method: 'DELETE' })
+
+// Drills
+export const getDrills = (focus?: string, maxPlayers?: number) => {
+  const params = new URLSearchParams()
+  if (focus) params.set('focus', focus)
+  if (maxPlayers) params.set('maxPlayers', String(maxPlayers))
+  const qs = params.toString()
+  return request<DrillResponse[]>(`/drills${qs ? `?${qs}` : ''}`)
+}
+
+// Training Plans
+export const getTrainingPlansByTrainingIds = (ids: number[]) =>
+  request<Record<string, TrainingPlanResponse>>(`/training-plans/by-training-ids?ids=${ids.join(',')}`)
+
+export const generateTrainingPlan = async (data: GeneratePlanRequest): Promise<TrainingPlanResponse> => {
+  const res = await fetch(`${API}/training-plans/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  })
+  if (res.status === 409) throw new Error('Trainingsplan existiert bereits für dieses Training')
+  if (res.status === 503) throw new Error('KI-Trainingsplan nicht verfügbar — API Key fehlt oder Service nicht erreichbar')
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.message ?? body?.error ?? `Fehler ${res.status}`)
+  }
+  return res.json()
+}
+
+export const updateTrainingPlan = (id: number, content: TrainingPlanContentResponse) =>
+  request<TrainingPlanResponse>(`/training-plans/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  })
+
+export const deleteTrainingPlan = (id: number) =>
+  request<void>(`/training-plans/${id}`, { method: 'DELETE' })
+

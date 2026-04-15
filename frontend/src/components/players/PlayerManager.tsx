@@ -18,6 +18,7 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { Player } from '@/types'
 
 function SortablePlayerRow({ player, index }: { player: Player; index: number }) {
@@ -140,7 +141,7 @@ export function PlayerManager() {
   }
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">Laden...</div>
+    return <LoadingSkeleton />
   }
 
   return (

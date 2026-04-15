@@ -77,7 +77,7 @@ export function LineupRow({
       <select
         value={entry.position ?? ''}
         onChange={e => onSetPosition(entry.player.id, e.target.value)}
-        className={`w-16 sm:w-20 text-sm border rounded-lg px-1.5 py-1 outline-none border-gray-200 bg-white focus:border-navy-600 ${
+        className={`w-16 sm:w-20 text-sm border rounded-lg px-1.5 py-1 outline-none border-gray-200 bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 ${
           !hasPosition ? 'text-gray-400' : ''
         }`}
       >
@@ -109,7 +109,7 @@ export function LineupRow({
             if (p) { onSetDhBatter(entry.player.id, p); setShowDhPicker(false) }
           }}
           onBlur={() => setShowDhPicker(false)}
-          className="w-24 sm:w-28 text-xs border border-navy-600 rounded-lg px-1.5 py-1 outline-none ring-1 ring-navy-100"
+          className="w-24 sm:w-28 text-xs border border-navy-600 rounded-lg px-1.5 py-1 outline-none focus:ring-2 focus:ring-navy-100"
           autoFocus
         >
           <option value="">Wer schlägt?</option>
@@ -136,14 +136,14 @@ export function LineupRow({
         <button
           onClick={() => onMoveUp(index)}
           disabled={isFirst}
-          className="p-0.5 text-gray-400 hover:text-navy-800 disabled:opacity-0"
+          className="p-0.5 text-gray-400 hover:text-navy-800 disabled:text-gray-200 disabled:cursor-default"
         >
           <ChevronUp size={14} />
         </button>
         <button
           onClick={() => onMoveDown(index)}
           disabled={isLast}
-          className="p-0.5 text-gray-400 hover:text-navy-800 disabled:opacity-0"
+          className="p-0.5 text-gray-400 hover:text-navy-800 disabled:text-gray-200 disabled:cursor-default"
         >
           <ChevronDown size={14} />
         </button>

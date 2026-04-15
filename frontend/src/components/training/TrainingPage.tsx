@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
@@ -79,39 +79,42 @@ export function TrainingPage() {
     }
   }, [loading, trainings.length])
 
-  // Stable sort: only re-sort when trainings list changes (not on every toggle)
-  const [sortedPlayerIds, setSortedPlayerIds] = useState<number[]>([])
-  useEffect(() => {
-    const sorted = [...players].sort((a, b) => {
+  // Precompute: player totals + training counts (avoid recalculating in render loop)
+  const playerTotals = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const t of trainings) {
+      if (t.cancelled) continue
+      const att = attendance.get(t.id)
+      if (!att) continue
+      for (const [pId, present] of att) {
+        if (present) map.set(pId, (map.get(pId) ?? 0) + 1)
+      }
+    }
+    return map
+  }, [trainings, attendance])
+
+  const trainingCounts = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const t of trainings) {
+      const att = attendance.get(t.id)
+      if (!att) { map.set(t.id, 0); continue }
+      let count = 0
+      for (const present of att.values()) { if (present) count++ }
+      map.set(t.id, count)
+    }
+    return map
+  }, [trainings, attendance])
+
+  // Stable sort: memoized, re-sorts only when players or totals change
+  const sortedPlayers = useMemo(() => {
+    return [...players].sort((a, b) => {
       if (a.regular !== b.regular) return a.regular ? -1 : 1
-      const aCount = trainings.reduce((sum, t) => {
-        const map = attendance.get(t.id)
-        return sum + (map?.get(a.id) ? 1 : 0)
-      }, 0)
-      const bCount = trainings.reduce((sum, t) => {
-        const map = attendance.get(t.id)
-        return sum + (map?.get(b.id) ? 1 : 0)
-      }, 0)
-      return bCount - aCount || a.name.localeCompare(b.name)
+      return (playerTotals.get(b.id) ?? 0) - (playerTotals.get(a.id) ?? 0) || a.name.localeCompare(b.name)
     })
-    setSortedPlayerIds(sorted.map(p => p.id))
-  }, [players, trainings.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [players, playerTotals])
 
-  const playerMap = new Map(players.map(p => [p.id, p]))
-  const sortedPlayers = sortedPlayerIds.map(id => playerMap.get(id)!).filter(Boolean)
-
-  const getPlayerTotal = (playerId: number) =>
-    trainings.reduce((sum, t) => {
-      if (t.cancelled) return sum
-      const map = attendance.get(t.id)
-      return sum + (map?.get(playerId) ? 1 : 0)
-    }, 0)
-
-  const getTrainingCount = (t: TrainingResponse) => {
-    const map = attendance.get(t.id)
-    if (!map) return 0
-    return Array.from(map.values()).filter(Boolean).length
-  }
+  const getPlayerTotal = (playerId: number) => playerTotals.get(playerId) ?? 0
+  const getTrainingCount = (t: { id: number }) => trainingCounts.get(t.id) ?? 0
 
   const exportCsv = () => {
     const nonCancelled = trainings.filter(t => !t.cancelled)

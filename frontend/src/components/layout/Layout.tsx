@@ -11,6 +11,7 @@ export const useToastContext = () => useContext(ToastCtx)!
 const TABS = [
   { path: '/', label: 'Spielbetrieb' },
   { path: '/training', label: 'Training' },
+  { path: '/training-plan', label: 'Trainingsplan' },
   { path: '/players', label: 'Spieler' },
 ] as const
 
@@ -35,7 +36,7 @@ export function Layout() {
               )}
               <Link to="/" className="flex items-center gap-2">
                 <img src="/deadsox.jpeg" alt="Dead Sox" className="w-9 h-9 rounded-lg" />
-                <span className="font-bold text-lg hidden sm:block">SOFTBALL LINEUP</span>
+                <span className="font-bold text-lg hidden sm:block">SOFTBALL PLANNER</span>
               </Link>
             </div>
             <nav className="flex items-center gap-0.5">
@@ -43,7 +44,7 @@ export function Layout() {
                 <Link
                   key={tab.path}
                   to={tab.path}
-                  className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-all duration-200 ${
+                  className={`px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 whitespace-nowrap ${
                     activeTab === tab.path
                       ? 'bg-softball-red-600 text-white shadow-lg shadow-softball-red-600/25'
                       : 'text-white/60 hover:text-white hover:bg-white/8'

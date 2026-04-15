@@ -1,0 +1,90 @@
+package com.softball.application;
+
+import com.softball.adapter.dto.TrainingPlanContentResponse;
+import com.softball.adapter.dto.TrainingPlanResponse;
+import com.softball.domain.model.Drill;
+import com.softball.domain.model.TrainingPlan;
+import com.softball.domain.model.TrainingPlanContent;
+import com.softball.domain.port.out.TrainingPlanRepository;
+import com.softball.domain.port.out.TrainingRepository;
+import com.softball.domain.service.TrainingPlanGenerator;
+import com.softball.shared.exception.ResourceNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class TrainingPlanService {
+
+    private final TrainingPlanRepository trainingPlanRepository;
+    private final TrainingRepository trainingRepository;
+    private final DrillService drillService;
+    private final TrainingPlanGenerator generator = new TrainingPlanGenerator();
+
+    public TrainingPlanService(final TrainingPlanRepository trainingPlanRepository,
+                               final TrainingRepository trainingRepository,
+                               final DrillService drillService) {
+        this.trainingPlanRepository = trainingPlanRepository;
+        this.trainingRepository = trainingRepository;
+        this.drillService = drillService;
+    }
+
+    public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
+                                         final List<String> availablePositions, final String focus,
+                                         final int durationMinutes) {
+        if (!trainingRepository.existsById(trainingId)) {
+            throw new ResourceNotFoundException("Training", trainingId);
+        }
+
+        if (trainingPlanRepository.existsByTrainingId(trainingId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainingsplan existiert bereits für dieses Training");
+        }
+
+        // Deterministischer Generator — kein KI-Call nötig
+        final List<Drill> drills = drillService.filterByFocus(focus, playerCount);
+        final TrainingPlanContent content = generator.generate(drills, playerCount, focus, durationMinutes);
+
+        final TrainingPlan plan = new TrainingPlan(trainingId, playerCount, focus, durationMinutes,
+                String.join(",", availablePositions));
+        plan.setContent(content);
+        return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, TrainingPlanResponse> getByTrainingIds(final List<Long> trainingIds) {
+        if (trainingIds == null || trainingIds.isEmpty()) return Map.of();
+        return trainingPlanRepository.findByTrainingIdIn(trainingIds).stream()
+                .collect(Collectors.toMap(
+                        p -> p.getTrainingId(),
+                        TrainingPlanResponse::from
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public TrainingPlanResponse getByTrainingId(final Long trainingId) {
+        return trainingPlanRepository.findByTrainingId(trainingId)
+                .map(TrainingPlanResponse::from)
+                .orElse(null);
+    }
+
+    @Transactional
+    public TrainingPlanResponse update(final Long planId, final TrainingPlanContentResponse contentDto) {
+        final TrainingPlan plan = trainingPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("TrainingPlan", planId));
+        plan.setContent(contentDto.toDomain());
+        return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
+    }
+
+    @Transactional
+    public void delete(final Long planId) {
+        if (trainingPlanRepository.findById(planId).isEmpty()) {
+            throw new ResourceNotFoundException("TrainingPlan", planId);
+        }
+        trainingPlanRepository.deleteById(planId);
+    }
+}

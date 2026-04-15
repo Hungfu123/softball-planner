@@ -23,7 +23,7 @@ public class GameEntity {
     @Formula("(SELECT COUNT(*) FROM lineup_entries le WHERE le.game_id = id)")
     private int lineupEntryCount;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "opponent_team_id")
     private LeagueTeamEntity opponentTeam;
 

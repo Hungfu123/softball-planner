@@ -6,6 +6,7 @@ import com.softball.domain.model.TrainingPeriod;
 import com.softball.shared.exception.ResourceNotFoundException;
 import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.domain.port.out.TrainingPeriodRepository;
+import com.softball.domain.port.out.TrainingPlanRepository;
 import com.softball.domain.port.out.TrainingRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,13 +20,16 @@ public class TrainingPeriodService {
     private final TrainingPeriodRepository periodRepository;
     private final TrainingRepository trainingRepository;
     private final TrainingAttendanceRepository attendanceRepository;
+    private final TrainingPlanRepository trainingPlanRepository;
 
     public TrainingPeriodService(final TrainingPeriodRepository periodRepository,
                                   final TrainingRepository trainingRepository,
-                                  final TrainingAttendanceRepository attendanceRepository) {
+                                  final TrainingAttendanceRepository attendanceRepository,
+                                  final TrainingPlanRepository trainingPlanRepository) {
         this.periodRepository = periodRepository;
         this.trainingRepository = trainingRepository;
         this.attendanceRepository = attendanceRepository;
+        this.trainingPlanRepository = trainingPlanRepository;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +66,8 @@ public class TrainingPeriodService {
         final List<Training> trainings = trainingRepository.findByPeriodIdOrderByDateDesc(periodId);
         final List<Long> trainingIds = trainings.stream().map(Training::getId).toList();
         if (!trainingIds.isEmpty()) {
+            // Cascade: training_plans und attendance explizit löschen bevor Trainings gelöscht werden
+            trainingPlanRepository.deleteByTrainingIds(trainingIds);
             attendanceRepository.deleteByTrainingIds(trainingIds);
         }
         trainingRepository.deleteAll(trainings);

@@ -8,6 +8,7 @@ import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import { PlusCircle, CrossBones, XMark } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { EditGameDayModal } from './EditGameDayModal'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import type { GameDayResponse, SeasonPlayerStats } from '@/types'
 import * as api from '@/api/client'
 
@@ -74,7 +75,7 @@ export function Dashboard() {
   }
 
   if (seasonsLoading) {
-    return <div className="text-center py-12 text-gray-500">Laden...</div>
+    return <LoadingSkeleton />
   }
 
   // Show latest game days first (reversed), limit to VISIBLE_GAME_DAYS
@@ -247,9 +248,9 @@ export function Dashboard() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 bg-gray-50">
-                          <th className="text-left px-4 py-3 font-semibold text-gray-600">Spieler</th>
-                          <th className="text-right px-4 py-3 font-semibold text-gray-600 w-24">Spiele</th>
-                          <th className="text-left px-4 py-3 font-semibold text-gray-600">Positionen</th>
+                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Spieler</th>
+                          <th className="text-right px-4 py-3 font-semibold text-gray-700 w-24">Spiele</th>
+                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Positionen</th>
                         </tr>
                       </thead>
                       <tbody>

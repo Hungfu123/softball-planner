@@ -18,7 +18,7 @@ public class TrainingAttendanceEntity {
     @NotNull
     private TrainingEntity training;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "player_id", nullable = false)
     @NotNull
     private PlayerEntity player;

@@ -1,0 +1,755 @@
+[
+  {
+    "id": "aufwarmroutine-dead-sox",
+    "name": "Aufwärmroutine der Dead Sox",
+    "categories": [
+      "WARMUP",
+      "CONDITIONING",
+      "BASERUNNING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bases oder Hütchen"
+    ],
+    "description": "Feste Aufwärmroutine für jedes Training. Wird immer in dieser Reihenfolge durchgeführt.\n\nPhase 1 — Laufen & Dynamisches Dehnen: Alle stellen sich in einer Reihe auf und gehen/laufen gemeinsam: 1. Eine Runde laufen (lockeres Einlaufen). 2. Knie an die Brust (im Gehen das Knie mit beiden Händen zur Brust ziehen, abwechselnd). 3. Butt Kicks (Fersen nach hinten zum Po ziehen). 4. Fielding-Shuffle in der Hocke (tiefe Hockposition, seitlich shufflen, so tief dass die Fanghand fast den Boden berührt). 5. Seitwärts-Shuffle (Richtung wechseln). 6. Lunges mit Drehung (große Ausfallschritte, Oberkörper zur Seite des vorderen Beins drehen). 7. Joggen & Sprint (locker joggen, dann auf Basedistanz voll durchsprinten).\n\nPhase 2 — Reaktionsübung: Alle mit dem Rücken zum Rufer. Bei \"Links\": Rechter Fuß tippt nach vorne mittig (Dreieck-Position), nach links drehen, Basedistanz sprinten. Bei \"Rechts\": Linker Fuß tippt nach vorne mittig, nach rechts drehen, sprinten.\n\nPhase 3 — Leadrun: An einer Linie aufstellen. Lead nehmen (1-2 Schritte, Körpergröße). Bei \"Go\" durchsprinten zur nächsten Base. Bei \"Back\" Head-first Slide zurück. Nur so viel Lead nehmen, dass man sicher zurückkommen kann!\n\nPhase 4 — Arme aufwärmen & Dehnen: Im Kreis gemeinsam Arm-Dehnübungen und Aufwärmübungen für Schultern und Arme.\n\nPhase 5 — Werfen: Partner suchen, in zwei Reihen gegenüber aufstellen. Zuwerfen und nach jedem Wurf einen Schritt zurückgehen um die Distanz langsam zu erhöhen.",
+    "hasImage": false,
+    "pdfPage": 5,
+    "rotation": "Alle machen gleichzeitig mit. Einer ruft die Kommandos.",
+    "variants": null
+  },
+  {
+    "id": "sprintubung-fielding-position",
+    "name": "Sprintübung aus Fielding Position",
+    "categories": [
+      "WARMUP",
+      "CONDITIONING"
+    ],
+    "minPlayers": 1,
+    "equipment": [],
+    "description": "Zwei Varianten, bei beiden wartet man in der Fielding Position auf das Kommando \"Go\".\n\nVariante 1 — Hops: In Fielding Position warten. Bei \"Go\": kleiner Hops auf den Fersen und dann lossprinten.\n\nVariante 2 — Crossover-Start: Mit dem rechten Fuß vorne stehen. Bei \"Go\": drei schnelle Crossover-Schritte (linker Fuß kreuzt vor, rechter Fuß nach, linker Fuß kreuzt vor) und dann lossprinten. Gleiches dann auch mit dem linken Fuß vorne.",
+    "hasImage": false,
+    "pdfPage": 6,
+    "rotation": "Alle machen gleichzeitig mit. Einer ruft \"Go\". Mehrere Runden pro Variante.",
+    "variants": null
+  },
+  {
+    "id": "viereck-drill-toss-wurf",
+    "name": "Viereck-Drill (Toss & Wurf)",
+    "categories": [
+      "THROWING"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "4 Hütchen"
+    ],
+    "description": "Vier Hütchen im Rechteck aufstellen. An jeder Ecke steht ein Spieler. Die kurzen Seiten werden getosst, die langen Seiten geworfen. Eine Toss-Seite wird mit Backhand-Toss ausgeführt. Nach jedem Toss/Wurf rennt man zur nächsten Position.\n\nAblauf: H1 wirft zu H2 (lange Seite) → rennt zu H2. H2 tosst Backhand zu H3 (kurze Seite) → rennt zu H3. H3 wirft zu H4 (lange Seite) → rennt zu H4. H4 tosst zu H1 (kurze Seite) → rennt zu H1.\n\nWichtig beim Toss: Ball aufnehmen aus der Fielding Position, dann ohne auszuholen direkt umdrehen und im Laufen den Ball zutossen. Hand zeigt am Ende nach oben, Handschuh geht nicht mit. Nicht ausholen.\n\nAndersrum auch machen (H1 → H4 → H3 → H2).",
+    "hasImage": true,
+    "pdfPage": 7,
+    "rotation": "Nach jeder Aktion rennt man zur nächsten Position. Alle durchlaufen alle Ecken. Optional bei mehr Spielern: mehrere Spieler pro Hütchen, jeder macht 2-3 Runden.",
+    "variants": "Beide Toss-Seiten mit Backhand-Toss ausführen. Oder Toss und Backhand tauschen."
+  },
+  {
+    "id": "backhand-toss",
+    "name": "Backhand-Toss",
+    "categories": [
+      "THROWING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Zu zweit gegenüber stehen. Ball aufnehmen — aus dem Handschuh heraus direkt tossen, ohne Ausholen. Ellbogen und Hand auf einer Höhe halten. Den Arm mit der Laufrichtung zur Base Richtung Fangperson ausstrecken. Der Ball soll die ganze Zeit nach außen zeigen und am Ende gerade zur Fangperson fliegen. Handschuh bleibt unten, nur die Wurfhand arbeitet.",
+    "hasImage": true,
+    "pdfPage": 7,
+    "rotation": "Abwechselnd tossen. Optional bei mehr Spielern: in einer Reihe aufstellen und rotieren.",
+    "variants": null
+  },
+  {
+    "id": "aufnehmen-sidewurf",
+    "name": "Aufnehmen mit Sidewurf",
+    "categories": [
+      "THROWING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Zu zweit seitlich zueinander stehen (nicht frontal), damit der Sidearm-Wurf möglich ist. Fielding Position einnehmen. Ball aufnehmen, Füße gestellt lassen und direkt von unten im Sidearm zur Fangperson werfen.",
+    "hasImage": true,
+    "pdfPage": 8,
+    "rotation": "Abwechselnd werfen. Optional bei mehr Spielern: in einer Reihe aufstellen und rotieren.",
+    "variants": null
+  },
+  {
+    "id": "hocke-wurf-partner",
+    "name": "Hocke-Wurf zum Partner",
+    "categories": [
+      "THROWING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Zu zweit gegenüber stehen. Beide gehen in die Hocke (Fielding Position). Ball aufnehmen und aus der Hocke heraus zum Partner werfen — ohne aufzustehen. Fokus auf saubere Wurftechnik aus der tiefen Position.\n\nAblauf: In die Hocke gehen, Ball liegt vor einem. Ball aufnehmen, Füße bleiben am Boden. Aus der Hocke direkt zum Partner werfen. Partner fängt und wirft aus der Hocke zurück.\n\nWichtig: Nicht aufstehen beim Wurf! Der Wurf kommt aus dem Oberkörper und dem Arm. Die Beine bleiben in der Hocke. Trainiert die Wurfbewegung ohne Schwung aus den Beinen.",
+    "hasImage": true,
+    "pdfPage": 8,
+    "rotation": "Abwechselnd werfen. Optional bei mehr Spielern: Paare bilden.",
+    "variants": null
+  },
+  {
+    "id": "grounder-fielding-basics",
+    "name": "Grounder-Fielding Basics",
+    "categories": [
+      "THROWING",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Grundübung für das Aufnehmen von Groundern. Ein Spieler rollt/wirft Grounder, der andere nimmt an und wirft zurück. Drei Varianten die nacheinander geübt werden:\n\nVariante 1 — Frontal (Mitte): Ball kommt direkt auf den Fielder zu. In Fielding Position gehen, Ball mittig vor dem Körper aufnehmen. Handschuh flach am Boden, andere Hand oben drüber zum Sichern.\n\nVariante 2 — Forehand (Handschuhseite): Ball kommt auf die Handschuhseite. Einen Schritt zur Seite machen, Ball mit dem Handschuh aufnehmen. Nicht quer über den Körper greifen — Schritt zum Ball!\n\nVariante 3 — Backhand (Wurfhandseite): Ball kommt auf die Wurfhandseite. Crossover-Schritt machen, Ball mit dem Handschuh von der anderen Seite aufnehmen. Den Handschuh von unten nach oben über den Ball führen.\n\nWichtig: Bei jeder Variante: Tief in die Hocke, Hintern runter, Augen auf den Ball. Erst fielding, dann Füße stellen, dann werfen.",
+    "hasImage": true,
+    "pdfPage": 9,
+    "rotation": "Fielder und Werfer tauschen nach jedem Durchgang (z.B. 5 Grounder pro Variante).",
+    "variants": "Werfer variiert Geschwindigkeit und Platzierung. Oder: Fielder weiß nicht welche Variante kommt."
+  },
+  {
+    "id": "lead-nehmen",
+    "name": "Lead nehmen",
+    "categories": [
+      "BASERUNNING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Hütchen"
+    ],
+    "description": "Jeder Spieler stellt sich an ein Hütchen (= Base). Einer ruft die Kommandos (kann gleichzeitig mitmachen).\n\nAblauf: Linker Fuß nach vorne, dann 1-2 Schritte Lead nehmen. Nur so viel Lead nehmen, dass man zurück kommen kann! Bei \"Go\": Durchsprinten zur nächsten Base. Bei \"Back\": Head-first zurück zum Hütchen — tief nach unten gleiten mit Oberschenkel und Brust, Arme weit nach vorne. Nicht auf die Knie fallen lassen, sondern tief nach unten und nach vorne gleiten.\n\nWer kein Head-first Slide machen will, kann auch ohne Slide schnell zurück.",
+    "hasImage": true,
+    "pdfPage": 9,
+    "rotation": "Alle machen gleichzeitig mit. Der Rufer macht selbst mit.",
+    "variants": null
+  },
+  {
+    "id": "base-coach-signale",
+    "name": "Base-Coach Signale",
+    "categories": [
+      "BASERUNNING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bases oder Hütchen"
+    ],
+    "description": "Übung um die Base-Coach Signale zu lernen und als Runner darauf zu reagieren. Der Runner läuft von Home Richtung 1st Base und schaut auf den Base-Coach.\n\nSignale des Base-Coach:\n1. Single (Stopp): Beide Hände hoch strecken. → Runner bleibt auf 1st Base stehen.\n2. Weiter zur 2nd (Lead): Rechter Arm zeigt auf 2nd Base, linker Arm über Kopf zeigt ebenfalls Richtung 2nd. → Runner macht einen Lead von 1st Base Richtung 2nd.\n3. Durchlaufen: Arm dreht im Kreis durch (Kreisbewegung). → Runner läuft direkt durch zur 2nd Base.\n\nWichtig: Bei Lead und Durchlaufen macht der Base-Coach die Kreisbewegungen mit dem Arm. Der Runner muss während des Laufens auf den Coach schauen und sofort reagieren.",
+    "hasImage": true,
+    "pdfPage": 10,
+    "rotation": "Runner und Base-Coach tauschen. Optional bei mehr Spielern: mehrere Runner nacheinander.",
+    "variants": null
+  },
+  {
+    "id": "steal-1st-2nd",
+    "name": "Steal von 1st auf 2nd",
+    "categories": [
+      "BASERUNNING",
+      "CATCHER",
+      "PITCHER",
+      "SITUATIONAL"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Spielsituation üben: Steal von 1st Base auf 2nd Base.\n\nAblauf: Der Runner steht auf 1st Base und nimmt einen Lead. Der Pitcher geht in die Motion und wirft zum Catcher. Bei der Motion startet der Runner und versucht die 2nd Base zu stealen. Der Catcher fängt den Ball und macht ein Coming zur 2nd Base, um den Runner zu taggen. An der 2nd Base steht ein Infielder (SS oder 2B) der den Tag macht.\n\nMehrere Runner hintereinander laufen lassen, damit jeder mehrere Versuche bekommt.",
+    "hasImage": true,
+    "pdfPage": 11,
+    "rotation": "Mehrere Runner stellen sich an 1st Base an. Nach jedem Steal ans Ende der Reihe.",
+    "variants": null
+  },
+  {
+    "id": "agility-ladder-beinubungen",
+    "name": "Agility Ladder — Beinübungen",
+    "categories": [
+      "CONDITIONING",
+      "WARMUP"
+    ],
+    "minPlayers": 1,
+    "equipment": [
+      "Koordinationsleiter"
+    ],
+    "description": "Fünf Übungen in der Koordinationsleiter, nacheinander durchführen:\n\n1. Beidfüßig springen (hoch): Mit beiden Füßen möglichst hoch auf den Fußspitzen springen. Erste Hälfte vorwärts, ab der Hälfte rückwärts.\n2. Einbeinig springen: Auf einem Fuß springen, sowohl vorwärts als auch rückwärts. Abwechselnd das Bein wechseln.\n3. Seitwärts shufflen: Seitwärts durch die Leiter shufflen. Die Handschuhhand soll dabei über den Boden gleiten.\n4. Trippelschritte + Knie hoch: Kleine Trippelschritte bis zur Mitte der Leiter, dann wechseln zu Knie nach oben.\n5. Seitwärts shuffle + Crossover: Seitwärts durch die Leiter shufflen. Nach jedem zweiten Feld: Crossover-Schritt — das hintere Bein kreuzt vor dem vorderen Bein, dann weiter shufflen.",
+    "hasImage": true,
+    "pdfPage": 12,
+    "rotation": "Jeder Spieler macht alle 5 Übungen nacheinander durch die Leiter.",
+    "variants": null
+  },
+  {
+    "id": "catcher-relay-home-1b",
+    "name": "Catcher Relay Home — 1B",
+    "categories": [
+      "CATCHER",
+      "FIELDING"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Übung für den Catcher: Ball annehmen und schnell zur 1st Base weiterwerfen, und andersrum.\n\nVariante 1 — Infielder → Home → 1B: Ein Infielder (3B, SS, 2B oder P) wirft nach Home. Der Catcher fängt den Ball und wirft direkt zur 1B.\n\nVariante 2 — 1B → Home → Infielder: Die 1B wirft nach Home. Der Catcher fängt den Ball und wirft zum Infielder.\n\nJeder Infielder kommt dran. Fokus auf schnelles Fangen und Umsetzen des Catcher.",
+    "hasImage": true,
+    "pdfPage": 13,
+    "rotation": "Infielder-Position rotiert. Catcher und 1B tauschen nach einer Runde.",
+    "variants": null
+  },
+  {
+    "id": "catcher-quick-throw-1b",
+    "name": "Catcher Quick Throw zur 1B",
+    "categories": [
+      "CATCHER",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Mehrere Bälle liegen nah vor der Homeplate. Der Catcher steht in seiner Catcher Stance.\n\nAblauf: Aus der Catcher Stance einen Ball aufnehmen. Einen kleinen Bogen Richtung 1st Base machen um den Wurfwinkel zu bekommen. Zur 1B werfen. Direkt den nächsten Ball aufnehmen und wiederholen bis alle Bälle geworfen sind.\n\nFokus auf schnelles Aufnehmen und sauberen Wurf aus der tiefen Position.",
+    "hasImage": true,
+    "pdfPage": 13,
+    "rotation": "Catcher und 1B tauschen nach jedem Durchgang.",
+    "variants": null
+  },
+  {
+    "id": "catcher-coming-2nd",
+    "name": "Catcher Coming zur 2nd Base",
+    "categories": [
+      "CATCHER",
+      "SITUATIONAL",
+      "COMINGS"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Übung für den schnellen Wurf vom Catcher zur 2nd Base bei einem Steal.\n\nAblauf: Der Catcher steht in seiner Stance hinter Home. Ein Pitcher wirft zum Catcher. Ein Spieler an der 2nd Base ruft \"Steal!\" Der Catcher fängt den Ball und wirft sofort zur 2nd Base. An der 2nd Base steht ein Infielder (SS oder 2B) der den Ball fängt und den Tag macht.",
+    "hasImage": true,
+    "pdfPage": 14,
+    "rotation": "Catcher, Pitcher und Infielder rotieren.",
+    "variants": null
+  },
+  {
+    "id": "catcher-coming-3rd",
+    "name": "Catcher Coming zur 3rd Base",
+    "categories": [
+      "CATCHER",
+      "SITUATIONAL",
+      "COMINGS"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Übung für den schnellen Wurf vom Catcher zur 3rd Base bei einem Steal.\n\nAblauf: Der Catcher steht in seiner Stance hinter Home. Ein Pitcher wirft zum Catcher. Ein Spieler an der 3rd Base ruft \"Steal!\" Der Catcher fängt den Ball und wirft sofort zur 3rd Base. An der 3rd Base steht die 3B die den Ball fängt und den Tag macht.",
+    "hasImage": true,
+    "pdfPage": 14,
+    "rotation": "Catcher, Pitcher und 3B rotieren.",
+    "variants": null
+  },
+  {
+    "id": "1b-footwork-stretch",
+    "name": "1B Footwork & Stretch",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Übung für das richtige Footwork an der 1st Base. Die 1B steht mit den Fußballen an der Innenkante der Base (Richtung Infield) und streckt sich je nach Wurfrichtung.\n\nGrundposition: Fußballen an der Innenkante der Base, Blick ins Feld, bereit in jede Richtung zu stretchen.\n\nStretch je nach Wurf:\n- Wurf von links (3B / SS): Rechter Fuß bleibt an der Base, Stretch mit dem linken Fuß Richtung Ball.\n- Wurf von rechts (2B / P): Linker Fuß bleibt an der Base, Stretch mit dem rechten Fuß Richtung Ball.\n- Wurf frontal: Beide Optionen möglich — Stretch mit dem Fuß der zur Wurfseite zeigt.\n\nEin Spieler wirft aus verschiedenen Positionen (3B, SS, 2B, P) zur 1B. Die 1B übt den richtigen Stretch mit dem richtigen Fuß. Fokus auf sauberes Footwork, nicht auf Wurfgeschwindigkeit.",
+    "hasImage": true,
+    "pdfPage": 15,
+    "rotation": "Werfer und 1B tauschen nach einer Runde.",
+    "variants": null
+  },
+  {
+    "id": "1b-scoops",
+    "name": "1B Scoops",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Übung für das Aufnehmen von niedrigen Würfen (Short-Hops) an der 1st Base. Die wichtigste Fähigkeit einer 1B — schlechte Würfe aus dem Dreck sauber aufnehmen.\n\nAblauf: Ein Spieler wirft absichtlich niedrige Bälle zur 1B — Short-Hops, die vor der Base aufkommen. Die 1B steht in Stretch-Position und versucht den Ball sauber zu scoopen. Würfe kommen von links, rechts und frontal.\n\nWichtig: Handschuh flach am Boden, Finger nach unten zeigen. Den Ball in den Handschuh \"schaufeln\", nicht von oben greifen. Knie beugen, tief gehen.",
+    "hasImage": true,
+    "pdfPage": 16,
+    "rotation": "Werfer und 1B tauschen nach jedem Durchgang.",
+    "variants": null
+  },
+  {
+    "id": "1b-bunt-defense",
+    "name": "1B Bunt Defense",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING",
+      "SITUATIONAL",
+      "BUNT_DEFENSE"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Übung für die Bunt Defense der 1B. Bei einem Bunt vor die 1B muss die 1B nach vorne laufen, den Ball aufnehmen und weiterwerfen.\n\nAblauf: Ein Spieler legt oder rollt einen Bunt vor die 1B. Die 1B rennt nach vorne, nimmt den Ball auf. Wirft zur 2B (wenn jemand 1st Base covered) oder zur anderen Base je nach Situation. Ein Spieler (2B oder P) übernimmt die 1st Base.\n\nWichtig: Schnell nach vorne laufen, Ball sauber aufnehmen, Füße stellen und sauberen Wurf machen. Nicht hetzen — lieber ein Out sicher nehmen.",
+    "hasImage": true,
+    "pdfPage": 16,
+    "rotation": "1B → 2B (Cover) → Spieler → 1B.",
+    "variants": null
+  },
+  {
+    "id": "1b-3-1-putout",
+    "name": "1B 3-1 Putout",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Übung für den 3-1 Putout: Die 1B fieldet einen Grounder und läuft selbst zur Base für das Out.\n\nAblauf: Ein Spieler rollt oder schlägt einen Grounder Richtung 1B. Die 1B fieldet den Ball. Die 1B läuft mit dem Ball selbst zur 1st Base und tritt drauf.\n\nWichtig: Ball sauber aufnehmen, dann zur Base laufen. Nicht gleichzeitig versuchen — erst fielding, dann Base. Bei weitem Ball entscheiden: Selber laufen oder doch zum Pitcher werfen der die Base covered?",
+    "hasImage": true,
+    "pdfPage": 17,
+    "rotation": "1B und Spieler tauschen nach jedem Durchgang.",
+    "variants": null
+  },
+  {
+    "id": "1b-3-6-3-double-play",
+    "name": "1B 3-6-3 Double Play",
+    "categories": [
+      "FIRST_BASE",
+      "SS",
+      "FIELDING",
+      "DOUBLE_PLAY"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Übung für den 3-6-3 Double Play: 1B fieldet, wirft zur 2nd Base (SS oder 2B), bekommt den Ball zurück an der 1st Base.\n\nAblauf: Ein Spieler rollt einen Grounder zur 1B. Die 1B fieldet den Ball und wirft sofort zur 2nd Base. Der Infielder (SS oder 2B) fängt an der 2nd Base und wirft zurück zur 1st Base. Die 1B muss nach dem Wurf zurück zur Base laufen und den Rückwurf fangen.\n\nWichtig: Nach dem Wurf zur 2nd sofort zurück zur Base! Der Rückwurf muss schnell und sauber kommen. Die 1B muss mit dem Fuß auf der Base stehen wenn sie den Ball fängt.",
+    "hasImage": true,
+    "pdfPage": 18,
+    "rotation": "1B → SS → Spieler → 1B.",
+    "variants": "3-6-1: Pitcher covered die 1st Base statt die 1B zurückzulaufen. Braucht einen 4. Spieler."
+  },
+  {
+    "id": "1b-bad-throws",
+    "name": "1B Bad Throws",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Übung für das Handling von schlechten Würfen an der 1st Base — zu hoch, zu weit links/rechts oder Overthrows.\n\nAblauf: Ein Spieler wirft absichtlich schlechte Würfe zur 1B: zu hoch, seitlich daneben, zu kurz, Overthrows. Die 1B muss entscheiden: Stretch und fangen, oder Base verlassen und den Ball sichern?\n\nRegel: Den Ball sichern ist wichtiger als auf der Base zu bleiben! Lieber die Base verlassen und den Ball fangen, als den Ball durchlassen und Runner weiter vorrücken.\n\nWichtig:\n- Bei Würfen die erreichbar sind: Stretch, Fuß bleibt auf der Base.\n- Bei Würfen die zu weit weg sind: Base verlassen, Ball sichern, Runner ist safe aber kommt nicht weiter.\n- Bei Overthrows: Sofort umdrehen und dem Ball nachlaufen.",
+    "hasImage": true,
+    "pdfPage": 18,
+    "rotation": "Werfer und 1B tauschen nach jedem Durchgang.",
+    "variants": null
+  },
+  {
+    "id": "1b-receiving-alle-positionen",
+    "name": "1B Receiving von allen Positionen",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 5,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Die 1B übt das Fangen von Würfen aus allen Infield-Positionen mit dem richtigen Footwork und Stretch.\n\nAblauf: Spieler stehen auf den Infield-Positionen (3B, SS, 2B, P). Jeder wirft nacheinander zur 1B. Die 1B übt den richtigen Stretch je nach Wurfrichtung (siehe Footwork & Stretch Drill). Jeder Werfer macht mehrere Würfe bevor rotiert wird.\n\nFokus: Richtiges Footwork bei Spieltempo. Jede Position hat einen anderen Wurfwinkel — die 1B muss sich jedes Mal anpassen.",
+    "hasImage": true,
+    "pdfPage": 19,
+    "rotation": "Nach einer Runde wechselt die 1B. Alle Positionen rotieren durch.",
+    "variants": null
+  },
+  {
+    "id": "1b-wurf-home-3rd",
+    "name": "1B Wurf nach Home & 3rd Base",
+    "categories": [
+      "FIRST_BASE",
+      "FIELDING",
+      "SITUATIONAL"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Übung für Würfe der 1B nach Home und zur 3rd Base — typische Spielsituationen bei Runners auf den Bases.\n\nVariante 1 — 1B → Home: Die 1B fieldet einen Grounder oder bekommt einen Ball und wirft schnell nach Home. Situation: Runner auf 3rd Base kommt nach Hause.\n\nVariante 2 — 1B → 3rd Base: Die 1B fieldet einen Grounder und wirft zur 3rd Base. Situation: Runner auf 2nd Base versucht zur 3rd zu kommen.\n\nFokus: Schnelles Umsetzen nach dem Fielding — Ball aufnehmen, Füße stellen, sauberer Wurf zum Ziel. Nicht hetzen, aber zügig.",
+    "hasImage": true,
+    "pdfPage": 20,
+    "rotation": "1B → Catcher/3B → Spieler → 1B.",
+    "variants": null
+  },
+  {
+    "id": "2b-komplett-drill",
+    "name": "2B Komplett-Drill (Hocke / Double Play / Toss zur 1B)",
+    "categories": [
+      "SECOND_BASE",
+      "SS",
+      "FIELDING",
+      "DOUBLE_PLAY"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Drei Phasen, die typische 2B-Spielsituationen abdecken:\n\nTeil 1 — Hocke-Wurf: Ein Spieler rollt den Ball frontal zur 2B. Die 2B fängt den Ball und bleibt in der Hocke. Aus der Hocke wirft sie zur 1B.\n\nTeil 2 — Double Play: Ein Grounder wird Richtung 2nd Base gerollt. Die 2B läuft nach links (Richtung 2nd Base), fieldet den Ball, und gibt einen kurzen Toss zum SS, der auf 2nd Base steht. Der SS wirft weiter zur 1B für den Double Play.\n\nTeil 3 — Toss zur 1B: Ein Grounder wird Richtung 1B-Seite gerollt. Die 2B muss nach rechts rennen, den Ball aufnehmen und zur 1B tossen.",
+    "hasImage": true,
+    "pdfPage": 20,
+    "rotation": "2B → 1B → Spieler → SS → 2B. Jeder durchläuft jede Position.",
+    "variants": null
+  },
+  {
+    "id": "ss-komplett-drill",
+    "name": "SS Komplett-Drill (Backhand / Slow Roller / Double Play / Force)",
+    "categories": [
+      "SS",
+      "SECOND_BASE",
+      "FIELDING",
+      "DOUBLE_PLAY"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Fünf Phasen, die typische SS-Spielsituationen abdecken. SS steht zwischen 2nd und 3rd Base, schaut Richtung Schlagmann. SS bekommt 5 Bälle, dann wird rotiert.\n\nGrundtechnik SS: Nach dem Fielding einen kleinen Bogen nach links machen, um Schwung Richtung 1B mitzunehmen.\n\nTeil 1 — Backhand rechts: Grounder nach rechts (Richtung 3rd Base). SS läuft nach rechts, nimmt den Ball backhand an, wirft zur 1B.\n\nTeil 2 — Slow Roller mit Bogen: Grounder frontal. SS läuft auf den Ball zu, nimmt ihn auf, macht Bogen nach links für Schwung Richtung 1B, wirft.\n\nTeil 3 — Hocke-Wurf (Double Play 6-4-3): Grounder frontal. SS nimmt Ball an, bleibt in der Hocke, wirft zur 2B. 2B wirft weiter zur 1B.\n\nTeil 4 — Force an 2nd Base: Grounder nach links (nah an 2nd Base). SS läuft nach links, tritt auf 2nd Base, wirft zur 1B.\n\nTeil 5 — Double Play 6-4-3 (Ball Richtung 2nd): Grounder nach links. SS fieldet, wirft zur 2B. 2B wirft weiter zur 1B.",
+    "hasImage": true,
+    "pdfPage": 21,
+    "rotation": "SS → 1B → Spieler → 2B → SS. Jeder durchläuft jede Position.",
+    "variants": "Wenn 5 Teile zu viel sind: 3 Teile auswählen."
+  },
+  {
+    "id": "ss-backhand-1b",
+    "name": "SS Backhand zur 1B",
+    "categories": [
+      "SS",
+      "FIELDING"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Einfacher Drill für das Backhand-Fielding. Der Spieler schlägt oder rollt den Ball nach rechts (Richtung 3rd Base, aus SS-Sicht). Der SS läuft nach rechts, nimmt den Ball backhand an und wirft zur 1B.",
+    "hasImage": true,
+    "pdfPage": 22,
+    "rotation": "SS → 1B → Spieler → SS.",
+    "variants": null
+  },
+  {
+    "id": "ss-force-3b-bogen-1b",
+    "name": "SS Force 3B + Bogen zur 1B",
+    "categories": [
+      "SS",
+      "THIRD_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Zwei Phasen. SS bekommt 2 Bälle, dann wird rotiert.\n\nTeil 1 — Force an 3rd Base: Grounder frontal zum SS. Der SS tosst zur 3B. Die 3B tritt auf die Base und wirft zur 1B.\n\nTeil 2 — Bogen zur 1B: Grounder frontal oder leicht nach links. Der SS läuft auf den Ball zu, nimmt ihn auf und macht einen kleinen Bogen nach links um den Schwung Richtung 1B mitzunehmen, dann wirft zur 1B.",
+    "hasImage": true,
+    "pdfPage": 23,
+    "rotation": "SS → 3B → 1B → Spieler → SS.",
+    "variants": null
+  },
+  {
+    "id": "3b-komplett-drill",
+    "name": "3B Komplett-Drill (Fielding links / Backhand / Bunt)",
+    "categories": [
+      "THIRD_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Base"
+    ],
+    "description": "Drei Phasen, die typische 3B-Spielsituationen abdecken. 3B bekommt 3 Bälle, dann wird rotiert.\n\nTeil 1 — Fielding links (Richtung 2B): Grounder nach links. Die 3B nimmt den Ball an und wirft zur 1B.\n\nTeil 2 — Backhand rechts: Grounder nach rechts (Richtung Foul-Line). Die 3B läuft nach rechts, nimmt den Ball backhand an und wirft zur 1B.\n\nTeil 3 — Bunt Defense: Bunt wird vor die 3B gelegt. Die 3B rennt nach vorne, nimmt den Ball auf und macht einen Sidewurf zur 1B.",
+    "hasImage": true,
+    "pdfPage": 23,
+    "rotation": "3B → 1B → Spieler → 3B.",
+    "variants": null
+  },
+  {
+    "id": "outfield-basic-laufen-fangen",
+    "name": "Outfield Basic — Laufen & Fangen",
+    "categories": [
+      "OUTFIELD",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Grundübung für Outfielder: Einer zeigt die Richtung, der andere läuft und fängt. Trainiert das Lesen der Flugbahn und das Laufen zum Ball.\n\nBasic: Der Werfer steht mit dem Ball in der Hand und zeigt in eine Richtung (links, rechts oder nach hinten). Der Outfielder startet und läuft in die gezeigte Richtung. Der Werfer wirft den Ball dorthin, der Outfielder fängt und wirft zurück.\n\nWichtig: Der Outfielder soll den Ball im Laufen fangen, nicht stehen bleiben und warten. Ersten Schritt in die richtige Richtung machen, dann zum Ball laufen.",
+    "hasImage": true,
+    "pdfPage": 24,
+    "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
+    "variants": "Advanced: Werfer zeigt erst rechts, dann schnell links (Richtungswechsel). Oder: Werfer wirft ohne vorher zu zeigen (Reaktion auf Flugbahn)."
+  },
+  {
+    "id": "outfield-drop-step",
+    "name": "Outfield Drop-Step Drill",
+    "categories": [
+      "OUTFIELD",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Der Werfer steht vor dem Outfielder und hält den Ball hoch. Der Outfielder läuft schräg nach hinten und behält dabei den Ball im Blick.\n\nDer Werfer zeigt den Ball nach links oder rechts. Der Outfielder dreht seinen Körper in die angezeigte Richtung und läuft los. Der Werfer wechselt dann die Richtung (1-3 Mal). Der Outfielder muss jedes Mal reagieren und sich über innen drehen — also über die Seite wo der Ball ist. Nie nach außen drehen, sonst verliert man den Ball kurz aus den Augen.\n\nSobald der Werfer den Ball wirft, fängt der Outfielder und wirft zurück.\n\nWichtig beim Richtungswechsel: Immer über die Ballseite drehen (Innendrehung). Bei einer Außendrehung hat man den Ball vorübergehend nicht im Blick — das kann im Spiel fatal sein.",
+    "hasImage": true,
+    "pdfPage": 25,
+    "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
+    "variants": null
+  },
+  {
+    "id": "outfield-kommunikation-backup",
+    "name": "Outfield Kommunikation & Backup",
+    "categories": [
+      "OUTFIELD",
+      "FIELDING",
+      "SITUATIONAL"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Schläger"
+    ],
+    "description": "Übung für Kommunikation und Backup zwischen zwei Outfieldern.\n\nAblauf: Der Schlagmann schlägt den Ball nach hinten ins Outfield. Beide Outfielder laufen zum Ball. Wer zuerst \"ICH\" ruft, bekommt den Ball. Der andere Outfielder positioniert sich hinter dem Fänger als Backup. Der Outfielder fängt den Ball und wirft zum Cutoff (Infielder Richtung Schlagmann).\n\nWichtig: Laut und deutlich \"ICH\" rufen. Wer zuerst ruft, hat Vorrang. Der andere geht sofort ins Backup.",
+    "hasImage": true,
+    "pdfPage": 25,
+    "rotation": "OF1 und OF2 tauschen. Cutoff und Schlagmann rotieren.",
+    "variants": null
+  },
+  {
+    "id": "outfield-viereck-flyout",
+    "name": "Outfield Viereck — Flyout Reaktion",
+    "categories": [
+      "OUTFIELD",
+      "CONDITIONING",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle (mind. 5)",
+      "4 Hütchen"
+    ],
+    "description": "Vier Hütchen im Viereck aufstellen (ca. 10x10 Meter). Der Outfielder steht in der Mitte. Ein Werfer steht vor dem Viereck und wirft 5 Flyouts hintereinander in verschiedene Richtungen — seitlich, nach vorne und nach hinten.\n\nAblauf: Der Werfer wirft einen Flyout in eine Ecke oder Seite des Vierecks. Der Outfielder sprintet hin und fängt den Ball aus der Luft. Der Outfielder lässt den Ball fallen oder legt ihn außerhalb des Vierecks ab. Sofort zurück zur Mitte — der nächste Flyout kommt direkt. Nach 5 Bällen wird gewechselt.\n\nWichtig: Der Werfer muss darauf achten, dass der Spieler in alle Richtungen laufen muss — seitlich, nach vorne und besonders nach hinten. Das Laufen nach hinten mit dem Ball im Blick ist die schwierigste und wichtigste Bewegung.",
+    "hasImage": true,
+    "pdfPage": 26,
+    "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
+    "variants": "10 Bälle hintereinander für mehr Kondition."
+  },
+  {
+    "id": "outfield-viereck-kommunikation",
+    "name": "Outfield Viereck — Kommunikation",
+    "categories": [
+      "OUTFIELD",
+      "FIELDING",
+      "SITUATIONAL"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "4 Hütchen"
+    ],
+    "description": "Dasselbe Viereck wie beim Flyout-Reaktion-Drill (ca. 10x10 Meter). Zwei Outfielder stehen nebeneinander im Viereck — einer davon ist der CF. Ein Werfer steht vor dem Viereck.\n\nAblauf: Der Werfer wirft einen Flyout in die Mitte zwischen die beiden Outfielder. Beide laufen zum Ball. Wer zuerst laut \"ICH\" ruft, fängt den Ball. Wenn beide gleichzeitig rufen: CF hat immer Vorrang. Der andere Outfielder geht sofort ins Backup — positioniert sich hinter dem Fänger, falls der Ball runterfällt.\n\nWichtig: Nicht schnell hintereinander werfen. Nach jedem Ball kurz Pause — der Fokus liegt auf der Kommunikation, nicht auf Tempo. Laut und deutlich \"ICH\" rufen.",
+    "hasImage": true,
+    "pdfPage": 27,
+    "rotation": "Beide Outfielder und Werfer rotieren. CF-Rolle wechselt.",
+    "variants": null
+  },
+  {
+    "id": "relay-einfach",
+    "name": "Relay Einfach (zu dritt/viert)",
+    "categories": [
+      "SITUATIONAL",
+      "OUTFIELD",
+      "FIELDING",
+      "RELAY"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Vereinfachte Relay-Übung ohne vollen Diamond. 3-4 Spieler stehen in einer Linie mit Abstand.\n\nAblauf zu dritt: Spieler 1 (Outfielder) wirft zum Spieler 2 (Cutoff). Spieler 2 fängt, dreht sich um und wirft zu Spieler 3 (Ziel/Home). Zurück: Spieler 3 wirft zu 2, Spieler 2 wirft zu 1.\n\nAblauf zu viert: Spieler 1 wirft zu 2, Spieler 2 wirft zu 3, Spieler 3 wirft zu 4. Zurück in umgekehrter Reihenfolge.\n\nWichtig: Der Cutoff-Man muss sich in der Linie zwischen Werfer und Ziel aufstellen. Arme hoch damit der Outfielder ihn sieht. Schnell fangen, umdrehen, werfen.",
+    "hasImage": true,
+    "pdfPage": 27,
+    "rotation": "Alle rotieren eine Position weiter nach jedem Durchgang.",
+    "variants": "Zu viert: einen vierten Spieler ans Ende stellen. Distanz vergrößern für stärkere Würfe."
+  },
+  {
+    "id": "infield-wurf-home-runner-3rd",
+    "name": "Infield Wurf nach Home (Runner auf 3rd)",
+    "categories": [
+      "SITUATIONAL",
+      "FIELDING"
+    ],
+    "minPlayers": 5,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Spielsituation: Runner auf 3rd Base, Grounder ins Infield → Wurf nach Home. Trainiert schnelles Fielding und den Wurf zum Catcher.\n\nAblauf: Ein Spieler rollt/schlägt Grounder zu verschiedenen Infield-Positionen (SS, 3B, 2B, 1B). Der Infielder nimmt den Ball an und wirft sofort nach Home. Der Catcher fängt den Ball und macht den Tag. Optional: Ein Spieler simuliert den Runner der von 3rd Base losläuft.\n\nWichtig: Der Infielder muss schnell entscheiden: Reicht die Zeit für den Wurf nach Home? Wenn der Runner zu schnell ist → lieber den sicheren Out an 1st Base nehmen. Je nach Spieleranzahl müssen nicht alle Infield-Positionen besetzt sein.",
+    "hasImage": true,
+    "pdfPage": 28,
+    "rotation": "Infielder rotieren nach jedem Durchgang. Jeder spielt jede Position.",
+    "variants": null
+  },
+  {
+    "id": "infield-plays-aufgebaut",
+    "name": "Infield Plays (aufgebautes Infield)",
+    "categories": [
+      "SITUATIONAL",
+      "FIELDING",
+      "FIRST_BASE",
+      "SS",
+      "SECOND_BASE",
+      "THIRD_BASE"
+    ],
+    "minPlayers": 6,
+    "equipment": [
+      "Bälle",
+      "Bases",
+      "Schläger (optional)"
+    ],
+    "description": "Komplettes Infield aufbauen und verschiedene Spielsituationen durchspielen. Alle Infielder auf ihren Positionen (1B, 2B, SS, 3B) plus Catcher und Hitter/Roller. Optional: Runner auf Bases.\n\nPlays die durchgespielt werden:\n- Grounder → Wurf zur 1B: Jede Position fieldet und wirft zur 1B. Die 1B macht den Stretch.\n- Double Play: Grounder zum SS oder 2B → Wurf zur 2nd Base → Weiter zur 1B.\n- Wurf nach Home: Grounder ins Infield, Runner auf 3rd Base läuft los → Infielder entscheidet: Home oder 1B?\n- Bunt Defense: Bunt vor Home → Catcher oder 3B/1B nimmt auf, wirft zur Base.\n- Force Play an verschiedenen Bases: Je nach Runner-Situation den Ball zur richtigen Base werfen.\n\nOhne Runner: Spieler rufen die Situation an und alle reagieren als ob Runner da wären.\nMit Runner: 1-2 Spieler als Runner auf Bases. Runner laufen bei Kontakt los. Realistischer aber braucht mehr Spieler.\n\nWichtig: Jeder Infielder muss vor dem Grounder wissen was er macht: Wohin werfe ich? Wo ist der Lead-Runner?",
+    "hasImage": true,
+    "pdfPage": 29,
+    "rotation": "Infielder rotieren nach jeder Runde. Jeder spielt jede Position.",
+    "variants": "Ohne Runner starten, dann mit Runner steigern. Trainer ruft verschiedene Situationen an."
+  },
+  {
+    "id": "second-short-double-play",
+    "name": "Second/Short Double Play Übung",
+    "categories": [
+      "SS",
+      "SECOND_BASE",
+      "DOUBLE_PLAY",
+      "SITUATIONAL"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Toss- und Fieldingübung für den Double Play an der 2nd Base. Ein Spieler rollt den Ball zum SS oder zur 2B, die dann zur 2nd Base werfen/tossen.\n\nAls 2B: Mit dem linken Fuß außen an der Base stehen. Bei Toss: Zur SS-Seite hingehen. In dem Moment, wo man den Ball fängt, mit dem rechten Fuß nach vorne gehen. Wurf zur 1B. Bei Wurf: Stehen bleiben und nach hinten gehen. Wurf zur 1B.\n\nAls SS: Mit dem rechten Fuß an der Außenseite der Base stehen. In dem Moment, wo man den Ball fängt, mit dem linken Fuß nach vorne gehen und zur 1B werfen.",
+    "hasImage": true,
+    "pdfPage": 30,
+    "rotation": "SS und 2B tauschen Positionen nach jeder Runde.",
+    "variants": null
+  },
+  {
+    "id": "relay-cutoff",
+    "name": "Relay & Cutoff Übung",
+    "categories": [
+      "SITUATIONAL",
+      "SS",
+      "SECOND_BASE",
+      "OUTFIELD",
+      "RELAY"
+    ],
+    "minPlayers": 8,
+    "equipment": [
+      "Bälle",
+      "Bases",
+      "Schläger (optional)"
+    ],
+    "description": "Relay-Situationen je nach Outfield-Position üben. Ball wird geschlagen oder ins Outfield geworfen. Der Cutoff-Man (SS oder 2B) positioniert sich in der Relay-Linie und leitet den Ball weiter zum Ziel (Home, 3rd oder 2nd Base).\n\nBall im LF: SS ist Cutoff. Relay-Ziele: Home, 3rd Base oder 2nd Base.\nBall im CF: SS oder 2B ist Cutoff (je nach Seite). Relay-Ziele: Home, 3rd oder 2nd.\nBall im RF: 2B ist Cutoff. Relay-Ziele: Home, 3rd oder 2nd.\n\nWichtig:\n- Der Catcher positioniert die Relay-Person — er ruft Anweisungen wo sich der Cutoff-Man hinstellen soll.\n- Der Cutoff-Man stellt sich in einer geraden Linie zwischen Outfielder und Ziel-Base auf. Arme hoch damit der Outfielder ihn sieht.\n- Der Outfielder wirft immer gerade Richtung Home — der Cutoff-Man fängt den Ball ab, wenn der Catcher das Kommando gibt.\n- Die Position des Cutoff-Man hängt von der Wurfstärke des Outfielders ab.\n- Catcher ruft wohin der Ball gehen soll und wann der Cutoff-Man abfangen soll.",
+    "hasImage": true,
+    "pdfPage": 31,
+    "rotation": "Outfielder, Cutoff und Infielder rotieren nach jeder Runde.",
+    "variants": null
+  },
+  {
+    "id": "rundown",
+    "name": "Rundown",
+    "categories": [
+      "SITUATIONAL",
+      "FIELDING"
+    ],
+    "minPlayers": 5,
+    "equipment": [
+      "Bälle",
+      "Bases"
+    ],
+    "description": "Ein Runner steckt zwischen zwei Bases. Die Defense versucht den Runner zu taggen.\n\nAblauf: Mind. 2 Spieler pro Base stehen hintereinander. Der Spieler mit dem Ball läuft auf den Runner zu und zwingt ihn zur Entscheidung. Bevor der Runner ihn erreicht, wirft er zum Partner an der anderen Base. Nach dem Wurf geht er sofort aus der Laufbahn raus (hinter die Base), damit der nächste Spieler übernehmen kann. Der nächste Spieler fängt den Ball und läuft wieder auf den Runner zu. Das geht so weiter bis der Runner getaggt wird oder safe ist.\n\nWichtig für die Defense:\n- Immer auf den Runner zulaufen, nicht stehen bleiben und werfen.\n- Der Fänger an der anderen Base sagt an, wann geworfen werden soll.\n- Nach dem Wurf sofort aus dem Weg gehen.\n- So wenig Würfe wie möglich — Ziel ist es, den Runner schnell zu taggen.\n\nWichtig für den Runner: Aufmerksam bleiben! Wenn die Defense einen Fehler macht, sofort ausnutzen und safe werden.",
+    "hasImage": true,
+    "pdfPage": 32,
+    "rotation": "Runner wechselt nach jedem Durchgang. Bei mehr Spielern: mehrere pro Base.",
+    "variants": null
+  },
+  {
+    "id": "hitting-stationen",
+    "name": "Hitting Stationen",
+    "categories": [
+      "HITTING"
+    ],
+    "minPlayers": 10,
+    "equipment": [
+      "Bälle",
+      "Schläger",
+      "Tees",
+      "Netz (optional)",
+      "Korken / Whiffleballs",
+      "Besenstange (optional)"
+    ],
+    "description": "Stationen-Training für verschiedene Schlag-Situationen. Pro Station mind. 2 Spieler. Nach einer festgelegten Zeit (z.B. 5-10 Minuten) wird zur nächsten Station rotiert.\n\nStation 1 — Live Hitting: Ein Spieler tosst, einer schlägt. Weitere Spieler fangen die geschlagenen Bälle und werfen sie zurück. Jeder Batter bekommt eine festgelegte Anzahl Schläge, dann wird gewechselt.\n\nStation 2 — Bunt: Ein Spieler tosst, einer buntet. Fokus auf Bunttechnik und Ballplatzierung.\n\nStation 3 — Tee: Vom Tee schlagen. Mit Netz: ins Netz schlagen. Ohne Netz: Richtung Fielder schlagen.\n\nStation 4 — Korken / Whiffleballs: Ein Spieler hält/wirft Korken oder Whiffleballs, der Batter schlägt drauf. Trainiert die Hand-Augen-Koordination. Whiffleballs eignen sich besonders gut zum Zielen auf bestimmte Zonen.\n\nStation 5 — Tee 45 Grad: Ca. 45 Grad zur Base stehen und vom Tee schlagen. Ziel: hinteres Bein spüren und Rotation üben.\n\nStation 6 — Besenstange Hüftrotation: Besenstange hinter dem Rücken halten (in den Ellbogen eingehakt). Mit der Hüfte drehen und versuchen, den Ball am Tee mit der Stange zu berühren. Trainiert die Hüftrotation ohne Arme.\n\nJe nach Anzahl der Spieler und Equipment können Stationen weggelassen oder hinzugefügt werden.",
+    "hasImage": false,
+    "pdfPage": 33,
+    "rotation": "Nach festgelegter Zeit rotieren alle zur nächsten Station.",
+    "variants": null
+  },
+  {
+    "id": "loading-tee-fortgeschritten",
+    "name": "Loading vom Tee (Fortgeschritten)",
+    "categories": [
+      "HITTING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Schläger",
+      "Tee",
+      "Netz"
+    ],
+    "description": "Fortgeschrittene Übung für das Timing des Loadings. Ein Spieler simuliert die Softball-Pitching-Motion (Windmill) ohne Ball. Der Batter schlägt vom Tee ins Netz und timet sein Loading nach der Pitcher-Bewegung.\n\nAblauf: Der \"Pitcher\" steht vor dem Batter und macht die Windmill-Motion ohne Ball. Der Batter schaut auf den Pitcher und beginnt sein Loading, wenn die Hände sich trennen und der Arm anfängt sich zu bewegen. Während der Arm durch den Kreis geht: Gewicht nach hinten verlagern, Hände laden, Stride-Fuß geht vor. Am Release-Punkt (Arm kommt unten an): Batter ist fertig geladen, Blick geht auf den Ball am Tee, Swing.\n\nWichtig: Loading und Swing sind zwei getrennte Bewegungen — nicht alles auf einmal. Erst laden, dann schlagen. Wer zu spät mit dem Loading anfängt, muss alles gleichzeitig machen und verliert Kraft und Timing.\n\nDiese Übung setzt voraus, dass der Batter bereits eine grundlegende Schlagform hat.",
+    "hasImage": true,
+    "pdfPage": 34,
+    "rotation": "Batter und Pitcher tauschen nach festgelegter Anzahl Schläge.",
+    "variants": null
+  }
+]

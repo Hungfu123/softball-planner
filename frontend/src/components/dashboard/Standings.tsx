@@ -90,16 +90,16 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600 w-8">#</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600">Team</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-12" title="Spiele">Sp</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-12" title="Siege">S</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-12" title="Niederlagen">N</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-12" title="Unentschieden">U</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-16" title="Siegquote">Win%</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-14" title="Runs Scored (erzielte Punkte)">RS</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-14" title="Runs Against (kassierte Punkte)">RA</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-600 w-14" title="Run Differential (Differenz)">+/-</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-700 w-8">#</th>
+                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Team</th>
+                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Spiele">Sp</th>
+                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Siege">S</th>
+                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Niederlagen">N</th>
+                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Unentschieden">U</th>
+                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-16" title="Siegquote">Win%</th>
+                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-14" title="Runs Scored (erzielte Punkte)">RS</th>
+                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-14" title="Runs Against (kassierte Punkte)">RA</th>
+                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-14" title="Run Differential (Differenz)">+/-</th>
                     <th className="w-8" />
                   </tr>
                 </thead>
@@ -139,13 +139,13 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                       <td className="text-center px-3 py-2.5 font-mono">{s.games}</td>
                       <td className="text-center px-3 py-2.5 font-mono text-green-700">{s.wins}</td>
                       <td className="text-center px-3 py-2.5 font-mono text-red-600">{s.losses}</td>
-                      <td className="text-center px-3 py-2.5 font-mono text-gray-500">{s.ties}</td>
+                      <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono text-gray-500">{s.ties}</td>
                       <td className="text-center px-3 py-2.5 font-mono font-semibold">
                         {s.games > 0 ? (s.winPct * 100).toFixed(0) + '%' : '—'}
                       </td>
-                      <td className="text-center px-3 py-2.5 font-mono">{s.runsScored}</td>
-                      <td className="text-center px-3 py-2.5 font-mono">{s.runsAgainst}</td>
-                      <td className={`text-center px-3 py-2.5 font-mono font-semibold ${
+                      <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono">{s.runsScored}</td>
+                      <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono">{s.runsAgainst}</td>
+                      <td className={`hidden sm:table-cell text-center px-3 py-2.5 font-mono font-semibold ${
                         s.runDiff > 0 ? 'text-green-700' : s.runDiff < 0 ? 'text-red-600' : 'text-gray-500'
                       }`}>
                         {s.runDiff > 0 ? '+' : ''}{s.runDiff}

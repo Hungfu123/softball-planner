@@ -21,7 +21,7 @@ public class CarEntity {
     @JsonIgnore
     private GameDayEntity gameDay;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id", nullable = false)
     private PlayerEntity driver;
 

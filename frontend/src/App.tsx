@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { Dashboard } from '@/components/dashboard/Dashboard'
@@ -8,6 +8,14 @@ import { LineupSheet } from '@/components/export/LineupSheet'
 import { TrainingPage } from '@/components/training/TrainingPage'
 import { LoginPage } from '@/components/auth/LoginPage'
 import { setAuth, hasAuth, clearAuth } from '@/api/client'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+
+// Lazy-load heavy pages
+const TrainingPlanPage = lazy(() => import('@/components/training-plan/TrainingPlanPage'))
+
+function LazyTrainingPlan() {
+  return <Suspense fallback={<LoadingSkeleton />}><TrainingPlanPage /></Suspense>
+}
 
 const router = createBrowserRouter([
   {
@@ -15,6 +23,7 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Dashboard /> },
       { path: '/training', element: <TrainingPage /> },
+      { path: '/training-plan', element: <LazyTrainingPlan /> },
       { path: '/players', element: <PlayerManager /> },
       { path: '/gameday/:id', element: <GameDayPlanner /> },
     ],

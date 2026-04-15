@@ -7,6 +7,7 @@ import com.softball.domain.model.TrainingPeriod;
 import com.softball.shared.exception.ResourceNotFoundException;
 import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.domain.port.out.TrainingPeriodRepository;
+import com.softball.domain.port.out.TrainingPlanRepository;
 import com.softball.domain.port.out.TrainingRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,7 @@ class TrainingPeriodServiceTest {
     @Mock private TrainingPeriodRepository periodRepository;
     @Mock private TrainingRepository trainingRepository;
     @Mock private TrainingAttendanceRepository attendanceRepository;
+    @Mock private TrainingPlanRepository trainingPlanRepository;
 
     @InjectMocks private TrainingPeriodService service;
 
@@ -114,7 +116,8 @@ class TrainingPeriodServiceTest {
 
         service.delete(1L);
 
-        // Batch-Delete statt Loop
+        // Cascade: Plans, Attendance und Trainings löschen
+        verify(trainingPlanRepository).deleteByTrainingIds(List.of(10L, 20L));
         verify(attendanceRepository).deleteByTrainingIds(List.of(10L, 20L));
         verify(attendanceRepository, never()).deleteByTrainingId(any());
         verify(trainingRepository).deleteAll(List.of(t1, t2));

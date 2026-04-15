@@ -5,6 +5,7 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { PlusCircle, TrashBin, XMark } from '@/icons'
 import type { Player, CarResponse } from '@/types'
 import { DIRECTION_LABELS } from '@/types'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 
 interface Props {
   gameDayId: number
@@ -41,7 +42,7 @@ export function CarpoolPlanner({ gameDayId, availablePlayers }: Props) {
   }
 
   if (carpool.loading) {
-    return <div className="text-center py-12 text-gray-500">Laden...</div>
+    return <LoadingSkeleton />
   }
 
   return (

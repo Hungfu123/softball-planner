@@ -61,4 +61,16 @@ button:active:not(:disabled), [role="button"]:active {
 @media print {
   body { background: white; }
   .no-print { display: none !important; }
+
+  /* Trainingsplan: alle Coaching-Details aufklappen */
+  [data-print-expand] { display: block !important; }
+
+  /* Trainingsplan: Buttons/Controls ausblenden */
+  .plan-controls { display: none !important; }
+
+  /* Page-Break-Hints zwischen großen Drill-Sections */
+  .plan-section { break-inside: avoid; }
+
+  /* Handbuch-Referenzen gut sichtbar */
+  .print-ref { color: #333 !important; }
 }
