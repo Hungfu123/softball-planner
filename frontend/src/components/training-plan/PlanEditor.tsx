@@ -150,14 +150,47 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
     const newIndex = sectionIds.indexOf(over.id as string)
     if (oldIndex === -1 || newIndex === -1) return
     const reordered = [...sections]
-    const [moved] = reordered.splice(oldIndex, 1)
+    let [moved] = reordered.splice(oldIndex, 1)
+
+    // Wenn der Drill eine Station verlässt, parallelGroup prüfen
+    if (moved.parallelGroup != null) {
+      const remainingInGroup = reordered.filter(s => s.parallelGroup === moved.parallelGroup)
+      if (remainingInGroup.length < 2) {
+        // Station hat nur noch ≤1 Drill → komplett auflösen
+        const group = moved.parallelGroup
+        reordered.forEach((s, i) => {
+          if (s.parallelGroup === group) {
+            reordered[i] = { ...s, parallelGroup: null, playersPerGroup: null }
+          }
+        })
+      }
+      // Prüfen ob Drill noch neben seiner Gruppe landet
+      const targetGroup = reordered[newIndex]?.parallelGroup ?? reordered[Math.max(0, newIndex - 1)]?.parallelGroup
+      if (targetGroup !== moved.parallelGroup) {
+        moved = { ...moved, parallelGroup: null, playersPerGroup: null }
+      }
+    }
+
     reordered.splice(newIndex, 0, moved)
     setSections(reordered)
     setSelectedIndices(new Set())
   }
 
   const removeSection = (index: number) => {
-    setSections(prev => prev.filter((_, i) => i !== index))
+    setSections(prev => {
+      const removed = prev[index]
+      const filtered = prev.filter((_, i) => i !== index)
+      // Wenn der entfernte Drill zu einer Station gehörte und nur noch ≤1 übrig: auflösen
+      if (removed.parallelGroup != null) {
+        const remainingInGroup = filtered.filter(s => s.parallelGroup === removed.parallelGroup)
+        if (remainingInGroup.length < 2) {
+          return filtered.map(s =>
+            s.parallelGroup === removed.parallelGroup ? { ...s, parallelGroup: null, playersPerGroup: null } : s
+          )
+        }
+      }
+      return filtered
+    })
     setSelectedIndices(prev => { const next = new Set(prev); next.delete(index); return next })
   }
 
