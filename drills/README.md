@@ -35,12 +35,18 @@ drills/
 
 ## Workflow: Drill hinzufügen/ändern
 
-1. Typst-Datei in `drills/drills/` bearbeiten
-2. `./drills/build.sh` ausführen (kompiliert PDF + kopiert nach `backend/src/main/resources/static/`)
+1. Typst-Datei in `drills/drills/` bearbeiten (neuen `#drill(...)` Block einfügen)
+2. `./drills/build.sh` ausführen — das Script erledigt alles automatisch:
+   - Kompiliert Typst → PDF
+   - Kopiert PDF nach `backend/src/main/resources/static/`
+   - **Synchronisiert `pdfPage`-Nummern** in `drills.json` automatisch (per `typst query`)
+   - Warnt wenn Drills in JSON keinen Match in der PDF haben
+   - Warnt wenn neue Drills in der PDF noch nicht in `drills.json` stehen
 3. `backend/src/main/resources/drills.json` updaten:
-   - Neuen Drill eintragen (id, name, categories, minPlayers, equipment, description, pdfPage, ...)
-   - pdfPage aus dem neuen Inhaltsverzeichnis ablesen (Seite 2-3 der PDF)
-   - Bei verschobenen Seiten: pdfPage aller betroffenen Drills aktualisieren
+   - Neuen Drill eintragen (id, name, categories, minPlayers, equipment, description, rotation, ...)
+   - **pdfPage wird automatisch gesetzt** — nicht manuell pflegen!
+   - Danach nochmal `./build.sh` laufen lassen um die pdfPage für den neuen Eintrag zu setzen
+4. Falls neue Kategorie: `DrillCategory.java` Enum + `FOCUS_CATEGORY_MAP` in Generator + Frontend erweitern
 
 ## Aktueller Stand
 

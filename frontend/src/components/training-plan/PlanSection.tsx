@@ -50,11 +50,18 @@ function FormattedText({ text }: { text: string }) {
   )
 }
 
+const BATTING_STATIONS = [
+  { label: 'Live', desc: 'Pitcher tosst, Batter schlägt' },
+  { label: 'Bunt', desc: 'Bunttechnik & Ballplatzierung' },
+  { label: 'Tee', desc: 'Tee Station (Besen für Hüfte)' },
+  { label: 'Korken', desc: 'Korken / Whiffleballs' },
+]
+
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
-  WARMUP: { label: 'Aufwärmen', color: 'bg-orange-50 text-orange-600' },
+  WARMUP: { label: 'Aufwärmen', color: 'bg-navy-50 text-navy-600' },
   DRILL: { label: 'Drill', color: 'bg-navy-50 text-navy-700' },
-  BATTING: { label: 'Batting', color: 'bg-softball-red-50 text-softball-red-600' },
-  GAME: { label: 'Spiel', color: 'bg-purple-50 text-purple-600' },
+  BATTING: { label: 'Batting', color: 'bg-navy-50 text-navy-700' },
+  GAME: { label: 'Spiel', color: 'bg-navy-50 text-navy-600' },
   KI_VORSCHLAG: { label: 'KI-Vorschlag', color: 'bg-amber-50 text-amber-600' },
 }
 
@@ -73,19 +80,18 @@ export default function PlanSection({ section, drills, index: _index }: Props) {
   const hasExtraCoaching = section.setupNotes || section.tips || section.rounds || section.userNotes
 
   return (
-    <div className="relative pb-3">
+    <div className="relative">
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden plan-section">
         {/* Header */}
         <div className="px-4 py-3 flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>{badge.label}</span>
-              <span className="text-xs text-gray-400 font-medium">{section.durationMinutes ?? '?'} min</span>
+            <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-gray-600 font-medium">{section.durationMinutes ?? '?'} min</span>
               {section.playersPerGroup && (
-                <span className="text-xs text-gray-300">· {section.playersPerGroup} Spieler/Gruppe</span>
+                <span className="text-xs text-gray-400">· {section.playersPerGroup} Spieler/Gruppe</span>
               )}
             </div>
-            <h4 className="text-sm font-semibold text-gray-900 mt-1">{section.title}</h4>
           </div>
           {drill?.pdfPage && (
             <button
@@ -97,12 +103,18 @@ export default function PlanSection({ section, drills, index: _index }: Props) {
           )}
         </div>
 
-        {/* Batting hint */}
+        {/* Batting: Stationen direkt sichtbar */}
         {section.sectionType === 'BATTING' && (
-          <div className="px-4 pb-2">
-            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5">
-              Je nach Equipment und Spieleranzahl Stationen auswählen — nicht alle müssen gleichzeitig laufen.
-            </p>
+          <div className="px-4 pb-3">
+            <p className="text-xs text-gray-400 mb-2">Je nach Equipment und Spieleranzahl auswählen:</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {BATTING_STATIONS.map((station, i) => (
+                <div key={i} className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                  <p className="text-xs font-semibold text-gray-900">{station.label}</p>
+                  <p className="text-[10px] text-gray-400">{station.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -123,7 +135,7 @@ export default function PlanSection({ section, drills, index: _index }: Props) {
         )}
 
         {/* Drill description — collapsed by default */}
-        {drill?.description && (
+        {drill?.description && section.sectionType !== 'BATTING' && (
           <>
             <button
               onClick={() => setDescOpen(!descOpen)}

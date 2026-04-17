@@ -36,7 +36,7 @@ interface Props {
 export default function PlanForm({ trainingId, training, generating, onGenerate, onCancel }: Props) {
   const defaultDuration = useMemo(() => getDefaultDuration(training?.date), [training?.date])
   const [playerCount, setPlayerCount] = useState(10)
-  const [positions, setPositions] = useState<Set<string>>(new Set(POSITION_OPTIONS))
+  const [positions, setPositions] = useState<Set<string>>(new Set())
   const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set(['ALLROUND']))
   const [duration, setDuration] = useState(defaultDuration)
 

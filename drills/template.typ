@@ -97,8 +97,9 @@
   rotation: none,
   varianten: none,
 ) = {
-  // Drill-Überschrift
+  // Drill-Überschrift + Metadaten für automatische pdfPage-Erkennung
   heading(level: 2)[#name]
+  context [#metadata((name: name, page: counter(page).get().first())) <drill-page>]
 
   // Metadaten-Leiste
   rect(width: 100%, inset: 8pt, radius: 4pt, fill: hellgrau)[
