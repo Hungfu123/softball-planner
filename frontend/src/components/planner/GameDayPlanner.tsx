@@ -280,6 +280,7 @@ export function GameDayPlanner() {
       <div className="bg-white rounded-2xl shadow-sm p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="group/header flex items-start gap-2">
+            <div className="w-1 h-8 bg-softball-red-600 rounded-full flex-shrink-0 mt-1" />
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-950">
                 {gameDay.label || 'Spieltag'} — {formatDate(gameDay.date)}
