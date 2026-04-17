@@ -229,8 +229,9 @@ public class TrainingPlanGenerator {
     private int calculateBattingMinutes(final int totalMinutes, final int remainingAfterWarmup) {
         if (totalMinutes >= 180) return 60;
         if (totalMinutes >= 120) return 45;
-        if (totalMinutes >= 90) return 30;
-        return Math.min(30, Math.max(15, remainingAfterWarmup / 2));
+        if (totalMinutes >= 90) return 40;
+        // Kurze Trainings: mindestens 15 min, aber nicht mehr als die Hälfte der verbleibenden Zeit
+        return Math.max(15, Math.min(40, remainingAfterWarmup / 2));
     }
 
     private List<String> parseFocuses(final String focus) {

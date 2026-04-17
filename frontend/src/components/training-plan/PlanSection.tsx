@@ -57,14 +57,6 @@ const BATTING_STATIONS = [
   { label: 'Korken', desc: 'Korken / Whiffleballs' },
 ]
 
-const TYPE_BADGES: Record<string, { label: string; color: string }> = {
-  WARMUP: { label: 'Aufwärmen', color: 'bg-navy-50 text-navy-600' },
-  DRILL: { label: 'Drill', color: 'bg-navy-50 text-navy-700' },
-  BATTING: { label: 'Batting', color: 'bg-navy-50 text-navy-700' },
-  GAME: { label: 'Spiel', color: 'bg-navy-50 text-navy-600' },
-  KI_VORSCHLAG: { label: 'KI-Vorschlag', color: 'bg-amber-50 text-amber-600' },
-}
-
 interface Props {
   section: TrainingPlanSectionResponse
   drills: DrillResponse[]
@@ -75,7 +67,6 @@ export default function PlanSection({ section, drills, index: _index }: Props) {
   const [descOpen, setDescOpen] = useState(false)
   const [coachOpen, setCoachOpen] = useState(false)
   const drill = section.drillId ? drills.find(d => d.id === section.drillId) : null
-  const badge = TYPE_BADGES[section.sectionType ?? 'DRILL'] ?? TYPE_BADGES.DRILL
   const hasKeyInfo = section.rotationPlan || section.groupSetup || section.adaptationNotes
   const hasExtraCoaching = section.setupNotes || section.tips || section.rounds || section.userNotes
 

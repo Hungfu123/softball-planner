@@ -267,10 +267,10 @@ class TrainingPlanGeneratorTest {
         }
 
         @Test
-        void batting_30_min_bei_90_min_training() {
+        void batting_40_min_bei_90_min_training() {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "WERFEN", 90);
 
-            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(30);
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(40);
         }
 
         @Test
