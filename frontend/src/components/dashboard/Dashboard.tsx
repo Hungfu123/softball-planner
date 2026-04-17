@@ -83,6 +83,10 @@ export function Dashboard() {
   const visibleGameDays = showAllGameDays ? sortedGameDays : sortedGameDays.slice(0, VISIBLE_GAME_DAYS)
   const hiddenCount = gameDays.length - VISIBLE_GAME_DAYS
 
+  // Nächster anstehender Spieltag — nur zukünftige (heute oder später)
+  const today = new Date().toISOString().slice(0, 10)
+  const nextGameDayId = gameDays.find(gd => gd.date >= today)?.id ?? null
+
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl shadow-sm p-5">
@@ -130,7 +134,7 @@ export function Dashboard() {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {visibleGameDays.map(gd => (
-                    <GameDayCard key={gd.id} gameDay={gd} onDelete={setDeleteGameDayId} onEdit={setEditGameDayId} />
+                    <GameDayCard key={gd.id} gameDay={gd} isNext={gd.id === nextGameDayId} onDelete={setDeleteGameDayId} onEdit={setEditGameDayId} />
                   ))}
                 </div>
 

@@ -9,11 +9,12 @@ function formatDate(dateStr: string) {
 
 interface Props {
   gameDay: GameDayResponse
+  isNext?: boolean
   onDelete: (id: number) => void
   onEdit: (id: number) => void
 }
 
-export function GameDayCard({ gameDay, onDelete, onEdit }: Props) {
+export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
   const playerCount = gameDay.availablePlayers.length
   const totalGames = gameDay.games.length
   const gamesWithOpponent = gameDay.games.filter(g => g.opponentTeam)
@@ -26,7 +27,7 @@ export function GameDayCard({ gameDay, onDelete, onEdit }: Props) {
     <Link
       to={`/gameday/${gameDay.id}`}
       className={`block rounded-xl p-4 shadow-sm hover:shadow-md hover:border-navy-600 hover:bg-navy-50/50 transition-all group relative bg-white border border-gray-200 ${
-        allLineupsReady ? 'border-l-4 border-l-navy-600' : ''
+        isNext ? 'border-l-4 border-l-navy-600' : allLineupsReady ? 'border-l-4 border-l-navy-600' : ''
       }`}
     >
       <div className="absolute top-3 right-3 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all">
@@ -46,6 +47,9 @@ export function GameDayCard({ gameDay, onDelete, onEdit }: Props) {
         </button>
       </div>
 
+      {isNext && (
+        <span className="text-[10px] font-bold uppercase tracking-wider text-navy-600 mb-1 block">Nächster Spieltag</span>
+      )}
       <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">
         {formatDate(gameDay.date)}
       </div>

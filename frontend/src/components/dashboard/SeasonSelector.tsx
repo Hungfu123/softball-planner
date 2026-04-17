@@ -34,52 +34,63 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
     }
   }
 
+  const selectedSeason = seasons.find(s => s.id === selectedId)
+
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium text-gray-600">Saison:</label>
-        {seasons.length > 0 ? (
-          <select
-            value={selectedId ?? ''}
-            onChange={e => onSelect(Number(e.target.value))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white hover:border-navy-300 hover:bg-navy-50 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer transition-colors"
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-1 h-8 bg-softball-red-600 rounded-full flex-shrink-0" />
+          {selectedSeason ? (
+            <div>
+              <h1 className="text-2xl font-bold text-gray-950">{selectedSeason.name}</h1>
+              {seasons.length > 1 ? (
+                <select
+                  value={selectedId ?? ''}
+                  onChange={e => onSelect(Number(e.target.value))}
+                  className="text-sm text-gray-400 hover:text-navy-600 cursor-pointer outline-none bg-transparent border border-transparent hover:border-gray-200 rounded px-1 -ml-1 transition-colors"
+                >
+                  {seasons.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} {s.year}</option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-gray-400">{selectedSeason.year}</p>
+              )}
+            </div>
+          ) : (
+            <h1 className="text-2xl font-bold text-gray-950">Spielbetrieb</h1>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {selectedId && (
+            <>
+              <button
+                onClick={() => {
+                  const s = seasons.find(x => x.id === selectedId)
+                  if (s) { setName(s.name); setYear(s.year); setShowEditModal(true) }
+                }}
+                className="p-2 text-gray-400 hover:text-navy-800 hover:bg-navy-50 rounded-lg cursor-pointer"
+                title="Saison bearbeiten"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 rounded-lg cursor-pointer"
+                title="Saison löschen"
+              >
+                <TrashBin size={16} />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors"
           >
-            {seasons.map(s => (
-              <option key={s.id} value={s.id}>{s.name} {s.year}</option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-sm text-gray-500">Keine Saison vorhanden</span>
-        )}
-
-        {selectedId && (
-          <>
-            <button
-              onClick={() => {
-                const s = seasons.find(x => x.id === selectedId)
-                if (s) { setName(s.name); setYear(s.year); setShowEditModal(true) }
-              }}
-              className="p-2 text-navy-600 hover:text-navy-800 hover:bg-navy-50 rounded-lg cursor-pointer"
-              title="Saison bearbeiten"
-            >
-              <Pencil size={16} />
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-navy-600 hover:text-softball-red-600 hover:bg-softball-red-50 rounded-lg cursor-pointer"
-              title="Saison löschen"
-            >
-              <TrashBin size={16} />
-            </button>
-          </>
-        )}
-
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-300 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors"
-        >
-          <PlusCircle size={16} /> Neue Saison
-        </button>
+            <PlusCircle size={16} /> Neue Saison
+          </button>
+        </div>
       </div>
 
       {showModal && (
