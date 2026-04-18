@@ -28,7 +28,7 @@ public class TrainingPlanGenerator {
     private static final int MAX_GAME_MINUTES = 40;
     private static final int IDEAL_GROUP_SIZE = 4;
     private static final int MIN_PLAYERS_FOR_STATIONS = 8;
-    private static final int STATION_BLOCK_MINUTES = 20;
+    private static final int MINUTES_PER_STATION = 10;
     private static final int BASICS_DRILL_MINUTES = 10;
     private static final int MAX_BASICS_DRILLS = 2;
     private static final int MIN_DRILL_MINUTES = 10;
@@ -124,37 +124,51 @@ public class TrainingPlanGenerator {
                 basics.forEach(d -> usedDrillIds.add(d.getId()));
                 focusUsed += focusMinutes;
             } else {
-                // --- Grundlagen: alle zusammen, max 2 Drills à 10 min ---
+                // Zuerst Stations-Bedarf berechnen, dann Basics anpassen
+                final boolean canDoStations = playerCount >= MIN_PLAYERS_FOR_STATIONS && advanced.size() >= 2;
+                final int maxStations = playerCount >= 12 ? 3 : 2;
+                final int drillsPerBlock = canDoStations
+                        ? Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)) : 0;
+                final int stationBlockMinutes = drillsPerBlock * MINUTES_PER_STATION;
+                final int stationBreakNeeded = canDoStations && drillsPerBlock >= 3
+                        ? BREAK_MINUTES * 2 : (canDoStations ? BREAK_MINUTES : 0);
+                final int stationTotalNeeded = canDoStations
+                        ? stationBlockMinutes + stationBreakNeeded : 0;
+
+                // --- Grundlagen: alle zusammen, Anzahl anpassen damit Stationen + Pause reinpassen ---
                 if (!basics.isEmpty() && focusMinutes >= BASICS_DRILL_MINUTES) {
+                    final int availableForBasics = canDoStations
+                            ? Math.max(0, focusMinutes - stationTotalNeeded) : focusMinutes;
                     final int numBasics = Math.min(MAX_BASICS_DRILLS,
-                            Math.min(basics.size(), focusMinutes / BASICS_DRILL_MINUTES));
-                    final int basicsTime = numBasics * BASICS_DRILL_MINUTES;
-                    for (int i = 0; i < numBasics; i++) {
-                        sections.add(buildDrillSection(basics.get(i), "DRILL", BASICS_DRILL_MINUTES, playerCount));
-                        usedDrillIds.add(basics.get(i).getId());
+                            Math.min(basics.size(), availableForBasics / BASICS_DRILL_MINUTES));
+                    if (numBasics > 0) {
+                        final int basicsTime = numBasics * BASICS_DRILL_MINUTES;
+                        for (int i = 0; i < numBasics; i++) {
+                            sections.add(buildDrillSection(basics.get(i), "DRILL", BASICS_DRILL_MINUTES, playerCount));
+                            usedDrillIds.add(basics.get(i).getId());
+                        }
+                        focusUsed += basicsTime;
                     }
-                    focusUsed += basicsTime;
                 }
 
                 // --- Positions-/Simulations-Drills: Stationsblock (parallel in Gruppen) ---
                 int remainingFocusMinutes = focusMinutes - focusUsed;
-                if (playerCount >= MIN_PLAYERS_FOR_STATIONS && advanced.size() >= 2
-                        && remainingFocusMinutes >= STATION_BLOCK_MINUTES) {
-                    final int drillsPerBlock = Math.min(4, Math.max(2, playerCount / IDEAL_GROUP_SIZE));
+                if (canDoStations && remainingFocusMinutes >= drillsPerBlock * MINUTES_PER_STATION) {
                     final int stationDrills = Math.min(advanced.size(), drillsPerBlock);
-                    // Aufbaupause: 10 min bei 3+ Stationen, 5 min bei 2 (Fallback wenn kein Platz)
-                    if (focusUsed > 0 && remainingFocusMinutes > STATION_BLOCK_MINUTES) {
+                    final int blockMinutes = stationDrills * MINUTES_PER_STATION;
+                    // Aufbaupause: 10 min bei 3+ Stationen, 5 min bei 2
+                    if (focusUsed > 0 && remainingFocusMinutes > blockMinutes) {
                         final int idealBreak = stationDrills >= 3 ? BREAK_MINUTES * 2 : BREAK_MINUTES;
-                        final int actualBreak = Math.min(idealBreak, remainingFocusMinutes - STATION_BLOCK_MINUTES);
+                        final int actualBreak = Math.min(idealBreak, remainingFocusMinutes - blockMinutes);
                         sections.add(buildBreakSection("Trinken, nächste Übungen kurz erklären. Wer die Übung kennt, hilft beim Stationen aufbauen.", actualBreak));
                         focusUsed += actualBreak;
                         remainingFocusMinutes -= actualBreak;
                     }
                     final List<Drill> blockDrills = advanced.subList(0, stationDrills);
-                    sections.addAll(buildStationBlock(blockDrills, playerCount, STATION_BLOCK_MINUTES, parallelGroupCounter));
+                    sections.addAll(buildStationBlock(blockDrills, playerCount, blockMinutes, parallelGroupCounter));
                     blockDrills.forEach(d -> usedDrillIds.add(d.getId()));
                     parallelGroupCounter++;
-                    focusUsed += STATION_BLOCK_MINUTES;
+                    focusUsed += blockMinutes;
                 } else if (!advanced.isEmpty() && remainingFocusMinutes >= MIN_DRILL_MINUTES) {
                     final List<TrainingPlanSection> seqDrills = buildSequentialDrills(
                             advanced, playerCount, remainingFocusMinutes);
@@ -170,7 +184,7 @@ public class TrainingPlanGenerator {
         // --- Pause nach Warmup nur wenn Drills generiert wurden ---
         final boolean hasDrills = sections.size() > drillSectionStartIdx;
         if (warmupDrill != null && hasDrills) {
-            sections.add(drillSectionStartIdx, buildBreakSection("Trinken, nächste Übungen kurz erklären."));
+            sections.add(drillSectionStartIdx, buildBreakSection("Trinken, nächste Übungen kurz erklären. Wer kann, fängt schon mit dem Aufbau an."));
         }
 
         // --- SCHRITT 5: Pause + Batting ---
@@ -186,9 +200,14 @@ public class TrainingPlanGenerator {
             sections.add(buildGameSection(playerCount, gameMinutes));
         }
 
-        final String groupHint = String.format(
-                "Erfahrene Spieler gleichmäßig auf die Gruppen verteilen. Bei %d Spielern idealerweise Gruppen von %d-%d.",
-                playerCount, Math.max(2, IDEAL_GROUP_SIZE - 1), IDEAL_GROUP_SIZE + 1);
+        final int groupCount = Math.min(playerCount >= 12 ? 3 : 2, Math.max(2, playerCount / IDEAL_GROUP_SIZE));
+        final int minGroup = playerCount / groupCount;
+        final int maxGroup = (int) Math.ceil((double) playerCount / groupCount);
+        final String groupHint = minGroup == maxGroup
+                ? String.format("Erfahrene Spieler gleichmäßig auf die Gruppen verteilen. Bei %d Spielern: %d Gruppen à %d.",
+                        playerCount, groupCount, minGroup)
+                : String.format("Erfahrene Spieler gleichmäßig auf die Gruppen verteilen. Bei %d Spielern: %d Gruppen à %d-%d.",
+                        playerCount, groupCount, minGroup, maxGroup);
 
         return new TrainingPlanContent(sections, groupHint, null);
     }
@@ -198,18 +217,23 @@ public class TrainingPlanGenerator {
     private List<TrainingPlanSection> buildStationBlock(final List<Drill> drills, final int playerCount,
                                                          final int totalMinutes, final int parallelGroup) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
-        final int numStations = Math.min(drills.size(), Math.min(4, Math.max(2, playerCount / IDEAL_GROUP_SIZE)));
-        final int playersPerGroup = (int) Math.ceil((double) playerCount / numStations);
+        final int maxStations = playerCount >= 12 ? 3 : 2;
+        final int numStations = Math.min(drills.size(), Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)));
+        final int minPerGroup = playerCount / numStations;
+        final int maxPerGroup = (int) Math.ceil((double) playerCount / numStations);
         final int minutesPerStation = totalMinutes / numStations;
+        final String groupSizeText = minPerGroup == maxPerGroup
+                ? String.valueOf(minPerGroup)
+                : minPerGroup + "-" + maxPerGroup;
 
         for (int i = 0; i < numStations; i++) {
             final Drill drill = drills.get(i);
             final TrainingPlanSection section = buildDrillSection(drill, "DRILL", totalMinutes, playerCount);
             section.setParallelGroup(parallelGroup);
-            section.setPlayersPerGroup(playersPerGroup);
+            section.setPlayersPerGroup(maxPerGroup);
             section.setRotationPlan(String.format(
-                    "%d Gruppen à %d Spieler. %d Minuten pro Station, dann rotieren. Nach %d Minuten hat jede Gruppe jeden Drill gemacht.",
-                    numStations, playersPerGroup, minutesPerStation, totalMinutes));
+                    "%d Gruppen à %s Spieler. %d Minuten pro Station, dann rotieren. Nach %d Minuten hat jede Gruppe jeden Drill gemacht.",
+                    numStations, groupSizeText, minutesPerStation, totalMinutes));
             section.setGroupSetup(String.format("Station %s — %s", Character.toString('A' + i), drill.getName()));
             sections.add(section);
         }

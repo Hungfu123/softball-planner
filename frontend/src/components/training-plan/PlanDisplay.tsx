@@ -42,6 +42,7 @@ const PHASE_CONFIG: Record<string, { label: string }> = {
   DRILL:   { label: 'Drills zusammen' },
   BATTING: { label: 'Batting' },
   GAME:    { label: 'Spiel' },
+  BREAK:   { label: 'Pause' },
 }
 
 function getPhaseType(block: GroupedBlock): string {
@@ -59,8 +60,9 @@ function buildPhases(grouped: GroupedBlock[]): Phase[] {
     const cfg = PHASE_CONFIG[type] ?? PHASE_CONFIG.DRILL
 
     // Gleiche Phase zusammenfassen (z.B. mehrere aufeinanderfolgende Station-Blöcke)
+    // BREAK-Phasen nie zusammenfassen — jede Pause ist eigenständig
     const last = phases[phases.length - 1]
-    if (last && last.id === type) {
+    if (last && last.id === type && type !== 'BREAK') {
       last.minutes += minutes
       last.blocks.push(block)
     } else {
@@ -78,6 +80,8 @@ function buildShareText(drills: DrillResponse[], grouped: GroupedBlock[], traini
   lines.push('')
 
   for (const phase of phases) {
+    // Pausen nicht in den Überblick aufnehmen
+    if (phase.id === 'BREAK') continue
     if (phase.id === 'WARMUP') {
       lines.push('*Aufwärmen*')
       lines.push('• Aufwärmroutine')
@@ -161,18 +165,38 @@ function CompactWarmup({ block, drills }: { block: GroupedBlock; drills: DrillRe
   )
 }
 
+// ─── Compact Break ───
+
+function CompactBreak({ block }: { block: GroupedBlock }) {
+  const section = block.sections[0]
+  return (
+    <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-medium text-gray-600">Pause</span>
+        <span className="text-xs text-gray-400">{section.durationMinutes} min</span>
+      </div>
+      {section.setupNotes && (
+        <p className="text-xs text-gray-500 mt-1">{section.setupNotes}</p>
+      )}
+    </div>
+  )
+}
+
 // ─── Station Block ───
 
-function StationBlock({ block, drills }: { block: GroupedBlock; drills: DrillResponse[] }) {
+function StationBlock({ block, drills, playerCount }: { block: GroupedBlock; drills: DrillResponse[]; playerCount: number }) {
   const duration = block.sections[0]?.durationMinutes ?? 0
-  const playersPerGroup = block.sections[0]?.playersPerGroup
-  const perStation = block.sections.length > 0 ? Math.round(duration / block.sections.length) : 0
+  const numStations = block.sections.length
+  const perStation = numStations > 0 ? Math.round(duration / numStations) : 0
+  const minPerGroup = Math.floor(playerCount / numStations)
+  const maxPerGroup = Math.ceil(playerCount / numStations)
+  const groupSizeText = minPerGroup === maxPerGroup ? `${minPerGroup}` : `${minPerGroup}-${maxPerGroup}`
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 plan-section">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-gray-500">{block.sections.length} Drills · Gruppen rotieren</span>
-        <span className="text-[11px] text-gray-400">{duration} min · {perStation} min/Drill{playersPerGroup ? ` · ${playersPerGroup}/Gruppe` : ''}</span>
+        <span className="text-xs font-medium text-gray-500">{numStations} Drills · Gruppen rotieren</span>
+        <span className="text-[11px] text-gray-400">{duration} min · {perStation} min/Drill · {groupSizeText}/Gruppe</span>
       </div>
 
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
@@ -192,7 +216,7 @@ function StationBlock({ block, drills }: { block: GroupedBlock; drills: DrillRes
                 )}
               </div>
               <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
-              {section.playersPerGroup && <span className="text-xs text-gray-400">{section.playersPerGroup} Spieler</span>}
+              <span className="text-xs text-gray-400">{groupSizeText} Spieler</span>
               {drill?.description && (
                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">{drill.description.split('\n')[0]}</p>
               )}
@@ -227,6 +251,16 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
               const startMinute = minuteOffset
               minuteOffset += phase.minutes
 
+              // BREAK: kompakte Karte ohne Phase-Header
+              if (phase.id === 'BREAK') {
+                sectionIndex++
+                return (
+                  <div key={pi} className={`space-y-2 ${pi > 0 ? 'mt-5' : ''}`}>
+                    <CompactBreak block={phase.blocks[0]} />
+                  </div>
+                )
+              }
+
               return (
                 <div key={pi} className={`space-y-2 ${pi > 0 ? 'mt-5' : ''}`}>
                   <PhaseHeader phase={phase} startMinute={startMinute} />
@@ -241,7 +275,7 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
                     // Stationsblöcke
                     if (block.parallel && block.sections.length >= 2) {
                       sectionIndex += block.sections.length
-                      return <StationBlock key={bi} block={block} drills={drills} />
+                      return <StationBlock key={bi} block={block} drills={drills} playerCount={plan.playerCount} />
                     }
 
                     // Einzelne Sections (Batting, Game, einzelne Drills)
