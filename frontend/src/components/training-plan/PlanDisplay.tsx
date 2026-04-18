@@ -242,6 +242,30 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
     <div className="space-y-4">
       <div className="flex flex-col lg:flex-row lg:items-start gap-4">
 
+        {/* === Mobile: Focus + Actions oben === */}
+        <div className="lg:hidden">
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Schwerpunkt</p>
+                <h3 className="text-lg font-bold text-gray-900">{plan.focus}</h3>
+                <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                  <span>{plan.playerCount} Spieler</span>
+                  <span>{plan.durationMinutes} min</span>
+                </div>
+              </div>
+              <div className="flex gap-1.5 no-print">
+                <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 cursor-pointer" title="Anpassen">
+                  <Pencil size={14} /> Anpassen
+                </button>
+                <button onClick={onDelete} className="flex items-center px-3 py-2 border border-gray-200 rounded-lg text-gray-400 cursor-pointer" title="Löschen">
+                  <TrashBin size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* === LEFT: Drill Cards === */}
         <div className="flex-1 min-w-0 space-y-3">
           {/* Phases with headers */}
@@ -289,8 +313,8 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
           })()}
         </div>
 
-        {/* === RIGHT: Sticky Sidebar === */}
-        <div className="lg:w-72 lg:flex-shrink-0">
+        {/* === RIGHT: Sticky Sidebar (Desktop only — Mobile hat Focus+Buttons oben) === */}
+        <div className="hidden lg:block lg:w-72 lg:flex-shrink-0">
           <div className="lg:sticky lg:top-20 space-y-3">
 
             {/* Focus + Actions */}
