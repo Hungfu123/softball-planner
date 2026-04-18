@@ -16,13 +16,13 @@ public class DrillService {
     private static final Map<String, List<DrillCategory>> FOCUS_CATEGORY_MAP = Map.ofEntries(
         Map.entry("WERFEN", List.of(DrillCategory.THROWING)),
         Map.entry("INFIELD_DEFENSE", List.of(DrillCategory.FIRST_BASE, DrillCategory.SECOND_BASE, DrillCategory.SS,
-                DrillCategory.THIRD_BASE, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE)),
-        Map.entry("OUTFIELD", List.of(DrillCategory.OUTFIELD)),
+                DrillCategory.THIRD_BASE, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE, DrillCategory.THROWING)),
+        Map.entry("OUTFIELD", List.of(DrillCategory.OUTFIELD, DrillCategory.THROWING)),
         Map.entry("BASERUNNING", List.of(DrillCategory.BASERUNNING, DrillCategory.CONDITIONING)),
         Map.entry("SITUATIONAL", List.of(DrillCategory.SITUATIONAL, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE,
                 DrillCategory.COMINGS)),
-        Map.entry("CATCHER", List.of(DrillCategory.CATCHER, DrillCategory.COMINGS)),
-        Map.entry("RELAY", List.of(DrillCategory.RELAY)),
+        Map.entry("CATCHER", List.of(DrillCategory.CATCHER, DrillCategory.COMINGS, DrillCategory.THROWING)),
+        Map.entry("RELAY", List.of(DrillCategory.RELAY, DrillCategory.THROWING)),
         Map.entry("ALLROUND", List.of(DrillCategory.values()))
     );
 

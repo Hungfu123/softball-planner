@@ -579,7 +579,6 @@
     "name": "Outfield Viereck — Flyout Reaktion",
     "categories": [
       "OUTFIELD",
-      "CONDITIONING",
       "FIELDING"
     ],
     "minPlayers": 2,
@@ -618,7 +617,6 @@
     "categories": [
       "SITUATIONAL",
       "OUTFIELD",
-      "FIELDING",
       "RELAY"
     ],
     "minPlayers": 3,
@@ -636,7 +634,10 @@
     "name": "Infield Wurf nach Home (Runner auf 3rd)",
     "categories": [
       "SITUATIONAL",
-      "FIELDING"
+      "FIELDING",
+      "FIRST_BASE",
+      "SS",
+      "THIRD_BASE"
     ],
     "minPlayers": 5,
     "equipment": [
@@ -697,8 +698,6 @@
     "name": "Relay & Cutoff Übung",
     "categories": [
       "SITUATIONAL",
-      "SS",
-      "SECOND_BASE",
       "OUTFIELD",
       "RELAY"
     ],
@@ -719,7 +718,12 @@
     "name": "Rundown",
     "categories": [
       "SITUATIONAL",
-      "FIELDING"
+      "FIELDING",
+      "BASERUNNING",
+      "FIRST_BASE",
+      "SECOND_BASE",
+      "SS",
+      "THIRD_BASE"
     ],
     "minPlayers": 5,
     "equipment": [

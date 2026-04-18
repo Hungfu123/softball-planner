@@ -151,7 +151,7 @@
 
 #drill(
   name: "Outfield Viereck — Flyout Reaktion",
-  kategorien: ("Outfield", "Conditioning", "Fielding"),
+  kategorien: ("Outfield", "Fielding"),
   spieler: 2,
   equipment: ("Bälle (mind. 5)", "4 Hütchen"),
   beschreibung: [

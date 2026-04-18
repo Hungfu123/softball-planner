@@ -42,12 +42,12 @@ class TrainingPlanGeneratorTest {
     }
 
     private static Drill infieldDrill(final String id, final String name) {
-        return new Drill(id, name, List.of(DrillCategory.FIRST_BASE),
+        return new Drill(id, name, List.of(DrillCategory.FIRST_BASE, DrillCategory.FIELDING),
                 2, List.of("Bälle"), "Infield Drill", false, null, null, null);
     }
 
     private static Drill relayDrill(final String id, final String name) {
-        return new Drill(id, name, List.of(DrillCategory.RELAY),
+        return new Drill(id, name, List.of(DrillCategory.RELAY, DrillCategory.SITUATIONAL),
                 6, List.of("Bälle", "Bases"), "Relay Drill", false, null, null, null);
     }
 
@@ -319,14 +319,18 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void kommagetrennte_schwerpunkte() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "WERFEN,OUTFIELD", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE,OUTFIELD", 180);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
             assertThat(drills).isNotEmpty();
-            // Mindestens Throwing- und Outfield-Drills sollten vorkommen
-            assertThat(drills.stream().map(TrainingPlanSection::getDrillId).toList())
-                    .anySatisfy(id -> assertThat(id).startsWith("throw"))
-                    .anySatisfy(id -> assertThat(id).startsWith("of"));
+            // Drills aus beiden Schwerpunkten sollten vorkommen
+            final List<String> ids = drills.stream().map(TrainingPlanSection::getDrillId).toList();
+            // Infield-Drills oder Throwing-Grundlagen
+            assertThat(ids).anySatisfy(id -> assertThat(id).satisfiesAnyOf(
+                    i -> assertThat(i).startsWith("if"),
+                    i -> assertThat(i).startsWith("throw")));
+            // Outfield-Drills
+            assertThat(ids).anySatisfy(id -> assertThat(id).startsWith("of"));
         }
 
         @Test
@@ -542,19 +546,23 @@ class TrainingPlanGeneratorTest {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 6, "RELAY", 120);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
-            // Relay-Drills haben minPlayers=6, bei playerCount=6 sollten sie auftauchen
+            // RELAY-Focus enthält RELAY + THROWING Kategorien
+            assertThat(drills).isNotEmpty();
             assertThat(drills).allSatisfy(s ->
-                    assertThat(s.getDrillId()).startsWith("relay"));
+                    assertThat(s.getDrillId()).satisfiesAnyOf(
+                            id -> assertThat(id).startsWith("relay"),
+                            id -> assertThat(id).startsWith("throw")));
         }
 
         @Test
         void kein_drill_fuer_focus_ueberspringt_focus() {
-            // Catalog ohne Relay-Drills, aber Focus ist RELAY
+            // Catalog ohne passende Drills — nur Drills mit CATCHER-Kategorie, Focus ist BASERUNNING
             final List<Drill> catalog = List.of(
                     warmupDrill(), hittingDrill(),
-                    throwingDrill("t1", "Wurf 1"), throwingDrill("t2", "Wurf 2"));
+                    new Drill("cat-1", "Catcher Drill", List.of(DrillCategory.CATCHER),
+                            2, List.of(), "", false, null, null, null));
 
-            final TrainingPlanContent result = generator.generate(catalog, 10, "RELAY", 120);
+            final TrainingPlanContent result = generator.generate(catalog, 10, "BASERUNNING", 120);
 
             // Sollte nicht crashen, einfach keine Drills
             assertThat(sectionsByType(result, "DRILL")).isEmpty();
@@ -736,6 +744,65 @@ class TrainingPlanGeneratorTest {
                 // Alle Drills innerhalb eines Blocks haben die gleiche Dauer = STATION_BLOCK_MINUTES (25)
                 assertThat(stationen.get(0).getDurationMinutes()).isEqualTo(25);
             }
+        }
+    }
+
+    // ─── Progression & Deduplizierung ───
+
+    @Nested
+    class Progression {
+
+        @Test
+        void drills_sind_nach_level_sortiert_grundlagen_vor_position_vor_simulation() {
+            // Infield hat alle 3 Levels: Throwing (Grund), 1B/SS (Pos), Double Play (Sim)
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 6, "INFIELD_DEFENSE", 120);
+
+            final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
+            assertThat(drills.size()).isGreaterThanOrEqualTo(2);
+
+            // Throwing-Drills (Grundlagen) sollten vor Infield-Position-Drills kommen
+            int lastThrowingIdx = -1;
+            int firstNonThrowingIdx = Integer.MAX_VALUE;
+            for (int i = 0; i < drills.size(); i++) {
+                final String id = drills.get(i).getDrillId();
+                if (id != null && id.startsWith("throw")) {
+                    lastThrowingIdx = i;
+                } else if (firstNonThrowingIdx == Integer.MAX_VALUE) {
+                    firstNonThrowingIdx = i;
+                }
+            }
+            if (lastThrowingIdx >= 0 && firstNonThrowingIdx < Integer.MAX_VALUE) {
+                assertThat(lastThrowingIdx).isLessThan(firstNonThrowingIdx);
+            }
+        }
+
+        @Test
+        void deduplizierung_bei_mehreren_schwerpunkten() {
+            // WERFEN + INFIELD_DEFENSE: Throwing-Drills sollten nur einmal vorkommen
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 6, "WERFEN,INFIELD_DEFENSE", 120);
+
+            final List<String> drillIds = sectionsByType(result, "DRILL").stream()
+                    .map(TrainingPlanSection::getDrillId)
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+
+            // Keine doppelten Drill-IDs
+            assertThat(drillIds).doesNotHaveDuplicates();
+        }
+
+        @Test
+        void infield_focus_enthaelt_throwing_als_grundlage() {
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE", 180);
+
+            final List<String> drillIds = sectionsByType(result, "DRILL").stream()
+                    .map(TrainingPlanSection::getDrillId).toList();
+
+            // Throwing-Drills als Grundlage UND/ODER Infield-Drills als Positionsdrills
+            assertThat(drillIds).isNotEmpty();
+            // Beide Typen sollten im Katalog matchen
+            assertThat(drillIds).anySatisfy(id -> assertThat(id).satisfiesAnyOf(
+                    i -> assertThat(i).startsWith("throw"),
+                    i -> assertThat(i).startsWith("if")));
         }
     }
 

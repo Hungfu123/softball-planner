@@ -6,7 +6,7 @@
 
 #drill(
   name: "Relay Einfach (zu dritt/viert)",
-  kategorien: ("Situational", "Outfield", "Fielding", "Relay"),
+  kategorien: ("Situational", "Outfield", "Relay"),
   spieler: 3,
   equipment: ("Bälle",),
   beschreibung: [
@@ -44,7 +44,7 @@
 
 #drill(
   name: "Infield Wurf nach Home (Runner auf 3rd)",
-  kategorien: ("Situational", "Fielding"),
+  kategorien: ("Situational", "Fielding", "1B", "SS", "3B"),
   spieler: 5,
   equipment: ("Bälle", "Bases"),
   beschreibung: [
@@ -241,7 +241,7 @@
 
 #drill(
   name: "Relay & Cutoff Übung",
-  kategorien: ("Situational", "SS", "2B", "Outfield", "Relay"),
+  kategorien: ("Situational", "Outfield", "Relay"),
   spieler: 8,
   equipment: ("Bälle", "Bases", "Schläger (optional)"),
   beschreibung: [
@@ -380,7 +380,7 @@
 
 #drill(
   name: "Rundown",
-  kategorien: ("Situational", "Fielding"),
+  kategorien: ("Situational", "Fielding", "Baserunning", "1B", "2B", "SS", "3B"),
   spieler: 5,
   equipment: ("Bälle", "Bases"),
   beschreibung: [
