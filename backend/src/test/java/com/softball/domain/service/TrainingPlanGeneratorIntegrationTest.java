@@ -44,15 +44,11 @@ class TrainingPlanGeneratorIntegrationTest {
         assertThat(sections.stream().noneMatch(s -> "GAME".equals(s.getSectionType()))).isTrue();
         assertThat(sections.stream().anyMatch(s -> "BATTING".equals(s.getSectionType()))).isTrue();
 
-        // Grundlagen sequentiell + Positions-Drills als Stationen
+        // Drills vorhanden (Stationen oder sequentiell je nach Zeitbudget)
         final List<TrainingPlanSection> drills = sections.stream()
                 .filter(s -> "DRILL".equals(s.getSectionType())).toList();
         assertThat(drills).isNotEmpty();
-
-        // Sequentielle Grundlagen (kein parallelGroup)
-        assertThat(drills.stream().anyMatch(s -> s.getParallelGroup() == null)).isTrue();
-        // Stationsblock mit Positions-Drills (parallelGroup gesetzt)
-        assertThat(drills.stream().anyMatch(s -> s.getParallelGroup() != null)).isTrue();
+        assertThat(sections.stream().anyMatch(s -> "BREAK".equals(s.getSectionType()))).isTrue();
     }
 
     @Test

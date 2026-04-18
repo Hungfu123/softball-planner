@@ -28,7 +28,9 @@ public class TrainingPlanGenerator {
     private static final int MAX_GAME_MINUTES = 40;
     private static final int IDEAL_GROUP_SIZE = 4;
     private static final int MIN_PLAYERS_FOR_STATIONS = 8;
-    private static final int MINUTES_PER_STATION = 10;
+    private static final int MINUTES_PER_STATION_SMALL = 15;
+    private static final int MINUTES_PER_STATION_LARGE = 20;
+    private static final int LARGE_GROUP_THRESHOLD = 6;
     private static final int BASICS_DRILL_MINUTES = 10;
     private static final int MAX_BASICS_DRILLS = 2;
     private static final int MIN_DRILL_MINUTES = 10;
@@ -129,7 +131,11 @@ public class TrainingPlanGenerator {
                 final int maxStations = playerCount >= 12 ? 3 : 2;
                 final int drillsPerBlock = canDoStations
                         ? Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)) : 0;
-                final int stationBlockMinutes = drillsPerBlock * MINUTES_PER_STATION;
+                final int playersPerStation = drillsPerBlock > 0
+                        ? (int) Math.ceil((double) playerCount / drillsPerBlock) : 0;
+                final int minutesPerStation = playersPerStation >= LARGE_GROUP_THRESHOLD
+                        ? MINUTES_PER_STATION_LARGE : MINUTES_PER_STATION_SMALL;
+                final int stationBlockMinutes = drillsPerBlock * minutesPerStation;
                 final int stationBreakNeeded = canDoStations && drillsPerBlock >= 3
                         ? BREAK_MINUTES * 2 : (canDoStations ? BREAK_MINUTES : 0);
                 final int stationTotalNeeded = canDoStations
@@ -153,9 +159,9 @@ public class TrainingPlanGenerator {
 
                 // --- Positions-/Simulations-Drills: Stationsblock (parallel in Gruppen) ---
                 int remainingFocusMinutes = focusMinutes - focusUsed;
-                if (canDoStations && remainingFocusMinutes >= drillsPerBlock * MINUTES_PER_STATION) {
+                if (canDoStations && remainingFocusMinutes >= stationBlockMinutes) {
                     final int stationDrills = Math.min(advanced.size(), drillsPerBlock);
-                    final int blockMinutes = stationDrills * MINUTES_PER_STATION;
+                    final int blockMinutes = stationDrills * minutesPerStation;
                     // Aufbaupause: 10 min bei 3+ Stationen, 5 min bei 2
                     if (focusUsed > 0 && remainingFocusMinutes > blockMinutes) {
                         final int idealBreak = stationDrills >= 3 ? BREAK_MINUTES * 2 : BREAK_MINUTES;

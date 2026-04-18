@@ -357,7 +357,8 @@ class TrainingPlanGeneratorTest {
         @Test
         void grundlagen_sequentiell_positionen_als_stationen() {
             // INFIELD_DEFENSE hat Grundlagen (THROWING) + Positions-Drills (1B/SS/3B)
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "INFIELD_DEFENSE", 120);
+            // 180 min damit genug Drill-Zeit für Basics + Stationen
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "INFIELD_DEFENSE", 180);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
             assertThat(drills).isNotEmpty();
