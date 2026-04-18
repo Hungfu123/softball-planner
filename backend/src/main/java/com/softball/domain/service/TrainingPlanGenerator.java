@@ -23,13 +23,16 @@ public class TrainingPlanGenerator {
     private static final String HITTING_DRILL_ID = "hitting-stationen";
     private static final int WARMUP_MINUTES = 30;
     private static final int MIN_PLAYERS_FOR_GAME = 14;
-    private static final int MIN_DURATION_FOR_GAME = 120;
+    private static final int MIN_DURATION_FOR_GAME = 150;
     private static final int MIN_GAME_MINUTES = 20;
     private static final int MAX_GAME_MINUTES = 40;
     private static final int IDEAL_GROUP_SIZE = 4;
     private static final int MIN_PLAYERS_FOR_STATIONS = 8;
-    private static final int STATION_BLOCK_MINUTES = 25;
+    private static final int STATION_BLOCK_MINUTES = 20;
+    private static final int BASICS_DRILL_MINUTES = 10;
+    private static final int MAX_BASICS_DRILLS = 2;
     private static final int MIN_DRILL_MINUTES = 10;
+    private static final int BREAK_MINUTES = 5;
 
     private static final Map<String, List<DrillCategory>> FOCUS_CATEGORY_MAP = Map.ofEntries(
             Map.entry("WERFEN", List.of(DrillCategory.THROWING)),
@@ -63,14 +66,21 @@ public class TrainingPlanGenerator {
             remainingMinutes -= gameMinutes;
         }
 
+        // --- Pausen reservieren: vor Batting + optional vor Spiel ---
+        // Pause nach Warmup wird aus Drill-Zeit genommen (nur wenn genug Drill-Zeit vorhanden)
+        final int reservedBreaks = 1 + (gameMinutes > 0 ? 1 : 0);
+        remainingMinutes -= reservedBreaks * BREAK_MINUTES;
+
         // --- SCHRITT 3: Batting reservieren ---
-        final int battingMinutes = calculateBattingMinutes(totalMinutes, remainingMinutes);
+        final int battingMinutes = calculateBattingMinutes(totalMinutes, remainingMinutes, playerCount);
         remainingMinutes -= battingMinutes;
 
-        // --- SCHRITT 4: Drill-Phase — pro Schwerpunkt Blöcke à max 40 min ---
+        // --- SCHRITT 4: Drill-Phase ---
+        final int drillSectionStartIdx = sections.size();
         final List<String> focuses = parseFocuses(focus);
         int parallelGroupCounter = 1;
-        int totalDrillMinutes = remainingMinutes;
+        // Warmup-Pause + Stations-Aufbaupause werden aus Drill-Zeit genommen
+        int totalDrillMinutes = Math.max(0, remainingMinutes - BREAK_MINUTES);
         int usedDrillMinutes = 0;
         final Set<String> usedDrillIds = new HashSet<>();
 
@@ -96,46 +106,83 @@ public class TrainingPlanGenerator {
                 continue;
             }
 
-            // Nach Progression sortieren (Grundlagen → Position → Simulation), innerhalb jedes Levels shufflen
-            final List<Drill> sorted = sortByProgression(focusDrills);
+            // Drills nach Level aufteilen: Grundlagen (Level 1) vs. Position/Simulation (Level 2+)
+            final List<Drill> basics = new ArrayList<>(focusDrills.stream()
+                    .filter(d -> drillLevel(d) == 1).toList());
+            final List<Drill> advanced = new ArrayList<>(focusDrills.stream()
+                    .filter(d -> drillLevel(d) >= 2).toList());
+            Collections.shuffle(basics);
+            Collections.shuffle(advanced);
 
-            // Bei genug Spielern: Stationsblöcke à 25 min, max 2 pro Schwerpunkt
-            if (playerCount >= MIN_PLAYERS_FOR_STATIONS && sorted.size() >= 2) {
-                final int maxBlocks = Math.min(2, focusMinutes / STATION_BLOCK_MINUTES);
-                final int numBlocks = Math.max(1, maxBlocks);
-                final int drillsPerBlock = Math.min(4, Math.max(2, playerCount / IDEAL_GROUP_SIZE));
-                int drillOffset = 0;
-                int focusUsed = 0;
+            int focusUsed = 0;
 
-                for (int b = 0; b < numBlocks && drillOffset + 1 < sorted.size(); b++) {
-                    final int end = Math.min(sorted.size(), drillOffset + drillsPerBlock);
-                    if (end - drillOffset < 2) break;
-                    final List<Drill> blockDrills = sorted.subList(drillOffset, end);
+            if (advanced.isEmpty()) {
+                // --- Nur Grundlagen (z.B. WERFEN-Focus): alle Zeit für sequentielle Drills ---
+                final List<TrainingPlanSection> seqDrills = buildSequentialDrills(
+                        basics, playerCount, focusMinutes);
+                sections.addAll(seqDrills);
+                basics.forEach(d -> usedDrillIds.add(d.getId()));
+                focusUsed += focusMinutes;
+            } else {
+                // --- Grundlagen: alle zusammen, max 2 Drills à 10 min ---
+                if (!basics.isEmpty() && focusMinutes >= BASICS_DRILL_MINUTES) {
+                    final int numBasics = Math.min(MAX_BASICS_DRILLS,
+                            Math.min(basics.size(), focusMinutes / BASICS_DRILL_MINUTES));
+                    final int basicsTime = numBasics * BASICS_DRILL_MINUTES;
+                    for (int i = 0; i < numBasics; i++) {
+                        sections.add(buildDrillSection(basics.get(i), "DRILL", BASICS_DRILL_MINUTES, playerCount));
+                        usedDrillIds.add(basics.get(i).getId());
+                    }
+                    focusUsed += basicsTime;
+                }
+
+                // --- Positions-/Simulations-Drills: Stationsblock (parallel in Gruppen) ---
+                int remainingFocusMinutes = focusMinutes - focusUsed;
+                if (playerCount >= MIN_PLAYERS_FOR_STATIONS && advanced.size() >= 2
+                        && remainingFocusMinutes >= STATION_BLOCK_MINUTES) {
+                    final int drillsPerBlock = Math.min(4, Math.max(2, playerCount / IDEAL_GROUP_SIZE));
+                    final int stationDrills = Math.min(advanced.size(), drillsPerBlock);
+                    // Aufbaupause: 10 min bei 3+ Stationen, 5 min bei 2 (Fallback wenn kein Platz)
+                    if (focusUsed > 0 && remainingFocusMinutes > STATION_BLOCK_MINUTES) {
+                        final int idealBreak = stationDrills >= 3 ? BREAK_MINUTES * 2 : BREAK_MINUTES;
+                        final int actualBreak = Math.min(idealBreak, remainingFocusMinutes - STATION_BLOCK_MINUTES);
+                        sections.add(buildBreakSection("Trinken, nächste Übungen kurz erklären. Wer die Übung kennt, hilft beim Stationen aufbauen.", actualBreak));
+                        focusUsed += actualBreak;
+                        remainingFocusMinutes -= actualBreak;
+                    }
+                    final List<Drill> blockDrills = advanced.subList(0, stationDrills);
                     sections.addAll(buildStationBlock(blockDrills, playerCount, STATION_BLOCK_MINUTES, parallelGroupCounter));
                     blockDrills.forEach(d -> usedDrillIds.add(d.getId()));
                     parallelGroupCounter++;
-                    drillOffset = end;
                     focusUsed += STATION_BLOCK_MINUTES;
+                } else if (!advanced.isEmpty() && remainingFocusMinutes >= MIN_DRILL_MINUTES) {
+                    final List<TrainingPlanSection> seqDrills = buildSequentialDrills(
+                            advanced, playerCount, remainingFocusMinutes);
+                    sections.addAll(seqDrills);
+                    advanced.forEach(d -> usedDrillIds.add(d.getId()));
+                    focusUsed += remainingFocusMinutes;
                 }
-
-                usedDrillMinutes += focusUsed;
-            } else {
-                final List<TrainingPlanSection> seqDrills = buildSequentialDrills(
-                        sorted, playerCount, focusMinutes);
-                sections.addAll(seqDrills);
-                sorted.forEach(d -> usedDrillIds.add(d.getId()));
-                usedDrillMinutes += focusMinutes;
             }
+
+            usedDrillMinutes += focusUsed;
         }
 
-        // --- SCHRITT 5: Batting ---
+        // --- Pause nach Warmup nur wenn Drills generiert wurden ---
+        final boolean hasDrills = sections.size() > drillSectionStartIdx;
+        if (warmupDrill != null && hasDrills) {
+            sections.add(drillSectionStartIdx, buildBreakSection("Trinken, nächste Übungen kurz erklären."));
+        }
+
+        // --- SCHRITT 5: Pause + Batting ---
         final Drill hittingDrill = findById(allDrills, HITTING_DRILL_ID);
         if (hittingDrill != null && battingMinutes > 0) {
+            sections.add(buildBreakSection("Trinken. Batting-Stationen aufbauen: Tees, Netz, Bälle bereitlegen. Wer die Station kennt, hilft beim Aufbau."));
             sections.add(buildDrillSection(hittingDrill, "BATTING", battingMinutes, playerCount));
         }
 
-        // --- SCHRITT 6: Spiel ---
+        // --- SCHRITT 6: Pause + Spiel ---
         if (gameMinutes > 0) {
+            sections.add(buildBreakSection("Trinken. Bases aufstellen, Teams einteilen."));
             sections.add(buildGameSection(playerCount, gameMinutes));
         }
 
@@ -219,6 +266,23 @@ public class TrainingPlanGenerator {
         return section;
     }
 
+    // ─── Pause ───
+
+    private TrainingPlanSection buildBreakSection(final String setupHint) {
+        return buildBreakSection(setupHint, BREAK_MINUTES);
+    }
+
+    private TrainingPlanSection buildBreakSection(final String setupHint, final int minutes) {
+        final TrainingPlanSection section = new TrainingPlanSection();
+        section.setSectionType("BREAK");
+        section.setTitle("Pause");
+        section.setDurationMinutes(minutes);
+        if (setupHint != null) {
+            section.setSetupNotes(setupHint);
+        }
+        return section;
+    }
+
     // ─── Helpers ───
 
     private String buildAdaptationNote(final Drill drill, final int playerCount) {
@@ -232,9 +296,13 @@ public class TrainingPlanGenerator {
         return null;
     }
 
-    private int calculateBattingMinutes(final int totalMinutes, final int remainingAfterWarmup) {
+    private int calculateBattingMinutes(final int totalMinutes, final int remainingAfterWarmup,
+                                            final int playerCount) {
         if (totalMinutes >= 180) return 60;
-        if (totalMinutes >= 120) return 45;
+        if (totalMinutes >= 120) {
+            // Ab 12 Spielern: mind. 50 min Batting (jeder muss drankommen)
+            return playerCount >= 12 ? 50 : 40;
+        }
         if (totalMinutes >= 90) return 40;
         // Kurze Trainings: mindestens 15 min, aber nicht mehr als die Hälfte der verbleibenden Zeit
         return Math.max(15, Math.min(40, remainingAfterWarmup / 2));
@@ -277,11 +345,12 @@ public class TrainingPlanGenerator {
 
     private static final Set<DrillCategory> POSITION_CATEGORIES = Set.of(
             DrillCategory.FIRST_BASE, DrillCategory.SECOND_BASE, DrillCategory.SS,
-            DrillCategory.THIRD_BASE, DrillCategory.OUTFIELD, DrillCategory.CATCHER, DrillCategory.PITCHER);
+            DrillCategory.THIRD_BASE, DrillCategory.OUTFIELD, DrillCategory.CATCHER, DrillCategory.PITCHER,
+            DrillCategory.RELAY);
 
     private static final Set<DrillCategory> SIMULATION_CATEGORIES = Set.of(
             DrillCategory.SITUATIONAL, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE,
-            DrillCategory.RELAY, DrillCategory.COMINGS);
+            DrillCategory.COMINGS);
 
     /**
      * Bestimmt das Progressionslevel eines Drills:

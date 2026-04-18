@@ -102,7 +102,7 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void plan_endet_mit_spiel_wenn_bedingungen_erfuellt() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 180);
 
             final List<TrainingPlanSection> all = sections(result);
             assertThat(all.get(all.size() - 1).getSectionType()).isEqualTo("GAME");
@@ -110,7 +110,7 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void batting_kommt_vor_spiel() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 180);
 
             final List<TrainingPlanSection> all = sections(result);
             final int battingIdx = findFirstIndex(all, "BATTING");
@@ -182,8 +182,8 @@ class TrainingPlanGeneratorTest {
     class SpielSektion {
 
         @Test
-        void spiel_bei_14_spielern_und_120_min() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 14, "WERFEN", 120);
+        void spiel_bei_14_spielern_und_150_min() {
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 14, "WERFEN", 150);
 
             final List<TrainingPlanSection> games = sectionsByType(result, "GAME");
             assertThat(games).hasSize(1);
@@ -192,21 +192,21 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void kein_spiel_bei_13_spielern() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 13, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 13, "WERFEN", 150);
 
             assertThat(sectionsByType(result, "GAME")).isEmpty();
         }
 
         @Test
-        void kein_spiel_bei_119_minuten() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 119);
+        void kein_spiel_bei_120_minuten() {
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
 
             assertThat(sectionsByType(result, "GAME")).isEmpty();
         }
 
         @Test
         void spiel_titel_gerade_spielerzahl() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 150);
 
             final TrainingPlanSection game = sectionsByType(result, "GAME").get(0);
             assertThat(game.getTitle()).isEqualTo("Spiel (8 vs 8)");
@@ -215,7 +215,7 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void spiel_titel_ungerade_spielerzahl() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 15, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 15, "WERFEN", 150);
 
             final TrainingPlanSection game = sectionsByType(result, "GAME").get(0);
             assertThat(game.getTitle()).contains("7 vs 8");
@@ -231,14 +231,14 @@ class TrainingPlanGeneratorTest {
             assertThat(gameLang.getDurationMinutes()).isLessThanOrEqualTo(40);
 
             // Wenig verbleibend → min 20
-            final TrainingPlanContent kurz = generator.generate(fullCatalog(), 14, "WERFEN", 120);
+            final TrainingPlanContent kurz = generator.generate(fullCatalog(), 14, "WERFEN", 150);
             final TrainingPlanSection gameKurz = sectionsByType(kurz, "GAME").get(0);
             assertThat(gameKurz.getDurationMinutes()).isGreaterThanOrEqualTo(20);
         }
 
         @Test
         void spiel_rotation_plan() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 150);
 
             final TrainingPlanSection game = sectionsByType(result, "GAME").get(0);
             assertThat(game.getRotationPlan()).contains("durchspielen");
@@ -260,10 +260,17 @@ class TrainingPlanGeneratorTest {
         }
 
         @Test
-        void batting_45_min_bei_120_min_training() {
+        void batting_40_min_bei_120_min_unter_12_spieler() {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "WERFEN", 120);
 
-            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(45);
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(40);
+        }
+
+        @Test
+        void batting_50_min_bei_120_min_ab_12_spieler() {
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 12, "WERFEN", 120);
+
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(50);
         }
 
         @Test
@@ -319,7 +326,8 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void kommagetrennte_schwerpunkte() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE,OUTFIELD", 180);
+            // 10 Spieler (kein Spiel) → genug Drill-Zeit für beide Schwerpunkte
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "INFIELD_DEFENSE,OUTFIELD", 180);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
             assertThat(drills).isNotEmpty();
@@ -347,17 +355,43 @@ class TrainingPlanGeneratorTest {
     class StationsVsSequentiell {
 
         @Test
-        void stationen_ab_8_spielern() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 8, "WERFEN", 120);
+        void grundlagen_sequentiell_positionen_als_stationen() {
+            // INFIELD_DEFENSE hat Grundlagen (THROWING) + Positions-Drills (1B/SS/3B)
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "INFIELD_DEFENSE", 120);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
             assertThat(drills).isNotEmpty();
-            assertThat(drills.stream().anyMatch(s -> s.getParallelGroup() != null)).isTrue();
+
+            // Grundlagen (Throwing) sind sequentiell (kein parallelGroup)
+            final List<TrainingPlanSection> seqDrills = drills.stream()
+                    .filter(s -> s.getParallelGroup() == null).toList();
+            assertThat(seqDrills).isNotEmpty();
+
+            // Positions-Drills als Stationsblock (mit parallelGroup)
+            final List<TrainingPlanSection> stations = drills.stream()
+                    .filter(s -> s.getParallelGroup() != null).toList();
+            assertThat(stations).isNotEmpty();
+
+            // Grundlagen kommen VOR Stationen
+            final int lastSeqIdx = drills.indexOf(seqDrills.get(seqDrills.size() - 1));
+            final int firstStationIdx = drills.indexOf(stations.get(0));
+            assertThat(lastSeqIdx).isLessThan(firstStationIdx);
+        }
+
+        @Test
+        void reiner_werfen_focus_komplett_sequentiell() {
+            // WERFEN hat nur Level-1-Grundlagen → keine Stationen
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 12, "WERFEN", 120);
+
+            final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
+            assertThat(drills).isNotEmpty();
+            assertThat(drills).allSatisfy(s -> assertThat(s.getParallelGroup()).isNull());
         }
 
         @Test
         void sequentielle_drills_unter_8_spielern() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 7, "WERFEN", 120);
+            // < 8 Spieler → immer sequentiell, auch bei Positions-Drills
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 7, "INFIELD_DEFENSE", 120);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
             assertThat(drills).isNotEmpty();
@@ -366,7 +400,7 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void stationen_haben_gleiche_dauer_innerhalb_gruppe() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE", 180);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
             final var groups = drills.stream()
@@ -381,7 +415,7 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void stationen_haben_playersPerGroup_gesetzt() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE", 180);
 
             final List<TrainingPlanSection> stationen = sectionsByType(result, "DRILL").stream()
                     .filter(s -> s.getParallelGroup() != null).toList();
@@ -394,7 +428,7 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void stationen_haben_rotationPlan_und_groupSetup() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE", 180);
 
             final List<TrainingPlanSection> stationen = sectionsByType(result, "DRILL").stream()
                     .filter(s -> s.getParallelGroup() != null).toList();
@@ -409,13 +443,12 @@ class TrainingPlanGeneratorTest {
 
         @Test
         void station_group_setup_nutzt_buchstaben_A_B_C() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE", 180);
 
             final List<TrainingPlanSection> stationen = sectionsByType(result, "DRILL").stream()
                     .filter(s -> s.getParallelGroup() != null).toList();
 
             if (stationen.size() >= 2) {
-                // Erste Station einer Gruppe sollte A sein, zweite B, etc.
                 final var firstGroup = stationen.stream()
                         .filter(s -> s.getParallelGroup().equals(stationen.get(0).getParallelGroup())).toList();
                 assertThat(firstGroup.get(0).getGroupSetup()).startsWith("Station A");
@@ -426,21 +459,21 @@ class TrainingPlanGeneratorTest {
         }
 
         @Test
-        void max_2_stationsbloecke_pro_schwerpunkt() {
-            // Langer Trainingszeitraum → auch nicht mehr als 2 Blöcke pro Focus
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN", 240);
+        void max_1_stationsblock_pro_schwerpunkt() {
+            // Pro Schwerpunkt: Grundlagen sequentiell + max 1 Stationsblock
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE", 240);
 
             final List<TrainingPlanSection> stationen = sectionsByType(result, "DRILL").stream()
                     .filter(s -> s.getParallelGroup() != null).toList();
 
             final long distinctGroups = stationen.stream()
                     .map(TrainingPlanSection::getParallelGroup).distinct().count();
-            assertThat(distinctGroups).isLessThanOrEqualTo(2);
+            assertThat(distinctGroups).isLessThanOrEqualTo(1);
         }
 
         @Test
         void stationsblock_hat_mindestens_2_drills() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 12, "WERFEN", 120);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 12, "INFIELD_DEFENSE", 120);
 
             final var groups = sectionsByType(result, "DRILL").stream()
                     .filter(s -> s.getParallelGroup() != null)
@@ -452,11 +485,11 @@ class TrainingPlanGeneratorTest {
         }
 
         @Test
-        void sequentielle_drills_circa_15_min_pro_drill() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 6, "WERFEN", 120);
+        void grundlagen_drills_haben_keine_parallelGroup() {
+            // Grundlagen-Drills (THROWING, alle zusammen) haben keine parallelGroup
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 12, "WERFEN", 120);
 
             final List<TrainingPlanSection> drills = sectionsByType(result, "DRILL");
-            // Bei sequentiellen Drills sollte die Gesamtzeit ungefähr aufgeteilt sein
             assertThat(drills).allSatisfy(s -> assertThat(s.getParallelGroup()).isNull());
             assertThat(drills).isNotEmpty();
         }
@@ -468,21 +501,24 @@ class TrainingPlanGeneratorTest {
     class MehrereSchwerpunkte {
 
         @Test
-        void zwei_schwerpunkte_erzeugen_verschiedene_parallelGroups() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN,OUTFIELD", 180);
+        void zwei_schwerpunkte_erzeugen_drills_aus_beiden_kategorien() {
+            // 10 Spieler (kein Spiel) → genug Drill-Zeit für beide Schwerpunkte
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "INFIELD_DEFENSE,OUTFIELD", 180);
 
-            final List<TrainingPlanSection> stationen = sectionsByType(result, "DRILL").stream()
-                    .filter(s -> s.getParallelGroup() != null).toList();
+            final List<String> drillIds = sectionsByType(result, "DRILL").stream()
+                    .map(TrainingPlanSection::getDrillId).toList();
+            assertThat(drillIds).isNotEmpty();
 
-            final long distinctGroups = stationen.stream()
-                    .map(TrainingPlanSection::getParallelGroup).distinct().count();
-            // Jeder Schwerpunkt sollte eigene parallelGroup(s) bekommen
-            assertThat(distinctGroups).isGreaterThanOrEqualTo(2);
+            // Drills aus beiden Schwerpunkten: Infield + Outfield
+            assertThat(drillIds).anySatisfy(id -> assertThat(id).satisfiesAnyOf(
+                    i -> assertThat(i).startsWith("if"),
+                    i -> assertThat(i).startsWith("throw")));
+            assertThat(drillIds).anySatisfy(id -> assertThat(id).startsWith("of"));
         }
 
         @Test
         void parallelGroup_counter_ist_aufsteigend() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "WERFEN,OUTFIELD", 180);
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 16, "INFIELD_DEFENSE,OUTFIELD", 180);
 
             final List<Integer> groups = sectionsByType(result, "DRILL").stream()
                     .map(TrainingPlanSection::getParallelGroup)
@@ -673,8 +709,8 @@ class TrainingPlanGeneratorTest {
         }
 
         @Test
-        void exakt_an_grenzen_14_spieler_120_min() {
-            final TrainingPlanContent result = generator.generate(fullCatalog(), 14, "WERFEN", 120);
+        void exakt_an_grenzen_14_spieler_150_min() {
+            final TrainingPlanContent result = generator.generate(fullCatalog(), 14, "WERFEN", 150);
 
             assertThat(sectionsByType(result, "GAME")).hasSize(1);
         }

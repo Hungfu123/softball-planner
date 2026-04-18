@@ -147,6 +147,23 @@
     "variants": null
   },
   {
+    "id": "baserunning-diamond",
+    "name": "Bases durchlaufen mit Signalen",
+    "categories": [
+      "BASERUNNING",
+      "CONDITIONING"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bases oder Hütchen"
+    ],
+    "description": "Alle laufen nacheinander den kompletten Diamond ab und reagieren auf Base-Coach-Signale. Zwei Spieler stehen als Base-Coaches an 1st und 3rd Base.\n\nAblauf: Runner startet an Home und läuft los. Am 1st-Base-Coach: Signal lesen — Stopp (auf Base bleiben), Durchlaufen (weiter zur 2nd), oder Runden (Base runden und Lead nehmen). Am 3rd-Base-Coach: Gleiche Signale — Stopp, Durchlaufen nach Home, oder Runden.\n\nVariante 1 — Single: Coach zeigt Stopp an 1st. Runner bleibt. Nächstes Kommando: Lead, Go → Runner läuft zur 2nd. Von 2nd: Coach an 3rd zeigt Durchlaufen → Runner sprintet über 3rd nach Home.\n\nVariante 2 — Double/Triple: Coach zeigt Durchlaufen an 1st. Runner rundet 1st und läuft durch zur 2nd (oder 3rd). Dabei auf den 3rd-Base-Coach schauen.\n\nVariante 3 — Inside-the-Park: Coach zeigt überall Durchlaufen. Runner sprintet den kompletten Diamond ohne zu stoppen.\n\nWichtig: Beim Runden der Base den Bogen nach innen machen (nicht weit ausholen). Auf die Base treten, nicht drüber springen. Immer auf den nächsten Coach schauen während man läuft.",
+    "hasImage": false,
+    "pdfPage": null,
+    "rotation": "Nächster Runner startet sobald der vorherige die 2nd Base erreicht hat. Base-Coaches tauschen nach einer Runde.",
+    "variants": "Mit Zeitdruck: Stopuhr laufen lassen, wer schafft den schnellsten Diamond? Oder: Coach entscheidet spontan — Runner weiß vorher nicht ob Single, Double oder Triple."
+  },
+  {
     "id": "steal-1st-2nd",
     "name": "Steal von 1st auf 2nd",
     "categories": [
@@ -615,7 +632,6 @@
     "id": "relay-einfach",
     "name": "Relay Einfach (zu dritt/viert)",
     "categories": [
-      "SITUATIONAL",
       "OUTFIELD",
       "RELAY"
     ],

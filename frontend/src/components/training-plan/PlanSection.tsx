@@ -63,7 +63,7 @@ interface Props {
   index: number
 }
 
-export default function PlanSection({ section, drills, index: _index }: Props) {
+export default function PlanSection({ section, drills }: Props) {
   const [descOpen, setDescOpen] = useState(false)
   const [coachOpen, setCoachOpen] = useState(false)
   const drill = section.drillId ? drills.find(d => d.id === section.drillId) : null
