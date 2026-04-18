@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * Deterministischer Trainingsplan-Generator.
  * Erstellt einen Plan aus dem Drill-Katalog basierend auf Schwerpunkten, Spieleranzahl und Dauer.
- * Pro Schwerpunkt wird ein eigener Stationsblock erstellt.
+ * Siehe docs/trainingsplan-algorithmus.md für die vollständige Dokumentation.
  */
 public class TrainingPlanGenerator {
 
