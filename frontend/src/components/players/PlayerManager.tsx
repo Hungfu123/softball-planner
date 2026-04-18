@@ -218,11 +218,6 @@ export function PlayerManager() {
                 />
               ) : (
                 <>
-                  {p.defaultBattingOrder != null && (
-                    <span className="text-xs font-mono font-semibold text-gray-400 w-5 text-center shrink-0">
-                      #{p.defaultBattingOrder}
-                    </span>
-                  )}
                   <span className="flex-1 text-sm font-medium text-gray-900">{p.name}</span>
                 </>
               )}
