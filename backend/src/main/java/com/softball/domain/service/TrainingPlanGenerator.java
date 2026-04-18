@@ -35,6 +35,7 @@ public class TrainingPlanGenerator {
     private static final int MAX_BASICS_DRILLS = 2;
     private static final int MIN_DRILL_MINUTES = 10;
     private static final int BREAK_MINUTES = 5;
+    private static final int OVERTIME_BUFFER = 5;
 
     private static final Map<String, List<DrillCategory>> FOCUS_CATEGORY_MAP = Map.ofEntries(
             Map.entry("WERFEN", List.of(DrillCategory.THROWING)),
@@ -52,13 +53,14 @@ public class TrainingPlanGenerator {
     public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
                                          final String focus, final int totalMinutes) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
-        int remainingMinutes = totalMinutes;
+        int remainingMinutes = totalMinutes + OVERTIME_BUFFER;
 
-        // --- SCHRITT 1: Aufwärmen ---
+        // --- SCHRITT 1: Aufwärmen + Trinkpause ---
         final Drill warmupDrill = findById(allDrills, WARMUP_DRILL_ID);
         if (warmupDrill != null) {
             sections.add(buildDrillSection(warmupDrill, "WARMUP", WARMUP_MINUTES, playerCount));
-            remainingMinutes -= WARMUP_MINUTES;
+            sections.add(buildBreakSection("Trinken."));
+            remainingMinutes -= WARMUP_MINUTES + BREAK_MINUTES;
         }
 
         // --- SCHRITT 2: Spiel reservieren ---
@@ -81,7 +83,7 @@ public class TrainingPlanGenerator {
         final int drillSectionStartIdx = sections.size();
         final List<String> focuses = parseFocuses(focus);
         int parallelGroupCounter = 1;
-        // Nach Warmup geht es direkt in die Basics (zu zweit, kein Aufbau nötig)
+        // Nach Warmup: Trinkpause (gehört zum Warmup-Block, nicht extra reserviert)
         int totalDrillMinutes = remainingMinutes;
         int usedDrillMinutes = 0;
         final Set<String> usedDrillIds = new HashSet<>();
@@ -326,7 +328,7 @@ public class TrainingPlanGenerator {
                                             final int playerCount) {
         if (totalMinutes >= 180) return 60;
         if (totalMinutes >= 120) {
-            // Ab 12 Spielern: mind. 50 min Batting (jeder muss drankommen)
+            // Ab 12 Spielern: 50 min (mehr Rotationen nötig), unter 12: 40 min
             return playerCount >= 12 ? 50 : 40;
         }
         if (totalMinutes >= 90) return 40;
