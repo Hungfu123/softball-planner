@@ -81,8 +81,8 @@ public class TrainingPlanGenerator {
         final int drillSectionStartIdx = sections.size();
         final List<String> focuses = parseFocuses(focus);
         int parallelGroupCounter = 1;
-        // Warmup-Pause + Stations-Aufbaupause werden aus Drill-Zeit genommen
-        int totalDrillMinutes = Math.max(0, remainingMinutes - BREAK_MINUTES);
+        // Nach Warmup geht es direkt in die Basics (zu zweit, kein Aufbau nötig)
+        int totalDrillMinutes = remainingMinutes;
         int usedDrillMinutes = 0;
         final Set<String> usedDrillIds = new HashSet<>();
 
@@ -187,11 +187,7 @@ public class TrainingPlanGenerator {
             usedDrillMinutes += focusUsed;
         }
 
-        // --- Pause nach Warmup nur wenn Drills generiert wurden ---
-        final boolean hasDrills = sections.size() > drillSectionStartIdx;
-        if (warmupDrill != null && hasDrills) {
-            sections.add(drillSectionStartIdx, buildBreakSection("Trinken, nächste Übungen kurz erklären. Wer kann, fängt schon mit dem Aufbau an."));
-        }
+        // Keine Pause nach Warmup — Basics sind Partnerübungen, man geht direkt rein
 
         // --- SCHRITT 5: Pause + Batting ---
         final Drill hittingDrill = findById(allDrills, HITTING_DRILL_ID);
