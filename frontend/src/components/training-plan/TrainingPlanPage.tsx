@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTrainingPlan } from '@/hooks/useTrainingPlan'
-import PeriodSelector from '@/components/shared/PeriodSelector'
 import PlanForm from './PlanForm'
 import PlanDisplay from './PlanDisplay'
 import PlanEditor from './PlanEditor'
