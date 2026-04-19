@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 
 public record TrainingPlanResponse(
         Long id, Long trainingId, int playerCount, String focus, int durationMinutes,
-        String availablePositions, TrainingPlanContentResponse content,
+        TrainingPlanContentResponse content,
         LocalDateTime createdAt, LocalDateTime updatedAt) {
 
     public static TrainingPlanResponse from(final TrainingPlan plan) {
         return new TrainingPlanResponse(
                 plan.getId(), plan.getTrainingId(), plan.getPlayerCount(), plan.getFocus(),
-                plan.getDurationMinutes(), plan.getAvailablePositions(),
+                plan.getDurationMinutes(),
                 TrainingPlanContentResponse.from(plan.getContent()),
                 plan.getCreatedAt(), plan.getUpdatedAt()
         );

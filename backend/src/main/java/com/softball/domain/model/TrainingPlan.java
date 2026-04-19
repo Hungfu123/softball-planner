@@ -8,7 +8,6 @@ public class TrainingPlan {
     private int playerCount;
     private String focus;
     private int durationMinutes;
-    private String availablePositions;
     private TrainingPlanContent content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -16,12 +15,11 @@ public class TrainingPlan {
     public TrainingPlan() {}
 
     public TrainingPlan(final Long trainingId, final int playerCount, final String focus,
-                        final int durationMinutes, final String availablePositions) {
+                        final int durationMinutes) {
         this.trainingId = trainingId;
         this.playerCount = playerCount;
         this.focus = focus;
         this.durationMinutes = durationMinutes;
-        this.availablePositions = availablePositions;
     }
 
     public Long getId() { return id; }
@@ -34,8 +32,6 @@ public class TrainingPlan {
     public void setFocus(final String focus) { this.focus = focus; }
     public int getDurationMinutes() { return durationMinutes; }
     public void setDurationMinutes(final int durationMinutes) { this.durationMinutes = durationMinutes; }
-    public String getAvailablePositions() { return availablePositions; }
-    public void setAvailablePositions(final String availablePositions) { this.availablePositions = availablePositions; }
     public TrainingPlanContent getContent() { return content; }
     public void setContent(final TrainingPlanContent content) { this.content = content; }
     public LocalDateTime getCreatedAt() { return createdAt; }

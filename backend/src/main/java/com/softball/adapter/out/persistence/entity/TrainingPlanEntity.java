@@ -31,10 +31,6 @@ public class TrainingPlanEntity {
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes;
 
-    @NotNull
-    @Column(name = "available_positions", nullable = false)
-    private String availablePositions;
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "plan_content", columnDefinition = "jsonb", nullable = false)
     private String planContent;
@@ -71,8 +67,6 @@ public class TrainingPlanEntity {
     public void setFocus(final String focus) { this.focus = focus; }
     public int getDurationMinutes() { return durationMinutes; }
     public void setDurationMinutes(final int durationMinutes) { this.durationMinutes = durationMinutes; }
-    public String getAvailablePositions() { return availablePositions; }
-    public void setAvailablePositions(final String availablePositions) { this.availablePositions = availablePositions; }
     public String getPlanContent() { return planContent; }
     public void setPlanContent(final String planContent) { this.planContent = planContent; }
     public LocalDateTime getCreatedAt() { return createdAt; }

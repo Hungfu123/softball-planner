@@ -23,8 +23,6 @@ function getDefaultDuration(dateStr?: string): number {
   return 90
 }
 
-const POSITION_OPTIONS = ['Pitcher', 'Catcher', '1B', '2B', 'SS', '3B', 'Outfielder']
-
 interface Props {
   trainingId: number
   training?: TrainingResponse
@@ -36,18 +34,8 @@ interface Props {
 export default function PlanForm({ trainingId, training, generating, onGenerate, onCancel }: Props) {
   const defaultDuration = useMemo(() => getDefaultDuration(training?.date), [training?.date])
   const [playerCount, setPlayerCount] = useState(10)
-  const [positions, setPositions] = useState<Set<string>>(new Set())
   const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set(['ALLROUND']))
   const [duration, setDuration] = useState(defaultDuration)
-
-  const togglePosition = (pos: string) => {
-    setPositions(prev => {
-      const next = new Set(prev)
-      if (next.has(pos)) next.delete(pos)
-      else next.add(pos)
-      return next
-    })
-  }
 
   const toggleFocus = (f: TrainingFocus) => {
     setFocuses(prev => {
@@ -68,7 +56,6 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
     onGenerate({
       trainingId,
       playerCount,
-      availablePositions: [...positions],
       focus: [...focuses].join(','),
       durationMinutes: duration,
     })
@@ -88,26 +75,6 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
           onChange={e => setPlayerCount(Number(e.target.value))}
           className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
         />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Verfügbare Positionen</label>
-        <div className="flex flex-wrap gap-2">
-          {POSITION_OPTIONS.map(pos => (
-            <button
-              key={pos}
-              type="button"
-              onClick={() => togglePosition(pos)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
-                positions.has(pos)
-                  ? 'bg-navy-800 text-white border-navy-800'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-navy-300'
-              }`}
-            >
-              {pos}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div>
@@ -154,7 +121,7 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          disabled={generating || positions.size === 0}
+          disabled={generating}
           className="px-6 py-2.5 bg-navy-800 text-white rounded-lg font-medium text-sm hover:bg-navy-700 disabled:opacity-40 disabled:cursor-default transition-colors cursor-pointer"
         >
           {generating ? (

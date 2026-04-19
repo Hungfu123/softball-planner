@@ -234,7 +234,6 @@ export interface TrainingPlanResponse {
   playerCount: number
   focus: string
   durationMinutes: number
-  availablePositions: string
   content: TrainingPlanContentResponse | null
   createdAt: string
   updatedAt: string
@@ -243,7 +242,6 @@ export interface TrainingPlanResponse {
 export interface GeneratePlanRequest {
   trainingId: number
   playerCount: number
-  availablePositions: string[]
   focus: string
   durationMinutes: number
 }

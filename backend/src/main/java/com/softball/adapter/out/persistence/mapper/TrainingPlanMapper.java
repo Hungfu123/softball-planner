@@ -28,7 +28,6 @@ public class TrainingPlanMapper {
         plan.setPlayerCount(entity.getPlayerCount());
         plan.setFocus(entity.getFocus());
         plan.setDurationMinutes(entity.getDurationMinutes());
-        plan.setAvailablePositions(entity.getAvailablePositions());
         plan.setContent(deserializeContent(entity.getPlanContent()));
         plan.setCreatedAt(entity.getCreatedAt());
         plan.setUpdatedAt(entity.getUpdatedAt());
@@ -45,7 +44,6 @@ public class TrainingPlanMapper {
         entity.setPlayerCount(domain.getPlayerCount());
         entity.setFocus(domain.getFocus());
         entity.setDurationMinutes(domain.getDurationMinutes());
-        entity.setAvailablePositions(domain.getAvailablePositions());
         entity.setPlanContent(serializeContent(domain.getContent()));
         return entity;
     }
@@ -54,7 +52,6 @@ public class TrainingPlanMapper {
         entity.setPlayerCount(domain.getPlayerCount());
         entity.setFocus(domain.getFocus());
         entity.setDurationMinutes(domain.getDurationMinutes());
-        entity.setAvailablePositions(domain.getAvailablePositions());
         entity.setPlanContent(serializeContent(domain.getContent()));
     }
 

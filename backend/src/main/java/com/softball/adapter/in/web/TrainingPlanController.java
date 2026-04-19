@@ -24,7 +24,7 @@ public class TrainingPlanController {
     @ResponseStatus(HttpStatus.CREATED)
     public TrainingPlanResponse generate(@Valid @RequestBody final GeneratePlanRequest request) {
         return trainingPlanService.generate(
-                request.trainingId(), request.playerCount(), request.availablePositions(),
+                request.trainingId(), request.playerCount(),
                 request.focus(), request.durationMinutes());
     }
 

@@ -35,8 +35,7 @@ public class TrainingPlanService {
     }
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
-                                         final List<String> availablePositions, final String focus,
-                                         final int durationMinutes) {
+                                         final String focus, final int durationMinutes) {
         if (!trainingRepository.existsById(trainingId)) {
             throw new ResourceNotFoundException("Training", trainingId);
         }
@@ -49,8 +48,7 @@ public class TrainingPlanService {
         final List<Drill> drills = drillService.filterByFocus(focus, playerCount);
         final TrainingPlanContent content = generator.generate(drills, playerCount, focus, durationMinutes);
 
-        final TrainingPlan plan = new TrainingPlan(trainingId, playerCount, focus, durationMinutes,
-                String.join(",", availablePositions));
+        final TrainingPlan plan = new TrainingPlan(trainingId, playerCount, focus, durationMinutes);
         plan.setContent(content);
         return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
     }

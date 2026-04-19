@@ -90,7 +90,6 @@ public class GeminiAiAdapter implements AiTrainingPlanPort {
                 Erstelle einen Trainingsplan mit folgenden Vorgaben:
 
                 - Spieleranzahl: %d
-                - Verfügbare Positionen: %s
                 - Schwerpunkt: %s
                 - Dauer: %d Minuten
 
@@ -98,7 +97,6 @@ public class GeminiAiAdapter implements AiTrainingPlanPort {
                 %s
                 """,
                 request.getPlayerCount(),
-                String.join(", ", request.getAvailablePositions()),
                 request.getFocus(),
                 request.getDurationMinutes(),
                 drillList
