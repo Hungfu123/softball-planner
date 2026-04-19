@@ -166,16 +166,28 @@ export default function TrainingPlanPage() {
   // Overview
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="w-1 h-8 bg-softball-red-600 rounded-full" />
           <h1 className="text-2xl font-bold text-gray-950">Trainingsplan</h1>
         </div>
-        <PeriodSelector
-          periods={periods}
-          activePeriodId={activePeriodId}
-          onChange={selectPeriod}
-        />
+        {periods.length > 1 && (
+          <div className="flex gap-1.5 mt-2 ml-4">
+            {periods.map(p => (
+              <button
+                key={p.id}
+                onClick={() => selectPeriod(p.id)}
+                className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
+                  activePeriodId === p.id
+                    ? 'bg-navy-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {trainings.length === 0 ? (
