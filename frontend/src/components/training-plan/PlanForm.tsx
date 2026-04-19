@@ -66,15 +66,20 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
       <h3 className="text-lg font-bold text-gray-900">Plan generieren</h3>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Spieleranzahl</label>
-        <input
-          type="number"
-          min={2}
-          max={30}
-          value={playerCount}
-          onChange={e => setPlayerCount(Number(e.target.value))}
-          className="w-24 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-2">Spieleranzahl</label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPlayerCount(p => Math.max(2, p - 1))}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 font-bold text-lg hover:bg-gray-50 cursor-pointer"
+          >−</button>
+          <span className="w-10 text-center text-sm font-bold text-gray-900">{playerCount}</span>
+          <button
+            type="button"
+            onClick={() => setPlayerCount(p => Math.min(20, p + 1))}
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 font-bold text-lg hover:bg-gray-50 cursor-pointer"
+          >+</button>
+        </div>
       </div>
 
       <div>
