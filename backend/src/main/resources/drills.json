@@ -464,6 +464,44 @@
     "variants": "Wenn 5 Teile zu viel sind: 3 Teile auswählen."
   },
   {
+    "id": "ss-fielding-bat",
+    "name": "SS Fielding mit Bat",
+    "categories": [
+      "SS",
+      "FIELDING"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Schläger",
+      "Base (1B)"
+    ],
+    "description": "Realistisches Fielding-Training für den SS mit geschlagenen Groundern statt gerollten Bällen. Ein Batter steht an Home und schlägt Grounder Richtung SS. Der SS fieldet und wirft zur 1B.\n\nDrei Varianten nacheinander:\n\nVariante 1 — Forehand (Handschuhseite): Batter schlägt Grounder nach links (aus SS-Sicht). SS läuft nach links, fieldet forehand, stellt die Füße und wirft zur 1B.\n\nVariante 2 — Frontal (Mitte): Batter schlägt Grounder direkt auf den SS. SS geht in Fielding Position, nimmt den Ball mittig auf, macht den typischen SS-Bogen nach links für Schwung und wirft zur 1B.\n\nVariante 3 — Backhand (Wurfhandseite): Batter schlägt Grounder nach rechts (Richtung 3rd Base). SS läuft nach rechts, nimmt den Ball backhand an und wirft zur 1B.\n\nWichtig: Geschlagene Bälle sind schneller und unberechenbarer als gerollte — genau wie im Spiel. Der SS muss schnell lesen wohin der Ball geht und die Füße entsprechend stellen.",
+    "hasImage": false,
+    "pdfPage": null,
+    "rotation": "SS fieldet 5 Bälle pro Variante, dann tauschen SS und 1B. Batter bleibt oder rotiert.",
+    "variants": "Batter variiert Geschwindigkeit und Platzierung ohne Ansage — SS weiß nicht welche Variante kommt."
+  },
+  {
+    "id": "2b-fielding-bat",
+    "name": "2B Fielding mit Bat",
+    "categories": [
+      "SECOND_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 4,
+    "equipment": [
+      "Bälle",
+      "Schläger",
+      "Bases (1B, 2B)"
+    ],
+    "description": "Realistisches Fielding-Training für die 2B mit geschlagenen Groundern. Ein Batter steht an Home und schlägt Grounder in den Bereich zwischen SS und 1B. Die 2B fieldet und wirft zur 1B. SS und 1B stehen auf ihren Positionen.\n\nDrei Varianten nacheinander:\n\nVariante 1 — Forehand (Richtung 2nd Base): Batter schlägt Grounder nach links (aus 2B-Sicht, Richtung 2nd Base). 2B läuft nach links, fieldet forehand und wirft zur 1B.\n\nVariante 2 — Frontal (Mitte): Batter schlägt Grounder direkt auf die 2B. 2B geht in Fielding Position, nimmt den Ball mittig auf und wirft zur 1B.\n\nVariante 3 — Backhand (Richtung 1B): Batter schlägt Grounder nach rechts (Richtung 1B-Seite). 2B läuft nach rechts, nimmt den Ball backhand an und wirft oder tosst zur 1B.\n\nWichtig: Der SS steht auf seiner Position und rückt bei Bedarf zur 2nd Base vor (Cover). Die 1B macht den Stretch wie im Spiel. Geschlagene Bälle trainieren das Lesen der Flugbahn unter Spielbedingungen.",
+    "hasImage": false,
+    "pdfPage": null,
+    "rotation": "2B fieldet 5 Bälle pro Variante, dann rotieren 2B → 1B → SS → Batter → 2B.",
+    "variants": "Batter variiert ohne Ansage. Oder: SS covered 2nd Base nach jedem Grounder (Force-Play-Simulation)."
+  },
+  {
     "id": "ss-backhand-1b",
     "name": "SS Backhand zur 1B",
     "categories": [
