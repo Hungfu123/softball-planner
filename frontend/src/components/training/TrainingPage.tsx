@@ -5,6 +5,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, CrossBones, ChevronDown, ChevronUp, XMark, Pencil, UploadIcon, ExportDoc } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import type { TrainingResponse } from '@/types'
+import * as api from '@/api/client'
 
 export function TrainingPage() {
   const {
@@ -18,12 +19,30 @@ export function TrainingPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [headerMenuId, setHeaderMenuId] = useState<number | null>(null)
   const [statsOpen, setStatsOpen] = useState(false)
-  const [statsFilter, setStatsFilter] = useState<'8weeks' | '12weeks' | 'season' | 'all'>('8weeks')
+  const [statsFilter, setStatsFilter] = useState<'8weeks' | '12weeks' | 'season' | 'all' | '3months' | 'allTime'>('3months')
+  const [crossSeasonStats, setCrossSeasonStats] = useState<{ playerId: number; playerName: string; attended: number; totalTrainings: number; regular: boolean }[]>([])
+  const [crossSeasonLoading, setCrossSeasonLoading] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [deletePeriodId, setDeletePeriodId] = useState<number | null>(null)
   const [renamingPeriod, setRenamingPeriod] = useState<{ id: number; name: string } | null>(null)
   const [hoveredPlayer, setHoveredPlayer] = useState<number | null>(null)
   const [hoveredTraining, setHoveredTraining] = useState<number | null>(null)
+
+  // Cross-season Stats laden wenn Filter aktiv
+  useEffect(() => {
+    if (statsFilter !== '3months' && statsFilter !== 'allTime') return
+    setCrossSeasonLoading(true)
+    const since = statsFilter === '3months'
+      ? new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      : undefined
+    api.getTrainingStats(undefined, since).then(data => {
+      setCrossSeasonStats(data.map(s => ({
+        playerId: s.playerId, playerName: s.playerName,
+        attended: Number(s.attended), totalTrainings: Number(s.totalTrainings),
+        regular: s.regular,
+      })))
+    }).finally(() => setCrossSeasonLoading(false))
+  }, [statsFilter])
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
 
@@ -254,7 +273,6 @@ export function TrainingPage() {
   })()
 
   const activeTotalTrainings = filteredTrainings.length
-  const maxAttendance = Math.max(...filteredStats.map(s => s.attended), 1)
 
   // Issue #6: distinguish "no trainings at all" from "no players and no trainings"
   const hasPlayers = players.length > 0
@@ -558,10 +576,11 @@ export function TrainingPage() {
             {/* Filter chips */}
             <div className="flex gap-1.5">
               {([
-                ['8weeks', 'Letzte 8 Wochen'],
-                ['12weeks', 'Letzte 12 Wochen'],
-                ['season', 'Seit Beginn'],
-                ['all', 'Alle'],
+                ['3months', 'Letzte 3 Monate'],
+                ['allTime', 'Gesamt'],
+                ['8weeks', '8 Wochen (Saison)'],
+                ['12weeks', '12 Wochen (Saison)'],
+                ['season', 'Saison'],
               ] as const).map(([key, label]) => (
                 <button
                   key={key}
@@ -577,49 +596,59 @@ export function TrainingPage() {
               ))}
             </div>
 
-            {/* Date range hint */}
-            {activeTotalTrainings > 0 && (
-              <p className="text-xs text-gray-400">
-                {(() => {
-                  const fmt = (d: string) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                  const sorted = [...filteredTrainings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                  const first = fmt(sorted[0].date)
-                  const last = fmt(sorted[sorted.length - 1].date)
-                  const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                  if (statsFilter === 'all') return `${first} – ${last} · ${activeTotalTrainings} Trainings`
-                  return `${first} – ${today} (heute) · ${activeTotalTrainings} Trainings`
-                })()}
-              </p>
-            )}
+            {/* Stats content — cross-season oder perioden-basiert */}
+            {(() => {
+              const isCrossSeason = statsFilter === '3months' || statsFilter === 'allTime'
+              const displayStats = isCrossSeason ? crossSeasonStats : filteredStats
+              const displayTotal = isCrossSeason
+                ? (crossSeasonStats[0]?.totalTrainings ?? 0)
+                : activeTotalTrainings
+              const displayMax = Math.max(...displayStats.map(s => s.attended), 1)
 
-            {filteredStats.length === 0 || activeTotalTrainings === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">Keine Daten im gewählten Zeitraum.</p>
-            ) : (
-              [...filteredStats]
-                .sort((a, b) => b.attended - a.attended)
-                .map(s => {
-                  const pct = activeTotalTrainings > 0
-                    ? Math.round((s.attended / activeTotalTrainings) * 100)
-                    : 0
-                  const barWidth = Math.round((s.attended / maxAttendance) * 100)
-                  return (
-                    <div key={s.playerId} className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-gray-900 w-32 truncate">
-                        {s.playerName}
-                      </span>
-                      <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all bg-navy-800"
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 tabular-nums w-16 text-right">
-                        {s.attended}/{activeTotalTrainings} ({pct}%)
-                      </span>
-                    </div>
-                  )
-                })
-            )}
+              if (crossSeasonLoading && isCrossSeason) {
+                return <p className="text-sm text-gray-400 text-center py-4">Lade Statistik...</p>
+              }
+
+              const hint = isCrossSeason
+                ? `${statsFilter === '3months' ? 'Letzte 3 Monate' : 'Seit Beginn'} · Alle Zeiträume · ${displayTotal} Trainings`
+                : activeTotalTrainings > 0 ? (() => {
+                    const fmt = (d: string) => new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    const sorted = [...filteredTrainings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    return `${fmt(sorted[0].date)} – ${fmt(sorted[sorted.length - 1].date)} · ${activeTotalTrainings} Trainings`
+                  })() : null
+
+              return <>
+                {hint && <p className="text-xs text-gray-400">{hint}</p>}
+                {displayStats.length === 0 || displayTotal === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">Keine Daten im gewählten Zeitraum.</p>
+                ) : (
+                  [...displayStats]
+                    .sort((a, b) => b.attended - a.attended)
+                    .map(s => {
+                      const pct = displayTotal > 0
+                        ? Math.round((s.attended / displayTotal) * 100)
+                        : 0
+                      const barWidth = Math.round((s.attended / displayMax) * 100)
+                      return (
+                        <div key={s.playerId} className="flex items-center gap-3">
+                          <span className="text-sm font-medium text-gray-900 w-32 truncate">
+                            {s.playerName}
+                          </span>
+                          <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all bg-navy-800"
+                              style={{ width: `${barWidth}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500 tabular-nums w-16 text-right">
+                            {s.attended}/{displayTotal} ({pct}%)
+                          </span>
+                        </div>
+                      )
+                    })
+                )}
+              </>
+            })()}
           </div>
         )}
       </section>

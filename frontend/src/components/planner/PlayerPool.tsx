@@ -27,18 +27,18 @@ function gameCountBadge(gc: number): string {
   return 'bg-emerald-100 text-emerald-700'
 }
 
-type TrainingFilter = '12weeks' | 'all'
+type TrainingFilter = '3months' | 'all'
 
 function sinceDate(filter: TrainingFilter, refDate: string): string | undefined {
   if (filter === 'all') return undefined
   const d = new Date(refDate + 'T00:00:00')
-  d.setDate(d.getDate() - 84)
+  d.setDate(d.getDate() - 90) // 3 Monate
   return d.toISOString().slice(0, 10)
 }
 
 export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDayDate, onAdd }: Props) {
   const [tab, setTab] = useState<'pool' | 'overview' | 'training'>('pool')
-  const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('12weeks')
+  const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('3months')
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
@@ -257,7 +257,7 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            {!selectedPeriodId && ([['12weeks', '12 Wo.'], ['all', 'Gesamt']] as const).map(([key, label]) => (
+            {!selectedPeriodId && ([['3months', '3 Monate'], ['all', 'Gesamt']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTrainingFilter(key)}
