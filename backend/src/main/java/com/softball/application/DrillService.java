@@ -22,7 +22,7 @@ public class DrillService {
         Map.entry("SITUATIONAL", List.of(DrillCategory.SITUATIONAL, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE,
                 DrillCategory.COMINGS)),
         Map.entry("CATCHER", List.of(DrillCategory.CATCHER, DrillCategory.COMINGS, DrillCategory.THROWING)),
-        Map.entry("RELAY", List.of(DrillCategory.RELAY, DrillCategory.THROWING)),
+        Map.entry("RELAY", List.of(DrillCategory.RELAY)),
         Map.entry("ALLROUND", List.of(DrillCategory.values()))
     );
 

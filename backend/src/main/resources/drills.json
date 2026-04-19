@@ -670,7 +670,8 @@
     "id": "relay-einfach",
     "name": "Relay Einfach (zu dritt/viert)",
     "categories": [
-      "THROWING"
+      "THROWING",
+      "RELAY"
     ],
     "minPlayers": 3,
     "equipment": [

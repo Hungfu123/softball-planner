@@ -46,7 +46,7 @@ public class TrainingPlanGenerator {
             Map.entry("SITUATIONAL", List.of(DrillCategory.SITUATIONAL, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE,
                     DrillCategory.COMINGS)),
             Map.entry("CATCHER", List.of(DrillCategory.CATCHER, DrillCategory.COMINGS, DrillCategory.THROWING)),
-            Map.entry("RELAY", List.of(DrillCategory.RELAY, DrillCategory.THROWING)),
+            Map.entry("RELAY", List.of(DrillCategory.RELAY)),
             Map.entry("ALLROUND", List.of(DrillCategory.values()))
     );
 
@@ -373,8 +373,7 @@ public class TrainingPlanGenerator {
 
     private static final Set<DrillCategory> POSITION_CATEGORIES = Set.of(
             DrillCategory.FIRST_BASE, DrillCategory.SECOND_BASE, DrillCategory.SS,
-            DrillCategory.THIRD_BASE, DrillCategory.OUTFIELD, DrillCategory.CATCHER, DrillCategory.PITCHER,
-            DrillCategory.RELAY);
+            DrillCategory.THIRD_BASE, DrillCategory.OUTFIELD, DrillCategory.CATCHER, DrillCategory.PITCHER);
 
     private static final Set<DrillCategory> SIMULATION_CATEGORIES = Set.of(
             DrillCategory.SITUATIONAL, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE,
