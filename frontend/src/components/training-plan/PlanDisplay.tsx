@@ -245,20 +245,18 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
         {/* === Mobile: Focus + Actions oben === */}
         <div className="lg:hidden">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Schwerpunkt</p>
-                <h3 className="text-lg font-bold text-gray-900">{plan.focus}</h3>
-                <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                  <span>{plan.playerCount} Spieler</span>
-                  <span>{plan.durationMinutes} min</span>
-                </div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Schwerpunkt</p>
+            <h3 className="text-base font-bold text-gray-900">{plan.focus}</h3>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex gap-3 text-xs text-gray-400">
+                <span>{plan.playerCount} Spieler</span>
+                <span>{plan.durationMinutes} min</span>
               </div>
               <div className="flex gap-1.5 no-print">
-                <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 cursor-pointer" title="Anpassen">
+                <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 cursor-pointer" title="Anpassen">
                   <Pencil size={14} /> Anpassen
                 </button>
-                <button onClick={onDelete} className="flex items-center px-3 py-2 border border-gray-200 rounded-lg text-gray-400 cursor-pointer" title="Löschen">
+                <button onClick={onDelete} className="flex items-center px-2 py-1.5 border border-gray-200 rounded-lg text-gray-400 cursor-pointer" title="Löschen">
                   <TrashBin size={14} />
                 </button>
               </div>
