@@ -1,0 +1,49 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Frontend
+        run: cd frontend && npm ci && npm run build
+
+      - name: Build Backend (with frontend)
+        run: |
+          cp -r frontend/dist backend/src/main/resources/static/
+          cd backend && ./mvnw package -DskipTests -Dfrontend.skip=true
+
+      - name: Build Docker Image
+        run: |
+          docker build -t softball-planner:latest .
+
+      - name: Deploy to Server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H 178.104.118.46 >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Image zum Server schicken
+          docker save softball-planner:latest | ssh -i ~/.ssh/deploy_key root@178.104.118.46 "docker load"
+
+          # Container neu starten
+          ssh -i ~/.ssh/deploy_key root@178.104.118.46 "cd /opt/softball && docker compose up -d backend && docker image prune -f"
