@@ -356,7 +356,7 @@ public class TrainingPlanGenerator {
 
     private static final Set<DrillCategory> POSITION_CATEGORIES = Set.of(
             DrillCategory.FIRST_BASE, DrillCategory.SECOND_BASE, DrillCategory.SS,
-            DrillCategory.THIRD_BASE, DrillCategory.OUTFIELD, DrillCategory.CATCHER, DrillCategory.PITCHER);
+            DrillCategory.THIRD_BASE, DrillCategory.CATCHER, DrillCategory.PITCHER);
 
     private static final Set<DrillCategory> SIMULATION_CATEGORIES = Set.of(
             DrillCategory.SITUATIONAL, DrillCategory.DOUBLE_PLAY, DrillCategory.BUNT_DEFENSE,
