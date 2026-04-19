@@ -128,24 +128,42 @@ public class TrainingPlanGenerator {
                 basics.forEach(d -> usedDrillIds.add(d.getId()));
                 focusUsed += focusMinutes;
             } else {
-                // Zuerst Stations-Bedarf berechnen, dann Basics anpassen
+                // Stationen berechnen — adaptiv: wenn 3 nicht passen, 2 probieren
                 final boolean canDoStations = playerCount >= MIN_PLAYERS_FOR_STATIONS && advanced.size() >= 2;
-                final int maxStations = playerCount >= 12 ? 3 : 2;
-                final int drillsPerBlock = canDoStations
-                        ? Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)) : 0;
-                final int playersPerStation = drillsPerBlock > 0
-                        ? (int) Math.ceil((double) playerCount / drillsPerBlock) : 0;
-                final int minutesPerStation = playersPerStation >= LARGE_GROUP_THRESHOLD
-                        ? MINUTES_PER_STATION_LARGE : MINUTES_PER_STATION_SMALL;
-                final int stationBlockMinutes = drillsPerBlock * minutesPerStation;
-                final int stationBreakNeeded = canDoStations && drillsPerBlock >= 3
-                        ? BREAK_MINUTES * 2 : (canDoStations ? BREAK_MINUTES : 0);
-                final int stationTotalNeeded = canDoStations
+                int stationCount = 0;
+                int stationBlockMinutes = 0;
+                int stationBreakNeeded = 0;
+                int minutesPerStation = MINUTES_PER_STATION_SMALL;
+
+                if (canDoStations) {
+                    final int maxStations = playerCount >= 12 ? 3 : 2;
+                    final int idealStations = Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE));
+
+                    // Versuche mit idealStations, dann mit weniger falls es nicht passt
+                    for (int tryStations = idealStations; tryStations >= 2; tryStations--) {
+                        final int tryPlayersPerStation = (int) Math.ceil((double) playerCount / tryStations);
+                        final int tryMinPerStation = tryPlayersPerStation >= LARGE_GROUP_THRESHOLD
+                                ? MINUTES_PER_STATION_LARGE : MINUTES_PER_STATION_SMALL;
+                        final int tryBlockMinutes = tryStations * tryMinPerStation;
+                        final int tryBreak = tryStations >= 3 ? BREAK_MINUTES * 2 : BREAK_MINUTES;
+                        final int tryTotal = tryBlockMinutes + tryBreak;
+
+                        if (tryTotal <= focusMinutes) {
+                            stationCount = tryStations;
+                            minutesPerStation = tryMinPerStation;
+                            stationBlockMinutes = tryBlockMinutes;
+                            stationBreakNeeded = tryBreak;
+                            break;
+                        }
+                    }
+                }
+
+                final int stationTotalNeeded = stationCount > 0
                         ? stationBlockMinutes + stationBreakNeeded : 0;
 
-                // --- Grundlagen: alle zusammen, Anzahl anpassen damit Stationen + Pause reinpassen ---
+                // --- Grundlagen: alle zusammen ---
                 if (!basics.isEmpty() && focusMinutes >= BASICS_DRILL_MINUTES) {
-                    final int availableForBasics = canDoStations
+                    final int availableForBasics = stationCount > 0
                             ? Math.max(0, focusMinutes - stationTotalNeeded) : focusMinutes;
                     final int numBasics = Math.min(MAX_BASICS_DRILLS,
                             Math.min(basics.size(), availableForBasics / BASICS_DRILL_MINUTES));
@@ -161,10 +179,10 @@ public class TrainingPlanGenerator {
 
                 // --- Positions-/Simulations-Drills: Stationsblock (parallel in Gruppen) ---
                 int remainingFocusMinutes = focusMinutes - focusUsed;
-                if (canDoStations && remainingFocusMinutes >= stationBlockMinutes) {
-                    final int stationDrills = Math.min(advanced.size(), drillsPerBlock);
+                if (stationCount > 0 && remainingFocusMinutes >= stationBlockMinutes) {
+                    final int stationDrills = Math.min(advanced.size(), stationCount);
                     final int blockMinutes = stationDrills * minutesPerStation;
-                    // Aufbaupause: 10 min bei 3+ Stationen, 5 min bei 2
+                    // Aufbaupause
                     if (focusUsed > 0 && remainingFocusMinutes > blockMinutes) {
                         final int idealBreak = stationDrills >= 3 ? BREAK_MINUTES * 2 : BREAK_MINUTES;
                         final int actualBreak = Math.min(idealBreak, remainingFocusMinutes - blockMinutes);
