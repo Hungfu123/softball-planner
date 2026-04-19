@@ -498,7 +498,7 @@ export function GameDayPlanner() {
                     onChange={e => setSelectedPeriodId(e.target.value ? Number(e.target.value) : null)}
                     className="ml-auto text-[11px] font-mono text-gray-500 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer hover:border-gray-400 transition-colors focus:outline-none focus:border-navy-600"
                   >
-                    <option value="">letzte 12 Wo.</option>
+                    <option value="">Letzte 3 Monate</option>
                     {trainingPeriods.map(p => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}

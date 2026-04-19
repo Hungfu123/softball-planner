@@ -32,10 +32,11 @@ export function TrainingPage() {
   useEffect(() => {
     if (statsFilter !== '3months' && statsFilter !== 'allTime') return
     setCrossSeasonLoading(true)
+    const today = new Date().toISOString().slice(0, 10)
     const since = statsFilter === '3months'
       ? new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
       : undefined
-    api.getTrainingStats(undefined, since).then(data => {
+    api.getTrainingStats(undefined, since, today).then(data => {
       setCrossSeasonStats(data.map(s => ({
         playerId: s.playerId, playerName: s.playerName,
         attended: Number(s.attended), totalTrainings: Number(s.totalTrainings),
