@@ -237,7 +237,6 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
   const phases = buildPhases(grouped)
   const totalMinutes = phases.reduce((sum, p) => sum + p.minutes, 0)
   const generatedText = useMemo(() => buildShareText(drills, grouped, trainingDate), [drills, grouped, trainingDate])
-  const [shareText, setShareText] = useState(generatedText)
   const [copied, setCopied] = useState(false)
 
   let sectionIndex = 0
@@ -357,37 +356,31 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
               </div>
             </div>
 
-            {/* Überblick — editierbar + Copy für WhatsApp */}
+            {/* Überblick — WhatsApp-ready + Copy */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 no-print">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Überblick</h4>
-                <div className="flex gap-1">
-                  {shareText !== generatedText && (
-                    <button
-                      onClick={() => setShareText(generatedText)}
-                      className="px-2 py-1 text-[10px] font-medium text-gray-400 hover:text-gray-600 cursor-pointer"
-                    >
-                      Zurücksetzen
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(shareText)
-                      setCopied(true)
-                      setTimeout(() => setCopied(false), 2000)
-                    }}
-                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-navy-600 border border-navy-200 rounded hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
-                  >
-                    <ClipboardIcon size={12} /> {copied ? 'Kopiert!' : 'Kopieren'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedText)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-navy-600 border border-navy-200 rounded hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
+                >
+                  <ClipboardIcon size={12} /> {copied ? 'Kopiert!' : 'Kopieren'}
+                </button>
               </div>
-              <textarea
-                value={shareText}
-                onChange={e => setShareText(e.target.value)}
-                rows={Math.max(8, shareText.split('\n').length + 1)}
-                className="w-full text-xs text-gray-600 leading-relaxed border border-gray-100 rounded-lg p-2 resize-y focus:border-navy-300 focus:ring-1 focus:ring-navy-100 outline-none"
-              />
+              <p className="text-[10px] text-gray-400 mb-2">Trainingsübersicht für WhatsApp — kopieren und an die Spieler schicken.</p>
+              <div className="text-xs text-gray-600 space-y-1.5 whitespace-pre-line">
+                {generatedText.split('\n').map((line, i) => {
+                  if (!line.trim()) return <div key={i} className="h-1" />
+                  if (line.startsWith('⚾')) return <p key={i} className="font-bold text-gray-900">{line}</p>
+                  if (line.startsWith('*') && line.endsWith('*')) return <p key={i} className="font-semibold text-gray-800 mt-1">{line.replace(/\*/g, '')}</p>
+                  if (line.startsWith('  •') || line.startsWith('•')) return <p key={i} className="pl-2">{line}</p>
+                  return <p key={i}>{line}</p>
+                })}
+              </div>
             </div>
 
             {/* Group Hint */}
