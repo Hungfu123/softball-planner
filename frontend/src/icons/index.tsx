@@ -210,3 +210,15 @@ export function UsersIcon({ size = 20, className }: IconProps) {
     </svg>
   )
 }
+
+export function BallIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      {/* Stitching — zwei Kurven für den klassischen Softball-Look */}
+      <path d="M4.5 7.5 Q 12 12, 4.5 16.5" strokeDasharray="1.5 2.2" />
+      <path d="M19.5 7.5 Q 12 12, 19.5 16.5" strokeDasharray="1.5 2.2" />
+    </svg>
+  )
+}

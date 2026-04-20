@@ -18,7 +18,7 @@ import { SubstitutionEditor } from './SubstitutionEditor'
 import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -297,7 +297,67 @@ export function GameDayPlanner() {
               <Pencil size={16} />
             </button>
           </div>
-          <div className="flex items-center gap-2">
+          {/* MOBILE Layout: Primary-Row + Toolbar-Strip */}
+          <div className="sm:hidden flex flex-col gap-2 w-full">
+            {/* Primary — Anwesend + Live scoren (beide filled Navy/Red) */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowPlayersModal(true)}
+                title="Wer ist am Spieltag dabei?"
+                className={`px-3 py-2.5 text-sm rounded-lg font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 transition-colors ${
+                  availablePlayers.length === 0
+                    ? 'bg-softball-red-50 border-2 border-softball-red-500 text-softball-red-700 animate-pulse'
+                    : 'bg-navy-800 text-white hover:bg-navy-900'
+                }`}
+              >
+                <UsersIcon size={18} />
+                <span>Anwesend ({availablePlayers.length})</span>
+                {availablePlayers.length > 0 && availablePlayers.length < 9 && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                )}
+              </button>
+              {gameDay && gameDay.games.length > 0 && (
+                <Link
+                  to={`/gameday/${gameDayId}/scoring/${activeTab}`}
+                  className="px-3 py-2.5 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
+                >
+                  <BallIcon size={18} />
+                  <span>Live scoren</span>
+                </Link>
+              )}
+            </div>
+
+            {/* Secondary — Toolbar-Strip ohne einzelne Boxen */}
+            <div className="flex items-center justify-between gap-0 border-t border-gray-100 pt-2">
+              {availablePlayers.length > 0 && (
+                <ToolbarBtn
+                  icon={<DiceIcon size={16} />}
+                  label="Auto"
+                  onClick={() => setShowAutoAllConfirm(true)}
+                  disabled={autoAllLoading}
+                />
+              )}
+              <ToolbarBtn
+                icon={<CarIcon size={16} />}
+                label="Fahrten"
+                active={activeSection === 'carpool'}
+                onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
+              />
+              <ToolbarBtn
+                icon={<ClipboardIcon size={16} />}
+                label="Scoring"
+                onClick={handleExportScoring}
+              />
+              <ToolbarBtn
+                icon={<ExportDoc size={16} />}
+                label="PDF"
+                onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
+              />
+            </div>
+          </div>
+
+          {/* DESKTOP Layout: Original single-row */}
+          <div className="hidden sm:flex items-center gap-2">
             {availablePlayers.length > 0 && (
               <button
                 onClick={() => setShowAutoAllConfirm(true)}
@@ -306,7 +366,7 @@ export function GameDayPlanner() {
                 title="Alle Spiele automatisch aufstellen"
               >
                 <DiceIcon size={16} />
-                <span className="hidden sm:inline">Alle aufstellen</span>
+                <span>Alle aufstellen</span>
               </button>
             )}
             <button
@@ -353,11 +413,11 @@ export function GameDayPlanner() {
             {gameDay && gameDay.games.length > 0 && (
               <Link
                 to={`/gameday/${gameDayId}/scoring/${activeTab}`}
-                className="ml-1 sm:ml-2 p-2 sm:px-3 sm:py-2 rounded-lg bg-softball-red-600 text-white font-bold text-xs sm:text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1 sm:gap-1.5"
+                className="ml-2 px-3 py-2 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1.5"
                 title="Live scoren"
               >
-                <span className="text-base">⚾</span>
-                <span className="hidden sm:inline">Live scoren</span>
+                <BallIcon size={18} />
+                <span>Live scoren</span>
               </Link>
             )}
           </div>
@@ -686,5 +746,30 @@ export function GameDayPlanner() {
         />
       )}
     </div>
+  )
+}
+
+interface ToolbarBtnProps {
+  icon: React.ReactNode
+  label: string
+  onClick: () => void
+  active?: boolean
+  disabled?: boolean
+}
+
+function ToolbarBtn({ icon, label, onClick, active, disabled }: ToolbarBtnProps) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-md cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+        active
+          ? 'text-navy-700 bg-navy-50'
+          : 'text-navy-600 hover:bg-gray-50 active:bg-gray-100'
+      }`}
+    >
+      {icon}
+      <span className="text-[10px] font-semibold leading-none">{label}</span>
+    </button>
   )
 }

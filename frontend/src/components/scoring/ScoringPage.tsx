@@ -85,16 +85,18 @@ export function ScoringPage() {
     if (inningTransition) setExtraOuts(0)
   }, [inningTransition])
 
-  // Batting-Side aus localStorage laden + prompten wenn noch nichts gespielt
+  // Batting-Side + Ended-Flag aus localStorage laden
   useEffect(() => {
     if (currentGame == null) return
     const stored = localStorage.getItem(`scoring-side-${currentGame.id}`)
     if (stored === 'top' || stored === 'bottom') {
       setBattingSide(stored)
     } else if (atBats.length === 0 && scoreboard) {
-      // Noch nichts gespielt → fragen
       setShowSidePrompt(true)
     }
+    // Manual Game-Over-Flag persistent
+    const ended = localStorage.getItem(`scoring-ended-${currentGame.id}`)
+    if (ended === '1') setManualGameOver(true)
   }, [currentGame, atBats.length, scoreboard])
 
   const pickSide = (side: 'top' | 'bottom') => {
@@ -283,8 +285,9 @@ export function ScoringPage() {
       setInningOverride(null)
       setExtraOuts(0)
       setManualGameOver(false)
-      // Batting-Side auch resetten, damit der Prompt neu kommt
+      // Batting-Side + Ended-Flag resetten
       localStorage.removeItem(`scoring-side-${currentGame.id}`)
+      localStorage.removeItem(`scoring-ended-${currentGame.id}`)
       setBattingSide(null)
       setShowSidePrompt(true)
       await reload()
@@ -292,6 +295,12 @@ export function ScoringPage() {
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
+  }
+
+  const handleReopenGame = () => {
+    setManualGameOver(false)
+    if (currentGame) localStorage.removeItem(`scoring-ended-${currentGame.id}`)
+    toast.show('Spiel wieder offen — Editieren möglich', 'success')
   }
 
   return (
@@ -475,6 +484,12 @@ export function ScoringPage() {
               📊 Stats für diese Saison ansehen
             </Link>
           )}
+          <button
+            onClick={handleReopenGame}
+            className="block w-full text-center px-4 py-2 rounded-lg border border-white/30 text-white/90 hover:bg-white/10 text-sm cursor-pointer"
+          >
+            ↺ Spiel wieder öffnen (weiter editieren)
+          </button>
         </div>
       )}
 
@@ -755,11 +770,12 @@ export function ScoringPage() {
       {showEndGameConfirm && (
         <ConfirmModal
           title="Spiel beenden?"
-          message="Das Scoring wird auf 'beendet' gesetzt. Stats sind sofort abrufbar. Du kannst später zurückkehren und weiter editieren."
+          message="Das Scoring wird auf 'beendet' gesetzt. Stats sind sofort abrufbar. Du kannst später 'Wieder öffnen' tippen um weiter zu editieren."
           confirmLabel="Ja, beenden"
           onConfirm={() => {
             setShowEndGameConfirm(false)
             setManualGameOver(true)
+            if (currentGame) localStorage.setItem(`scoring-ended-${currentGame.id}`, '1')
             toast.show('Spiel beendet — Stats verfügbar', 'success')
           }}
           onCancel={() => setShowEndGameConfirm(false)}
