@@ -5,6 +5,7 @@ import com.softball.adapter.dto.RecordAtBatRequest;
 import com.softball.adapter.dto.RecordStealingEventRequest;
 import com.softball.adapter.dto.ScoreboardResponse;
 import com.softball.adapter.dto.StealingEventResponse;
+import com.softball.adapter.dto.UpdateBaseStateRequest;
 import com.softball.application.GameScoringService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,12 @@ public class ScoringController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void undoLastAtBat(@PathVariable final Long gameId) {
         scoringService.undoLastAtBat(gameId);
+    }
+
+    @PutMapping("/{gameId}/atbats/last/base-state")
+    public AtBatResponse updateLastBaseState(@PathVariable final Long gameId,
+                                              @RequestBody final UpdateBaseStateRequest req) {
+        return scoringService.updateLastBaseState(gameId, req.first(), req.second(), req.third(), req.runsScored(), req.rbi());
     }
 
     @GetMapping("/{gameId}/stealing-events")

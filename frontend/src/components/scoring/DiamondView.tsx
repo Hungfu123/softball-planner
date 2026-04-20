@@ -1,4 +1,4 @@
-import { motion } from 'motion/react'
+import { motion, AnimatePresence } from 'motion/react'
 import type { BaseStateDto, RunnerOnBase } from '@/types'
 
 interface Props {
@@ -7,13 +7,20 @@ interface Props {
   onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void
 }
 
-// Base-Positions im 220x220 viewBox (rotiert 45° Diamond)
-const BASE_POSITIONS = {
+// Positions im 220x220 viewBox
+const POS = {
   home: { cx: 110, cy: 190 },
   first: { cx: 180, cy: 110 },
   second: { cx: 110, cy: 30 },
   third: { cx: 40, cy: 110 },
 } as const
+
+function posForBase(base: number) {
+  if (base === 1) return POS.first
+  if (base === 2) return POS.second
+  if (base === 3) return POS.third
+  return POS.home
+}
 
 function truncate(name: string, max = 7): string {
   if (!name) return ''
@@ -21,84 +28,105 @@ function truncate(name: string, max = 7): string {
 }
 
 export function DiamondView({ baseState, runners, onRunnerTap }: Props) {
-  const runnerByBase = new Map<number, RunnerOnBase>()
-  runners.forEach(r => runnerByBase.set(r.base, r))
-
   return (
     <svg viewBox="0 0 220 220" className="w-full max-w-[280px] mx-auto">
-      {/* Base-Paths (dünne Linien) */}
+      {/* Base-Paths (dünne Linien zwischen Bases) */}
       <path
-        d={`M ${BASE_POSITIONS.home.cx} ${BASE_POSITIONS.home.cy}
-            L ${BASE_POSITIONS.first.cx} ${BASE_POSITIONS.first.cy}
-            L ${BASE_POSITIONS.second.cx} ${BASE_POSITIONS.second.cy}
-            L ${BASE_POSITIONS.third.cx} ${BASE_POSITIONS.third.cy} Z`}
+        d={`M ${POS.home.cx} ${POS.home.cy}
+            L ${POS.first.cx} ${POS.first.cy}
+            L ${POS.second.cx} ${POS.second.cy}
+            L ${POS.third.cx} ${POS.third.cy} Z`}
         fill="none"
         stroke="#e5e7eb"
         strokeWidth="2"
         strokeDasharray="4 3"
       />
 
-      {/* Bases */}
-      <Base
-        base={1}
-        pos={BASE_POSITIONS.first}
-        runner={runnerByBase.get(1) ?? null}
-        baseStateId={baseState.first}
-        onTap={onRunnerTap}
-      />
-      <Base
-        base={2}
-        pos={BASE_POSITIONS.second}
-        runner={runnerByBase.get(2) ?? null}
-        baseStateId={baseState.second}
-        onTap={onRunnerTap}
-      />
-      <Base
-        base={3}
-        pos={BASE_POSITIONS.third}
-        runner={runnerByBase.get(3) ?? null}
-        baseStateId={baseState.third}
-        onTap={onRunnerTap}
-      />
+      {/* Bases — statisch, immer gerendert */}
+      <StaticBase pos={POS.first} label="1B" occupied={baseState.first != null} />
+      <StaticBase pos={POS.second} label="2B" occupied={baseState.second != null} />
+      <StaticBase pos={POS.third} label="3B" occupied={baseState.third != null} />
 
-      {/* Home Plate — Pentagon */}
+      {/* Home Plate */}
       <polygon
-        points={`${BASE_POSITIONS.home.cx - 14},${BASE_POSITIONS.home.cy - 5}
-                 ${BASE_POSITIONS.home.cx + 14},${BASE_POSITIONS.home.cy - 5}
-                 ${BASE_POSITIONS.home.cx + 14},${BASE_POSITIONS.home.cy + 6}
-                 ${BASE_POSITIONS.home.cx},${BASE_POSITIONS.home.cy + 14}
-                 ${BASE_POSITIONS.home.cx - 14},${BASE_POSITIONS.home.cy + 6}`}
+        points={`${POS.home.cx - 14},${POS.home.cy - 5}
+                 ${POS.home.cx + 14},${POS.home.cy - 5}
+                 ${POS.home.cx + 14},${POS.home.cy + 6}
+                 ${POS.home.cx},${POS.home.cy + 14}
+                 ${POS.home.cx - 14},${POS.home.cy + 6}`}
         fill="#fff"
         stroke="#9ca3af"
         strokeWidth="1.5"
       />
       <text
-        x={BASE_POSITIONS.home.cx}
-        y={BASE_POSITIONS.home.cy + 28}
+        x={POS.home.cx}
+        y={POS.home.cy + 28}
         textAnchor="middle"
         className="fill-gray-500 text-[9px] font-medium"
       >
         Home
       </text>
+
+      {/* Runners — als separate Layer, animiert per cx/cy */}
+      <AnimatePresence>
+        {runners.map(r => {
+          const p = posForBase(r.base)
+          return (
+            <motion.g
+              key={r.playerId}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.6 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              style={{ cursor: onRunnerTap ? 'pointer' : 'default' }}
+              onClick={() => onRunnerTap?.(r.base as 1 | 2 | 3, r)}
+            >
+              <motion.circle
+                cx={p.cx}
+                cy={p.cy}
+                r="18"
+                fill="#172554"
+                stroke="#fff"
+                strokeWidth="2"
+                initial={false}
+                animate={{ cx: p.cx, cy: p.cy }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+              />
+              <motion.text
+                textAnchor="middle"
+                className="fill-white text-[8px] font-bold pointer-events-none"
+                initial={false}
+                animate={{ x: p.cx, y: p.cy - 4 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+              >
+                {r.battingOrder != null ? `#${r.battingOrder}` : ''}
+              </motion.text>
+              <motion.text
+                textAnchor="middle"
+                className="fill-white text-[9px] font-semibold pointer-events-none"
+                initial={false}
+                animate={{ x: p.cx, y: p.cy + 7 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+              >
+                {truncate(r.playerName)}
+              </motion.text>
+            </motion.g>
+          )
+        })}
+      </AnimatePresence>
     </svg>
   )
 }
 
-interface BaseProps {
-  base: 1 | 2 | 3
+interface StaticBaseProps {
   pos: { cx: number; cy: number }
-  runner: RunnerOnBase | null
-  baseStateId: number | null
-  onTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void
+  label: string
+  occupied: boolean
 }
 
-function Base({ base, pos, runner, baseStateId, onTap }: BaseProps) {
-  const occupied = baseStateId != null && runner != null
-  const baseLabel = base === 1 ? '1B' : base === 2 ? '2B' : '3B'
-
+function StaticBase({ pos, label, occupied }: StaticBaseProps) {
   return (
     <g>
-      {/* Base-Rechteck (rotiert 45°) */}
       <rect
         x={pos.cx - 16}
         y={pos.cy - 16}
@@ -110,7 +138,6 @@ function Base({ base, pos, runner, baseStateId, onTap }: BaseProps) {
         stroke={occupied ? '#047857' : '#9ca3af'}
         strokeWidth="2"
       />
-      {/* Base-Label (sichtbar nur wenn leer) */}
       {!occupied && (
         <text
           x={pos.cx}
@@ -118,45 +145,8 @@ function Base({ base, pos, runner, baseStateId, onTap }: BaseProps) {
           textAnchor="middle"
           className="fill-gray-400 text-[10px] font-medium"
         >
-          {baseLabel}
+          {label}
         </text>
-      )}
-      {/* Runner-Kreis + Name */}
-      {occupied && runner && (
-        <motion.g
-          layoutId={`runner-${runner.playerId}`}
-          initial={false}
-          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          style={{ cursor: onTap ? 'pointer' : 'default' }}
-          onClick={() => onTap?.(base, runner)}
-        >
-          <circle
-            cx={pos.cx}
-            cy={pos.cy}
-            r="18"
-            fill="#172554"
-            stroke="#fff"
-            strokeWidth="2"
-          />
-          {runner.battingOrder != null && (
-            <text
-              x={pos.cx}
-              y={pos.cy - 4}
-              textAnchor="middle"
-              className="fill-white text-[8px] font-bold"
-            >
-              #{runner.battingOrder}
-            </text>
-          )}
-          <text
-            x={pos.cx}
-            y={pos.cy + 7}
-            textAnchor="middle"
-            className="fill-white text-[9px] font-semibold"
-          >
-            {truncate(runner.playerName)}
-          </text>
-        </motion.g>
       )}
     </g>
   )

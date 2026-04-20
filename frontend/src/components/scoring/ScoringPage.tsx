@@ -6,6 +6,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { ChevronLeft } from '@/icons'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
+import { CorrectionSheet } from './CorrectionSheet'
 import * as api from '@/api/client'
 import type { AtBatResult, BaseStateDto, GameDayResponse, RunnerOnBase } from '@/types'
 
@@ -21,6 +22,9 @@ export function ScoringPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [stealingRunner, setStealingRunner] = useState<RunnerOnBase | null>(null)
+  // Inning-Override: wenn 3 Outs erreicht + User wechselt Inning, zeigen wir
+  // frisches Inning mit leeren Bases bis der erste AtBat des neuen Innings passiert.
+  const [inningOverride, setInningOverride] = useState<number | null>(null)
 
   useEffect(() => {
     if (gameDayId == null) return
@@ -35,7 +39,23 @@ export function ScoringPage() {
 
   const { atBats, scoreboard, reload, recordAtBat, undo, recordStealingEvent } = useScoring(currentGame?.id ?? null)
 
-  const currentInning = scoreboard?.currentInning ?? 1
+  // Effektive Anzeige-Werte: Wenn User "Nächstes Inning" getappt hat, zeigen wir
+  // neues Inning + leere Bases bis der erste AtBat dieses Innings kommt.
+  const serverInning = scoreboard?.currentInning ?? 1
+  const displayInning = inningOverride ?? serverInning
+  const inningTransition = inningOverride != null && serverInning < inningOverride
+  const displayOuts = inningTransition ? 0 : (scoreboard?.outsInCurrentInning ?? 0)
+  const displayBaseState = inningTransition ? { first: null, second: null, third: null } : (scoreboard?.baseState ?? { first: null, second: null, third: null })
+  const displayRunners = inningTransition ? [] : (scoreboard?.runners ?? [])
+  const halfInningOver = !inningTransition && displayOuts >= 3
+  const currentInning = displayInning
+
+  // inningOverride zurücksetzen sobald Server in das neue Inning nachgezogen hat
+  useEffect(() => {
+    if (inningOverride != null && serverInning >= inningOverride) {
+      setInningOverride(null)
+    }
+  }, [serverInning, inningOverride])
 
   const handleRecord = async (result: AtBatResult) => {
     if (!scoreboard || !scoreboard.currentBatterId) {
@@ -44,8 +64,8 @@ export function ScoringPage() {
     }
     setSubmitting(true)
     try {
-      const nextState = advanceBases(scoreboard.baseState, result, scoreboard.currentBatterId)
-      const runsScored = countScored(scoreboard.baseState, nextState, result, scoreboard.currentBatterId)
+      const nextState = advanceBases(displayBaseState, result, scoreboard.currentBatterId)
+      const runsScored = countScored(displayBaseState, nextState, result, scoreboard.currentBatterId)
       await recordAtBat({
         batterId: scoreboard.currentBatterId,
         result,
@@ -61,6 +81,11 @@ export function ScoringPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  const handleNextInning = () => {
+    setInningOverride((displayInning) + 1)
+    toast.show(`Inning ${displayInning + 1} · Bases frei`, 'success')
   }
 
   const handleUndo = async () => {
@@ -121,7 +146,18 @@ export function ScoringPage() {
 
   const scoreUs = scoreboard?.scoreUs ?? 0
   const scoreThem = scoreboard?.scoreThem ?? 0
-  const outs = scoreboard?.outsInCurrentInning ?? 0
+
+  // Extra-Outs pro Inning (für Double-Play o.Ä.): localer Override bis neues Inning
+  const [extraOuts, setExtraOuts] = useState(0)
+  const totalOuts = Math.min(3, displayOuts + extraOuts)
+
+  // Korrektur-Sheet state
+  const [showCorrection, setShowCorrection] = useState(false)
+
+  useEffect(() => {
+    // extraOuts zurücksetzen bei Inning-Wechsel
+    if (inningTransition) setExtraOuts(0)
+  }, [inningTransition])
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -151,32 +187,52 @@ export function ScoringPage() {
             <span className="text-3xl font-black text-gray-600 tabular-nums">{scoreThem}</span>
           </div>
           <div className="text-right">
-            <div className="text-sm font-semibold text-gray-700">{currentInning}. Inning</div>
-            <div className="flex items-center justify-end gap-1 mt-0.5">
+            <div className="text-sm font-semibold text-gray-700">{displayInning}. Inning</div>
+            <button
+              onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
+              className="flex items-center justify-end gap-1 mt-0.5 cursor-pointer group"
+              title="Tap = +1 Out (Double Play). Bei 3 Aus: Reset."
+            >
               {[0, 1, 2].map(i => (
                 <span
                   key={i}
-                  className={`w-2.5 h-2.5 rounded-full ${i < outs ? 'bg-softball-red-600' : 'bg-gray-200'}`}
+                  className={`w-3 h-3 rounded-full transition-colors ${i < totalOuts ? 'bg-softball-red-600' : 'bg-gray-200 group-hover:bg-gray-300'}`}
                 />
               ))}
-              <span className="text-xs text-gray-500 ml-1 tabular-nums">{outs} Aus</span>
-            </div>
+              <span className="text-xs text-gray-500 ml-1 tabular-nums">{totalOuts} Aus</span>
+            </button>
           </div>
         </div>
       </div>
 
+      {/* Inning-Wechsel Banner */}
+      {halfInningOver && (
+        <div className="bg-softball-red-50 border-b-2 border-softball-red-200 px-4 py-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="font-bold text-softball-red-900">3. Out erreicht!</div>
+            <div className="text-xs text-softball-red-700">Halb-Inning beendet</div>
+          </div>
+          <button
+            onClick={handleNextInning}
+            className="px-4 py-2 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
+          >
+            Nächstes Inning ▸
+          </button>
+        </div>
+      )}
+
       {/* Diamond */}
       <div className="flex-1 flex flex-col items-center justify-center py-4 px-4">
         <DiamondView
-          baseState={scoreboard?.baseState ?? { first: null, second: null, third: null }}
-          runners={scoreboard?.runners ?? []}
-          onRunnerTap={handleRunnerTap}
+          baseState={displayBaseState}
+          runners={displayRunners}
+          onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
         />
       </div>
 
       {/* Batter Card */}
       <div className="px-4 py-3 bg-white border-t border-gray-200">
-        {scoreboard?.currentBatterId ? (
+        {scoreboard?.currentBatterId && !halfInningOver ? (
           <div className="flex items-center gap-3">
             <span className="text-xs bg-navy-900 text-white font-bold px-2 py-1 rounded-lg tabular-nums">
               #{scoreboard.currentBatterOrder ?? '?'}
@@ -185,6 +241,10 @@ export function ScoringPage() {
               {scoreboard.currentBatterName}
             </span>
             <span className="text-sm text-gray-500 ml-auto">⚾ am Schlag</span>
+          </div>
+        ) : halfInningOver ? (
+          <div className="text-sm text-gray-500 text-center py-1">
+            Warte auf Inning-Wechsel
           </div>
         ) : (
           <div className="text-sm text-gray-500 text-center py-1">
@@ -195,17 +255,64 @@ export function ScoringPage() {
 
       {/* Action Buttons */}
       <div className="px-4 py-4 bg-white border-t border-gray-200 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-        <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId} />
+        <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId || halfInningOver} />
 
-        {/* Undo */}
-        <button
-          onClick={handleUndo}
-          disabled={atBats.length === 0 || submitting}
-          className="w-full mt-3 h-11 rounded-lg bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          ↶ Letzte Aktion rückgängig
-        </button>
+        {/* Undo + Korrektur */}
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <button
+            onClick={handleUndo}
+            disabled={atBats.length === 0 || submitting}
+            className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            ↶ Rückgängig
+          </button>
+          <button
+            onClick={() => setShowCorrection(true)}
+            disabled={submitting}
+            className="h-11 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer"
+          >
+            ⚙ Korrigieren
+          </button>
+        </div>
       </div>
+
+      {/* Korrektur-Sheet */}
+      <CorrectionSheet
+        open={showCorrection}
+        onClose={() => setShowCorrection(false)}
+        baseState={displayBaseState}
+        runners={displayRunners}
+        availablePlayers={gameDay.availablePlayers}
+        onSave={async ({ newState, extraRuns, outsFromRunners }) => {
+          if (atBats.length === 0) {
+            toast.show('Noch kein AtBat — kann nicht korrigieren', 'error')
+            return
+          }
+          try {
+            const lastAtBat = atBats[atBats.length - 1]
+            const newRuns = (lastAtBat.runsScored ?? 0) + extraRuns
+            await api.updateLastBaseState(currentGame.id, {
+              first: newState.first,
+              second: newState.second,
+              third: newState.third,
+              runsScored: newRuns,
+              rbi: newRuns,
+            })
+            // Runner-Outs als CaughtStealing-Events (für Stats-Tracking)
+            for (const runnerId of outsFromRunners) {
+              await api.recordStealingEvent(currentGame.id, {
+                runnerId,
+                type: 'CAUGHT_STEALING',
+                inning: currentInning,
+              })
+            }
+            await reload()
+            toast.show('Korrigiert ✓', 'success')
+          } catch (e) {
+            toast.show((e as Error).message, 'error')
+          }
+        }}
+      />
 
       {/* Stealing Sheet */}
       <Drawer.Root open={stealingRunner !== null} onOpenChange={(open) => !open && setStealingRunner(null)}>
@@ -253,61 +360,55 @@ export function ScoringPage() {
   )
 }
 
-// --- Smart-Advance-Defaults für Runner ---
+// --- Konservatives Auto-Advance ---
+// Regel: Batter erreicht die Base, die seinem Hit entspricht. Runner die vor
+// ihm stehen laufen NUR so weit wie unbedingt nötig (Force) bzw. genau +N
+// Bases. Realistische Softball-Play-Szenarien wie "Runner von 2B scort bei
+// Single" sollten vom User über die Runner-Korrektur manuell gesetzt werden,
+// weil Out-am-Basepad oder Stop-at-3rd auch vorkommen können.
 function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number): BaseStateDto {
-  let advance = 0
   switch (result) {
-    case 'SINGLE': advance = 1; break
-    case 'DOUBLE': advance = 2; break
-    case 'TRIPLE': advance = 3; break
-    case 'HOMERUN': advance = 4; break
+    case 'STRIKEOUT':
+    case 'OUT':
+      return state
+    case 'HOMERUN':
+      return { first: null, second: null, third: null }
+    case 'TRIPLE':
+      // Alle Runner laufen Home, Batter auf 3B
+      return { first: null, second: null, third: batterId }
     case 'WALK':
     case 'HIT_BY_PITCH': {
-      // Force-advance nur wenn Bases besetzt sind vor Batter
+      // Force-Advance: nur wenn bases vor Batter besetzt sind
       const next: BaseStateDto = { first: batterId, second: state.second, third: state.third }
       if (state.first != null) {
         next.second = state.first
         if (state.second != null) {
           next.third = state.second
-          // third läuft Home — V1 verzichtet auf Zählung, User kann korrigieren
+          // Runner von 3B scort — wird beim countScored erkannt
         }
       }
       return next
     }
-    case 'STRIKEOUT':
-    case 'OUT':
-      return state
-  }
-  // Hit: Smart-Default (Runner auf 2B oder 3B rennen Home bei Single/Double)
-  if (result === 'SINGLE') {
-    return {
-      first: batterId,
-      second: state.first,
-      third: null, // 2B → Home (Standard-Vorschlag)
-      // 3B → Home, 2B → Home: beide erledigt (raus aus diamond)
+    case 'SINGLE': {
+      // Konservativ: Batter auf 1B, Runner jeweils +1 Base
+      // 3B → Home (scort), 2B → 3B, 1B → 2B
+      return {
+        first: batterId,
+        second: state.first,
+        third: state.second,
+        // 3B-Runner scort (wird weggelassen aus state → countScored erkennt)
+      }
+    }
+    case 'DOUBLE': {
+      // Konservativ: Batter auf 2B, Runner jeweils +2 Bases
+      // 3B → Home, 2B → Home, 1B → 3B
+      return {
+        first: null,
+        second: batterId,
+        third: state.first,
+      }
     }
   }
-  if (result === 'DOUBLE') {
-    return {
-      first: null,
-      second: batterId,
-      third: state.first, // 1B → 3B
-      // 2B, 3B → Home
-    }
-  }
-  if (result === 'TRIPLE') {
-    return {
-      first: null,
-      second: null,
-      third: batterId, // alle anderen Home
-    }
-  }
-  if (result === 'HOMERUN') {
-    return { first: null, second: null, third: null }
-  }
-  // fallback via advance-count
-  void advance
-  return state
 }
 
 function countScored(before: BaseStateDto, after: BaseStateDto, result: AtBatResult, batterId: number): number {

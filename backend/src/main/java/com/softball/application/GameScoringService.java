@@ -87,6 +87,24 @@ public class GameScoringService {
             .ifPresent(last -> atBatRepository.deleteById(last.getId()));
     }
 
+    /**
+     * Aktualisiert den BaseState des letzten AtBats (für Runner-Korrektur post-AtBat).
+     * Runs/RBI werden überschrieben wenn übergeben.
+     */
+    @Transactional
+    public AtBatResponse updateLastBaseState(final Long gameId,
+                                              final Long first, final Long second, final Long third,
+                                              final Integer runsScored, final Integer rbi) {
+        findGame(gameId);
+        final AtBat last = atBatRepository.findLastByGameId(gameId)
+            .orElseThrow(() -> new ResourceNotFoundException("Kein AtBat vorhanden für Spiel " + gameId));
+        last.setBaseStateAfter(new BaseState(first, second, third));
+        if (runsScored != null) last.setRunsScored(runsScored);
+        if (rbi != null) last.setRbi(rbi);
+        final AtBat saved = atBatRepository.save(last);
+        return AtBatResponse.from(saved);
+    }
+
     @Transactional
     public StealingEventResponse recordStealingEvent(final Long gameId, final RecordStealingEventRequest req) {
         final Game game = findGame(gameId);
@@ -108,9 +126,10 @@ public class GameScoringService {
     public ScoreboardResponse getScoreboard(final Long gameId) {
         final Game game = findGame(gameId);
         final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
+        final List<BaseRunningEvent> stealingEvents = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         final List<LineupEntry> lineup = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId);
 
-        final int scoreUs = atBats.stream().mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0).sum();
+        int scoreUs = atBats.stream().mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0).sum();
         final Integer scoreThem = game.getScoreThem();
 
         final AtBat last = atBats.isEmpty() ? null : atBats.get(atBats.size() - 1);
@@ -121,9 +140,38 @@ public class GameScoringService {
             .filter(a -> a.getResult() != null && a.getResult().isOut())
             .count();
 
-        final BaseState state = last != null && last.getBaseStateAfter() != null
+        BaseState state = last != null && last.getBaseStateAfter() != null
             ? last.getBaseStateAfter()
             : BaseState.empty();
+
+        // Fold in stealing events die NACH dem letzten AtBat passiert sind
+        if (last != null) {
+            for (final BaseRunningEvent e : stealingEvents) {
+                if (e.getCreatedAt() == null || last.getCreatedAt() == null) continue;
+                if (!e.getCreatedAt().isAfter(last.getCreatedAt())) continue;
+                if (e.getRunner() == null) continue;
+                final Long runnerId = e.getRunner().getId();
+                if (e.getType() == BaseRunningEventType.STOLEN_BASE) {
+                    if (runnerId.equals(state.first())) {
+                        state = new BaseState(null, runnerId, state.third());
+                    } else if (runnerId.equals(state.second())) {
+                        state = new BaseState(state.first(), null, runnerId);
+                    } else if (runnerId.equals(state.third())) {
+                        // Steal of home
+                        state = new BaseState(state.first(), state.second(), null);
+                        scoreUs += 1;
+                    }
+                } else if (e.getType() == BaseRunningEventType.CAUGHT_STEALING) {
+                    if (runnerId.equals(state.first())) {
+                        state = new BaseState(null, state.second(), state.third());
+                    } else if (runnerId.equals(state.second())) {
+                        state = new BaseState(state.first(), null, state.third());
+                    } else if (runnerId.equals(state.third())) {
+                        state = new BaseState(state.first(), state.second(), null);
+                    }
+                }
+            }
+        }
 
         final Map<Long, Player> playerMap = buildPlayerMap(state, lineup);
 
