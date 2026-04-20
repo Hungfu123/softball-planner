@@ -353,10 +353,11 @@ export function GameDayPlanner() {
             {gameDay && gameDay.games.length > 0 && (
               <Link
                 to={`/gameday/${gameDayId}/scoring/${activeTab}`}
-                className="ml-2 px-3 py-2 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                className="ml-1 sm:ml-2 p-2 sm:px-3 sm:py-2 rounded-lg bg-softball-red-600 text-white font-bold text-xs sm:text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1 sm:gap-1.5"
                 title="Live scoren"
               >
-                ⚾ Live scoren
+                <span className="text-base">⚾</span>
+                <span className="hidden sm:inline">Live scoren</span>
               </Link>
             )}
           </div>

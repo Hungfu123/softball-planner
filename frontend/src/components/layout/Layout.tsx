@@ -9,11 +9,11 @@ const ToastCtx = createContext<ToastContext | null>(null)
 export const useToastContext = () => useContext(ToastCtx)!
 
 const TABS = [
-  { path: '/', label: 'Spielbetrieb' },
-  { path: '/training', label: 'Training' },
-  { path: '/training-plan', label: 'Trainingsplan' },
-  { path: '/players', label: 'Spieler' },
-  { path: '/stats', label: 'Statistik' },
+  { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele' },
+  { path: '/training', label: 'Training', shortLabel: 'Training' },
+  { path: '/training-plan', label: 'Trainingsplan', shortLabel: 'Plan' },
+  { path: '/players', label: 'Spieler', shortLabel: 'Spieler' },
+  { path: '/stats', label: 'Statistik', shortLabel: 'Stats' },
 ] as const
 
 export function Layout() {
@@ -51,7 +51,8 @@ export function Layout() {
                       : 'text-white/60 hover:text-white hover:bg-white/8'
                   }`}
                 >
-                  {tab.label}
+                  <span className="sm:hidden">{tab.shortLabel}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
                 </Link>
               ))}
             </nav>
