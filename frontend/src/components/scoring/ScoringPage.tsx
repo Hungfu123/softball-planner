@@ -36,9 +36,13 @@ export function ScoringPage() {
   const [editingScoreUs, setEditingScoreUs] = useState(false)
   const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
-  const [homerunFlash, setHomerunFlash] = useState(false)
+  // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
+  const [homerunFlash, setHomerunFlash] = useState<string | null>(null)
+  const [hbpFlash, setHbpFlash] = useState<string | null>(null)
   const [manualGameOver, setManualGameOver] = useState(false)
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false)
+  // Wer ist bei dem letzten AtBat nach Home gelaufen (für Korrektur-Sheet)
+  const [recentlyScored, setRecentlyScored] = useState<{ playerId: number; playerName: string }[]>([])
   // Top (Gegner schlägt zuerst) / Bottom (wir schlagen zuerst). Pro Spiel in localStorage.
   const [battingSide, setBattingSide] = useState<'top' | 'bottom' | null>(null)
   const [showSidePrompt, setShowSidePrompt] = useState(false)
@@ -106,9 +110,24 @@ export function ScoringPage() {
       return
     }
     setSubmitting(true)
+    // Name des aktuellen Batters merken BEVOR reload passiert
+    const batterNameSnapshot = scoreboard.currentBatterName ?? 'Batter'
     try {
       const nextState = advanceBases(displayBaseState, result, scoreboard.currentBatterId)
       const runsScored = countScored(displayBaseState, nextState, result, scoreboard.currentBatterId)
+      // Ermittle Runner die durch diesen AtBat gescort haben (für Korrigieren-Sheet)
+      const newRunnerIds = new Set([nextState.first, nextState.second, nextState.third].filter(Boolean) as number[])
+      const scoredPlayers = (scoreboard.runners ?? [])
+        .filter(r => !newRunnerIds.has(r.playerId))
+        .map(r => ({ playerId: r.playerId, playerName: r.playerName }))
+      // Homerun-Batter auch als "gescort" markieren (falls HR) damit er in Korrektur auftaucht
+      if (result === 'HOMERUN' && scoreboard.currentBatterName) {
+        scoredPlayers.push({
+          playerId: scoreboard.currentBatterId,
+          playerName: scoreboard.currentBatterName,
+        })
+      }
+      setRecentlyScored(scoredPlayers)
       await recordAtBat({
         batterId: scoreboard.currentBatterId,
         result,
@@ -118,10 +137,16 @@ export function ScoringPage() {
         rbi: runsScored, // V1: RBI = Runs Scored (Vereinfachung)
       })
       if (result === 'HOMERUN') {
-        setHomerunFlash(true)
-        setTimeout(() => setHomerunFlash(false), 2200)
+        setHomerunFlash(batterNameSnapshot)
+        setTimeout(() => setHomerunFlash(null), 2200)
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try { navigator.vibrate([80, 60, 80, 60, 200]) } catch { /* vibrate not supported */ }
+        }
+      } else if (result === 'HIT_BY_PITCH') {
+        setHbpFlash(batterNameSnapshot)
+        setTimeout(() => setHbpFlash(null), 1500)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
         }
       }
       else if (runsScored > 0) toast.show(`${runsScored} Run${runsScored > 1 ? 's' : ''} gescort!`, 'success')
@@ -512,15 +537,18 @@ export function ScoringPage() {
         onClose={() => setShowCorrection(false)}
         baseState={displayBaseState}
         runners={displayRunners}
+        recentlyScored={recentlyScored}
         availablePlayers={gameDay.availablePlayers}
-        onSave={async ({ newState, extraRuns, outsFromRunners }) => {
+        onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds }) => {
           if (atBats.length === 0) {
             toast.show('Noch kein AtBat — kann nicht korrigieren', 'error')
             return
           }
           try {
             const lastAtBat = atBats[atBats.length - 1]
-            const newRuns = (lastAtBat.runsScored ?? 0) + extraRuns
+            // neuHome adds, unscored subtracts
+            const delta = extraRuns - unscoredPlayerIds.length
+            const newRuns = Math.max(0, (lastAtBat.runsScored ?? 0) + delta)
             await api.updateLastBaseState(currentGame.id, {
               first: newState.first,
               second: newState.second,
@@ -536,6 +564,14 @@ export function ScoringPage() {
                 inning: currentInning,
               })
             }
+            // "Unscored" Spieler (vorher Home, jetzt nicht mehr) auch als CS zählen wenn position='out'
+            const unscoredAsOut = unscoredPlayerIds.filter(id => outsFromRunners.includes(id))
+            for (const runnerId of unscoredPlayerIds.filter(id => !unscoredAsOut.includes(id))) {
+              // Spieler wurde zurück auf eine Base gesetzt — kein CS, nur Run-Abzug (schon erledigt)
+              void runnerId
+            }
+            // Korrektur wurde angewendet, recentlyScored leeren damit nächster Edit nicht doppelt zählt
+            setRecentlyScored([])
             await reload()
             toast.show('Korrigiert ✓', 'success')
           } catch (e) {
@@ -613,7 +649,7 @@ export function ScoringPage() {
                 HOME RUN!
               </div>
               <div className="text-lg sm:text-2xl font-bold text-white/90 mt-2">
-                {scoreboard?.currentBatterName}
+                {homerunFlash}
               </div>
             </motion.div>
             {/* Konfetti-Partikel */}
@@ -636,6 +672,69 @@ export function ScoringPage() {
                 }}
                 transition={{ duration: 1.8, ease: 'easeOut', delay: i * 0.03 }}
               />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* HBP "Aua"-Animation */}
+      <AnimatePresence>
+        {hbpFlash && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center"
+          >
+            {/* Roter Flash im Hintergrund */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.35, 0] }}
+              transition={{ duration: 0.4, times: [0, 0.3, 1] }}
+              className="absolute inset-0 bg-softball-red-600"
+            />
+            {/* Tot-Drama */}
+            <motion.div
+              initial={{ scale: 0.3, rotate: -20 }}
+              animate={{
+                scale: [0.3, 1.4, 1, 1, 1],
+                rotate: [-20, 15, -8, 5, -3],
+                y: [0, -20, 10, -5, 0],
+              }}
+              exit={{ scale: 0.5, opacity: 0, rotate: 90 }}
+              transition={{ duration: 1.2, ease: 'easeOut' }}
+              className="text-center"
+            >
+              <div className="text-8xl sm:text-9xl drop-shadow-xl">💥</div>
+              <div className="text-3xl sm:text-5xl font-black text-white drop-shadow-2xl mt-2 -rotate-3">
+                AUA!
+              </div>
+              <div className="text-sm sm:text-lg font-bold text-white/90 mt-1">
+                Hit-by-Pitch — {hbpFlash}
+              </div>
+            </motion.div>
+            {/* Schmerz-Sterne ✨ */}
+            {['✨', '💢', '⚡', '✨', '💢'].map((emoji, i) => (
+              <motion.div
+                key={i}
+                className="absolute text-3xl sm:text-4xl"
+                style={{
+                  left: `${30 + Math.random() * 40}%`,
+                  top: `${35 + Math.random() * 30}%`,
+                }}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{
+                  opacity: [0, 1, 0],
+                  scale: [0, 1.2, 0.5],
+                  x: (Math.random() - 0.5) * 150,
+                  y: (Math.random() - 0.5) * 150,
+                  rotate: Math.random() * 360,
+                }}
+                transition={{ duration: 0.9, delay: i * 0.06 }}
+              >
+                {emoji}
+              </motion.div>
             ))}
           </motion.div>
         )}

@@ -16,19 +16,32 @@ interface Props {
   onClose: () => void
   baseState?: BaseStateDto  // optional, reserviert für künftige Nutzung
   runners: RunnerOnBase[]
+  recentlyScored?: { playerId: number; playerName: string }[]
   availablePlayers: Player[]
-  onSave: (data: { newState: BaseStateDto; extraRuns: number; outsFromRunners: number[] }) => void | Promise<void>
+  onSave: (data: {
+    newState: BaseStateDto
+    extraRuns: number
+    outsFromRunners: number[]
+    unscoredPlayerIds: number[]  // Spieler die VORHER 'home' waren, jetzt nicht mehr → Runs abziehen
+  }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], availablePlayers, onSave }: Props) {
   const initial = useMemo<RunnerAssignment[]>(() => {
-    return runners.map(r => ({
+    const onBase = runners.map(r => ({
       playerId: r.playerId,
       playerName: r.playerName,
       position: r.base as 1 | 2 | 3,
       wasOnBase: r.base as 1 | 2 | 3,
+    } as RunnerAssignment))
+    const scored = recentlyScored.map(s => ({
+      playerId: s.playerId,
+      playerName: s.playerName,
+      position: 'home' as Position,
+      wasOnBase: null,
     }))
-  }, [runners])
+    return [...onBase, ...scored]
+  }, [runners, recentlyScored])
 
   const [assignments, setAssignments] = useState<RunnerAssignment[]>(initial)
   const [saving, setSaving] = useState(false)
@@ -76,7 +89,17 @@ export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSa
       second: assignments.find(a => a.position === 2)?.playerId ?? null,
       third: assignments.find(a => a.position === 3)?.playerId ?? null,
     }
-    const extraRuns = assignments.filter(a => a.position === 'home').length
+    // NEU home: Spieler die vorher NICHT 'home' waren, jetzt schon → +Run
+    // UnScored: Spieler die vorher 'home' waren (recentlyScored), jetzt nicht → -Run
+    const recentlyScoredIds = new Set(recentlyScored.map(r => r.playerId))
+    const newHomeAssignments = assignments.filter(a => a.position === 'home' && !recentlyScoredIds.has(a.playerId))
+    const extraRuns = newHomeAssignments.length
+    const unscoredPlayerIds = recentlyScored
+      .filter(rs => {
+        const a = assignments.find(a => a.playerId === rs.playerId)
+        return a && a.position !== 'home'
+      })
+      .map(rs => rs.playerId)
     const outsFromRunners = assignments
       .filter(a => a.position === 'out')
       .map(a => a.playerId)
@@ -84,7 +107,7 @@ export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSa
     onClose()
     setSaving(true)
     try {
-      await onSave({ newState, extraRuns, outsFromRunners })
+      await onSave({ newState, extraRuns, outsFromRunners, unscoredPlayerIds })
     } finally {
       setSaving(false)
     }

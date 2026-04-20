@@ -30,7 +30,7 @@ function truncate(name: string, max = 7): string {
 export function DiamondView({ baseState, runners, onRunnerTap }: Props) {
   return (
     <svg viewBox="0 0 220 220" className="w-full max-w-[280px] mx-auto">
-      {/* Base-Paths (dünne Linien zwischen Bases) */}
+      {/* Base-Paths */}
       <path
         d={`M ${POS.home.cx} ${POS.home.cy}
             L ${POS.first.cx} ${POS.first.cy}
@@ -42,7 +42,7 @@ export function DiamondView({ baseState, runners, onRunnerTap }: Props) {
         strokeDasharray="4 3"
       />
 
-      {/* Bases — statisch, immer gerendert */}
+      {/* Bases — statisch */}
       <StaticBase pos={POS.first} label="1B" occupied={baseState.first != null} />
       <StaticBase pos={POS.second} label="2B" occupied={baseState.second != null} />
       <StaticBase pos={POS.third} label="3B" occupied={baseState.third != null} />
@@ -67,49 +67,56 @@ export function DiamondView({ baseState, runners, onRunnerTap }: Props) {
         Home
       </text>
 
-      {/* Runners — als separate Layer, animiert per cx/cy */}
+      {/* Runners — motion.g positioniert sich per x/y-translate,
+          Children bewegen sich mit.
+          - initial: Runner taucht am Home-Plate auf (als wäre er Batter) und läuft zur Base
+          - animate: zur aktuellen Base-Position (bei Base-Wechsel animiert Motion automatisch)
+          - exit: läuft zum Home-Plate während fade (= Runner scort) */}
       <AnimatePresence>
         {runners.map(r => {
           const p = posForBase(r.base)
           return (
             <motion.g
               key={r.playerId}
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.6 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+              animate={{ opacity: 1, scale: 1, x: p.cx, y: p.cy }}
+              exit={{
+                opacity: 0,
+                scale: 0.6,
+                x: POS.home.cx,
+                y: POS.home.cy,
+              }}
+              transition={{ type: 'spring', stiffness: 220, damping: 24 }}
               style={{ cursor: onRunnerTap ? 'pointer' : 'default' }}
               onClick={() => onRunnerTap?.(r.base as 1 | 2 | 3, r)}
             >
-              <motion.circle
-                cx={p.cx}
-                cy={p.cy}
+              {/* Kreis + Texte relativ zu 0/0 — bewegen sich mit dem g */}
+              <circle
+                cx={0}
+                cy={0}
                 r="18"
                 fill="#172554"
                 stroke="#fff"
                 strokeWidth="2"
-                initial={false}
-                animate={{ cx: p.cx, cy: p.cy }}
-                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
               />
-              <motion.text
-                textAnchor="middle"
-                className="fill-white text-[8px] font-bold pointer-events-none"
-                initial={false}
-                animate={{ x: p.cx, y: p.cy - 4 }}
-                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-              >
-                {r.battingOrder != null ? `#${r.battingOrder}` : ''}
-              </motion.text>
-              <motion.text
+              {r.battingOrder != null && (
+                <text
+                  x={0}
+                  y={-4}
+                  textAnchor="middle"
+                  className="fill-white text-[8px] font-bold pointer-events-none"
+                >
+                  #{r.battingOrder}
+                </text>
+              )}
+              <text
+                x={0}
+                y={7}
                 textAnchor="middle"
                 className="fill-white text-[9px] font-semibold pointer-events-none"
-                initial={false}
-                animate={{ x: p.cx, y: p.cy + 7 }}
-                transition={{ type: 'spring', stiffness: 280, damping: 24 }}
               >
                 {truncate(r.playerName)}
-              </motion.text>
+              </text>
             </motion.g>
           )
         })}
@@ -127,15 +134,18 @@ interface StaticBaseProps {
 function StaticBase({ pos, label, occupied }: StaticBaseProps) {
   return (
     <g>
-      <rect
+      <motion.rect
         x={pos.cx - 16}
         y={pos.cy - 16}
         width="32"
         height="32"
         rx="4"
         transform={`rotate(45 ${pos.cx} ${pos.cy})`}
-        fill={occupied ? '#059669' : 'transparent'}
-        stroke={occupied ? '#047857' : '#9ca3af'}
+        animate={{
+          fill: occupied ? '#dc2626' : 'rgba(0,0,0,0)',
+          stroke: occupied ? '#b91c1c' : '#9ca3af',
+        }}
+        transition={{ duration: 0.3 }}
         strokeWidth="2"
       />
       {!occupied && (
@@ -143,7 +153,7 @@ function StaticBase({ pos, label, occupied }: StaticBaseProps) {
           x={pos.cx}
           y={pos.cy + 3}
           textAnchor="middle"
-          className="fill-gray-400 text-[10px] font-medium"
+          className="fill-gray-400 text-[10px] font-medium pointer-events-none"
         >
           {label}
         </text>
