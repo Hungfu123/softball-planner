@@ -70,8 +70,13 @@ export function ScoringPage() {
   const displayRunners = inningTransition ? [] : (scoreboard?.runners ?? [])
   const halfInningOver = !inningTransition && displayOuts >= 3
   const currentInning = displayInning
-  const MAX_INNINGS = 7
-  const gameOver = manualGameOver || (halfInningOver && displayInning >= MAX_INNINGS)
+  const REGULATION_INNINGS = 7
+  // Unentschieden → Extra-Innings erlaubt. Game-Over nur wenn manuell ODER
+  // (Regulation-Inning Ende UND nicht unentschieden)
+  const regulationOver = halfInningOver && displayInning >= REGULATION_INNINGS
+  const isTied = (scoreboard?.scoreUs ?? 0) === (scoreboard?.scoreThem ?? 0)
+  const extraInningsNeeded = regulationOver && isTied
+  const gameOver = manualGameOver || (regulationOver && !isTied)
 
   // inningOverride zurücksetzen sobald Server in das neue Inning nachgezogen hat
   useEffect(() => {
@@ -129,7 +134,8 @@ export function ScoringPage() {
           playerName: scoreboard.currentBatterName,
         })
       }
-      setRecentlyScored(scoredPlayers)
+      // Erst Server-Call, danach lokalen State setzen — so bleibt bei Fehler
+      // nichts inkonsistent.
       await recordAtBat({
         batterId: scoreboard.currentBatterId,
         result,
@@ -138,6 +144,7 @@ export function ScoringPage() {
         runsScored,
         rbi: runsScored, // V1: RBI = Runs Scored (Vereinfachung)
       })
+      setRecentlyScored(scoredPlayers)
       if (result === 'HOMERUN') {
         setHomerunFlash(batterNameSnapshot)
         setTimeout(() => setHomerunFlash(null), 2200)
@@ -435,8 +442,12 @@ export function ScoringPage() {
         <div className="bg-softball-red-50 border-b-2 border-softball-red-200 px-4 py-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="font-bold text-softball-red-900">3. Out erreicht!</div>
-              <div className="text-xs text-softball-red-700">Halb-Inning beendet</div>
+              <div className="font-bold text-softball-red-900">
+                {extraInningsNeeded ? `Unentschieden nach ${displayInning} — Extra Inning!` : '3. Out erreicht!'}
+              </div>
+              <div className="text-xs text-softball-red-700">
+                {extraInningsNeeded ? 'Softball-Tiebreaker: weiter bis zur Entscheidung' : 'Halb-Inning beendet'}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

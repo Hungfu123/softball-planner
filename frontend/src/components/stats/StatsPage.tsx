@@ -17,7 +17,8 @@ export function StatsPage() {
   const seasonIdParam = params.get('seasonId')
   const yearParam = params.get('year')
   const gameIdParam = params.get('gameId')
-  const selectedGameId = gameIdParam ? Number(gameIdParam) : null
+  const gameIdParsed = gameIdParam ? Number(gameIdParam) : null
+  const selectedGameId = gameIdParsed != null && !Number.isNaN(gameIdParsed) ? gameIdParsed : null
 
   const [seasons, setSeasons] = useState<Season[]>([])
   const [years, setYears] = useState<number[]>([])

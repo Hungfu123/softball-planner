@@ -9,7 +9,7 @@ import com.softball.domain.model.AtBatResult;
 public record RecordAtBatRequest(
     @NotNull Long batterId,
     @NotNull AtBatResult result,
-    @NotNull @Min(1) @Max(7) Integer inning,
+    @NotNull @Min(1) @Max(99) Integer inning,
     BaseStateDto baseStateAfter,
     Integer runsScored,
     Integer rbi
