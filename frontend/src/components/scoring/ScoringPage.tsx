@@ -477,12 +477,20 @@ export function ScoringPage() {
             </div>
           </div>
           {currentGame && gameDay && (
-            <Link
-              to={`/stats?scope=season&seasonId=${gameDay.seasonId}&view=batting`}
-              className="block w-full text-center px-4 py-3 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
-            >
-              📊 Stats für diese Saison ansehen
-            </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Link
+                to={`/stats?scope=game&gameId=${currentGame.id}&view=batting`}
+                className="block text-center px-4 py-3 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
+              >
+                📊 Stats dieses Spiels
+              </Link>
+              <Link
+                to={`/stats?scope=season&seasonId=${gameDay.seasonId}&view=batting`}
+                className="block text-center px-4 py-3 rounded-lg border border-white/30 text-white hover:bg-white/10 font-bold text-sm cursor-pointer"
+              >
+                📊 Saison-Stats
+              </Link>
+            </div>
           )}
           <button
             onClick={handleReopenGame}

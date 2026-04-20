@@ -6,7 +6,7 @@ import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
 
-type ScopeKind = 'season' | 'year' | 'allTime'
+type ScopeKind = 'season' | 'year' | 'allTime' | 'game'
 type ViewKind = 'batting' | 'games'
 
 export function StatsPage() {
@@ -16,6 +16,8 @@ export function StatsPage() {
   const view = (params.get('view') as ViewKind) || 'batting'
   const seasonIdParam = params.get('seasonId')
   const yearParam = params.get('year')
+  const gameIdParam = params.get('gameId')
+  const selectedGameId = gameIdParam ? Number(gameIdParam) : null
 
   const [seasons, setSeasons] = useState<Season[]>([])
   const [years, setYears] = useState<number[]>([])
@@ -72,12 +74,14 @@ export function StatsPage() {
     setLoading(true)
 
     const battingP = (): Promise<PlayerBattingStatsResponse[]> => {
+      if (scopeKind === 'game' && selectedGameId != null) return api.getGameBattingStats(selectedGameId)
       if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonBattingStats(selectedSeasonId)
       if (scopeKind === 'year') return api.getYearBattingStats(selectedYear)
       if (scopeKind === 'allTime') return api.getAllTimeBattingStats()
       return Promise.resolve([])
     }
     const gamesP = (): Promise<SeasonPlayerStats[]> => {
+      if (scopeKind === 'game') return Promise.resolve([]) // Einsätze pro einzelnem Spiel = nicht sinnvoll
       if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonStats(selectedSeasonId)
       if (scopeKind === 'year') return api.getYearStats(selectedYear)
       if (scopeKind === 'allTime') return api.getAllTimeStats()
@@ -98,7 +102,7 @@ export function StatsPage() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [scopeKind, selectedSeasonId, selectedYear])
+  }, [scopeKind, selectedSeasonId, selectedYear, selectedGameId])
 
   // Load seasons-by-year for Kontext-Info
   useEffect(() => {
@@ -107,6 +111,9 @@ export function StatsPage() {
   }, [scopeKind, selectedYear])
 
   const contextInfo = useMemo(() => {
+    if (scopeKind === 'game') {
+      return selectedGameId != null ? `Nur dieses Spiel — Stats aus den At-Bats` : 'Kein Spiel ausgewählt'
+    }
     if (scopeKind === 'season') {
       const s = seasons.find(x => x.id === selectedSeasonId)
       return s ? `${s.name} · ${s.year}` : 'Keine Saison ausgewählt'
@@ -117,7 +124,7 @@ export function StatsPage() {
       return `Jahr ${selectedYear} · ${seasonsForYear.length} ${seasonsForYear.length === 1 ? 'Saison' : 'Saisons'}: ${names}`
     }
     return `Alle Jahre · ${seasons.length} ${seasons.length === 1 ? 'Saison' : 'Saisons'}`
-  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear])
+  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId])
 
   return (
     <div className="space-y-6">
@@ -138,6 +145,9 @@ export function StatsPage() {
 
         {/* Scope Toggle */}
         <div className="flex flex-wrap gap-2 mb-3">
+          {scopeKind === 'game' && (
+            <ScopeChip active={true} onClick={() => { /* noop */ }}>Dieses Spiel</ScopeChip>
+          )}
           <ScopeChip active={scopeKind === 'season'} onClick={() => setScope('season')}>Saison</ScopeChip>
           <ScopeChip active={scopeKind === 'year'} onClick={() => setScope('year')}>Jahr</ScopeChip>
           <ScopeChip active={scopeKind === 'allTime'} onClick={() => setScope('allTime')}>Alle Zeit</ScopeChip>
@@ -171,10 +181,12 @@ export function StatsPage() {
         <p className="text-xs text-gray-500 mt-2">{contextInfo}</p>
       </div>
 
-      {/* View Tabs */}
+      {/* View Tabs — 'Einsätze' macht nur Sinn bei aggregierten Scopes */}
       <div className="flex gap-2 border-b border-gray-200">
         <ViewTab active={view === 'batting'} onClick={() => setView('batting')}>Schlagen</ViewTab>
-        <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
+        {scopeKind !== 'game' && (
+          <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
+        )}
       </div>
 
       {/* Content */}
