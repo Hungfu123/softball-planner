@@ -12,6 +12,11 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 
 // Lazy-load heavy pages
 const TrainingPlanPage = lazy(() => import('@/components/training-plan/TrainingPlanPage'))
+const ScoringPage = lazy(() => import('@/components/scoring/ScoringPage').then(m => ({ default: m.ScoringPage })))
+
+function LazyScoring() {
+  return <Suspense fallback={<LoadingSkeleton />}><ScoringPage /></Suspense>
+}
 
 function LazyTrainingPlan() {
   return <Suspense fallback={<LoadingSkeleton />}><TrainingPlanPage /></Suspense>
@@ -29,6 +34,7 @@ const router = createBrowserRouter([
     ],
   },
   { path: '/gameday/:id/export', element: <LineupSheet /> },
+  { path: '/gameday/:id/scoring/:gameIndex', element: <LazyScoring /> },
 ])
 
 export default function App() {

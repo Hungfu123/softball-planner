@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useBlocker } from 'react-router-dom'
+import { Link, useParams, useBlocker } from 'react-router-dom'
 import { useGameDay } from '@/hooks/useGameDay'
 import { useLineup } from '@/hooks/useLineup'
 import { useStaff } from '@/hooks/useStaff'
@@ -350,6 +350,15 @@ export function GameDayPlanner() {
             >
               <ExportDoc size={20} />
             </button>
+            {gameDay && gameDay.games.length > 0 && (
+              <Link
+                to={`/gameday/${gameDayId}/scoring/${activeTab}`}
+                className="ml-2 px-3 py-2 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                title="Live scoren"
+              >
+                ⚾ Live scoren
+              </Link>
+            )}
           </div>
         </div>
       </div>

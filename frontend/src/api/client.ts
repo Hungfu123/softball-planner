@@ -57,6 +57,12 @@ import type {
   TrainingPlanResponse,
   TrainingPlanContentResponse,
   GeneratePlanRequest,
+  AtBatResponse,
+  RecordAtBatRequest,
+  StealingEventResponse,
+  RecordStealingEventRequest,
+  ScoreboardResponse,
+  PlayerBattingStatsResponse,
 } from '@/types'
 
 // Players
@@ -277,4 +283,29 @@ export const updateTrainingPlan = (id: number, content: TrainingPlanContentRespo
 
 export const deleteTrainingPlan = (id: number) =>
   request<void>(`/training-plans/${id}`, { method: 'DELETE' })
+
+// Live-Scoring
+export const getAtBats = (gameId: number) =>
+  request<AtBatResponse[]>(`/games/${gameId}/atbats`)
+export const recordAtBat = (gameId: number, req: RecordAtBatRequest) =>
+  request<AtBatResponse>(`/games/${gameId}/atbats`, { method: 'POST', body: JSON.stringify(req) })
+export const undoLastAtBat = (gameId: number) =>
+  request<void>(`/games/${gameId}/atbats/last`, { method: 'DELETE' })
+
+export const getStealingEvents = (gameId: number) =>
+  request<StealingEventResponse[]>(`/games/${gameId}/stealing-events`)
+export const recordStealingEvent = (gameId: number, req: RecordStealingEventRequest) =>
+  request<StealingEventResponse>(`/games/${gameId}/stealing-events`, { method: 'POST', body: JSON.stringify(req) })
+export const deleteStealingEvent = (gameId: number, eventId: number) =>
+  request<void>(`/games/${gameId}/stealing-events/${eventId}`, { method: 'DELETE' })
+
+export const getScoreboard = (gameId: number) =>
+  request<ScoreboardResponse>(`/games/${gameId}/scoreboard`)
+
+export const getGameBattingStats = (gameId: number) =>
+  request<PlayerBattingStatsResponse[]>(`/games/${gameId}/batting-stats`)
+export const getGameDayBattingStats = (gameDayId: number) =>
+  request<PlayerBattingStatsResponse[]>(`/gamedays/${gameDayId}/batting-stats`)
+export const getSeasonBattingStats = (seasonId: number) =>
+  request<PlayerBattingStatsResponse[]>(`/seasons/${seasonId}/batting-stats`)
 

@@ -245,3 +245,113 @@ export interface GeneratePlanRequest {
   focus: string
   durationMinutes: number
 }
+
+// Live-Scoring
+export type AtBatResult =
+  | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN'
+  | 'WALK' | 'HIT_BY_PITCH'
+  | 'STRIKEOUT' | 'OUT'
+
+export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING'
+
+export interface BaseStateDto {
+  first: number | null
+  second: number | null
+  third: number | null
+}
+
+export interface AtBatResponse {
+  id: number
+  gameId: number
+  batterId: number
+  batterName: string
+  sequence: number
+  inning: number
+  result: AtBatResult
+  baseStateAfter: BaseStateDto
+  runsScored: number
+  rbi: number
+  createdAt: string
+  createdBy: string
+}
+
+export interface RecordAtBatRequest {
+  batterId: number
+  result: AtBatResult
+  inning: number
+  baseStateAfter?: BaseStateDto
+  runsScored?: number
+  rbi?: number
+}
+
+export interface StealingEventResponse {
+  id: number
+  gameId: number
+  runnerId: number
+  runnerName: string
+  inning: number
+  type: BaseRunningEventType
+  createdAt: string
+}
+
+export interface RecordStealingEventRequest {
+  runnerId: number
+  type: BaseRunningEventType
+  inning: number
+}
+
+export interface RunnerOnBase {
+  base: number
+  playerId: number
+  playerName: string
+  battingOrder: number | null
+}
+
+export interface ScoreboardResponse {
+  gameId: number
+  scoreUs: number
+  scoreThem: number | null
+  currentInning: number
+  outsInCurrentInning: number
+  baseState: BaseStateDto
+  runners: RunnerOnBase[]
+  currentBatterId: number | null
+  currentBatterName: string | null
+  currentBatterOrder: number | null
+  totalAtBats: number
+}
+
+export interface PlayerBattingStatsResponse {
+  playerId: number
+  playerName: string
+  plateAppearances: number
+  atBats: number
+  hits: number
+  singles: number
+  doubles: number
+  triples: number
+  homeRuns: number
+  walks: number
+  hitByPitch: number
+  strikeouts: number
+  outs: number
+  stolenBases: number
+  caughtStealing: number
+  runsBattedIn: number
+  totalBases: number
+  battingAverage: number
+  onBasePct: number
+  sluggingPct: number
+  ops: number
+}
+
+export const AT_BAT_RESULT_LABELS: Record<AtBatResult, string> = {
+  SINGLE: 'Single',
+  DOUBLE: 'Double',
+  TRIPLE: 'Triple',
+  HOMERUN: 'Homerun',
+  WALK: 'Walk',
+  HIT_BY_PITCH: 'Hit-by-Pitch',
+  STRIKEOUT: 'Strikeout',
+  OUT: 'Aus',
+}
