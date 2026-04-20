@@ -18,6 +18,12 @@ public interface SpringAtBatRepository extends JpaRepository<AtBatEntity, Long> 
     @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter WHERE ab.game.gameDay.season.id = :seasonId")
     List<AtBatEntity> findBySeasonId(Long seasonId);
 
+    @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter WHERE ab.game.gameDay.season.year = :year")
+    List<AtBatEntity> findByYear(int year);
+
+    @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter")
+    List<AtBatEntity> findAllWithBatter();
+
     @Query("SELECT COALESCE(MAX(ab.sequence), 0) FROM AtBatEntity ab WHERE ab.game.id = :gameId")
     Integer findMaxSequenceByGameId(Long gameId);
 

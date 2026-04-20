@@ -54,4 +54,9 @@ public class SeasonController {
     public List<SeasonPlayerStats> getStats(@PathVariable final Long id) {
         return statsService.getSeasonStats(id);
     }
+
+    @GetMapping("/years")
+    public List<Integer> getYears() {
+        return seasonService.getDistinctYears();
+    }
 }

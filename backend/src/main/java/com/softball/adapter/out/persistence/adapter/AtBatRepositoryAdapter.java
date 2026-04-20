@@ -50,6 +50,16 @@ public class AtBatRepositoryAdapter implements AtBatRepository {
     }
 
     @Override
+    public List<AtBat> findByYear(final int year) {
+        return repo.findByYear(year).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<AtBat> findAll() {
+        return repo.findAllWithBatter().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<AtBat> findById(final Long id) {
         return repo.findById(id).map(mapper::toDomain);
     }

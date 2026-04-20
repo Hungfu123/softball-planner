@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useSeasons } from '@/hooks/useSeasons'
 import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
@@ -283,6 +284,14 @@ export function Dashboard() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+                <div className="mt-3 text-right">
+                  <Link
+                    to={`/stats?scope=season&seasonId=${selectedSeasonId}`}
+                    className="inline-flex items-center gap-1 text-sm text-navy-700 hover:text-softball-red-600 hover:underline cursor-pointer"
+                  >
+                    Alle Statistiken (Schlagen, Jahr, …) →
+                  </Link>
                 </div>
               </CollapsibleSection>
               </div>

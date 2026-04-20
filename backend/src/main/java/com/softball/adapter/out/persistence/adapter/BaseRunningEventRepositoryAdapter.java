@@ -49,6 +49,16 @@ public class BaseRunningEventRepositoryAdapter implements BaseRunningEventReposi
     }
 
     @Override
+    public List<BaseRunningEvent> findByYear(final int year) {
+        return repo.findByYear(year).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<BaseRunningEvent> findAll() {
+        return repo.findAllWithRunner().stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<BaseRunningEvent> findById(final Long id) {
         return repo.findById(id).map(mapper::toDomain);
     }

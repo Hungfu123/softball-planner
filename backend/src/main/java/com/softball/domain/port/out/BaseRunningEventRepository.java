@@ -9,6 +9,8 @@ public interface BaseRunningEventRepository {
     List<BaseRunningEvent> findByGameIdOrderByIdAsc(Long gameId);
     List<BaseRunningEvent> findByGameIdInOrderByIdAsc(List<Long> gameIds);
     List<BaseRunningEvent> findBySeasonId(Long seasonId);
+    List<BaseRunningEvent> findByYear(int year);
+    List<BaseRunningEvent> findAll();
     Optional<BaseRunningEvent> findById(Long id);
     BaseRunningEvent save(BaseRunningEvent event);
     void deleteById(Long id);

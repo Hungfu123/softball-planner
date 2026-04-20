@@ -9,6 +9,8 @@ public interface AtBatRepository {
     List<AtBat> findByGameIdOrderBySequenceAsc(Long gameId);
     List<AtBat> findByGameIdInOrderBySequenceAsc(List<Long> gameIds);
     List<AtBat> findBySeasonId(Long seasonId);
+    List<AtBat> findByYear(int year);
+    List<AtBat> findAll();
     Optional<AtBat> findById(Long id);
     Optional<AtBat> findLastByGameId(Long gameId);
     Integer findMaxSequenceByGameId(Long gameId);

@@ -11,4 +11,6 @@ public interface SeasonRepository {
     void deleteById(Long id);
     boolean existsById(Long id);
     Optional<Season> findByIdWithGameDaysAndGames(Long id);
+    List<Season> findByYear(int year);
+    List<Integer> findDistinctYearsWithData();
 }

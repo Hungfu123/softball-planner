@@ -13,6 +13,7 @@ const TABS = [
   { path: '/training', label: 'Training' },
   { path: '/training-plan', label: 'Trainingsplan' },
   { path: '/players', label: 'Spieler' },
+  { path: '/stats', label: 'Statistik' },
 ] as const
 
 export function Layout() {

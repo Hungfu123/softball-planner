@@ -69,4 +69,14 @@ public class SeasonRepositoryAdapter implements SeasonRepository {
             return season;
         });
     }
+
+    @Override
+    public List<Season> findByYear(final int year) {
+        return repo.findByYearOrderByIdAsc(year).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Integer> findDistinctYearsWithData() {
+        return repo.findDistinctYears();
+    }
 }

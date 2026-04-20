@@ -74,8 +74,24 @@ public class BattingStatsService {
     public List<PlayerBattingStatsResponse> getSeasonStats(final Long seasonId) {
         final List<AtBat> atBats = atBatRepository.findBySeasonId(seasonId);
         final List<BaseRunningEvent> steals = stealingRepository.findBySeasonId(seasonId);
+        return statsFromEvents(atBats, steals);
+    }
 
-        // Spieler-Ids aus Events sammeln (Season-übergreifende Lineups wären zu teuer)
+    @Transactional(readOnly = true)
+    public List<PlayerBattingStatsResponse> getYearStats(final int year) {
+        final List<AtBat> atBats = atBatRepository.findByYear(year);
+        final List<BaseRunningEvent> steals = stealingRepository.findByYear(year);
+        return statsFromEvents(atBats, steals);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlayerBattingStatsResponse> getAllTimeStats() {
+        final List<AtBat> atBats = atBatRepository.findAll();
+        final List<BaseRunningEvent> steals = stealingRepository.findAll();
+        return statsFromEvents(atBats, steals);
+    }
+
+    private List<PlayerBattingStatsResponse> statsFromEvents(final List<AtBat> atBats, final List<BaseRunningEvent> steals) {
         final Set<Long> playerIds = new HashSet<>();
         for (final AtBat a : atBats) if (a.getBatter() != null) playerIds.add(a.getBatter().getId());
         for (final BaseRunningEvent e : steals) if (e.getRunner() != null) playerIds.add(e.getRunner().getId());

@@ -59,4 +59,14 @@ public class SeasonService {
         }
         seasonRepository.deleteById(id);
     }
+
+    @Transactional(readOnly = true)
+    public List<Integer> getDistinctYears() {
+        return seasonRepository.findDistinctYearsWithData();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Season> getSeasonsByYear(final int year) {
+        return seasonRepository.findByYear(year);
+    }
 }

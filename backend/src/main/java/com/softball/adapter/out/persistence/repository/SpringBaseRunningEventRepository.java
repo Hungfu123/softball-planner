@@ -16,4 +16,10 @@ public interface SpringBaseRunningEventRepository extends JpaRepository<BaseRunn
 
     @Query("SELECT e FROM BaseRunningEventEntity e JOIN FETCH e.runner WHERE e.game.gameDay.season.id = :seasonId")
     List<BaseRunningEventEntity> findBySeasonId(Long seasonId);
+
+    @Query("SELECT e FROM BaseRunningEventEntity e JOIN FETCH e.runner WHERE e.game.gameDay.season.year = :year")
+    List<BaseRunningEventEntity> findByYear(int year);
+
+    @Query("SELECT e FROM BaseRunningEventEntity e JOIN FETCH e.runner")
+    List<BaseRunningEventEntity> findAllWithRunner();
 }

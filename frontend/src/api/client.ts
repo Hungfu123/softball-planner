@@ -296,6 +296,20 @@ export const updateLastBaseState = (gameId: number, data: { first: number | null
 export const resetScoring = (gameId: number) =>
   request<void>(`/games/${gameId}/scoring`, { method: 'DELETE' })
 
+// Year / All-Time Stats
+export const getYearBattingStats = (year: number) =>
+  request<PlayerBattingStatsResponse[]>(`/years/${year}/batting-stats`)
+export const getYearStats = (year: number) =>
+  request<SeasonPlayerStats[]>(`/years/${year}/stats`)
+export const getYearSeasons = (year: number) =>
+  request<Season[]>(`/years/${year}/seasons`)
+export const getAllTimeBattingStats = () =>
+  request<PlayerBattingStatsResponse[]>('/stats/all-time/batting')
+export const getAllTimeStats = () =>
+  request<SeasonPlayerStats[]>('/stats/all-time/games')
+export const getDistinctYears = () =>
+  request<number[]>('/seasons/years')
+
 export const getStealingEvents = (gameId: number) =>
   request<StealingEventResponse[]>(`/games/${gameId}/stealing-events`)
 export const recordStealingEvent = (gameId: number, req: RecordStealingEventRequest) =>
