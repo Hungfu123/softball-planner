@@ -23,34 +23,39 @@ export function GamesStatsTable({ stats }: Props) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-white rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Spieler</th>
-              <th className="text-right px-4 py-3 font-semibold text-gray-600 w-32">Spiele</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Positionen</th>
+            <tr className="bg-navy-900 text-white">
+              <th className="text-left px-4 py-2.5 font-bold text-[11px] uppercase tracking-wider">Spieler</th>
+              <th className="text-right px-4 py-2.5 font-bold text-[11px] uppercase tracking-wider w-32">Spiele</th>
+              <th className="text-left px-4 py-2.5 font-bold text-[11px] uppercase tracking-wider">Positionen</th>
             </tr>
           </thead>
           <tbody>
-            {stats.map(s => (
-              <tr key={s.playerId} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                <td className="px-4 py-2.5 font-medium text-gray-900">{s.playerName}</td>
-                <td className="px-4 py-2.5 text-right">
+            {stats.map((s, idx) => (
+              <tr
+                key={s.playerId}
+                className={`border-b border-gray-100 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
+                  idx % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'
+                }`}
+              >
+                <td className="px-4 py-2 font-semibold text-navy-900">{s.playerName}</td>
+                <td className="px-4 py-2 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-navy-800 rounded-full"
+                        className="h-full bg-softball-red-600 rounded-full"
                         style={{ width: `${(s.totalGames / maxGames) * 100}%` }}
                       />
                     </div>
-                    <span className="font-mono font-semibold text-gray-900 w-10 text-right tabular-nums">
+                    <span className="font-bold text-navy-900 w-10 text-right tabular-nums">
                       {s.totalGames}
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-2.5 text-gray-600">{topPositions(s.positionCounts)}</td>
+                <td className="px-4 py-2 text-gray-600 text-xs">{topPositions(s.positionCounts)}</td>
               </tr>
             ))}
           </tbody>
