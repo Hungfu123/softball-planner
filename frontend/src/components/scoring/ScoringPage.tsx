@@ -37,6 +37,11 @@ export function ScoringPage() {
   const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   const [homerunFlash, setHomerunFlash] = useState(false)
+  const [manualGameOver, setManualGameOver] = useState(false)
+  const [showEndGameConfirm, setShowEndGameConfirm] = useState(false)
+  // Top (Gegner schlägt zuerst) / Bottom (wir schlagen zuerst). Pro Spiel in localStorage.
+  const [battingSide, setBattingSide] = useState<'top' | 'bottom' | null>(null)
+  const [showSidePrompt, setShowSidePrompt] = useState(false)
 
   useEffect(() => {
     if (gameDayId == null) return
@@ -62,7 +67,7 @@ export function ScoringPage() {
   const halfInningOver = !inningTransition && displayOuts >= 3
   const currentInning = displayInning
   const MAX_INNINGS = 7
-  const gameOver = halfInningOver && displayInning >= MAX_INNINGS
+  const gameOver = manualGameOver || (halfInningOver && displayInning >= MAX_INNINGS)
 
   // inningOverride zurücksetzen sobald Server in das neue Inning nachgezogen hat
   useEffect(() => {
@@ -75,6 +80,25 @@ export function ScoringPage() {
   useEffect(() => {
     if (inningTransition) setExtraOuts(0)
   }, [inningTransition])
+
+  // Batting-Side aus localStorage laden + prompten wenn noch nichts gespielt
+  useEffect(() => {
+    if (currentGame == null) return
+    const stored = localStorage.getItem(`scoring-side-${currentGame.id}`)
+    if (stored === 'top' || stored === 'bottom') {
+      setBattingSide(stored)
+    } else if (atBats.length === 0 && scoreboard) {
+      // Noch nichts gespielt → fragen
+      setShowSidePrompt(true)
+    }
+  }, [currentGame, atBats.length, scoreboard])
+
+  const pickSide = (side: 'top' | 'bottom') => {
+    if (!currentGame) return
+    setBattingSide(side)
+    localStorage.setItem(`scoring-side-${currentGame.id}`, side)
+    setShowSidePrompt(false)
+  }
 
   const handleRecord = async (result: AtBatResult) => {
     if (!scoreboard || !scoreboard.currentBatterId) {
@@ -255,14 +279,24 @@ export function ScoringPage() {
           <div className="text-sm font-semibold">
             Dead Sox <span className="text-white/60">vs.</span> {opponentName}
           </div>
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            disabled={atBats.length === 0}
-            className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-            title="Scoring zurücksetzen"
-          >
-            ↺ Reset
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowEndGameConfirm(true)}
+              disabled={atBats.length === 0 || gameOver}
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              title="Spiel beenden und Stats zeigen"
+            >
+              🏁 Beenden
+            </button>
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              disabled={atBats.length === 0}
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              title="Scoring zurücksetzen"
+            >
+              ↺ Reset
+            </button>
+          </div>
         </div>
       </header>
 
@@ -335,7 +369,11 @@ export function ScoringPage() {
 
           {/* Inning + Outs */}
           <div className="text-right">
-            <div className="text-xs sm:text-sm font-semibold text-gray-700">{displayInning}. Inning</div>
+            <div className="text-xs sm:text-sm font-semibold text-gray-700">
+              {displayInning}. Inning
+              {battingSide === 'top' && <span className="ml-1 text-[10px] text-gray-500">↑ Oben</span>}
+              {battingSide === 'bottom' && <span className="ml-1 text-[10px] text-gray-500">↓ Unten</span>}
+            </div>
             <button
               onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
               className="flex items-center justify-end gap-1 mt-0.5 cursor-pointer group"
@@ -607,6 +645,57 @@ export function ScoringPage() {
           onConfirm={handleReset}
           onCancel={() => setShowResetConfirm(false)}
         />
+      )}
+
+      {/* End-Game Confirmation */}
+      {showEndGameConfirm && (
+        <ConfirmModal
+          title="Spiel beenden?"
+          message="Das Scoring wird auf 'beendet' gesetzt. Stats sind sofort abrufbar. Du kannst später zurückkehren und weiter editieren."
+          confirmLabel="Ja, beenden"
+          onConfirm={() => {
+            setShowEndGameConfirm(false)
+            setManualGameOver(true)
+            toast.show('Spiel beendet — Stats verfügbar', 'success')
+          }}
+          onCancel={() => setShowEndGameConfirm(false)}
+        />
+      )}
+
+      {/* Top/Bottom Prompt — Wer schlägt zuerst? */}
+      {showSidePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Wer schlägt zuerst?</h2>
+              <p className="text-xs text-gray-500 mt-1">
+                Softball-Regel: Away-Team schlägt oben, Home-Team unten. Wird nur für die Anzeige genutzt.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => pickSide('top')}
+                className="h-20 rounded-xl bg-navy-800 hover:bg-navy-900 text-white font-bold text-sm flex flex-col items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>Wir (Away)</span>
+                <span className="text-[10px] font-normal opacity-80">↑ Oben schlagen</span>
+              </button>
+              <button
+                onClick={() => pickSide('bottom')}
+                className="h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm flex flex-col items-center justify-center gap-1 cursor-pointer"
+              >
+                <span>Wir (Home)</span>
+                <span className="text-[10px] font-normal opacity-80">↓ Unten schlagen</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowSidePrompt(false)}
+              className="w-full h-9 text-xs text-gray-500 hover:text-gray-700 cursor-pointer"
+            >
+              Überspringen
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Debug: reload silently wenn nötig */}
