@@ -248,12 +248,12 @@ CREATE TABLE training_plans (
 - **Modell-Austauschbar**: Port-Interface bleibt gleich, Adapter kann später auf OpenAI/Anthropic wechseln
 - **Auto-Configuration**: Spring Boot konfiguriert ChatClient.Builder automatisch
 
-### Deployment-Config (Render.com + Neon.tech)
+### Deployment-Config (Hetzner VPS)
 
 - **GEMINI_API_KEY** muss als Environment Variable gesetzt werden:
   - **Lokal:** `.env` Datei oder Shell-Export
-  - **Render.com:** Dashboard → Environment → `GEMINI_API_KEY` = `AIza...`
-- **Neon.tech (PostgreSQL):** JSONB ist Standard-PostgreSQL, keine Extension nötig. Die Flyway-Migration läuft automatisch beim Deploy.
+  - **Hetzner:** `/opt/softball/docker-compose.yml` → Service `backend` → `environment` → `GEMINI_API_KEY=AIza...`
+- **PostgreSQL (Docker):** JSONB ist Standard-PostgreSQL, keine Extension nötig. Die Flyway-Migration läuft automatisch beim Deploy.
 - **Graceful Degradation:** Wenn `GEMINI_API_KEY` leer/nicht gesetzt:
   - `GeminiAiAdapter` fängt Exception ab, wirft `AiServiceException` mit HTTP 503
   - Controller gibt HTTP 503 mit Meldung "KI-Trainingsplan nicht verfügbar — API Key fehlt"

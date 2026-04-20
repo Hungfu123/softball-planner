@@ -151,13 +151,20 @@ Integration-Tests laufen gegen eine echte PostgreSQL via Testcontainers (Docker 
 
 ## Deployment
 
-Die App laeuft auf **Render.com** (Backend + Frontend als Docker-Image) mit **Neon.tech** (PostgreSQL).
+Die App laeuft auf einem **Hetzner VPS** (Docker Compose) unter https://softball-planner.duckdns.org.
+
+### Stack
+- **Backend + Frontend:** Spring Boot JAR (Frontend als statische Resources) im Docker-Container
+- **Datenbank:** PostgreSQL 17 im Docker-Container
+- **Reverse-Proxy:** Nginx mit SSL (Let's Encrypt, auto-renewal via certbot)
+- **Domain:** DuckDNS
 
 ### Wie es funktioniert
-- Push auf `master` → Render baut und deployed automatisch
+- Push auf `master` → GitHub Action → SSH zum Server → `/opt/softball/deploy.sh`
+- Deploy-Script: `git pull` → `docker build` → `docker compose up -d backend`
 - Dockerfile baut Frontend + Backend in ein JAR
 - Flyway migriert die Datenbank beim Start
-- Umgebungsvariablen auf Render: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`
+- Umgebungsvariablen in `/opt/softball/docker-compose.yml`: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`, `GEMINI_API_KEY`
 
 ### Produktions-Build lokal testen
 
