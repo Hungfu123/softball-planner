@@ -59,12 +59,13 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                 <th className="text-right px-3 py-3 font-semibold text-gray-600">Schlag</th>
                 <th className="text-right px-3 py-3 font-semibold text-gray-600">Treffer</th>
                 <th className="text-right px-3 py-3 font-semibold text-gray-600">Quote</th>
+                <th className="text-right px-3 py-3 font-semibold text-gray-600">Walks</th>
+                <th className="text-right px-3 py-3 font-semibold text-gray-600">Strikeouts</th>
+                <th className="text-right px-3 py-3 font-semibold text-gray-600">HR</th>
+                <th className="text-right px-3 py-3 font-semibold text-gray-600">Steals</th>
                 {showDetails && (
                   <>
-                    <th className="text-right px-3 py-3 font-semibold text-gray-600">Walks</th>
-                    <th className="text-right px-3 py-3 font-semibold text-gray-600">Strikeouts</th>
-                    <th className="text-right px-3 py-3 font-semibold text-gray-600">Homeruns</th>
-                    <th className="text-right px-3 py-3 font-semibold text-gray-600">Steals</th>
+                    <th className="text-right px-3 py-3 font-semibold text-gray-600">Hits-Mix</th>
                     <th className="text-right px-3 py-3 font-semibold text-gray-600 cursor-help" onClick={onOpenGlossary} title="Auf-Base-Quote (OBP)">
                       OBP <span className="text-[10px] text-gray-400">ⓘ</span>
                     </th>
@@ -84,25 +85,26 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                 const barWidth = Math.round((Number(s.battingAverage) / maxBA) * 100)
                 return (
                   <tr key={s.playerId} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                    <td className="px-3 py-2.5 font-medium text-gray-900">{s.playerName}</td>
+                    <td className="px-3 py-2.5 font-medium text-gray-900 whitespace-nowrap">{s.playerName}</td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.atBats}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">
-                      {showDetails ? `${s.singles}/${s.doubles}/${s.triples}/${s.homeRuns}` : s.hits}
-                    </td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.hits}</td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="w-12 sm:w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                           <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${barWidth}%` }} />
                         </div>
                         <span className="font-mono font-semibold text-gray-900 w-10 text-right tabular-nums">{baPct} %</span>
                       </div>
                     </td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.walks}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.strikeouts}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.homeRuns}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.stolenBases}</td>
                     {showDetails && (
                       <>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.walks}</td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.strikeouts}</td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.homeRuns}</td>
-                        <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{s.stolenBases}</td>
+                        <td className="px-3 py-2.5 text-right tabular-nums text-gray-600 text-xs" title="Single / Double / Triple / HR">
+                          {s.singles}/{s.doubles}/{s.triples}/{s.homeRuns}
+                        </td>
                         <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{formatPct(Number(s.onBasePct))}</td>
                         <td className="px-3 py-2.5 text-right tabular-nums text-gray-700">{formatDec(Number(s.sluggingPct))}</td>
                         <td className="px-3 py-2.5 text-right tabular-nums text-gray-700 font-semibold">{formatDec(Number(s.ops))}</td>

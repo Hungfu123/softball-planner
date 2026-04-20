@@ -49,11 +49,11 @@ export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSa
     setAssignments(arr => arr.filter(a => a.playerId !== playerId))
   }
 
-  const addRunner = (player: Player, base: 1 | 2 | 3) => {
+  const addRunner = (player: Player, position: Position) => {
     setAssignments(arr => [...arr, {
       playerId: player.id,
       playerName: player.name,
-      position: base,
+      position,
       wasOnBase: null,
     }])
     setShowAddPicker(false)
@@ -175,36 +175,43 @@ export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSa
             {showAddPicker && (
               <div className="border border-gray-200 rounded-xl p-3 space-y-2 bg-blue-50/40">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 text-sm">Welcher Spieler + auf welche Base?</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Spieler setzen auf…</h3>
                   <button
                     onClick={() => setShowAddPicker(false)}
-                    className="text-gray-500 text-sm"
+                    className="text-gray-500 text-sm cursor-pointer"
                   >
                     Abbrechen
                   </button>
                 </div>
-                <div className="max-h-48 overflow-y-auto space-y-1">
+                <p className="text-[11px] text-gray-500">
+                  Nützlich z.B. wenn Runner fälschlich als &quot;scored&quot; gezählt wurde aber eigentlich AUS war.
+                </p>
+                <div className="max-h-56 overflow-y-auto space-y-1.5">
                   {candidates.map(p => (
-                    <div key={p.id} className="flex items-center gap-2 p-2 bg-white rounded-lg">
-                      <span className="flex-1 text-sm font-medium">{p.name}</span>
+                    <div key={p.id} className="flex items-center gap-1 p-2 bg-white rounded-lg flex-wrap">
+                      <span className="flex-1 min-w-0 text-sm font-medium truncate">{p.name}</span>
                       <button
                         onClick={() => addRunner(p, 1)}
                         className="px-2 py-1 text-xs bg-navy-100 text-navy-700 rounded cursor-pointer hover:bg-navy-200"
-                      >
-                        → 1B
-                      </button>
+                      >1B</button>
                       <button
                         onClick={() => addRunner(p, 2)}
                         className="px-2 py-1 text-xs bg-navy-100 text-navy-700 rounded cursor-pointer hover:bg-navy-200"
-                      >
-                        → 2B
-                      </button>
+                      >2B</button>
                       <button
                         onClick={() => addRunner(p, 3)}
                         className="px-2 py-1 text-xs bg-navy-100 text-navy-700 rounded cursor-pointer hover:bg-navy-200"
-                      >
-                        → 3B
-                      </button>
+                      >3B</button>
+                      <button
+                        onClick={() => addRunner(p, 'home')}
+                        className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded cursor-pointer hover:bg-emerald-200"
+                        title="Home = scort"
+                      >Home</button>
+                      <button
+                        onClick={() => addRunner(p, 'out')}
+                        className="px-2 py-1 text-xs bg-softball-red-100 text-softball-red-700 rounded cursor-pointer hover:bg-softball-red-200"
+                        title="Aus = Caught Stealing / Runner out"
+                      >Aus</button>
                     </div>
                   ))}
                 </div>
