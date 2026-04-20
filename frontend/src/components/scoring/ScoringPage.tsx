@@ -257,6 +257,11 @@ export function ScoringPage() {
       await api.resetScoring(currentGame.id)
       setInningOverride(null)
       setExtraOuts(0)
+      setManualGameOver(false)
+      // Batting-Side auch resetten, damit der Prompt neu kommt
+      localStorage.removeItem(`scoring-side-${currentGame.id}`)
+      setBattingSide(null)
+      setShowSidePrompt(true)
       await reload()
       toast.show('Scoring zurückgesetzt · Bases frei', 'success')
     } catch (e) {
@@ -669,23 +674,29 @@ export function ScoringPage() {
             <div>
               <h2 className="text-lg font-bold text-gray-900">Wer schlägt zuerst?</h2>
               <p className="text-xs text-gray-500 mt-1">
-                Softball-Regel: Away-Team schlägt oben, Home-Team unten. Wird nur für die Anzeige genutzt.
+                In Softball schlägt das Auswärtsteam oben (Top of Inning), das Heimteam unten (Bottom).
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <button
                 onClick={() => pickSide('top')}
-                className="h-20 rounded-xl bg-navy-800 hover:bg-navy-900 text-white font-bold text-sm flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="h-16 rounded-xl bg-navy-800 hover:bg-navy-900 text-white font-bold text-sm flex items-center justify-between px-4 cursor-pointer"
               >
-                <span>Wir (Away)</span>
-                <span className="text-[10px] font-normal opacity-80">↑ Oben schlagen</span>
+                <span className="flex flex-col items-start">
+                  <span>Wir schlagen zuerst</span>
+                  <span className="text-[10px] font-normal opacity-80">wir sind Auswärtsteam</span>
+                </span>
+                <span className="text-lg">↑ Oben</span>
               </button>
               <button
                 onClick={() => pickSide('bottom')}
-                className="h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="h-16 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm flex items-center justify-between px-4 cursor-pointer"
               >
-                <span>Wir (Home)</span>
-                <span className="text-[10px] font-normal opacity-80">↓ Unten schlagen</span>
+                <span className="flex flex-col items-start">
+                  <span>Gegner schlägt zuerst</span>
+                  <span className="text-[10px] font-normal opacity-80">wir sind Heimteam</span>
+                </span>
+                <span className="text-lg">↓ Unten</span>
               </button>
             </div>
             <button
