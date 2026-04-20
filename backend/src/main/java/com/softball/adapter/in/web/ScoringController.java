@@ -41,6 +41,12 @@ public class ScoringController {
         scoringService.undoLastAtBat(gameId);
     }
 
+    @DeleteMapping("/{gameId}/scoring")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetScoring(@PathVariable final Long gameId) {
+        scoringService.resetScoring(gameId);
+    }
+
     @PutMapping("/{gameId}/atbats/last/base-state")
     public AtBatResponse updateLastBaseState(@PathVariable final Long gameId,
                                               @RequestBody final UpdateBaseStateRequest req) {

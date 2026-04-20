@@ -9,6 +9,7 @@ import { TrainingPage } from '@/components/training/TrainingPage'
 import { LoginPage } from '@/components/auth/LoginPage'
 import { setAuth, hasAuth, clearAuth } from '@/api/client'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 
 // Lazy-load heavy pages
 const TrainingPlanPage = lazy(() => import('@/components/training-plan/TrainingPlanPage'))
@@ -25,16 +26,17 @@ function LazyTrainingPlan() {
 const router = createBrowserRouter([
   {
     element: <Layout />,
+    errorElement: <ChunkErrorBoundary />,
     children: [
-      { path: '/', element: <Dashboard /> },
-      { path: '/training', element: <TrainingPage /> },
-      { path: '/training-plan', element: <LazyTrainingPlan /> },
-      { path: '/players', element: <PlayerManager /> },
-      { path: '/gameday/:id', element: <GameDayPlanner /> },
+      { path: '/', element: <Dashboard />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/training', element: <TrainingPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/training-plan', element: <LazyTrainingPlan />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/players', element: <PlayerManager />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/gameday/:id', element: <GameDayPlanner />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
-  { path: '/gameday/:id/export', element: <LineupSheet /> },
-  { path: '/gameday/:id/scoring/:gameIndex', element: <LazyScoring /> },
+  { path: '/gameday/:id/export', element: <LineupSheet />, errorElement: <ChunkErrorBoundary /> },
+  { path: '/gameday/:id/scoring/:gameIndex', element: <LazyScoring />, errorElement: <ChunkErrorBoundary /> },
 ])
 
 export default function App() {

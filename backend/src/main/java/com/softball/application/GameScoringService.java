@@ -87,6 +87,16 @@ public class GameScoringService {
             .ifPresent(last -> atBatRepository.deleteById(last.getId()));
     }
 
+    /** Löscht alle AtBats + Stealing-Events für dieses Spiel — komplettes Reset. */
+    @Transactional
+    public void resetScoring(final Long gameId) {
+        findGame(gameId);
+        final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
+        for (final AtBat a : atBats) atBatRepository.deleteById(a.getId());
+        final List<BaseRunningEvent> events = stealingRepository.findByGameIdOrderByIdAsc(gameId);
+        for (final BaseRunningEvent e : events) stealingRepository.deleteById(e.getId());
+    }
+
     /**
      * Aktualisiert den BaseState des letzten AtBats (für Runner-Korrektur post-AtBat).
      * Runs/RBI werden überschrieben wenn übergeben.

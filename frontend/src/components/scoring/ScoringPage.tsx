@@ -7,6 +7,7 @@ import { ChevronLeft } from '@/icons'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
+import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import * as api from '@/api/client'
 import type { AtBatResult, BaseStateDto, GameDayResponse, RunnerOnBase } from '@/types'
 
@@ -153,6 +154,22 @@ export function ScoringPage() {
 
   // Korrektur-Sheet state
   const [showCorrection, setShowCorrection] = useState(false)
+  // Reset-Dialog state
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  const handleReset = async () => {
+    if (!currentGame) return
+    setShowResetConfirm(false)
+    try {
+      await api.resetScoring(currentGame.id)
+      setInningOverride(null)
+      setExtraOuts(0)
+      await reload()
+      toast.show('Scoring zurückgesetzt · Bases frei', 'success')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
 
   useEffect(() => {
     // extraOuts zurücksetzen bei Inning-Wechsel
@@ -174,7 +191,14 @@ export function ScoringPage() {
           <div className="text-sm font-semibold">
             Dead Sox <span className="text-white/60">vs.</span> {opponentName}
           </div>
-          <div className="w-16" />
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            disabled={atBats.length === 0}
+            className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            title="Scoring zurücksetzen"
+          >
+            ↺ Reset
+          </button>
         </div>
       </header>
 
@@ -353,6 +377,17 @@ export function ScoringPage() {
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+
+      {/* Reset Confirmation */}
+      {showResetConfirm && (
+        <ConfirmModal
+          title="Scoring zurücksetzen"
+          message={`Wirklich alle ${atBats.length} At-Bats und Steal-Events für dieses Spiel löschen? Das kann nicht rückgängig gemacht werden.`}
+          confirmLabel="Ja, alles löschen"
+          onConfirm={handleReset}
+          onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
 
       {/* Debug: reload silently wenn nötig */}
       <button onClick={reload} className="hidden" aria-hidden />

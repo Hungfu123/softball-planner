@@ -293,6 +293,8 @@ export const undoLastAtBat = (gameId: number) =>
   request<void>(`/games/${gameId}/atbats/last`, { method: 'DELETE' })
 export const updateLastBaseState = (gameId: number, data: { first: number | null; second: number | null; third: number | null; runsScored?: number | null; rbi?: number | null }) =>
   request<AtBatResponse>(`/games/${gameId}/atbats/last/base-state`, { method: 'PUT', body: JSON.stringify(data) })
+export const resetScoring = (gameId: number) =>
+  request<void>(`/games/${gameId}/scoring`, { method: 'DELETE' })
 
 export const getStealingEvents = (gameId: number) =>
   request<StealingEventResponse[]>(`/games/${gameId}/stealing-events`)
