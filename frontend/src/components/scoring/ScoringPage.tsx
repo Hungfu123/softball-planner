@@ -32,6 +32,8 @@ export function ScoringPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
+  const [editingScoreUs, setEditingScoreUs] = useState(false)
+  const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
 
   useEffect(() => {
@@ -130,6 +132,24 @@ export function ScoringPage() {
       toast.show((e as Error).message, 'error')
     } finally {
       setEditingScoreThem(false)
+    }
+  }
+
+  const saveScoreUs = async () => {
+    if (!currentGame) return
+    const parsed = scoreUsInput.trim() === '' ? null : Number(scoreUsInput)
+    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0)) {
+      toast.show('Ungültige Zahl', 'error')
+      setEditingScoreUs(false)
+      return
+    }
+    try {
+      await api.setGameScore(currentGame.id, parsed ?? 0, scoreThem)
+      await reload()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setEditingScoreUs(false)
     }
   }
 
@@ -236,41 +256,76 @@ export function ScoringPage() {
         </div>
       </header>
 
-      {/* Scoreboard Strip */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-navy-900 tabular-nums">{scoreUs}</span>
-            <span className="text-xl text-gray-400">:</span>
-            {editingScoreThem ? (
-              <input
-                type="number"
-                inputMode="numeric"
-                value={scoreThemInput}
-                onChange={e => setScoreThemInput(e.target.value)}
-                onBlur={saveScoreThem}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') saveScoreThem()
-                  if (e.key === 'Escape') setEditingScoreThem(false)
-                }}
-                className="w-16 text-3xl font-black text-gray-700 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent"
-                autoFocus
-              />
-            ) : (
-              <button
-                onClick={() => {
-                  setScoreThemInput(String(scoreThem ?? 0))
-                  setEditingScoreThem(true)
-                }}
-                className="text-3xl font-black text-gray-600 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors"
-                title="Gegner-Score tippen um zu editieren"
-              >
-                {scoreThem ?? 0}
-              </button>
-            )}
+      {/* Scoreboard Strip - kompakt */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2">
+        <div className="flex items-center justify-between gap-3">
+          {/* Scores — beide tappbar + editierbar */}
+          <div className="flex items-baseline gap-1.5">
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] text-gray-400 uppercase font-semibold -mb-0.5">Wir</span>
+              {editingScoreUs ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={scoreUsInput}
+                  onChange={e => setScoreUsInput(e.target.value)}
+                  onBlur={saveScoreUs}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveScoreUs()
+                    if (e.key === 'Escape') setEditingScoreUs(false)
+                  }}
+                  className="w-14 text-2xl sm:text-3xl font-black text-navy-900 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setScoreUsInput(String(scoreUs ?? 0))
+                    setEditingScoreUs(true)
+                  }}
+                  className="text-2xl sm:text-3xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors px-1 leading-none"
+                  title="Unseren Score tippen um zu editieren"
+                >
+                  {scoreUs}
+                </button>
+              )}
+            </div>
+            <span className="text-xl text-gray-300">:</span>
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] text-gray-400 uppercase font-semibold -mb-0.5">Sie</span>
+              {editingScoreThem ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  value={scoreThemInput}
+                  onChange={e => setScoreThemInput(e.target.value)}
+                  onBlur={saveScoreThem}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveScoreThem()
+                    if (e.key === 'Escape') setEditingScoreThem(false)
+                  }}
+                  className="w-14 text-2xl sm:text-3xl font-black text-gray-700 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => {
+                    setScoreThemInput(String(scoreThem ?? 0))
+                    setEditingScoreThem(true)
+                  }}
+                  className="text-2xl sm:text-3xl font-black text-gray-600 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors px-1 leading-none"
+                  title="Gegner-Score tippen um zu editieren"
+                >
+                  {scoreThem ?? 0}
+                </button>
+              )}
+            </div>
+            <span className="ml-1 text-[10px] text-gray-400 font-medium">✎ tap zum edit</span>
           </div>
+
+          {/* Inning + Outs */}
           <div className="text-right">
-            <div className="text-sm font-semibold text-gray-700">{displayInning}. Inning</div>
+            <div className="text-xs sm:text-sm font-semibold text-gray-700">{displayInning}. Inning</div>
             <button
               onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
               className="flex items-center justify-end gap-1 mt-0.5 cursor-pointer group"
@@ -279,10 +334,10 @@ export function ScoringPage() {
               {[0, 1, 2].map(i => (
                 <span
                   key={i}
-                  className={`w-3 h-3 rounded-full transition-colors ${i < totalOuts ? 'bg-softball-red-600' : 'bg-gray-200 group-hover:bg-gray-300'}`}
+                  className={`w-2.5 h-2.5 rounded-full transition-colors ${i < totalOuts ? 'bg-softball-red-600' : 'bg-gray-200 group-hover:bg-gray-300'}`}
                 />
               ))}
-              <span className="text-xs text-gray-500 ml-1 tabular-nums">{totalOuts} Aus</span>
+              <span className="text-[10px] text-gray-500 ml-1 tabular-nums">{totalOuts} Aus</span>
             </button>
           </div>
         </div>
@@ -323,55 +378,53 @@ export function ScoringPage() {
         </div>
       )}
 
-      {/* Diamond */}
-      <div className="flex-1 flex flex-col items-center justify-center py-4 px-4">
-        <DiamondView
-          baseState={displayBaseState}
-          runners={displayRunners}
-          onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
-        />
+      {/* Diamond - kompakter */}
+      <div className="flex-1 flex flex-col items-center justify-center py-2 px-4 min-h-0">
+        <div className="w-full max-w-[220px] sm:max-w-[260px]">
+          <DiamondView
+            baseState={displayBaseState}
+            runners={displayRunners}
+            onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
+          />
+        </div>
       </div>
 
-      {/* Batter Card */}
-      <div className="px-4 py-3 bg-white border-t border-gray-200">
+      {/* Batter Card - kompakt, einzeilig */}
+      <div className="px-4 py-2 bg-white border-t border-gray-200">
         {scoreboard?.currentBatterId && !halfInningOver ? (
-          <div className="flex items-center gap-3">
-            <span className="text-xs bg-navy-900 text-white font-bold px-2 py-1 rounded-lg tabular-nums">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] bg-navy-900 text-white font-bold px-1.5 py-0.5 rounded tabular-nums">
               #{scoreboard.currentBatterOrder ?? '?'}
             </span>
-            <span className="font-bold text-lg text-gray-900 uppercase tracking-wide">
+            <span className="font-bold text-base sm:text-lg text-gray-900 uppercase tracking-tight truncate">
               {scoreboard.currentBatterName}
             </span>
-            <span className="text-sm text-gray-500 ml-auto">⚾ am Schlag</span>
+            <span className="text-xs text-gray-500 ml-auto whitespace-nowrap">⚾ am Schlag</span>
           </div>
         ) : halfInningOver ? (
-          <div className="text-sm text-gray-500 text-center py-1">
-            Warte auf Inning-Wechsel
-          </div>
+          <div className="text-xs text-gray-500 text-center">Warte auf Inning-Wechsel</div>
         ) : (
-          <div className="text-sm text-gray-500 text-center py-1">
-            Kein Schlagmann — bitte zuerst Lineup erstellen
-          </div>
+          <div className="text-xs text-gray-500 text-center">Kein Schlagmann — bitte Lineup erstellen</div>
         )}
       </div>
 
-      {/* Action Buttons */}
-      <div className="px-4 py-4 bg-white border-t border-gray-200 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+      {/* Action Buttons — sticky Thumb-Zone */}
+      <div className="px-3 pt-3 pb-2 bg-white border-t border-gray-200 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
         <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId || halfInningOver} />
 
-        {/* Undo + Korrektur */}
-        <div className="grid grid-cols-2 gap-2 mt-3">
+        {/* Undo + Korrektur - kompakter */}
+        <div className="grid grid-cols-2 gap-2 mt-2">
           <button
             onClick={handleUndo}
             disabled={atBats.length === 0 || submitting}
-            className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="h-10 rounded-lg bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             ↶ Rückgängig
           </button>
           <button
             onClick={() => setShowCorrection(true)}
             disabled={submitting}
-            className="h-11 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 cursor-pointer"
+            className="h-10 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
           >
             ⚙ Korrigieren
           </button>

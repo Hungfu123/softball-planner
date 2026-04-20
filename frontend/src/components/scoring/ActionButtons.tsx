@@ -87,7 +87,7 @@ function PrimaryButton({ color, label, onClick, disabled }: { color: Color; labe
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-[72px] rounded-xl font-bold text-base cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${COLOR_CLASSES[color]}`}
+      className={`h-16 sm:h-[72px] rounded-xl font-bold text-sm sm:text-base cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${COLOR_CLASSES[color]}`}
     >
       {label}
     </button>
@@ -99,10 +99,10 @@ function SecondaryButton({ color, label, subtitle, onClick, disabled }: { color:
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-[60px] rounded-xl font-bold text-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
+      className={`h-12 sm:h-[60px] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="text-[10px] font-normal opacity-90">{subtitle}</span>}
+      {subtitle && <span className="text-[9px] sm:text-[10px] font-normal opacity-90">{subtitle}</span>}
     </button>
   )
 }
@@ -114,7 +114,7 @@ function HitSubButton({ label, onClick, accent }: { label: string; onClick: () =
   return (
     <button
       onClick={onClick}
-      className={`h-[72px] rounded-xl font-bold text-sm cursor-pointer transition-colors shadow-sm ${cls}`}
+      className={`h-16 sm:h-[72px] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors shadow-sm ${cls}`}
     >
       {label}
     </button>
