@@ -26,6 +26,13 @@ export function ScoringPage() {
   // Inning-Override: wenn 3 Outs erreicht + User wechselt Inning, zeigen wir
   // frisches Inning mit leeren Bases bis der erste AtBat des neuen Innings passiert.
   const [inningOverride, setInningOverride] = useState<number | null>(null)
+  // Extra-Outs pro Inning (für Double-Play o.Ä.): lokaler Override
+  const [extraOuts, setExtraOuts] = useState(0)
+  const [showCorrection, setShowCorrection] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [editingScoreThem, setEditingScoreThem] = useState(false)
+  const [scoreThemInput, setScoreThemInput] = useState('')
+  const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
 
   useEffect(() => {
     if (gameDayId == null) return
@@ -58,6 +65,11 @@ export function ScoringPage() {
     }
   }, [serverInning, inningOverride])
 
+  // extraOuts zurücksetzen bei Inning-Wechsel
+  useEffect(() => {
+    if (inningTransition) setExtraOuts(0)
+  }, [inningTransition])
+
   const handleRecord = async (result: AtBatResult) => {
     if (!scoreboard || !scoreboard.currentBatterId) {
       toast.show('Kein Schlagmann gesetzt — bitte Lineup erstellen', 'error')
@@ -84,9 +96,41 @@ export function ScoringPage() {
     }
   }
 
-  const handleNextInning = () => {
-    setInningOverride((displayInning) + 1)
+  const handleNextInning = async () => {
+    // Optional: Gegner-Runs in diesem Inning addieren
+    if (currentGame && opponentRunsThisInning.trim() !== '') {
+      const addRuns = Number(opponentRunsThisInning)
+      if (!Number.isNaN(addRuns) && addRuns >= 0) {
+        const newScoreThem = (scoreThem ?? 0) + addRuns
+        try {
+          await api.setGameScore(currentGame.id, scoreUs, newScoreThem)
+        } catch (e) {
+          toast.show((e as Error).message, 'error')
+        }
+      }
+    }
+    setOpponentRunsThisInning('')
+    setInningOverride(displayInning + 1)
     toast.show(`Inning ${displayInning + 1} · Bases frei`, 'success')
+    await reload()
+  }
+
+  const saveScoreThem = async () => {
+    if (!currentGame) return
+    const parsed = scoreThemInput.trim() === '' ? null : Number(scoreThemInput)
+    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0)) {
+      toast.show('Ungültige Zahl', 'error')
+      setEditingScoreThem(false)
+      return
+    }
+    try {
+      await api.setGameScore(currentGame.id, scoreUs, parsed ?? 0)
+      await reload()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setEditingScoreThem(false)
+    }
   }
 
   const handleUndo = async () => {
@@ -108,17 +152,20 @@ export function ScoringPage() {
 
   const handleStealing = async (type: 'STOLEN_BASE' | 'CAUGHT_STEALING') => {
     if (!stealingRunner) return
+    const runnerName = stealingRunner.playerName
+    // Sheet sofort schließen — optimistic UX
+    setStealingRunner(null)
     try {
       await recordStealingEvent({
         runnerId: stealingRunner.playerId,
         type,
         inning: currentInning,
       })
-      // Bei STOLEN_BASE Runner-Position im BaseState weitersetzen via neuem AtBat-Update nicht —
-      // V1 trackt den Event nur als Stat, Base-State bleibt unverändert bis zum nächsten AtBat.
-      // Für Polish V2: Base-State auch aktualisieren.
-      toast.show(type === 'STOLEN_BASE' ? `⚡ ${stealingRunner.playerName} klaut!` : `${stealingRunner.playerName} gefangen`, 'success')
-      setStealingRunner(null)
+      if (type === 'STOLEN_BASE') {
+        toast.show(`⚡ ${runnerName} klaut die nächste Base!`, 'success')
+      } else {
+        toast.show(`✕ ${runnerName} beim Klauen gefangen · +1 Aus`, 'success')
+      }
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
@@ -147,15 +194,7 @@ export function ScoringPage() {
 
   const scoreUs = scoreboard?.scoreUs ?? 0
   const scoreThem = scoreboard?.scoreThem ?? 0
-
-  // Extra-Outs pro Inning (für Double-Play o.Ä.): localer Override bis neues Inning
-  const [extraOuts, setExtraOuts] = useState(0)
   const totalOuts = Math.min(3, displayOuts + extraOuts)
-
-  // Korrektur-Sheet state
-  const [showCorrection, setShowCorrection] = useState(false)
-  // Reset-Dialog state
-  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const handleReset = async () => {
     if (!currentGame) return
@@ -170,11 +209,6 @@ export function ScoringPage() {
       toast.show((e as Error).message, 'error')
     }
   }
-
-  useEffect(() => {
-    // extraOuts zurücksetzen bei Inning-Wechsel
-    if (inningTransition) setExtraOuts(0)
-  }, [inningTransition])
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -208,7 +242,32 @@ export function ScoringPage() {
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-navy-900 tabular-nums">{scoreUs}</span>
             <span className="text-xl text-gray-400">:</span>
-            <span className="text-3xl font-black text-gray-600 tabular-nums">{scoreThem}</span>
+            {editingScoreThem ? (
+              <input
+                type="number"
+                inputMode="numeric"
+                value={scoreThemInput}
+                onChange={e => setScoreThemInput(e.target.value)}
+                onBlur={saveScoreThem}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') saveScoreThem()
+                  if (e.key === 'Escape') setEditingScoreThem(false)
+                }}
+                className="w-16 text-3xl font-black text-gray-700 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent"
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => {
+                  setScoreThemInput(String(scoreThem ?? 0))
+                  setEditingScoreThem(true)
+                }}
+                className="text-3xl font-black text-gray-600 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors"
+                title="Gegner-Score tippen um zu editieren"
+              >
+                {scoreThem ?? 0}
+              </button>
+            )}
           </div>
           <div className="text-right">
             <div className="text-sm font-semibold text-gray-700">{displayInning}. Inning</div>
@@ -231,17 +290,36 @@ export function ScoringPage() {
 
       {/* Inning-Wechsel Banner */}
       {halfInningOver && (
-        <div className="bg-softball-red-50 border-b-2 border-softball-red-200 px-4 py-3 flex items-center justify-between gap-3">
-          <div>
-            <div className="font-bold text-softball-red-900">3. Out erreicht!</div>
-            <div className="text-xs text-softball-red-700">Halb-Inning beendet</div>
+        <div className="bg-softball-red-50 border-b-2 border-softball-red-200 px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="font-bold text-softball-red-900">3. Out erreicht!</div>
+              <div className="text-xs text-softball-red-700">Halb-Inning beendet</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex-1 text-xs text-softball-red-900 font-medium">
+              Runs vom Gegner in diesem Inning:
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={opponentRunsThisInning}
+                onChange={e => setOpponentRunsThisInning(e.target.value)}
+                placeholder="0"
+                className="ml-2 w-16 px-2 py-1 border border-softball-red-300 rounded text-center font-bold text-base text-gray-900 bg-white outline-none focus:border-softball-red-500 focus:ring-2 focus:ring-softball-red-100"
+              />
+            </label>
           </div>
           <button
             onClick={handleNextInning}
-            className="px-4 py-2 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
+            className="w-full px-4 py-3 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
           >
-            Nächstes Inning ▸
+            Nächstes Inning starten ▸
           </button>
+          <p className="text-[10px] text-softball-red-700/70 text-center">
+            Gegner-Runs werden zum Gesamtscore addiert. Leer lassen wenn 0.
+          </p>
         </div>
       )}
 
@@ -351,19 +429,26 @@ export function ScoringPage() {
                   <h2 className="text-lg font-bold text-gray-900 text-center">
                     {stealingRunner.playerName} auf {stealingRunner.base}B
                   </h2>
+                  <p className="text-xs text-gray-500 text-center">
+                    Was ist zwischen den Pitches passiert?
+                  </p>
                   <button
                     onClick={() => handleStealing('STOLEN_BASE')}
-                    className="w-full h-16 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-base cursor-pointer shadow-sm"
+                    className="w-full h-20 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-base cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
                   >
-                    ⚡ Stolen Base
-                    <div className="text-xs font-normal opacity-90">Base geklaut</div>
+                    <span>⚡ Stolen Base</span>
+                    <span className="text-xs font-normal opacity-90">
+                      Läuft zur nächsten Base · Runner bewegt sich
+                    </span>
                   </button>
                   <button
                     onClick={() => handleStealing('CAUGHT_STEALING')}
-                    className="w-full h-16 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-base cursor-pointer shadow-sm"
+                    className="w-full h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white font-bold text-base cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
                   >
-                    ❌ Caught Stealing
-                    <div className="text-xs font-normal opacity-90">Beim Klauen gefangen</div>
+                    <span>✕ Caught Stealing</span>
+                    <span className="text-xs font-normal opacity-90">
+                      Beim Klauen gefangen · Runner ist AUS (+1 Out)
+                    </span>
                   </button>
                   <button
                     onClick={() => setStealingRunner(null)}

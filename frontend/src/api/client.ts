@@ -295,6 +295,8 @@ export const updateLastBaseState = (gameId: number, data: { first: number | null
   request<AtBatResponse>(`/games/${gameId}/atbats/last/base-state`, { method: 'PUT', body: JSON.stringify(data) })
 export const resetScoring = (gameId: number) =>
   request<void>(`/games/${gameId}/scoring`, { method: 'DELETE' })
+export const setGameScore = (gameId: number, scoreUs: number | null, scoreThem: number | null) =>
+  request<GameResponse>(`/games/${gameId}/score`, { method: 'PUT', body: JSON.stringify({ scoreUs, scoreThem }) })
 
 // Year / All-Time Stats
 export const getYearBattingStats = (year: number) =>

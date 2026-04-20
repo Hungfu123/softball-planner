@@ -145,20 +145,28 @@ public class GameScoringService {
         final AtBat last = atBats.isEmpty() ? null : atBats.get(atBats.size() - 1);
         final int currentInning = last != null ? last.getInning() : 1;
 
-        final int outsInCurrent = (int) atBats.stream()
+        final int atBatOuts = (int) atBats.stream()
             .filter(a -> a.getInning() != null && a.getInning() == currentInning)
             .filter(a -> a.getResult() != null && a.getResult().isOut())
             .count();
+        // Caught-Stealing ist ebenfalls ein Out
+        final int csOuts = (int) stealingEvents.stream()
+            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING)
+            .filter(e -> e.getInning() != null && e.getInning() == currentInning)
+            .count();
+        final int outsInCurrent = atBatOuts + csOuts;
 
         BaseState state = last != null && last.getBaseStateAfter() != null
             ? last.getBaseStateAfter()
             : BaseState.empty();
 
-        // Fold in stealing events die NACH dem letzten AtBat passiert sind
+        // Fold in stealing events die NACH dem letzten AtBat passiert sind.
+        // Wenn es noch kein AtBat gibt, wird kein Steal gefoldet (Runner gibt's eh nicht).
+        // Timestamp-Vergleich: wir nehmen NICHT-before um gleiche Millisekunden einzuschließen.
         if (last != null) {
             for (final BaseRunningEvent e : stealingEvents) {
                 if (e.getCreatedAt() == null || last.getCreatedAt() == null) continue;
-                if (!e.getCreatedAt().isAfter(last.getCreatedAt())) continue;
+                if (e.getCreatedAt().isBefore(last.getCreatedAt())) continue;
                 if (e.getRunner() == null) continue;
                 final Long runnerId = e.getRunner().getId();
                 if (e.getType() == BaseRunningEventType.STOLEN_BASE) {
