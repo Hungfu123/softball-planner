@@ -6,23 +6,16 @@ interface Props {
   onOpenGlossary?: () => void
 }
 
-const MIN_AB_DEFAULT = 5
-
 export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
   const [showDetails, setShowDetails] = useState(false)
-  const [includeLowAB, setIncludeLowAB] = useState(false)
-
-  const filtered = useMemo(() => {
-    return includeLowAB ? stats : stats.filter(s => s.atBats >= MIN_AB_DEFAULT)
-  }, [stats, includeLowAB])
 
   const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
+    return [...stats].sort((a, b) => {
       const bDiff = Number(b.battingAverage) - Number(a.battingAverage)
       if (bDiff !== 0) return bDiff
       return b.hits - a.hits || a.playerName.localeCompare(b.playerName)
     })
-  }, [filtered])
+  }, [stats])
 
   const maxBA = useMemo(() => Math.max(...sorted.map(s => Number(s.battingAverage)), 0.001), [sorted])
 
@@ -43,21 +36,16 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
           onClick={() => setShowDetails(x => !x)}
           className="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer"
         >
-          {showDetails ? '▲ Weniger' : '▼ Mehr Details'}
+          {showDetails ? '▲ Weniger' : '▼ Mehr Details (OBP, SLG, OPS)'}
         </button>
-        <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={includeLowAB}
-            onChange={e => setIncludeLowAB(e.target.checked)}
-            className="rounded"
-          />
-          Auch Spieler mit &lt; {MIN_AB_DEFAULT} Schlag
-        </label>
-        {filtered.length < stats.length && (
-          <span className="text-xs text-gray-500 ml-auto">
-            {stats.length - filtered.length} versteckt (zu wenig Daten)
-          </span>
+        {onOpenGlossary && (
+          <button
+            onClick={onOpenGlossary}
+            className="px-3 py-1.5 text-xs font-medium rounded-full bg-navy-100 text-navy-700 hover:bg-navy-200 cursor-pointer inline-flex items-center gap-1"
+          >
+            <span className="inline-flex w-4 h-4 items-center justify-center rounded-full bg-navy-600 text-white text-[10px] font-bold">i</span>
+            Abkürzungen
+          </button>
         )}
       </div>
 

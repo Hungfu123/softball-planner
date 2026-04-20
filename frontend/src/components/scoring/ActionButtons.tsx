@@ -36,7 +36,7 @@ export function ActionButtons({ onRecord, disabled }: Props) {
             <div className="grid grid-cols-3 gap-2">
               <PrimaryButton color="emerald" label="TREFFER" onClick={handleHit} disabled={disabled} />
               <PrimaryButton color="red" label="STRIKEOUT" onClick={() => handleRecord('STRIKEOUT')} disabled={disabled} />
-              <PrimaryButton color="gray" label="AUS" onClick={() => handleRecord('OUT')} disabled={disabled} />
+              <PrimaryButton color="gray" label="AUS" subtitle="Grounder / Fly" onClick={() => handleRecord('OUT')} disabled={disabled} />
             </div>
             {/* Reihe 2: 2 Secondary Buttons (60px) */}
             <div className="grid grid-cols-2 gap-2">
@@ -82,14 +82,15 @@ const COLOR_CLASSES = {
 
 type Color = keyof typeof COLOR_CLASSES
 
-function PrimaryButton({ color, label, onClick, disabled }: { color: Color; label: string; onClick: () => void; disabled?: boolean }) {
+function PrimaryButton({ color, label, subtitle, onClick, disabled }: { color: Color; label: string; subtitle?: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-16 sm:h-[72px] rounded-xl font-bold text-sm sm:text-base cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ${COLOR_CLASSES[color]}`}
+      className={`h-16 sm:h-[72px] rounded-xl font-bold text-sm sm:text-base cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
-      {label}
+      <span>{label}</span>
+      {subtitle && <span className="text-[9px] sm:text-[10px] font-normal opacity-90">{subtitle}</span>}
     </button>
   )
 }

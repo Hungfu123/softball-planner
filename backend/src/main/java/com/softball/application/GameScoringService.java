@@ -87,14 +87,21 @@ public class GameScoringService {
             .ifPresent(last -> atBatRepository.deleteById(last.getId()));
     }
 
-    /** Löscht alle AtBats + Stealing-Events für dieses Spiel — komplettes Reset. */
+    /** Löscht alle AtBats + Stealing-Events + Score für dieses Spiel — komplettes Reset. */
     @Transactional
     public void resetScoring(final Long gameId) {
-        findGame(gameId);
+        final Game game = findGame(gameId);
         final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
         for (final AtBat a : atBats) atBatRepository.deleteById(a.getId());
         final List<BaseRunningEvent> events = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         for (final BaseRunningEvent e : events) stealingRepository.deleteById(e.getId());
+        // Score auch zurücksetzen (damit die im Scoreboard korrekt bei 0 startet)
+        game.setScoreUs(0);
+        game.setScoreThem(0);
+        // Game neu speichern — geht über GameService, aber direkt über Repo einfacher: wir nutzen JPA dirty-tracking nicht für Domain-Objekte, also setGameScore via GameRepository
+        // Minimal-Invasiv: wir mapen auf Entity und speichern nichts, stattdessen setzen wir via Score-Endpoint-Helper
+        // Simplest: nutze setGameScore wenn vorhanden. Wir nutzen gameRepository.save.
+        gameRepository.save(game);
     }
 
     /**
@@ -161,8 +168,9 @@ public class GameScoringService {
             : BaseState.empty();
 
         // Fold in stealing events die NACH dem letzten AtBat passiert sind.
-        // Wenn es noch kein AtBat gibt, wird kein Steal gefoldet (Runner gibt's eh nicht).
-        // Timestamp-Vergleich: wir nehmen NICHT-before um gleiche Millisekunden einzuschließen.
+        // Kaskaden-Logik: Wenn Ziel-Base besetzt ist, advanced der bestehende Runner
+        // automatisch eine Base weiter (Double-Steal). Ist dann 3B auch besetzt, scort
+        // der 3B-Runner Home.
         if (last != null) {
             for (final BaseRunningEvent e : stealingEvents) {
                 if (e.getCreatedAt() == null || last.getCreatedAt() == null) continue;
@@ -171,11 +179,28 @@ public class GameScoringService {
                 final Long runnerId = e.getRunner().getId();
                 if (e.getType() == BaseRunningEventType.STOLEN_BASE) {
                     if (runnerId.equals(state.first())) {
-                        state = new BaseState(null, runnerId, state.third());
+                        // Runner 1B → 2B. Kaskade wenn 2B besetzt
+                        Long on2B = state.second();
+                        Long on3B = state.third();
+                        Long newThird = on3B;
+                        if (on2B != null) {
+                            // 2B-Runner läuft mit auf 3B
+                            if (on3B != null) {
+                                // 3B-Runner scort Home
+                                scoreUs += 1;
+                            }
+                            newThird = on2B;
+                        }
+                        state = new BaseState(null, runnerId, newThird);
                     } else if (runnerId.equals(state.second())) {
+                        // Runner 2B → 3B. Kaskade wenn 3B besetzt (dieser scort)
+                        Long on3B = state.third();
+                        if (on3B != null) {
+                            scoreUs += 1; // 3B scort
+                        }
                         state = new BaseState(state.first(), null, runnerId);
                     } else if (runnerId.equals(state.third())) {
-                        // Steal of home
+                        // Steal of home — Runner scort
                         state = new BaseState(state.first(), state.second(), null);
                         scoreUs += 1;
                     }

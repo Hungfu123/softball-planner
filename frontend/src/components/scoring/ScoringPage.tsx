@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
@@ -35,6 +36,7 @@ export function ScoringPage() {
   const [editingScoreUs, setEditingScoreUs] = useState(false)
   const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
+  const [homerunFlash, setHomerunFlash] = useState(false)
 
   useEffect(() => {
     if (gameDayId == null) return
@@ -59,6 +61,8 @@ export function ScoringPage() {
   const displayRunners = inningTransition ? [] : (scoreboard?.runners ?? [])
   const halfInningOver = !inningTransition && displayOuts >= 3
   const currentInning = displayInning
+  const MAX_INNINGS = 7
+  const gameOver = halfInningOver && displayInning >= MAX_INNINGS
 
   // inningOverride zurücksetzen sobald Server in das neue Inning nachgezogen hat
   useEffect(() => {
@@ -89,7 +93,13 @@ export function ScoringPage() {
         runsScored,
         rbi: runsScored, // V1: RBI = Runs Scored (Vereinfachung)
       })
-      if (result === 'HOMERUN') toast.show('🎉 HOME RUN!', 'success')
+      if (result === 'HOMERUN') {
+        setHomerunFlash(true)
+        setTimeout(() => setHomerunFlash(false), 2200)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try { navigator.vibrate([80, 60, 80, 60, 200]) } catch { /* vibrate not supported */ }
+        }
+      }
       else if (runsScored > 0) toast.show(`${runsScored} Run${runsScored > 1 ? 's' : ''} gescort!`, 'success')
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -343,8 +353,8 @@ export function ScoringPage() {
         </div>
       </div>
 
-      {/* Inning-Wechsel Banner */}
-      {halfInningOver && (
+      {/* Inning-Wechsel Banner / Spiel-Ende */}
+      {halfInningOver && !gameOver && (
         <div className="bg-softball-red-50 border-b-2 border-softball-red-200 px-4 py-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -375,6 +385,28 @@ export function ScoringPage() {
           <p className="text-[10px] text-softball-red-700/70 text-center">
             Gegner-Runs werden zum Gesamtscore addiert. Leer lassen wenn 0.
           </p>
+        </div>
+      )}
+
+      {/* Spiel-Ende-Banner */}
+      {gameOver && (
+        <div className="bg-navy-900 text-white px-4 py-4 space-y-3">
+          <div className="text-center">
+            <div className="text-2xl font-black">🏆 Spiel beendet!</div>
+            <div className="text-sm text-white/80">
+              {(scoreUs ?? 0) > (scoreThem ?? 0) ? 'Wir haben gewonnen!' :
+               (scoreUs ?? 0) < (scoreThem ?? 0) ? 'Leider verloren' :
+               'Unentschieden'} · Endstand {scoreUs} : {scoreThem ?? 0}
+            </div>
+          </div>
+          {currentGame && gameDay && (
+            <Link
+              to={`/stats?scope=season&seasonId=${gameDay.seasonId}&view=batting`}
+              className="block w-full text-center px-4 py-3 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
+            >
+              📊 Stats für diese Saison ansehen
+            </Link>
+          )}
         </div>
       )}
 
@@ -515,6 +547,56 @@ export function ScoringPage() {
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
+
+      {/* Homerun Celebration */}
+      <AnimatePresence>
+        {homerunFlash && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-gradient-to-b from-emerald-600/90 via-emerald-500/70 to-softball-red-500/80"
+          >
+            <motion.div
+              initial={{ scale: 0.5, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: -30 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+              className="text-center"
+            >
+              <div className="text-7xl sm:text-9xl mb-2">🎉</div>
+              <div className="text-4xl sm:text-6xl font-black text-white drop-shadow-2xl tracking-wider">
+                HOME RUN!
+              </div>
+              <div className="text-lg sm:text-2xl font-bold text-white/90 mt-2">
+                {scoreboard?.currentBatterName}
+              </div>
+            </motion.div>
+            {/* Konfetti-Partikel */}
+            {[...Array(16)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-3 h-3 rounded-full"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: '50%',
+                  background: ['#fbbf24', '#ef4444', '#10b981', '#3b82f6', '#fff'][i % 5],
+                }}
+                initial={{ y: 0, opacity: 1, scale: 0 }}
+                animate={{
+                  y: (Math.random() - 0.5) * 600,
+                  x: (Math.random() - 0.5) * 300,
+                  opacity: 0,
+                  scale: 1,
+                  rotate: Math.random() * 720,
+                }}
+                transition={{ duration: 1.8, ease: 'easeOut', delay: i * 0.03 }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Reset Confirmation */}
       {showResetConfirm && (

@@ -71,21 +71,20 @@ export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSa
 
   const handleSave = async () => {
     if (hasConflict) return
+    const newState: BaseStateDto = {
+      first: assignments.find(a => a.position === 1)?.playerId ?? null,
+      second: assignments.find(a => a.position === 2)?.playerId ?? null,
+      third: assignments.find(a => a.position === 3)?.playerId ?? null,
+    }
+    const extraRuns = assignments.filter(a => a.position === 'home').length
+    const outsFromRunners = assignments
+      .filter(a => a.position === 'out')
+      .map(a => a.playerId)
+    // Sheet sofort schließen (optimistic). Toast kommt vom Parent-Handler.
+    onClose()
     setSaving(true)
     try {
-      const newState: BaseStateDto = {
-        first: assignments.find(a => a.position === 1)?.playerId ?? null,
-        second: assignments.find(a => a.position === 2)?.playerId ?? null,
-        third: assignments.find(a => a.position === 3)?.playerId ?? null,
-      }
-      // Zusätzliche Runs: neue Home-Runner die vorher nicht Home waren
-      const extraRuns = assignments.filter(a => a.position === 'home').length
-      // Outs: Runner die vorher auf Base waren und jetzt "out"
-      const outsFromRunners = assignments
-        .filter(a => a.position === 'out')
-        .map(a => a.playerId)
       await onSave({ newState, extraRuns, outsFromRunners })
-      onClose()
     } finally {
       setSaving(false)
     }
@@ -97,14 +96,26 @@ export function CorrectionSheet({ open, onClose, runners, availablePlayers, onSa
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
           <Drawer.Title className="sr-only">Runner korrigieren</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
-          <div className="px-4 pt-4 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Runner anpassen</h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Wo sind die Runner wirklich gelandet? Tap Chip um zu setzen.
-              </p>
+          {/* Sticky top mit Drag-Handle + X-Close */}
+          <div className="sticky top-0 bg-white z-10 border-b border-gray-100">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
+            <div className="flex items-center justify-between px-4 py-3">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Runner anpassen</h2>
+                <p className="text-[11px] text-gray-500">
+                  Wo sind die Runner wirklich gelandet? Chips tippen.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 -mr-2 text-gray-400 hover:text-gray-700 cursor-pointer"
+                aria-label="Schließen"
+              >
+                ✕
+              </button>
             </div>
+          </div>
+          <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
 
             {assignments.length === 0 && (
               <p className="text-sm text-gray-500 text-center py-4">Kein Runner auf Base.</p>
