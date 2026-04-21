@@ -11,7 +11,7 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
           key={t.id}
           className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-[slideUp_300ms_ease] ${
             t.type === 'success'
-              ? 'bg-green-600 text-white'
+              ? 'bg-emerald-600 text-white'
               : 'bg-softball-red-600 text-white'
           }`}
         >

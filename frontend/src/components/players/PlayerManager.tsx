@@ -17,8 +17,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
-import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { Card, Button, EmptyState, ConfirmModal, LoadingSkeleton } from '@/components/shared'
 import type { Player } from '@/types'
 
 function SortablePlayerRow({ player, index }: { player: Player; index: number }) {
@@ -175,33 +174,30 @@ export function PlayerManager() {
             className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             autoFocus
           />
-          <button
-            onClick={handleCreate}
-            disabled={!newName.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-softball-red-600 text-white text-sm font-medium hover:bg-softball-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <PlusCircle size={16} /> Hinzufügen
-          </button>
+          <Button onClick={handleCreate} disabled={!newName.trim()} icon={<PlusCircle size={16} />}>
+            Hinzufügen
+          </Button>
         </div>
       )}
 
       {players.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
-          <p>Noch keine Spieler angelegt. Leg los!</p>
-        </div>
+        <EmptyState
+          title="Noch keine Spieler angelegt"
+          description="Leg los!"
+          icon={<CrossBones size={48} />}
+        />
       ) : orderMode ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedPlayers.map(p => p.id)} strategy={verticalListSortingStrategy}>
-            <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            <Card className="divide-y divide-gray-100">
               {orderedPlayers.map((p, i) => (
                 <SortablePlayerRow key={p.id} player={p} index={i} />
               ))}
-            </div>
+            </Card>
           </SortableContext>
         </DndContext>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+        <Card className="divide-y divide-gray-100">
           {players.map(p => (
             <div key={p.id} className="flex items-center gap-3 px-4 py-3 group">
               {editingId === p.id ? (
@@ -239,7 +235,7 @@ export function PlayerManager() {
               </div>
             </div>
           ))}
-        </div>
+        </Card>
       )}
       {deletePlayerId && (
         <ConfirmModal

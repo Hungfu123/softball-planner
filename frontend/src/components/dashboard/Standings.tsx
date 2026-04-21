@@ -137,8 +137,8 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                         )}
                       </td>
                       <td className="text-center px-3 py-2.5 font-mono">{s.games}</td>
-                      <td className="text-center px-3 py-2.5 font-mono text-green-700">{s.wins}</td>
-                      <td className="text-center px-3 py-2.5 font-mono text-red-600">{s.losses}</td>
+                      <td className="text-center px-3 py-2.5 font-mono text-emerald-700">{s.wins}</td>
+                      <td className="text-center px-3 py-2.5 font-mono text-softball-red-600">{s.losses}</td>
                       <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono text-gray-500">{s.ties}</td>
                       <td className="text-center px-3 py-2.5 font-mono font-semibold">
                         {s.games > 0 ? (s.winPct * 100).toFixed(0) + '%' : '—'}
@@ -146,7 +146,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                       <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono">{s.runsScored}</td>
                       <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono">{s.runsAgainst}</td>
                       <td className={`hidden sm:table-cell text-center px-3 py-2.5 font-mono font-semibold ${
-                        s.runDiff > 0 ? 'text-green-700' : s.runDiff < 0 ? 'text-red-600' : 'text-gray-500'
+                        s.runDiff > 0 ? 'text-emerald-700' : s.runDiff < 0 ? 'text-softball-red-600' : 'text-gray-500'
                       }`}>
                         {s.runDiff > 0 ? '+' : ''}{s.runDiff}
                       </td>
@@ -154,7 +154,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                         {!s.team.ownTeam && (
                           <button
                             onClick={() => setDeleteTeam({ id: s.team.id, name: s.team.name })}
-                            className="p-1 text-gray-200 hover:text-red-500 transition-colors cursor-pointer"
+                            className="p-1 text-gray-200 hover:text-softball-red-500 transition-colors cursor-pointer"
                             title="Team löschen"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -231,7 +231,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                     <span className="text-gray-700">{r.awayTeam.name}</span>
                     <button
                       onClick={async () => { await api.deleteLeagueResult(r.id); reloadAll() }}
-                      className="p-0.5 text-gray-200 hover:text-red-500 transition-colors cursor-pointer ml-auto"
+                      className="p-0.5 text-gray-200 hover:text-softball-red-500 transition-colors cursor-pointer ml-auto"
                       title="Löschen"
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -313,14 +313,14 @@ function OurGameRow({ game, onChanged }: { game: GameResponse; onChanged: () => 
           <button onClick={handleSave} className="text-xs text-navy-700 hover:text-navy-900 font-medium cursor-pointer ml-1">OK</button>
           {game.scoreUs != null && (
             <button onClick={async () => { await api.updateScore(game.id, null, null); setUs(''); setThem(''); setEditing(false); onChanged() }}
-              className="text-xs text-gray-400 hover:text-red-500 cursor-pointer">Löschen</button>
+              className="text-xs text-gray-400 hover:text-softball-red-500 cursor-pointer">Löschen</button>
           )}
         </div>
       ) : (
         <button onClick={() => setEditing(true)}
           className={`font-mono cursor-pointer px-2 py-0.5 rounded hover:bg-gray-100 ${
             game.scoreUs != null
-              ? game.scoreUs > game.scoreThem! ? 'text-green-700 font-semibold' : game.scoreUs < game.scoreThem! ? 'text-red-600 font-semibold' : 'text-gray-500'
+              ? game.scoreUs > game.scoreThem! ? 'text-emerald-700 font-semibold' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600 font-semibold' : 'text-gray-500'
               : 'text-gray-300'
           }`}>
           {game.scoreUs != null ? `${game.scoreUs}:${game.scoreThem}` : '—:—'}

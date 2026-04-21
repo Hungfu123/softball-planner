@@ -15,10 +15,10 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0a1628]">
-      <form onSubmit={handleSubmit} className="bg-[#0f2040] p-8 rounded-lg shadow-2xl w-80 border border-[#1a3060]">
+    <div className="min-h-screen flex items-center justify-center bg-navy-900">
+      <form onSubmit={handleSubmit} className="bg-navy-800 p-8 rounded-lg shadow-2xl w-80 border border-navy-700">
         <div className="flex justify-center mb-6">
-          <img src="/deadsox.jpeg" alt="Dead Sox" className="h-20 w-20 rounded-full border-2 border-red-600" />
+          <img src="/deadsox.jpeg" alt="Dead Sox" className="h-20 w-20 rounded-full border-2 border-softball-red-600" />
         </div>
         <h1 className="text-xl font-bold text-center mb-6 text-white">Dead Sox Lineup</h1>
         <input
@@ -26,13 +26,13 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder="Passwort"
-          className="w-full px-3 py-2 bg-[#1a3060] border border-[#2a4070] text-white placeholder-gray-400 rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-red-600"
+          className="w-full px-3 py-2 bg-navy-700 border border-navy-600 text-white placeholder-gray-400 rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-softball-red-500"
           autoFocus
         />
-        {error && <p className="text-red-400 text-sm mb-3">{error}</p>}
+        {error && <p className="text-softball-red-400 text-sm mb-3">{error}</p>}
         <button
           type="submit"
-          className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition-colors font-semibold"
+          className="w-full bg-softball-red-600 text-white py-2 rounded-md hover:bg-softball-red-700 transition-colors font-semibold"
         >
           Anmelden
         </button>

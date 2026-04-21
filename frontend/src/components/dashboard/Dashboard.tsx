@@ -5,11 +5,12 @@ import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
 import { GameDayCard } from './GameDayCard'
 import { Standings } from './Standings'
-import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import { PlusCircle, CrossBones, XMark } from '@/icons'
-import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { EditGameDayModal } from './EditGameDayModal'
-import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import {
+  Card, Button, SectionHeader, EmptyState,
+  ConfirmModal, CollapsibleSection, LoadingSkeleton,
+} from '@/components/shared'
 import type { GameDayResponse, SeasonPlayerStats } from '@/types'
 import * as api from '@/api/client'
 
@@ -90,7 +91,7 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-sm p-5">
+      <Card padding="lg" className="rounded-2xl">
       <SeasonSelector
         seasons={seasons}
         selectedId={selectedSeasonId}
@@ -104,33 +105,31 @@ export function Dashboard() {
           setStats([])
         }}
       />
-      </div>
+      </Card>
 
       {selectedSeasonId && (
         <>
           {/* Game Days */}
-          <section className="bg-white rounded-2xl shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-950 flex items-center gap-2">
-                <span className="w-1 h-5 bg-softball-red-500 rounded-full" />
+          <Card padding="lg" className="rounded-2xl">
+            <SectionHeader
+              title={<>
                 Spieltage
                 {gameDays.length > 0 && (
-                  <span className="text-sm font-normal text-gray-400">{gameDays.length} gesamt</span>
+                  <span className="text-sm font-normal text-gray-400 normal-case">{gameDays.length} gesamt</span>
                 )}
-              </h2>
-              <button
-                onClick={() => setShowNewGameDay(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-softball-red-600 text-white hover:bg-softball-red-500 font-medium text-sm cursor-pointer transition-colors"
-              >
-                <PlusCircle size={16} /> Neuer Spieltag
-              </button>
-            </div>
+              </>}
+              actions={
+                <Button size="sm" onClick={() => setShowNewGameDay(true)} icon={<PlusCircle size={16} />}>
+                  Neuer Spieltag
+                </Button>
+              }
+            />
 
             {gameDays.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
-                <p>Noch keine Spieltage in dieser Saison.</p>
-              </div>
+              <EmptyState
+                title="Noch keine Spieltage in dieser Saison"
+                icon={<CrossBones size={48} />}
+              />
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -157,8 +156,9 @@ export function Dashboard() {
                 )}
               </>
             )}
+          </Card>
 
-            {showNewGameDay && (
+          {showNewGameDay && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowNewGameDay(false)}>
                 <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -214,28 +214,18 @@ export function Dashboard() {
                     </div>
                   </div>
                   <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
-                    <button
-                      onClick={() => setShowNewGameDay(false)}
-                      className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
-                    >
-                      Abbrechen
-                    </button>
-                    <button
-                      onClick={handleCreateGameDay}
-                      disabled={!newGdDate || !newGdGameCount}
-                      className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50"
-                    >
+                    <Button variant="ghost" onClick={() => setShowNewGameDay(false)}>Abbrechen</Button>
+                    <Button onClick={handleCreateGameDay} disabled={!newGdDate || !newGdGameCount}>
                       Erstellen
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
             )}
-          </section>
 
           {/* Liga + Stats side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <div className="bg-white rounded-2xl shadow-sm p-5">
+            <Card padding="lg" className="rounded-2xl">
             <Standings
               seasonId={selectedSeasonId}
               gameDays={gameDays}
@@ -244,9 +234,9 @@ export function Dashboard() {
                 api.getSeasonStats(selectedSeasonId).then(setStats)
               }}
             />
-            </div>
+            </Card>
             {stats.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-sm p-5">
+              <Card padding="lg" className="rounded-2xl">
               <CollapsibleSection title="Saison-Statistik" count={stats.length} defaultOpen>
                 <div className="rounded-xl overflow-hidden">
                   <div className="overflow-x-auto">
@@ -294,7 +284,7 @@ export function Dashboard() {
                   </Link>
                 </div>
               </CollapsibleSection>
-              </div>
+              </Card>
             )}
           </div>
         </>

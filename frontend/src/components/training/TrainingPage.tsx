@@ -529,7 +529,7 @@ export function TrainingPage() {
                             key={p.id}
                             className={`h-11 border-b border-gray-100 flex items-center justify-center cursor-pointer transition-colors ${
                               t.cancelled
-                                ? 'bg-red-50/60 cursor-not-allowed'
+                                ? 'bg-softball-red-50/60 cursor-not-allowed'
                                 : present
                                   ? t.type === 'PITCHER_CATCHER'
                                     ? isHighlighted ? 'bg-softball-red-700 text-white ring-2 ring-navy-400 ring-inset' : 'bg-softball-red-700 text-white hover:bg-softball-red-600'

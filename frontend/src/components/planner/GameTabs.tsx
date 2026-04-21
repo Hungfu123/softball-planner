@@ -104,7 +104,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                     onClick={e => { e.stopPropagation(); setScoreGameId(scoreGameId === game.id ? null : game.id) }}
                     className={`text-xs px-2 py-1 rounded-md cursor-pointer font-mono transition-colors hover:bg-navy-50 ${
                       game.scoreUs != null
-                        ? game.scoreUs > game.scoreThem! ? 'text-green-700' : game.scoreUs < game.scoreThem! ? 'text-red-600' : 'text-gray-500'
+                        ? game.scoreUs > game.scoreThem! ? 'text-emerald-700' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
                         : 'text-gray-400 italic'
                     }`}
                     title="Ergebnis eintragen"
@@ -113,7 +113,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                   </span>
                 ) : game.scoreUs != null ? (
                   <span className={`text-xs px-1.5 py-0.5 font-mono hidden sm:inline ${
-                    game.scoreUs > game.scoreThem! ? 'text-green-700' : game.scoreUs < game.scoreThem! ? 'text-red-600' : 'text-gray-500'
+                    game.scoreUs > game.scoreThem! ? 'text-emerald-700' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
                   }`}>
                     {game.scoreUs}:{game.scoreThem}
                   </span>
@@ -265,7 +265,7 @@ function ScoreEditor({ scoreUs, scoreThem, onSave, onClose }: {
         {scoreUs != null && (
           <button
             onClick={() => onSave(null, null)}
-            className="text-xs text-gray-400 hover:text-red-500 cursor-pointer"
+            className="text-xs text-gray-400 hover:text-softball-red-500 cursor-pointer"
           >
             Löschen
           </button>

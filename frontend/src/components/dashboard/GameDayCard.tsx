@@ -70,7 +70,7 @@ export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
             <span className="text-gray-500">vs {g.opponentTeam!.name}</span>
             {g.scoreUs != null && (
               <span className={`font-mono font-semibold ${
-                g.scoreUs > g.scoreThem! ? 'text-green-700' : g.scoreUs < g.scoreThem! ? 'text-red-600' : 'text-gray-500'
+                g.scoreUs > g.scoreThem! ? 'text-emerald-700' : g.scoreUs < g.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
               }`}>
                 {g.scoreUs}:{g.scoreThem}
               </span>

@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/*
+ * Farb-System (60/30/10 + Status):
+ *   60% — White/Gray (Tailwind default) — Hintergründe, Text, Borders
+ *   30% — Navy (--color-navy-*) — Brand Primary: Buttons, Tabs, Akzente
+ *   10% — Softball-Red (--color-softball-red-*) — CTAs, kritische Akzente
+ *
+ *   Status (semantisch, sparsam):
+ *     emerald-* → "Alles gut / ausreichend" (Spielerzahl 9+, Anwesenheit hoch)
+ *     amber-*   → "Warnung / grenzwertig" (Spielerzahl 7-8, Minderheit)
+ */
 @theme {
   --color-navy-50: #F0F1FA;
   --color-navy-100: #E8EAF6;
@@ -10,6 +20,7 @@
 
   --color-softball-red-50: #FFF5F5;
   --color-softball-red-100: #FEE2E2;
+  --color-softball-red-400: #F87171;
   --color-softball-red-500: #E63946;
   --color-softball-red-600: #CC2936;
   --color-softball-red-700: #B91C2A;
@@ -47,6 +58,20 @@ button:active:not(:disabled), [role="button"]:active {
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
+}
+
+/* Skeleton-Loader: dezenter Shimmer-Sweep */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  animation: shimmer 1.6s infinite;
 }
 
 @keyframes slideUp {

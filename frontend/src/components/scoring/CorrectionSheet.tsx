@@ -242,7 +242,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
             )}
 
             {hasConflict && (
-              <div className="text-xs text-red-600 bg-red-50 rounded-lg p-2 text-center">
+              <div className="text-xs text-softball-red-600 bg-softball-red-50 rounded-lg p-2 text-center">
                 Zwei Runner auf derselben Base — bitte prüfen.
               </div>
             )}
