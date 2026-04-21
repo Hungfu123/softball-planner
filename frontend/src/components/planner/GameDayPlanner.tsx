@@ -46,6 +46,8 @@ export function GameDayPlanner() {
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
+  const [seasonBattingStats, setSeasonBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
+  const [yearBattingStats, setYearBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
   const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
   const activeGame = gameDay?.games[activeTab]
@@ -74,7 +76,20 @@ export function GameDayPlanner() {
       Promise.all([
         api.getGameDays(gameDay.seasonId),
         api.getSeason(gameDay.seasonId),
-      ]).then(([gd, s]) => { setSeasonGameDays(gd); setSeason(s) })
+      ]).then(([gd, s]) => {
+        setSeasonGameDays(gd)
+        setSeason(s)
+        // Batting-Stats: beide Varianten parallel laden, User kann zwischen
+        // Saison und Jahr umschalten.
+        api.getSeasonBattingStats(gameDay.seasonId)
+          .then(setSeasonBattingStats)
+          .catch(() => setSeasonBattingStats([]))
+        if (s?.year) {
+          api.getYearBattingStats(s.year)
+            .then(setYearBattingStats)
+            .catch(() => setYearBattingStats([]))
+        }
+      })
     }
   }, [gameDay?.seasonId])
 
@@ -356,13 +371,13 @@ export function GameDayPlanner() {
             </div>
           </div>
 
-          {/* DESKTOP Layout: Original single-row */}
+          {/* DESKTOP Layout: 2 Primary (Anwesend + Live scoren), 1 Secondary (Alle aufstellen), Icon-only */}
           <div className="hidden sm:flex items-center gap-2">
             {availablePlayers.length > 0 && (
               <button
                 onClick={() => setShowAutoAllConfirm(true)}
                 disabled={autoAllLoading}
-                className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                className="px-3 py-2 text-sm rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 cursor-pointer font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
                 title="Alle Spiele automatisch aufstellen"
               >
                 <DiceIcon size={16} />
@@ -372,43 +387,42 @@ export function GameDayPlanner() {
             <button
               onClick={() => setShowPlayersModal(true)}
               title="Wer ist am Spieltag dabei?"
-              className={`px-3 py-2 text-sm rounded-lg border font-medium cursor-pointer ${
+              className={`px-3 py-2 text-sm rounded-lg font-bold cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
                 availablePlayers.length === 0
-                  ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
-                  : 'border-navy-200 text-navy-700 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors'
+                  ? 'border-2 border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
+                  : 'bg-navy-800 text-white hover:bg-navy-900'
               }`}
             >
-              <span className="inline-flex items-center gap-1.5">
-                Anwesend ({availablePlayers.length})
-                {availablePlayers.length > 0 && availablePlayers.length < 9 && (
-                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
-                )}
-              </span>
+              <UsersIcon size={16} />
+              <span>Anwesend ({availablePlayers.length})</span>
+              {availablePlayers.length > 0 && availablePlayers.length < 9 && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
+              )}
             </button>
             <button
               onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
               title="Fahrten planen"
-              className={`p-2 rounded-lg border cursor-pointer ${
+              className={`p-2 rounded-lg border cursor-pointer transition-colors ${
                 activeSection === 'carpool'
                   ? 'border-navy-600 bg-navy-50 text-navy-700'
-                  : 'border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors'
+                  : 'border-navy-200 text-navy-600 hover:bg-navy-50'
               }`}
             >
-              <CarIcon size={20} />
+              <CarIcon size={18} />
             </button>
             <button
               onClick={handleExportScoring}
-              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-50 transition-colors cursor-pointer"
               title="Scoring-Sheet drucken"
             >
-              <ClipboardIcon size={20} />
+              <ClipboardIcon size={18} />
             </button>
             <button
               onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
-              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white transition-colors cursor-pointer"
+              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-50 transition-colors cursor-pointer"
               title="Als PDF exportieren"
             >
-              <ExportDoc size={20} />
+              <ExportDoc size={18} />
             </button>
             {gameDay && gameDay.games.length > 0 && (
               <Link
@@ -416,7 +430,7 @@ export function GameDayPlanner() {
                 className="ml-2 px-3 py-2 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1.5"
                 title="Live scoren"
               >
-                <BallIcon size={18} />
+                <BallIcon size={16} />
                 <span>Live scoren</span>
               </Link>
             )}
@@ -550,6 +564,9 @@ export function GameDayPlanner() {
                 allAvailablePlayers={availablePlayers}
                 lineupPlayerIds={lineupUsedIds}
                 stats={adjustedStats}
+                battingStatsSeason={seasonBattingStats}
+                battingStatsYear={yearBattingStats}
+                seasonYear={season?.year ?? null}
                 gameDayDate={gameDay.date}
                 onAdd={handleAddPlayer}
               />

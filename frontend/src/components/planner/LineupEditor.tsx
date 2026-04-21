@@ -66,15 +66,25 @@ export function LineupEditor({
 
   const filledCount = entries.filter(e => e.position).length
 
+  const MIN_PLAYERS = 9
+  const MAX_PLAYERS = 10
+  const statusColor =
+    filledCount >= MIN_PLAYERS ? 'text-emerald-700 bg-emerald-50' :
+    filledCount >= MIN_PLAYERS - 2 ? 'text-amber-700 bg-amber-50' :
+    'text-softball-red-700 bg-softball-red-50'
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-2">
         <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
           <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
           Lineup
         </h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 font-mono">{filledCount}/10</span>
+        <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+          <span className={`text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full ${statusColor}`}>
+            {filledCount} von {MAX_PLAYERS}
+            {filledCount < MIN_PLAYERS && <span className="ml-1 font-normal">(min. {MIN_PLAYERS})</span>}
+          </span>
           {onAutoGenerate && (
             <button
               onClick={onAutoGenerate}

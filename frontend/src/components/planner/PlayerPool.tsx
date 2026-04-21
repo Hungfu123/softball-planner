@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
+import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse, PlayerBattingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 
@@ -7,8 +7,18 @@ interface Props {
   allAvailablePlayers: Player[]
   lineupPlayerIds: Set<number>
   stats: GameDayPlayerStats[]
+  battingStatsSeason?: PlayerBattingStatsResponse[]
+  battingStatsYear?: PlayerBattingStatsResponse[]
+  seasonYear?: number | null
   gameDayDate: string
   onAdd: (player: Player) => void
+}
+
+function formatAvg(avg: number | null | undefined): string | null {
+  if (avg == null) return null
+  const n = Number(avg)
+  if (Number.isNaN(n)) return null
+  return n.toFixed(3).replace(/^0\./, '.')
 }
 
 function formatPositions(positions: string[]): string {
@@ -36,7 +46,17 @@ function sinceDate(filter: TrainingFilter, refDate: string): string | undefined 
   return d.toISOString().slice(0, 10)
 }
 
-export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDayDate, onAdd }: Props) {
+export function PlayerPool({
+  allAvailablePlayers, lineupPlayerIds, stats,
+  battingStatsSeason = [], battingStatsYear = [], seasonYear,
+  gameDayDate, onAdd,
+}: Props) {
+  const [battingScope, setBattingScope] = useState<'season' | 'year'>('year')
+  const battingStats = battingScope === 'year' ? battingStatsYear : battingStatsSeason
+  const battingMap = useMemo(() =>
+    new Map(battingStats.map(b => [b.playerId, b])),
+    [battingStats]
+  )
   const [tab, setTab] = useState<'pool' | 'overview' | 'training'>('pool')
   const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('3months')
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
@@ -213,34 +233,94 @@ export function PlayerPool({ allAvailablePlayers, lineupPlayerIds, stats, gameDa
           })}
         </div>
       ) : tab === 'overview' ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+        (() => {
+          // Top-AVG ermitteln für Highlight (handles Ties)
+          const availableIds = new Set(allAvailablePlayers.map(p => p.id))
+          const avgValues = battingStats
+            .filter(b => availableIds.has(b.playerId) && b.atBats > 0)
+            .map(b => Number(b.battingAverage))
+          const topAvg = avgValues.length > 0 ? Math.max(...avgValues) : null
+          return (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {/* Scope-Toggle: AVG über Saison oder ganzes Jahr */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border-b border-gray-100 text-[10px]">
+            <span className="text-gray-500 mr-1">AVG:</span>
+            <button
+              onClick={() => setBattingScope('season')}
+              className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer ${
+                battingScope === 'season'
+                  ? 'bg-navy-800 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              Saison
+            </button>
+            <button
+              onClick={() => setBattingScope('year')}
+              className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer ${
+                battingScope === 'year'
+                  ? 'bg-navy-800 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              Jahr {seasonYear ?? ''}
+            </button>
+          </div>
+          {/* Ein einziger Header mit Spalten-Labels — navy-900 für 30%-Palette */}
+          <div className="grid grid-cols-[6rem_3rem_3.5rem_1.75rem] gap-3 px-3 py-2 bg-navy-900 text-white text-[10px] font-bold uppercase tracking-wider">
+            <span>Spieler</span>
+            <span className="text-left" title={battingScope === 'year' ? 'Batting Average dieses Jahres (alle Saisons)' : 'Batting Average dieser Saison'}>AVG</span>
+            <span className="text-left" title="Position(en) in diesem Spieltag">Pos.</span>
+            <span className="text-center" title="Einsätze dieser Saison">Sp.</span>
+          </div>
           {allSorted.map(player => {
             const st = statsMap.get(player.id)
             const gc = st?.gameCount ?? 0
             const posStr = formatPositions(st?.positions?.map(p => p.position) ?? [])
+            const bs = battingMap.get(player.id)
+            const avgNum = bs && bs.atBats > 0 ? Number(bs.battingAverage) : null
+            const avgStr = avgNum != null ? formatAvg(avgNum) : null
+            const isTop = avgNum != null && topAvg != null && avgNum === topAvg
 
             return (
               <div
                 key={player.id}
-                className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 last:border-0 cursor-default select-none"
+                className="grid grid-cols-[6rem_3rem_3.5rem_1.75rem] gap-3 items-center px-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-default select-none"
               >
-                <span className="flex-1 text-sm text-gray-400 truncate">
+                <span className="text-sm text-gray-800 truncate">
                   {player.name}
                 </span>
 
-                {posStr && (
-                  <span className="text-[11px] font-mono text-gray-300 shrink-0">
-                    {posStr}
-                  </span>
-                )}
+                <span className={`text-left text-sm font-mono tabular-nums font-bold ${
+                  isTop ? 'text-softball-red-600' : avgStr ? 'text-navy-900' : 'text-gray-300'
+                }`}
+                      title={avgStr ? `${bs?.hits}/${bs?.atBats} Treffer${isTop ? ' · Top-AVG' : ''}` : 'Noch keine At-Bats'}>
+                  {avgStr ?? '—'}
+                </span>
 
-                <span className={`text-xs font-mono font-semibold w-7 text-center shrink-0 rounded-full py-0.5 ${gameCountBadge(gc)}`}>
+                <span className="text-left text-[11px] font-mono text-gray-500 truncate">
+                  {posStr || <span className="text-gray-300">—</span>}
+                </span>
+
+                <span className={`text-xs font-mono font-semibold text-center rounded-full py-0.5 ${gameCountBadge(gc)}`}>
                   {gc}
                 </span>
               </div>
             )
           })}
+          {/* Link zu ausführlicher Stats-Seite */}
+          <div className="px-3 py-1.5 bg-white border-t border-gray-200 text-right">
+            <a
+              href="/stats?scope=season"
+              className="text-[11px] text-navy-700 hover:text-softball-red-600 hover:underline cursor-pointer"
+              title="Jahr- und Karriere-Vergleiche"
+            >
+              Alle Statistiken (Jahr, Karriere…) →
+            </a>
+          </div>
         </div>
+          )
+        })()
       ) : (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
           <div className="flex items-center gap-1 mb-1 flex-wrap">

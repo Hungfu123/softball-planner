@@ -38,14 +38,14 @@ export function FieldView({ entries }: Props) {
           <polygon
             points="50,70 72,50 50,30 28,50"
             fill="none"
-            stroke="#E63946"
+            stroke="#172554"
             strokeWidth="0.5"
           />
           {/* Bases */}
-          <rect x="48.5" y="68.5" width="3" height="3" fill="white" stroke="#E63946" strokeWidth="0.5" transform="rotate(45 50 70)" />
-          <rect x="70.5" y="48.5" width="3" height="3" fill="white" stroke="#E63946" strokeWidth="0.5" transform="rotate(45 72 50)" />
-          <rect x="48.5" y="28.5" width="3" height="3" fill="white" stroke="#E63946" strokeWidth="0.5" transform="rotate(45 50 30)" />
-          <rect x="26.5" y="48.5" width="3" height="3" fill="white" stroke="#E63946" strokeWidth="0.5" transform="rotate(45 28 50)" />
+          <rect x="48.5" y="68.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 50 70)" />
+          <rect x="70.5" y="48.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 72 50)" />
+          <rect x="48.5" y="28.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 50 30)" />
+          <rect x="26.5" y="48.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 28 50)" />
 
           {FIELD_POSITIONS.map(pos => {
             const coord = FIELD_COORDS[pos]
