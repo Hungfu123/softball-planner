@@ -2,11 +2,25 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
-import { createContext, useContext } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import type { ToastContext } from '@/hooks/useToast'
 
 const ToastCtx = createContext<ToastContext | null>(null)
 export const useToastContext = () => useContext(ToastCtx)!
+
+/**
+ * Standalone Toast-Provider für Routes außerhalb des Layouts (z.B. ScoringPage).
+ * Ohne diesen Wrapper wäre useToastContext() null → .show() crasht.
+ */
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const toast = useToast()
+  return (
+    <ToastCtx.Provider value={toast}>
+      {children}
+      <Toast toasts={toast.toasts} onDismiss={toast.dismiss} />
+    </ToastCtx.Provider>
+  )
+}
 
 const TABS = [
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele' },

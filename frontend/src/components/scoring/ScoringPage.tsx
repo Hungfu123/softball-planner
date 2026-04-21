@@ -90,7 +90,7 @@ export function ScoringPage() {
     if (inningTransition) setExtraOuts(0)
   }, [inningTransition])
 
-  // Batting-Side + Ended-Flag aus localStorage laden
+  // Batting-Side + Ended-Flag + Inning-Override aus localStorage laden
   useEffect(() => {
     if (currentGame == null) return
     const stored = localStorage.getItem(`scoring-side-${currentGame.id}`)
@@ -102,7 +102,24 @@ export function ScoringPage() {
     // Manual Game-Over-Flag persistent
     const ended = localStorage.getItem(`scoring-ended-${currentGame.id}`)
     if (ended === '1') setManualGameOver(true)
+    // Inning-Override persistieren: User hat "Nächstes Inning" gedrückt aber
+    // noch kein neuer AtBat → Reload würde sonst zurück zum alten Inning springen.
+    const overrideStr = localStorage.getItem(`scoring-inning-override-${currentGame.id}`)
+    if (overrideStr) {
+      const n = Number(overrideStr)
+      if (!Number.isNaN(n) && n >= 1 && n <= 99) setInningOverride(n)
+    }
   }, [currentGame, atBats.length, scoreboard])
+
+  // Inning-Override-Persistierung
+  useEffect(() => {
+    if (currentGame == null) return
+    if (inningOverride == null) {
+      localStorage.removeItem(`scoring-inning-override-${currentGame.id}`)
+    } else {
+      localStorage.setItem(`scoring-inning-override-${currentGame.id}`, String(inningOverride))
+    }
+  }, [currentGame, inningOverride])
 
   const pickSide = (side: 'top' | 'bottom') => {
     if (!currentGame) return

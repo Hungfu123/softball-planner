@@ -1,6 +1,6 @@
 import { useState, useCallback, lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { Layout } from '@/components/layout/Layout'
+import { Layout, ToastProvider } from '@/components/layout/Layout'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
@@ -17,7 +17,13 @@ const ScoringPage = lazy(() => import('@/components/scoring/ScoringPage').then(m
 const StatsPage = lazy(() => import('@/components/stats/StatsPage').then(m => ({ default: m.StatsPage })))
 
 function LazyScoring() {
-  return <Suspense fallback={<LoadingSkeleton />}><ScoringPage /></Suspense>
+  // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
+  // sonst crasht useToastContext().show() mit null.
+  return (
+    <ToastProvider>
+      <Suspense fallback={<LoadingSkeleton />}><ScoringPage /></Suspense>
+    </ToastProvider>
+  )
 }
 
 function LazyTrainingPlan() {

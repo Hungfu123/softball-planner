@@ -279,7 +279,302 @@ class GameScoringServiceTest {
         assertThat(sb.baseState().third()).isNull();
     }
 
+    // --- Edge Cases: Softball-Szenarien ---
+
+    @Test
+    void grandSlam_basesLoadedHomerun_scoresFour() {
+        mockGame();
+        // Bases loaded + HR → 4 Runs, alle Bases leer
+        final AtBat hr = atBat(1, 1, hung, AtBatResult.HOMERUN, BaseState.empty());
+        hr.setRunsScored(4);
+        hr.setRbi(4);
+        hr.setCreatedAt(Instant.now());
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(hr));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(4);
+        assertThat(sb.baseState().first()).isNull();
+    }
+
+    @Test
+    void scoreUs_sumsAllRunsScoredAcrossAtBats() {
+        mockGame();
+        // 3 verschiedene AtBats mit verschiedenen runsScored-Werten
+        final AtBat hr = atBat(1, 1, hung, AtBatResult.HOMERUN, BaseState.empty());
+        hr.setRunsScored(2); // Solo + Runner von 1B
+        final AtBat single = atBat(2, 2, anne, AtBatResult.SINGLE, new BaseState(anne.getId(), null, null));
+        single.setRunsScored(1);
+        final AtBat out = atBat(3, 3, khang, AtBatResult.OUT, BaseState.empty());
+        out.setRunsScored(0);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(hr, single, out));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(3);
+    }
+
+    @Test
+    void basesLoadedWalk_forcedRunScores() {
+        // Simuliert: 3 Runner auf Base, Batter bekommt Walk → 1 Run forced
+        // (Frontend berechnet das + sendet runsScored=1)
+        mockGame();
+        final AtBat walk = atBat(1, 1, hung, AtBatResult.WALK,
+            new BaseState(hung.getId(), anne.getId(), khang.getId()));
+        walk.setRunsScored(1);
+        walk.setRbi(1);
+        walk.setCreatedAt(Instant.now());
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(walk));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of(hung, anne, khang));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(1);
+        // Bases bleiben loaded
+        assertThat(sb.baseState().first()).isEqualTo(hung.getId());
+        assertThat(sb.baseState().second()).isEqualTo(anne.getId());
+        assertThat(sb.baseState().third()).isEqualTo(khang.getId());
+    }
+
+    @Test
+    void outsInCurrentInning_multipleOutsAccumulate() {
+        mockGame();
+        final Instant t = Instant.parse("2026-04-21T10:00:00Z");
+        final AtBat so = atBat(1, 2, hung, AtBatResult.STRIKEOUT, BaseState.empty());
+        so.setCreatedAt(t);
+        final AtBat groundOut = atBat(2, 2, anne, AtBatResult.OUT, BaseState.empty());
+        groundOut.setCreatedAt(t);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(so, groundOut));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.outsInCurrentInning()).isEqualTo(2);
+        assertThat(sb.currentInning()).isEqualTo(2);
+    }
+
+    @Test
+    void caughtStealingAt2B_removesRunnerFrom2B() {
+        mockGame();
+        final Instant atBatTime = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant csTime = Instant.parse("2026-04-21T10:01:00Z");
+        // Anne auf 2B, versucht 3B zu klauen, wird gefangen
+        final AtBat ab = atBat(1, 1, hung, AtBatResult.OUT, new BaseState(null, anne.getId(), null));
+        ab.setCreatedAt(atBatTime);
+        final BaseRunningEvent cs = stealingEvent(anne, 1, BaseRunningEventType.CAUGHT_STEALING, csTime);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(cs));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.baseState().second()).isNull();
+        assertThat(sb.outsInCurrentInning()).isEqualTo(2); // AtBat-Out + CS-Out
+    }
+
+    @Test
+    void caughtStealingAt3B_removesRunnerFrom3B() {
+        mockGame();
+        final Instant atBatTime = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant csTime = Instant.parse("2026-04-21T10:01:00Z");
+        final AtBat ab = atBat(1, 1, hung, AtBatResult.OUT, new BaseState(null, null, anne.getId()));
+        ab.setCreatedAt(atBatTime);
+        final BaseRunningEvent cs = stealingEvent(anne, 1, BaseRunningEventType.CAUGHT_STEALING, csTime);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(cs));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.baseState().third()).isNull();
+    }
+
+    @Test
+    void caughtStealing_doesNotAffectScoreUs() {
+        // CS nimmt keinen Run weg (logisch)
+        mockGame();
+        final Instant atBatTime = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant csTime = Instant.parse("2026-04-21T10:01:00Z");
+        // Score war schon 2 durch vorherige Runs
+        final AtBat prevHr = atBat(1, 1, hung, AtBatResult.HOMERUN, BaseState.empty());
+        prevHr.setRunsScored(2);
+        prevHr.setCreatedAt(atBatTime.minusSeconds(10));
+        final AtBat ab = atBat(2, 1, anne, AtBatResult.SINGLE, new BaseState(anne.getId(), null, null));
+        ab.setCreatedAt(atBatTime);
+        final BaseRunningEvent cs = stealingEvent(anne, 1, BaseRunningEventType.CAUGHT_STEALING, csTime);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(prevHr, ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(cs));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(2); // CS hat Score nicht verändert
+    }
+
+    // --- currentBatter resolution ---
+
+    @Test
+    void firstAtBat_currentBatterIsFirstInLineup() {
+        mockGame();
+        final LineupEntry e1 = lineupEntry(hung, 1);
+        final LineupEntry e2 = lineupEntry(anne, 2);
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of(e1, e2));
+        when(playerRepository.findAllById(any())).thenReturn(List.of(hung, anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.currentBatterId()).isEqualTo(hung.getId());
+        assertThat(sb.currentBatterName()).isEqualTo("Hung");
+    }
+
+    @Test
+    void afterAtBat_currentBatterIsNextInOrder() {
+        mockGame();
+        final LineupEntry e1 = lineupEntry(hung, 1);
+        final LineupEntry e2 = lineupEntry(anne, 2);
+        final LineupEntry e3 = lineupEntry(khang, 3);
+        final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of(e1, e2, e3));
+        when(playerRepository.findAllById(any())).thenReturn(List.of(hung, anne, khang));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.currentBatterId()).isEqualTo(anne.getId());
+    }
+
+    @Test
+    void afterLastBatter_currentBatterWrapsToFirst() {
+        mockGame();
+        final LineupEntry e1 = lineupEntry(hung, 1);
+        final LineupEntry e2 = lineupEntry(anne, 2);
+        // Letzter Batter war #2 (Anne) — danach muss #1 (Hung) wieder dran sein
+        final AtBat ab = atBat(1, 1, anne, AtBatResult.OUT, BaseState.empty());
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of(e1, e2));
+        when(playerRepository.findAllById(any())).thenReturn(List.of(hung, anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.currentBatterId()).isEqualTo(hung.getId()); // Wrap-around
+    }
+
+    @Test
+    void lastBatterNotInLineup_fallbackToFirstInLineup() {
+        // Edge: Falls letzter Batter nicht im Lineup (z.B. entfernt nach AtBat),
+        // fallback zum ersten Spieler der Batting-Order.
+        mockGame();
+        final LineupEntry e1 = lineupEntry(hung, 1);
+        // Anne ist NICHT im Lineup, hat aber gebattet (Inkonsistenz)
+        final AtBat ab = atBat(1, 1, anne, AtBatResult.SINGLE, new BaseState(anne.getId(), null, null));
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of(e1));
+        when(playerRepository.findAllById(any())).thenReturn(List.of(hung, anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.currentBatterId()).isEqualTo(hung.getId());
+    }
+
+    @Test
+    void emptyLineup_currentBatterIsNull() {
+        mockGame();
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.currentBatterId()).isNull();
+        assertThat(sb.currentBatterName()).isNull();
+    }
+
+    // --- Mutation-Operationen ---
+
+    @Test
+    void undoLastAtBat_removesLastEntry() {
+        mockGame();
+        final AtBat last = atBat(2, 1, anne, AtBatResult.OUT, BaseState.empty());
+        last.setId(42L);
+        when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(last));
+
+        service.undoLastAtBat(1L);
+
+        org.mockito.Mockito.verify(atBatRepository).deleteById(42L);
+    }
+
+    @Test
+    void undoLastAtBat_noAtBats_doesNothing() {
+        mockGame();
+        when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.empty());
+
+        service.undoLastAtBat(1L); // Kein throw
+
+        org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never())
+            .deleteById(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void resetScoring_clearsAllAtBatsAndSteals_andResetsScore() {
+        mockGame();
+        game.setScoreUs(5);
+        game.setScoreThem(3);
+        final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, BaseState.empty());
+        ab.setId(10L);
+        final BaseRunningEvent e = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, Instant.now());
+        e.setId(20L);
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(e));
+
+        service.resetScoring(1L);
+
+        org.mockito.Mockito.verify(atBatRepository).deleteById(10L);
+        org.mockito.Mockito.verify(stealingRepository).deleteById(20L);
+        assertThat(game.getScoreUs()).isZero();
+        assertThat(game.getScoreThem()).isZero();
+        org.mockito.Mockito.verify(gameRepository).save(game);
+    }
+
     // --- helpers ---
+
+    private LineupEntry lineupEntry(final Player player, final int battingOrder) {
+        final LineupEntry e = new LineupEntry();
+        e.setGame(game);
+        e.setPlayer(player);
+        e.setBattingOrder(battingOrder);
+        return e;
+    }
+
+    // original helpers below:
+    // mockGame, atBat, stealingEvent
 
     private void mockGame() {
         when(gameRepository.findById(1L)).thenReturn(java.util.Optional.of(game));
