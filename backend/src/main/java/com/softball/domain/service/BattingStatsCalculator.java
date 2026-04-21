@@ -50,7 +50,7 @@ public class BattingStatsCalculator {
     public BattingStats calculateForPlayer(final Player player,
                                             final List<AtBat> playerAtBats,
                                             final List<BaseRunningEvent> playerStealingEvents) {
-        int plateAppearances = playerAtBats.size();
+        int plateAppearances = 0;
         int atBats = 0;
         int hits = 0, singles = 0, doubles = 0, triples = 0, homeRuns = 0;
         int walks = 0, hbp = 0, strikeouts = 0, outs = 0;
@@ -59,6 +59,8 @@ public class BattingStatsCalculator {
 
         for (final AtBat ab : playerAtBats) {
             final AtBatResult r = ab.getResult();
+            if (r == null) continue; // Defensive: AtBat ohne Result wird ignoriert (sollte DB-seitig NOT NULL sein)
+            plateAppearances++;
             if (r.countsAsAtBat()) atBats++;
             if (r.isHit()) hits++;
             switch (r) {
