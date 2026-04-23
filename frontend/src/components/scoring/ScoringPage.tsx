@@ -413,16 +413,17 @@ export function ScoringPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md">
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-4 h-14 flex items-center justify-between gap-2">
           <button
             onClick={() => navigate(`/gameday/${gameDayId}`)}
-            className="p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1"
+            className="p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1 shrink-0"
           >
             <ChevronLeft size={24} />
-            <span className="text-sm font-medium">Zurück</span>
+            <span className="text-sm font-medium hidden sm:inline">Zurück</span>
           </button>
-          <div className="text-sm font-semibold">
-            Dead Sox <span className="text-white/60">vs.</span> {opponentName}
+          <div className="text-sm font-semibold truncate flex-1 text-center min-w-0">
+            <span className="hidden sm:inline">Dead Sox </span>
+            <span className="text-white/60">vs.</span> {opponentName}
           </div>
           <div className="flex items-center gap-1">
             <button
