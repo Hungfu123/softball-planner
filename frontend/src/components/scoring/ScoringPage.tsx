@@ -39,6 +39,10 @@ export function ScoringPage() {
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
   const [homerunFlash, setHomerunFlash] = useState<string | null>(null)
   const [hbpFlash, setHbpFlash] = useState<string | null>(null)
+  const [walkFlash, setWalkFlash] = useState<string | null>(null)
+  const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
+  // Runner die gerade Home erreicht haben (Array von Namen) — feiert Run-Scoring
+  const [scoredFlash, setScoredFlash] = useState<string[] | null>(null)
   const [manualGameOver, setManualGameOver] = useState(false)
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false)
   // Wer ist bei dem letzten AtBat nach Home gelaufen (für Korrektur-Sheet)
@@ -174,6 +178,22 @@ export function ScoringPage() {
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
         }
+      } else if (result === 'WALK') {
+        setWalkFlash(batterNameSnapshot)
+        setTimeout(() => setWalkFlash(null), 1400)
+      } else if (result === 'STRIKEOUT') {
+        setStrikeoutFlash(batterNameSnapshot)
+        setTimeout(() => setStrikeoutFlash(null), 1600)
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try { navigator.vibrate([40, 40, 80]) } catch { /* vibrate not supported */ }
+        }
+      }
+
+      // Home-Plate-Berührung: wenn Runner durch diesen AtBat gescort sind, feier die!
+      // NICHT bei HR — da läuft die HR-Vollbild-Animation schon.
+      if (result !== 'HOMERUN' && scoredPlayers.length > 0) {
+        setScoredFlash(scoredPlayers.map(p => p.playerName))
+        setTimeout(() => setScoredFlash(null), 1500)
       }
       // Toasts + Sheet-Trigger abhängig vom Result
       const hadRunners = (scoreboard.runners?.length ?? 0) > 0
@@ -867,6 +887,85 @@ export function ScoringPage() {
                 {emoji}
               </motion.div>
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Walk — entspannter Badge (häufig, nicht blockierend) */}
+      <AnimatePresence>
+        {walkFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-navy-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
+              <span className="text-3xl">🚶</span>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Walk</div>
+                <div className="text-base font-bold">{walkFlash} → 1B</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Strikeout — kurzer Shake + "K" Chip (dramatisch aber schnell) */}
+      <AnimatePresence>
+        {strikeoutFlash && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{
+              opacity: 1,
+              scale: [0.5, 1.2, 1, 1, 1],
+              x: [0, -6, 6, -4, 4, 0],
+            }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.6 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-softball-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
+              <span className="text-4xl font-black">K</span>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Strikeout</div>
+                <div className="text-base font-bold">{strikeoutFlash}</div>
+              </div>
+              <span className="text-2xl">💨</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Home-Plate-Berührung — feiert scorende Runner (eine oder mehrere) */}
+      <AnimatePresence>
+        {scoredFlash && scoredFlash.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.7 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: [0.7, 1.15, 1],
+            }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            transition={{ duration: 0.7, type: 'spring', stiffness: 260, damping: 18 }}
+            className="fixed top-28 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/40">
+              <span className="text-3xl">⚾</span>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider opacity-90">
+                  {scoredFlash.length === 1 ? 'Home!' : `+${scoredFlash.length} Runs`}
+                </div>
+                <div className="text-base font-bold">
+                  {scoredFlash.length === 1
+                    ? `${scoredFlash[0]} scort`
+                    : scoredFlash.join(' · ')}
+                </div>
+              </div>
+              <span className="text-3xl">🎉</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
