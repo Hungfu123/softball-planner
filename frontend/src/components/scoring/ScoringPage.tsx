@@ -1030,12 +1030,6 @@ export function ScoringPage() {
                 <span className="text-lg">↓ Unten</span>
               </button>
             </div>
-            <button
-              onClick={() => setShowSidePrompt(false)}
-              className="w-full h-9 text-xs text-gray-500 hover:text-gray-700 cursor-pointer"
-            >
-              Überspringen
-            </button>
           </div>
         </div>
       )}
