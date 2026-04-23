@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Drawer } from 'vaul'
-import type { BaseStateDto, Player, RunnerOnBase } from '@/types'
+import type { BaseStateDto, RunnerOnBase } from '@/types'
 
 type Position = 1 | 2 | 3 | 'home' | 'out'
 
@@ -24,7 +24,6 @@ interface Props {
   baseState?: BaseStateDto  // optional, reserviert für künftige Nutzung
   runners: RunnerOnBase[]
   recentlyScored?: { playerId: number; playerName: string }[]
-  availablePlayers: Player[]
   context?: CorrectionContext
   onSave: (data: {
     newState: BaseStateDto
@@ -35,7 +34,7 @@ interface Props {
   }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], availablePlayers, context = 'manual', onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', onSave }: Props) {
   const initial = useMemo<RunnerAssignment[]>(() => {
     const onBase = runners.map(r => ({
       playerId: r.playerId,
@@ -54,14 +53,10 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
 
   const [assignments, setAssignments] = useState<RunnerAssignment[]>(initial)
   const [saving, setSaving] = useState(false)
-  const [showAddPicker, setShowAddPicker] = useState(false)
 
   useEffect(() => {
     setAssignments(initial)
   }, [initial, open])
-
-  const assignedIds = new Set(assignments.map(a => a.playerId))
-  const candidates = availablePlayers.filter(p => !assignedIds.has(p.id))
 
   const setPosition = (playerId: number, pos: Position) => {
     setAssignments(arr => arr.map(a => a.playerId === playerId ? { ...a, position: pos } : a))
@@ -84,16 +79,6 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
       if (a.position === 1) return { ...a, position: 2 as Position }
       return a
     }))
-  }
-
-  const addRunner = (player: Player, position: Position) => {
-    setAssignments(arr => [...arr, {
-      playerId: player.id,
-      playerName: player.name,
-      position,
-      wasOnBase: null,
-    }])
-    setShowAddPicker(false)
   }
 
   // Build new base state
@@ -227,60 +212,6 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
               </div>
             ))}
 
-            {!showAddPicker && candidates.length > 0 && (
-              <button
-                onClick={() => setShowAddPicker(true)}
-                className="w-full h-11 rounded-lg border-2 border-dashed border-gray-300 text-gray-600 text-sm font-medium hover:border-navy-400 hover:text-navy-700 cursor-pointer"
-              >
-                + Runner hinzufügen
-              </button>
-            )}
-
-            {showAddPicker && (
-              <div className="border border-gray-200 rounded-xl p-3 space-y-2 bg-blue-50/40">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900 text-sm">Spieler setzen auf…</h3>
-                  <button
-                    onClick={() => setShowAddPicker(false)}
-                    className="text-gray-500 text-sm cursor-pointer"
-                  >
-                    Abbrechen
-                  </button>
-                </div>
-                <p className="text-[11px] text-gray-500">
-                  Nützlich z.B. wenn Runner fälschlich als &quot;scored&quot; gezählt wurde aber eigentlich AUS war.
-                </p>
-                <div className="max-h-56 overflow-y-auto space-y-1.5">
-                  {candidates.map(p => (
-                    <div key={p.id} className="flex items-center gap-1 p-2 bg-white rounded-lg flex-wrap">
-                      <span className="flex-1 min-w-0 text-sm font-medium truncate">{p.name}</span>
-                      <button
-                        onClick={() => addRunner(p, 1)}
-                        className="px-2 py-1 text-xs bg-navy-100 text-navy-700 rounded cursor-pointer hover:bg-navy-200"
-                      >1B</button>
-                      <button
-                        onClick={() => addRunner(p, 2)}
-                        className="px-2 py-1 text-xs bg-navy-100 text-navy-700 rounded cursor-pointer hover:bg-navy-200"
-                      >2B</button>
-                      <button
-                        onClick={() => addRunner(p, 3)}
-                        className="px-2 py-1 text-xs bg-navy-100 text-navy-700 rounded cursor-pointer hover:bg-navy-200"
-                      >3B</button>
-                      <button
-                        onClick={() => addRunner(p, 'home')}
-                        className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded cursor-pointer hover:bg-emerald-200"
-                        title="Home = scort"
-                      >Home</button>
-                      <button
-                        onClick={() => addRunner(p, 'out')}
-                        className="px-2 py-1 text-xs bg-softball-red-100 text-softball-red-700 rounded cursor-pointer hover:bg-softball-red-200"
-                        title="Aus = Caught Stealing / Runner out"
-                      >Aus</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {hasConflict && (
               <div className="text-xs text-softball-red-600 bg-softball-red-50 rounded-lg p-2 text-center">

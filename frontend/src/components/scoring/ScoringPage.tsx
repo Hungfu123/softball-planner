@@ -44,6 +44,7 @@ export function ScoringPage() {
   const [hbpFlash, setHbpFlash] = useState<string | null>(null)
   const [walkFlash, setWalkFlash] = useState<string | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
+  const [overthrowFlash, setOverthrowFlash] = useState<string | null>(null)
   // Runner die gerade Home erreicht haben (Array von Namen) — feiert Run-Scoring
   const [scoredFlash, setScoredFlash] = useState<string[] | null>(null)
   const [manualGameOver, setManualGameOver] = useState(false)
@@ -200,16 +201,19 @@ export function ScoringPage() {
       }
 
       // Home-Plate-Berührung: wenn Runner durch diesen AtBat gescort sind, feier die!
-      // NICHT bei HR — da läuft die HR-Vollbild-Animation schon.
-      if (result !== 'HOMERUN' && scoredPlayers.length > 0) {
+      // NICHT bei HR (HR-Vollbild läuft schon) und nicht bei HBP (AUA-Vollbild reicht).
+      if (result !== 'HOMERUN' && result !== 'HIT_BY_PITCH' && scoredPlayers.length > 0) {
         setScoredFlash(scoredPlayers.map(p => p.playerName))
         setTimeout(() => setScoredFlash(null), 1500)
       }
       // Toasts + Sheet-Trigger abhängig vom Result
       const hadRunners = (scoreboard.runners?.length ?? 0) > 0
       const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
+      // Wenn dieser Out der 3. Out ist → Half-Inning ist vorbei,
+      // Runner-Advancement interessiert nicht mehr.
+      const willBe3rdOut = result === 'OUT' && (scoreboard.outsInCurrentInning ?? 0) >= 2
 
-      if (result === 'OUT' && hadRunners) {
+      if (result === 'OUT' && hadRunners && !willBe3rdOut) {
         // Auto-Open nach OUT: meist muss User entscheiden (Sac Fly, DP, Advancement)
         setShowCorrection(true)
       } else if (isHit && hadRunners) {
@@ -332,10 +336,12 @@ export function ScoringPage() {
         rbi: lastAtBat.rbi ?? 0, // RBI bleibt unverändert — Overthrow gibt keine RBI an Batter
       })
       await reload()
-      const parts = []
-      if (extraRuns > 0) parts.push(`${extraRuns} Run${extraRuns > 1 ? 's' : ''}`)
       const advanced = (current.first != null ? 1 : 0) + (current.second != null ? 1 : 0) + (current.third != null ? 1 : 0)
-      toast.show(`⚡ Overthrow · ${advanced} Runner +1 ${extraRuns > 0 ? `· ${parts.join(' · ')}` : ''}`, 'success')
+      const label = extraRuns > 0
+        ? `${advanced} Runner +1 · ${extraRuns} Run${extraRuns > 1 ? 's' : ''}`
+        : `${advanced} Runner +1 Base`
+      setOverthrowFlash(label)
+      setTimeout(() => setOverthrowFlash(null), 1600)
     } catch (e) {
       toast.show((e as Error).message, 'error')
     } finally {
@@ -411,12 +417,6 @@ export function ScoringPage() {
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
-  }
-
-  const handleReopenGame = () => {
-    setManualGameOver(false)
-    if (currentGame) localStorage.removeItem(`scoring-ended-${currentGame.id}`)
-    toast.show('Spiel wieder offen — Editieren möglich', 'success')
   }
 
   return (
@@ -621,12 +621,6 @@ export function ScoringPage() {
               </Link>
             </div>
           )}
-          <button
-            onClick={handleReopenGame}
-            className="block w-full text-center px-4 py-2 rounded-lg border border-white/30 text-white/90 hover:bg-white/10 text-sm cursor-pointer"
-          >
-            ↺ Spiel wieder öffnen (weiter editieren)
-          </button>
         </div>
       )}
 
@@ -702,7 +696,6 @@ export function ScoringPage() {
         baseState={displayBaseState}
         runners={displayRunners}
         recentlyScored={recentlyScored}
-        availablePlayers={gameDay.availablePlayers}
         context={
           atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'
             ? 'post-out'
@@ -907,6 +900,27 @@ export function ScoringPage() {
                 {emoji}
               </motion.div>
             ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Overthrow — Top-Banner nach Dead-Ball-Advance */}
+      <AnimatePresence>
+        {overthrowFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-navy-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
+              <span className="text-2xl">⚡</span>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Overthrow</div>
+                <div className="text-base font-bold">{overthrowFlash}</div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
