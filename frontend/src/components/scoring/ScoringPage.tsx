@@ -517,8 +517,15 @@ export function ScoringPage() {
           <div className="text-right">
             <div className="text-xs sm:text-sm font-semibold text-gray-700">
               {displayInning}. Inning
-              {battingSide === 'top' && <span className="ml-1 text-[10px] text-gray-500">↑ Oben</span>}
-              {battingSide === 'bottom' && <span className="ml-1 text-[10px] text-gray-500">↓ Unten</span>}
+              {battingSide && (
+                <button
+                  onClick={() => setShowSidePrompt(true)}
+                  className="ml-1 text-[10px] text-gray-500 hover:text-navy-700 underline decoration-dotted underline-offset-2 cursor-pointer"
+                  title="Seite ändern"
+                >
+                  {battingSide === 'top' ? '↑ Oben' : '↓ Unten'}
+                </button>
+              )}
             </div>
             <button
               onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
