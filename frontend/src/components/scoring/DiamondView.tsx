@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import type { BaseStateDto, RunnerOnBase } from '@/types'
 
@@ -5,6 +6,8 @@ interface Props {
   baseState: BaseStateDto
   runners: RunnerOnBase[]
   onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void
+  /** Wenn gesetzt: HR-Runner läuft über alle Bases Home → 1B → 2B → 3B → Home und fadet aus. */
+  homerunRunner?: { playerId: number; playerName: string; battingOrder: number | null } | null
 }
 
 // Positions im 220x220 viewBox
@@ -15,21 +18,14 @@ const POS = {
   third: { cx: 40, cy: 110 },
 } as const
 
-function posForBase(base: number) {
-  if (base === 1) return POS.first
-  if (base === 2) return POS.second
-  if (base === 3) return POS.third
-  return POS.home
-}
-
 function truncate(name: string, max = 7): string {
   if (!name) return ''
   return name.length > max ? name.slice(0, max - 1) + '…' : name
 }
 
-export function DiamondView({ baseState, runners, onRunnerTap }: Props) {
+export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner }: Props) {
   return (
-    <svg viewBox="0 0 220 220" className="w-full max-w-[280px] mx-auto">
+    <svg viewBox="0 0 220 220" className="w-full max-w-[420px] mx-auto">
       {/* Base-Paths */}
       <path
         d={`M ${POS.home.cx} ${POS.home.cy}
@@ -67,61 +63,117 @@ export function DiamondView({ baseState, runners, onRunnerTap }: Props) {
         Home
       </text>
 
-      {/* Runners — motion.g positioniert sich per x/y-translate,
-          Children bewegen sich mit.
-          - initial: Runner taucht am Home-Plate auf (als wäre er Batter) und läuft zur Base
-          - animate: zur aktuellen Base-Position (bei Base-Wechsel animiert Motion automatisch)
-          - exit: läuft zum Home-Plate während fade (= Runner scort) */}
+      {/* Runners — bei erstem Erscheinen laufen sie über alle Zwischenbases.
+          Danach: simple Position-Animation (z.B. Advance von 1B → 2B direkt). */}
       <AnimatePresence>
-        {runners.map(r => {
-          const p = posForBase(r.base)
-          return (
-            <motion.g
-              key={r.playerId}
-              initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
-              animate={{ opacity: 1, scale: 1, x: p.cx, y: p.cy }}
-              exit={{
-                opacity: 0,
-                scale: 0.6,
-                x: POS.home.cx,
-                y: POS.home.cy,
-              }}
-              transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-              style={{ cursor: onRunnerTap ? 'pointer' : 'default' }}
-              onClick={() => onRunnerTap?.(r.base as 1 | 2 | 3, r)}
-            >
-              {/* Kreis + Texte relativ zu 0/0 — bewegen sich mit dem g */}
-              <circle
-                cx={0}
-                cy={0}
-                r="18"
-                fill="#172554"
-                stroke="#fff"
-                strokeWidth="2"
-              />
-              {r.battingOrder != null && (
-                <text
-                  x={0}
-                  y={-4}
-                  textAnchor="middle"
-                  className="fill-white text-[8px] font-bold pointer-events-none"
-                >
-                  #{r.battingOrder}
-                </text>
-              )}
-              <text
-                x={0}
-                y={7}
-                textAnchor="middle"
-                className="fill-white text-[9px] font-semibold pointer-events-none"
-              >
-                {truncate(r.playerName)}
+        {runners.map(r => (
+          <Runner key={r.playerId} r={r} onRunnerTap={onRunnerTap} />
+        ))}
+      </AnimatePresence>
+
+      {/* Homerun-Runner — rennt Home → 1B → 2B → 3B → Home, dann fade */}
+      <AnimatePresence>
+        {homerunRunner && (
+          <motion.g
+            key={`hr-${homerunRunner.playerId}`}
+            initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+            animate={{
+              opacity: [0, 1, 1, 1, 1, 1],
+              scale: [0.6, 1, 1, 1, 1, 1.2],
+              x: [POS.home.cx, POS.first.cx, POS.second.cx, POS.third.cx, POS.home.cx, POS.home.cx],
+              y: [POS.home.cy, POS.first.cy, POS.second.cy, POS.third.cy, POS.home.cy, POS.home.cy],
+            }}
+            exit={{ opacity: 0, scale: 1.4 }}
+            transition={{ duration: 2.0, ease: 'easeInOut', times: [0, 0.25, 0.5, 0.75, 0.95, 1] }}
+          >
+            <circle cx={0} cy={0} r="18" fill="#CC2936" stroke="#fff" strokeWidth="2.5" />
+            {homerunRunner.battingOrder != null && (
+              <text x={0} y={-4} textAnchor="middle" className="fill-white text-[8px] font-bold pointer-events-none">
+                #{homerunRunner.battingOrder}
               </text>
-            </motion.g>
-          )
-        })}
+            )}
+            <text x={0} y={7} textAnchor="middle" className="fill-white text-[9px] font-semibold pointer-events-none">
+              {truncate(homerunRunner.playerName)}
+            </text>
+          </motion.g>
+        )}
       </AnimatePresence>
     </svg>
+  )
+}
+
+/**
+ * Base-Index für Waypoint-Berechnung: 0 = Home, 1-3 = Bases.
+ * Gibt Position für jeden Index zurück.
+ */
+function posForIndex(i: number) {
+  if (i === 0) return POS.home
+  if (i === 1) return POS.first
+  if (i === 2) return POS.second
+  if (i === 3) return POS.third
+  return POS.home
+}
+
+/**
+ * Runner mit Waypoint-Animation:
+ * Läuft immer von der VORHERIGEN Base über alle Zwischenbases zur
+ * aktuellen. Auf Initial-Mount: von Home (0). Nach Advance 1→3 (Double):
+ * über 2B. Nach direktem Advance 1→2: einfach 1B→2B.
+ *
+ * lastBase-State merkt wo wir waren. Nach onAnimationComplete wird
+ * er auf die aktuelle Base aktualisiert.
+ */
+function Runner({ r, onRunnerTap }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void }) {
+  // lastBase = 0 auf Initial-Mount (Runner kommt von Home)
+  const [lastBase, setLastBase] = useState<number>(0)
+
+  // Waypoints: jede Base zwischen lastBase und r.base
+  const waypoints = useMemo(() => {
+    const xs: number[] = []
+    const ys: number[] = []
+    const start = Math.min(lastBase, r.base)
+    const end = Math.max(lastBase, r.base)
+    for (let b = start; b <= end; b++) {
+      const pos = posForIndex(b)
+      xs.push(pos.cx)
+      ys.push(pos.cy)
+    }
+    // Wenn Runner rückwärts läuft (selten, via Korrektur), Reihenfolge anpassen
+    if (lastBase > r.base) { xs.reverse(); ys.reverse() }
+    return { xs, ys }
+  }, [r.base, lastBase])
+
+  const distance = Math.abs(r.base - lastBase)
+  const hasKeyframes = waypoints.xs.length > 1
+
+  return (
+    <motion.g
+      initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        x: hasKeyframes ? waypoints.xs : waypoints.xs[0],
+        y: hasKeyframes ? waypoints.ys : waypoints.ys[0],
+      }}
+      exit={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+      transition={{
+        duration: 0.3 + Math.max(1, distance) * 0.25,
+        ease: 'easeInOut',
+      }}
+      onAnimationComplete={() => { if (lastBase !== r.base) setLastBase(r.base) }}
+      style={{ cursor: onRunnerTap ? 'pointer' : 'default' }}
+      onClick={() => onRunnerTap?.(r.base as 1 | 2 | 3, r)}
+    >
+      <circle cx={0} cy={0} r="18" fill="#172554" stroke="#fff" strokeWidth="2" />
+      {r.battingOrder != null && (
+        <text x={0} y={-4} textAnchor="middle" className="fill-white text-[8px] font-bold pointer-events-none">
+          #{r.battingOrder}
+        </text>
+      )}
+      <text x={0} y={7} textAnchor="middle" className="fill-white text-[9px] font-semibold pointer-events-none">
+        {truncate(r.playerName)}
+      </text>
+    </motion.g>
   )
 }
 

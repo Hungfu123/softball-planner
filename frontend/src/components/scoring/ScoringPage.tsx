@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
-import { ChevronLeft, FootstepsIcon, StrikeoutIcon, TrophyIcon, SadFaceIcon } from '@/icons'
+import { ChevronLeft, FootstepsIcon, StrikeoutIcon, TrophyIcon, SadFaceIcon, Pencil } from '@/icons'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -38,6 +38,9 @@ export function ScoringPage() {
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
   const [homerunFlash, setHomerunFlash] = useState<string | null>(null)
+  // HR-Runner läuft über alle Bases. State hält name + battingOrder damit
+  // der Runner auf dem Diamond animiert werden kann.
+  const [homerunRunner, setHomerunRunner] = useState<{ playerId: number; playerName: string; battingOrder: number | null } | null>(null)
   const [hbpFlash, setHbpFlash] = useState<string | null>(null)
   const [walkFlash, setWalkFlash] = useState<string | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
@@ -169,6 +172,13 @@ export function ScoringPage() {
       if (result === 'HOMERUN') {
         setHomerunFlash(batterNameSnapshot)
         setTimeout(() => setHomerunFlash(null), 2200)
+        // Runner läuft Home → 1B → 2B → 3B → Home
+        setHomerunRunner({
+          playerId: scoreboard.currentBatterId,
+          playerName: batterNameSnapshot,
+          battingOrder: scoreboard.currentBatterOrder ?? null,
+        })
+        setTimeout(() => setHomerunRunner(null), 2200)
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try { navigator.vibrate([80, 60, 80, 60, 200]) } catch { /* vibrate not supported */ }
         }
@@ -410,7 +420,7 @@ export function ScoringPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-dvh bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md">
         <div className="px-4 h-14 flex items-center justify-between gap-2">
@@ -515,15 +525,16 @@ export function ScoringPage() {
 
           {/* Inning + Outs */}
           <div className="text-right">
-            <div className="text-xs sm:text-sm font-semibold text-gray-700">
-              {displayInning}. Inning
+            <div className="flex items-center justify-end gap-1.5 text-xs sm:text-sm font-semibold text-gray-700">
+              <span>{displayInning}. Inning</span>
               {battingSide && (
                 <button
                   onClick={() => setShowSidePrompt(true)}
-                  className="ml-1 text-[10px] text-gray-500 hover:text-navy-700 underline decoration-dotted underline-offset-2 cursor-pointer"
-                  title="Seite ändern"
+                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 border border-gray-300 rounded-full text-gray-600 hover:border-navy-600 hover:bg-navy-50 hover:text-navy-800 cursor-pointer transition-colors"
+                  title="Seite ändern (Oben/Unten)"
                 >
-                  {battingSide === 'top' ? '↑ Oben' : '↓ Unten'}
+                  <span>{battingSide === 'top' ? '↑ Oben' : '↓ Unten'}</span>
+                  <Pencil size={10} />
                 </button>
               )}
             </div>
@@ -621,11 +632,12 @@ export function ScoringPage() {
 
       {/* Diamond - kompakter */}
       <div className="flex-1 flex flex-col items-center justify-center py-2 px-4 min-h-0">
-        <div className="w-full max-w-[220px] sm:max-w-[260px]">
+        <div className="w-full max-w-[360px] sm:max-w-[420px]">
           <DiamondView
             baseState={displayBaseState}
             runners={displayRunners}
             onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
+            homerunRunner={homerunRunner}
           />
         </div>
       </div>

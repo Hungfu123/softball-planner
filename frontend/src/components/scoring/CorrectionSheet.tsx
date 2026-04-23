@@ -71,6 +71,21 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
     setAssignments(arr => arr.filter(a => a.playerId !== playerId))
   }
 
+  /**
+   * Quick-Action: alle Runner um eine Base weiter.
+   * Typisch bei Grounder-Out (force-play) — 3B scort, 2B→3B, 1B→2B.
+   * User kann danach einzelne Runner noch korrigieren (z.B. einer war Aus).
+   */
+  const advanceAllOneBase = () => {
+    setAssignments(arr => arr.map(a => {
+      if (a.position === 'home' || a.position === 'out') return a
+      if (a.position === 3) return { ...a, position: 'home' as Position }
+      if (a.position === 2) return { ...a, position: 3 as Position }
+      if (a.position === 1) return { ...a, position: 2 as Position }
+      return a
+    }))
+  }
+
   const addRunner = (player: Player, position: Position) => {
     setAssignments(arr => [...arr, {
       playerId: player.id,
@@ -152,6 +167,19 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
             </div>
           </div>
           <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+
+            {/* Quick-Action: alle +1 Base (typisch bei Grounder-Force-Play).
+                User kann danach einzelne Runner fein-korrigieren. */}
+            {assignments.some(a => a.position === 1 || a.position === 2 || a.position === 3) && (
+              <button
+                onClick={advanceAllOneBase}
+                className="w-full min-h-[44px] px-3 py-2 rounded-lg border border-navy-300 bg-navy-50 text-navy-800 text-sm font-semibold cursor-pointer hover:bg-navy-100 hover:border-navy-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                title="Alle Runner rücken eine Base weiter (typisch bei Grounder-Force)"
+              >
+                <span>Alle Runner +1 Base</span>
+                <span className="text-xs font-normal opacity-70">(danach fein-korrigieren)</span>
+              </button>
+            )}
 
             {assignments.length === 0 && (
               <p className="text-sm text-gray-500 text-center py-4">Kein Runner auf Base.</p>
