@@ -250,16 +250,35 @@ export function StrikeoutIcon({ size = 22, className }: IconProps) {
   )
 }
 
-/** Home-Plate mit Flagge — feiert Runner-scort. */
-export function HomePlateFlagIcon({ size = 20, className }: IconProps) {
+/** Trophy/Pokal — feiert Run-Scoring (universell als "gescort!" verständlich). */
+export function TrophyIcon({ size = 20, className }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {/* Home-Plate-Umriss (5-Eck) */}
-      <path d="M5 6h10l4 5-4 5H5V6z" fill="currentColor" fillOpacity="0.15" />
-      {/* Flagge rechts */}
-      <path d="M15 4v16" />
-      <path d="M15 4c2 0 4 .5 6 2-2 1.5-4 2-6 2" fill="currentColor" fillOpacity="0.5" />
+      {/* Pokal-Schale */}
+      <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" fill="currentColor" fillOpacity="0.25" />
+      {/* Griffe links/rechts */}
+      <path d="M7 6H4v2a3 3 0 0 0 3 3" />
+      <path d="M17 6h3v2a3 3 0 0 1-3 3" />
+      {/* Stiel + Fuß */}
+      <path d="M12 14v4" />
+      <path d="M8 21h8" strokeWidth="2.5" />
+      <path d="M9 18h6" />
+    </svg>
+  )
+}
+
+/** Trauriger Smiley — für Strikeout (Batter ist geknickt). */
+export function SadFaceIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      {/* Augen */}
+      <circle cx="9" cy="10" r="0.6" fill="currentColor" />
+      <circle cx="15" cy="10" r="0.6" fill="currentColor" />
+      {/* Trauriger Mund (nach unten gebogen) */}
+      <path d="M8 16 Q 12 13, 16 16" />
     </svg>
   )
 }
