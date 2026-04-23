@@ -11,6 +11,13 @@ interface RunnerAssignment {
   wasOnBase: 1 | 2 | 3 | null  // wo war er VORHER
 }
 
+/**
+ * Context: 'manual' — User hat "Korrigieren"-Button gedrückt, generische Runner-Anpassung
+ *          'post-out' — Automatisch nach Out-Play geöffnet, zeigt Grounder/Fly-kontextuelle Texte.
+ *                       onSave interpretiert outsFromRunners als OUT_ON_PLAY statt CAUGHT_STEALING.
+ */
+export type CorrectionContext = 'manual' | 'post-out'
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -18,15 +25,17 @@ interface Props {
   runners: RunnerOnBase[]
   recentlyScored?: { playerId: number; playerName: string }[]
   availablePlayers: Player[]
+  context?: CorrectionContext
   onSave: (data: {
     newState: BaseStateDto
     extraRuns: number
     outsFromRunners: number[]
     unscoredPlayerIds: number[]  // Spieler die VORHER 'home' waren, jetzt nicht mehr → Runs abziehen
+    context: CorrectionContext
   }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], availablePlayers, onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], availablePlayers, context = 'manual', onSave }: Props) {
   const initial = useMemo<RunnerAssignment[]>(() => {
     const onBase = runners.map(r => ({
       playerId: r.playerId,
@@ -107,7 +116,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
     onClose()
     setSaving(true)
     try {
-      await onSave({ newState, extraRuns, outsFromRunners, unscoredPlayerIds })
+      await onSave({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context })
     } finally {
       setSaving(false)
     }
@@ -124,9 +133,13 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], a
             <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
             <div className="flex items-center justify-between px-4 py-3">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Runner anpassen</h2>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {context === 'post-out' ? 'Runner weitergelaufen?' : 'Runner anpassen'}
+                </h2>
                 <p className="text-[11px] text-gray-500">
-                  Wo sind die Runner wirklich gelandet? Chips tippen.
+                  {context === 'post-out'
+                    ? 'Bei Grounder/Fly: wohin sind die Runner gelaufen?'
+                    : 'Wo sind die Runner wirklich gelandet? Chips tippen.'}
                 </p>
               </div>
               <button

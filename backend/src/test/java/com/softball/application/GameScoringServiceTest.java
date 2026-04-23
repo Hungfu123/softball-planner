@@ -408,6 +408,47 @@ class GameScoringServiceTest {
     }
 
     @Test
+    void outOnPlay_countsAsInningOut_andRemovesRunner() {
+        // Grounder-Out (Batter): Runner auf 2B wird bei Force-Play ausgespielt
+        mockGame();
+        final Instant t = Instant.parse("2026-04-23T10:00:00Z");
+        final AtBat grounder = atBat(1, 1, hung, AtBatResult.OUT, new BaseState(null, anne.getId(), null));
+        grounder.setCreatedAt(t);
+        final BaseRunningEvent runnerOut = stealingEvent(anne, 1, BaseRunningEventType.OUT_ON_PLAY, t.plusSeconds(1));
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(grounder));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(runnerOut));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.outsInCurrentInning()).isEqualTo(2); // Batter-Out + Runner-Out
+        assertThat(sb.baseState().second()).isNull(); // Runner weg von 2B
+    }
+
+    @Test
+    void outOnPlay_andCaughtStealing_mixedInInning() {
+        // Inning 1: 1× Batter-Out (Grounder), 1× Runner-Out-on-Play (vom Grounder),
+        //            später 1× CaughtStealing bei echtem Steal-Versuch
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-23T10:00:00Z");
+        final AtBat grounder = atBat(1, 1, hung, AtBatResult.OUT, BaseState.empty());
+        grounder.setCreatedAt(t1);
+        final BaseRunningEvent runnerOut = stealingEvent(anne, 1, BaseRunningEventType.OUT_ON_PLAY, t1.plusSeconds(1));
+        final BaseRunningEvent cs = stealingEvent(khang, 1, BaseRunningEventType.CAUGHT_STEALING, t1.plusSeconds(2));
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(grounder));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(runnerOut, cs));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.outsInCurrentInning()).isEqualTo(3); // alle drei zählen als Inning-Outs
+    }
+
+    @Test
     void caughtStealing_doesNotAffectScoreUs() {
         // CS nimmt keinen Run weg (logisch)
         mockGame();

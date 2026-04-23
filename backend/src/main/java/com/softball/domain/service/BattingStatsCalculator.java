@@ -82,6 +82,7 @@ public class BattingStatsCalculator {
         for (final BaseRunningEvent e : playerStealingEvents) {
             if (e.getType() == BaseRunningEventType.STOLEN_BASE) stolenBases++;
             else if (e.getType() == BaseRunningEventType.CAUGHT_STEALING) caughtStealing++;
+            // OUT_ON_PLAY zählt NICHT für Batter-Stats — ist nur ein Inning-Out-Event
         }
 
         final BigDecimal ba = divide(hits, atBats);

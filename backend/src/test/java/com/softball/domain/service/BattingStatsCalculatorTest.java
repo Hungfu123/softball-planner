@@ -392,6 +392,20 @@ class BattingStatsCalculatorTest {
     }
 
     @Test
+    void outOnPlay_doesNotCountAsCaughtStealing() {
+        // Runner wurde bei Grounder/Fly-Out ausgespielt — kein CS-Versuch
+        final List<BaseRunningEvent> events = List.of(
+            stealingEvent(BaseRunningEventType.STOLEN_BASE),
+            stealingEvent(BaseRunningEventType.OUT_ON_PLAY),
+            stealingEvent(BaseRunningEventType.OUT_ON_PLAY)
+        );
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), events);
+
+        assertThat(s.stolenBases()).isEqualTo(1);
+        assertThat(s.caughtStealing()).isZero(); // OUT_ON_PLAY fließt NICHT in CS
+    }
+
+    @Test
     void mixedSteals_caughtStealingDoesNotCountAsStolenBase() {
         final List<BaseRunningEvent> events = List.of(
             stealingEvent(BaseRunningEventType.STOLEN_BASE),

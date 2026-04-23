@@ -176,6 +176,14 @@ export function ScoringPage() {
         }
       }
       else if (runsScored > 0) toast.show(`${runsScored} Run${runsScored > 1 ? 's' : ''} gescort!`, 'success')
+
+      // Auto-Open Runner-Sheet nach OUT wenn Runner auf Base waren.
+      // Intention: User wird gefragt ob Runner weitergelaufen sind (Sacrifice Fly,
+      // Fielder's Choice, Grounder-Advancement). Verhindert Missklassifizierung
+      // als Steal/CaughtStealing.
+      if (result === 'OUT' && (scoreboard.runners?.length ?? 0) > 0) {
+        setShowCorrection(true)
+      }
     } catch (e) {
       toast.show((e as Error).message, 'error')
     } finally {
@@ -590,7 +598,12 @@ export function ScoringPage() {
         runners={displayRunners}
         recentlyScored={recentlyScored}
         availablePlayers={gameDay.availablePlayers}
-        onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds }) => {
+        context={
+          atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'
+            ? 'post-out'
+            : 'manual'
+        }
+        onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context }) => {
           if (atBats.length === 0) {
             toast.show('Noch kein AtBat — kann nicht korrigieren', 'error')
             return
@@ -607,19 +620,16 @@ export function ScoringPage() {
               runsScored: newRuns,
               rbi: newRuns,
             })
-            // Runner-Outs als CaughtStealing-Events (für Stats-Tracking)
+            // Runner-Outs speichern:
+            //   post-out → OUT_ON_PLAY (Grounder/Fly-Out-Follow-up, kein CS-Stat)
+            //   manual   → CAUGHT_STEALING (manuelle Korrektur eines Steal-Versuchs)
+            const outEventType = context === 'post-out' ? 'OUT_ON_PLAY' : 'CAUGHT_STEALING'
             for (const runnerId of outsFromRunners) {
               await api.recordStealingEvent(currentGame.id, {
                 runnerId,
-                type: 'CAUGHT_STEALING',
+                type: outEventType,
                 inning: currentInning,
               })
-            }
-            // "Unscored" Spieler (vorher Home, jetzt nicht mehr) auch als CS zählen wenn position='out'
-            const unscoredAsOut = unscoredPlayerIds.filter(id => outsFromRunners.includes(id))
-            for (const runnerId of unscoredPlayerIds.filter(id => !unscoredAsOut.includes(id))) {
-              // Spieler wurde zurück auf eine Base gesetzt — kein CS, nur Run-Abzug (schon erledigt)
-              void runnerId
             }
             // Korrektur wurde angewendet, recentlyScored leeren damit nächster Edit nicht doppelt zählt
             setRecentlyScored([])

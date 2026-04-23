@@ -156,12 +156,15 @@ public class GameScoringService {
             .filter(a -> a.getInning() != null && a.getInning() == currentInning)
             .filter(a -> a.getResult() != null && a.getResult().isOut())
             .count();
-        // Caught-Stealing ist ebenfalls ein Out
-        final int csOuts = (int) stealingEvents.stream()
-            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING)
+        // Runner-Outs zählen für den Inning-Counter:
+        //   CAUGHT_STEALING → beim Klau-Versuch erwischt
+        //   OUT_ON_PLAY     → bei Grounder/Fly-Out ausgespielt (z.B. Double-Play, Force-Out)
+        final int runnerOuts = (int) stealingEvents.stream()
+            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING
+                      || e.getType() == BaseRunningEventType.OUT_ON_PLAY)
             .filter(e -> e.getInning() != null && e.getInning() == currentInning)
             .count();
-        final int outsInCurrent = atBatOuts + csOuts;
+        final int outsInCurrent = atBatOuts + runnerOuts;
 
         BaseState state = last != null && last.getBaseStateAfter() != null
             ? last.getBaseStateAfter()
@@ -204,7 +207,9 @@ public class GameScoringService {
                         state = new BaseState(state.first(), state.second(), null);
                         scoreUs += 1;
                     }
-                } else if (e.getType() == BaseRunningEventType.CAUGHT_STEALING) {
+                } else if (e.getType() == BaseRunningEventType.CAUGHT_STEALING
+                        || e.getType() == BaseRunningEventType.OUT_ON_PLAY) {
+                    // Beide: Runner verschwindet von Base (keine Punkte)
                     if (runnerId.equals(state.first())) {
                         state = new BaseState(null, state.second(), state.third());
                     } else if (runnerId.equals(state.second())) {

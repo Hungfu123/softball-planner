@@ -252,7 +252,7 @@ export type AtBatResult =
   | 'WALK' | 'HIT_BY_PITCH'
   | 'STRIKEOUT' | 'OUT'
 
-export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING'
+export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY'
 
 export interface BaseStateDto {
   first: number | null
