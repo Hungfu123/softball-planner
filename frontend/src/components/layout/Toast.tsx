@@ -5,9 +5,9 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
   if (toasts.length === 0) return null
 
   return (
-    // Mobile: bottom-24 (96px) damit Toast nicht die sticky Scoring-ActionBar überdeckt.
-    // Desktop: bottom-4 wie vorher.
-    <div className="fixed bottom-24 sm:bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2">
+    // Mobile: top (unter Header), weil Bottom-ActionBars (Scoring) häufig
+    // die Toasts überdeckten. Desktop: bottom-4 wie vorher.
+    <div className="fixed top-20 sm:top-auto sm:bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2">
       {toasts.map(t => (
         <div
           key={t.id}

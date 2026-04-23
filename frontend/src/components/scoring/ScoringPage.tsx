@@ -872,11 +872,6 @@ export function ScoringPage() {
                   AUA!
                 </div>
               </div>
-              <div className="bg-navy-900 rounded-lg px-4 py-1.5 shadow-lg">
-                <div className="text-sm sm:text-lg font-bold text-white">
-                  Hit-by-Pitch — {hbpFlash}
-                </div>
-              </div>
             </motion.div>
             {/* Schmerz-Sterne ✨ */}
             {['✨', '💢', '⚡', '✨', '💢'].map((emoji, i) => (
