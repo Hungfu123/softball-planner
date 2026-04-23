@@ -72,13 +72,20 @@ export function ActionButtons({ onRecord, disabled }: Props) {
   )
 }
 
+/*
+ * Button-Farben nach Outcome-Semantik (WCAG-AA auf weißem Text):
+ *   navy-800   → TREFFER (Brand-Haupt, aktives Positives)
+ *   emerald-600 → WALK (free base, entspanntes Positives)
+ *   softball-red-600 → STRIKEOUT (Out, negativ)
+ *   gray-500   → AUS (neutral, Grounder/Fly)
+ *   amber-600  → HBP (Warn/Schmerz — dunkler als -500 für AA-Kontrast mit white)
+ */
 const COLOR_CLASSES = {
-  // navy für TREFFER — Brand-Primary, passt zum Home-Score-Banner
   emerald: 'bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white',
   red: 'bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white',
   gray: 'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
-  sky: 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white',
-  amber: 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white',
+  sky: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
+  amber: 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white',
 } as const
 
 type Color = keyof typeof COLOR_CLASSES
