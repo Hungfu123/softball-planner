@@ -73,7 +73,8 @@ export function ActionButtons({ onRecord, disabled }: Props) {
 }
 
 const COLOR_CLASSES = {
-  emerald: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
+  // navy für TREFFER — Brand-Primary, passt zum Home-Score-Banner
+  emerald: 'bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white',
   red: 'bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white',
   gray: 'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
   sky: 'bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white',
@@ -110,8 +111,8 @@ function SecondaryButton({ color, label, subtitle, onClick, disabled }: { color:
 
 function HitSubButton({ label, onClick, accent }: { label: string; onClick: () => void; accent?: boolean }) {
   const cls = accent
-    ? 'bg-gradient-to-br from-emerald-500 to-softball-red-500 text-white'
-    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white'
+    ? 'bg-gradient-to-br from-navy-700 to-softball-red-600 text-white'
+    : 'bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white'
   return (
     <button
       onClick={onClick}

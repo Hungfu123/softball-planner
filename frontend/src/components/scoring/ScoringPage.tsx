@@ -953,7 +953,7 @@ export function ScoringPage() {
             transition={{ duration: 0.7, type: 'spring', stiffness: 260, damping: 18 }}
             className="fixed top-28 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/40">
+            <div className="bg-gradient-to-br from-navy-700 to-navy-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/40">
               <TrophyIcon size={30} className="text-white" />
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider opacity-90">
