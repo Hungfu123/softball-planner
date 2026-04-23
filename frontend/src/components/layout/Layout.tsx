@@ -1,8 +1,9 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { ChevronLeft } from '@/icons'
+import { ChevronLeft, XMark } from '@/icons'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
-import { createContext, useContext, type ReactNode } from 'react'
+import { useTodayGameDay } from '@/hooks/useTodayGameDay'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { ToastContext } from '@/hooks/useToast'
 
 const ToastCtx = createContext<ToastContext | null>(null)
@@ -33,6 +34,21 @@ const TABS = [
 export function Layout() {
   const toast = useToast()
   const location = useLocation()
+  const today = useTodayGameDay()
+
+  // Banner-Dismiss pro Tag persistent — nach Dismiss bleibt er den Rest des Tages weg,
+  // nächster Spieltag (anderer Tag) zeigt ihn wieder.
+  const [bannerDismissed, setBannerDismissed] = useState<boolean>(false)
+  useEffect(() => {
+    if (!today) return
+    const key = `today-banner-dismissed-${today.gameDay.date}`
+    setBannerDismissed(localStorage.getItem(key) === '1')
+  }, [today])
+  const dismissBanner = () => {
+    if (!today) return
+    localStorage.setItem(`today-banner-dismissed-${today.gameDay.date}`, '1')
+    setBannerDismissed(true)
+  }
 
   const isSubPage = location.pathname.startsWith('/gameday/')
   const activeTab = TABS.find(t => t.path === location.pathname)?.path
@@ -41,7 +57,32 @@ export function Layout() {
   return (
     <ToastCtx.Provider value={toast}>
       <div className="min-h-screen bg-gray-100">
-        <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print">
+        {/* HEUTE-Banner — nur wenn Spieltag genau heute ist, bis User dismisst */}
+        {today && !bannerDismissed && (
+          <div className="bg-softball-red-600 text-white sticky top-0 z-[60] shadow-md no-print">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-3">
+              <span className="text-sm font-bold uppercase tracking-wider">🔴 Heute</span>
+              <span className="text-sm flex-1 min-w-0 truncate">
+                Spieltag{today.gameDay.label ? ` · ${today.gameDay.label}` : ''}
+                {today.gameDay.location ? ` · ${today.gameDay.location}` : ''}
+              </span>
+              <Link
+                to={`/gameday/${today.gameDay.id}`}
+                className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 whitespace-nowrap"
+              >
+                Öffnen →
+              </Link>
+              <button
+                onClick={dismissBanner}
+                className="p-1 hover:bg-white/20 rounded-full"
+                aria-label="Banner schließen"
+              >
+                <XMark size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+        <header className={`bg-navy-900 text-white sticky z-50 shadow-md no-print ${today && !bannerDismissed ? 'top-10' : 'top-0'}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {isSubPage && (

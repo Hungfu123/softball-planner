@@ -10,7 +10,7 @@ import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import * as api from '@/api/client'
-import type { AtBatResult, BaseStateDto, GameDayResponse, RunnerOnBase } from '@/types'
+import type { AtBatResult, BaseStateDto, GameDayResponse, LineupEntryResponse, RunnerOnBase } from '@/types'
 
 export function ScoringPage() {
   const { id: gameDayIdParam, gameIndex: gameIndexParam } = useParams()
@@ -24,6 +24,8 @@ export function ScoringPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [stealingRunner, setStealingRunner] = useState<RunnerOnBase | null>(null)
+  const [lineup, setLineup] = useState<LineupEntryResponse[]>([])
+  const [showLineupSheet, setShowLineupSheet] = useState(false)
   // Inning-Override: wenn 3 Outs erreicht + User wechselt Inning, zeigen wir
   // frisches Inning mit leeren Bases bis der erste AtBat des neuen Innings passiert.
   const [inningOverride, setInningOverride] = useState<number | null>(null)
@@ -67,6 +69,12 @@ export function ScoringPage() {
   const opponentName = currentGame?.opponentTeam?.name ?? 'Gegner'
 
   const { atBats, scoreboard, reload, recordAtBat, undo, recordStealingEvent } = useScoring(currentGame?.id ?? null)
+
+  // Lineup laden für Batter-Preview (nächste 2-3 + Full-Lineup-Sheet)
+  useEffect(() => {
+    if (!currentGame?.id) return
+    api.getLineup(currentGame.id).then(setLineup).catch(() => setLineup([]))
+  }, [currentGame?.id])
 
   // Effektive Anzeige-Werte: Wenn User "Nächstes Inning" getappt hat, zeigen wir
   // neues Inning + leere Bases bis der erste AtBat dieses Innings kommt.
@@ -636,17 +644,49 @@ export function ScoringPage() {
         </div>
       </div>
 
-      {/* Batter Card - kompakt, einzeilig */}
+      {/* Batter Card - kompakt mit On-Deck-Preview + Lineup-Sheet-Button */}
       <div className="px-4 py-2 bg-white border-t border-gray-200">
         {scoreboard?.currentBatterId && !halfInningOver ? (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] bg-navy-900 text-white font-bold px-1.5 py-0.5 rounded tabular-nums">
-              #{scoreboard.currentBatterOrder ?? '?'}
-            </span>
-            <span className="font-bold text-base sm:text-lg text-gray-900 uppercase tracking-tight truncate">
-              {scoreboard.currentBatterName}
-            </span>
-            <span className="text-xs text-gray-500 ml-auto whitespace-nowrap">⚾ am Schlag</span>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] bg-navy-900 text-white font-bold px-1.5 py-0.5 rounded tabular-nums">
+                #{scoreboard.currentBatterOrder ?? '?'}
+              </span>
+              <span className="font-bold text-base sm:text-lg text-gray-900 uppercase tracking-tight truncate">
+                {scoreboard.currentBatterName}
+              </span>
+              <span className="text-xs text-gray-500 whitespace-nowrap">⚾ am Schlag</span>
+              <button
+                onClick={() => setShowLineupSheet(true)}
+                className="ml-auto text-[11px] text-navy-700 hover:text-navy-900 font-medium px-2 py-0.5 rounded-full border border-gray-200 hover:border-navy-400 cursor-pointer whitespace-nowrap"
+                title="Kompletten Batting-Order anzeigen"
+              >
+                📋 Lineup
+              </button>
+            </div>
+            {/* On-Deck Preview: nächste 3 Batters */}
+            {(() => {
+              const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
+              if (sorted.length === 0) return null
+              const currentIdx = sorted.findIndex(e => (e.dhBatterPlayer?.id ?? e.player.id) === scoreboard.currentBatterId)
+              if (currentIdx === -1) return null
+              const next = Array.from({ length: 3 }, (_, i) => sorted[(currentIdx + i + 1) % sorted.length])
+              return (
+                <div className="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-gray-400">Nächste:</span>
+                  {next.map((e, i) => {
+                    const p = e.dhBatterPlayer ?? e.player
+                    return (
+                      <span key={`${e.id}-${i}`} className="inline-flex items-center gap-0.5">
+                        <span className="font-mono text-gray-400">#{e.battingOrder}</span>
+                        <span className="font-medium text-gray-700">{p.name}</span>
+                        {i < next.length - 1 && <span className="text-gray-300">·</span>}
+                      </span>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
         ) : halfInningOver ? (
           <div className="text-xs text-gray-500 text-center">Warte auf Inning-Wechsel</div>
@@ -738,6 +778,76 @@ export function ScoringPage() {
           }
         }}
       />
+
+      {/* Lineup-Sheet: komplette Batting-Order mit Current + Next-Markern */}
+      <Drawer.Root open={showLineupSheet} onOpenChange={(open) => !open && setShowLineupSheet(false)}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto focus:outline-none">
+            <Drawer.Title className="sr-only">Batting-Order</Drawer.Title>
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
+            <div className="px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Batting-Order</h2>
+              <p className="text-[11px] text-gray-500 mb-3">
+                Reihenfolge der Schlagspieler. Aktueller Batter markiert.
+              </p>
+              {(() => {
+                const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
+                if (sorted.length === 0) return (
+                  <p className="text-sm text-gray-500 text-center py-4">Kein Lineup verfügbar.</p>
+                )
+                const currentIdx = sorted.findIndex(e => (e.dhBatterPlayer?.id ?? e.player.id) === scoreboard?.currentBatterId)
+                return (
+                  <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
+                    {sorted.map((e, i) => {
+                      const p = e.dhBatterPlayer ?? e.player
+                      const isCurrent = i === currentIdx
+                      const isNext = currentIdx !== -1 && i === (currentIdx + 1) % sorted.length
+                      return (
+                        <div
+                          key={e.id}
+                          className={`flex items-center gap-3 px-4 py-2.5 ${
+                            isCurrent ? 'bg-navy-50' : ''
+                          }`}
+                        >
+                          <span className={`text-xs font-bold w-7 text-center rounded tabular-nums ${
+                            isCurrent ? 'bg-navy-900 text-white px-1.5 py-0.5' : 'text-gray-400'
+                          }`}>
+                            {e.battingOrder}
+                          </span>
+                          <span className={`flex-1 text-sm truncate ${
+                            isCurrent ? 'font-bold text-gray-900' : 'text-gray-700'
+                          }`}>
+                            {p.name}
+                          </span>
+                          {e.dhBatterPlayer && (
+                            <span className="text-[9px] uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">DH</span>
+                          )}
+                          {e.position && (
+                            <span className="text-[11px] font-mono text-gray-500">{e.position}</span>
+                          )}
+                          {isCurrent && (
+                            <span className="text-[10px] font-bold text-navy-700 uppercase tracking-wider">⚾ am Schlag</span>
+                          )}
+                          {isNext && !isCurrent && (
+                            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">nächster</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+              <button
+                onClick={() => setShowLineupSheet(false)}
+                className="w-full mt-4 h-11 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 cursor-pointer"
+              >
+                Schließen
+              </button>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
       {/* Stealing Sheet */}
       <Drawer.Root open={stealingRunner !== null} onOpenChange={(open) => !open && setStealingRunner(null)}>
