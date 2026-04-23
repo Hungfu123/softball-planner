@@ -329,3 +329,7 @@ export const getGameDayBattingStats = (gameDayId: number) =>
 export const getSeasonBattingStats = (seasonId: number) =>
   request<PlayerBattingStatsResponse[]>(`/seasons/${seasonId}/batting-stats`)
 
+// Substitutions: Mid-Game-Wechsel
+export const addSubstitution = (gameId: number, req: { playerOutId: number; playerInId: number; inning: number }) =>
+  request<SubstitutionResponse>(`/games/${gameId}/substitutions`, { method: 'POST', body: JSON.stringify(req) })
+

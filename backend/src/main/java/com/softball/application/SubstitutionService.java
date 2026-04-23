@@ -49,6 +49,64 @@ public class SubstitutionService {
             ));
     }
 
+    /**
+     * Fügt EINE Substitution zum Spiel hinzu ohne existierende zu löschen.
+     * Wird für Mid-Game-Wechsel beim Live-Scoring genutzt.
+     * Validiert: playerOut muss derzeit effektiv im Lineup sein (direkt oder via
+     * vorheriger Sub), playerIn darf noch nicht im Spiel sein.
+     */
+    @Transactional
+    public Substitution addSubstitution(final Long gameId, final SubstitutionRequest req) {
+        final Game game = gameRepository.findById(gameId)
+            .orElseThrow(() -> new ResourceNotFoundException("Game", gameId));
+
+        if (req.playerOutId().equals(req.playerInId())) {
+            throw new BusinessValidationException("Spieler kann nicht mit sich selbst ausgewechselt werden");
+        }
+
+        // Effective-Lineup: aktuelle Lineup-Player + bereits eingewechselte
+        final Set<Long> initialLineupIds = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId).stream()
+            .flatMap(e -> {
+                final List<Long> ids = new ArrayList<>();
+                if (e.getPlayer() != null) ids.add(e.getPlayer().getId());
+                if (e.getDhBatterPlayer() != null) ids.add(e.getDhBatterPlayer().getId());
+                return ids.stream();
+            }).collect(Collectors.toSet());
+        final List<Substitution> existing = substitutionRepository.findByGameId(gameId);
+        // Aktuell spielende Spieler = initialLineup - alle playerOut + alle playerIn
+        final Set<Long> activeIds = new HashSet<>(initialLineupIds);
+        for (final Substitution s : existing) {
+            if (s.getPlayerOut() != null) activeIds.remove(s.getPlayerOut().getId());
+            if (s.getPlayerIn() != null) activeIds.add(s.getPlayerIn().getId());
+        }
+
+        if (!activeIds.contains(req.playerOutId())) {
+            throw new BusinessValidationException("Spieler (raus) spielt aktuell nicht");
+        }
+        if (activeIds.contains(req.playerInId())) {
+            throw new BusinessValidationException("Einwechselspieler spielt bereits");
+        }
+
+        final Set<Long> availableIds = (game.getGameDay() != null && game.getGameDay().getAvailablePlayers() != null)
+            ? game.getGameDay().getAvailablePlayers().stream().map(Player::getId).collect(Collectors.toSet())
+            : Set.of();
+        if (!availableIds.isEmpty() && !availableIds.contains(req.playerInId())) {
+            throw new BusinessValidationException("Einwechselspieler muss als verfuegbar markiert sein");
+        }
+
+        final Player playerOut = playerRepository.findById(req.playerOutId())
+            .orElseThrow(() -> new ResourceNotFoundException("Player", req.playerOutId()));
+        final Player playerIn = playerRepository.findById(req.playerInId())
+            .orElseThrow(() -> new ResourceNotFoundException("Player", req.playerInId()));
+
+        final Substitution sub = new Substitution();
+        sub.setGame(game);
+        sub.setPlayerOut(playerOut);
+        sub.setPlayerIn(playerIn);
+        sub.setInning(req.inning());
+        return substitutionRepository.save(sub);
+    }
+
     @Transactional
     public List<Substitution> setSubstitutions(final Long gameId, final List<SubstitutionRequest> requests) {
         final Game game = gameRepository.findById(gameId)

@@ -7,5 +7,5 @@ import jakarta.validation.constraints.NotNull;
 public record SubstitutionRequest(
     @NotNull Long playerOutId,
     @NotNull Long playerInId,
-    @NotNull @Min(1) @Max(6) Integer inning
+    @NotNull @Min(1) @Max(99) Integer inning
 ) {}

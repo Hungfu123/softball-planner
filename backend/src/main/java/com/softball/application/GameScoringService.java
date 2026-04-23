@@ -28,17 +28,20 @@ public class GameScoringService {
     private final LineupEntryRepository lineupEntryRepository;
     private final AtBatRepository atBatRepository;
     private final BaseRunningEventRepository stealingRepository;
+    private final SubstitutionRepository substitutionRepository;
 
     public GameScoringService(final GameRepository gameRepository,
                                final PlayerRepository playerRepository,
                                final LineupEntryRepository lineupEntryRepository,
                                final AtBatRepository atBatRepository,
-                               final BaseRunningEventRepository stealingRepository) {
+                               final BaseRunningEventRepository stealingRepository,
+                               final SubstitutionRepository substitutionRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.atBatRepository = atBatRepository;
         this.stealingRepository = stealingRepository;
+        this.substitutionRepository = substitutionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -228,7 +231,11 @@ public class GameScoringService {
         addRunner(runners, 2, state.second(), playerMap, lineup);
         addRunner(runners, 3, state.third(), playerMap, lineup);
 
-        final Optional<LineupEntry> currentBatter = resolveCurrentBatter(last, lineup);
+        // Subs werden auf den Batting-Slot angewendet — DH + Player-Wechsel
+        final List<Substitution> substitutions = substitutionRepository.findByGameId(gameId);
+        final Optional<LineupEntry> currentBatterEntry = resolveCurrentBatter(last, lineup, substitutions);
+        final Optional<Player> currentBatter = currentBatterEntry.map(e ->
+            resolveBatterForEntry(e, substitutions, currentInning));
 
         return new ScoreboardResponse(
             gameId,
@@ -238,11 +245,41 @@ public class GameScoringService {
             outsInCurrent,
             new AtBatResponse.BaseStateDto(state.first(), state.second(), state.third()),
             runners,
-            currentBatter.map(e -> e.getPlayer().getId()).orElse(null),
-            currentBatter.map(e -> e.getPlayer().getName()).orElse(null),
-            currentBatter.map(LineupEntry::getBattingOrder).orElse(null),
+            currentBatter.map(Player::getId).orElse(null),
+            currentBatter.map(Player::getName).orElse(null),
+            currentBatterEntry.map(LineupEntry::getBattingOrder).orElse(null),
             atBats.size()
         );
+    }
+
+    /**
+     * Ermittelt den effektiven Batter für einen Lineup-Slot unter Berücksichtigung von:
+     *   1. DH — wenn entry.dhBatterPlayer gesetzt ist, batted der DH (nicht der Field-Player)
+     *   2. Substitutions — zuletzt gegen playerIn ausgetauscht (Kaskade möglich)
+     */
+    private Player resolveBatterForEntry(final LineupEntry entry,
+                                          final List<Substitution> substitutions,
+                                          final int currentInning) {
+        Player current = entry.getDhBatterPlayer() != null
+            ? entry.getDhBatterPlayer()
+            : entry.getPlayer();
+        if (current == null) return null;
+
+        // Substitutions in Inning-Reihenfolge durchlaufen (ältere zuerst),
+        // um Kaskaden korrekt abzubilden: A → B → C.
+        final List<Substitution> sortedSubs = substitutions.stream()
+            .filter(s -> s.getInning() != null && s.getInning() <= currentInning)
+            .sorted(Comparator.comparing(Substitution::getInning)
+                .thenComparing(s -> s.getId() != null ? s.getId() : 0L))
+            .toList();
+        for (final Substitution sub : sortedSubs) {
+            if (sub.getPlayerOut() != null
+                    && sub.getPlayerOut().getId().equals(current.getId())
+                    && sub.getPlayerIn() != null) {
+                current = sub.getPlayerIn();
+            }
+        }
+        return current;
     }
 
     private void addRunner(final List<ScoreboardResponse.RunnerOnBase> out,
@@ -269,8 +306,15 @@ public class GameScoringService {
             .collect(Collectors.toMap(Player::getId, p -> p, (a, b) -> a));
     }
 
-    /** Nächster Batter: nach letztem Batter in der Batting Order. Wenn keine AtBats: #1. */
-    private Optional<LineupEntry> resolveCurrentBatter(final AtBat lastAtBat, final List<LineupEntry> lineup) {
+    /**
+     * Nächster Batter: nach letztem Batter in der Batting Order.
+     * Nutzt den effektiven Batter pro Slot (DH + Substitutions), damit wir
+     * den richtigen Lineup-Slot zuordnen können wenn der DH oder eingewechselte
+     * Spieler gebattet haben.
+     */
+    private Optional<LineupEntry> resolveCurrentBatter(final AtBat lastAtBat,
+                                                        final List<LineupEntry> lineup,
+                                                        final List<Substitution> substitutions) {
         if (lineup.isEmpty()) return Optional.empty();
         final List<LineupEntry> sorted = lineup.stream()
             .filter(e -> e.getBattingOrder() != null)
@@ -280,9 +324,11 @@ public class GameScoringService {
         if (lastAtBat == null || lastAtBat.getBatter() == null) return Optional.of(sorted.get(0));
 
         final Long lastBatterId = lastAtBat.getBatter().getId();
+        final int atBatInning = lastAtBat.getInning() != null ? lastAtBat.getInning() : 1;
         int lastIdx = -1;
         for (int i = 0; i < sorted.size(); i++) {
-            if (sorted.get(i).getPlayer() != null && sorted.get(i).getPlayer().getId().equals(lastBatterId)) {
+            final Player effective = resolveBatterForEntry(sorted.get(i), substitutions, atBatInning);
+            if (effective != null && effective.getId().equals(lastBatterId)) {
                 lastIdx = i;
                 break;
             }

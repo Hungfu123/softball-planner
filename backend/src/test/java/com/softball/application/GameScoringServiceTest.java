@@ -28,6 +28,7 @@ class GameScoringServiceTest {
     @Mock private LineupEntryRepository lineupEntryRepository;
     @Mock private AtBatRepository atBatRepository;
     @Mock private BaseRunningEventRepository stealingRepository;
+    @Mock private SubstitutionRepository substitutionRepository;
 
     @InjectMocks
     private GameScoringService service;

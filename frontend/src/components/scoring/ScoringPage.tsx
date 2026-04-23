@@ -10,7 +10,7 @@ import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import * as api from '@/api/client'
-import type { AtBatResult, BaseStateDto, GameDayResponse, LineupEntryResponse, RunnerOnBase } from '@/types'
+import type { AtBatResult, BaseStateDto, GameDayResponse, LineupEntryResponse, Player, RunnerOnBase, SubstitutionResponse } from '@/types'
 
 export function ScoringPage() {
   const { id: gameDayIdParam, gameIndex: gameIndexParam } = useParams()
@@ -25,7 +25,11 @@ export function ScoringPage() {
   const [submitting, setSubmitting] = useState(false)
   const [stealingRunner, setStealingRunner] = useState<RunnerOnBase | null>(null)
   const [lineup, setLineup] = useState<LineupEntryResponse[]>([])
+  const [substitutions, setSubstitutions] = useState<SubstitutionResponse[]>([])
   const [showLineupSheet, setShowLineupSheet] = useState(false)
+  const [showSubSheet, setShowSubSheet] = useState(false)
+  const [subPlayerOut, setSubPlayerOut] = useState<Player | null>(null)
+  const [subPlayerIn, setSubPlayerIn] = useState<Player | null>(null)
   // Inning-Override: wenn 3 Outs erreicht + User wechselt Inning, zeigen wir
   // frisches Inning mit leeren Bases bis der erste AtBat des neuen Innings passiert.
   const [inningOverride, setInningOverride] = useState<number | null>(null)
@@ -74,7 +78,25 @@ export function ScoringPage() {
   useEffect(() => {
     if (!currentGame?.id) return
     api.getLineup(currentGame.id).then(setLineup).catch(() => setLineup([]))
+    api.getSubstitutions(currentGame.id).then(setSubstitutions).catch(() => setSubstitutions([]))
   }, [currentGame?.id])
+
+  /**
+   * Effektiver Spieler für einen Lineup-Slot unter Berücksichtigung von:
+   *   - DH-Batter (wenn gesetzt)
+   *   - Substitutions (Kaskade A→B→C)
+   * Analog zur Backend-Logik in GameScoringService.resolveBatterForEntry.
+   */
+  const effectivePlayerForEntry = (entry: LineupEntryResponse): Player => {
+    let current: Player = entry.dhBatterPlayer ?? entry.player
+    const sortedSubs = [...substitutions].sort((a, b) =>
+      a.inning !== b.inning ? a.inning - b.inning : a.id - b.id
+    )
+    for (const s of sortedSubs) {
+      if (s.playerOut.id === current.id) current = s.playerIn
+    }
+    return current
+  }
 
   // Effektive Anzeige-Werte: Wenn User "Nächstes Inning" getappt hat, zeigen wir
   // neues Inning + leere Bases bis der erste AtBat dieses Innings kommt.
@@ -317,6 +339,34 @@ export function ScoringPage() {
    * es gibt keine Varianten bei einem Overthrow.
    * Backend: letztes AtBat wird aktualisiert mit neuem BaseState + erhöhten Runs.
    */
+  /**
+   * Mid-Game-Sub bestätigen: API-Call + Reload von lineup/subs/scoreboard.
+   */
+  const handleConfirmSub = async () => {
+    if (!currentGame || !subPlayerOut || !subPlayerIn) return
+    setSubmitting(true)
+    try {
+      await api.addSubstitution(currentGame.id, {
+        playerOutId: subPlayerOut.id,
+        playerInId: subPlayerIn.id,
+        inning: currentInning,
+      })
+      const [newSubs] = await Promise.all([
+        api.getSubstitutions(currentGame.id),
+        reload(),
+      ])
+      setSubstitutions(newSubs)
+      toast.show(`${subPlayerOut.name} → ${subPlayerIn.name} eingewechselt`, 'success')
+      setShowSubSheet(false)
+      setSubPlayerOut(null)
+      setSubPlayerIn(null)
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleOverthrow = async () => {
     if (!currentGame || atBats.length === 0) return
     const lastAtBat = atBats[atBats.length - 1]
@@ -668,14 +718,14 @@ export function ScoringPage() {
             {(() => {
               const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
               if (sorted.length === 0) return null
-              const currentIdx = sorted.findIndex(e => (e.dhBatterPlayer?.id ?? e.player.id) === scoreboard.currentBatterId)
+              const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard.currentBatterId)
               if (currentIdx === -1) return null
               const next = Array.from({ length: 3 }, (_, i) => sorted[(currentIdx + i + 1) % sorted.length])
               return (
                 <div className="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap">
                   <span className="text-gray-400">Nächste:</span>
                   {next.map((e, i) => {
-                    const p = e.dhBatterPlayer ?? e.player
+                    const p = effectivePlayerForEntry(e)
                     return (
                       <span key={`${e.id}-${i}`} className="inline-flex items-center gap-0.5">
                         <span className="font-mono text-gray-400">#{e.battingOrder}</span>
@@ -796,11 +846,12 @@ export function ScoringPage() {
                 if (sorted.length === 0) return (
                   <p className="text-sm text-gray-500 text-center py-4">Kein Lineup verfügbar.</p>
                 )
-                const currentIdx = sorted.findIndex(e => (e.dhBatterPlayer?.id ?? e.player.id) === scoreboard?.currentBatterId)
+                const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard?.currentBatterId)
                 return (
                   <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
                     {sorted.map((e, i) => {
-                      const p = e.dhBatterPlayer ?? e.player
+                      const p = effectivePlayerForEntry(e)
+                      const wasSubbedIn = p.id !== (e.dhBatterPlayer?.id ?? e.player.id)
                       const isCurrent = i === currentIdx
                       const isNext = currentIdx !== -1 && i === (currentIdx + 1) % sorted.length
                       return (
@@ -820,7 +871,10 @@ export function ScoringPage() {
                           }`}>
                             {p.name}
                           </span>
-                          {e.dhBatterPlayer && (
+                          {wasSubbedIn && (
+                            <span className="text-[9px] uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">eingewechselt</span>
+                          )}
+                          {e.dhBatterPlayer && !wasSubbedIn && (
                             <span className="text-[9px] uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">DH</span>
                           )}
                           {e.position && (
@@ -838,12 +892,122 @@ export function ScoringPage() {
                   </div>
                 )
               })()}
-              <button
-                onClick={() => setShowLineupSheet(false)}
-                className="w-full mt-4 h-11 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 cursor-pointer"
-              >
-                Schließen
-              </button>
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                <button
+                  onClick={() => { setShowLineupSheet(false); setShowSubSheet(true) }}
+                  className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold text-sm cursor-pointer"
+                >
+                  🔄 Wechseln
+                </button>
+                <button
+                  onClick={() => setShowLineupSheet(false)}
+                  className="h-11 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 cursor-pointer"
+                >
+                  Schließen
+                </button>
+              </div>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
+
+      {/* Sub-Sheet: Mid-Game-Wechsel */}
+      <Drawer.Root open={showSubSheet} onOpenChange={(open) => { if (!open) { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) } }}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
+            <Drawer.Title className="sr-only">Spieler wechseln</Drawer.Title>
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
+            <div className="px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
+              <h2 className="text-lg font-bold text-gray-900 mb-1">Spieler wechseln</h2>
+              <p className="text-[11px] text-gray-500 mb-4">
+                Aktives Inning: {currentInning}. Wechsel wird ab diesem Inning wirksam.
+              </p>
+              {(() => {
+                // Aktive Spieler = effective players aus Lineup
+                const activePlayers = [...lineup]
+                  .filter(e => e.battingOrder != null)
+                  .sort((a, b) => a.battingOrder - b.battingOrder)
+                  .map(e => effectivePlayerForEntry(e))
+                const activeIds = new Set(activePlayers.map(p => p.id))
+                // Bench = available nicht aktiv
+                const benchPlayers = gameDay.availablePlayers.filter(p => !activeIds.has(p.id))
+                return (
+                  <div className="space-y-4">
+                    {/* Wer geht raus */}
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                        Raus{subPlayerOut ? '' : ' — wen ersetzen?'}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {activePlayers.map(p => (
+                          <button
+                            key={p.id}
+                            onClick={() => setSubPlayerOut(p)}
+                            className={`px-3 py-2.5 rounded-lg text-sm font-medium text-left cursor-pointer transition-colors ${
+                              subPlayerOut?.id === p.id
+                                ? 'bg-softball-red-600 text-white border-2 border-softball-red-700'
+                                : 'border border-gray-300 text-gray-700 hover:border-softball-red-400 hover:bg-softball-red-50'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Wer kommt rein */}
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">
+                        Rein{subPlayerIn ? '' : ' — wer ersetzt?'}
+                      </div>
+                      {benchPlayers.length === 0 ? (
+                        <p className="text-sm text-gray-500 py-2">Keine Bench-Spieler verfügbar.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {benchPlayers.map(p => (
+                            <button
+                              key={p.id}
+                              onClick={() => setSubPlayerIn(p)}
+                              className={`px-3 py-2.5 rounded-lg text-sm font-medium text-left cursor-pointer transition-colors ${
+                                subPlayerIn?.id === p.id
+                                  ? 'bg-emerald-600 text-white border-2 border-emerald-700'
+                                  : 'border border-gray-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
+                              }`}
+                            >
+                              {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Preview */}
+                    {subPlayerOut && subPlayerIn && (
+                      <div className="bg-navy-50 border border-navy-200 rounded-lg p-3 text-sm text-navy-800">
+                        <span className="font-semibold">{subPlayerOut.name}</span> geht raus,{' '}
+                        <span className="font-semibold">{subPlayerIn.name}</span> kommt rein (Inning {currentInning}).
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
+              <div className="grid grid-cols-2 gap-2 mt-5">
+                <button
+                  onClick={() => { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) }}
+                  className="h-11 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 cursor-pointer"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={handleConfirmSub}
+                  disabled={!subPlayerOut || !subPlayerIn || submitting}
+                  className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Wechseln…' : '✓ Bestätigen'}
+                </button>
+              </div>
             </div>
           </Drawer.Content>
         </Drawer.Portal>

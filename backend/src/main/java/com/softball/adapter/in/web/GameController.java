@@ -82,4 +82,14 @@ public class GameController {
                                                         @RequestBody List<@Valid SubstitutionRequest> requests) {
         return substitutionService.setSubstitutions(id, requests).stream().map(SubstitutionResponse::from).toList();
     }
+
+    /**
+     * Fügt EINE Substitution hinzu (ohne existierende zu löschen).
+     * Für Mid-Game-Wechsel im Live-Scoring.
+     */
+    @PostMapping("/{id}/substitutions")
+    public SubstitutionResponse addSubstitution(@PathVariable final Long id,
+                                                 @RequestBody @Valid SubstitutionRequest request) {
+        return SubstitutionResponse.from(substitutionService.addSubstitution(id, request));
+    }
 }

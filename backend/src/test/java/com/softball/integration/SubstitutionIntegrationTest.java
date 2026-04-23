@@ -208,11 +208,13 @@ class SubstitutionIntegrationTest {
     }
 
     @Test
-    void setSubstitutions_inning7_returns400() throws Exception {
+    void setSubstitutions_inning100_returns400() throws Exception {
+        // Inning 100 über Max(99) — sollte abgelehnt werden.
+        // 7+ ist jetzt erlaubt (Extra-Innings).
         mockMvc.perform(put("/api/games/" + gameId + "/substitutions")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(List.of(
-                    Map.of("playerOutId", player1.getId(), "playerInId", benchPlayer.getId(), "inning", 7)
+                    Map.of("playerOutId", player1.getId(), "playerInId", benchPlayer.getId(), "inning", 100)
                 ))))
             .andExpect(status().isBadRequest());
     }
