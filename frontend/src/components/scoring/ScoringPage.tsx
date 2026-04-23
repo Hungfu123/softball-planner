@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
-import { ChevronLeft } from '@/icons'
+import { ChevronLeft, FootstepsIcon, StrikeoutIcon, HomePlateFlagIcon } from '@/icons'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -902,7 +902,7 @@ export function ScoringPage() {
             className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
             <div className="bg-navy-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
-              <span className="text-3xl">🚶</span>
+              <FootstepsIcon size={28} className="text-white" />
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Walk</div>
                 <div className="text-base font-bold">{walkFlash} → 1B</div>
@@ -927,12 +927,12 @@ export function ScoringPage() {
             className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
             <div className="bg-softball-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
-              <span className="text-4xl font-black">K</span>
+              <span className="text-4xl font-black leading-none">K</span>
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Strikeout</div>
                 <div className="text-base font-bold">{strikeoutFlash}</div>
               </div>
-              <span className="text-2xl">💨</span>
+              <StrikeoutIcon size={28} className="text-white" />
             </div>
           </motion.div>
         )}
@@ -953,7 +953,7 @@ export function ScoringPage() {
             className="fixed top-28 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/40">
-              <span className="text-3xl">⚾</span>
+              <HomePlateFlagIcon size={28} className="text-white" />
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider opacity-90">
                   {scoredFlash.length === 1 ? 'Home!' : `+${scoredFlash.length} Runs`}
@@ -964,7 +964,6 @@ export function ScoringPage() {
                     : scoredFlash.join(' · ')}
                 </div>
               </div>
-              <span className="text-3xl">🎉</span>
             </div>
           </motion.div>
         )}

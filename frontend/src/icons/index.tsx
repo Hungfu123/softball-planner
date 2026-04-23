@@ -222,3 +222,44 @@ export function BallIcon({ size = 20, className }: IconProps) {
     </svg>
   )
 }
+
+/** Fußabdruck-Paar für Walk. */
+export function FootstepsIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M7 5c-1.4 0-2.5 1.3-2.5 3s.6 3 2 3.5 2.5-.5 2.5-2.5S8.4 5 7 5zm-.5 7.5c-.8 0-1.5.7-1.5 1.5v2c0 .8.7 1.5 1.5 1.5S8 16.8 8 16v-2c0-.8-.7-1.5-1.5-1.5z"/>
+      <path d="M17 9c-1.4 0-2.5 1.3-2.5 3s.6 3 2 3.5 2.5-.5 2.5-2.5S18.4 9 17 9zm-.5 7.5c-.8 0-1.5.7-1.5 1.5v1c0 .8.7 1.5 1.5 1.5S18 19.8 18 19v-1c0-.8-.7-1.5-1.5-1.5z"/>
+    </svg>
+  )
+}
+
+/** Ball mit Motion-Lines — für Strikeout (Ball zieht am Batter vorbei). */
+export function StrikeoutIcon({ size = 22, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Ball */}
+      <circle cx="15" cy="12" r="5" />
+      {/* Stitching */}
+      <path d="M11 10.5 Q 15 12, 11 13.5" strokeDasharray="1 1.5" strokeWidth="1.2" />
+      {/* Motion-Lines links vom Ball */}
+      <path d="M2 9h5" />
+      <path d="M3 12h4" />
+      <path d="M2 15h5" />
+    </svg>
+  )
+}
+
+/** Home-Plate mit Flagge — feiert Runner-scort. */
+export function HomePlateFlagIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Home-Plate-Umriss (5-Eck) */}
+      <path d="M5 6h10l4 5-4 5H5V6z" fill="currentColor" fillOpacity="0.15" />
+      {/* Flagge rechts */}
+      <path d="M15 4v16" />
+      <path d="M15 4c2 0 4 .5 6 2-2 1.5-4 2-6 2" fill="currentColor" fillOpacity="0.5" />
+    </svg>
+  )
+}
