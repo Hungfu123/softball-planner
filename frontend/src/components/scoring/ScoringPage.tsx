@@ -175,14 +175,24 @@ export function ScoringPage() {
           try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
         }
       }
-      else if (runsScored > 0) toast.show(`${runsScored} Run${runsScored > 1 ? 's' : ''} gescort!`, 'success')
+      // Toasts + Sheet-Trigger abhängig vom Result
+      const hadRunners = (scoreboard.runners?.length ?? 0) > 0
+      const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
 
-      // Auto-Open Runner-Sheet nach OUT wenn Runner auf Base waren.
-      // Intention: User wird gefragt ob Runner weitergelaufen sind (Sacrifice Fly,
-      // Fielder's Choice, Grounder-Advancement). Verhindert Missklassifizierung
-      // als Steal/CaughtStealing.
-      if (result === 'OUT' && (scoreboard.runners?.length ?? 0) > 0) {
+      if (result === 'OUT' && hadRunners) {
+        // Auto-Open nach OUT: meist muss User entscheiden (Sac Fly, DP, Advancement)
         setShowCorrection(true)
+      } else if (isHit && hadRunners) {
+        // Nach Hit mit Runnern: Toast mit Anpassen-Action (non-blocking).
+        // Default-Advance stimmt meist, User kann tippen wenn Runner ausgelaufen
+        // oder extra Base genommen hat.
+        const runsMsg = runsScored > 0 ? ` · ${runsScored} Run${runsScored > 1 ? 's' : ''}` : ''
+        toast.show(`${result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : 'Triple'}${runsMsg} — Runner anders?`, 'success', {
+          duration: 6000,
+          action: { label: 'Anpassen', onClick: () => setShowCorrection(true) },
+        })
+      } else if (runsScored > 0) {
+        toast.show(`${runsScored} Run${runsScored > 1 ? 's' : ''} gescort!`, 'success')
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -252,6 +262,50 @@ export function ScoringPage() {
     try {
       await undo()
       toast.show('Letzte Aktion rückgängig gemacht', 'success')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  /**
+   * Overthrow / Dead Ball / Wild Throw: alle Runner rücken eine Base weiter.
+   * 3B → Home (scort), 2B → 3B, 1B → 2B. Direkt angewendet ohne Zwischensheet —
+   * es gibt keine Varianten bei einem Overthrow.
+   * Backend: letztes AtBat wird aktualisiert mit neuem BaseState + erhöhten Runs.
+   */
+  const handleOverthrow = async () => {
+    if (!currentGame || atBats.length === 0) return
+    const lastAtBat = atBats[atBats.length - 1]
+    // Runner +1 berechnen
+    const current = displayBaseState
+    let extraRuns = 0
+    const next: BaseStateDto = { first: null, second: null, third: null }
+    if (current.third != null) extraRuns += 1 // 3B → Home
+    if (current.second != null) next.third = current.second // 2B → 3B
+    if (current.first != null) next.second = current.first // 1B → 2B
+
+    if (extraRuns === 0 && next.second == null && next.third == null) {
+      toast.show('Keine Runner zum Verschieben', 'error')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const newRuns = Math.max(0, (lastAtBat.runsScored ?? 0) + extraRuns)
+      await api.updateLastBaseState(currentGame.id, {
+        first: next.first,
+        second: next.second,
+        third: next.third,
+        runsScored: newRuns,
+        rbi: lastAtBat.rbi ?? 0, // RBI bleibt unverändert — Overthrow gibt keine RBI an Batter
+      })
+      await reload()
+      const parts = []
+      if (extraRuns > 0) parts.push(`${extraRuns} Run${extraRuns > 1 ? 's' : ''}`)
+      const advanced = (current.first != null ? 1 : 0) + (current.second != null ? 1 : 0) + (current.third != null ? 1 : 0)
+      toast.show(`⚡ Overthrow · ${advanced} Runner +1 ${extraRuns > 0 ? `· ${parts.join(' · ')}` : ''}`, 'success')
     } catch (e) {
       toast.show((e as Error).message, 'error')
     } finally {
@@ -571,8 +625,9 @@ export function ScoringPage() {
       <div className="px-3 pt-3 pb-2 bg-white border-t border-gray-200 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
         <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId || halfInningOver} />
 
-        {/* Undo + Korrektur - kompakter */}
-        <div className="grid grid-cols-2 gap-2 mt-2">
+        {/* Undo + Korrektur + Overthrow (bei Runnern). Overthrow nur sichtbar
+            wenn mind. 1 Runner auf Base — sonst irrelevant. */}
+        <div className={`grid gap-2 mt-2 ${displayRunners.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <button
             onClick={handleUndo}
             disabled={atBats.length === 0 || submitting}
@@ -587,6 +642,16 @@ export function ScoringPage() {
           >
             ⚙ Korrigieren
           </button>
+          {displayRunners.length > 0 && (
+            <button
+              onClick={handleOverthrow}
+              disabled={submitting || atBats.length === 0}
+              className="h-10 rounded-lg border border-navy-300 text-navy-700 bg-white hover:bg-navy-50 hover:border-navy-500 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+              title="Dead Ball / Overthrow: alle Runner rücken eine Base weiter"
+            >
+              ⚡ Overthrow
+            </button>
+          )}
         </div>
       </div>
 
@@ -765,14 +830,19 @@ export function ScoringPage() {
               }}
               exit={{ scale: 0.5, opacity: 0, rotate: 90 }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
-              className="text-center"
+              className="text-center flex flex-col items-center gap-2"
             >
               <div className="text-8xl sm:text-9xl drop-shadow-xl">💥</div>
-              <div className="text-3xl sm:text-5xl font-black text-white drop-shadow-2xl mt-2 -rotate-3">
-                AUA!
+              {/* Text in rotem Pill — bleibt lesbar auch wenn Flash-BG wegfadet */}
+              <div className="bg-softball-red-600 rounded-2xl px-5 py-2 shadow-2xl -rotate-3 border-2 border-white/40">
+                <div className="text-3xl sm:text-5xl font-black text-white">
+                  AUA!
+                </div>
               </div>
-              <div className="text-sm sm:text-lg font-bold text-white/90 mt-1">
-                Hit-by-Pitch — {hbpFlash}
+              <div className="bg-navy-900 rounded-lg px-4 py-1.5 shadow-lg">
+                <div className="text-sm sm:text-lg font-bold text-white">
+                  Hit-by-Pitch — {hbpFlash}
+                </div>
               </div>
             </motion.div>
             {/* Schmerz-Sterne ✨ */}

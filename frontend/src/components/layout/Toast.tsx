@@ -5,7 +5,9 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2">
+    // Mobile: bottom-24 (96px) damit Toast nicht die sticky Scoring-ActionBar überdeckt.
+    // Desktop: bottom-4 wie vorher.
+    <div className="fixed bottom-24 sm:bottom-4 right-4 left-4 sm:left-auto sm:w-96 z-50 flex flex-col gap-2">
       {toasts.map(t => (
         <div
           key={t.id}
@@ -20,13 +22,13 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
           {t.action && (
             <button
               onClick={async () => { await t.action!.onClick(); onDismiss(t.id) }}
-              className="px-2 py-1 text-xs font-bold bg-white/20 rounded hover:bg-white/30 transition-colors cursor-pointer whitespace-nowrap"
+              className="min-h-[36px] px-3 py-1.5 text-sm font-bold bg-white/25 rounded-md hover:bg-white/40 transition-colors cursor-pointer whitespace-nowrap active:scale-95"
             >
               {t.action.label}
             </button>
           )}
-          <button onClick={() => onDismiss(t.id)} className="p-0.5 hover:opacity-70">
-            <XMark size={14} />
+          <button onClick={() => onDismiss(t.id)} className="p-1.5 hover:opacity-70" aria-label="Schließen">
+            <XMark size={16} />
           </button>
         </div>
       ))}
