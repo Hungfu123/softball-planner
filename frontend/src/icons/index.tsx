@@ -268,6 +268,46 @@ export function TrophyIcon({ size = 20, className }: IconProps) {
   )
 }
 
+/** Clipboard/Lineup-Icon — Batting-Order-Liste. */
+export function ClipboardListIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Clipboard-Körper */}
+      <rect x="5" y="5" width="14" height="16" rx="2" />
+      {/* Clip oben */}
+      <rect x="9" y="3" width="6" height="4" rx="1" fill="currentColor" />
+      {/* Listen-Zeilen */}
+      <line x1="9" y1="12" x2="15" y2="12" />
+      <line x1="9" y1="16" x2="15" y2="16" />
+    </svg>
+  )
+}
+
+/** Zwei-Richtungs-Pfeile — für Spielerwechsel/Substitution. */
+export function SubstitutionIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Pfeil nach rechts (oben) */}
+      <path d="M4 7h14" />
+      <path d="M14 3l4 4-4 4" />
+      {/* Pfeil nach links (unten) */}
+      <path d="M20 17H6" />
+      <path d="M10 21l-4-4 4-4" />
+    </svg>
+  )
+}
+
+/** Blitz/Lightning — für Overthrow (Dead-Ball-Advance). */
+export function BoltIcon({ size = 20, className }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
+    </svg>
+  )
+}
+
 /** Trauriger Smiley — für Strikeout (Batter ist geknickt). */
 export function SadFaceIcon({ size = 20, className }: IconProps) {
   return (

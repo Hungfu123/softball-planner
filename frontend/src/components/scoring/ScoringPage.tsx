@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
-import { ChevronLeft, FootstepsIcon, StrikeoutIcon, TrophyIcon, SadFaceIcon, Pencil } from '@/icons'
+import { ChevronLeft, FootstepsIcon, StrikeoutIcon, TrophyIcon, SadFaceIcon, Pencil, ClipboardListIcon, SubstitutionIcon, BoltIcon } from '@/icons'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -708,10 +708,11 @@ export function ScoringPage() {
               <span className="text-xs text-gray-500 whitespace-nowrap">⚾ am Schlag</span>
               <button
                 onClick={() => setShowLineupSheet(true)}
-                className="ml-auto text-[11px] text-navy-700 hover:text-navy-900 font-medium px-2 py-0.5 rounded-full border border-gray-200 hover:border-navy-400 cursor-pointer whitespace-nowrap"
+                className="ml-auto text-[11px] text-navy-700 hover:text-navy-900 font-medium px-2 py-0.5 rounded-full border border-gray-200 hover:border-navy-400 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
                 title="Kompletten Batting-Order anzeigen"
               >
-                📋 Lineup
+                <ClipboardListIcon size={12} />
+                Lineup
               </button>
             </div>
             {/* On-Deck Preview: nächste 3 Batters */}
@@ -773,7 +774,8 @@ export function ScoringPage() {
               className="h-10 rounded-lg border border-navy-300 text-navy-700 bg-white hover:bg-navy-50 hover:border-navy-500 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
               title="Dead Ball / Overthrow: alle Runner rücken eine Base weiter"
             >
-              ⚡ Overthrow
+              <BoltIcon size={14} />
+              Overthrow
             </button>
           )}
         </div>
@@ -895,9 +897,10 @@ export function ScoringPage() {
               <div className="grid grid-cols-2 gap-2 mt-4">
                 <button
                   onClick={() => { setShowLineupSheet(false); setShowSubSheet(true) }}
-                  className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold text-sm cursor-pointer"
+                  className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold text-sm cursor-pointer inline-flex items-center justify-center gap-2"
                 >
-                  🔄 Wechseln
+                  <SubstitutionIcon size={16} />
+                  Wechseln
                 </button>
                 <button
                   onClick={() => setShowLineupSheet(false)}
@@ -1184,7 +1187,7 @@ export function ScoringPage() {
             className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
             <div className="bg-navy-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
-              <span className="text-2xl">⚡</span>
+              <BoltIcon size={28} className="text-white" />
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Overthrow</div>
                 <div className="text-base font-bold">{overthrowFlash}</div>
