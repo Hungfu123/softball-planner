@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -72,6 +73,28 @@ public class GameService {
 
         game.setScoreUs(scoreUs);
         game.setScoreThem(scoreThem);
+        return gameRepository.save(game);
+    }
+
+    @Transactional
+    public Game endGame(final Long gameId) {
+        final Game game = findById(gameId);
+        if (game.getEndedAt() != null) {
+            return game;
+        }
+        game.setEndedAt(Instant.now());
+        log.info("Spiel {} beendet", gameId);
+        return gameRepository.save(game);
+    }
+
+    @Transactional
+    public Game reopenGame(final Long gameId) {
+        final Game game = findById(gameId);
+        if (game.getEndedAt() == null) {
+            return game;
+        }
+        game.setEndedAt(null);
+        log.info("Spiel {} wieder geoeffnet", gameId);
         return gameRepository.save(game);
     }
 

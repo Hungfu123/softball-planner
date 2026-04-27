@@ -34,6 +34,15 @@ function groupSections(sections: TrainingPlanSectionResponse[]): GroupedBlock[] 
   return result
 }
 
+// Focus-Code (z.B. "INFIELD_DEFENSE") → readable ("Infield Defense")
+function formatFocus(focus: string): string {
+  return focus
+    .toLowerCase()
+    .split(/[_\s]+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
 // Phasen: Aufwärmen → Drills/Stationen → Batting → Spiel
 type Phase = { id: string; label: string; minutes: number; blocks: GroupedBlock[] }
 
@@ -132,13 +141,13 @@ function buildShareText(drills: DrillResponse[], grouped: GroupedBlock[], traini
 function PhaseHeader({ phase, startMinute }: { phase: Phase; startMinute: number }) {
   const blockCount = phase.blocks.length
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-1 h-5 rounded-full bg-softball-red-500 flex-shrink-0" />
-      <span className="text-sm font-bold uppercase tracking-wider text-navy-800">{phase.label}</span>
-      {phase.id === 'STATION' && blockCount > 1 && <span className="text-xs text-gray-400">· {blockCount} Runden</span>}
-      <span className="text-xs text-gray-400 font-medium">{phase.minutes} min</span>
-      <div className="flex-1 border-t border-gray-200" />
-      <span className="text-[11px] text-gray-400">ab Min. {startMinute}</span>
+    <div className="flex items-center gap-3 pb-1.5 border-b border-cream-200">
+      <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
+      <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">{phase.label}</span>
+      {phase.id === 'STATION' && blockCount > 1 && <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">· {blockCount} Runden</span>}
+      <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">{phase.minutes} min</span>
+      <div className="flex-1" />
+      <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">ab Min. {startMinute}</span>
     </div>
   )
 }
@@ -149,7 +158,7 @@ function CompactWarmup({ block, drills }: { block: GroupedBlock; drills: DrillRe
   const section = block.sections[0]
   const drill = section.drillId ? drills.find(d => d.id === section.drillId) : null
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center justify-between gap-3">
+    <div className="bg-cream-50 rounded-xl border border-cream-300 px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
         <span className="text-sm font-medium text-gray-900 truncate">{section.title}</span>
         <span className="text-xs text-gray-400">{section.durationMinutes} min</span>
@@ -171,7 +180,7 @@ function CompactWarmup({ block, drills }: { block: GroupedBlock; drills: DrillRe
 function CompactBreak({ block }: { block: GroupedBlock }) {
   const section = block.sections[0]
   return (
-    <div className="bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
+    <div className="bg-cream-100 rounded-xl border border-cream-300 px-4 py-3">
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium text-gray-600">Pause</span>
         <span className="text-xs text-gray-400">{section.durationMinutes} min</span>
@@ -194,7 +203,7 @@ function StationBlock({ block, drills, playerCount }: { block: GroupedBlock; dri
   const groupSizeText = minPerGroup === maxPerGroup ? `${minPerGroup}` : `${minPerGroup}-${maxPerGroup}`
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 plan-section">
+    <div className="bg-cream-50 rounded-xl border border-cream-300 p-4 plan-section">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium text-gray-500">{numStations} Drills · Gruppen rotieren</span>
         <span className="text-[11px] text-gray-400">{duration} min · {perStation} min/Drill · {groupSizeText}/Gruppe</span>
@@ -204,7 +213,7 @@ function StationBlock({ block, drills, playerCount }: { block: GroupedBlock; dri
         {block.sections.map((section, si) => {
           const drill = section.drillId ? drills.find(d => d.id === section.drillId) : null
           return (
-            <div key={si} className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+            <div key={si} className="bg-cream-100 rounded-lg p-3 border border-cream-200">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">Gruppe {String.fromCharCode(65 + si)}</span>
                 {drill?.pdfPage && (
@@ -247,7 +256,7 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
 
         {/* === Mobile: Focus + Actions oben === */}
         <div className="lg:hidden">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-cream-50 rounded-xl border border-cream-300 p-4">
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Schwerpunkt</p>
             <h3 className="text-base font-bold text-gray-900">{plan.focus}</h3>
             <div className="flex items-center justify-between mt-2">
@@ -256,10 +265,10 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
                 <span>{plan.durationMinutes} min</span>
               </div>
               <div className="flex gap-1.5 no-print">
-                <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 cursor-pointer" title="Anpassen">
+                <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 border border-cream-300 rounded-lg text-xs font-medium text-gray-600 cursor-pointer" title="Anpassen">
                   <Pencil size={14} /> Anpassen
                 </button>
-                <button onClick={onDelete} className="flex items-center px-2 py-1.5 border border-gray-200 rounded-lg text-gray-400 cursor-pointer" title="Löschen">
+                <button onClick={onDelete} className="flex items-center px-2 py-1.5 border border-cream-300 rounded-lg text-gray-400 cursor-pointer" title="Löschen">
                   <TrashBin size={14} />
                 </button>
               </div>
@@ -319,37 +328,39 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
           <div className="lg:sticky lg:top-20 space-y-3">
 
             {/* Focus + Actions */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Schwerpunkt</p>
-              <h3 className="text-lg font-bold text-gray-900">{plan.focus}</h3>
-              <div className="flex gap-3 mt-1 text-xs text-gray-400">
+            <div className="bg-cream-50 rounded-xl border border-cream-300 p-4">
+              <p className="font-display text-[10px] text-gray-500 uppercase tracking-widest font-bold">Schwerpunkt</p>
+              <h3 className="font-display text-lg font-extrabold text-navy-900 tracking-wide">{formatFocus(plan.focus)}</h3>
+              <div className="font-display flex gap-3 mt-1 text-[11px] text-gray-500 tracking-wide font-bold">
                 <span>{plan.playerCount} Spieler</span>
+                <span>·</span>
                 <span>{plan.durationMinutes} min</span>
               </div>
               {totalMinutes > 0 && totalMinutes !== plan.durationMinutes && (
-                <p className="text-xs text-navy-600 mt-1">{totalMinutes} min verplant</p>
+                <p className="font-display text-[10px] text-softball-red-700 mt-1 tracking-widest uppercase font-bold">{totalMinutes} min verplant</p>
               )}
 
               {/* Action buttons */}
-              <div className="flex gap-1.5 mt-3 pt-3 border-t border-gray-100 no-print">
+              <div className="flex gap-1.5 mt-3 pt-3 border-t border-cream-200 no-print">
                 <button
                   onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-800 text-white rounded-lg text-xs font-medium hover:bg-navy-700 transition-colors cursor-pointer"
+                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 transition-colors cursor-pointer"
                   title="Drill-Handbuch öffnen"
                 >
                   <ExportDoc size={14} /> Handbuch
                 </button>
                 <button
                   onClick={onEdit}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
+                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-cream-300 rounded-lg text-[11px] font-bold tracking-widest uppercase text-gray-700 hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
                   title="Anpassen"
                 >
                   <Pencil size={14} /> Anpassen
                 </button>
                 <button
                   onClick={onDelete}
-                  className="flex items-center justify-center px-3 py-2 border border-gray-200 rounded-lg text-gray-400 hover:text-softball-red-600 hover:border-softball-red-600 transition-colors cursor-pointer"
+                  className="flex items-center justify-center px-3 py-2 border border-cream-300 rounded-lg text-gray-400 hover:text-softball-red-600 hover:border-softball-red-400 transition-colors cursor-pointer"
                   title="Löschen"
+                  aria-label="Löschen"
                 >
                   <TrashBin size={14} />
                 </button>
@@ -357,16 +368,16 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
             </div>
 
             {/* Überblick — WhatsApp-ready + Copy */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 no-print">
-              <div className="flex items-center justify-between mb-1">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Überblick</h4>
+            <div className="bg-cream-50 rounded-xl border border-cream-300 p-4 no-print">
+              <div className="flex items-center justify-between mb-1 pb-1.5 border-b border-cream-200">
+                <h4 className="font-display text-[12px] font-extrabold tracking-widest uppercase text-navy-900">Überblick</h4>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(generatedText)
                     setCopied(true)
                     setTimeout(() => setCopied(false), 2000)
                   }}
-                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-navy-600 border border-navy-200 rounded hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
+                  className="font-display flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-navy-700 border border-cream-300 rounded hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
                 >
                   <ClipboardIcon size={12} /> {copied ? 'Kopiert!' : 'Kopieren'}
                 </button>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Trophy, ChevronDown, ChevronUp, Info, Zap } from 'lucide-react'
 import type { PlayerBattingStatsResponse } from '@/types'
 
 interface Props {
@@ -21,7 +22,7 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
 
   if (stats.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-500">
+      <div className="bg-cream-50 border border-cream-300 rounded-xl p-12 text-center text-gray-500">
         <p className="mb-2">Noch keine Schlag-Daten in diesem Zeitraum.</p>
         <p className="text-xs">Scort ein paar At-Bats in einem Spiel um Stats zu sehen.</p>
       </div>
@@ -34,51 +35,46 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
       <div className="flex items-center flex-wrap gap-2">
         <button
           onClick={() => setShowDetails(x => !x)}
-          className="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer"
+          className="font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
         >
-          {showDetails ? '▲ Weniger' : '▼ Mehr Details (OBP, SLG, OPS)'}
+          {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          {showDetails ? 'Weniger' : 'Mehr Details (OBP, SLG, OPS)'}
         </button>
         {onOpenGlossary && (
           <button
             onClick={onOpenGlossary}
-            className="px-3 py-1.5 text-xs font-medium rounded-full bg-navy-100 text-navy-700 hover:bg-navy-200 cursor-pointer inline-flex items-center gap-1"
+            className="font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-navy-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
           >
-            <span className="inline-flex w-4 h-4 items-center justify-center rounded-full bg-navy-600 text-white text-[10px] font-bold">i</span>
+            <Info size={12} />
             Abkürzungen
           </button>
         )}
       </div>
 
       {/* Table — 60/30/10: White 60% / Navy 30% / Softball-Red 10% */}
-      <div className="bg-white rounded-xl overflow-hidden">
+      <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-navy-900 text-white">
-                <th className="text-left px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">#</th>
-                <th className="text-left px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">Spieler</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">Schlag</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">Treffer</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider cursor-help" onClick={onOpenGlossary} title="Batting Average (AVG) — Softball-Standard z.B. .333">
-                  AVG <span className="text-[9px] text-white/60">ⓘ</span>
+                <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">#</th>
+                <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Spieler</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Schlag</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Treffer</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Batting Average (AVG)">
+                  AVG
                 </th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">Quote</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">Walks</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">K</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">HR</th>
-                <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">SB</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Quote</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Walks</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">K</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">HR</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">SB</th>
                 {showDetails && (
                   <>
-                    <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider">Hits 1/2/3/HR</th>
-                    <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider cursor-help" onClick={onOpenGlossary} title="Auf-Base-Quote (OBP)">
-                      OBP <span className="text-[9px] text-white/60">ⓘ</span>
-                    </th>
-                    <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider cursor-help" onClick={onOpenGlossary} title="Schlagstärke (SLG)">
-                      SLG <span className="text-[9px] text-white/60">ⓘ</span>
-                    </th>
-                    <th className="text-right px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider cursor-help" onClick={onOpenGlossary} title="OBP + SLG = Gesamtstärke">
-                      OPS <span className="text-[9px] text-white/60">ⓘ</span>
-                    </th>
+                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Hits 1/2/3/HR</th>
+                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Auf-Base-Quote (OBP)">OBP</th>
+                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Schlagstärke (SLG)">SLG</th>
+                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="OBP + SLG = Gesamtstärke">OPS</th>
                   </>
                 )}
               </tr>
@@ -92,26 +88,26 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                 return (
                   <tr
                     key={s.playerId}
-                    className={`border-b border-gray-100 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
-                      idx % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'
+                    className={`border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
+                      idx % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'
                     }`}
                   >
                     {/* Rang — Top-1 in Softball-Red (10% Accent) */}
-                    <td className={`px-3 py-2 text-left tabular-nums font-bold ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
-                      {isTop ? '🏆' : idx + 1}
+                    <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
+                      {isTop ? <Trophy size={16} className="text-softball-red-600" /> : idx + 1}
                     </td>
                     {/* Spieler — Navy für Hierarchie */}
-                    <td className="px-3 py-2 font-semibold text-navy-900 whitespace-nowrap">{s.playerName}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-gray-700">{s.atBats}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-gray-700">{s.hits}</td>
+                    <td className="px-3 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide">{s.playerName}</td>
+                    <td className="px-3 py-2 text-right font-display tabular-nums text-gray-700">{s.atBats}</td>
+                    <td className="px-3 py-2 text-right font-display tabular-nums text-gray-700">{s.hits}</td>
                     {/* AVG — Headline-Metrik prominent in Navy */}
-                    <td className="px-3 py-2 text-right tabular-nums font-bold text-navy-900 text-base">
+                    <td className="px-3 py-2 text-right font-display tabular-nums font-extrabold text-navy-900 text-base">
                       {formatDec(Number(s.battingAverage))}
                     </td>
                     {/* Quote mit Balken — Softball-Red (10% Accent) */}
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <div className="w-12 sm:w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="w-12 sm:w-16 h-1.5 bg-cream-200 rounded-full overflow-hidden">
                           <div className="h-full bg-softball-red-600 rounded-full" style={{ width: `${barWidth}%` }} />
                         </div>
                         <span className="font-semibold text-navy-900 w-10 text-right tabular-nums text-xs">
@@ -119,15 +115,17 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                         </span>
                       </div>
                     </td>
-                    <td className={`px-3 py-2 text-right tabular-nums ${dimZero(s.walks)}`}>{s.walks}</td>
-                    <td className={`px-3 py-2 text-right tabular-nums ${dimZero(s.strikeouts)}`}>{s.strikeouts}</td>
+                    <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.walks)}`}>{s.walks}</td>
+                    <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.strikeouts)}`}>{s.strikeouts}</td>
                     {/* HR — wenn > 0, Softball-Red Akzent */}
-                    <td className={`px-3 py-2 text-right tabular-nums font-semibold ${
+                    <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${
                       s.homeRuns > 0 ? 'text-softball-red-600' : 'text-gray-300'
                     }`}>
-                      {s.homeRuns > 0 ? `${s.homeRuns} ⚡` : '0'}
+                      {s.homeRuns > 0 ? (
+                        <span className="inline-flex items-center gap-0.5">{s.homeRuns} <Zap size={11} /></span>
+                      ) : '0'}
                     </td>
-                    <td className={`px-3 py-2 text-right tabular-nums ${dimZero(s.stolenBases)}`}>{s.stolenBases}</td>
+                    <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.stolenBases)}`}>{s.stolenBases}</td>
                     {showDetails && (
                       <>
                         <td className="px-3 py-2 text-right tabular-nums text-gray-600 text-xs" title="Single / Double / Triple / HR">

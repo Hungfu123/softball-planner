@@ -51,11 +51,11 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col"
+        className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
           <h2 className="text-lg font-bold text-gray-900">Drill hinzufügen</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
@@ -63,13 +63,13 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
         </div>
 
         {/* Filters */}
-        <div className="px-4 py-3 space-y-2 border-b border-gray-100">
+        <div className="px-4 py-3 space-y-2 border-b border-cream-200">
           <input
             type="text"
             placeholder="Drill suchen…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+            className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             autoFocus
           />
           {focusCategories && focusCategories.length > 0 && (
@@ -81,7 +81,7 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
             <button
               onClick={() => setFilter(null)}
               className={`px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors ${
-                !filter ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                !filter ? 'bg-navy-800 text-white' : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
               }`}
             >
               Alle
@@ -97,7 +97,7 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
                       ? 'bg-navy-800 text-white'
                       : isFocus
                         ? 'bg-navy-100 text-navy-700 ring-1 ring-navy-300'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
                   }`}
                 >
                   {CATEGORY_LABELS[cat] ?? cat}
@@ -113,7 +113,7 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
             <p className="text-center text-sm text-gray-400 py-8">Keine Drills gefunden</p>
           ) : (
             filtered.map(drill => (
-              <div key={drill.id} className="flex items-center border-b border-gray-50">
+              <div key={drill.id} className="flex items-center border-b border-cream-200">
                 <button
                   onClick={() => onSelect(drill)}
                   className="flex-1 text-left px-4 py-3 hover:bg-navy-50 transition-colors cursor-pointer"
@@ -124,7 +124,7 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
                   </div>
                   <div className="flex gap-1 mt-1">
                     {drill.categories.map(cat => (
-                      <span key={cat} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                      <span key={cat} className="text-xs bg-cream-200 text-gray-500 px-1.5 py-0.5 rounded">
                         {CATEGORY_LABELS[cat] ?? cat}
                       </span>
                     ))}
@@ -133,7 +133,7 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
                 {drill.pdfPage && (
                   <button
                     onClick={(e) => { e.stopPropagation(); window.open(`/drills.pdf?t=${Date.now()}#page=${drill.pdfPage}`, 'drill-handbuch') }}
-                    className="self-stretch flex items-center px-3 text-xs text-navy-600 hover:bg-navy-50 hover:underline transition-colors cursor-pointer flex-shrink-0 border-l border-gray-100"
+                    className="self-stretch flex items-center px-3 text-xs text-navy-600 hover:bg-navy-50 hover:underline transition-colors cursor-pointer flex-shrink-0 border-l border-cream-200"
                     title="Im Handbuch nachschlagen"
                   >
                     S.{drill.pdfPage} ↗

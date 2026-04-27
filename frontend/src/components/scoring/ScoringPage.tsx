@@ -4,7 +4,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
-import { ChevronLeft, FootstepsIcon, StrikeoutIcon, TrophyIcon, SadFaceIcon, Pencil, ClipboardListIcon, SubstitutionIcon, BoltIcon } from '@/icons'
+import { ChevronLeft, ClipboardListIcon, SubstitutionIcon, BoltIcon } from '@/icons'
+import { Flag, RotateCcw, Undo2, Settings, Zap, X as XIcon } from 'lucide-react'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -64,7 +65,11 @@ export function ScoringPage() {
   useEffect(() => {
     if (gameDayId == null) return
     api.getGameDay(gameDayId)
-      .then(setGameDay)
+      .then(gd => {
+        setGameDay(gd)
+        // Saison-Kontext persistieren — wenn User Logo→Dashboard klickt, bleibt richtige Saison aktiv
+        if (gd?.seasonId) localStorage.setItem('dashboard-season-id', String(gd.seasonId))
+      })
       .catch((e: Error) => toast.show(e.message, 'error'))
       .finally(() => setLoading(false))
   }, [gameDayId, toast])
@@ -437,7 +442,7 @@ export function ScoringPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-48 h-1.5 bg-cream-300 rounded-full overflow-hidden">
           <div className="h-full w-1/3 bg-navy-800 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" />
         </div>
       </div>
@@ -464,6 +469,8 @@ export function ScoringPage() {
     setShowResetConfirm(false)
     try {
       await api.resetScoring(currentGame.id)
+      // Falls Backend `endedAt` gesetzt ist, auch reopen — sonst bleibt Game als FERTIG markiert
+      try { await api.reopenGame(currentGame.id) } catch { /* ignore: vor Backend-Deploy */ }
       setInningOverride(null)
       setExtraOuts(0)
       setManualGameOver(false)
@@ -482,16 +489,26 @@ export function ScoringPage() {
   return (
     <div className="min-h-dvh bg-cream-100 flex flex-col">
       {/* Header */}
-      <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md border-b-[3px] border-softball-red-600">
+      <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md">
         <div className="px-4 h-14 flex items-center justify-between gap-2">
-          <button
-            onClick={() => navigate(`/gameday/${gameDayId}`)}
-            className="p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1 shrink-0"
-            aria-label="Zurück"
-          >
-            <ChevronLeft size={24} />
-            <span className="text-sm font-medium hidden sm:inline">Zurück</span>
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <Link
+              to="/"
+              className="p-1 hover:bg-navy-700 rounded-lg flex items-center"
+              aria-label="Zur Startseite"
+              title="Zur Startseite"
+            >
+              <img src="/deadsox.jpeg" alt="Dead Sox" className="w-7 h-7 rounded" />
+            </Link>
+            <button
+              onClick={() => navigate(`/gameday/${gameDayId}`)}
+              className="p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1"
+              aria-label="Zurück zum Spieltag"
+              title="Zurück zum Spieltag"
+            >
+              <ChevronLeft size={22} />
+            </button>
+          </div>
           <div className="font-display text-sm font-bold tracking-wider uppercase truncate flex-1 text-center min-w-0">
             <span className="hidden sm:inline">Dead Sox </span>
             <span className="text-white/60">vs.</span> {opponentName}
@@ -500,118 +517,118 @@ export function ScoringPage() {
             <button
               onClick={() => setShowEndGameConfirm(true)}
               disabled={atBats.length === 0 || gameOver}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title="Spiel beenden und Stats zeigen"
+              aria-label="Spiel beenden"
             >
-              🏁 Beenden
+              <Flag size={14} /> Beenden
             </button>
             <button
               onClick={() => setShowResetConfirm(true)}
               disabled={atBats.length === 0}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title="Scoring zurücksetzen"
+              aria-label="Scoring zurücksetzen"
             >
-              ↺ Reset
+              <RotateCcw size={14} /> Reset
             </button>
           </div>
         </div>
       </header>
 
-      {/* Scoreboard Strip - kompakt */}
-      <div className="bg-cream-50 border-b border-cream-300 px-4 py-2">
-        <div className="flex items-center justify-between gap-3">
-          {/* Scores — beide tappbar + editierbar */}
-          <div className="flex items-baseline gap-1.5">
-            <div className="flex flex-col items-center">
-              <span className="font-display text-[10px] text-gray-500 uppercase font-bold tracking-widest -mb-0.5">Wir</span>
-              {editingScoreUs ? (
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={scoreUsInput}
-                  onChange={e => setScoreUsInput(e.target.value)}
-                  onBlur={saveScoreUs}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') saveScoreUs()
-                    if (e.key === 'Escape') setEditingScoreUs(false)
-                  }}
-                  className="font-display w-14 text-3xl sm:text-4xl font-black text-softball-red-600 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => {
-                    setScoreUsInput(String(scoreUs ?? 0))
-                    setEditingScoreUs(true)
-                  }}
-                  className="font-display text-3xl sm:text-4xl font-black text-softball-red-600 tabular-nums cursor-pointer hover:text-softball-red-700 transition-colors px-1 leading-none"
-                  title="Unseren Score tippen um zu editieren"
-                >
-                  {scoreUs}
-                </button>
-              )}
-            </div>
-            <span className="font-display text-2xl text-gray-300">—</span>
-            <div className="flex flex-col items-center">
-              <span className="font-display text-[10px] text-gray-500 uppercase font-bold tracking-widest -mb-0.5">Sie</span>
-              {editingScoreThem ? (
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={scoreThemInput}
-                  onChange={e => setScoreThemInput(e.target.value)}
-                  onBlur={saveScoreThem}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') saveScoreThem()
-                    if (e.key === 'Escape') setEditingScoreThem(false)
-                  }}
-                  className="font-display w-14 text-3xl sm:text-4xl font-black text-navy-900 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => {
-                    setScoreThemInput(String(scoreThem ?? 0))
-                    setEditingScoreThem(true)
-                  }}
-                  className="font-display text-3xl sm:text-4xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors px-1 leading-none"
-                  title="Gegner-Score tippen um zu editieren"
-                >
-                  {scoreThem ?? 0}
-                </button>
-              )}
-            </div>
-            <span className="ml-1 text-[10px] text-gray-400 font-medium hidden sm:inline">✎ tap zum edit</span>
-          </div>
-
-          {/* Inning + Outs */}
-          <div className="text-right">
-            <div className="flex items-center justify-end gap-1.5 text-xs sm:text-sm font-semibold text-gray-700">
-              <span>{displayInning}. Inning</span>
-              {battingSide && (
-                <button
-                  onClick={() => setShowSidePrompt(true)}
-                  className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 border border-gray-300 rounded-full text-gray-600 hover:border-navy-600 hover:bg-navy-50 hover:text-navy-800 cursor-pointer transition-colors"
-                  title="Seite ändern (Oben/Unten)"
-                >
-                  <span>{battingSide === 'top' ? '↑ Oben' : '↓ Unten'}</span>
-                  <Pencil size={10} />
-                </button>
-              )}
-            </div>
+      {/* Live-State-Strip — Navy, direkt unter Header (1 Navy-Block oben) */}
+      <div className="bg-navy-900 text-white px-4 py-2 flex items-center justify-between border-b-[3px] border-softball-red-600">
+        <div className="flex items-center gap-2.5">
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/55">Inning</span>
+          <span className="font-display text-2xl font-extrabold leading-none">{displayInning}</span>
+          {battingSide && (
             <button
-              onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
-              className="flex items-center justify-end gap-1 mt-0.5 cursor-pointer group"
-              title="Tap = +1 Out (Double Play). Bei 3 Aus: Reset."
+              onClick={() => setShowSidePrompt(true)}
+              className="font-display inline-flex items-center text-[10px] px-2 py-0.5 border border-white/20 rounded-full text-white/85 hover:bg-white/10 hover:text-white cursor-pointer transition-colors tracking-widest uppercase"
+              title="Seite ändern (Oben/Unten)"
+              aria-label="Seite (Oben/Unten) ändern"
             >
-              {[0, 1, 2].map(i => (
-                <span
-                  key={i}
-                  className={`w-2.5 h-2.5 rounded-full transition-colors ${i < totalOuts ? 'bg-softball-red-600' : 'bg-gray-200 group-hover:bg-gray-300'}`}
-                />
-              ))}
-              <span className="text-[10px] text-gray-500 ml-1 tabular-nums">{totalOuts} Aus</span>
+              {battingSide === 'top' ? '↑ Top' : '↓ Btm'}
             </button>
+          )}
+        </div>
+        <button
+          onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
+          className="flex items-center gap-2 cursor-pointer group"
+          title="Tap = +1 Out (Double Play). Bei 3 Aus: Reset."
+          aria-label="Outs +1"
+        >
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/55">Outs</span>
+          <span className="flex items-center gap-1.5">
+            {[0, 1, 2].map(i => (
+              <span
+                key={i}
+                className={`w-3 h-3 rounded-full transition-colors ${i < totalOuts
+                  ? 'bg-softball-red-500 shadow-[0_0_8px_rgba(230,57,70,0.6)]'
+                  : 'bg-white/15 border border-white/25'}`}
+              />
+            ))}
+          </span>
+        </button>
+      </div>
+
+      {/* Score-Band — Cream, kompakt + zentriert (Reference) — direkt nach Navy für klare Trennung */}
+      <div className="bg-cream-50 border-b border-cream-300 px-4 py-2.5">
+        <div className="flex items-center justify-center gap-3 sm:gap-4">
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-[11px] text-softball-red-700 uppercase font-bold tracking-widest">Wir</span>
+            {editingScoreUs ? (
+              <input
+                type="number"
+                inputMode="numeric"
+                value={scoreUsInput}
+                onChange={e => setScoreUsInput(e.target.value)}
+                onBlur={saveScoreUs}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') saveScoreUs()
+                  if (e.key === 'Escape') setEditingScoreUs(false)
+                }}
+                className="font-display w-16 text-4xl sm:text-5xl font-black text-softball-red-600 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => { setScoreUsInput(String(scoreUs ?? 0)); setEditingScoreUs(true) }}
+                className="font-display text-4xl sm:text-5xl font-black text-softball-red-600 tabular-nums cursor-pointer hover:text-softball-red-700 transition-colors leading-none"
+                title="Unseren Score tippen um zu editieren"
+                aria-label="Unseren Score editieren"
+              >
+                {scoreUs}
+              </button>
+            )}
+          </div>
+          <span className="font-display text-2xl text-gray-300">—</span>
+          <div className="flex items-baseline gap-2">
+            {editingScoreThem ? (
+              <input
+                type="number"
+                inputMode="numeric"
+                value={scoreThemInput}
+                onChange={e => setScoreThemInput(e.target.value)}
+                onBlur={saveScoreThem}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') saveScoreThem()
+                  if (e.key === 'Escape') setEditingScoreThem(false)
+                }}
+                className="font-display w-16 text-4xl sm:text-5xl font-black text-navy-900 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
+                autoFocus
+              />
+            ) : (
+              <button
+                onClick={() => { setScoreThemInput(String(scoreThem ?? 0)); setEditingScoreThem(true) }}
+                className="font-display text-4xl sm:text-5xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors leading-none"
+                title="Gegner-Score tippen um zu editieren"
+                aria-label="Gegner-Score editieren"
+              >
+                {scoreThem ?? 0}
+              </button>
+            )}
+            <span className="font-display text-[11px] text-gray-500 uppercase font-bold tracking-widest">Sie</span>
           </div>
         </div>
       </div>
@@ -702,10 +719,10 @@ export function ScoringPage() {
         </div>
       </div>
 
-      {/* Batter Card - prominent mit Pulse-Status + Lineup-Button */}
-      <div className="px-3 py-2 bg-cream-100">
+      {/* Batter Card - flach mit HR-Trenner statt Card-Frame */}
+      <div className="px-3 py-2 bg-cream-100 border-t border-cream-300">
         {scoreboard?.currentBatterId && !halfInningOver ? (
-          <div className="bg-cream-50 border border-cream-300 rounded-xl px-3 py-2.5 shadow-sm space-y-1.5">
+          <div className="px-1 py-1 space-y-1.5">
             <div className="flex items-center gap-2.5">
               <span className="font-display shrink-0 text-xl bg-navy-900 text-white font-extrabold tabular-nums w-10 h-10 rounded-lg flex items-center justify-center">
                 {scoreboard.currentBatterOrder ?? '?'}
@@ -722,11 +739,11 @@ export function ScoringPage() {
               </span>
               <button
                 onClick={() => setShowLineupSheet(true)}
-                className="font-display shrink-0 text-[10px] tracking-widest uppercase text-navy-900 bg-white hover:bg-navy-50 font-bold px-2.5 py-1.5 rounded-full border border-cream-300 hover:border-navy-500 cursor-pointer inline-flex items-center gap-1"
+                className="shrink-0 text-navy-700 hover:text-navy-900 p-1 cursor-pointer"
                 aria-label="Komplette Aufstellung anzeigen"
+                title="Komplette Aufstellung anzeigen"
               >
-                <ClipboardListIcon size={12} />
-                Lineup
+                <ClipboardListIcon size={20} />
               </button>
             </div>
             {/* On-Deck Preview: nächste 3 Batters */}
@@ -773,16 +790,16 @@ export function ScoringPage() {
           <button
             onClick={handleUndo}
             disabled={atBats.length === 0 || submitting}
-            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
-            ↶ Rückgängig
+            <Undo2 size={14} /> Rückgängig
           </button>
           <button
             onClick={() => setShowCorrection(true)}
             disabled={submitting}
-            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
           >
-            ⚙ Korrigieren
+            <Settings size={14} /> Korrigieren
           </button>
           {displayRunners.length > 0 && (
             <button
@@ -852,7 +869,7 @@ export function ScoringPage() {
       <Drawer.Root open={showLineupSheet} onOpenChange={(open) => !open && setShowLineupSheet(false)}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto focus:outline-none">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[80vh] overflow-y-auto focus:outline-none">
             <Drawer.Title className="sr-only">Batting-Order</Drawer.Title>
             <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
             <div className="px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
@@ -867,7 +884,7 @@ export function ScoringPage() {
                 )
                 const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard?.currentBatterId)
                 return (
-                  <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="divide-y divide-gray-100 border border-cream-300 rounded-xl overflow-hidden">
                     {sorted.map((e, i) => {
                       const p = effectivePlayerForEntry(e)
                       const wasSubbedIn = p.id !== (e.dhBatterPlayer?.id ?? e.player.id)
@@ -900,7 +917,13 @@ export function ScoringPage() {
                             <span className="text-[11px] font-mono text-gray-500">{e.position}</span>
                           )}
                           {isCurrent && (
-                            <span className="text-[10px] font-bold text-navy-700 uppercase tracking-wider">⚾ am Schlag</span>
+                            <span className="font-display text-[10px] font-bold text-softball-red-700 uppercase tracking-widest inline-flex items-center gap-1">
+                              <span className="relative flex w-1.5 h-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-softball-red-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-softball-red-500" />
+                              </span>
+                              am Schlag
+                            </span>
                           )}
                           {isNext && !isCurrent && (
                             <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">nächster</span>
@@ -921,7 +944,7 @@ export function ScoringPage() {
                 </button>
                 <button
                   onClick={() => setShowLineupSheet(false)}
-                  className="h-11 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 cursor-pointer"
+                  className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium hover:bg-cream-100 cursor-pointer"
                 >
                   Schließen
                 </button>
@@ -935,7 +958,7 @@ export function ScoringPage() {
       <Drawer.Root open={showSubSheet} onOpenChange={(open) => { if (!open) { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) } }}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
             <Drawer.Title className="sr-only">Spieler wechseln</Drawer.Title>
             <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
             <div className="px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
@@ -967,7 +990,7 @@ export function ScoringPage() {
                             className={`px-3 py-2.5 rounded-lg text-sm font-medium text-left cursor-pointer transition-colors ${
                               subPlayerOut?.id === p.id
                                 ? 'bg-softball-red-600 text-white border-2 border-softball-red-700'
-                                : 'border border-gray-300 text-gray-700 hover:border-softball-red-400 hover:bg-softball-red-50'
+                                : 'border border-cream-300 text-gray-700 hover:border-softball-red-400 hover:bg-softball-red-50'
                             }`}
                           >
                             {p.name}
@@ -992,7 +1015,7 @@ export function ScoringPage() {
                               className={`px-3 py-2.5 rounded-lg text-sm font-medium text-left cursor-pointer transition-colors ${
                                 subPlayerIn?.id === p.id
                                   ? 'bg-emerald-600 text-white border-2 border-emerald-700'
-                                  : 'border border-gray-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
+                                  : 'border border-cream-300 text-gray-700 hover:border-emerald-400 hover:bg-emerald-50'
                               }`}
                             >
                               {p.name}
@@ -1016,7 +1039,7 @@ export function ScoringPage() {
               <div className="grid grid-cols-2 gap-2 mt-5">
                 <button
                   onClick={() => { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) }}
-                  className="h-11 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 cursor-pointer"
+                  className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium hover:bg-cream-100 cursor-pointer"
                 >
                   Abbrechen
                 </button>
@@ -1037,7 +1060,7 @@ export function ScoringPage() {
       <Drawer.Root open={stealingRunner !== null} onOpenChange={(open) => !open && setStealingRunner(null)}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[70vh] focus:outline-none">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[70vh] focus:outline-none">
             <Drawer.Title className="sr-only">Base Running</Drawer.Title>
             <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
             <div className="px-4 pt-4 pb-6 space-y-3" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
@@ -1051,25 +1074,25 @@ export function ScoringPage() {
                   </p>
                   <button
                     onClick={() => handleStealing('STOLEN_BASE')}
-                    className="w-full h-20 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-base cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
+                    className="font-display w-full h-20 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
                   >
-                    <span>⚡ Stolen Base</span>
-                    <span className="text-xs font-normal opacity-90">
+                    <span className="inline-flex items-center gap-2"><Zap size={18} /> Stolen Base</span>
+                    <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
                       Läuft zur nächsten Base · Runner bewegt sich
                     </span>
                   </button>
                   <button
                     onClick={() => handleStealing('CAUGHT_STEALING')}
-                    className="w-full h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white font-bold text-base cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
+                    className="font-display w-full h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
                   >
-                    <span>✕ Caught Stealing</span>
-                    <span className="text-xs font-normal opacity-90">
+                    <span className="inline-flex items-center gap-2"><XIcon size={18} /> Caught Stealing</span>
+                    <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
                       Beim Klauen gefangen · Runner ist AUS (+1 Out)
                     </span>
                   </button>
                   <button
                     onClick={() => setStealingRunner(null)}
-                    className="w-full h-11 rounded-xl border border-gray-300 text-gray-600 font-medium cursor-pointer"
+                    className="w-full h-11 rounded-xl border border-cream-300 text-gray-600 font-medium cursor-pointer"
                   >
                     Abbrechen
                   </button>
@@ -1080,184 +1103,297 @@ export function ScoringPage() {
         </Drawer.Portal>
       </Drawer.Root>
 
-      {/* Homerun Celebration */}
+      {/* Homerun — Vintage Scorecard Ink-Stamp */}
       <AnimatePresence>
         {homerunFlash && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-gradient-to-b from-emerald-600/90 via-emerald-500/70 to-softball-red-500/80"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-cream-50/95"
           >
             <motion.div
-              initial={{ scale: 0.5, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: -30 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 18 }}
+              initial={{ scale: 0.4, rotate: -25, opacity: 0 }}
+              animate={{ scale: [0.4, 1.15, 1, 1], rotate: [-25, -8, -8, -8], opacity: 1 }}
+              exit={{ scale: 1.3, opacity: 0 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="text-center"
             >
-              <div className="text-7xl sm:text-9xl mb-2">{homerunFlash.isGrandSlam ? '💥' : '🎉'}</div>
-              <div className="text-4xl sm:text-6xl font-black text-white drop-shadow-2xl tracking-wider">
-                {homerunFlash.isGrandSlam ? 'GRAND SLAM!' : 'HOME RUN!'}
+              <div
+                className="font-display font-black text-softball-red-600 leading-none tracking-tight"
+                style={{
+                  fontSize: homerunFlash.isGrandSlam ? 'clamp(120px, 36vw, 320px)' : 'clamp(140px, 42vw, 380px)',
+                  textShadow: '4px 4px 0 rgba(10,15,92,0.18), 0 0 1px rgba(204,41,54,0.5)',
+                  WebkitTextStroke: '2px var(--color-softball-red-700)',
+                }}
+              >
+                HR
               </div>
-              <div className="text-lg sm:text-2xl font-bold text-white/90 mt-2">
+              {homerunFlash.isGrandSlam && (
+                <div className="font-display text-3xl sm:text-5xl font-extrabold text-navy-900 -mt-4 tracking-widest">
+                  × 4 GRAND SLAM
+                </div>
+              )}
+              <div className="font-display mt-4 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
                 {homerunFlash.batter}
               </div>
             </motion.div>
-            {/* Konfetti-Partikel */}
-            {[...Array(16)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-3 h-3 rounded-full"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: '50%',
-                  background: ['#fbbf24', '#ef4444', '#10b981', '#3b82f6', '#fff'][i % 5],
-                }}
-                initial={{ y: 0, opacity: 1, scale: 0 }}
-                animate={{
-                  y: (Math.random() - 0.5) * 600,
-                  x: (Math.random() - 0.5) * 300,
-                  opacity: 0,
-                  scale: 1,
-                  rotate: Math.random() * 720,
-                }}
-                transition={{ duration: 1.8, ease: 'easeOut', delay: i * 0.03 }}
-              />
-            ))}
+            {/* Ink-Splatter: kleine rotierte Brand-Rechtecke statt Konfetti */}
+            {[...Array(12)].map((_, i) => {
+              const colors = ['bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
+              const sizes = ['w-2 h-4', 'w-3 h-3', 'w-1.5 h-5', 'w-4 h-2']
+              return (
+                <motion.div
+                  key={i}
+                  className={`absolute ${colors[i % colors.length]} ${sizes[i % sizes.length]}`}
+                  style={{
+                    left: `${20 + Math.random() * 60}%`,
+                    top: `${30 + Math.random() * 40}%`,
+                  }}
+                  initial={{ scale: 0, rotate: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0, 1, 1, 0.8],
+                    rotate: Math.random() * 540 - 270,
+                    x: (Math.random() - 0.5) * 500,
+                    y: (Math.random() - 0.5) * 400,
+                    opacity: [0, 1, 1, 0],
+                  }}
+                  transition={{ duration: 1.6, ease: 'easeOut', delay: 0.1 + i * 0.04 }}
+                />
+              )
+            })}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* HBP "Aua"-Animation */}
+      {/* HBP — Impact "HBP!" mit Schmerz-Effekt (Crack-Lines + Impact-Ring + Shake) */}
       <AnimatePresence>
         {hbpFlash && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: 1,
+              x: [0, -14, 12, -10, 8, -5, 3, 0],
+              y: [0, 6, -4, 5, -3, 2, 0],
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-cream-50/95"
+          >
+            {/* Roter Pain-Pulse Hintergrund */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.4, 0.15, 0] }}
+              transition={{ duration: 0.5, times: [0, 0.15, 0.5, 1] }}
+              className="absolute inset-0 bg-softball-red-600"
+            />
+            {/* Impact-Ring: roter Ring expandiert vom Zentrum */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0.8 }}
+              animate={{ scale: [0, 4], opacity: [0.8, 0] }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+              className="absolute w-40 h-40 rounded-full border-[6px] border-softball-red-600"
+            />
+            <motion.div
+              initial={{ scale: 0, opacity: 0.6 }}
+              animate={{ scale: [0, 6], opacity: [0.6, 0] }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
+              className="absolute w-40 h-40 rounded-full border-[3px] border-softball-red-700"
+            />
+            {/* Crack-Lines: zigzag SVG strahlt vom Zentrum aus */}
+            <svg
+              className="absolute pointer-events-none"
+              width="600"
+              height="600"
+              viewBox="-300 -300 600 600"
+            >
+              {[0, 60, 120, 180, 240, 300].map((angle, i) => (
+                <motion.path
+                  key={angle}
+                  d={`M 0 0 L ${Math.cos((angle * Math.PI) / 180) * 60} ${Math.sin((angle * Math.PI) / 180) * 60} l 18 -8 l 30 12 l 25 -10 l 30 6`}
+                  transform={`rotate(${angle})`}
+                  fill="none"
+                  stroke="var(--color-softball-red-700)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: [0, 1, 1], opacity: [0, 1, 0] }}
+                  transition={{ duration: 0.8, delay: 0.1 + i * 0.02, ease: 'easeOut' }}
+                />
+              ))}
+            </svg>
+            {/* Smash-In Text */}
+            <motion.div
+              initial={{ scale: 0.2, rotate: -25, opacity: 0 }}
+              animate={{
+                scale: [0.2, 1.5, 0.95, 1.05, 1, 1],
+                rotate: [-25, 12, -8, 5, -6, -6],
+                opacity: 1,
+              }}
+              exit={{ scale: 0.6, opacity: 0, rotate: -30 }}
+              transition={{ duration: 0.55, ease: [0.16, 1.4, 0.3, 1] }}
+              className="text-center relative"
+            >
+              <div
+                className="font-display font-black text-softball-red-600 leading-none tracking-tight"
+                style={{
+                  fontSize: 'clamp(140px, 42vw, 380px)',
+                  textShadow: '6px 6px 0 rgba(10,15,92,0.25), -2px -2px 0 rgba(255,251,243,0.6)',
+                  WebkitTextStroke: '2.5px var(--color-softball-red-700)',
+                }}
+              >
+                HBP!
+              </div>
+              {/* Klein "AUTSCH" als Sticker rotiert */}
+              <motion.div
+                initial={{ scale: 0, rotate: 25 }}
+                animate={{ scale: [0, 1.2, 1], rotate: 12 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="absolute -top-4 -right-2 sm:-right-12 bg-softball-red-600 text-white font-display font-black text-xl sm:text-3xl px-3 py-1 rounded-md tracking-wider rotate-12 shadow-lg border-2 border-cream-50"
+              >
+                AUTSCH!
+              </motion.div>
+              <div className="font-display mt-2 text-base sm:text-xl font-bold text-navy-900 uppercase tracking-widest">
+                Hit by Pitch
+              </div>
+              <div className="font-display mt-1 text-xl sm:text-2xl font-bold text-navy-900 uppercase tracking-widest">
+                {hbpFlash} <span className="text-softball-red-700">→ 1B</span>
+              </div>
+            </motion.div>
+            {/* Ink-Splatter */}
+            {[...Array(10)].map((_, i) => {
+              const colors = ['bg-softball-red-600', 'bg-navy-900']
+              const sizes = ['w-2 h-3', 'w-3 h-2', 'w-1.5 h-4']
+              return (
+                <motion.div
+                  key={i}
+                  className={`absolute ${colors[i % colors.length]} ${sizes[i % sizes.length]}`}
+                  style={{
+                    left: `${30 + Math.random() * 40}%`,
+                    top: `${35 + Math.random() * 30}%`,
+                  }}
+                  initial={{ scale: 0, rotate: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0, 1, 0.7],
+                    rotate: Math.random() * 360,
+                    x: (Math.random() - 0.5) * 320,
+                    y: (Math.random() - 0.5) * 240,
+                    opacity: [0, 1, 0],
+                  }}
+                  transition={{ duration: 0.9, ease: 'easeOut', delay: 0.1 + i * 0.04 }}
+                />
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Overthrow — Scorecard "E" (Error/Dead-Ball) Notation */}
+      <AnimatePresence>
+        {overthrowFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-navy-900 text-white pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border border-white/15">
+              <span
+                className="font-display font-black text-3xl text-softball-red-400 leading-none"
+              >
+                E
+              </span>
+              <div>
+                <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60">Dead Ball</div>
+                <div className="font-display text-base font-bold tracking-wider uppercase">{overthrowFlash}</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Walk — Scorecard "BB" Notation */}
+      <AnimatePresence>
+        {walkFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="bg-navy-900 text-white pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border border-white/15">
+              <span
+                className="font-display font-black text-3xl text-cream-50 leading-none"
+                style={{ WebkitTextStroke: '1px var(--color-softball-red-500)' }}
+              >
+                BB
+              </span>
+              <div>
+                <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60">Base on Balls</div>
+                <div className="font-display text-base font-bold tracking-wider uppercase">{walkFlash} <span className="text-cream-200">→ 1B</span></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Strikeout — Vintage "K!" Stempel diagonal */}
+      <AnimatePresence>
+        {strikeoutFlash && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center"
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-cream-50/90"
           >
-            {/* Roter Flash im Hintergrund */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.35, 0] }}
-              transition={{ duration: 0.4, times: [0, 0.3, 1] }}
-              className="absolute inset-0 bg-softball-red-600"
-            />
-            {/* Tot-Drama */}
-            <motion.div
-              initial={{ scale: 0.3, rotate: -20 }}
+              initial={{ scale: 0.3, rotate: 20, opacity: 0 }}
               animate={{
-                scale: [0.3, 1.4, 1, 1, 1],
-                rotate: [-20, 15, -8, 5, -3],
-                y: [0, -20, 10, -5, 0],
+                scale: [0.3, 1.3, 1, 1, 1],
+                rotate: [20, -15, -12, -12, -12],
+                x: [0, -8, 6, -4, 0],
+                opacity: 1,
               }}
-              exit={{ scale: 0.5, opacity: 0, rotate: 90 }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-              className="text-center flex flex-col items-center gap-2"
+              exit={{ scale: 0.6, opacity: 0, rotate: -30 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="text-center relative"
             >
-              <div className="text-8xl sm:text-9xl drop-shadow-xl">💥</div>
-              {/* Text in rotem Pill — bleibt lesbar auch wenn Flash-BG wegfadet */}
-              <div className="bg-softball-red-600 rounded-2xl px-5 py-2 shadow-2xl -rotate-3 border-2 border-white/40">
-                <div className="text-3xl sm:text-5xl font-black text-white">
-                  AUA!
-                </div>
+              <div
+                className="font-display font-black text-softball-red-600 leading-none"
+                style={{
+                  fontSize: 'clamp(180px, 50vw, 440px)',
+                  textShadow: '5px 5px 0 rgba(10,15,92,0.2)',
+                  WebkitTextStroke: '3px var(--color-softball-red-700)',
+                }}
+              >
+                K!
+              </div>
+              {/* Diagonal Scribble durch K wie Umpire-Mark */}
+              <svg
+                className="absolute inset-0 w-full h-full pointer-events-none"
+                viewBox="0 0 400 400"
+                preserveAspectRatio="none"
+              >
+                <motion.path
+                  d="M 30 350 Q 200 50 380 320"
+                  fill="none"
+                  stroke="var(--color-softball-red-700)"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 0.4, delay: 0.25, ease: 'easeOut' }}
+                />
+              </svg>
+              <div className="font-display mt-2 text-xl sm:text-2xl font-bold text-navy-900 uppercase tracking-widest">
+                {strikeoutFlash} · Strikeout
               </div>
             </motion.div>
-            {/* Schmerz-Sterne ✨ */}
-            {['✨', '💢', '⚡', '✨', '💢'].map((emoji, i) => (
-              <motion.div
-                key={i}
-                className="absolute text-3xl sm:text-4xl"
-                style={{
-                  left: `${30 + Math.random() * 40}%`,
-                  top: `${35 + Math.random() * 30}%`,
-                }}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={{
-                  opacity: [0, 1, 0],
-                  scale: [0, 1.2, 0.5],
-                  x: (Math.random() - 0.5) * 150,
-                  y: (Math.random() - 0.5) * 150,
-                  rotate: Math.random() * 360,
-                }}
-                transition={{ duration: 0.9, delay: i * 0.06 }}
-              >
-                {emoji}
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Overthrow — Top-Banner nach Dead-Ball-Advance */}
-      <AnimatePresence>
-        {overthrowFlash && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.8 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
-          >
-            <div className="bg-navy-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
-              <BoltIcon size={28} className="text-white" />
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Overthrow</div>
-                <div className="text-base font-bold">{overthrowFlash}</div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Walk — entspannter Badge (häufig, nicht blockierend) */}
-      <AnimatePresence>
-        {walkFlash && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.8 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
-          >
-            <div className="bg-navy-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
-              <FootstepsIcon size={28} className="text-white" />
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Walk</div>
-                <div className="text-base font-bold">{walkFlash} → 1B</div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Strikeout — kurzer Shake + "K" Chip (dramatisch aber schnell) */}
-      <AnimatePresence>
-        {strikeoutFlash && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{
-              opacity: 1,
-              scale: [0.5, 1.2, 1, 1, 1],
-              x: [0, -6, 6, -4, 4, 0],
-            }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.6 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
-          >
-            <div className="bg-softball-red-600 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/30">
-              <span className="text-4xl font-black leading-none">K</span>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Strikeout</div>
-                <div className="text-base font-bold">{strikeoutFlash}</div>
-              </div>
-              <StrikeoutIcon size={26} className="text-white" />
-              <SadFaceIcon size={26} className="text-white" />
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1266,26 +1402,25 @@ export function ScoringPage() {
       <AnimatePresence>
         {scoredFlash && scoredFlash.length > 0 && (
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.7 }}
-            animate={{
-              opacity: 1,
-              y: 0,
-              scale: [0.7, 1.15, 1],
-            }}
-            exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            transition={{ duration: 0.7, type: 'spring', stiffness: 260, damping: 18 }}
-            className="fixed top-28 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+            initial={{ opacity: 0, y: 24, scale: 0.85 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.45, type: 'spring', stiffness: 280, damping: 22 }}
+            className="fixed top-32 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
-            <div className="bg-gradient-to-br from-navy-700 to-navy-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border-2 border-white/40">
-              <TrophyIcon size={30} className="text-white" />
+            <div className="bg-cream-50 border-2 border-softball-red-600 text-navy-900 px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3">
+              <span
+                className="font-display font-black text-4xl text-softball-red-600 leading-none"
+                style={{ WebkitTextStroke: '0.5px var(--color-softball-red-700)' }}
+              >
+                +{scoredFlash.length}
+              </span>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-90">
-                  {scoredFlash.length === 1 ? 'Home!' : `+${scoredFlash.length} Runs`}
+                <div className="font-display text-[10px] font-bold tracking-widest uppercase text-gray-500">
+                  {scoredFlash.length === 1 ? 'Run' : 'Runs'}
                 </div>
-                <div className="text-base font-bold">
-                  {scoredFlash.length === 1
-                    ? `${scoredFlash[0]} scort`
-                    : scoredFlash.join(' · ')}
+                <div className="font-display text-base font-bold tracking-wider uppercase truncate max-w-[200px]">
+                  {scoredFlash.join(' · ')}
                 </div>
               </div>
             </div>
@@ -1310,11 +1445,18 @@ export function ScoringPage() {
           title="Spiel beenden?"
           message="Das Scoring wird auf 'beendet' gesetzt. Stats sind sofort abrufbar. Du kannst später 'Wieder öffnen' tippen um weiter zu editieren."
           confirmLabel="Ja, beenden"
-          onConfirm={() => {
+          onConfirm={async () => {
             setShowEndGameConfirm(false)
-            setManualGameOver(true)
-            if (currentGame) localStorage.setItem(`scoring-ended-${currentGame.id}`, '1')
-            toast.show('Spiel beendet — Stats verfügbar', 'success')
+            if (!currentGame) return
+            try {
+              await api.endGame(currentGame.id)
+              setManualGameOver(true)
+              localStorage.setItem(`scoring-ended-${currentGame.id}`, '1')
+              await reload()
+              toast.show('Spiel beendet — Stats verfügbar', 'success')
+            } catch (e) {
+              toast.show((e as Error).message, 'error')
+            }
           }}
           onCancel={() => setShowEndGameConfirm(false)}
         />
@@ -1323,7 +1465,7 @@ export function ScoringPage() {
       {/* Top/Bottom Prompt — Wer schlägt zuerst? */}
       {showSidePrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm p-5 space-y-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900">Wer schlägt zuerst?</h2>
               <p className="text-xs text-gray-500 mt-1">

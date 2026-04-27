@@ -5,6 +5,7 @@ import com.softball.adapter.dto.GameDayResponse;
 import com.softball.domain.model.*;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
+import com.softball.domain.port.out.AtBatRepository;
 import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.LineupEntryRepository;
 import org.slf4j.Logger;
@@ -23,29 +24,50 @@ public class GameDayService {
 
     private final GameDayRepository gameDayRepository;
     private final LineupEntryRepository lineupEntryRepository;
+    private final AtBatRepository atBatRepository;
     private final SeasonService seasonService;
     private final AvailabilityService availabilityService;
 
     public GameDayService(final GameDayRepository gameDayRepository,
                           final LineupEntryRepository lineupEntryRepository,
+                          final AtBatRepository atBatRepository,
                           final SeasonService seasonService,
                           final AvailabilityService availabilityService) {
         this.gameDayRepository = gameDayRepository;
         this.lineupEntryRepository = lineupEntryRepository;
+        this.atBatRepository = atBatRepository;
         this.seasonService = seasonService;
         this.availabilityService = availabilityService;
     }
 
     @Transactional(readOnly = true)
     public List<GameDayResponse> findBySeasonIdAsDto(final Long seasonId) {
-        return gameDayRepository.findBySeasonIdOrderByDateAsc(seasonId).stream()
-            .map(GameDayResponse::from)
+        final List<GameDay> days = gameDayRepository.findBySeasonIdOrderByDateAsc(seasonId);
+        final List<Long> gameIds = days.stream()
+            .flatMap(d -> d.getGames().stream())
+            .map(Game::getId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+        final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
+        final Map<Long, Integer> liveScores = atBatRepository.sumRunsScoredByGameIds(gameIds);
+        return days.stream()
+            .map(d -> GameDayResponse.from(d, counts, liveScores))
             .toList();
     }
 
     @Transactional(readOnly = true)
     public GameDayResponse findByIdAsDto(final Long id) {
-        return GameDayResponse.from(findById(id));
+        return toResponseWithLive(findById(id));
+    }
+
+    private GameDayResponse toResponseWithLive(final GameDay gameDay) {
+        final List<Long> gameIds = gameDay.getGames().stream()
+            .map(Game::getId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+        final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
+        final Map<Long, Integer> liveScores = atBatRepository.sumRunsScoredByGameIds(gameIds);
+        return GameDayResponse.from(gameDay, counts, liveScores);
     }
 
     @Transactional(readOnly = true)
@@ -73,13 +95,13 @@ public class GameDayService {
         }
 
         final GameDay saved = gameDayRepository.save(gameDay);
-        return GameDayResponse.from(saved);
+        return toResponseWithLive(saved);
     }
 
     @Transactional
     public GameDayResponse setAvailablePlayers(final Long gameDayId, final List<Long> playerIds) {
         final GameDay saved = availabilityService.setAvailablePlayers(gameDayId, playerIds);
-        return GameDayResponse.from(saved);
+        return toResponseWithLive(saved);
     }
 
     @Transactional
@@ -95,7 +117,7 @@ public class GameDayService {
         gameDay.setLocation(location);
         final GameDay saved = gameDayRepository.save(gameDay);
         saved.getGames().size();
-        return GameDayResponse.from(saved);
+        return toResponseWithLive(saved);
     }
 
     @Transactional

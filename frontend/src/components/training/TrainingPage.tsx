@@ -223,7 +223,7 @@ export function TrainingPage() {
   if (loading || playersLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <div className="w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-48 h-1.5 bg-cream-200 rounded-full overflow-hidden">
           <div className="h-full w-1/3 bg-navy-800 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" />
         </div>
         <p className="text-sm text-gray-400">Laden…</p>
@@ -296,7 +296,7 @@ export function TrainingPage() {
                   <select
                     value={activePeriodId ?? ''}
                     onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
+                    className="border border-cream-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
                   >
                     <option value="">Alle Zeiträume</option>
                     {periods.map(p => (
@@ -329,13 +329,13 @@ export function TrainingPage() {
               <button
                 onClick={exportCsv}
                 disabled={trainings.filter(t => !t.cancelled).length === 0}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-cream-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
               >
                 <ExportDoc size={16} /> CSV Export
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-cream-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
               >
                 <UploadIcon size={16} /> CSV Import
               </button>
@@ -355,7 +355,7 @@ export function TrainingPage() {
                 <select
                   value={activePeriodId ?? ''}
                   onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                  className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 outline-none cursor-pointer"
+                  className="flex-1 min-w-0 border border-cream-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 outline-none cursor-pointer"
                 >
                   <option value="">Alle Zeiträume</option>
                   {periods.map(p => (
@@ -388,14 +388,14 @@ export function TrainingPage() {
             <button
               onClick={exportCsv}
               disabled={trainings.filter(t => !t.cancelled).length === 0}
-              className="p-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
+              className="p-2.5 rounded-lg border border-cream-300 text-gray-700 hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
               title="CSV Export"
             >
               <ExportDoc size={18} />
             </button>
             <button
               onClick={() => setShowImportModal(true)}
-              className="p-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
+              className="p-2.5 rounded-lg border border-cream-300 text-gray-700 hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
               title="CSV Import"
             >
               <UploadIcon size={18} />
@@ -411,12 +411,12 @@ export function TrainingPage() {
         </div>
 
         {!hasPlayers && !hasTrainings ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-500">
+          <div className="bg-white border border-cream-300 rounded-xl p-12 text-center text-gray-500">
             <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
             <p>Noch keine Trainings vorhanden.</p>
           </div>
         ) : hasPlayers && !hasTrainings ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-500">
+          <div className="bg-white border border-cream-300 rounded-xl p-12 text-center text-gray-500">
             <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
             <p className="mb-4">Noch keine Trainings erstellt.</p>
             <button
@@ -428,21 +428,21 @@ export function TrainingPage() {
           </div>
         ) : (
           <div
-            className="bg-white border border-gray-200 rounded-xl overflow-hidden"
+            className="bg-white border border-cream-300 rounded-xl overflow-hidden"
             onMouseLeave={() => { setHoveredPlayer(null); setHoveredTraining(null) }}
           >
             <div className="flex">
               {/* Sticky player column */}
-              <div className="flex-shrink-0 z-10 bg-white border-r border-gray-200">
+              <div className="flex-shrink-0 z-10 bg-white border-r border-cream-300">
                 {/* Header corner */}
-                <div className="h-14 border-b border-gray-200 px-3 flex items-center sticky top-0 bg-white z-20">
+                <div className="h-14 border-b border-cream-300 px-3 flex items-center sticky top-0 bg-white z-20">
                   <span className="text-xs font-semibold text-gray-500 uppercase">Spieler</span>
                 </div>
                 {/* Player names */}
                 {sortedPlayers.map(p => (
                   <div
                     key={p.id}
-                    className={`h-11 border-b border-gray-100 px-3 flex items-center gap-2 transition-colors ${
+                    className={`h-11 border-b border-cream-200 px-3 flex items-center gap-2 transition-colors ${
                       hoveredPlayer === p.id ? 'bg-softball-red-100' : ''
                     }`}
                     onMouseEnter={() => setHoveredPlayer(p.id)}
@@ -493,8 +493,8 @@ export function TrainingPage() {
                     >
                       {/* Date header */}
                       <div
-                        className={`h-14 border-b border-gray-200 flex flex-col items-center justify-center cursor-pointer relative group/header sticky top-0 z-20 ${
-                          hoveredTraining === t.id ? 'bg-softball-red-100' : t.cancelled ? 'bg-gray-100' : 'bg-white hover:bg-navy-50'
+                        className={`h-14 border-b border-cream-300 flex flex-col items-center justify-center cursor-pointer relative group/header sticky top-0 z-20 ${
+                          hoveredTraining === t.id ? 'bg-softball-red-100' : t.cancelled ? 'bg-cream-200' : 'bg-white hover:bg-navy-50'
                         }`}
                         onClick={() => handleHeaderClick(t.id)}
                       >
@@ -527,14 +527,14 @@ export function TrainingPage() {
                         return (
                           <div
                             key={p.id}
-                            className={`h-11 border-b border-gray-100 flex items-center justify-center cursor-pointer transition-colors ${
+                            className={`h-11 border-b border-cream-200 flex items-center justify-center cursor-pointer transition-colors ${
                               t.cancelled
                                 ? 'bg-softball-red-50/60 cursor-not-allowed'
                                 : present
                                   ? t.type === 'PITCHER_CATCHER'
                                     ? isHighlighted ? 'bg-softball-red-700 text-white ring-2 ring-navy-400 ring-inset' : 'bg-softball-red-700 text-white hover:bg-softball-red-600'
                                     : isHighlighted ? 'bg-navy-900 text-white ring-2 ring-softball-red-400 ring-inset' : 'bg-navy-900 text-white hover:bg-navy-800'
-                                  : isHighlighted ? 'bg-navy-100 text-gray-500' : 'bg-gray-50 text-gray-300 hover:bg-gray-100'
+                                  : isHighlighted ? 'bg-navy-100 text-gray-500' : 'bg-cream-100 text-gray-300 hover:bg-cream-200'
                             }`}
                             onMouseEnter={() => setHoveredPlayer(p.id)}
                             onMouseLeave={() => setHoveredPlayer(null)}
@@ -573,7 +573,7 @@ export function TrainingPage() {
         </button>
 
         {statsOpen && (
-          <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-3">
+          <div className="bg-white border border-cream-300 rounded-xl p-4 space-y-3">
             {/* Filter chips */}
             <div className="flex gap-1.5">
               {([
@@ -589,7 +589,7 @@ export function TrainingPage() {
                   className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
                     statsFilter === key
                       ? 'bg-navy-800 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
                   }`}
                 >
                   {label}
@@ -635,7 +635,7 @@ export function TrainingPage() {
                           <span className="text-sm font-medium text-gray-900 w-32 truncate">
                             {s.playerName}
                           </span>
-                          <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                          <div className="flex-1 h-6 bg-cream-200 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full transition-all bg-navy-800"
                               style={{ width: `${barWidth}%` }}
@@ -693,8 +693,8 @@ export function TrainingPage() {
       {/* Rename Period Modal */}
       {renamingPeriod && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setRenamingPeriod(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
               <h2 className="text-lg font-bold text-gray-900">Zeitraum umbenennen</h2>
               <button onClick={() => setRenamingPeriod(null)} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
                 <XMark size={20} />
@@ -705,7 +705,7 @@ export function TrainingPage() {
                 type="text"
                 value={renamingPeriod.name}
                 onChange={e => setRenamingPeriod({ ...renamingPeriod, name: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                 autoFocus
                 onKeyDown={e => {
                   if (e.key === 'Enter' && renamingPeriod.name.trim()) {
@@ -716,8 +716,8 @@ export function TrainingPage() {
                 }}
               />
             </div>
-            <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
-              <button onClick={() => setRenamingPeriod(null)} className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer">
+            <div className="px-4 py-3 border-t border-cream-300 flex justify-end gap-2">
+              <button onClick={() => setRenamingPeriod(null)} className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer">
                 Abbrechen
               </button>
               <button
@@ -780,7 +780,7 @@ function TrainingHeaderMenu({
 
   return (
     <div
-      className={`absolute top-12 z-30 bg-white border border-gray-200 rounded-lg shadow-lg py-1 w-36 ${positionClass}`}
+      className={`absolute top-12 z-30 bg-white border border-cream-300 rounded-lg shadow-lg py-1 w-36 ${positionClass}`}
       onMouseDown={e => e.stopPropagation()}
     >
       {!training.cancelled && (
@@ -892,10 +892,10 @@ function CreateTrainingModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto"
+        className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm max-h-[90vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
           <h2 className="text-lg font-bold text-gray-900">Neues Training</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
@@ -911,7 +911,7 @@ function CreateTrainingModal({
               className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
                 mode === 'single'
                   ? 'bg-navy-800 text-white border-navy-800'
-                  : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400'
+                  : 'bg-white text-gray-600 border-cream-300 hover:border-navy-400'
               }`}
             >
               Einzeln
@@ -922,7 +922,7 @@ function CreateTrainingModal({
               className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
                 mode === 'weekly'
                   ? 'bg-navy-800 text-white border-navy-800'
-                  : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400'
+                  : 'bg-white text-gray-600 border-cream-300 hover:border-navy-400'
               }`}
             >
               Wöchentlich
@@ -939,7 +939,7 @@ function CreateTrainingModal({
                 className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
                   type === 'REGULAR'
                     ? 'bg-navy-800 text-white border-navy-800'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400'
+                    : 'bg-white text-gray-600 border-cream-300 hover:border-navy-400'
                 }`}
               >
                 Normal
@@ -950,7 +950,7 @@ function CreateTrainingModal({
                 className={`flex-1 py-2 text-sm font-medium rounded-lg border cursor-pointer transition-colors ${
                   type === 'PITCHER_CATCHER'
                     ? 'bg-softball-red-600 text-white border-softball-red-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-softball-red-400'
+                    : 'bg-white text-gray-600 border-cream-300 hover:border-softball-red-400'
                 }`}
               >
                 P/C Training
@@ -966,7 +966,7 @@ function CreateTrainingModal({
                 type="date"
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                 autoFocus
               />
               {dateInPast && (
@@ -987,7 +987,7 @@ function CreateTrainingModal({
                       type="button"
                       onClick={() => { setPeriodSelect('existing'); if (!selectedPeriodName) setSelectedPeriodName(periods[0].name) }}
                       className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
-                        periodSelect === 'existing' ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        periodSelect === 'existing' ? 'bg-navy-800 text-white' : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
                       }`}
                     >
                       Bestehend
@@ -997,7 +997,7 @@ function CreateTrainingModal({
                     type="button"
                     onClick={() => setPeriodSelect('new')}
                     className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
-                      periodSelect === 'new' ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      periodSelect === 'new' ? 'bg-navy-800 text-white' : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
                     }`}
                   >
                     Neu
@@ -1008,7 +1008,7 @@ function CreateTrainingModal({
                     <select
                       value={selectedPeriodName}
                       onChange={e => setSelectedPeriodName(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
+                      className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
                     >
                       {periods.map(p => (
                         <option key={p.id} value={p.name}>{p.name}</option>
@@ -1024,7 +1024,7 @@ function CreateTrainingModal({
                       value={newPeriodName}
                       onChange={e => setNewPeriodName(e.target.value)}
                       placeholder="z.B. Sommersaison 2026"
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                      className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                     />
                     {newPeriodName.trim() ? (
                       <p className="text-xs text-gray-400 mt-1">Neuer Zeitraum wird erstellt.</p>
@@ -1050,7 +1050,7 @@ function CreateTrainingModal({
                         className={`flex-1 py-1.5 text-xs font-medium rounded-lg border cursor-pointer transition-colors ${
                           selected
                             ? 'bg-navy-800 text-white border-navy-800'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-navy-400 hover:text-navy-700'
+                            : 'bg-white text-gray-600 border-cream-300 hover:border-navy-400 hover:text-navy-700'
                         }`}
                       >
                         {label}
@@ -1066,7 +1066,7 @@ function CreateTrainingModal({
                   type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                  className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                 />
               </div>
 
@@ -1076,7 +1076,7 @@ function CreateTrainingModal({
                   type="date"
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                  className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                 />
                 {endBeforeStart && (
                   <p className="text-xs text-softball-red-600 mt-1">Enddatum muss nach dem Startdatum liegen.</p>
@@ -1095,7 +1095,7 @@ function CreateTrainingModal({
               type="time"
               value={time}
               onChange={e => setTime(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             />
           </div>
 
@@ -1106,7 +1106,7 @@ function CreateTrainingModal({
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="z.B. Sportplatz"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             />
           </div>
 
@@ -1118,10 +1118,10 @@ function CreateTrainingModal({
           )}
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
+        <div className="px-4 py-3 border-t border-cream-300 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
+            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
           >
             Abbrechen
           </button>
@@ -1164,10 +1164,10 @@ function ImportTrainingModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg"
+        className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-lg"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
           <h2 className="text-lg font-bold text-gray-900">CSV Import</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
@@ -1182,7 +1182,7 @@ function ImportTrainingModal({
               value={periodName}
               onChange={e => setPeriodName(e.target.value)}
               placeholder="z.B. Wintersaison 2025/26"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             />
           </div>
 
@@ -1190,7 +1190,7 @@ function ImportTrainingModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">CSV-Datei</label>
             <div
               className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                dragOver ? 'border-navy-600 bg-navy-50' : 'border-gray-300 hover:border-navy-400'
+                dragOver ? 'border-navy-600 bg-navy-50' : 'border-cream-300 hover:border-navy-400'
               }`}
               onClick={() => fileInputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragOver(true) }}
@@ -1225,7 +1225,7 @@ function ImportTrainingModal({
               onChange={e => setCsv(e.target.value)}
               placeholder={"Datum,Hung,Khang,Mike,...\n10.01.2026,TRUE,TRUE,FALSE,..."}
               rows={5}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none resize-y"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm font-mono focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none resize-y"
             />
           </div>
 
@@ -1236,10 +1236,10 @@ function ImportTrainingModal({
           )}
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
+        <div className="px-4 py-3 border-t border-cream-300 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
+            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
           >
             Abbrechen
           </button>

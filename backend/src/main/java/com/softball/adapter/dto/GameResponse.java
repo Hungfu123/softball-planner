@@ -2,18 +2,30 @@ package com.softball.adapter.dto;
 
 import com.softball.domain.model.Game;
 
+import java.time.Instant;
+
 public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse opponentTeam,
                             Integer scoreUs, Integer scoreThem, Long gameDayId,
-                            int lineupEntryCount) {
+                            int lineupEntryCount,
+                            Instant endedAt,
+                            long atBatCount) {
+
     public static GameResponse from(final Game game) {
+        return from(game, 0L, null);
+    }
+
+    public static GameResponse from(final Game game, final long atBatCount, final Integer liveScoreUs) {
+        final Integer effectiveScoreUs = liveScoreUs != null ? liveScoreUs : game.getScoreUs();
         return new GameResponse(
             game.getId(),
             game.getGameNumber(),
             game.getOpponentTeam() != null ? LeagueTeamResponse.from(game.getOpponentTeam()) : null,
-            game.getScoreUs(),
+            effectiveScoreUs,
             game.getScoreThem(),
             game.getGameDayId(),
-            game.getLineupEntryCount()
+            game.getLineupEntryCount(),
+            game.getEndedAt(),
+            atBatCount
         );
     }
 }

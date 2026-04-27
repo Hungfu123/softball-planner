@@ -69,21 +69,20 @@ export function LineupEditor({
   const MIN_PLAYERS = 9
   const MAX_PLAYERS = 10
   const statusColor =
-    filledCount >= MIN_PLAYERS ? 'text-emerald-700 bg-emerald-50' :
-    filledCount >= MIN_PLAYERS - 2 ? 'text-amber-700 bg-amber-50' :
-    'text-softball-red-700 bg-softball-red-50'
+    filledCount >= MIN_PLAYERS ? 'text-navy-900' :
+    'text-softball-red-700'
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2 gap-2">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
-          <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
+      <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-cream-200 gap-2">
+        <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2">
+          <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
           Lineup
         </h2>
         <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-          <span className={`text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full ${statusColor}`}>
-            {filledCount} von {MAX_PLAYERS}
-            {filledCount < MIN_PLAYERS && <span className="ml-1 font-normal">(min. {MIN_PLAYERS})</span>}
+          <span className={`font-display text-sm font-extrabold tabular-nums tracking-wide ${statusColor}`}>
+            {filledCount} <span className="text-gray-400 font-bold">von</span> {MAX_PLAYERS}
+            {filledCount < MIN_PLAYERS && <span className="ml-1.5 font-display text-[10px] tracking-widest uppercase text-gray-500">min {MIN_PLAYERS}</span>}
           </span>
           {onAutoGenerate && (
             <button
@@ -108,7 +107,7 @@ export function LineupEditor({
       </div>
 
       {entries.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-cream-300 rounded-xl">
           <CrossBones size={32} className="mx-auto mb-2 opacity-40" />
           <p className="text-sm">Tippe Spieler im Pool an</p>
           {onCopyOtherGame && (
@@ -123,7 +122,7 @@ export function LineupEditor({
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map(e => e.player.id)} strategy={verticalListSortingStrategy}>
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
+            <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
               {entries.map((entry, index) => {
                 const isFieldPos = !!entry.position && FIELD_POS_SET.has(entry.position)
 

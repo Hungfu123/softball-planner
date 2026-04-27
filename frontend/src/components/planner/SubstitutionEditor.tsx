@@ -48,15 +48,15 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
 
   return (
     <div className="mt-4">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
-          <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
+      <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-cream-200">
+        <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2">
+          <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
           Auswechslungen
         </h2>
         {!adding && canAdd && (
           <button
             onClick={() => setAdding(true)}
-            className="text-xs text-navy-600 hover:text-navy-800 transition-colors cursor-pointer"
+            className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 transition-colors cursor-pointer inline-flex items-center gap-1"
           >
             + Hinzufügen
           </button>
@@ -64,7 +64,7 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
       </div>
 
       {substitutions.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100 mb-2">
+        <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100 mb-2">
           {substitutions.map((sub, index) => (
             <div key={index} className="group/sub flex items-center gap-2 px-3 py-2 text-sm">
               <span className="text-navy-600 text-xs font-semibold shrink-0">
@@ -86,13 +86,13 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
 
 
       {adding && (
-        <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+        <div className="bg-cream-100 rounded-xl p-3 space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">Nach Inning</span>
             <select
               value={inning}
               onChange={e => setInning(Number(e.target.value))}
-              className="w-14 text-sm border border-gray-200 rounded-lg px-1.5 py-1 bg-white outline-none focus:border-navy-600"
+              className="w-14 text-sm border border-cream-300 rounded-lg px-1.5 py-1 bg-cream-50 outline-none focus:border-navy-600"
             >
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <option key={i} value={i}>{i}</option>
@@ -103,7 +103,7 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
             <select
               value={playerOutId}
               onChange={e => setPlayerOutId(Number(e.target.value) || '')}
-              className="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-1.5 py-1 bg-white outline-none focus:border-navy-600"
+              className="flex-1 min-w-0 text-sm border border-cream-300 rounded-lg px-1.5 py-1 bg-cream-50 outline-none focus:border-navy-600"
             >
               <option value="">Raus...</option>
               {availableOut.map(e => (
@@ -114,7 +114,7 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
             <select
               value={playerInId}
               onChange={e => setPlayerInId(Number(e.target.value) || '')}
-              className="flex-1 min-w-0 text-sm border border-gray-200 rounded-lg px-1.5 py-1 bg-white outline-none focus:border-navy-600"
+              className="flex-1 min-w-0 text-sm border border-cream-300 rounded-lg px-1.5 py-1 bg-cream-50 outline-none focus:border-navy-600"
             >
               <option value="">Rein...</option>
               {availableIn.map(p => (

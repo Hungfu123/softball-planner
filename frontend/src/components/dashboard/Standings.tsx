@@ -89,7 +89,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
+                  <tr className="border-b border-cream-300 bg-cream-100">
                     <th className="text-left px-4 py-3 font-semibold text-gray-700 w-8">#</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-700">Team</th>
                     <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Spiele">Sp</th>
@@ -107,8 +107,8 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                   {standings.map((s, i) => (
                     <tr
                       key={s.team.id}
-                      className={`border-b border-gray-100 last:border-0 ${
-                        s.team.ownTeam ? 'bg-navy-50 font-semibold border-l-2 border-l-navy-600' : 'hover:bg-gray-50'
+                      className={`border-b border-cream-200 last:border-0 ${
+                        s.team.ownTeam ? 'bg-navy-50 font-semibold border-l-2 border-l-navy-600' : 'hover:bg-cream-100'
                       }`}
                     >
                       <td className="px-4 py-2.5 text-gray-400 font-mono">{i + 1}</td>
@@ -178,12 +178,12 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
             onChange={e => setNewTeamName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreateTeam() }}
             placeholder="Neues Team..."
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100 w-48"
+            className="border border-cream-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100 w-48"
           />
           <button
             onClick={handleCreateTeam}
             disabled={creating || !newTeamName.trim()}
-            className="px-3 py-2 text-sm font-medium text-navy-700 border border-gray-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-40 cursor-pointer transition-colors"
+            className="px-3 py-2 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-40 cursor-pointer transition-colors"
           >
             + Hinzufügen
           </button>
@@ -195,7 +195,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
         <div className="space-y-4">
           {/* Our games */}
           {gamesWithOpponent.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
+            <div className="bg-white border border-cream-300 rounded-xl divide-y divide-gray-100">
               {gameDays.filter(gd => gd.games.some(g => g.opponentTeam)).map(gd => (
                 <div key={gd.id} className="px-4 py-3">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
@@ -217,7 +217,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
 
           {/* League results (other teams) */}
           {leagueResults.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl px-4 py-3">
+            <div className="bg-white border border-cream-300 rounded-xl px-4 py-3">
               <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
                 Andere Ergebnisse
               </div>
@@ -305,11 +305,11 @@ function OurGameRow({ game, onChanged }: { game: GameResponse; onChanged: () => 
         <div className="flex items-center gap-1.5">
           <input ref={inputRef} type="number" min="0" value={us} onChange={e => setUs(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-            className="w-12 border border-gray-200 rounded px-1.5 py-1 text-center font-mono text-sm outline-none focus:border-navy-600" />
+            className="w-12 border border-cream-300 rounded px-1.5 py-1 text-center font-mono text-sm outline-none focus:border-navy-600" />
           <span className="text-gray-400">:</span>
           <input type="number" min="0" value={them} onChange={e => setThem(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-            className="w-12 border border-gray-200 rounded px-1.5 py-1 text-center font-mono text-sm outline-none focus:border-navy-600" />
+            className="w-12 border border-cream-300 rounded px-1.5 py-1 text-center font-mono text-sm outline-none focus:border-navy-600" />
           <button onClick={handleSave} className="text-xs text-navy-700 hover:text-navy-900 font-medium cursor-pointer ml-1">OK</button>
           {game.scoreUs != null && (
             <button onClick={async () => { await api.updateScore(game.id, null, null); setUs(''); setThem(''); setEditing(false); onChanged() }}
@@ -318,7 +318,7 @@ function OurGameRow({ game, onChanged }: { game: GameResponse; onChanged: () => 
         </div>
       ) : (
         <button onClick={() => setEditing(true)}
-          className={`font-mono cursor-pointer px-2 py-0.5 rounded hover:bg-gray-100 ${
+          className={`font-mono cursor-pointer px-2 py-0.5 rounded hover:bg-cream-200 ${
             game.scoreUs != null
               ? game.scoreUs > game.scoreThem! ? 'text-emerald-700 font-semibold' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600 font-semibold' : 'text-gray-500'
               : 'text-gray-300'
@@ -375,11 +375,11 @@ function AddLeagueResult({ seasonId, teams, onAdded }: {
       />
       <input type="number" min="0" value={homeScore} onChange={e => setHomeScore(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-        placeholder="—" className="w-12 border border-gray-200 rounded px-1.5 py-1.5 text-center font-mono text-sm outline-none focus:border-navy-600" />
+        placeholder="—" className="w-12 border border-cream-300 rounded px-1.5 py-1.5 text-center font-mono text-sm outline-none focus:border-navy-600" />
       <span className="text-gray-400 font-bold">:</span>
       <input type="number" min="0" value={awayScore} onChange={e => setAwayScore(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-        placeholder="—" className="w-12 border border-gray-200 rounded px-1.5 py-1.5 text-center font-mono text-sm outline-none focus:border-navy-600" />
+        placeholder="—" className="w-12 border border-cream-300 rounded px-1.5 py-1.5 text-center font-mono text-sm outline-none focus:border-navy-600" />
       <TeamCombobox
         teams={teams}
         selected={awayTeam}
@@ -389,7 +389,7 @@ function AddLeagueResult({ seasonId, teams, onAdded }: {
         onCreated={onAdded}
       />
       <button onClick={handleAdd} disabled={!canSave || saving}
-        className="px-3 py-1.5 text-sm font-medium text-navy-700 border border-gray-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-30 cursor-pointer transition-colors">
+        className="px-3 py-1.5 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-30 cursor-pointer transition-colors">
         + Eintragen
       </button>
     </div>
@@ -454,7 +454,7 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
     <div className="relative" ref={ref}>
       <button
         onClick={() => { setOpen(!open); setSearch('') }}
-        className={`border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm outline-none min-w-[100px] text-left cursor-pointer hover:border-gray-300 ${
+        className={`border border-cream-300 rounded-lg px-2.5 py-1.5 text-sm outline-none min-w-[100px] text-left cursor-pointer hover:border-cream-300 ${
           selected ? 'text-gray-900' : 'text-gray-400'
         }`}
       >
@@ -462,7 +462,7 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
       </button>
 
       {open && (
-        <div className={`absolute left-0 z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-52 ${openUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
+        <div className={`absolute left-0 z-50 bg-white border border-cream-300 rounded-lg shadow-lg w-52 ${openUp ? 'bottom-full mb-1' : 'top-full mt-1'}`}>
           <div className="p-2">
             <input
               ref={inputRef}
@@ -474,14 +474,14 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
                 if (e.key === 'Escape') setOpen(false)
               }}
               placeholder="Suchen oder erstellen..."
-              className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100"
+              className="w-full border border-cream-300 rounded px-2.5 py-1.5 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100"
             />
           </div>
           <div className="max-h-48 overflow-y-auto">
             {selected && (
               <button
                 onClick={() => { onSelect(null); setOpen(false); setSearch('') }}
-                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 cursor-pointer"
+                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-cream-100 cursor-pointer"
               >
                 Auswahl entfernen
               </button>
@@ -501,13 +501,13 @@ function TeamCombobox({ teams, selected, placeholder, seasonId, onSelect, onCrea
               <div className="px-3 py-2 text-xs text-gray-400">Keine Teams gefunden</div>
             )}
             {!showCreate && search.trim().length === 0 && filtered.length > 0 && (
-              <div className="px-3 py-2 text-[11px] text-gray-400 border-t border-gray-100">
+              <div className="px-3 py-2 text-[11px] text-gray-400 border-t border-cream-200">
                 Name eingeben um neues Team zu erstellen
               </div>
             )}
             {showCreate && (
               <>
-                {filtered.length > 0 && <div className="border-t border-gray-100" />}
+                {filtered.length > 0 && <div className="border-t border-cream-200" />}
                 <button
                   onClick={handleCreate}
                   disabled={creating}

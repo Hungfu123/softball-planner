@@ -39,6 +39,7 @@ public class GameRepositoryAdapter implements GameRepository {
                 existing.setGameNumber(game.getGameNumber());
                 existing.setScoreUs(game.getScoreUs());
                 existing.setScoreThem(game.getScoreThem());
+                existing.setEndedAt(game.getEndedAt());
                 if (game.getOpponentTeam() != null && game.getOpponentTeam().getId() != null) {
                     existing.setOpponentTeam(leagueTeamRepo.getReferenceById(game.getOpponentTeam().getId()));
                 } else {

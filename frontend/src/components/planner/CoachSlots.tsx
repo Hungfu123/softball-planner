@@ -45,22 +45,22 @@ export function CoachSlots({ staff, availablePlayers, onSave }: Props) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2 flex items-center gap-2">
-        <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
+      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 mb-2 pb-1.5 border-b border-cream-200 flex items-center gap-2">
+        <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Coaches
       </h2>
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-3 space-y-3">
+      <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm p-3 space-y-3">
         {Object.entries(STAFF_ROLES).map(([role, label]) => {
           const value = role === 'BASE_COACH_1ST' ? coach1st : coach3rd
 
           return (
             <div key={role}>
-              <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1">{label}</label>
               <select
                 value={value}
                 onChange={e => handleChange(role, e.target.value ? Number(e.target.value) : '')}
                 disabled={saving}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-navy-600 cursor-pointer hover:border-navy-300 transition-colors disabled:opacity-50"
+                className="font-display w-full border border-cream-300 rounded-lg px-3 py-2 text-sm font-bold text-navy-900 bg-cream-50 outline-none focus:border-navy-600 focus:ring-2 focus:ring-cream-200 cursor-pointer hover:border-navy-400 transition-colors disabled:opacity-50"
               >
                 <option value="">— nicht besetzt —</option>
                 {availablePlayers.map(p => (

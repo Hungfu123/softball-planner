@@ -49,7 +49,7 @@ export function CarpoolPlanner({ gameDayId, availablePlayers }: Props) {
     <div className="space-y-4">
       {/* Status Bar */}
       {carpool.cars.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+        <div className="bg-cream-50 border border-cream-300 rounded-xl p-4 space-y-2">
           <div className="flex items-center gap-3 text-sm">
             <span className="font-medium text-gray-900">{totalPlayers} Spieler</span>
             <span className="text-gray-300">·</span>
@@ -76,7 +76,7 @@ export function CarpoolPlanner({ gameDayId, availablePlayers }: Props) {
 
       {/* Car List */}
       {carpool.cars.length === 0 ? (
-        <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
+        <div className="text-center py-12 border-2 border-dashed border-cream-300 rounded-xl">
           <p className="text-gray-400 mb-1">Noch keine Autos eingetragen.</p>
           <p className="text-sm text-gray-300 mb-4">Füge Autos hinzu um die Fahrten zu planen.</p>
           <button
@@ -165,7 +165,7 @@ function CarCard({ car, onDelete }: {
   const free = freeSeats(car)
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+    <div className="bg-cream-50 border border-cream-300 rounded-xl px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <span className="text-lg">🚗</span>
         <div className="flex items-center gap-2 flex-wrap">
@@ -183,7 +183,7 @@ function CarCard({ car, onDelete }: {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className={`text-xs font-medium px-2 py-1 rounded-full ${free > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+        <span className={`text-xs font-medium px-2 py-1 rounded-full ${free > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-cream-200 text-gray-500'}`}>
           {free} frei
         </span>
         <button
@@ -210,8 +210,8 @@ function AddCarModal({ availablePlayers, onAdd, onClose }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
           <h2 className="text-lg font-bold text-gray-900">Auto hinzufügen</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
@@ -223,7 +223,7 @@ function AddCarModal({ availablePlayers, onAdd, onClose }: {
             <select
               value={driverId}
               onChange={e => setDriverId(Number(e.target.value))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             >
               <option value="">— wählen —</option>
               {availablePlayers.map(p => (
@@ -239,7 +239,7 @@ function AddCarModal({ availablePlayers, onAdd, onClose }: {
               max={9}
               value={seats}
               onChange={e => setSeats(Number(e.target.value))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             />
           </div>
           <div>
@@ -261,10 +261,10 @@ function AddCarModal({ availablePlayers, onAdd, onClose }: {
             </div>
           </div>
         </div>
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+        <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
+            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
           >
             Abbrechen
           </button>

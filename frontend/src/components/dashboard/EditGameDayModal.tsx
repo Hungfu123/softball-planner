@@ -31,8 +31,8 @@ export function EditGameDayModal({ gameDay, onSaved, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
           <h2 className="text-lg font-bold text-gray-900">Spieltag bearbeiten</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
             <XMark size={20} />
@@ -45,7 +45,7 @@ export function EditGameDayModal({ gameDay, onSaved, onClose }: Props) {
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             />
           </div>
           <div>
@@ -54,7 +54,7 @@ export function EditGameDayModal({ gameDay, onSaved, onClose }: Props) {
               value={label}
               onChange={e => setLabel(e.target.value)}
               placeholder="z.B. Spieltag 1"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
               autoFocus
             />
           </div>
@@ -64,14 +64,14 @@ export function EditGameDayModal({ gameDay, onSaved, onClose }: Props) {
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="z.B. Bottrop"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             />
           </div>
         </div>
-        <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+        <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
+            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200"
           >
             Abbrechen
           </button>

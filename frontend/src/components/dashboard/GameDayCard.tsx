@@ -26,7 +26,7 @@ export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
   return (
     <Link
       to={`/gameday/${gameDay.id}`}
-      className={`block rounded-xl p-4 shadow-sm hover:shadow-md hover:border-navy-600 hover:bg-navy-50/50 transition-all group relative bg-white border border-gray-200 ${
+      className={`block rounded-xl p-4 shadow-sm hover:shadow-md hover:border-navy-600 hover:bg-navy-50/50 transition-all group relative bg-white border border-cream-300 ${
         isNext ? 'border-l-4 border-l-navy-600' : allLineupsReady ? 'border-l-4 border-l-navy-600' : ''
       }`}
     >

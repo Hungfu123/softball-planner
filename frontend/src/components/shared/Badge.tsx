@@ -14,7 +14,7 @@ interface Props {
 const COLORS: Record<Color, string> = {
   navy: 'bg-navy-100 text-navy-800',
   red: 'bg-softball-red-100 text-softball-red-700',
-  gray: 'bg-gray-100 text-gray-700',
+  gray: 'bg-cream-200 text-gray-700',
   emerald: 'bg-emerald-100 text-emerald-700',
   amber: 'bg-amber-100 text-amber-700',
   blue: 'bg-blue-100 text-blue-700',

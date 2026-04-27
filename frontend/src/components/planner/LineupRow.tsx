@@ -51,7 +51,7 @@ export function LineupRow({
       ref={setNodeRef}
       style={style}
       className={`lineup-row group/row flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] ${
-        isDragging ? 'shadow-lg bg-white rounded-lg' : ''
+        isDragging ? 'shadow-lg bg-cream-50 rounded-lg' : ''
       } ${!hasPosition ? 'bg-amber-50' : ''}`}
     >
       {/* Drag Handle */}
@@ -77,8 +77,8 @@ export function LineupRow({
       <select
         value={entry.position ?? ''}
         onChange={e => onSetPosition(entry.player.id, e.target.value)}
-        className={`w-16 sm:w-20 text-sm border rounded-lg px-1.5 py-1 outline-none border-gray-200 bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 ${
-          !hasPosition ? 'text-gray-400' : ''
+        className={`font-display w-16 sm:w-20 text-xs font-bold tracking-wide border rounded-lg px-2 py-1 outline-none border-cream-300 bg-cream-50 hover:border-navy-400 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 cursor-pointer ${
+          !hasPosition ? 'text-gray-400' : 'text-navy-900'
         }`}
       >
         <option value="">Pos.</option>

@@ -62,7 +62,7 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+    <form onSubmit={handleSubmit} className="bg-cream-50 rounded-2xl border border-cream-300 p-6 space-y-5">
       <h3 className="text-lg font-bold text-gray-900">Plan generieren</h3>
 
       <div>
@@ -71,13 +71,13 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
           <button
             type="button"
             onClick={() => setPlayerCount(p => Math.max(2, p - 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 font-bold text-lg hover:bg-gray-50 cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-cream-300 text-gray-600 font-bold text-lg hover:bg-cream-100 cursor-pointer"
           >−</button>
           <span className="w-10 text-center text-sm font-bold text-gray-900">{playerCount}</span>
           <button
             type="button"
             onClick={() => setPlayerCount(p => Math.min(20, p + 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 font-bold text-lg hover:bg-gray-50 cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-cream-300 text-gray-600 font-bold text-lg hover:bg-cream-100 cursor-pointer"
           >+</button>
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
               className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
                 focuses.has(opt.value)
                   ? 'bg-navy-800 text-white border-navy-800'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-navy-300'
+                  : 'bg-cream-50 text-gray-600 border-cream-300 hover:border-navy-300'
               }`}
             >
               {opt.label}
@@ -114,7 +114,7 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
               className={`px-4 py-1.5 rounded-lg text-sm font-medium border transition-colors cursor-pointer ${
                 duration === d
                   ? 'bg-navy-800 text-white border-navy-800'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-navy-300'
+                  : 'bg-cream-50 text-gray-600 border-cream-300 hover:border-navy-300'
               }`}
             >
               {d} min

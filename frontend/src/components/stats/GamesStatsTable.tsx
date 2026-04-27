@@ -16,14 +16,14 @@ export function GamesStatsTable({ stats }: Props) {
 
   if (stats.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-500">
+      <div className="bg-cream-50 border border-cream-300 rounded-xl p-12 text-center text-gray-500">
         Keine Einsatz-Daten in diesem Zeitraum.
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl overflow-hidden">
+    <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -37,14 +37,14 @@ export function GamesStatsTable({ stats }: Props) {
             {stats.map((s, idx) => (
               <tr
                 key={s.playerId}
-                className={`border-b border-gray-100 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
-                  idx % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'
+                className={`border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
+                  idx % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'
                 }`}
               >
                 <td className="px-4 py-2 font-semibold text-navy-900">{s.playerName}</td>
                 <td className="px-4 py-2 text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="w-16 h-1.5 bg-cream-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-softball-red-600 rounded-full"
                         style={{ width: `${(s.totalGames / maxGames) * 100}%` }}

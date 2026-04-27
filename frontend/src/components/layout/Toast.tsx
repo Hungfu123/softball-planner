@@ -11,23 +11,29 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
       {toasts.map(t => (
         <div
           key={t.id}
-          className={`flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-[slideUp_300ms_ease] ${
+          className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl border text-sm font-medium animate-[slideUp_300ms_ease] ${
             t.type === 'success'
-              ? 'bg-emerald-600 text-white'
-              : 'bg-softball-red-600 text-white'
+              ? 'bg-cream-50 border-emerald-200 text-emerald-900'
+              : 'bg-cream-50 border-softball-red-300 text-softball-red-900'
           }`}
         >
-          {t.type === 'success' ? <CheckCircle size={18} /> : <AlertTriangle size={18} />}
+          <span className={t.type === 'success' ? 'text-emerald-700' : 'text-softball-red-700'}>
+            {t.type === 'success' ? <CheckCircle size={18} /> : <AlertTriangle size={18} />}
+          </span>
           <span className="flex-1">{t.message}</span>
           {t.action && (
             <button
               onClick={async () => { await t.action!.onClick(); onDismiss(t.id) }}
-              className="min-h-[36px] px-3 py-1.5 text-sm font-bold bg-white/25 rounded-md hover:bg-white/40 transition-colors cursor-pointer whitespace-nowrap active:scale-95"
+              className={`font-display min-h-[36px] px-3 py-1.5 text-xs font-extrabold tracking-widest uppercase rounded-md cursor-pointer whitespace-nowrap active:scale-95 ${
+                t.type === 'success'
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'bg-softball-red-600 text-white hover:bg-softball-red-700'
+              }`}
             >
               {t.action.label}
             </button>
           )}
-          <button onClick={() => onDismiss(t.id)} className="p-1.5 hover:opacity-70" aria-label="Schließen">
+          <button onClick={() => onDismiss(t.id)} className="p-1.5 text-gray-400 hover:text-gray-700" aria-label="Schließen">
             <XMark size={16} />
           </button>
         </div>

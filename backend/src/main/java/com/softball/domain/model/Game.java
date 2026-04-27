@@ -1,5 +1,6 @@
 package com.softball.domain.model;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +12,7 @@ public class Game {
     private Integer scoreThem;
     private GameDay gameDay;
     private int lineupEntryCount;
+    private Instant endedAt;
     private List<LineupEntry> lineupEntries = new ArrayList<>();
     private List<GameStaff> staff = new ArrayList<>();
 
@@ -40,4 +42,6 @@ public class Game {
     public List<GameStaff> getStaff() { return staff; }
     public void setStaff(final List<GameStaff> staff) { this.staff = staff; }
     public Long getGameDayId() { return gameDay != null ? gameDay.getId() : null; }
+    public Instant getEndedAt() { return endedAt; }
+    public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
 }

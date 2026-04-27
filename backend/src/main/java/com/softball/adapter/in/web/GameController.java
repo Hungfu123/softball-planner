@@ -6,6 +6,8 @@ import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
 import com.softball.application.LineupSuggestionService;
 import com.softball.application.SubstitutionService;
+import com.softball.domain.model.Game;
+import com.softball.domain.port.out.AtBatRepository;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,26 +22,45 @@ public class GameController {
     private final GameStaffService gameStaffService;
     private final LineupSuggestionService lineupSuggestionService;
     private final SubstitutionService substitutionService;
+    private final AtBatRepository atBatRepository;
 
     public GameController(final GameService gameService, final LineupService lineupService,
                           final GameStaffService gameStaffService,
                           final LineupSuggestionService lineupSuggestionService,
-                          final SubstitutionService substitutionService) {
+                          final SubstitutionService substitutionService,
+                          final AtBatRepository atBatRepository) {
         this.gameService = gameService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
         this.lineupSuggestionService = lineupSuggestionService;
         this.substitutionService = substitutionService;
+        this.atBatRepository = atBatRepository;
+    }
+
+    private GameResponse toResponseWithLive(final Game game) {
+        final long atBatCount = atBatRepository.countByGameId(game.getId());
+        final Integer liveScoreUs = atBatCount > 0 ? atBatRepository.sumRunsScoredByGameId(game.getId()) : null;
+        return GameResponse.from(game, atBatCount, liveScoreUs);
     }
 
     @PutMapping("/{id}/opponent")
     public GameResponse updateOpponent(@PathVariable final Long id, @RequestBody final UpdateGameRequest request) {
-        return GameResponse.from(gameService.updateOpponent(id, request.opponentTeamId()));
+        return toResponseWithLive(gameService.updateOpponent(id, request.opponentTeamId()));
     }
 
     @PutMapping("/{id}/score")
     public GameResponse setScore(@PathVariable final Long id, @RequestBody final SetGameScoreRequest request) {
-        return GameResponse.from(gameService.setScore(id, request.scoreUs(), request.scoreThem()));
+        return toResponseWithLive(gameService.setScore(id, request.scoreUs(), request.scoreThem()));
+    }
+
+    @PostMapping("/{id}/end")
+    public GameResponse endGame(@PathVariable final Long id) {
+        return toResponseWithLive(gameService.endGame(id));
+    }
+
+    @PostMapping("/{id}/reopen")
+    public GameResponse reopenGame(@PathVariable final Long id) {
+        return toResponseWithLive(gameService.reopenGame(id));
     }
 
     @GetMapping("/{id}/lineup")
@@ -69,7 +90,7 @@ public class GameController {
 
     @PostMapping("/{gameId1}/swap/{gameId2}")
     public List<GameResponse> swapGames(@PathVariable final Long gameId1, @PathVariable final Long gameId2) {
-        return gameService.swapGames(gameId1, gameId2).stream().map(GameResponse::from).toList();
+        return gameService.swapGames(gameId1, gameId2).stream().map(this::toResponseWithLive).toList();
     }
 
     @GetMapping("/{id}/substitutions")

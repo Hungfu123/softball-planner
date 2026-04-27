@@ -29,4 +29,15 @@ public interface SpringAtBatRepository extends JpaRepository<AtBatEntity, Long> 
 
     @Query("SELECT ab FROM AtBatEntity ab WHERE ab.game.id = :gameId ORDER BY ab.sequence DESC LIMIT 1")
     Optional<AtBatEntity> findLastByGameId(Long gameId);
+
+    long countByGameId(Long gameId);
+
+    @Query("SELECT ab.game.id, COUNT(ab) FROM AtBatEntity ab WHERE ab.game.id IN :gameIds GROUP BY ab.game.id")
+    List<Object[]> countByGameIdsRaw(List<Long> gameIds);
+
+    @Query("SELECT COALESCE(SUM(ab.runsScored), 0) FROM AtBatEntity ab WHERE ab.game.id = :gameId")
+    Integer sumRunsScoredByGameId(Long gameId);
+
+    @Query("SELECT ab.game.id, COALESCE(SUM(ab.runsScored), 0) FROM AtBatEntity ab WHERE ab.game.id IN :gameIds GROUP BY ab.game.id")
+    List<Object[]> sumRunsScoredByGameIdsRaw(List<Long> gameIds);
 }

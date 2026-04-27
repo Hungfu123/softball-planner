@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.hibernate.annotations.Formula;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +31,9 @@ public class GameEntity {
     private Integer scoreUs;
 
     private Integer scoreThem;
+
+    @Column(name = "ended_at")
+    private Instant endedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_day_id", nullable = false)
@@ -68,4 +72,6 @@ public class GameEntity {
     public void setStaff(List<GameStaffEntity> staff) { this.staff = staff; }
     public int getLineupEntryCount() { return lineupEntryCount; }
     public Long getGameDayId() { return gameDay != null ? gameDay.getId() : null; }
+    public Instant getEndedAt() { return endedAt; }
+    public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
 }

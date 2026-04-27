@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Season } from '@/types'
 import { PlusCircle, Pencil, TrashBin, XMark } from '@/icons'
+import { ChevronDown } from 'lucide-react'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { useToastContext } from '@/components/layout/Layout'
 
@@ -11,9 +12,10 @@ interface Props {
   onCreate: (name: string, year: number) => Promise<Season>
   onUpdate: (id: number, name: string, year: number) => Promise<Season>
   onDelete: (id: number) => Promise<void>
+  variant?: 'dropdown' | 'inline'
 }
 
-export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpdate, onDelete }: Props) {
+export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpdate, onDelete, variant = 'dropdown' }: Props) {
   const toast = useToastContext()
   const [showModal, setShowModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -56,6 +58,54 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
     <>
       <div className="flex items-center justify-between gap-3" ref={menuRef}>
         <span className="font-display text-[11px] font-bold tracking-widest uppercase text-gray-500 shrink-0">Saison</span>
+        {variant === 'inline' ? (
+          <div className="flex items-center gap-2 min-w-0">
+            {seasons.length > 1 ? (
+              <select
+                value={selectedId ?? ''}
+                onChange={e => onSelect(Number(e.target.value))}
+                className="font-display text-base lg:text-lg font-extrabold text-navy-900 bg-transparent outline-none cursor-pointer truncate"
+              >
+                {seasons.map(s => <option key={s.id} value={s.id}>{s.name} · {s.year}</option>)}
+              </select>
+            ) : (
+              <span className="font-display text-base lg:text-lg font-extrabold text-navy-900 truncate">
+                {selectedSeason ? `${selectedSeason.name} · ${selectedSeason.year}` : '— Keine Saison —'}
+              </span>
+            )}
+            {selectedId && (
+              <>
+                <button
+                  onClick={() => {
+                    const s = seasons.find(x => x.id === selectedId)
+                    if (s) { setName(s.name); setYear(s.year); setShowEditModal(true) }
+                  }}
+                  className="p-1.5 text-gray-400 hover:text-navy-800 hover:bg-cream-100 rounded-lg cursor-pointer shrink-0"
+                  title="Saison bearbeiten"
+                  aria-label="Saison bearbeiten"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-1.5 text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 rounded-lg cursor-pointer shrink-0"
+                  title="Saison löschen"
+                  aria-label="Saison löschen"
+                >
+                  <TrashBin size={14} />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setShowModal(true)}
+              className="p-1.5 text-gray-400 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer shrink-0"
+              title="Neue Saison"
+              aria-label="Neue Saison erstellen"
+            >
+              <PlusCircle size={16} />
+            </button>
+          </div>
+        ) : (
         <div className="relative">
           <button
             onClick={() => setShowMenu(s => !s)}
@@ -66,7 +116,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
             <span className="truncate max-w-[220px]">
               {selectedSeason ? `${selectedSeason.name} · ${selectedSeason.year}` : '— Saison wählen —'}
             </span>
-            <span className="text-gray-400 text-xs">▾</span>
+            <ChevronDown size={14} className="text-gray-400" />
           </button>
           {showMenu && (
             <div
@@ -122,12 +172,13 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
             </div>
           )}
         </div>
+        )}
       </div>
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
               <h2 className="text-lg font-bold text-gray-900">Neue Saison</h2>
               <button onClick={() => setShowModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
                 <XMark size={20} />
@@ -141,7 +192,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                   value={name}
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                   autoFocus
                 />
               </div>
@@ -153,14 +204,14 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                   onChange={e => setYear(Number(e.target.value))}
                   min={2020}
                   max={2030}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                 />
               </div>
             </div>
-            <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
+                className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200"
               >
                 Abbrechen
               </button>
@@ -178,8 +229,8 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
 
       {showEditModal && selectedId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowEditModal(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
               <h2 className="text-lg font-bold text-gray-900">Saison bearbeiten</h2>
               <button onClick={() => setShowEditModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
                 <XMark size={20} />
@@ -198,7 +249,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                         .catch((err: Error) => toast.show(err.message, 'error'))
                     }
                   }}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                   autoFocus
                 />
               </div>
@@ -210,14 +261,14 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                   onChange={e => setYear(Number(e.target.value))}
                   min={2020}
                   max={2030}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                 />
               </div>
             </div>
-            <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+            <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100"
+                className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200"
               >
                 Abbrechen
               </button>

@@ -126,11 +126,11 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
     <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
           <Drawer.Title className="sr-only">Runner korrigieren</Drawer.Title>
           {/* Sticky top mit Drag-Handle + X-Close */}
-          <div className="sticky top-0 bg-white z-10 border-b border-gray-100">
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
+          <div className="sticky top-0 bg-cream-50 z-10 border-b border-cream-300">
+            <div className="w-12 h-1.5 bg-cream-300 rounded-full mx-auto mt-3" />
             <div className="flex items-center justify-between px-4 py-3">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">
@@ -172,7 +172,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
             )}
 
             {assignments.map(a => (
-              <div key={a.playerId} className="border border-gray-200 rounded-xl p-3 bg-gray-50">
+              <div key={a.playerId} className="border border-cream-300 rounded-xl p-3 bg-cream-100">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="font-bold text-gray-900">{a.playerName}</div>
@@ -234,7 +234,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={onClose}
-                  className="h-11 rounded-lg border border-gray-300 text-gray-700 font-medium cursor-pointer hover:bg-gray-50"
+                  className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium cursor-pointer hover:bg-cream-100"
                 >
                   Abbrechen
                 </button>

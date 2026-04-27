@@ -37,9 +37,9 @@ export function ChunkErrorBoundary() {
 
   if (isChunkError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-cream-100 p-6">
         <div className="text-center">
-          <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3">
+          <div className="w-12 h-1.5 bg-cream-300 rounded-full overflow-hidden mx-auto mb-3">
             <div className="h-full w-1/3 bg-navy-800 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" />
           </div>
           <p className="text-sm text-gray-600">App wird aktualisiert…</p>
@@ -50,7 +50,7 @@ export function ChunkErrorBoundary() {
 
   // Alle anderen Fehler: generische Fehleranzeige mit manuellem Reload
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-cream-100 p-6">
       <div className="max-w-md text-center space-y-4">
         <h1 className="text-xl font-bold text-gray-900">Etwas ist schiefgelaufen</h1>
         <p className="text-sm text-gray-600 break-words">{msg}</p>

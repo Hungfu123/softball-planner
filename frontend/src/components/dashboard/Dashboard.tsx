@@ -33,11 +33,19 @@ export function Dashboard() {
   const [newGdLocation, setNewGdLocation] = useState('')
   const [newGdGameCount, setNewGdGameCount] = useState(3)
 
+  // Letzte Auswahl aus localStorage (überlebt Navigation Logo→Dashboard)
   useEffect(() => {
     if (seasons.length > 0 && !selectedSeasonId) {
-      setSelectedSeasonId(seasons[seasons.length - 1].id)
+      const persisted = Number(localStorage.getItem('dashboard-season-id'))
+      const known = seasons.find(s => s.id === persisted)?.id
+      setSelectedSeasonId(known ?? seasons[seasons.length - 1].id)
     }
   }, [seasons, selectedSeasonId])
+
+  // Auswahl persistieren
+  useEffect(() => {
+    if (selectedSeasonId != null) localStorage.setItem('dashboard-season-id', String(selectedSeasonId))
+  }, [selectedSeasonId])
 
   useEffect(() => {
     if (!selectedSeasonId) return
@@ -106,9 +114,9 @@ export function Dashboard() {
     upcomingGd?.date === today ? 'today' : upcomingGd ? 'upcoming' : 'past'
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* Kompakter Saison-Selector — flach, mit Full-Width Trennstrich */}
-      <div className="-mx-3 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pb-3 border-b border-cream-300">
+    <div className="space-y-3 sm:space-y-4">
+      {/* Saison-Selector: Dropdown auf allen Screens (konsistent mobile + desktop) */}
+      <div className="-mx-3 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pb-2 border-b border-cream-300">
         <SeasonSelector
           seasons={seasons}
           selectedId={selectedSeasonId}
@@ -179,8 +187,8 @@ export function Dashboard() {
 
           {showNewGameDay && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowNewGameDay(false)}>
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
                     <h2 className="text-lg font-bold text-gray-900">Neuer Spieltag</h2>
                     <button onClick={() => setShowNewGameDay(false)} className="p-1 text-gray-400 hover:text-gray-600">
                       <XMark size={20} />
@@ -193,7 +201,7 @@ export function Dashboard() {
                         type="date"
                         value={newGdDate}
                         onChange={e => setNewGdDate(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                         autoFocus
                       />
                     </div>
@@ -210,7 +218,7 @@ export function Dashboard() {
                           setNewGdGameCount(Math.max(1, Math.min(10, Number(val))));
                         }}
                         onBlur={() => { if (!newGdGameCount) setNewGdGameCount(1); }}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                       />
                     </div>
                     <div>
@@ -219,7 +227,7 @@ export function Dashboard() {
                         placeholder="z.B. Spieltag 3"
                         value={newGdLabel}
                         onChange={e => setNewGdLabel(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                       />
                     </div>
                     <div>
@@ -228,11 +236,11 @@ export function Dashboard() {
                         placeholder="z.B. Berlin Tegel"
                         value={newGdLocation}
                         onChange={e => setNewGdLocation(e.target.value)}
-                        className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
                       />
                     </div>
                   </div>
-                  <div className="px-5 py-4 border-t border-gray-100 flex justify-end gap-2">
+                  <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
                     <Button variant="ghost" onClick={() => setShowNewGameDay(false)}>Abbrechen</Button>
                     <Button onClick={handleCreateGameDay} disabled={!newGdDate || !newGdGameCount}>
                       Erstellen
@@ -313,6 +321,10 @@ export function Dashboard() {
               if (playedGames.length === 0) {
                 return <p className="text-sm text-gray-500 text-center py-6">Noch keine gespielten Spiele.</p>
               }
+              const fmtDate = (iso: string) => {
+                const d = new Date(iso + 'T00:00:00')
+                return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' })
+              }
               return (
                 <div className="space-y-1.5">
                   {playedGames.slice().reverse().map(({ gd, g }) => {
@@ -320,6 +332,8 @@ export function Dashboard() {
                     const them = g.scoreThem ?? 0
                     const r = us > them ? 'W' : us < them ? 'L' : 'T'
                     const pipColor = r === 'W' ? 'bg-emerald-600' : r === 'L' ? 'bg-softball-red-600' : 'bg-gray-500'
+                    const opponent = g.opponentTeam?.name ?? 'Gegner offen'
+                    const context = [gd.label, gd.location].filter(Boolean).join(' · ')
                     return (
                       <Link
                         key={g.id}
@@ -327,12 +341,16 @@ export function Dashboard() {
                         onClick={() => setOpenSheet(null)}
                         className="flex items-center gap-3 px-3 py-2.5 bg-white border border-cream-300 rounded-xl hover:border-navy-400"
                       >
-                        <span className={`font-display ${pipColor} w-7 h-7 rounded-lg text-white text-xs font-extrabold flex items-center justify-center`}>{r}</span>
+                        <span className={`font-display ${pipColor} w-7 h-7 rounded-lg text-white text-xs font-extrabold flex items-center justify-center shrink-0`}>{r}</span>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-[13px] truncate">{g.opponentTeam?.name ?? 'Unbekannt'}</div>
-                          <div className="text-[11px] text-gray-500">{gd.date}</div>
+                          <div className="font-display font-bold text-[13px] uppercase tracking-wide truncate">
+                            <span className="text-gray-500">vs</span> <span className="text-navy-900">{opponent}</span>
+                          </div>
+                          <div className="text-[11px] text-gray-500 truncate">
+                            {fmtDate(gd.date)}{context && ` · ${context}`}
+                          </div>
                         </div>
-                        <span className="font-display text-sm font-extrabold tabular-nums text-navy-900">{us}–{them}</span>
+                        <span className="font-display text-base font-extrabold tabular-nums text-navy-900 shrink-0">{us}–{them}</span>
                       </Link>
                     )
                   })}

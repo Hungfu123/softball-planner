@@ -1,3 +1,4 @@
+import { Trophy, Award, CalendarDays, TrendingUp } from 'lucide-react'
 import type { GameDayResponse, PlayerBattingStatsResponse } from '@/types'
 
 interface Props {
@@ -34,77 +35,113 @@ export function SeasonTileGrid({ gameDays, battingStats, onOpenLiga, onOpenStats
   const runsConceded = playedGames.reduce((s, g) => s + (g.scoreThem ?? 0), 0)
   const runDiff = runsScored - runsConceded
 
-  const tileBase = 'text-left bg-cream-50 border border-cream-300 rounded-2xl p-3 sm:p-4 hover:border-navy-400 hover:bg-white transition-colors active:scale-[0.98] cursor-pointer'
+  const tileBase = 'text-left bg-cream-50 border border-cream-300 rounded-xl p-2.5 sm:p-3 md:p-4 flex flex-col hover:border-navy-400 hover:bg-white transition-colors active:scale-[0.98] cursor-pointer'
+  const iconHeader = 'flex items-center gap-1.5 mb-1'
+  const labelCls = 'font-display text-[9px] sm:text-[10px] tracking-widest font-bold text-gray-500 uppercase'
+  const bigCls = 'font-display text-lg sm:text-xl md:text-2xl font-extrabold text-navy-900 leading-none mt-0.5'
+  const subCls = 'text-[10px] sm:text-[11px] text-gray-600 mt-0.5 leading-tight'
 
   const fmtAvg = (v: number) => {
     const s = v.toFixed(3)
     return s.startsWith('0') ? s.slice(1) : s
   }
 
+  // Bento-Asymmetric: LIGA span-2 hero · TOP HITTER + RUNS 50/50 · ERGEBNISSE span-2 strip
+  const heroBig = 'font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-navy-900 leading-none'
+
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-3">
-      <button onClick={onOpenLiga} className={tileBase}>
-        <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-base mb-2">🏆</div>
-        <div className="font-display text-[10px] tracking-widest font-bold text-gray-500 uppercase">Liga</div>
-        <div className="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 leading-none mt-0.5">
-          {wins}–{losses}{ties > 0 ? `–${ties}` : ''}
+    <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+      {/* Row 1 — LIGA Hero (span 2 cols) */}
+      <button onClick={onOpenLiga} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
+        <Trophy size={22} strokeWidth={2.2} className="text-navy-800 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className={labelCls}>Liga</div>
+          <div className={heroBig}>{wins}–{losses}{ties > 0 ? `–${ties}` : ''}</div>
         </div>
-        <div className="text-[11px] text-gray-600 mt-0.5">{playedGames.length} Spiele</div>
+        <div className="text-right shrink-0">
+          <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-300 leading-none">{playedGames.length}</div>
+          <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Spiele</div>
+        </div>
       </button>
 
+      {/* Row 2 — TOP HITTER + RUNS */}
       <button onClick={onOpenStats} className={tileBase}>
-        <div className="w-8 h-8 rounded-lg bg-navy-50 text-navy-700 flex items-center justify-center text-base mb-2">⚾</div>
-        <div className="font-display text-[10px] tracking-widest font-bold text-gray-500 uppercase">Top Hitter</div>
+        <div className={iconHeader}>
+          <Award size={18} strokeWidth={2.2} className="text-softball-red-700" />
+          <span className={labelCls}>Top Hitter</span>
+        </div>
         {topHitter ? (
-          <>
-            <div className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 leading-none mt-0.5 truncate">
-              {fmtAvg(topHitter.battingAverage)}<span className="text-[11px] tracking-widest font-bold text-gray-500 ml-1">AVG</span>
+          <div className="flex items-end justify-between gap-2 mt-0.5">
+            <div className="min-w-0">
+              <div className={`${bigCls} truncate`}>
+                {fmtAvg(topHitter.battingAverage)}<span className="text-[10px] tracking-widest font-bold text-gray-500 ml-1">AVG</span>
+              </div>
+              <div className={`${subCls} truncate`}>{topHitter.playerName}</div>
             </div>
-            <div className="text-[11px] text-gray-600 mt-0.5 truncate">{topHitter.playerName}</div>
-          </>
+            <div className="text-right shrink-0">
+              <div className="font-display text-base sm:text-lg font-extrabold text-gray-300 leading-none">{topHitter.plateAppearances}</div>
+              <div className={`${labelCls} text-[8px] sm:text-[9px]`}>PA</div>
+            </div>
+          </div>
         ) : (
           <>
-            <div className="font-display text-xl font-bold text-gray-400 mt-0.5">—</div>
-            <div className="text-[11px] text-gray-500 mt-0.5">Min. {MIN_PA} PA nötig</div>
+            <div className="font-display text-base font-bold text-gray-400 mt-0.5">—</div>
+            <div className={subCls}>Min. {MIN_PA} PA nötig</div>
           </>
         )}
       </button>
 
       <button onClick={onOpenResults} className={tileBase}>
-        <div className="w-8 h-8 rounded-lg bg-cream-200 text-gray-700 flex items-center justify-center text-base mb-2">📅</div>
-        <div className="font-display text-[10px] tracking-widest font-bold text-gray-500 uppercase">Ergebnisse</div>
-        <div className="flex gap-1 mt-1.5 mb-0.5">
-          {recentResults.length > 0 ? recentResults.map((r, i) => (
-            <span
-              key={i}
-              className={`font-display w-5 h-5 sm:w-6 sm:h-6 rounded text-[10px] sm:text-xs font-extrabold text-white flex items-center justify-center ${
-                r === 'W' ? 'bg-emerald-600' : r === 'L' ? 'bg-softball-red-600' : 'bg-gray-500'
-              }`}
-            >{r}</span>
-          )) : <span className="text-xs text-gray-400">Noch keine Spiele</span>}
+        <div className={iconHeader}>
+          <TrendingUp size={18} strokeWidth={2.2} className="text-softball-red-700" />
+          <span className={labelCls}>Runs</span>
         </div>
-        {recentResults.length > 0 && <div className="text-[11px] text-gray-600">letzte {recentResults.length}</div>}
-      </button>
-
-      <button onClick={onOpenResults} className={tileBase}>
-        <div className="w-8 h-8 rounded-lg bg-softball-red-50 text-softball-red-700 flex items-center justify-center text-base mb-2">📊</div>
-        <div className="font-display text-[10px] tracking-widest font-bold text-gray-500 uppercase">Runs</div>
         {playedGames.length > 0 ? (
-          <>
-            <div className="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 leading-none mt-0.5 inline-flex items-baseline gap-1">
-              <span className="text-emerald-700">{runsScored}</span>
-              <span className="text-gray-400 text-base">/</span>
-              <span className="text-softball-red-700">{runsConceded}</span>
+          <div className="flex items-end justify-between gap-2 mt-0.5">
+            <div className="min-w-0">
+              <div className={`${bigCls} inline-flex items-baseline gap-1`}>
+                <span className="text-navy-800">{runsScored}</span>
+                <span className="text-gray-400 text-xs">/</span>
+                <span className="text-softball-red-700">{runsConceded}</span>
+              </div>
+              <div className={subCls}>geschossen / kassiert</div>
             </div>
-            <div className="text-[11px] text-gray-600 mt-0.5">
-              Diff {runDiff > 0 ? `+${runDiff}` : runDiff}
+            <div className="text-right shrink-0">
+              <div className={`font-display text-base sm:text-lg font-extrabold leading-none ${runDiff > 0 ? 'text-emerald-600' : runDiff < 0 ? 'text-softball-red-600' : 'text-gray-400'}`}>
+                {runDiff > 0 ? `+${runDiff}` : runDiff}
+              </div>
+              <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Diff</div>
             </div>
-          </>
+          </div>
         ) : (
           <>
-            <div className="font-display text-xl font-bold text-gray-400 mt-0.5">—</div>
-            <div className="text-[11px] text-gray-500 mt-0.5">Noch keine Spiele</div>
+            <div className="font-display text-base font-bold text-gray-400 mt-0.5">—</div>
+            <div className={subCls}>Keine Spiele</div>
           </>
+        )}
+      </button>
+
+      {/* Row 3 — ERGEBNISSE Strip (span 2 cols) */}
+      <button onClick={onOpenResults} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
+        <CalendarDays size={20} strokeWidth={2.2} className="text-navy-800 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className={labelCls}>Ergebnisse</div>
+          <div className="flex items-center gap-1.5 mt-1">
+            {recentResults.length > 0 ? recentResults.map((r, i) => (
+              <span
+                key={i}
+                className={`font-display w-6 h-6 sm:w-7 sm:h-7 rounded text-[10px] sm:text-xs font-extrabold text-white flex items-center justify-center ${
+                  r === 'W' ? 'bg-emerald-600' : r === 'L' ? 'bg-softball-red-600' : 'bg-gray-500'
+                }`}
+              >{r}</span>
+            )) : <span className="text-xs text-gray-400">Noch keine Spiele</span>}
+          </div>
+        </div>
+        {recentResults.length > 0 && (
+          <div className="text-right shrink-0">
+            <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-300 leading-none">{recentResults.length}</div>
+            <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Letzte</div>
+          </div>
         )}
       </button>
     </div>

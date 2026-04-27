@@ -3,6 +3,7 @@ package com.softball.service;
 import com.softball.adapter.dto.GameDayPlayerStats;
 import com.softball.adapter.dto.GameDayResponse;
 import com.softball.domain.model.*;
+import com.softball.domain.port.out.AtBatRepository;
 import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.LineupEntryRepository;
 import com.softball.application.AvailabilityService;
@@ -31,6 +32,9 @@ class GameDayServiceTest {
 
     @Mock
     private LineupEntryRepository lineupEntryRepository;
+
+    @Mock
+    private AtBatRepository atBatRepository;
 
     @Mock
     private SeasonService seasonService;

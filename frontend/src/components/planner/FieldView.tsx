@@ -28,11 +28,11 @@ export function FieldView({ entries }: Props) {
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2 flex items-center gap-2">
-        <span className="w-1 h-4 bg-softball-red-500 rounded-full" />
+      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 mb-2 pb-1.5 border-b border-cream-200 flex items-center gap-2">
+        <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Feld
       </h2>
-      <div className="relative bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden" style={{ paddingBottom: '90%' }}>
+      <div className="relative bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden" style={{ paddingBottom: '90%' }}>
         <svg viewBox="0 0 100 95" className="absolute inset-0 w-full h-full">
           {/* Baselines */}
           <polygon
@@ -52,25 +52,27 @@ export function FieldView({ entries }: Props) {
             const name = posMap.get(pos)
             return (
               <g key={pos}>
-                {/* Position label */}
+                {/* Position label — kleiner als Name (Name ist primary) */}
                 <text
                   x={coord.x}
-                  y={name ? coord.y - 4 : coord.y - 1}
+                  y={name ? coord.y - 3.5 : coord.y - 1}
                   textAnchor="middle"
-                  fontSize="3.2"
-                  fontWeight="bold"
-                  fill={name ? '#111B6B' : '#9ca3af'}
+                  fontSize="2.4"
+                  fontWeight="700"
+                  letterSpacing="0.15"
+                  fill={name ? '#CC2936' : '#9ca3af'}
                 >
                   {pos}
                 </text>
-                {/* Player name */}
+                {/* Player name — primary */}
                 {name && (
                   <text
                     x={coord.x}
-                    y={coord.y + 1}
+                    y={coord.y + 1.4}
                     textAnchor="middle"
-                    fontSize="2.8"
-                    fill="#374151"
+                    fontSize="3.2"
+                    fontWeight="700"
+                    fill="#0A0F5C"
                   >
                     {name.length > 12 ? name.slice(0, 11) + '…' : name}
                   </text>

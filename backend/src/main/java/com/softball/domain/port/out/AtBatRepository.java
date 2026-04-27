@@ -3,6 +3,7 @@ package com.softball.domain.port.out;
 import com.softball.domain.model.AtBat;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface AtBatRepository {
@@ -14,6 +15,10 @@ public interface AtBatRepository {
     Optional<AtBat> findById(Long id);
     Optional<AtBat> findLastByGameId(Long gameId);
     Integer findMaxSequenceByGameId(Long gameId);
+    long countByGameId(Long gameId);
+    Map<Long, Long> countByGameIds(List<Long> gameIds);
+    int sumRunsScoredByGameId(Long gameId);
+    Map<Long, Integer> sumRunsScoredByGameIds(List<Long> gameIds);
     AtBat save(AtBat atBat);
     void deleteById(Long id);
 }

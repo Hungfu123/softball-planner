@@ -52,7 +52,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
     g.opponentTeam ? `Spiel ${g.gameNumber} (vs ${g.opponentTeam.name})` : `Spiel ${g.gameNumber}`
 
   return (
-    <div className="flex border-b border-gray-200 overflow-visible items-stretch">
+    <div className="flex border-b border-cream-300 overflow-visible items-stretch">
       {games.map((game, i) => (
         <div key={game.id} className="relative group flex items-center">
           <button
@@ -175,7 +175,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
               {menuGameId === game.id && (
                 <div
                   ref={menuRef}
-                  className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50 min-w-[200px]"
+                  className="absolute top-full left-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]"
                 >
                   <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
                     Lineup tauschen mit...
@@ -236,7 +236,7 @@ function ScoreEditor({ scoreUs, scoreThem, onSave, onClose }: {
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-48"
+      className="absolute top-full left-0 mt-1 z-50 bg-cream-50 border border-cream-300 rounded-lg shadow-lg p-3 w-48"
     >
       <div className="text-xs font-semibold text-gray-500 mb-2">Ergebnis</div>
       <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ function ScoreEditor({ scoreUs, scoreThem, onSave, onClose }: {
           onChange={e => setUs(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') onClose() }}
           placeholder="Wir"
-          className="w-16 border border-gray-200 rounded px-2 py-1.5 text-sm text-center font-mono outline-none focus:border-navy-600"
+          className="w-16 border border-cream-300 rounded px-2 py-1.5 text-sm text-center font-mono outline-none focus:border-navy-600"
         />
         <span className="text-gray-400 font-bold">:</span>
         <input
@@ -258,7 +258,7 @@ function ScoreEditor({ scoreUs, scoreThem, onSave, onClose }: {
           onChange={e => setThem(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') onClose() }}
           placeholder="Sie"
-          className="w-16 border border-gray-200 rounded px-2 py-1.5 text-sm text-center font-mono outline-none focus:border-navy-600"
+          className="w-16 border border-cream-300 rounded px-2 py-1.5 text-sm text-center font-mono outline-none focus:border-navy-600"
         />
       </div>
       <div className="flex justify-between mt-2">
@@ -329,7 +329,7 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
   return (
     <div
       ref={ref}
-      className="absolute top-full left-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg w-56"
+      className="absolute top-full left-0 mt-1 z-50 bg-cream-50 border border-cream-300 rounded-lg shadow-lg w-56"
     >
       <div className="p-2">
         <input
@@ -342,7 +342,7 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
             if (e.key === 'Escape') onClose()
           }}
           placeholder="Suchen oder erstellen..."
-          className="w-full border border-gray-200 rounded px-2.5 py-1.5 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100"
+          className="w-full border border-cream-300 rounded px-2.5 py-1.5 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100"
         />
       </div>
 
@@ -355,7 +355,7 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
             {currentTeam && (
               <button
                 onClick={() => onSelect(null)}
-                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-gray-50 cursor-pointer"
+                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-cream-100 cursor-pointer"
               >
                 Gegner entfernen
               </button>
@@ -379,7 +379,7 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
             )}
 
             {!showCreate && search.trim().length === 0 && filtered.length > 0 && (
-              <div className="px-3 py-2 text-[11px] text-gray-400 border-t border-gray-100">
+              <div className="px-3 py-2 text-[11px] text-gray-400 border-t border-cream-200">
                 Name eingeben um neues Team zu erstellen
               </div>
             )}
@@ -387,7 +387,7 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
             {/* Create new team option */}
             {showCreate && (
               <>
-                {filtered.length > 0 && <div className="border-t border-gray-100" />}
+                {filtered.length > 0 && <div className="border-t border-cream-200" />}
                 <button
                   onClick={handleCreate}
                   disabled={creating}

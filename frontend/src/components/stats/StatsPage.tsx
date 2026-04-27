@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { ChevronDown, Trophy } from 'lucide-react'
 import * as api from '@/api/client'
 import type { PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
 import { BattingStatsTable } from './BattingStatsTable'
@@ -131,59 +132,88 @@ export function StatsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-1 h-8 bg-softball-red-600 rounded-full" />
-          <h1 className="text-2xl font-bold text-gray-950">Statistik</h1>
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-cream-300">
+          <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h1>
           <button
             onClick={() => setShowGlossary(true)}
-            className="ml-auto text-sm text-gray-500 hover:text-navy-700 cursor-pointer flex items-center gap-1"
+            className="font-display ml-auto text-[11px] tracking-widest uppercase text-gray-500 hover:text-navy-700 cursor-pointer flex items-center gap-1.5 font-bold"
             title="Abkürzungen und Formeln erklärt"
           >
-            <span className="inline-flex w-5 h-5 items-center justify-center rounded-full bg-gray-200 text-gray-600 text-xs font-bold">i</span>
+            <span className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-cream-300 text-gray-600 text-xs font-bold">i</span>
             <span className="hidden sm:inline">Abkürzungen</span>
           </button>
         </div>
 
-        {/* Scope Toggle */}
-        <div className="flex flex-wrap gap-2 mb-3">
+        {/* Compact Filter-Row: Scope-Pills + Selector inline */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
           {scopeKind === 'game' && (
             <ScopeChip active={true} onClick={() => { /* noop */ }}>Dieses Spiel</ScopeChip>
           )}
           <ScopeChip active={scopeKind === 'season'} onClick={() => setScope('season')}>Saison</ScopeChip>
           <ScopeChip active={scopeKind === 'year'} onClick={() => setScope('year')}>Jahr</ScopeChip>
           <ScopeChip active={scopeKind === 'allTime'} onClick={() => setScope('allTime')}>Alle Zeit</ScopeChip>
+
+          {/* Selector inline rechts daneben statt eigene Reihe */}
+          {scopeKind === 'season' && seasons.length > 0 && (
+            <div className="relative inline-flex items-center ml-auto sm:ml-0">
+              <select
+                value={selectedSeasonId ?? ''}
+                onChange={e => setSeasonId(Number(e.target.value))}
+                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400"
+              >
+                {seasons.map(s => (
+                  <option key={s.id} value={s.id}>{s.name} · {s.year}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
+            </div>
+          )}
+          {scopeKind === 'year' && years.length > 0 && (
+            <div className="relative inline-flex items-center ml-auto sm:ml-0">
+              <select
+                value={selectedYear}
+                onChange={e => setYear(Number(e.target.value))}
+                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400"
+              >
+                {years.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
+            </div>
+          )}
         </div>
-
-        {/* Scope Picker */}
-        {scopeKind === 'season' && seasons.length > 0 && (
-          <select
-            value={selectedSeasonId ?? ''}
-            onChange={e => setSeasonId(Number(e.target.value))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
-          >
-            {seasons.map(s => (
-              <option key={s.id} value={s.id}>{s.name} ({s.year})</option>
-            ))}
-          </select>
-        )}
-        {scopeKind === 'year' && years.length > 0 && (
-          <select
-            value={selectedYear}
-            onChange={e => setYear(Number(e.target.value))}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        )}
-
-        {/* Kontext-Info */}
-        <p className="text-xs text-gray-500 mt-2">{contextInfo}</p>
       </div>
 
+      {/* Highlight-Banner: Top-Stat als visueller Anker */}
+      {(() => {
+        const topPlayer = battingStats
+          .filter(p => p.atBats > 0)
+          .sort((a, b) => Number(b.battingAverage) - Number(a.battingAverage))[0]
+        if (!topPlayer) return null
+        const fmtAvg = (v: number) => {
+          const s = v.toFixed(3)
+          return s.startsWith('0') ? s.slice(1) : s
+        }
+        return (
+          <div className="bg-cream-50 border border-cream-300 rounded-xl px-4 py-2.5 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-softball-red-50 text-softball-red-700 flex items-center justify-center shrink-0">
+              <Trophy size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-display text-[10px] font-bold tracking-widest uppercase text-gray-500">Top Hitter · {contextInfo}</div>
+              <div className="font-display font-extrabold text-navy-900 truncate">{topPlayer.playerName}</div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="font-display text-2xl sm:text-3xl font-extrabold text-softball-red-600 leading-none tabular-nums">{fmtAvg(Number(topPlayer.battingAverage))}</div>
+              <div className="font-display text-[9px] font-bold tracking-widest text-gray-500">AVG</div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* View Tabs — 'Einsätze' macht nur Sinn bei aggregierten Scopes */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-cream-300">
         <ViewTab active={view === 'batting'} onClick={() => setView('batting')}>Schlagen</ViewTab>
         {scopeKind !== 'game' && (
           <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
@@ -193,7 +223,7 @@ export function StatsPage() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-48 h-1.5 bg-cream-200 rounded-full overflow-hidden">
             <div className="h-full w-1/3 bg-navy-800 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" />
           </div>
         </div>
@@ -212,8 +242,8 @@ function ScopeChip({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-1.5 text-sm font-semibold rounded-full cursor-pointer transition-colors ${
-        active ? 'bg-navy-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+      className={`font-display px-3 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full cursor-pointer transition-colors ${
+        active ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
       }`}
     >
       {children}
@@ -225,8 +255,8 @@ function ViewTab({ active, onClick, children }: { active: boolean; onClick: () =
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-semibold cursor-pointer border-b-2 -mb-[2px] transition-colors ${
-        active ? 'border-softball-red-600 text-softball-red-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+      className={`font-display px-4 py-2 text-xs font-bold tracking-widest uppercase cursor-pointer border-b-2 -mb-[2px] transition-colors ${
+        active ? 'border-softball-red-600 text-softball-red-700' : 'border-transparent text-gray-500 hover:text-navy-900'
       }`}
     >
       {children}

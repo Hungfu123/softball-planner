@@ -61,7 +61,7 @@ export function ActionButtons({ onRecord, disabled }: Props) {
             </div>
             <button
               onClick={handleCancel}
-              className="w-full h-11 rounded-lg border border-gray-300 text-gray-600 text-sm font-medium hover:bg-gray-100 cursor-pointer"
+              className="w-full h-11 rounded-lg border border-cream-300 text-gray-600 text-sm font-medium hover:bg-cream-200 cursor-pointer"
             >
               ← Abbrechen
             </button>

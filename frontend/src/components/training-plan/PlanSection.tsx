@@ -72,7 +72,7 @@ export default function PlanSection({ section, drills }: Props) {
 
   return (
     <div className="relative">
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden plan-section">
+      <div className="bg-cream-50 rounded-xl border border-cream-300 overflow-hidden plan-section">
         {/* Header */}
         <div className="px-4 py-3 flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -100,7 +100,7 @@ export default function PlanSection({ section, drills }: Props) {
             <p className="text-xs text-gray-400 mb-2">Je nach Equipment und Spieleranzahl auswählen:</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {BATTING_STATIONS.map((station, i) => (
-                <div key={i} className="bg-gray-50 rounded-lg px-3 py-2 border border-gray-100">
+                <div key={i} className="bg-cream-100 rounded-lg px-3 py-2 border border-cream-200">
                   <p className="text-xs font-semibold text-gray-900">{station.label}</p>
                   <p className="text-[10px] text-gray-400">{station.desc}</p>
                 </div>
@@ -136,7 +136,7 @@ export default function PlanSection({ section, drills }: Props) {
               Drill-Beschreibung
             </button>
             {descOpen && (
-              <div className="px-4 pb-3 text-sm text-gray-600 leading-relaxed space-y-0.5 border-t border-gray-50 pt-2">
+              <div className="px-4 pb-3 text-sm text-gray-600 leading-relaxed space-y-0.5 border-t border-cream-200 pt-2">
                 <FormattedText text={drill.description} />
                 {drill.rotation && <p className="text-xs text-gray-400 mt-2"><span className="font-medium text-gray-500">Handbuch-Rotation:</span> {drill.rotation}</p>}
                 {drill.variants && <p className="text-xs text-gray-400"><span className="font-medium text-gray-500">Varianten:</span> {drill.variants}</p>}
@@ -150,13 +150,13 @@ export default function PlanSection({ section, drills }: Props) {
           <>
             <button
               onClick={() => setCoachOpen(!coachOpen)}
-              className="w-full px-4 py-1.5 text-left text-xs text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer flex items-center gap-1"
+              className="w-full px-4 py-1.5 text-left text-xs text-gray-400 hover:bg-cream-100 transition-colors cursor-pointer flex items-center gap-1"
             >
               <span className={`transition-transform text-[10px] ${coachOpen ? 'rotate-90' : ''}`}>▸</span>
               Weitere Details
             </button>
             {coachOpen && (
-              <div data-print-expand className="px-4 pb-3 space-y-1.5 text-xs text-gray-500 border-t border-gray-50 pt-2">
+              <div data-print-expand className="px-4 pb-3 space-y-1.5 text-xs text-gray-500 border-t border-cream-200 pt-2">
                 {section.setupNotes && <p><span className="font-medium text-gray-600">Aufbau:</span> {section.setupNotes}</p>}
                 {section.tips && <p><span className="font-medium text-gray-600">Tipps:</span> {section.tips}</p>}
                 {section.rounds && <p><span className="font-medium text-gray-600">Runden:</span> {section.rounds}</p>}

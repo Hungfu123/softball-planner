@@ -147,7 +147,7 @@ export default function TrainingPlanPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <div className="w-48 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className="w-48 h-1.5 bg-cream-200 rounded-full overflow-hidden">
           <div className="h-full w-1/3 bg-navy-800 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" />
         </div>
         <p className="text-sm text-gray-400">Laden…</p>
@@ -179,7 +179,7 @@ export default function TrainingPlanPage() {
                 className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
                   activePeriodId === p.id
                     ? 'bg-navy-800 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
                 }`}
               >
                 {p.name}
@@ -246,7 +246,7 @@ export default function TrainingPlanPage() {
                           </button>
                         </>
                       ) : (
-                        <span className="px-4 py-2 bg-white text-navy-800 rounded-lg text-sm font-medium">
+                        <span className="px-4 py-2 bg-cream-50 text-navy-800 rounded-lg text-sm font-medium">
                           Plan erstellen →
                         </span>
                       )}
@@ -261,7 +261,7 @@ export default function TrainingPlanPage() {
           {restUpcoming.length > 0 && (
             <div>
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Kommende Trainings</h2>
-              <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+              <div className="bg-cream-50 rounded-xl border border-cream-300 divide-y divide-cream-200">
                 {restUpcoming.map(t => {
                   const plan = plans.get(t.id)
                   const hasPlan = !!plan
@@ -272,7 +272,7 @@ export default function TrainingPlanPage() {
                       className="group flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-navy-50/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <span className={`w-2 h-2 rounded-full ${hasPlan ? 'bg-navy-600' : 'bg-gray-300'}`} />
+                        <span className={`w-2 h-2 rounded-full ${hasPlan ? 'bg-navy-600' : 'bg-cream-300'}`} />
                         <span className="text-sm font-medium text-gray-900">{formatDate(t.date)}</span>
                         {hasPlan && plan && <FocusBadgesLight focus={plan.focus} />}
                       </div>
@@ -317,7 +317,7 @@ export default function TrainingPlanPage() {
                 Vergangene Trainings ({past.length})
               </button>
               {showPast && (
-                <div className="mt-2 bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                <div className="mt-2 bg-cream-50 rounded-xl border border-cream-300 divide-y divide-cream-200">
                   {past.map(t => {
                     const plan = plans.get(t.id)
                     const hasPlan = !!plan
@@ -325,10 +325,10 @@ export default function TrainingPlanPage() {
                       <div
                         key={t.id}
                         onClick={() => hasPlan ? setViewTrainingId(t.id) : undefined}
-                        className={`flex items-center justify-between px-4 py-2.5 ${hasPlan ? 'cursor-pointer hover:bg-gray-50' : 'opacity-50'}`}
+                        className={`flex items-center justify-between px-4 py-2.5 ${hasPlan ? 'cursor-pointer hover:bg-cream-100' : 'opacity-50'}`}
                       >
                         <div className="flex items-center gap-3">
-                          <span className={`w-1.5 h-1.5 rounded-full ${hasPlan ? 'bg-navy-600' : 'bg-gray-300'}`} />
+                          <span className={`w-1.5 h-1.5 rounded-full ${hasPlan ? 'bg-navy-600' : 'bg-cream-300'}`} />
                           <span className="text-sm text-gray-500">{formatDate(t.date)}</span>
                           {t.cancelled && <span className="text-[10px] text-softball-red-500">Abgesagt</span>}
                           {hasPlan && plan && <FocusBadgesLight focus={plan.focus} />}
@@ -410,7 +410,7 @@ function FocusBadgesLight({ focus, max = 2 }: { focus: string; max?: number }) {
           {FOCUS_SHORT[f] ?? f}
         </span>
       ))}
-      {rest > 0 && <span className="px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded text-[10px]">+{rest}</span>}
+      {rest > 0 && <span className="px-1.5 py-0.5 bg-cream-200 text-gray-400 rounded text-[10px]">+{rest}</span>}
     </span>
   )
 }

@@ -16,23 +16,23 @@ export function LoadingSkeleton({ variant = 'dots', rows = 5, className = '' }: 
     return (
       <div className={`space-y-2 ${className}`} role="status" aria-label="Lade Daten">
         {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="skeleton-shimmer h-12 bg-gray-100 rounded-lg" />
+          <div key={i} className="skeleton-shimmer h-12 bg-cream-200 rounded-lg" />
         ))}
       </div>
     )
   }
   if (variant === 'card') {
     return (
-      <div className={`skeleton-shimmer bg-gray-100 rounded-xl h-40 ${className}`} role="status" aria-label="Lade Daten" />
+      <div className={`skeleton-shimmer bg-cream-200 rounded-xl h-40 ${className}`} role="status" aria-label="Lade Daten" />
     )
   }
   if (variant === 'table') {
     return (
-      <div className={`bg-white border border-gray-200 rounded-xl overflow-hidden ${className}`} role="status" aria-label="Lade Daten">
+      <div className={`bg-white border border-cream-300 rounded-xl overflow-hidden ${className}`} role="status" aria-label="Lade Daten">
         <div className="h-10 bg-navy-900" />
         {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="h-10 border-t border-gray-100 flex items-center px-3">
-            <div className="skeleton-shimmer h-4 w-1/3 bg-gray-100 rounded" />
+          <div key={i} className="h-10 border-t border-cream-200 flex items-center px-3">
+            <div className="skeleton-shimmer h-4 w-1/3 bg-cream-200 rounded" />
           </div>
         ))}
       </div>

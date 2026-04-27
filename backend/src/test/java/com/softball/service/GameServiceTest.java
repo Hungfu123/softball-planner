@@ -16,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -173,6 +174,76 @@ class GameServiceTest {
             assertThatThrownBy(() -> gameService.setScore(10L, 3, -1))
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessageContaining("negativ");
+        }
+    }
+
+    @Nested
+    class EndAndReopen {
+
+        @Test
+        void endGame_setsEndedAt_andSaves() {
+            assertThat(game.getEndedAt()).isNull();
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(gameRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            final Instant before = Instant.now();
+            final Game result = gameService.endGame(10L);
+            final Instant after = Instant.now();
+
+            assertThat(result.getEndedAt()).isNotNull();
+            assertThat(result.getEndedAt()).isBetween(before, after);
+            verify(gameRepository).save(game);
+        }
+
+        @Test
+        void endGame_alreadyEnded_isIdempotent_noSave() {
+            final Instant earlier = Instant.now().minusSeconds(60);
+            game.setEndedAt(earlier);
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+
+            final Game result = gameService.endGame(10L);
+
+            assertThat(result.getEndedAt()).isEqualTo(earlier);
+            verify(gameRepository, never()).save(any());
+        }
+
+        @Test
+        void reopenGame_clearsEndedAt() {
+            game.setEndedAt(Instant.now());
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(gameRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            final Game result = gameService.reopenGame(10L);
+
+            assertThat(result.getEndedAt()).isNull();
+            verify(gameRepository).save(game);
+        }
+
+        @Test
+        void reopenGame_alreadyOpen_isIdempotent_noSave() {
+            assertThat(game.getEndedAt()).isNull();
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+
+            final Game result = gameService.reopenGame(10L);
+
+            assertThat(result.getEndedAt()).isNull();
+            verify(gameRepository, never()).save(any());
+        }
+
+        @Test
+        void endGame_unknownId_throwsResourceNotFound() {
+            when(gameRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> gameService.endGame(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
+        }
+
+        @Test
+        void reopenGame_unknownId_throwsResourceNotFound() {
+            when(gameRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> gameService.reopenGame(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
         }
     }
 

@@ -57,7 +57,7 @@ function SortableItem({
 
   return (
     <div ref={setNodeRef} style={style} className={`flex items-center gap-2 rounded-lg px-3 py-2.5 transition-colors ${
-      selected ? 'bg-navy-50 border border-navy-300' : 'bg-white border border-gray-200'
+      selected ? 'bg-navy-50 border border-navy-300' : 'bg-cream-50 border border-cream-300'
     }`}>
       <button {...attributes} {...listeners}
         className="p-0.5 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 touch-none flex-shrink-0"
@@ -66,7 +66,7 @@ function SortableItem({
       </button>
 
       <input type="checkbox" checked={selected} onChange={onToggleSelect}
-        className="w-4 h-4 rounded border-gray-300 text-navy-600 focus:ring-navy-500 cursor-pointer flex-shrink-0" />
+        className="w-4 h-4 rounded border-cream-300 text-navy-600 focus:ring-navy-500 cursor-pointer flex-shrink-0" />
 
       <div className="flex-1 min-w-0 flex items-center gap-2">
         <span className="text-sm font-medium text-gray-900 truncate">{section.title}</span>
@@ -85,7 +85,7 @@ function SortableItem({
 
       <input type="number" min={1} max={180} value={section.durationMinutes ?? ''}
         onChange={e => onUpdateDuration(Number(e.target.value))}
-        className="w-12 border border-gray-200 rounded px-1.5 py-0.5 text-xs text-center focus:border-navy-600 outline-none flex-shrink-0" />
+        className="w-12 border border-cream-300 rounded px-1.5 py-0.5 text-xs text-center focus:border-navy-600 outline-none flex-shrink-0" />
       <span className="text-[10px] text-gray-400 flex-shrink-0">min</span>
 
       <button onClick={onRemove}
@@ -282,7 +282,7 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
   return (
     <div className="space-y-3">
       {/* Sticky header — nur Action-Buttons */}
-      <div className="flex items-center justify-end sticky top-16 bg-gray-100 z-10 py-2 -mx-4 px-4">
+      <div className="flex items-center justify-end sticky top-16 bg-cream-200 z-10 py-2 -mx-4 px-4">
         <div className="flex gap-2">
           <button onClick={() => { setAddToStation(null); setShowDrillPicker(true) }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-navy-800 text-white rounded-lg hover:bg-navy-700 transition-colors cursor-pointer">
@@ -348,7 +348,7 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
                 const blockMin = sections[g.indices[0]]?.durationMinutes ?? 0
                 const perStation = Math.round(blockMin / g.indices.length)
                 return (
-                  <div key={gi} className="rounded-xl bg-white border border-gray-200 border-l-4 border-l-navy-600 overflow-hidden">
+                  <div key={gi} className="rounded-xl bg-cream-50 border border-cream-300 border-l-4 border-l-navy-600 overflow-hidden">
                     {/* Station header */}
                     <div className="flex items-center justify-between px-3 py-2">
                       <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
                           + Drill
                         </button>
                         <button onClick={() => dissolveStation(g.group!)}
-                          className="px-2 py-0.5 text-[11px] text-gray-400 border border-gray-200 rounded hover:bg-softball-red-50 hover:text-softball-red-600 hover:border-softball-red-200 transition-colors cursor-pointer">
+                          className="px-2 py-0.5 text-[11px] text-gray-400 border border-cream-300 rounded hover:bg-softball-red-50 hover:text-softball-red-600 hover:border-softball-red-200 transition-colors cursor-pointer">
                           Auflösen
                         </button>
                       </div>
@@ -398,7 +398,7 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
 
       <textarea value={overallNotes} onChange={e => setOverallNotes(e.target.value)}
         placeholder="Allgemeine Notizen…" rows={2}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-navy-600 outline-none resize-none" />
+        className="w-full border border-cream-300 rounded-lg px-3 py-2 text-sm focus:border-navy-600 outline-none resize-none" />
 
       {showDrillPicker && (
         <DrillPickerModal drills={drills} focusCategories={focusCategories} onSelect={addDrill} onClose={() => { setShowDrillPicker(false); setAddToStation(null) }} />

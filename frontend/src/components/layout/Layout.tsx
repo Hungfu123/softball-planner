@@ -52,15 +52,15 @@ export function Layout() {
               <img src="/deadsox.jpeg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
               <span className="font-display font-extrabold text-base tracking-wider hidden sm:block">DEAD SOX</span>
             </Link>
-            <nav className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_92%,transparent)]">
+            <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 justify-end">
               {TABS.map(tab => (
                 <Link
                   key={tab.path}
                   to={tab.path}
-                  className={`font-display shrink-0 px-3 py-1.5 text-[11px] sm:text-xs font-bold tracking-widest rounded-full transition-all duration-200 whitespace-nowrap border ${
+                  className={`font-display shrink-0 px-3 py-1.5 text-[11px] sm:text-xs font-bold tracking-widest rounded-full transition-colors duration-200 whitespace-nowrap ${
                     activeTab === tab.path
-                      ? 'bg-white text-navy-900 border-white'
-                      : 'bg-white/8 text-white/75 border-white/15 hover:bg-white/15 hover:text-white'
+                      ? 'bg-white text-navy-900'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <span className="sm:hidden uppercase">{tab.shortLabel}</span>

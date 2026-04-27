@@ -15,7 +15,7 @@ interface Props {
  */
 export function EmptyState({ title, description, icon, action, dashed = false, className = '' }: Props) {
   const border = dashed
-    ? 'border-2 border-dashed border-gray-200 rounded-xl'
+    ? 'border-2 border-dashed border-cream-300 rounded-xl'
     : ''
   return (
     <div className={`text-center py-8 px-4 text-gray-400 ${border} ${className}`}>

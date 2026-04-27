@@ -91,11 +91,17 @@ public ResponseEntity<GameResponse> reopenGame(@PathVariable Long id) {
 
 ## Status-Semantik (Frontend-Logik)
 
-| Bedingung                                  | Status   |
-|--------------------------------------------|----------|
-| `endedAt != null`                          | FERTIG   |
-| `endedAt == null && atBatCount > 0`        | LIVE     |
-| `endedAt == null && atBatCount == 0`       | OFFEN    |
+| Bedingung                                  | Status   | Pill-Visual                        |
+|--------------------------------------------|----------|------------------------------------|
+| `endedAt != null`                          | FERTIG   | Cream-Pill mit ✓ + Result (Sieg/Niederlage/Fertig) |
+| `endedAt == null && atBatCount > 0`        | LIVE     | Roter Pill mit Pulse-Dot + "▶ LIVE" |
+| `endedAt == null && atBatCount == 0`       | OFFEN    | White-Tinted Pill "OFFEN" (neutral) |
+
+## Aktueller Frontend-Stand (Pre-Backend)
+
+Frontend hat bereits Pills für FERTIG/OFFEN. LIVE-State **noch nicht** weil `atBatCount` fehlt.
+Workaround: localStorage-Flag `scoring-ended-${gameId}` für FERTIG-Detection auf gleichem Gerät.
+Nach Backend-Deploy ersetzt.
 
 ## Live-Score-Update
 

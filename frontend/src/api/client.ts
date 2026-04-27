@@ -297,6 +297,10 @@ export const resetScoring = (gameId: number) =>
   request<void>(`/games/${gameId}/scoring`, { method: 'DELETE' })
 export const setGameScore = (gameId: number, scoreUs: number | null, scoreThem: number | null) =>
   request<GameResponse>(`/games/${gameId}/score`, { method: 'PUT', body: JSON.stringify({ scoreUs, scoreThem }) })
+export const endGame = (gameId: number) =>
+  request<GameResponse>(`/games/${gameId}/end`, { method: 'POST' })
+export const reopenGame = (gameId: number) =>
+  request<GameResponse>(`/games/${gameId}/reopen`, { method: 'POST' })
 
 // Year / All-Time Stats
 export const getYearBattingStats = (year: number) =>

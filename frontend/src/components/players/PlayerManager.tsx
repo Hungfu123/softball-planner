@@ -156,7 +156,7 @@ export function PlayerManager() {
             className={`py-2.5 px-4 rounded-lg text-sm font-semibold cursor-pointer transition-colors text-center ${
               tab === key
                 ? 'bg-navy-800 text-white'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
             }`}
           >
             {label}
@@ -171,7 +171,7 @@ export function PlayerManager() {
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleCreate()}
             placeholder="Name eingeben..."
-            className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+            className="flex-1 border border-cream-300 rounded-lg px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
             autoFocus
           />
           <Button onClick={handleCreate} disabled={!newName.trim()} icon={<PlusCircle size={16} />}>

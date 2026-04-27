@@ -45,8 +45,8 @@ export function CopyLineupModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
           <h2 className="text-lg font-bold text-gray-900">Lineup kopieren</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600">
             <XMark size={20} />

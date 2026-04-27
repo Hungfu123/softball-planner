@@ -42,10 +42,10 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', onConf
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
-        className="bg-white rounded-2xl shadow-xl w-full max-w-sm"
+        className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
           <h2 id="confirm-modal-title" className="text-lg font-bold text-gray-900">{title}</h2>
           <button onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
@@ -57,10 +57,10 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', onConf
           <p className="text-sm text-gray-600">{message}</p>
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
+        <div className="px-4 py-3 border-t border-cream-300 flex justify-end gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-gray-100 cursor-pointer"
+            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
           >
             Abbrechen
           </button>

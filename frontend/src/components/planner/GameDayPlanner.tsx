@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams, useBlocker } from 'react-router-dom'
+import { Link, useParams, useSearchParams, useBlocker } from 'react-router-dom'
 import { useGameDay } from '@/hooks/useGameDay'
 import { useLineup } from '@/hooks/useLineup'
 import { useStaff } from '@/hooks/useStaff'
@@ -32,7 +32,9 @@ export function GameDayPlanner() {
   const staff = useStaff()
   const { players } = usePlayers()
   const toast = useToastContext()
-  const [activeTab, setActiveTab] = useState(0)
+  const [searchParams] = useSearchParams()
+  const initialTab = Math.max(0, Number(searchParams.get('game') ?? 0))
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [activeSection, setActiveSection] = useState<'lineup' | 'carpool'>('lineup')
   const [showPlayersModal, setShowPlayersModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -48,8 +50,8 @@ export function GameDayPlanner() {
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const [seasonBattingStats, setSeasonBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
   const [yearBattingStats, setYearBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
-  const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
-  const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
+  const [, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
+  const [selectedPeriodId] = useState<number | null>(null)
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -292,24 +294,24 @@ export function GameDayPlanner() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-5">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="group/header flex items-start gap-2">
-            <div className="w-1 h-8 bg-softball-red-600 rounded-full flex-shrink-0 mt-1" />
+          <div className="group/header flex items-baseline gap-3">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-950">
-                {gameDay.label || 'Spieltag'} — {formatDate(gameDay.date)}
+              <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
+                {gameDay.label || 'Spieltag'} <span className="text-softball-red-600">·</span> {formatDate(gameDay.date)}
               </h1>
               {gameDay.location && (
-                <p className="text-sm text-gray-600">@ {gameDay.location}</p>
+                <p className="font-display text-[11px] tracking-widest uppercase text-gray-500 mt-0.5">📍 {gameDay.location}</p>
               )}
             </div>
             <button
               onClick={() => setShowEditModal(true)}
-              className="mt-1 p-1.5 rounded-lg text-softball-red-500 opacity-0 group-hover/header:opacity-100 hover:text-softball-red-700 hover:bg-softball-red-50 transition-all cursor-pointer"
+              className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover/header:opacity-100 hover:text-navy-700 hover:bg-cream-100 transition-all cursor-pointer"
               title="Spieltag bearbeiten"
+              aria-label="Spieltag bearbeiten"
             >
-              <Pencil size={16} />
+              <Pencil size={14} />
             </button>
           </div>
           {/* MOBILE Layout: Primary-Row + Toolbar-Strip */}
@@ -343,7 +345,7 @@ export function GameDayPlanner() {
             </div>
 
             {/* Secondary — Toolbar-Strip ohne einzelne Boxen */}
-            <div className="flex items-center justify-between gap-0 border-t border-gray-100 pt-2">
+            <div className="flex items-center justify-between gap-0 border-t border-cream-200 pt-2">
               {availablePlayers.length > 0 && (
                 <ToolbarBtn
                   icon={<DiceIcon size={16} />}
@@ -371,66 +373,75 @@ export function GameDayPlanner() {
             </div>
           </div>
 
-          {/* DESKTOP Layout: 2 Primary (Anwesend + Live scoren), 1 Secondary (Alle aufstellen), Icon-only */}
+          {/* DESKTOP Layout: klare Hierarchie — Text-Link / Primary / Tertiary-Group / CTA */}
           <div className="hidden sm:flex items-center gap-2">
+            {/* Tertiary: pure Text-Link (rare action) */}
             {availablePlayers.length > 0 && (
               <button
                 onClick={() => setShowAutoAllConfirm(true)}
                 disabled={autoAllLoading}
-                className="px-3 py-2 text-sm rounded-lg border border-navy-200 text-navy-700 hover:bg-navy-50 cursor-pointer font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                className="font-display px-2 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
                 title="Alle Spiele automatisch aufstellen"
               >
-                <DiceIcon size={16} />
+                <DiceIcon size={14} />
                 <span>Alle aufstellen</span>
               </button>
             )}
+            {/* Primary: Anwesend (navy filled) */}
             <button
               onClick={() => setShowPlayersModal(true)}
               title="Wer ist am Spieltag dabei?"
-              className={`px-3 py-2 text-sm rounded-lg font-bold cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
+              className={`font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase rounded-lg cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
                 availablePlayers.length === 0
                   ? 'border-2 border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
-                  : 'bg-navy-800 text-white hover:bg-navy-900'
+                  : 'bg-navy-900 text-white hover:bg-navy-800'
               }`}
             >
-              <UsersIcon size={16} />
+              <UsersIcon size={14} />
               <span>Anwesend ({availablePlayers.length})</span>
               {availablePlayers.length > 0 && availablePlayers.length < 9 && (
                 <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
               )}
             </button>
-            <button
-              onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
-              title="Fahrten planen"
-              className={`p-2 rounded-lg border cursor-pointer transition-colors ${
-                activeSection === 'carpool'
-                  ? 'border-navy-600 bg-navy-50 text-navy-700'
-                  : 'border-navy-200 text-navy-600 hover:bg-navy-50'
-              }`}
-            >
-              <CarIcon size={18} />
-            </button>
-            <button
-              onClick={handleExportScoring}
-              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-50 transition-colors cursor-pointer"
-              title="Scoring-Sheet drucken"
-            >
-              <ClipboardIcon size={18} />
-            </button>
-            <button
-              onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
-              className="p-2 rounded-lg border border-navy-200 text-navy-600 hover:bg-navy-50 transition-colors cursor-pointer"
-              title="Als PDF exportieren"
-            >
-              <ExportDoc size={18} />
-            </button>
+            {/* Tertiary-Group: Icon-Only Buttons mit gap-Trennung */}
+            <div className="flex items-center gap-1 ml-1">
+              <button
+                onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
+                title="Fahrten planen"
+                className={`p-2 rounded-lg border cursor-pointer transition-colors ${
+                  activeSection === 'carpool'
+                    ? 'border-navy-600 bg-navy-50 text-navy-700'
+                    : 'border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-navy-400'
+                }`}
+                aria-label="Fahrten planen"
+              >
+                <CarIcon size={16} />
+              </button>
+              <button
+                onClick={handleExportScoring}
+                className="p-2 rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
+                title="Scoring-Sheet drucken"
+                aria-label="Scoring-Sheet drucken"
+              >
+                <ClipboardIcon size={16} />
+              </button>
+              <button
+                onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
+                className="p-2 rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
+                title="Als PDF exportieren"
+                aria-label="Als PDF exportieren"
+              >
+                <ExportDoc size={16} />
+              </button>
+            </div>
+            {/* CTA: Live scoren — prominenter als Anwesend (px-4 + size up) */}
             {gameDay && gameDay.games.length > 0 && (
               <Link
                 to={`/gameday/${gameDayId}/scoring/${activeTab}`}
-                className="ml-2 px-3 py-2 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer flex items-center gap-1.5"
+                className="font-display ml-2 px-4 py-2 rounded-lg bg-softball-red-600 text-white font-extrabold text-xs tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 transition-colors cursor-pointer flex items-center gap-1.5"
                 title="Live scoren"
               >
-                <BallIcon size={16} />
+                <BallIcon size={15} />
                 <span>Live scoren</span>
               </Link>
             )}
@@ -451,7 +462,7 @@ export function GameDayPlanner() {
       ) : (
       <>
       {/* Tabs */}
-      <div className="bg-white rounded-2xl shadow-sm px-4 pt-2">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-4 pt-2">
       <GameTabs
         games={gameDay.games}
         activeIndex={activeTab}
@@ -509,7 +520,7 @@ export function GameDayPlanner() {
 
       {availablePlayers.length === 0 ? (
         /* Empty state: no players assigned yet */
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl">
+        <div className="text-center py-16 border-2 border-dashed border-cream-300 rounded-xl">
           <CrossBones size={48} className="mx-auto mb-4 opacity-30" />
           <p className="text-gray-500 mb-1">Noch keine Spieler für diesen Spieltag ausgewählt.</p>
           <p className="text-sm text-gray-400 mb-6">Wähle zuerst aus, wer am Spieltag dabei ist.</p>
@@ -575,23 +586,15 @@ export function GameDayPlanner() {
             {/* Col 3: Training + Coaches — desktop only */}
             <div className="hidden lg:block space-y-4 order-3">
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="w-1 h-6 bg-softball-red-600 rounded-full shrink-0" />
-                  <span className="text-sm font-bold uppercase tracking-wide text-gray-950">
+                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-cream-200">
+                  <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
                     Training
                   </span>
-                  <select
-                    value={selectedPeriodId ?? ''}
-                    onChange={e => setSelectedPeriodId(e.target.value ? Number(e.target.value) : null)}
-                    className="ml-auto text-[11px] font-mono text-gray-500 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer hover:border-gray-400 transition-colors focus:outline-none focus:border-navy-600"
-                  >
-                    <option value="">Letzte 3 Monate</option>
-                    {trainingPeriods.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
+                  <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
+                    Letzte 3 Monate
+                  </span>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
+                <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden p-3 space-y-1.5">
                   {(() => {
                     const availableIds = new Set(availablePlayers.map(p => p.id))
                     const filtered = trainingStats
@@ -609,7 +612,7 @@ export function GameDayPlanner() {
                             <span className="text-xs font-medium text-gray-900 w-16 truncate">
                               {s.playerName}
                             </span>
-                            <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-navy-800"
                                 style={{ width: `${barWidth}%` }}
@@ -782,7 +785,7 @@ function ToolbarBtn({ icon, label, onClick, active, disabled }: ToolbarBtnProps)
       className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-md cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
         active
           ? 'text-navy-700 bg-navy-50'
-          : 'text-navy-600 hover:bg-gray-50 active:bg-gray-100'
+          : 'text-navy-600 hover:bg-cream-100 active:bg-cream-200'
       }`}
     >
       {icon}

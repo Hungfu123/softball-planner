@@ -35,6 +35,8 @@ export interface GameResponse {
   scoreThem: number | null
   gameDayId: number
   lineupEntryCount: number
+  endedAt?: string | null
+  atBatCount?: number
 }
 
 export interface LineupEntryResponse {

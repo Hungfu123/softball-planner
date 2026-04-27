@@ -95,7 +95,7 @@ export function LineupSheet() {
                   {lineup
                     .sort((a, b) => a.battingOrder - b.battingOrder)
                     .map(entry => (
-                      <tr key={entry.id} className="border-b border-gray-100">
+                      <tr key={entry.id} className="border-b border-cream-200">
                         <td className="py-1 w-5 font-mono text-gray-400">{entry.battingOrder}</td>
                         <td className="py-1 font-medium">
                           {entry.player.name}

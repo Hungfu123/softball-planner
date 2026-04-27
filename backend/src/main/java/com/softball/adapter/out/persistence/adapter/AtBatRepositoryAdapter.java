@@ -12,7 +12,9 @@ import com.softball.domain.model.BaseState;
 import com.softball.domain.port.out.AtBatRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -73,6 +75,40 @@ public class AtBatRepositoryAdapter implements AtBatRepository {
     public Integer findMaxSequenceByGameId(final Long gameId) {
         final Integer v = repo.findMaxSequenceByGameId(gameId);
         return v != null ? v : 0;
+    }
+
+    @Override
+    public long countByGameId(final Long gameId) {
+        return repo.countByGameId(gameId);
+    }
+
+    @Override
+    public Map<Long, Long> countByGameIds(final List<Long> gameIds) {
+        if (gameIds == null || gameIds.isEmpty()) return Map.of();
+        final Map<Long, Long> result = new HashMap<>();
+        for (final Long id : gameIds) result.put(id, 0L);
+        for (final Object[] row : repo.countByGameIdsRaw(gameIds)) {
+            result.put((Long) row[0], (Long) row[1]);
+        }
+        return result;
+    }
+
+    @Override
+    public int sumRunsScoredByGameId(final Long gameId) {
+        final Integer v = repo.sumRunsScoredByGameId(gameId);
+        return v != null ? v : 0;
+    }
+
+    @Override
+    public Map<Long, Integer> sumRunsScoredByGameIds(final List<Long> gameIds) {
+        if (gameIds == null || gameIds.isEmpty()) return Map.of();
+        final Map<Long, Integer> result = new HashMap<>();
+        for (final Long id : gameIds) result.put(id, 0);
+        for (final Object[] row : repo.sumRunsScoredByGameIdsRaw(gameIds)) {
+            final Long sum = ((Number) row[1]).longValue();
+            result.put((Long) row[0], sum.intValue());
+        }
+        return result;
     }
 
     @Override

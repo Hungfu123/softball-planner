@@ -121,8 +121,8 @@ export function PlayerPool({
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-2">
-        <span className="w-1 h-6 bg-softball-red-600 rounded-full shrink-0" />
+      <div className="flex items-center gap-3 mb-2 pb-1.5 border-b border-cream-200">
+        <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         <nav className="flex items-center gap-4 flex-1 min-w-0">
           {([
             ['pool', 'Spieler', freePlayers.length, false],
@@ -132,16 +132,16 @@ export function PlayerPool({
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`text-sm font-bold uppercase tracking-wide cursor-pointer transition-colors ${
+              className={`font-display text-[12px] sm:text-[13px] font-extrabold uppercase tracking-widest cursor-pointer transition-colors ${
                 tab === key
-                  ? 'text-gray-950'
-                  : 'text-gray-300 hover:text-gray-500'
+                  ? 'text-navy-900'
+                  : 'text-gray-400 hover:text-gray-600'
               } ${mobileOnly ? 'lg:hidden' : ''}`}
             >
               {label}
               {tab === key && (
-                <span className="ml-1 text-xs font-mono text-gray-400">
-                  ({count})
+                <span className="ml-1 font-display text-[11px] font-bold text-gray-400">
+                  {count}
                 </span>
               )}
             </button>
@@ -150,7 +150,7 @@ export function PlayerPool({
       </div>
 
       {tab === 'pool' ? (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden">
           {/* Free players — prominent, clickable */}
           {freePlayers.map(player => {
             const st = statsMap.get(player.id)
@@ -162,7 +162,7 @@ export function PlayerPool({
               <button
                 key={player.id}
                 onClick={() => onAdd(player)}
-                className={`pool-chip w-full flex items-center gap-2 px-3 py-2 text-left border-b border-gray-100 last:border-0 ${
+                className={`pool-chip w-full flex items-center gap-2 px-3 py-2 text-left border-b border-cream-200 last:border-0 ${
                   noGames
                     ? 'bg-softball-red-50 hover:bg-navy-100'
                     : 'hover:bg-navy-50'
@@ -196,7 +196,7 @@ export function PlayerPool({
 
           {/* Lineup players — subtle, separated */}
           {lineupPlayers.length > 0 && freePlayers.length > 0 && (
-            <div className="border-t border-gray-200 bg-gray-50 px-3 py-1.5">
+            <div className="border-t border-cream-300 bg-cream-100 px-3 py-1.5">
               <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Im Lineup</span>
             </div>
           )}
@@ -208,7 +208,7 @@ export function PlayerPool({
             return (
               <div
                 key={player.id}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-left border-b border-gray-50 last:border-0 bg-gray-50/50 cursor-not-allowed"
+                className="w-full flex items-center gap-2 px-3 py-1.5 text-left border-b border-cream-200 last:border-0 bg-cream-100/50 cursor-not-allowed"
               >
                 {player.defaultBattingOrder != null && (
                   <span className="text-[11px] font-mono font-semibold text-gray-300 shrink-0 lg:hidden">
@@ -241,16 +241,16 @@ export function PlayerPool({
             .map(b => Number(b.battingAverage))
           const topAvg = avgValues.length > 0 ? Math.max(...avgValues) : null
           return (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
           {/* Scope-Toggle: AVG über Saison oder ganzes Jahr */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white border-b border-gray-100 text-[10px]">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cream-50 border-b border-cream-200 text-[10px]">
             <span className="text-gray-500 mr-1">AVG:</span>
             <button
               onClick={() => setBattingScope('season')}
               className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer ${
                 battingScope === 'season'
                   ? 'bg-navy-800 text-white'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
               }`}
             >
               Saison
@@ -260,7 +260,7 @@ export function PlayerPool({
               className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer ${
                 battingScope === 'year'
                   ? 'bg-navy-800 text-white'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
               }`}
             >
               Jahr {seasonYear ?? ''}
@@ -285,7 +285,7 @@ export function PlayerPool({
             return (
               <div
                 key={player.id}
-                className="grid grid-cols-[6rem_3rem_3.5rem_1.75rem] gap-3 items-center px-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 cursor-default select-none"
+                className="grid grid-cols-[6rem_3rem_3.5rem_1.75rem] gap-3 items-center px-3 py-2 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
               >
                 <span className="text-sm text-gray-800 truncate">
                   {player.name}
@@ -309,7 +309,7 @@ export function PlayerPool({
             )
           })}
           {/* Link zu ausführlicher Stats-Seite */}
-          <div className="px-3 py-1.5 bg-white border-t border-gray-200 text-right">
+          <div className="px-3 py-1.5 bg-cream-50 border-t border-cream-300 text-right">
             <a
               href="/stats?scope=season"
               className="text-[11px] text-navy-700 hover:text-softball-red-600 hover:underline cursor-pointer"
@@ -322,7 +322,7 @@ export function PlayerPool({
           )
         })()
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-3 space-y-1.5">
+        <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden p-3 space-y-1.5">
           <div className="flex items-center gap-1 mb-1 flex-wrap">
             <select
               value={selectedPeriodId ?? ''}
@@ -330,7 +330,7 @@ export function PlayerPool({
                 setSelectedPeriodId(e.target.value ? Number(e.target.value) : null)
                 setLoadedFilter(null)
               }}
-              className="text-[11px] font-medium text-gray-600 bg-transparent border border-gray-200 rounded px-1.5 py-0.5 cursor-pointer hover:border-gray-400 transition-colors focus:outline-none focus:border-navy-600"
+              className="text-[11px] font-medium text-gray-600 bg-transparent border border-cream-300 rounded px-1.5 py-0.5 cursor-pointer hover:border-navy-500 transition-colors focus:outline-none focus:border-navy-600"
             >
               <option value="">Zeitraum</option>
               {trainingPeriods.map(p => (
@@ -344,7 +344,7 @@ export function PlayerPool({
                 className={`text-[11px] px-2 py-0.5 rounded-full font-medium cursor-pointer transition-colors ${
                   trainingFilter === key
                     ? 'bg-navy-800 text-white'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
                 }`}
               >
                 {label}
@@ -369,7 +369,7 @@ export function PlayerPool({
                   <span className="text-xs font-medium text-gray-900 w-20 truncate">
                     {s.playerName}
                   </span>
-                  <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full bg-navy-800"
                       style={{ width: `${barWidth}%` }}

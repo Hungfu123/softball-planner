@@ -20,6 +20,7 @@ public class GameMapper {
         game.setScoreThem(entity.getScoreThem());
         game.setOpponentTeam(leagueTeamMapper.toDomain(entity.getOpponentTeam()));
         game.setLineupEntryCount(entity.getLineupEntryCount());
+        game.setEndedAt(entity.getEndedAt());
         if (entity.getGameDay() != null) {
             final com.softball.domain.model.GameDay gd = new com.softball.domain.model.GameDay();
             gd.setId(entity.getGameDay().getId());
