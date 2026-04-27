@@ -43,7 +43,7 @@ export function ScoringPage() {
   const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
-  const [homerunFlash, setHomerunFlash] = useState<string | null>(null)
+  const [homerunFlash, setHomerunFlash] = useState<{ batter: string; isGrandSlam: boolean } | null>(null)
   // HR-Runner läuft über alle Bases. State hält name + battingOrder damit
   // der Runner auf dem Diamond animiert werden kann.
   const [homerunRunner, setHomerunRunner] = useState<{ playerId: number; playerName: string; battingOrder: number | null } | null>(null)
@@ -201,7 +201,9 @@ export function ScoringPage() {
       })
       setRecentlyScored(scoredPlayers)
       if (result === 'HOMERUN') {
-        setHomerunFlash(batterNameSnapshot)
+        // Grand Slam: Bases loaded HR → 4 Runs (3 Runner + Batter)
+        const isGrandSlam = runsScored === 4
+        setHomerunFlash({ batter: batterNameSnapshot, isGrandSlam })
         setTimeout(() => setHomerunFlash(null), 2200)
         // Runner läuft Home → 1B → 2B → 3B → Home
         setHomerunRunner({
@@ -691,6 +693,11 @@ export function ScoringPage() {
             onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
             homerunRunner={homerunRunner}
           />
+          {displayRunners.length > 0 && !halfInningOver && (
+            <p className="text-[11px] text-gray-500 text-center mt-1">
+              Tipp auf Runner für Stolen Base / Caught Stealing
+            </p>
+          )}
         </div>
       </div>
 
@@ -1080,12 +1087,12 @@ export function ScoringPage() {
               transition={{ type: 'spring', stiffness: 280, damping: 18 }}
               className="text-center"
             >
-              <div className="text-7xl sm:text-9xl mb-2">🎉</div>
+              <div className="text-7xl sm:text-9xl mb-2">{homerunFlash.isGrandSlam ? '💥' : '🎉'}</div>
               <div className="text-4xl sm:text-6xl font-black text-white drop-shadow-2xl tracking-wider">
-                HOME RUN!
+                {homerunFlash.isGrandSlam ? 'GRAND SLAM!' : 'HOME RUN!'}
               </div>
               <div className="text-lg sm:text-2xl font-bold text-white/90 mt-2">
-                {homerunFlash}
+                {homerunFlash.batter}
               </div>
             </motion.div>
             {/* Konfetti-Partikel */}

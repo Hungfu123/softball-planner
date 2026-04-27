@@ -153,9 +153,10 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
           </div>
           <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
 
-            {/* Quick-Action: alle +1 Base (typisch bei Grounder-Force-Play).
-                User kann danach einzelne Runner fein-korrigieren. */}
-            {assignments.some(a => a.position === 1 || a.position === 2 || a.position === 3) && (
+            {/* Quick-Action: alle +1 Base — nur bei post-out (Grounder-Force).
+                Nach Hit (manual) sind Runner bereits via Default-Advance verschoben,
+                Button würde sie nochmal weiterschieben → meist falsch. */}
+            {context === 'post-out' && assignments.some(a => a.position === 1 || a.position === 2 || a.position === 3) && (
               <button
                 onClick={advanceAllOneBase}
                 className="w-full min-h-[44px] px-3 py-2 rounded-lg border border-navy-300 bg-navy-50 text-navy-800 text-sm font-semibold cursor-pointer hover:bg-navy-100 hover:border-navy-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
