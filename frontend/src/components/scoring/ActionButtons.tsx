@@ -95,10 +95,10 @@ function PrimaryButton({ color, label, subtitle, onClick, disabled }: { color: C
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-16 sm:h-[72px] rounded-xl font-bold text-sm sm:text-base cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
+      className={`font-display h-16 sm:h-[72px] rounded-xl font-extrabold text-base sm:text-lg tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="text-[9px] sm:text-[10px] font-normal opacity-90">{subtitle}</span>}
+      {subtitle && <span className="font-body text-[9px] sm:text-[10px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
     </button>
   )
 }
@@ -108,10 +108,10 @@ function SecondaryButton({ color, label, subtitle, onClick, disabled }: { color:
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`h-12 sm:h-[60px] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
+      className={`font-display h-12 sm:h-[60px] rounded-xl font-extrabold text-sm sm:text-base tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="text-[9px] sm:text-[10px] font-normal opacity-90">{subtitle}</span>}
+      {subtitle && <span className="font-body text-[9px] sm:text-[10px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
     </button>
   )
 }
@@ -123,7 +123,7 @@ function HitSubButton({ label, onClick, accent }: { label: string; onClick: () =
   return (
     <button
       onClick={onClick}
-      className={`h-16 sm:h-[72px] rounded-xl font-bold text-xs sm:text-sm cursor-pointer transition-colors shadow-sm ${cls}`}
+      className={`font-display h-16 sm:h-[72px] rounded-xl font-extrabold text-base sm:text-lg tracking-widest uppercase cursor-pointer transition-colors ${cls}`}
     >
       {label}
     </button>

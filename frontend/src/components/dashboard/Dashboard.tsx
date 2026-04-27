@@ -3,18 +3,20 @@ import { Link } from 'react-router-dom'
 import { useSeasons } from '@/hooks/useSeasons'
 import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
-import { GameDayCard } from './GameDayCard'
+import { HeroNextGameDay } from './HeroNextGameDay'
+import { SeasonTileGrid } from './SeasonTileGrid'
+import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
-import { PlusCircle, CrossBones, XMark } from '@/icons'
+import { DetailSheet } from './DashboardSheets'
+import { PlusCircle, XMark } from '@/icons'
 import { EditGameDayModal } from './EditGameDayModal'
 import {
-  Card, Button, SectionHeader, EmptyState,
-  ConfirmModal, CollapsibleSection, LoadingSkeleton,
+  Button,
+  ConfirmModal, LoadingSkeleton,
 } from '@/components/shared'
-import type { GameDayResponse, SeasonPlayerStats } from '@/types'
+import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse } from '@/types'
 import * as api from '@/api/client'
 
-const VISIBLE_GAME_DAYS = 3
 
 export function Dashboard() {
   const { seasons, loading: seasonsLoading, create: createSeason, update: updateSeason, remove: removeSeason } = useSeasons()
@@ -22,6 +24,8 @@ export function Dashboard() {
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
   const [stats, setStats] = useState<SeasonPlayerStats[]>([])
+  const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
+  const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | null>(null)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
   const [showNewGameDay, setShowNewGameDay] = useState(false)
   const [newGdDate, setNewGdDate] = useState('')
@@ -41,9 +45,22 @@ export function Dashboard() {
     Promise.all([
       api.getGameDays(selectedSeasonId),
       api.getSeasonStats(selectedSeasonId),
-    ]).then(([gd, st]) => { setGameDays(gd); setStats(st) })
+      api.getSeasonBattingStats(selectedSeasonId).catch(() => [] as PlayerBattingStatsResponse[]),
+    ]).then(([gd, st, bs]) => { setGameDays(gd); setStats(st); setBattingStats(bs) })
       .catch(e => toast.show(e.message, 'error'))
   }, [selectedSeasonId, toast])
+
+  // Auto-Refresh wenn Dashboard sichtbar — alle 30s gameDays re-fetchen
+  // damit Live-Scores im Hero aktuell bleiben
+  useEffect(() => {
+    if (!selectedSeasonId) return
+    const tick = () => {
+      if (document.visibilityState !== 'visible') return
+      api.getGameDays(selectedSeasonId).then(setGameDays).catch(() => { /* silent */ })
+    }
+    const id = window.setInterval(tick, 30_000)
+    return () => window.clearInterval(id)
+  }, [selectedSeasonId])
 
   const handleCreateGameDay = async () => {
     if (!selectedSeasonId || !newGdDate || !newGdGameCount) return
@@ -80,83 +97,85 @@ export function Dashboard() {
     return <LoadingSkeleton />
   }
 
-  // Show latest game days first (reversed), limit to VISIBLE_GAME_DAYS
-  const sortedGameDays = [...gameDays].reverse()
-  const visibleGameDays = showAllGameDays ? sortedGameDays : sortedGameDays.slice(0, VISIBLE_GAME_DAYS)
-  const hiddenCount = gameDays.length - VISIBLE_GAME_DAYS
-
-  // Nächster anstehender Spieltag — nur zukünftige (heute oder später)
+  // Hero-GameDay: bevorzugt heute/zukünftig, sonst letzter vergangener
   const today = new Date().toISOString().slice(0, 10)
-  const nextGameDayId = gameDays.find(gd => gd.date >= today)?.id ?? null
+  const upcomingGd = gameDays.find(gd => gd.date >= today) ?? null
+  const lastPastGd = [...gameDays].reverse().find(gd => gd.date < today) ?? null
+  const heroGameDay = upcomingGd ?? lastPastGd
+  const heroVariant: 'today' | 'upcoming' | 'past' =
+    upcomingGd?.date === today ? 'today' : upcomingGd ? 'upcoming' : 'past'
 
   return (
-    <div className="space-y-6">
-      <Card padding="lg" className="rounded-2xl">
-      <SeasonSelector
-        seasons={seasons}
-        selectedId={selectedSeasonId}
-        onSelect={setSelectedSeasonId}
-        onCreate={createSeason}
-        onUpdate={updateSeason}
-        onDelete={async (id) => {
-          await removeSeason(id)
-          setSelectedSeasonId(null)
-          setGameDays([])
-          setStats([])
-        }}
-      />
-      </Card>
+    <div className="space-y-4 sm:space-y-5">
+      {/* Kompakter Saison-Selector — flach, mit Full-Width Trennstrich */}
+      <div className="-mx-3 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 pb-3 border-b border-cream-300">
+        <SeasonSelector
+          seasons={seasons}
+          selectedId={selectedSeasonId}
+          onSelect={setSelectedSeasonId}
+          onCreate={createSeason}
+          onUpdate={updateSeason}
+          onDelete={async (id) => {
+            await removeSeason(id)
+            setSelectedSeasonId(null)
+            setGameDays([])
+            setStats([])
+          }}
+        />
+      </div>
+
+      {selectedSeasonId && heroGameDay && (
+        <HeroNextGameDay gameDay={heroGameDay} variant={heroVariant} />
+      )}
 
       {selectedSeasonId && (
         <>
-          {/* Game Days */}
-          <Card padding="lg" className="rounded-2xl">
-            <SectionHeader
-              title={<>
-                Spieltage
-                {gameDays.length > 0 && (
-                  <span className="text-sm font-normal text-gray-400 normal-case">{gameDays.length} gesamt</span>
-                )}
-              </>}
-              actions={
-                <Button size="sm" onClick={() => setShowNewGameDay(true)} icon={<PlusCircle size={16} />}>
-                  Neuer Spieltag
-                </Button>
-              }
-            />
-
-            {gameDays.length === 0 ? (
-              <EmptyState
-                title="Noch keine Spieltage in dieser Saison"
-                icon={<CrossBones size={48} />}
-              />
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {visibleGameDays.map(gd => (
-                    <GameDayCard key={gd.id} gameDay={gd} isNext={gd.id === nextGameDayId} onDelete={setDeleteGameDayId} onEdit={setEditGameDayId} />
-                  ))}
+          {/* Anstehende Spieltage — Header immer sichtbar */}
+          {(() => {
+            const upcoming = gameDays.filter(gd => gd.date >= today && gd.id !== heroGameDay?.id)
+            const past = [...gameDays].reverse().filter(gd => gd.date < today && gd.id !== heroGameDay?.id)
+            // Wenn Hero ein Upcoming ist → Liste nur weitere Upcoming (kein Past mischen)
+            // Wenn Hero ein Past ist → Liste zeigt Past
+            const heroIsUpcoming = heroVariant === 'today' || heroVariant === 'upcoming'
+            const showList = heroIsUpcoming ? upcoming : past
+            const listLabel = heroIsUpcoming ? 'Anstehend' : 'Letzte Spieltage'
+            return (
+              <div>
+                <div className="flex items-center justify-between px-1 mb-2">
+                  <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
+                    {listLabel}
+                  </h2>
+                  <button
+                    onClick={() => setShowNewGameDay(true)}
+                    className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <PlusCircle size={14} />
+                    Neuer Spieltag
+                  </button>
                 </div>
+                {showList.length > 0 && (
+                  <UpcomingList
+                    gameDays={showList}
+                    showAll={showAllGameDays}
+                    onShowAll={() => setShowAllGameDays(true)}
+                    onShowLess={() => setShowAllGameDays(false)}
+                    visibleCount={3}
+                  />
+                )}
+              </div>
+            )
+          })()}
 
-                {hiddenCount > 0 && !showAllGameDays && (
-                  <button
-                    onClick={() => setShowAllGameDays(true)}
-                    className="mt-3 text-sm text-navy-700 hover:text-navy-900 font-medium cursor-pointer underline underline-offset-2"
-                  >
-                    Alle {gameDays.length} Spieltage anzeigen
-                  </button>
-                )}
-                {showAllGameDays && hiddenCount > 0 && (
-                  <button
-                    onClick={() => setShowAllGameDays(false)}
-                    className="mt-3 text-sm text-gray-400 hover:text-gray-600 cursor-pointer underline underline-offset-2"
-                  >
-                    Weniger anzeigen
-                  </button>
-                )}
-              </>
-            )}
-          </Card>
+          {selectedSeasonId && (gameDays.length > 0 || stats.length > 0) && (
+            <SeasonTileGrid
+              seasonId={selectedSeasonId}
+              gameDays={gameDays}
+              battingStats={battingStats}
+              onOpenLiga={() => setOpenSheet('liga')}
+              onOpenStats={() => setOpenSheet('stats')}
+              onOpenResults={() => setOpenSheet('results')}
+            />
+          )}
 
           {showNewGameDay && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowNewGameDay(false)}>
@@ -223,9 +242,8 @@ export function Dashboard() {
               </div>
             )}
 
-          {/* Liga + Stats side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <Card padding="lg" className="rounded-2xl">
+          {/* Detail-Sheets statt embedded sections — Tiles oben triggern */}
+          <DetailSheet open={openSheet === 'liga'} onClose={() => setOpenSheet(null)} title="Liga-Tabelle">
             <Standings
               seasonId={selectedSeasonId}
               gameDays={gameDays}
@@ -234,59 +252,94 @@ export function Dashboard() {
                 api.getSeasonStats(selectedSeasonId).then(setStats)
               }}
             />
-            </Card>
-            {stats.length > 0 && (
-              <Card padding="lg" className="rounded-2xl">
-              <CollapsibleSection title="Saison-Statistik" count={stats.length} defaultOpen>
-                <div className="rounded-xl overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50">
-                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Spieler</th>
-                          <th className="text-right px-4 py-3 font-semibold text-gray-700 w-24">Spiele</th>
-                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Positionen</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(() => {
-                          const maxGames = Math.max(...stats.map(st => st.totalGames), 1)
-                          return stats.map(s => {
+          </DetailSheet>
+
+          <DetailSheet open={openSheet === 'stats'} onClose={() => setOpenSheet(null)} title="Saison-Statistik">
+            {stats.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-6">Noch keine Daten in dieser Saison.</p>
+            ) : (
+              <>
+                <div className="overflow-x-auto rounded-xl border border-cream-300">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-cream-300 bg-cream-100">
+                        <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700">Spieler</th>
+                        <th className="text-right px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-24">Spiele</th>
+                        <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 hidden sm:table-cell">Positionen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const maxGames = Math.max(...stats.map(st => st.totalGames), 1)
+                        return stats.map(s => {
                           const entries = Object.entries(s.positionCounts)
                           entries.sort((a, b) => b[1] - a[1])
                           const positions = entries.length === 0 ? '—' : entries.map(([pos, count]) => `${pos} (${count}x)`).join(', ')
                           return (
-                            <tr key={s.playerId} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                            <tr key={s.playerId} className="border-b border-cream-200 last:border-0 hover:bg-cream-100">
                               <td className="px-4 py-2.5 font-medium text-gray-900">{s.playerName}</td>
                               <td className="px-4 py-2.5 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div className="w-12 sm:w-16 h-1.5 bg-cream-200 rounded-full overflow-hidden">
                                     <div className="h-full bg-navy-800 rounded-full" style={{ width: `${(s.totalGames / maxGames) * 100}%` }} />
                                   </div>
-                                  <span className="font-mono font-semibold text-gray-900 w-8 text-right">{s.totalGames}</span>
+                                  <span className="font-display font-bold text-gray-900 w-6 text-right">{s.totalGames}</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-2.5 text-gray-600">{positions}</td>
+                              <td className="px-4 py-2.5 text-gray-600 hidden sm:table-cell">{positions}</td>
                             </tr>
                           )
                         })
-                        })()}
-                      </tbody>
-                    </table>
-                  </div>
+                      })()}
+                    </tbody>
+                  </table>
                 </div>
                 <div className="mt-3 text-right">
                   <Link
                     to={`/stats?scope=season&seasonId=${selectedSeasonId}`}
-                    className="inline-flex items-center gap-1 text-sm text-navy-700 hover:text-softball-red-600 hover:underline cursor-pointer"
+                    onClick={() => setOpenSheet(null)}
+                    className="inline-flex items-center gap-1 text-sm text-navy-700 hover:text-softball-red-600 hover:underline"
                   >
                     Alle Statistiken (Schlagen, Jahr, …) →
                   </Link>
                 </div>
-              </CollapsibleSection>
-              </Card>
+              </>
             )}
-          </div>
+          </DetailSheet>
+
+          <DetailSheet open={openSheet === 'results'} onClose={() => setOpenSheet(null)} title="Ergebnisse">
+            {(() => {
+              const playedGames = gameDays.flatMap(gd => gd.games.map(g => ({ gd, g }))).filter(({ g }) => g.scoreUs != null && g.scoreThem != null)
+              if (playedGames.length === 0) {
+                return <p className="text-sm text-gray-500 text-center py-6">Noch keine gespielten Spiele.</p>
+              }
+              return (
+                <div className="space-y-1.5">
+                  {playedGames.slice().reverse().map(({ gd, g }) => {
+                    const us = g.scoreUs ?? 0
+                    const them = g.scoreThem ?? 0
+                    const r = us > them ? 'W' : us < them ? 'L' : 'T'
+                    const pipColor = r === 'W' ? 'bg-emerald-600' : r === 'L' ? 'bg-softball-red-600' : 'bg-gray-500'
+                    return (
+                      <Link
+                        key={g.id}
+                        to={`/gameday/${gd.id}`}
+                        onClick={() => setOpenSheet(null)}
+                        className="flex items-center gap-3 px-3 py-2.5 bg-white border border-cream-300 rounded-xl hover:border-navy-400"
+                      >
+                        <span className={`font-display ${pipColor} w-7 h-7 rounded-lg text-white text-xs font-extrabold flex items-center justify-center`}>{r}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-[13px] truncate">{g.opponentTeam?.name ?? 'Unbekannt'}</div>
+                          <div className="text-[11px] text-gray-500">{gd.date}</div>
+                        </div>
+                        <span className="font-display text-sm font-extrabold tabular-nums text-navy-900">{us}–{them}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </DetailSheet>
         </>
       )}
       {deleteGameDayId && (

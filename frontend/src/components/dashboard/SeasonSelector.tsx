@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Season } from '@/types'
 import { PlusCircle, Pencil, TrashBin, XMark } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
@@ -18,8 +18,24 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
   const [showModal, setShowModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
   const [name, setName] = useState('')
   const [year, setYear] = useState(new Date().getFullYear())
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showMenu) return
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false)
+    }
+    const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowMenu(false) }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onEsc)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onEsc)
+    }
+  }, [showMenu])
 
   const handleCreate = async () => {
     if (!name.trim()) return
@@ -38,58 +54,73 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-softball-red-600 rounded-full flex-shrink-0" />
-          {selectedSeason ? (
-            <div>
-              <h1 className="text-2xl font-bold text-gray-950">{selectedSeason.name}</h1>
-              {seasons.length > 1 ? (
-                <select
-                  value={selectedId ?? ''}
-                  onChange={e => onSelect(Number(e.target.value))}
-                  className="text-sm text-gray-400 hover:text-navy-600 cursor-pointer outline-none bg-transparent border border-transparent hover:border-gray-200 rounded px-1 -ml-1 transition-colors"
-                >
-                  {seasons.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} {s.year}</option>
-                  ))}
-                </select>
-              ) : (
-                <p className="text-sm text-gray-400">{selectedSeason.year}</p>
-              )}
-            </div>
-          ) : (
-            <h1 className="text-2xl font-bold text-gray-950">Spielbetrieb</h1>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {selectedId && (
-            <>
-              <button
-                onClick={() => {
-                  const s = seasons.find(x => x.id === selectedId)
-                  if (s) { setName(s.name); setYear(s.year); setShowEditModal(true) }
-                }}
-                className="p-2 text-gray-400 hover:text-navy-800 hover:bg-navy-50 rounded-lg cursor-pointer"
-                title="Saison bearbeiten"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 rounded-lg cursor-pointer"
-                title="Saison löschen"
-              >
-                <TrashBin size={16} />
-              </button>
-            </>
-          )}
+      <div className="flex items-center justify-between gap-3" ref={menuRef}>
+        <span className="font-display text-[11px] font-bold tracking-widest uppercase text-gray-500 shrink-0">Saison</span>
+        <div className="relative">
           <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-navy-800 hover:border-navy-800 hover:text-white cursor-pointer font-medium transition-colors"
+            onClick={() => setShowMenu(s => !s)}
+            className="font-display text-base sm:text-lg font-extrabold text-navy-900 inline-flex items-center gap-1 cursor-pointer hover:text-navy-700 outline-none"
+            aria-haspopup="menu"
+            aria-expanded={showMenu}
           >
-            <PlusCircle size={16} /> Neue Saison
+            <span className="truncate max-w-[220px]">
+              {selectedSeason ? `${selectedSeason.name} · ${selectedSeason.year}` : '— Saison wählen —'}
+            </span>
+            <span className="text-gray-400 text-xs">▾</span>
           </button>
+          {showMenu && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full mt-1 z-30 w-60 bg-white border border-cream-300 rounded-xl shadow-lg overflow-hidden"
+            >
+              {seasons.length > 0 && (
+                <div className="py-1 max-h-56 overflow-y-auto">
+                  {seasons.map(s => (
+                    <button
+                      key={s.id}
+                      role="menuitem"
+                      onClick={() => { onSelect(s.id); setShowMenu(false) }}
+                      className={`w-full text-left px-3 py-2 text-sm font-medium hover:bg-cream-100 cursor-pointer flex items-center justify-between ${s.id === selectedId ? 'text-navy-900 bg-cream-50' : 'text-gray-700'}`}
+                    >
+                      <span className="truncate">{s.name} · {s.year}</span>
+                      {s.id === selectedId && <span className="text-softball-red-600">●</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="border-t border-cream-200 py-1">
+                {selectedId && (
+                  <>
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        const s = seasons.find(x => x.id === selectedId)
+                        if (s) { setName(s.name); setYear(s.year); setShowEditModal(true) }
+                        setShowMenu(false)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-gray-700 hover:bg-cream-100 cursor-pointer inline-flex items-center gap-2"
+                    >
+                      <Pencil size={14} /> Bearbeiten
+                    </button>
+                    <button
+                      role="menuitem"
+                      onClick={() => { setShowDeleteConfirm(true); setShowMenu(false) }}
+                      className="w-full text-left px-3 py-2 text-sm font-medium text-softball-red-700 hover:bg-softball-red-50 cursor-pointer inline-flex items-center gap-2"
+                    >
+                      <TrashBin size={14} /> Löschen
+                    </button>
+                  </>
+                )}
+                <button
+                  role="menuitem"
+                  onClick={() => { setShowModal(true); setShowMenu(false) }}
+                  className="w-full text-left px-3 py-2 text-sm font-semibold text-navy-900 hover:bg-cream-100 cursor-pointer inline-flex items-center gap-2"
+                >
+                  <PlusCircle size={14} /> Neue Saison
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

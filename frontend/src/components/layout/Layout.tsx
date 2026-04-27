@@ -1,9 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { ChevronLeft, XMark } from '@/icons'
+import { ChevronLeft } from '@/icons'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
-import { useTodayGameDay } from '@/hooks/useTodayGameDay'
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, type ReactNode } from 'react'
 import type { ToastContext } from '@/hooks/useToast'
 
 const ToastCtx = createContext<ToastContext | null>(null)
@@ -34,21 +33,6 @@ const TABS = [
 export function Layout() {
   const toast = useToast()
   const location = useLocation()
-  const today = useTodayGameDay()
-
-  // Banner-Dismiss pro Tag persistent — nach Dismiss bleibt er den Rest des Tages weg,
-  // nächster Spieltag (anderer Tag) zeigt ihn wieder.
-  const [bannerDismissed, setBannerDismissed] = useState<boolean>(false)
-  useEffect(() => {
-    if (!today) return
-    const key = `today-banner-dismissed-${today.gameDay.date}`
-    setBannerDismissed(localStorage.getItem(key) === '1')
-  }, [today])
-  const dismissBanner = () => {
-    if (!today) return
-    localStorage.setItem(`today-banner-dismissed-${today.gameDay.date}`, '1')
-    setBannerDismissed(true)
-  }
 
   const isSubPage = location.pathname.startsWith('/gameday/')
   const activeTab = TABS.find(t => t.path === location.pathname)?.path
@@ -56,65 +40,38 @@ export function Layout() {
 
   return (
     <ToastCtx.Provider value={toast}>
-      <div className="min-h-screen bg-gray-100">
-        {/* HEUTE-Banner — nur wenn Spieltag genau heute ist, bis User dismisst */}
-        {today && !bannerDismissed && (
-          <div className="bg-softball-red-600 text-white sticky top-0 z-[60] shadow-md no-print">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-3">
-              <span className="text-sm font-bold uppercase tracking-wider">🔴 Heute</span>
-              <span className="text-sm flex-1 min-w-0 truncate">
-                Spieltag{today.gameDay.label ? ` · ${today.gameDay.label}` : ''}
-                {today.gameDay.location ? ` · ${today.gameDay.location}` : ''}
-              </span>
-              <Link
-                to={`/gameday/${today.gameDay.id}`}
-                className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 whitespace-nowrap"
-              >
-                Öffnen →
+      <div className="min-h-screen bg-cream-100">
+        <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
+            {isSubPage && (
+              <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg shrink-0" aria-label="Zurück">
+                <ChevronLeft size={22} />
               </Link>
-              <button
-                onClick={dismissBanner}
-                className="p-1 hover:bg-white/20 rounded-full"
-                aria-label="Banner schließen"
-              >
-                <XMark size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-        <header className={`bg-navy-900 text-white sticky z-50 shadow-md no-print ${today && !bannerDismissed ? 'top-10' : 'top-0'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {isSubPage && (
-                <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg">
-                  <ChevronLeft size={24} />
-                </Link>
-              )}
-              <Link to="/" className="flex items-center gap-2">
-                <img src="/deadsox.jpeg" alt="Dead Sox" className="w-9 h-9 rounded-lg" />
-                <span className="font-bold text-lg hidden sm:block">SOFTBALL PLANNER</span>
-              </Link>
-            </div>
-            <nav className="flex items-center gap-0.5">
+            )}
+            <Link to="/" className="flex items-center gap-2 shrink-0">
+              <img src="/deadsox.jpeg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
+              <span className="font-display font-extrabold text-base tracking-wider hidden sm:block">DEAD SOX</span>
+            </Link>
+            <nav className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_92%,transparent)]">
               {TABS.map(tab => (
                 <Link
                   key={tab.path}
                   to={tab.path}
-                  className={`px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-semibold rounded-full transition-all duration-200 whitespace-nowrap ${
+                  className={`font-display shrink-0 px-3 py-1.5 text-[11px] sm:text-xs font-bold tracking-widest rounded-full transition-all duration-200 whitespace-nowrap border ${
                     activeTab === tab.path
-                      ? 'bg-softball-red-600 text-white shadow-lg shadow-softball-red-600/25'
-                      : 'text-white/60 hover:text-white hover:bg-white/8'
+                      ? 'bg-white text-navy-900 border-white'
+                      : 'bg-white/8 text-white/75 border-white/15 hover:bg-white/15 hover:text-white'
                   }`}
                 >
-                  <span className="sm:hidden">{tab.shortLabel}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden uppercase">{tab.shortLabel}</span>
+                  <span className="hidden sm:inline uppercase">{tab.label}</span>
                 </Link>
               ))}
             </nav>
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 pt-2 sm:pt-4">
           <Outlet />
         </main>
 

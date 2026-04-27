@@ -13,14 +13,14 @@ const PADDING = {
 }
 
 /**
- * Standard-Card: weißer Hintergrund, graue Border, abgerundete Ecken, zarter Schatten.
- * Das 60%-Basis-Element der 60/30/10-Palette.
+ * Standard-Card: cream Papier-Hintergrund, dezente Border, abgerundete Ecken, weicher Schatten.
+ * Stadium-Pocket-Theme.
  */
 export function Card({ children, padding = 'none', className = '', ...rest }: Props) {
   return (
     <div
       {...rest}
-      className={`bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden ${PADDING[padding]} ${className}`}
+      className={`bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden ${PADDING[padding]} ${className}`}
     >
       {children}
     </div>

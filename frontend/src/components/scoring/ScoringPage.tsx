@@ -480,18 +480,19 @@ export function ScoringPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col">
+    <div className="min-h-dvh bg-cream-100 flex flex-col">
       {/* Header */}
-      <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md">
+      <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md border-b-[3px] border-softball-red-600">
         <div className="px-4 h-14 flex items-center justify-between gap-2">
           <button
             onClick={() => navigate(`/gameday/${gameDayId}`)}
             className="p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1 shrink-0"
+            aria-label="Zurück"
           >
             <ChevronLeft size={24} />
             <span className="text-sm font-medium hidden sm:inline">Zurück</span>
           </button>
-          <div className="text-sm font-semibold truncate flex-1 text-center min-w-0">
+          <div className="font-display text-sm font-bold tracking-wider uppercase truncate flex-1 text-center min-w-0">
             <span className="hidden sm:inline">Dead Sox </span>
             <span className="text-white/60">vs.</span> {opponentName}
           </div>
@@ -517,12 +518,12 @@ export function ScoringPage() {
       </header>
 
       {/* Scoreboard Strip - kompakt */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2">
+      <div className="bg-cream-50 border-b border-cream-300 px-4 py-2">
         <div className="flex items-center justify-between gap-3">
           {/* Scores — beide tappbar + editierbar */}
           <div className="flex items-baseline gap-1.5">
             <div className="flex flex-col items-center">
-              <span className="text-[9px] text-gray-400 uppercase font-semibold -mb-0.5">Wir</span>
+              <span className="font-display text-[10px] text-gray-500 uppercase font-bold tracking-widest -mb-0.5">Wir</span>
               {editingScoreUs ? (
                 <input
                   type="number"
@@ -534,7 +535,7 @@ export function ScoringPage() {
                     if (e.key === 'Enter') saveScoreUs()
                     if (e.key === 'Escape') setEditingScoreUs(false)
                   }}
-                  className="w-14 text-2xl sm:text-3xl font-black text-navy-900 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
+                  className="font-display w-14 text-3xl sm:text-4xl font-black text-softball-red-600 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
                   autoFocus
                 />
               ) : (
@@ -543,16 +544,16 @@ export function ScoringPage() {
                     setScoreUsInput(String(scoreUs ?? 0))
                     setEditingScoreUs(true)
                   }}
-                  className="text-2xl sm:text-3xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors px-1 leading-none"
+                  className="font-display text-3xl sm:text-4xl font-black text-softball-red-600 tabular-nums cursor-pointer hover:text-softball-red-700 transition-colors px-1 leading-none"
                   title="Unseren Score tippen um zu editieren"
                 >
                   {scoreUs}
                 </button>
               )}
             </div>
-            <span className="text-xl text-gray-300">:</span>
+            <span className="font-display text-2xl text-gray-300">—</span>
             <div className="flex flex-col items-center">
-              <span className="text-[9px] text-gray-400 uppercase font-semibold -mb-0.5">Sie</span>
+              <span className="font-display text-[10px] text-gray-500 uppercase font-bold tracking-widest -mb-0.5">Sie</span>
               {editingScoreThem ? (
                 <input
                   type="number"
@@ -564,7 +565,7 @@ export function ScoringPage() {
                     if (e.key === 'Enter') saveScoreThem()
                     if (e.key === 'Escape') setEditingScoreThem(false)
                   }}
-                  className="w-14 text-2xl sm:text-3xl font-black text-gray-700 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
+                  className="font-display w-14 text-3xl sm:text-4xl font-black text-navy-900 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
                   autoFocus
                 />
               ) : (
@@ -573,14 +574,14 @@ export function ScoringPage() {
                     setScoreThemInput(String(scoreThem ?? 0))
                     setEditingScoreThem(true)
                   }}
-                  className="text-2xl sm:text-3xl font-black text-gray-600 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors px-1 leading-none"
+                  className="font-display text-3xl sm:text-4xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors px-1 leading-none"
                   title="Gegner-Score tippen um zu editieren"
                 >
                   {scoreThem ?? 0}
                 </button>
               )}
             </div>
-            <span className="ml-1 text-[10px] text-gray-400 font-medium">✎ tap zum edit</span>
+            <span className="ml-1 text-[10px] text-gray-400 font-medium hidden sm:inline">✎ tap zum edit</span>
           </div>
 
           {/* Inning + Outs */}
@@ -701,22 +702,28 @@ export function ScoringPage() {
         </div>
       </div>
 
-      {/* Batter Card - kompakt mit On-Deck-Preview + Lineup-Sheet-Button */}
-      <div className="px-4 py-2 bg-white border-t border-gray-200">
+      {/* Batter Card - prominent mit Pulse-Status + Lineup-Button */}
+      <div className="px-3 py-2 bg-cream-100">
         {scoreboard?.currentBatterId && !halfInningOver ? (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-navy-900 text-white font-bold px-1.5 py-0.5 rounded tabular-nums">
-                #{scoreboard.currentBatterOrder ?? '?'}
+          <div className="bg-cream-50 border border-cream-300 rounded-xl px-3 py-2.5 shadow-sm space-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <span className="font-display shrink-0 text-xl bg-navy-900 text-white font-extrabold tabular-nums w-10 h-10 rounded-lg flex items-center justify-center">
+                {scoreboard.currentBatterOrder ?? '?'}
               </span>
-              <span className="font-bold text-base sm:text-lg text-gray-900 uppercase tracking-tight truncate">
+              <span className="font-display font-extrabold text-xl sm:text-2xl text-gray-900 uppercase tracking-wider truncate flex-1 min-w-0">
                 {scoreboard.currentBatterName}
               </span>
-              <span className="text-xs text-gray-500 whitespace-nowrap">⚾ am Schlag</span>
+              <span className="font-display shrink-0 inline-flex items-center gap-1.5 text-[10px] font-bold tracking-widest uppercase text-softball-red-700 bg-softball-red-50 border border-softball-red-100 px-2 py-1 rounded-full">
+                <span className="relative flex w-1.5 h-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-softball-red-500 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-softball-red-500" />
+                </span>
+                <span className="hidden sm:inline">am Schlag</span>
+              </span>
               <button
                 onClick={() => setShowLineupSheet(true)}
-                className="ml-auto text-[11px] text-navy-700 hover:text-navy-900 font-medium px-2 py-0.5 rounded-full border border-gray-200 hover:border-navy-400 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
-                title="Kompletten Batting-Order anzeigen"
+                className="font-display shrink-0 text-[10px] tracking-widest uppercase text-navy-900 bg-white hover:bg-navy-50 font-bold px-2.5 py-1.5 rounded-full border border-cream-300 hover:border-navy-500 cursor-pointer inline-flex items-center gap-1"
+                aria-label="Komplette Aufstellung anzeigen"
               >
                 <ClipboardListIcon size={12} />
                 Lineup
@@ -728,33 +735,36 @@ export function ScoringPage() {
               if (sorted.length === 0) return null
               const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard.currentBatterId)
               if (currentIdx === -1) return null
-              const next = Array.from({ length: 3 }, (_, i) => sorted[(currentIdx + i + 1) % sorted.length])
+              const next = Array.from({ length: 4 }, (_, i) => sorted[(currentIdx + i + 1) % sorted.length])
               return (
-                <div className="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap">
-                  <span className="text-gray-400">Nächste:</span>
-                  {next.map((e, i) => {
-                    const p = effectivePlayerForEntry(e)
-                    return (
-                      <span key={`${e.id}-${i}`} className="inline-flex items-center gap-0.5">
-                        <span className="font-mono text-gray-400">#{e.battingOrder}</span>
-                        <span className="font-medium text-gray-700">{p.name}</span>
-                        {i < next.length - 1 && <span className="text-gray-300">·</span>}
-                      </span>
-                    )
-                  })}
+                <div className="flex items-center gap-2 pt-1.5 border-t border-cream-200">
+                  <span className="font-display text-[9px] tracking-widest uppercase text-gray-500 font-bold">Nächste</span>
+                  <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                    {next.map((e, i) => {
+                      const p = effectivePlayerForEntry(e)
+                      const isUp = i === 0
+                      return (
+                        <span key={`${e.id}-${i}`} className={`inline-flex items-center gap-1 ${isUp ? '' : 'opacity-60'}`}>
+                          {isUp && <span className="text-softball-red-600 font-black">▸</span>}
+                          <span className="font-display font-bold text-navy-700 tabular-nums">{e.battingOrder}</span>
+                          <span className={`font-medium ${isUp ? 'text-softball-red-700 font-bold' : 'text-gray-700'}`}>{p.name}</span>
+                        </span>
+                      )
+                    })}
+                  </div>
                 </div>
               )
             })()}
           </div>
         ) : halfInningOver ? (
-          <div className="text-xs text-gray-500 text-center">Warte auf Inning-Wechsel</div>
+          <div className="text-xs text-gray-500 text-center py-2">Warte auf Inning-Wechsel</div>
         ) : (
-          <div className="text-xs text-gray-500 text-center">Kein Schlagmann — bitte Lineup erstellen</div>
+          <div className="text-xs text-gray-500 text-center py-2">Kein Schlagmann — bitte Lineup erstellen</div>
         )}
       </div>
 
       {/* Action Buttons — sticky Thumb-Zone */}
-      <div className="px-3 pt-3 pb-2 bg-white border-t border-gray-200 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
+      <div className="px-3 pt-3 pb-2 bg-cream-100 border-t border-cream-300 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
         <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId || halfInningOver} />
 
         {/* Undo + Korrektur + Overthrow (bei Runnern). Overthrow nur sichtbar
@@ -763,14 +773,14 @@ export function ScoringPage() {
           <button
             onClick={handleUndo}
             disabled={atBats.length === 0 || submitting}
-            className="h-10 rounded-lg bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             ↶ Rückgängig
           </button>
           <button
             onClick={() => setShowCorrection(true)}
             disabled={submitting}
-            className="h-10 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
           >
             ⚙ Korrigieren
           </button>
@@ -778,7 +788,7 @@ export function ScoringPage() {
             <button
               onClick={handleOverthrow}
               disabled={submitting || atBats.length === 0}
-              className="h-10 rounded-lg border border-navy-300 text-navy-700 bg-white hover:bg-navy-50 hover:border-navy-500 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+              className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white hover:border-navy-500 text-navy-800 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
               title="Dead Ball / Overthrow: alle Runner rücken eine Base weiter"
             >
               <BoltIcon size={14} />

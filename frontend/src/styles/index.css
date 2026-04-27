@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 /*
- * Farb-System (60/30/10 + Status):
- *   60% — White/Gray (Tailwind default) — Hintergründe, Text, Borders
- *   30% — Navy (--color-navy-*) — Brand Primary: Buttons, Tabs, Akzente
- *   10% — Softball-Red (--color-softball-red-*) — CTAs, kritische Akzente
- *
- *   Status (semantisch, sparsam):
- *     emerald-* → "Alles gut / ausreichend" (Spielerzahl 9+, Anwesenheit hoch)
- *     amber-*   → "Warnung / grenzwertig" (Spielerzahl 7-8, Minderheit)
+ * "Stadium Pocket" Design-System:
+ *   Cream paper bg + Navy + Softball-Red. Saira Condensed for display/numbers, Archivo for body.
+ *   Status: emerald (alles gut), amber (warnung).
  */
 @theme {
+  --color-cream-50: #FFFBF3;
+  --color-cream-100: #FBF7F0;
+  --color-cream-200: #F2EBDA;
+  --color-cream-300: #E8DEC5;
+
   --color-navy-50: #F0F1FA;
   --color-navy-100: #E8EAF6;
   --color-navy-600: #2D3BA0;
@@ -24,14 +24,26 @@
   --color-softball-red-500: #E63946;
   --color-softball-red-600: #CC2936;
   --color-softball-red-700: #B91C2A;
+
+  --font-display: "Saira Condensed", "Impact", sans-serif;
+  --font-body: "Archivo", system-ui, sans-serif;
 }
 
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  background-color: var(--color-gray-100);
+  font-family: "Archivo", system-ui, -apple-system, sans-serif;
+  background-color: var(--color-cream-100);
   color: var(--color-gray-900);
   scrollbar-gutter: stable;
 }
+
+.font-display {
+  font-family: "Saira Condensed", "Impact", sans-serif;
+  letter-spacing: 0.02em;
+}
+
+/* Hide scrollbar (für horizontale Pill-Nav etc.) */
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
 
 button, a, [role="button"] {
   transition: transform 150ms ease, opacity 150ms ease,
