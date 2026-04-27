@@ -287,22 +287,25 @@ export function TrainingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-1 h-8 bg-softball-red-600 rounded-full" />
-              <h1 className="text-2xl font-bold text-gray-950">Anwesenheit</h1>
+              <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">Anwesenheit</h1>
             </div>
             {/* Desktop: all buttons inline */}
             <div className="hidden sm:flex items-center gap-2">
               {periods.length > 0 && (
                 <div className="flex items-center gap-1">
-                  <select
-                    value={activePeriodId ?? ''}
-                    onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                    className="border border-cream-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
-                  >
-                    <option value="">Alle Zeiträume</option>
-                    {periods.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
+                  <div className="relative inline-flex items-center">
+                    <select
+                      value={activePeriodId ?? ''}
+                      onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
+                      className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-lg pl-3 pr-9 py-2 text-sm font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400"
+                    >
+                      <option value="">Alle Zeiträume</option>
+                      {periods.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="text-gray-400 absolute right-3 pointer-events-none" />
+                  </div>
                   {activePeriodId && (
                     <>
                       <button
@@ -310,8 +313,9 @@ export function TrainingPage() {
                           const p = periods.find(p => p.id === activePeriodId)
                           if (p) setRenamingPeriod({ id: p.id, name: p.name })
                         }}
-                        className="p-1.5 text-gray-400 hover:text-navy-600 rounded-lg hover:bg-navy-50 cursor-pointer"
+                        className="p-1.5 text-gray-400 hover:text-navy-800 rounded-lg hover:bg-cream-100 cursor-pointer"
                         title="Zeitraum umbenennen"
+                        aria-label="Zeitraum umbenennen"
                       >
                         <Pencil size={14} />
                       </button>
@@ -319,6 +323,7 @@ export function TrainingPage() {
                         onClick={() => setDeletePeriodId(activePeriodId)}
                         className="p-1.5 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-softball-red-50 cursor-pointer"
                         title="Zeitraum löschen"
+                        aria-label="Zeitraum löschen"
                       >
                         <XMark size={16} />
                       </button>
@@ -329,21 +334,21 @@ export function TrainingPage() {
               <button
                 onClick={exportCsv}
                 disabled={trainings.filter(t => !t.cancelled).length === 0}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-cream-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
+                className="font-display flex items-center gap-1.5 px-3 py-2 rounded-lg border border-cream-300 text-gray-700 text-xs font-bold tracking-widest uppercase hover:bg-cream-100 hover:border-navy-400 cursor-pointer disabled:opacity-40 disabled:cursor-default transition-colors"
               >
-                <ExportDoc size={16} /> CSV Export
+                <ExportDoc size={14} /> CSV Export
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-cream-300 text-gray-700 text-sm font-medium hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
+                className="font-display flex items-center gap-1.5 px-3 py-2 rounded-lg border border-cream-300 text-gray-700 text-xs font-bold tracking-widest uppercase hover:bg-cream-100 hover:border-navy-400 cursor-pointer transition-colors"
               >
-                <UploadIcon size={16} /> CSV Import
+                <UploadIcon size={14} /> CSV Import
               </button>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-softball-red-600 text-white text-sm font-medium hover:bg-softball-red-500 cursor-pointer"
+                className="font-display flex items-center gap-1.5 px-4 py-2 rounded-lg bg-softball-red-600 text-white text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
               >
-                <PlusCircle size={16} /> Neues Training
+                <PlusCircle size={14} /> Neues Training
               </button>
             </div>
           </div>
@@ -411,22 +416,48 @@ export function TrainingPage() {
         </div>
 
         {!hasPlayers && !hasTrainings ? (
-          <div className="bg-white border border-cream-300 rounded-xl p-12 text-center text-gray-500">
+          <div className="bg-cream-50 border border-cream-300 rounded-xl p-10 sm:p-12 text-center">
             <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
-            <p>Noch keine Trainings vorhanden.</p>
+            <p className="font-display text-base sm:text-lg font-bold text-navy-900 mb-1">Noch keine Spieler im Kader</p>
+            <p className="text-sm text-gray-500 mb-4">Erst Spieler unter <span className="font-semibold text-navy-700">Spieler</span> anlegen, dann Trainings erstellen.</p>
           </div>
         ) : hasPlayers && !hasTrainings ? (
-          <div className="bg-white border border-cream-300 rounded-xl p-12 text-center text-gray-500">
+          <div className="bg-cream-50 border border-cream-300 rounded-xl p-10 sm:p-12 text-center">
             <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
-            <p className="mb-4">Noch keine Trainings erstellt.</p>
+            <p className="font-display text-base sm:text-lg font-bold text-navy-900 mb-1">Erstes Training erstellen</p>
+            <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">
+              Lege ein Training an um Anwesenheit zu tracken. Spieler können pro Training als <span className="font-semibold text-navy-700">anwesend</span> oder <span className="font-semibold text-softball-red-700">Pflicht/Camp</span> markiert werden.
+            </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-softball-red-600 text-white text-sm font-medium hover:bg-navy-500 cursor-pointer"
+              className="font-display inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-softball-red-600 text-white text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
             >
-              <PlusCircle size={16} /> Neues Training
+              <PlusCircle size={14} /> Erstes Training
             </button>
           </div>
         ) : (
+          <>
+          {/* Legende — erklärt Cell-Bedeutung */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mb-2 text-[11px] text-gray-600">
+            <span className="font-display tracking-widest uppercase font-bold text-gray-500 mr-1">Legende:</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-navy-800 text-white text-[11px] font-bold">✓</span>
+              Anwesend
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-softball-red-600 text-white text-[11px] font-bold">✓</span>
+              Pflicht/Camp
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex w-5 h-5 items-center justify-center rounded border border-cream-300 text-gray-400 text-[11px]">—</span>
+              Nicht teilgenommen
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-softball-red-600 text-sm">★</span>
+              Stammspieler
+            </span>
+            <span className="ml-auto text-gray-400 hidden sm:inline">Tipp: Cell tippen um Anwesenheit zu wechseln</span>
+          </div>
           <div
             className="bg-white border border-cream-300 rounded-xl overflow-hidden"
             onMouseLeave={() => { setHoveredPlayer(null); setHoveredTraining(null) }}
@@ -558,6 +589,7 @@ export function TrainingPage() {
               </div>
             </div>
           </div>
+          </>
         )}
       </section>
 
@@ -568,14 +600,14 @@ export function TrainingPage() {
           className="flex items-center gap-3 mb-4 group cursor-pointer"
         >
           <div className="w-1 h-8 bg-softball-red-600 rounded-full" />
-          <h2 className="text-xl font-bold text-gray-950">Statistik</h2>
+          <h2 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h2>
           {statsOpen ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
         </button>
 
         {statsOpen && (
           <div className="bg-white border border-cream-300 rounded-xl p-4 space-y-3">
-            {/* Filter chips */}
-            <div className="flex gap-1.5">
+            {/* Filter chips — Hybrid (Active=navy-pill, Inactive=plain) */}
+            <div className="flex flex-wrap gap-1.5">
               {([
                 ['3months', 'Letzte 3 Monate'],
                 ['allTime', 'Gesamt'],
@@ -586,10 +618,10 @@ export function TrainingPage() {
                 <button
                   key={key}
                   onClick={() => setStatsFilter(key)}
-                  className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
+                  className={`font-display px-3 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full cursor-pointer transition-colors ${
                     statsFilter === key
-                      ? 'bg-navy-800 text-white'
-                      : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
+                      ? 'bg-navy-900 text-white'
+                      : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
                   }`}
                 >
                   {label}

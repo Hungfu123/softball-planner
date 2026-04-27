@@ -68,28 +68,37 @@ function SortableItem({
       <input type="checkbox" checked={selected} onChange={onToggleSelect}
         className="w-4 h-4 rounded border-cream-300 text-navy-600 focus:ring-navy-500 cursor-pointer flex-shrink-0" />
 
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="text-sm font-medium text-gray-900 truncate">{section.title}</span>
-        {drill?.pdfPage && (
-          <button
-            onClick={e => { e.stopPropagation(); window.open(`/drills.pdf?t=${Date.now()}#page=${drill.pdfPage}`, 'drill-handbuch') }}
-            className="text-[10px] text-navy-600 hover:underline cursor-pointer flex-shrink-0"
-          >
-            S.{drill.pdfPage} ↗
-          </button>
-        )}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-sm font-medium text-gray-900 truncate">{section.title}</span>
+          {drill?.pdfPage && (
+            <button
+              onClick={e => { e.stopPropagation(); window.open(`/drills.pdf?t=${Date.now()}#page=${drill.pdfPage}`, 'drill-handbuch') }}
+              className="font-display text-[10px] font-bold tracking-wider text-navy-700 hover:text-navy-900 hover:underline cursor-pointer flex-shrink-0"
+            >
+              S.{drill.pdfPage} ↗
+            </button>
+          )}
+        </div>
         {section.sectionType && section.sectionType !== 'DRILL' && (
-          <span className="text-[10px] text-gray-400 uppercase">{section.sectionType}</span>
+          <span className="font-display text-[9px] tracking-widest uppercase text-gray-400 font-bold">{section.sectionType}</span>
         )}
       </div>
 
-      <input type="number" min={1} max={180} value={section.durationMinutes ?? ''}
-        onChange={e => onUpdateDuration(Number(e.target.value))}
-        className="w-12 border border-cream-300 rounded px-1.5 py-0.5 text-xs text-center focus:border-navy-600 outline-none flex-shrink-0" />
-      <span className="text-[10px] text-gray-400 flex-shrink-0">min</span>
+      <div className="flex items-center gap-0.5 shrink-0">
+        <input
+          type="number" min={1} max={180} value={section.durationMinutes ?? ''}
+          onChange={e => onUpdateDuration(Number(e.target.value))}
+          className="font-display w-11 border border-cream-300 rounded px-1 py-0.5 text-xs font-bold text-navy-900 text-center focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none"
+        />
+        <span className="font-display text-[9px] tracking-widest uppercase text-gray-400 font-bold">min</span>
+      </div>
 
-      <button onClick={onRemove}
-        className="p-0.5 text-gray-300 hover:text-softball-red-500 cursor-pointer flex-shrink-0">
+      <button
+        onClick={onRemove}
+        className="p-1 text-gray-300 hover:text-softball-red-600 cursor-pointer flex-shrink-0"
+        aria-label="Drill entfernen"
+      >
         <XMark size={14} />
       </button>
     </div>
@@ -281,25 +290,33 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Sticky header — nur Action-Buttons */}
-      <div className="flex items-center justify-end sticky top-16 bg-cream-200 z-10 py-2 -mx-4 px-4">
-        <div className="flex gap-2">
-          <button onClick={() => { setAddToStation(null); setShowDrillPicker(true) }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-navy-800 text-white rounded-lg hover:bg-navy-700 transition-colors cursor-pointer">
+      {/* Sticky header — Action-Buttons (Mobile-friendly) */}
+      <div className="flex items-center justify-between sm:justify-end sticky top-16 bg-cream-100/95 backdrop-blur z-10 py-2 -mx-4 px-4 border-b border-cream-300">
+        <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => { setAddToStation(null); setShowDrillPicker(true) }}
+            className="font-display flex items-center gap-1.5 px-3 py-2 text-[11px] font-extrabold tracking-widest uppercase bg-navy-900 text-white rounded-lg hover:bg-navy-800 shadow-sm shadow-navy-900/15 transition-colors cursor-pointer"
+          >
             <PlusCircle size={14} /> Drill
           </button>
-          <button onClick={handleSave}
-            className="px-3 py-1.5 text-sm border border-navy-800 text-navy-800 rounded-lg hover:bg-navy-800 hover:text-white transition-colors cursor-pointer">
+          <div className="flex-1 sm:hidden" />
+          <button
+            onClick={handleSave}
+            className="font-display px-4 py-2 text-[11px] font-extrabold tracking-widest uppercase bg-softball-red-600 text-white rounded-lg hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 transition-colors cursor-pointer"
+          >
             Speichern
           </button>
-          <button onClick={onCancel} className="px-3 py-1.5 text-sm text-gray-400 hover:text-gray-700 cursor-pointer">
+          <button
+            onClick={onCancel}
+            className="font-display px-3 py-2 text-[11px] font-bold tracking-widest uppercase text-gray-500 hover:text-navy-900 cursor-pointer"
+          >
             Abbrechen
           </button>
         </div>
       </div>
 
       {/* Info + Hint Box */}
-      <div className="bg-navy-800 rounded-lg px-4 py-3 space-y-2">
+      <div className="bg-navy-900 rounded-xl px-4 py-3 space-y-2 shadow-sm shadow-navy-900/15">
         {/* Stats */}
         <div className="flex items-center gap-3 text-sm text-white">
           <span className="font-bold">{sections.length} Drills</span>
@@ -350,22 +367,26 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
                 return (
                   <div key={gi} className="rounded-xl bg-cream-50 border border-cream-300 border-l-4 border-l-navy-600 overflow-hidden">
                     {/* Station header */}
-                    <div className="flex items-center justify-between px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-navy-800 text-white uppercase tracking-wider">
+                    <div className="flex items-center justify-between gap-2 px-3 py-2 flex-wrap">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-display px-2 py-0.5 rounded text-[10px] font-extrabold bg-navy-900 text-white uppercase tracking-widest shrink-0">
                           Station {g.group}
                         </span>
-                        <span className="text-[10px] text-gray-400">
-                          {g.indices.length} Drills · {blockMin} min Block · {perStation} min/Drill
+                        <span className="font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold truncate">
+                          {g.indices.length} Drills · {blockMin} min · {perStation}/Drill
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => { setAddToStation(g.group); setShowDrillPicker(true) }}
-                          className="px-2 py-0.5 text-[11px] font-medium text-navy-600 border border-navy-200 rounded hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer">
-                          + Drill
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => { setAddToStation(g.group); setShowDrillPicker(true) }}
+                          className="font-display inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-navy-700 border border-cream-300 rounded hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                          <PlusCircle size={11} /> Drill
                         </button>
-                        <button onClick={() => dissolveStation(g.group!)}
-                          className="px-2 py-0.5 text-[11px] text-gray-400 border border-cream-300 rounded hover:bg-softball-red-50 hover:text-softball-red-600 hover:border-softball-red-200 transition-colors cursor-pointer">
+                        <button
+                          onClick={() => dissolveStation(g.group!)}
+                          className="font-display px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-gray-500 border border-cream-300 rounded hover:bg-softball-red-50 hover:text-softball-red-600 hover:border-softball-red-300 transition-colors cursor-pointer whitespace-nowrap"
+                        >
                           Auflösen
                         </button>
                       </div>

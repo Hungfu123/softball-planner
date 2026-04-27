@@ -168,18 +168,18 @@ export default function TrainingPlanPage() {
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <div className="w-1 h-8 bg-softball-red-600 rounded-full" />
-          <h1 className="text-2xl font-bold text-gray-950">Trainingsplan</h1>
+          <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">Trainingsplan</h1>
         </div>
         {periods.length > 1 && (
-          <div className="flex gap-1.5 mt-2 ml-4">
+          <div className="flex flex-wrap gap-1.5 mt-2 ml-4">
             {periods.map(p => (
               <button
                 key={p.id}
                 onClick={() => selectPeriod(p.id)}
-                className={`px-3 py-1 text-xs font-medium rounded-full cursor-pointer transition-colors ${
+                className={`font-display px-3 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full cursor-pointer transition-colors ${
                   activePeriodId === p.id
-                    ? 'bg-navy-800 text-white'
-                    : 'bg-cream-200 text-gray-600 hover:bg-cream-300'
+                    ? 'bg-navy-900 text-white'
+                    : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
                 }`}
               >
                 {p.name}
@@ -203,50 +203,52 @@ export default function TrainingPlanPage() {
             const hasPlan = !!plan
             return (
               <div>
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nächstes Training</h2>
+                <h2 className="font-display text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-2">Nächstes Training</h2>
                 <div
                   onClick={() => {
                     if (hasPlan) setViewTrainingId(nextTraining.id)
                     else setFormTrainingId(nextTraining.id)
                   }}
-                  className="group bg-navy-800 text-white rounded-2xl p-5 cursor-pointer hover:bg-navy-700 transition-colors"
+                  className="group bg-navy-900 text-white rounded-2xl p-5 cursor-pointer hover:bg-navy-800 transition-colors shadow-lg shadow-navy-900/15"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-lg font-bold">{formatDateLong(nextTraining.date)}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-xl sm:text-2xl font-extrabold tracking-wide">{formatDateLong(nextTraining.date)}</p>
                       {hasPlan && plan && (
                         <div className="mt-2 space-y-1.5">
                           <FocusBadges focus={plan.focus} />
-                          <p className="text-sm text-navy-100">
+                          <p className="font-display text-[11px] tracking-widest uppercase font-bold text-navy-100">
                             {plan.playerCount} Spieler · {plan.durationMinutes} min
                           </p>
-                          <p className="text-xs text-navy-100/60">
+                          <p className="font-display text-[10px] tracking-widest uppercase font-bold text-navy-100/60">
                             {plan.content?.sections?.length ?? 0} Drills geplant
                           </p>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 shrink-0">
                       {hasPlan ? (
                         <>
-                          <span className="px-2.5 py-1 bg-white/20 rounded-lg text-xs font-medium">✓ <span className="font-bold">Plan</span></span>
+                          <span className="font-display px-2.5 py-1 bg-white/15 border border-white/20 rounded-md text-[10px] font-extrabold tracking-widest uppercase inline-flex items-center gap-1">✓ Plan</span>
                           <button
                             onClick={e => { e.stopPropagation(); setEditTrainingId(nextTraining.id) }}
                             className="p-2 hover:bg-white/10 rounded-lg cursor-pointer"
                             title="Bearbeiten"
+                            aria-label="Bearbeiten"
                           >
-                            <Pencil size={16} />
+                            <Pencil size={14} />
                           </button>
                           <button
                             onClick={e => { e.stopPropagation(); setDeleteConfirm({ planId: plan!.id, trainingId: nextTraining.id }) }}
                             className="p-2 hover:bg-softball-red-500/30 rounded-lg cursor-pointer"
                             title="Löschen"
+                            aria-label="Löschen"
                           >
-                            <TrashBin size={16} />
+                            <TrashBin size={14} />
                           </button>
                         </>
                       ) : (
-                        <span className="px-4 py-2 bg-cream-50 text-navy-800 rounded-lg text-sm font-medium">
+                        <span className="font-display px-3 py-2 bg-cream-50 text-navy-900 rounded-lg text-[11px] font-extrabold tracking-widest uppercase">
                           Plan erstellen →
                         </span>
                       )}
@@ -260,7 +262,7 @@ export default function TrainingPlanPage() {
           {/* === KOMMENDE TRAININGS — kompakte Liste === */}
           {restUpcoming.length > 0 && (
             <div>
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Kommende Trainings</h2>
+              <h2 className="font-display text-[11px] font-bold tracking-widest uppercase text-gray-500 mb-2">Kommende Trainings</h2>
               <div className="bg-cream-50 rounded-xl border border-cream-300 divide-y divide-cream-200">
                 {restUpcoming.map(t => {
                   const plan = plans.get(t.id)
@@ -269,34 +271,36 @@ export default function TrainingPlanPage() {
                     <div
                       key={t.id}
                       onClick={() => hasPlan ? setViewTrainingId(t.id) : setFormTrainingId(t.id)}
-                      className="group flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-navy-50/50 transition-colors"
+                      className="group flex items-center justify-between px-3 sm:px-4 py-2.5 cursor-pointer hover:bg-cream-100 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className={`w-2 h-2 rounded-full ${hasPlan ? 'bg-navy-600' : 'bg-cream-300'}`} />
-                        <span className="text-sm font-medium text-gray-900">{formatDate(t.date)}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${hasPlan ? 'bg-navy-600' : 'bg-cream-300'}`} />
+                        <span className="font-display text-[12px] sm:text-sm font-bold tracking-wide text-navy-900 tabular-nums">{formatDate(t.date)}</span>
                         {hasPlan && plan && <FocusBadgesLight focus={plan.focus} />}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {hasPlan ? (
                           <>
-                            <span className="text-xs text-navy-600">✓ <span className="font-bold">Plan</span></span>
+                            <span className="font-display text-[11px] font-extrabold tracking-widest uppercase text-navy-700 inline-flex items-center gap-1">✓ Plan</span>
                             <div className="hidden group-hover:flex items-center gap-1">
                               <button
                                 onClick={e => { e.stopPropagation(); setEditTrainingId(t.id) }}
                                 className="p-1 text-navy-600 hover:bg-navy-50 rounded cursor-pointer"
+                                aria-label="Bearbeiten"
                               >
                                 <Pencil size={14} />
                               </button>
                               <button
                                 onClick={e => { e.stopPropagation(); setDeleteConfirm({ planId: plan!.id, trainingId: t.id }) }}
                                 className="p-1 text-gray-400 hover:text-softball-red-600 rounded cursor-pointer"
+                                aria-label="Löschen"
                               >
                                 <TrashBin size={14} />
                               </button>
                             </div>
                           </>
                         ) : (
-                          <span className="text-xs text-gray-300 group-hover:text-navy-600 transition-colors">Plan erstellen →</span>
+                          <span className="font-display text-[10px] tracking-widest uppercase font-bold text-gray-400 group-hover:text-navy-700 transition-colors">Plan erstellen →</span>
                         )}
                       </div>
                     </div>
@@ -311,9 +315,9 @@ export default function TrainingPlanPage() {
             <div>
               <button
                 onClick={() => setShowPast(!showPast)}
-                className="flex items-center gap-2 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-gray-600 transition-colors"
+                className="font-display flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-gray-500 cursor-pointer hover:text-navy-900 transition-colors"
               >
-                <span className={`transition-transform ${showPast ? 'rotate-90' : ''}`}>▸</span>
+                <span className={`transition-transform inline-flex ${showPast ? 'rotate-90' : ''}`}>▸</span>
                 Vergangene Trainings ({past.length})
               </button>
               {showPast && (

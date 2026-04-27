@@ -257,21 +257,34 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
         {/* === Mobile: Focus + Actions oben === */}
         <div className="lg:hidden">
           <div className="bg-cream-50 rounded-xl border border-cream-300 p-4">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Schwerpunkt</p>
-            <h3 className="text-base font-bold text-gray-900">{plan.focus}</h3>
-            <div className="flex items-center justify-between mt-2">
-              <div className="flex gap-3 text-xs text-gray-400">
-                <span>{plan.playerCount} Spieler</span>
-                <span>{plan.durationMinutes} min</span>
-              </div>
-              <div className="flex gap-1.5 no-print">
-                <button onClick={onEdit} className="flex items-center gap-1.5 px-3 py-1.5 border border-cream-300 rounded-lg text-xs font-medium text-gray-600 cursor-pointer" title="Anpassen">
-                  <Pencil size={14} /> Anpassen
-                </button>
-                <button onClick={onDelete} className="flex items-center px-2 py-1.5 border border-cream-300 rounded-lg text-gray-400 cursor-pointer" title="Löschen">
-                  <TrashBin size={14} />
-                </button>
-              </div>
+            <p className="font-display text-[10px] text-gray-500 uppercase tracking-widest font-bold">Schwerpunkt</p>
+            <h3 className="font-display text-base font-extrabold text-navy-900 tracking-wide">{formatFocus(plan.focus)}</h3>
+            <div className="font-display flex gap-3 mt-1 text-[11px] text-gray-500 tracking-wide font-bold">
+              <span>{plan.playerCount} Spieler</span>
+              <span>·</span>
+              <span>{plan.durationMinutes} min</span>
+            </div>
+            <div className="flex gap-1.5 mt-3 pt-3 border-t border-cream-200 no-print">
+              <button
+                onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
+                className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 shadow-sm shadow-navy-900/15 cursor-pointer"
+              >
+                <ExportDoc size={14} /> Handbuch
+              </button>
+              <button
+                onClick={onEdit}
+                className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-cream-300 rounded-lg text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 cursor-pointer"
+              >
+                <Pencil size={14} /> Anpassen
+              </button>
+              <button
+                onClick={onDelete}
+                className="flex items-center justify-center px-3 py-2 border border-cream-300 rounded-lg text-gray-400 hover:text-softball-red-600 hover:border-softball-red-400 cursor-pointer"
+                aria-label="Löschen"
+                title="Löschen"
+              >
+                <TrashBin size={14} />
+              </button>
             </div>
           </div>
         </div>
@@ -344,14 +357,14 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
               <div className="flex gap-1.5 mt-3 pt-3 border-t border-cream-200 no-print">
                 <button
                   onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
-                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 transition-colors cursor-pointer"
+                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 shadow-sm shadow-navy-900/15 transition-colors cursor-pointer"
                   title="Drill-Handbuch öffnen"
                 >
                   <ExportDoc size={14} /> Handbuch
                 </button>
                 <button
                   onClick={onEdit}
-                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-cream-300 rounded-lg text-[11px] font-bold tracking-widest uppercase text-gray-700 hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
+                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-cream-300 rounded-lg text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 transition-colors cursor-pointer"
                   title="Anpassen"
                 >
                   <Pencil size={14} /> Anpassen
@@ -405,6 +418,41 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
 
           </div>
         </div>
+      </div>
+
+      {/* === Mobile-Only: Überblick + Gruppenaufteilung am Ende === */}
+      <div className="lg:hidden mt-4 space-y-3">
+        <div className="bg-cream-50 rounded-xl border border-cream-300 p-4 no-print">
+          <div className="flex items-center justify-between mb-1 pb-1.5 border-b border-cream-200">
+            <h4 className="font-display text-[12px] font-extrabold tracking-widest uppercase text-navy-900">Überblick</h4>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(generatedText)
+                setCopied(true)
+                setTimeout(() => setCopied(false), 2000)
+              }}
+              className="font-display flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-navy-700 border border-cream-300 rounded hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
+            >
+              <ClipboardIcon size={12} /> {copied ? 'Kopiert!' : 'Kopieren'}
+            </button>
+          </div>
+          <p className="text-[10px] text-gray-400 mb-2">Für WhatsApp kopieren und an die Spieler schicken.</p>
+          <div className="text-xs text-gray-600 space-y-1.5 whitespace-pre-line">
+            {generatedText.split('\n').map((line, i) => {
+              if (!line.trim()) return <div key={i} className="h-1" />
+              if (line.startsWith('⚾')) return <p key={i} className="font-bold text-gray-900">{line}</p>
+              if (line.startsWith('*') && line.endsWith('*')) return <p key={i} className="font-semibold text-gray-800 mt-1">{line.replace(/\*/g, '')}</p>
+              if (line.startsWith('  •') || line.startsWith('•')) return <p key={i} className="pl-2">{line}</p>
+              return <p key={i}>{line}</p>
+            })}
+          </div>
+        </div>
+        {plan.content?.groupDistributionHint && (
+          <div className="bg-yellow-50 rounded-xl p-3 text-xs text-yellow-800 leading-relaxed">
+            <h4 className="font-display font-extrabold tracking-widest uppercase text-[11px] mb-1">Gruppenaufteilung</h4>
+            <p>{plan.content.groupDistributionHint}</p>
+          </div>
+        )}
       </div>
     </div>
   )
