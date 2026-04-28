@@ -74,18 +74,21 @@ export function LineupRow({
       </span>
 
       {/* Position Dropdown */}
-      <select
-        value={entry.position ?? ''}
-        onChange={e => onSetPosition(entry.player.id, e.target.value)}
-        className={`font-display w-16 sm:w-20 text-xs font-bold tracking-wide border rounded-lg px-2 py-1 outline-none border-cream-300 bg-cream-50 hover:border-navy-400 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 cursor-pointer ${
-          !hasPosition ? 'text-gray-400' : 'text-navy-900'
-        }`}
-      >
-        <option value="">Pos.</option>
-        {availablePositions.map(p => (
-          <option key={p} value={p}>{p}</option>
-        ))}
-      </select>
+      <div className="relative w-16 sm:w-20">
+        <select
+          value={entry.position ?? ''}
+          onChange={e => onSetPosition(entry.player.id, e.target.value)}
+          className={`font-display appearance-none w-full text-xs font-bold tracking-wide border rounded-lg pl-2 pr-6 py-1.5 outline-none border-cream-300 bg-cream-50 hover:bg-white hover:border-navy-400 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 cursor-pointer transition-colors ${
+            !hasPosition ? 'text-gray-400' : 'text-navy-900'
+          }`}
+        >
+          <option value="">Pos.</option>
+          {availablePositions.map(p => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+        <ChevronDown size={12} className="text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
 
       {/* DH area — fixed width to keep alignment consistent */}
       <div className="w-8 shrink-0 flex items-center justify-center">
@@ -102,21 +105,24 @@ export function LineupRow({
 
       {/* DH picker dropdown */}
       {isFieldPosition && !hasDh && showDhPicker && (
-        <select
-          value=""
-          onChange={e => {
-            const p = poolPlayers.find(pl => pl.id === Number(e.target.value))
-            if (p) { onSetDhBatter(entry.player.id, p); setShowDhPicker(false) }
-          }}
-          onBlur={() => setShowDhPicker(false)}
-          className="w-24 sm:w-28 text-xs border border-navy-600 rounded-lg px-1.5 py-1 outline-none focus:ring-2 focus:ring-navy-100"
-          autoFocus
-        >
-          <option value="">Wer schlägt?</option>
-          {poolPlayers.map(p => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
+        <div className="relative w-24 sm:w-28">
+          <select
+            value=""
+            onChange={e => {
+              const p = poolPlayers.find(pl => pl.id === Number(e.target.value))
+              if (p) { onSetDhBatter(entry.player.id, p); setShowDhPicker(false) }
+            }}
+            onBlur={() => setShowDhPicker(false)}
+            className="appearance-none w-full text-xs border border-navy-600 bg-cream-50 rounded-lg pl-2 pr-6 py-1.5 outline-none focus:ring-2 focus:ring-navy-100 cursor-pointer"
+            autoFocus
+          >
+            <option value="">Wer schlägt?</option>
+            {poolPlayers.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <ChevronDown size={12} className="text-navy-600 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+        </div>
       )}
 
       {/* DH assigned badge */}

@@ -8,7 +8,7 @@ import { SeasonTileGrid } from './SeasonTileGrid'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
 import { DetailSheet } from './DashboardSheets'
-import { PlusCircle, XMark } from '@/icons'
+import { PlusCircle, XMark, CrossBones } from '@/icons'
 import { EditGameDayModal } from './EditGameDayModal'
 import {
   Button,
@@ -102,8 +102,44 @@ export function Dashboard() {
   }
 
   if (seasonsLoading) {
-    return <LoadingSkeleton />
+    return <LoadingSkeleton variant="ball" />
   }
+
+  // Erst-User Empty-State: keine Saison existiert → starker Hero-CTA
+  if (seasons.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 sm:py-20 px-4 text-center">
+        <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-softball-red-600 text-white shadow-lg shadow-softball-red-600/25">
+          <CrossBones size={32} />
+        </div>
+        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-wide uppercase mb-3">
+          Willkommen beim Softball Planner
+        </h1>
+        <p className="font-display text-[12px] tracking-widest uppercase text-gray-500 font-bold mb-6 max-w-md">
+          Plane Spieltage, stelle Lineups auf,<br className="hidden sm:inline" /> scoore Spiele live mit der App.
+        </p>
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-sm">
+          <p className="font-display text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-2">Erster Schritt</p>
+          <h2 className="font-display text-xl font-extrabold text-navy-900 mb-3">Saison anlegen</h2>
+          <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+            Eine Saison gruppiert Spieltage, Lineups und Stats. Tippe unten um zu starten.
+          </p>
+          <button
+            onClick={() => {
+              const yr = new Date().getFullYear()
+              createSeason(`Saison ${yr}`, yr).then(s => setSelectedSeasonId(s.id))
+            }}
+            className="font-display w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-softball-red-600 text-white rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
+          >
+            <PlusCircle size={16} /> Saison {new Date().getFullYear()} erstellen
+          </button>
+          <p className="text-[11px] text-gray-400 mt-3">Du kannst Name + Jahr später ändern.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Saison existiert aber 0 Spieltage → kleinerer Empty-State im Dashboard-Layout (kein Full-Page-Hero)
 
   // Hero-GameDay: bevorzugt heute/zukünftig, sonst letzter vergangener
   const today = new Date().toISOString().slice(0, 10)
@@ -134,6 +170,25 @@ export function Dashboard() {
 
       {selectedSeasonId && heroGameDay && (
         <HeroNextGameDay gameDay={heroGameDay} variant={heroVariant} />
+      )}
+
+      {/* Saison existiert aber 0 Spieltage → Empty-State Hero-Card */}
+      {selectedSeasonId && !heroGameDay && gameDays.length === 0 && (
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl p-6 sm:p-8 text-center">
+          <div className="mx-auto mb-4 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-navy-50 text-navy-700">
+            <CrossBones size={24} />
+          </div>
+          <h2 className="font-display text-lg sm:text-xl font-extrabold text-navy-900 tracking-wide uppercase mb-2">Noch kein Spieltag</h2>
+          <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto leading-relaxed">
+            Lege einen Spieltag mit Datum + Anzahl Spielen an. Danach Spieler-Anwesenheit setzen und Lineups vorbereiten.
+          </p>
+          <button
+            onClick={() => setShowNewGameDay(true)}
+            className="font-display inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-softball-red-600 text-white rounded-xl text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
+          >
+            <PlusCircle size={14} /> Ersten Spieltag erstellen
+          </button>
+        </div>
       )}
 
       {selectedSeasonId && (
@@ -168,6 +223,8 @@ export function Dashboard() {
                     onShowAll={() => setShowAllGameDays(true)}
                     onShowLess={() => setShowAllGameDays(false)}
                     visibleCount={3}
+                    onEdit={id => setEditGameDayId(id)}
+                    onDelete={id => setDeleteGameDayId(id)}
                   />
                 )}
               </div>

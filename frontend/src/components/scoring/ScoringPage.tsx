@@ -5,7 +5,7 @@ import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
 import { ChevronLeft, ClipboardListIcon, SubstitutionIcon, BoltIcon } from '@/icons'
-import { Flag, RotateCcw, Undo2, Settings, Zap, X as XIcon } from 'lucide-react'
+import { Flag, RotateCcw, Undo2, Settings, Zap, X as XIcon, Footprints } from 'lucide-react'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -44,16 +44,17 @@ export function ScoringPage() {
   const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
-  const [homerunFlash, setHomerunFlash] = useState<{ batter: string; isGrandSlam: boolean } | null>(null)
+  const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   // HR-Runner läuft über alle Bases. State hält name + battingOrder damit
   // der Runner auf dem Diamond animiert werden kann.
   const [homerunRunner, setHomerunRunner] = useState<{ playerId: number; playerName: string; battingOrder: number | null } | null>(null)
   const [hbpFlash, setHbpFlash] = useState<string | null>(null)
-  const [walkFlash, setWalkFlash] = useState<string | null>(null)
+  const [walkFlash, setWalkFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [overthrowFlash, setOverthrowFlash] = useState<string | null>(null)
+  const [stealFlash, setStealFlash] = useState<{ runner: string; type: 'BASE' | 'HOME' | 'CAUGHT'; toBase: number } | null>(null)
   // Runner die gerade Home erreicht haben (Array von Namen) — feiert Run-Scoring
-  const [scoredFlash, setScoredFlash] = useState<string[] | null>(null)
+  const [scoredFlash, setScoredFlash] = useState<{ runners: string[]; hitLabel: string | null } | null>(null)
   const [manualGameOver, setManualGameOver] = useState(false)
   const [showEndGameConfirm, setShowEndGameConfirm] = useState(false)
   // Wer ist bei dem letzten AtBat nach Home gelaufen (für Korrektur-Sheet)
@@ -206,10 +207,8 @@ export function ScoringPage() {
       })
       setRecentlyScored(scoredPlayers)
       if (result === 'HOMERUN') {
-        // Grand Slam: Bases loaded HR → 4 Runs (3 Runner + Batter)
-        const isGrandSlam = runsScored === 4
-        setHomerunFlash({ batter: batterNameSnapshot, isGrandSlam })
-        setTimeout(() => setHomerunFlash(null), 2200)
+        setHomerunFlash({ batter: batterNameSnapshot, runsScored })
+        setTimeout(() => setHomerunFlash(null), 3200)
         // Runner läuft Home → 1B → 2B → 3B → Home
         setHomerunRunner({
           playerId: scoreboard.currentBatterId,
@@ -227,8 +226,8 @@ export function ScoringPage() {
           try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
         }
       } else if (result === 'WALK') {
-        setWalkFlash(batterNameSnapshot)
-        setTimeout(() => setWalkFlash(null), 1400)
+        setWalkFlash({ batter: batterNameSnapshot, runsScored })
+        setTimeout(() => setWalkFlash(null), 1700)
       } else if (result === 'STRIKEOUT') {
         setStrikeoutFlash(batterNameSnapshot)
         setTimeout(() => setStrikeoutFlash(null), 1600)
@@ -237,33 +236,29 @@ export function ScoringPage() {
         }
       }
 
-      // Home-Plate-Berührung: wenn Runner durch diesen AtBat gescort sind, feier die!
-      // NICHT bei HR (HR-Vollbild läuft schon) und nicht bei HBP (AUA-Vollbild reicht).
-      if (result !== 'HOMERUN' && result !== 'HIT_BY_PITCH' && scoredPlayers.length > 0) {
-        setScoredFlash(scoredPlayers.map(p => p.playerName))
-        setTimeout(() => setScoredFlash(null), 1500)
-      }
-      // Toasts + Sheet-Trigger abhängig vom Result
       const hadRunners = (scoreboard.runners?.length ?? 0) > 0
       const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
-      // Wenn dieser Out der 3. Out ist → Half-Inning ist vorbei,
-      // Runner-Advancement interessiert nicht mehr.
+      const hitLabel = result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : result === 'TRIPLE' ? 'Triple' : null
+      // Wenn dieser Out der 3. Out ist → Half-Inning ist vorbei
       const willBe3rdOut = result === 'OUT' && (scoreboard.outsInCurrentInning ?? 0) >= 2
+
+      // Einheitliche Score/Anpassen-Pille — eine Pille für alle Hit/Run-Cases
+      // (HR, HBP, WALK haben eigene Vollbild-/Pill-Animationen)
+      if (result !== 'HOMERUN' && result !== 'HIT_BY_PITCH' && result !== 'WALK') {
+        const showRuns = scoredPlayers.length > 0
+        const showHitPrompt = isHit && hadRunners
+        if (showRuns || showHitPrompt) {
+          setScoredFlash({
+            runners: scoredPlayers.map(p => p.playerName),
+            hitLabel: showHitPrompt ? hitLabel : null,
+          })
+          setTimeout(() => setScoredFlash(null), 2200)
+        }
+      }
 
       if (result === 'OUT' && hadRunners && !willBe3rdOut) {
         // Auto-Open nach OUT: meist muss User entscheiden (Sac Fly, DP, Advancement)
         setShowCorrection(true)
-      } else if (isHit && hadRunners) {
-        // Nach Hit mit Runnern: Toast mit Anpassen-Action (non-blocking).
-        // Default-Advance stimmt meist, User kann tippen wenn Runner ausgelaufen
-        // oder extra Base genommen hat.
-        const runsMsg = runsScored > 0 ? ` · ${runsScored} Run${runsScored > 1 ? 's' : ''}` : ''
-        toast.show(`${result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : 'Triple'}${runsMsg} — Runner anders?`, 'success', {
-          duration: 6000,
-          action: { label: 'Anpassen', onClick: () => setShowCorrection(true) },
-        })
-      } else if (runsScored > 0) {
-        toast.show(`${runsScored} Run${runsScored > 1 ? 's' : ''} gescort!`, 'success')
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -421,6 +416,8 @@ export function ScoringPage() {
   const handleStealing = async (type: 'STOLEN_BASE' | 'CAUGHT_STEALING') => {
     if (!stealingRunner) return
     const runnerName = stealingRunner.playerName
+    const fromBase = stealingRunner.base
+    const toBase = type === 'STOLEN_BASE' ? fromBase + 1 : fromBase
     // Sheet sofort schließen — optimistic UX
     setStealingRunner(null)
     try {
@@ -429,10 +426,14 @@ export function ScoringPage() {
         type,
         inning: currentInning,
       })
-      if (type === 'STOLEN_BASE') {
-        toast.show(`⚡ ${runnerName} klaut die nächste Base!`, 'success')
-      } else {
-        toast.show(`✕ ${runnerName} beim Klauen gefangen · +1 Aus`, 'success')
+      const flashType: 'BASE' | 'HOME' | 'CAUGHT' =
+        type === 'CAUGHT_STEALING' ? 'CAUGHT'
+          : fromBase === 3 ? 'HOME'
+            : 'BASE'
+      setStealFlash({ runner: runnerName, type: flashType, toBase })
+      setTimeout(() => setStealFlash(null), flashType === 'HOME' ? 2800 : 1700)
+      if (flashType === 'HOME' && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([60, 40, 60, 40, 150]) } catch { /* vibrate not supported */ }
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -509,10 +510,7 @@ export function ScoringPage() {
               <ChevronLeft size={22} />
             </button>
           </div>
-          <div className="font-display text-sm font-bold tracking-wider uppercase truncate flex-1 text-center min-w-0">
-            <span className="hidden sm:inline">Dead Sox </span>
-            <span className="text-white/60">vs.</span> {opponentName}
-          </div>
+          <div className="flex-1" />
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowEndGameConfirm(true)}
@@ -539,7 +537,7 @@ export function ScoringPage() {
       {/* Live-State-Strip — Navy, direkt unter Header (1 Navy-Block oben) */}
       <div className="bg-navy-900 text-white px-4 py-2 flex items-center justify-between border-b-[3px] border-softball-red-600">
         <div className="flex items-center gap-2.5">
-          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/55">Inning</span>
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white">Inning</span>
           <span className="font-display text-2xl font-extrabold leading-none">{displayInning}</span>
           {battingSide && (
             <button
@@ -558,7 +556,7 @@ export function ScoringPage() {
           title="Tap = +1 Out (Double Play). Bei 3 Aus: Reset."
           aria-label="Outs +1"
         >
-          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/55">Outs</span>
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white">Outs</span>
           <span className="flex items-center gap-1.5">
             {[0, 1, 2].map(i => (
               <span
@@ -576,7 +574,7 @@ export function ScoringPage() {
       <div className="bg-cream-50 border-b border-cream-300 px-4 py-2.5">
         <div className="flex items-center justify-center gap-3 sm:gap-4">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-[11px] text-softball-red-700 uppercase font-bold tracking-widest">Wir</span>
+            <span className="font-display text-[11px] text-softball-red-700 uppercase font-bold tracking-widest truncate max-w-[80px] sm:max-w-[140px]" title="Dead Sox">Dead Sox</span>
             {editingScoreUs ? (
               <input
                 type="number"
@@ -628,7 +626,7 @@ export function ScoringPage() {
                 {scoreThem ?? 0}
               </button>
             )}
-            <span className="font-display text-[11px] text-gray-500 uppercase font-bold tracking-widest">Sie</span>
+            <span className="font-display text-[11px] text-gray-500 uppercase font-bold tracking-widest truncate max-w-[80px] sm:max-w-[140px]" title={opponentName}>{opponentName}</span>
           </div>
         </div>
       </div>
@@ -1103,68 +1101,169 @@ export function ScoringPage() {
         </Drawer.Portal>
       </Drawer.Root>
 
-      {/* Homerun — Vintage Scorecard Ink-Stamp */}
+      {/* Homerun — Power-Smash mit Type-Label nach Runs */}
       <AnimatePresence>
-        {homerunFlash && (
+        {homerunFlash && (() => {
+          const runs = homerunFlash.runsScored
+          const isGrandSlam = runs >= 4
+          const typeLabel = runs === 1 ? 'SOLO HR' : runs === 2 ? '2-RUN HR' : runs === 3 ? '3-RUN HR' : 'GRAND SLAM'
+          return (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{
+              opacity: 1,
+              x: [0, -16, 14, -12, 10, -6, 4, -2, 0],
+              y: [0, 8, -5, 6, -4, 3, -2, 0],
+            }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
             className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-cream-50/95"
           >
+            {/* Power-Flash: gold→red radial */}
             <motion.div
-              initial={{ scale: 0.4, rotate: -25, opacity: 0 }}
-              animate={{ scale: [0.4, 1.15, 1, 1], rotate: [-25, -8, -8, -8], opacity: 1 }}
-              exit={{ scale: 1.3, opacity: 0 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              className="text-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.8, 0.3, 0] }}
+              transition={{ duration: 0.5, times: [0, 0.1, 0.4, 1] }}
+              className="absolute inset-0"
+              style={{ background: 'radial-gradient(circle at 50% 50%, #FFD93D 0%, rgba(204,41,54,0.55) 22%, transparent 55%)' }}
+            />
+
+            {/* 3 expanding impact-rings from CENTER */}
+            {[0, 0.1, 0.22].map((delay, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-40 h-40 rounded-full border-[6px] border-softball-red-600"
+                initial={{ scale: 0, opacity: 0.9 }}
+                animate={{ scale: [0, 6], opacity: [0.9, 0] }}
+                transition={{ duration: 1.0, ease: 'easeOut', delay }}
+              />
+            ))}
+
+            {/* Sun-burst rays from center */}
+            <svg
+              className="absolute pointer-events-none"
+              width="900"
+              height="900"
+              viewBox="-300 -300 600 600"
+            >
+              {[...Array(16)].map((_, i) => {
+                const angle = (i * 360) / 16
+                const rad = (angle * Math.PI) / 180
+                return (
+                  <motion.line
+                    key={i}
+                    x1={Math.cos(rad) * 80}
+                    y1={Math.sin(rad) * 80}
+                    x2={Math.cos(rad) * 290}
+                    y2={Math.sin(rad) * 290}
+                    stroke={i % 2 === 0 ? '#CC2936' : '#0A0F5C'}
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    initial={{ opacity: 0, pathLength: 0 }}
+                    animate={{ opacity: [0, 0.75, 0], pathLength: [0, 1, 1] }}
+                    transition={{ duration: 1.0, delay: 0.3 + i * 0.012, ease: 'easeOut' }}
+                  />
+                )
+              })}
+            </svg>
+
+            {/* Smash-In Text — HOMERUN! mega + Type-Sticker + Batter */}
+            <motion.div
+              initial={{ scale: 0.2, rotate: -25, opacity: 0 }}
+              animate={{
+                scale: [0.2, 1.4, 0.95, 1.05, 1, 1],
+                rotate: [-25, 10, -6, 4, -4, -4],
+                opacity: 1,
+              }}
+              exit={{ scale: 0.6, opacity: 0, rotate: -30 }}
+              transition={{ duration: 0.6, ease: [0.16, 1.4, 0.3, 1] }}
+              className="text-center relative z-10"
             >
               <div
                 className="font-display font-black text-softball-red-600 leading-none tracking-tight"
                 style={{
-                  fontSize: homerunFlash.isGrandSlam ? 'clamp(120px, 36vw, 320px)' : 'clamp(140px, 42vw, 380px)',
-                  textShadow: '4px 4px 0 rgba(10,15,92,0.18), 0 0 1px rgba(204,41,54,0.5)',
-                  WebkitTextStroke: '2px var(--color-softball-red-700)',
+                  fontSize: 'clamp(100px, 28vw, 280px)',
+                  textShadow: '8px 8px 0 rgba(10,15,92,0.3), -3px -3px 0 rgba(255,251,243,0.7), 0 0 2px rgba(204,41,54,0.5)',
+                  WebkitTextStroke: '2.5px var(--color-softball-red-700)',
                 }}
               >
-                HR
+                HR<span className="text-navy-900">!</span>
               </div>
-              {homerunFlash.isGrandSlam && (
-                <div className="font-display text-3xl sm:text-5xl font-extrabold text-navy-900 -mt-4 tracking-widest">
-                  × 4 GRAND SLAM
-                </div>
-              )}
-              <div className="font-display mt-4 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
+
+              {/* Type-Sticker (rotated) — SOLO / 2-RUN / 3-RUN / GRAND SLAM */}
+              <motion.div
+                initial={{ scale: 0, rotate: 30 }}
+                animate={{ scale: [0, 1.3, 1], rotate: isGrandSlam ? 12 : 8 }}
+                transition={{ duration: 0.45, delay: 0.3, ease: 'backOut' }}
+                className={`absolute -top-3 -right-2 sm:-right-12 font-display font-black text-base sm:text-2xl px-3 py-1 rounded-md tracking-wider shadow-lg border-2 border-cream-50 ${
+                  isGrandSlam
+                    ? 'bg-amber-400 text-navy-900'
+                    : 'bg-navy-900 text-white'
+                }`}
+              >
+                {typeLabel}
+              </motion.div>
+
+              <div className="font-display mt-3 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
                 {homerunFlash.batter}
               </div>
+              <div className="font-display mt-1 text-sm sm:text-lg font-bold text-softball-red-700 uppercase tracking-widest">
+                {runs} {runs === 1 ? 'Run' : 'Runs'} · → HOME
+              </div>
             </motion.div>
-            {/* Ink-Splatter: kleine rotierte Brand-Rechtecke statt Konfetti */}
-            {[...Array(12)].map((_, i) => {
-              const colors = ['bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
-              const sizes = ['w-2 h-4', 'w-3 h-3', 'w-1.5 h-5', 'w-4 h-2']
+
+            {/* Ink-Splatter from center */}
+            {[...Array(16)].map((_, i) => {
+              const colors = isGrandSlam
+                ? ['bg-amber-400', 'bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
+                : ['bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
+              const sizes = ['w-2 h-3', 'w-3 h-2', 'w-1.5 h-4', 'w-2 h-2']
               return (
                 <motion.div
                   key={i}
-                  className={`absolute ${colors[i % colors.length]} ${sizes[i % sizes.length]}`}
+                  className={`absolute ${colors[i % colors.length]} ${sizes[i % sizes.length]} rounded-sm`}
                   style={{
-                    left: `${20 + Math.random() * 60}%`,
+                    left: `${30 + Math.random() * 40}%`,
                     top: `${30 + Math.random() * 40}%`,
                   }}
                   initial={{ scale: 0, rotate: 0, opacity: 0 }}
                   animate={{
-                    scale: [0, 1, 1, 0.8],
+                    scale: [0, 1.2, 0.7],
                     rotate: Math.random() * 540 - 270,
-                    x: (Math.random() - 0.5) * 500,
-                    y: (Math.random() - 0.5) * 400,
-                    opacity: [0, 1, 1, 0],
+                    x: (Math.random() - 0.5) * 480,
+                    y: (Math.random() - 0.5) * 360,
+                    opacity: [0, 1, 0],
                   }}
-                  transition={{ duration: 1.6, ease: 'easeOut', delay: 0.1 + i * 0.04 }}
+                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.2 + i * 0.04 }}
+                />
+              )
+            })}
+
+            {/* Confetti rain (Grand Slam: extra dichter + amber) */}
+            {[...Array(isGrandSlam ? 32 : 18)].map((_, i) => {
+              const colors = isGrandSlam
+                ? ['bg-amber-400', 'bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
+                : ['bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
+              const sizes = ['w-2 h-3', 'w-1.5 h-5', 'w-3 h-2', 'w-2 h-2']
+              return (
+                <motion.div
+                  key={`rain-${i}`}
+                  className={`absolute ${colors[i % colors.length]} ${sizes[i % sizes.length]} rounded-sm`}
+                  style={{ left: `${Math.random() * 100}%`, top: '-5%' }}
+                  initial={{ y: 0, rotate: 0, opacity: 0 }}
+                  animate={{
+                    y: '110vh',
+                    rotate: Math.random() * 720 - 360,
+                    x: (Math.random() - 0.5) * 100,
+                    opacity: [0, 1, 1, 0.6],
+                  }}
+                  transition={{ duration: 2.0 + Math.random() * 0.5, ease: 'easeIn', delay: 0.6 + i * 0.04 }}
                 />
               )
             })}
           </motion.div>
-        )}
+          )
+        })()}
       </AnimatePresence>
 
       {/* HBP — Impact "HBP!" mit Schmerz-Effekt (Crack-Lines + Impact-Ring + Shake) */}
@@ -1315,7 +1414,7 @@ export function ScoringPage() {
         )}
       </AnimatePresence>
 
-      {/* Walk — Scorecard "BB" Notation */}
+      {/* Walk — Scorecard "BB" Notation mit walking Footsteps + Run-Sticker bei forced run */}
       <AnimatePresence>
         {walkFlash && (
           <motion.div
@@ -1325,18 +1424,229 @@ export function ScoringPage() {
             transition={{ type: 'spring', stiffness: 280, damping: 22 }}
             className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
           >
-            <div className="bg-navy-900 text-white pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border border-white/15">
-              <span
-                className="font-display font-black text-3xl text-cream-50 leading-none"
+            <div className="relative bg-navy-900 text-white pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border border-white/15 overflow-hidden">
+              <motion.div
+                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                initial={{ left: '-12%', opacity: 0 }}
+                animate={{ left: '108%', opacity: [0, 0.3, 0.3, 0] }}
+                transition={{ duration: 1.3, ease: 'linear', delay: 0.05 }}
+              >
+                <Footprints size={20} className="text-cream-50" />
+              </motion.div>
+
+              <motion.span
+                className="font-display font-black text-3xl text-cream-50 leading-none relative"
                 style={{ WebkitTextStroke: '1px var(--color-softball-red-500)' }}
+                initial={{ scale: 0.8 }}
+                animate={{ scale: [0.8, 1.15, 1, 1.05, 1] }}
+                transition={{ duration: 0.9, times: [0, 0.2, 0.45, 0.7, 1], ease: 'easeOut' }}
               >
                 BB
-              </span>
-              <div>
+              </motion.span>
+
+              <div className="relative">
                 <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60">Base on Balls</div>
-                <div className="font-display text-base font-bold tracking-wider uppercase">{walkFlash} <span className="text-cream-200">→ 1B</span></div>
+                <div className="font-display text-base font-bold tracking-wider uppercase">
+                  {walkFlash.batter}
+                </div>
+              </div>
+
+              {/* Run-Sticker bei forced run (bases-loaded walk) */}
+              {walkFlash.runsScored > 0 && (
+                <motion.div
+                  initial={{ scale: 0, rotate: 30, opacity: 0 }}
+                  animate={{ scale: [0, 1.3, 1], rotate: 12, opacity: 1 }}
+                  transition={{ duration: 0.45, delay: 0.4, ease: 'backOut' }}
+                  className="bg-softball-red-600 text-white font-display font-black text-sm px-2 py-1 rounded-md tracking-wider shadow-lg border border-cream-50/30 relative"
+                >
+                  +{walkFlash.runsScored} {walkFlash.runsScored === 1 ? 'RUN' : 'RUNS'}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Steal Pill — 1B/2B/3B oder Caught */}
+      <AnimatePresence>
+        {stealFlash && stealFlash.type !== 'HOME' && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className={`relative pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border overflow-hidden ${
+              stealFlash.type === 'CAUGHT'
+                ? 'bg-softball-red-700 text-white border-softball-red-800'
+                : 'bg-softball-red-600 text-white border-softball-red-700'
+            }`}>
+              {stealFlash.type !== 'CAUGHT' && (
+                <motion.div
+                  className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                  initial={{ left: '-12%', opacity: 0 }}
+                  animate={{ left: '108%', opacity: [0, 0.3, 0.3, 0] }}
+                  transition={{ duration: 1.0, ease: 'linear', delay: 0.05 }}
+                >
+                  <Footprints size={20} className="text-cream-50" />
+                </motion.div>
+              )}
+              <motion.div
+                initial={{ scale: 0.6, rotate: stealFlash.type === 'CAUGHT' ? 30 : -10 }}
+                animate={{ scale: [0.6, 1.25, 1], rotate: 0 }}
+                transition={{ duration: 0.5, ease: 'backOut' }}
+                className="relative"
+              >
+                {stealFlash.type === 'CAUGHT' ? <XIcon size={28} /> : <Zap size={28} fill="currentColor" />}
+              </motion.div>
+              <div className="relative">
+                <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/75">
+                  {stealFlash.type === 'CAUGHT' ? 'Caught Stealing · +1 Aus' : 'Stolen Base'}
+                </div>
+                <div className="font-display text-base font-bold tracking-wider uppercase">
+                  {stealFlash.runner}
+                  {stealFlash.type === 'BASE' && (
+                    <span className="ml-1.5 text-cream-200">→ {stealFlash.toBase}B</span>
+                  )}
+                </div>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Steal HOME — Cinematic Slide + SAFE!-Stamp */}
+      <AnimatePresence>
+        {stealFlash?.type === 'HOME' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: 1,
+              x: [0, -10, 8, -6, 4, -2, 0],
+              y: [0, 5, -3, 2, 0],
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-cream-50/95 overflow-hidden"
+          >
+            {/* Speed-Lines: streifen die Slide-Bewegung an */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 100 100">
+              {[...Array(10)].map((_, i) => {
+                const y = 35 + (i * 4)
+                return (
+                  <motion.line
+                    key={i}
+                    x1={100} y1={y}
+                    x2={20} y2={y}
+                    stroke="#CC2936"
+                    strokeWidth="0.4"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                    initial={{ opacity: 0, pathLength: 0 }}
+                    animate={{ opacity: [0, 0.7, 0], pathLength: [0, 1, 1] }}
+                    transition={{ duration: 0.45, delay: 0.1 + i * 0.025, ease: 'easeOut' }}
+                  />
+                )
+              })}
+            </svg>
+
+            {/* Sliding Footsteps — fliegen von rechts nach Center, kippen bei Slide */}
+            <motion.div
+              className="absolute"
+              style={{ top: '46%', transformOrigin: 'center' }}
+              initial={{ left: '105%', opacity: 0, rotate: 0 }}
+              animate={{
+                left: ['105%', '42%'],
+                opacity: [0, 1, 1, 0],
+                rotate: [0, -25, -45],
+                scale: [0.8, 1.1, 0.9],
+              }}
+              transition={{ duration: 0.7, delay: 0.15, ease: [0.45, 0, 0.6, 1], times: [0, 0.6, 0.85, 1] }}
+            >
+              <Footprints size={88} className="text-navy-900 drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)]" />
+            </motion.div>
+
+            {/* Dust-Cloud Puffs */}
+            {[...Array(16)].map((_, i) => {
+              const dx = -(50 + Math.random() * 220)
+              const dy = -(15 + Math.random() * 60)
+              const size = 18 + Math.random() * 32
+              return (
+                <motion.div
+                  key={`dust-${i}`}
+                  className="absolute bg-cream-300 rounded-full opacity-70"
+                  style={{ left: '42%', top: '56%', width: size, height: size }}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{
+                    scale: [0, 1.4, 1, 0.5],
+                    x: dx,
+                    y: dy,
+                    opacity: [0, 0.6, 0.4, 0],
+                  }}
+                  transition={{ duration: 1.4, delay: 0.55 + i * 0.03, ease: 'easeOut' }}
+                />
+              )
+            })}
+
+            {/* SAFE!-Mega-Stamp + Sticker */}
+            <motion.div
+              initial={{ scale: 0.2, rotate: -25, opacity: 0 }}
+              animate={{
+                scale: [0.2, 1.4, 0.95, 1.05, 1, 1],
+                rotate: [-25, 12, -8, 5, -6, -6],
+                opacity: 1,
+              }}
+              exit={{ scale: 0.6, opacity: 0, rotate: -30 }}
+              transition={{ duration: 0.55, delay: 0.85, ease: [0.16, 1.4, 0.3, 1] }}
+              className="text-center relative z-10"
+            >
+              <div
+                className="font-display font-black text-emerald-600 leading-none tracking-tight"
+                style={{
+                  fontSize: 'clamp(120px, 36vw, 320px)',
+                  textShadow: '8px 8px 0 rgba(10,15,92,0.3), -3px -3px 0 rgba(255,251,243,0.7), 0 0 3px rgba(16,185,129,0.5)',
+                  WebkitTextStroke: '3px #047857',
+                }}
+              >
+                SAFE!
+              </div>
+              <motion.div
+                initial={{ scale: 0, rotate: 30 }}
+                animate={{ scale: [0, 1.3, 1], rotate: 12 }}
+                transition={{ duration: 0.45, delay: 1.2, ease: 'backOut' }}
+                className="absolute -top-3 -right-2 sm:-right-12 bg-softball-red-600 text-white font-display font-black text-base sm:text-2xl px-3 py-1 rounded-md tracking-wider shadow-lg border-2 border-cream-50"
+              >
+                STOLEN HOME
+              </motion.div>
+              <div className="font-display mt-3 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
+                {stealFlash.runner}
+              </div>
+              <div className="font-display mt-1 text-sm sm:text-lg font-bold text-softball-red-700 uppercase tracking-widest">
+                +1 RUN
+              </div>
+            </motion.div>
+
+            {/* Confetti */}
+            {[...Array(20)].map((_, i) => {
+              const colors = ['bg-softball-red-600', 'bg-navy-900', 'bg-emerald-500', 'bg-cream-300']
+              const sizes = ['w-2 h-3', 'w-1.5 h-5', 'w-3 h-2', 'w-2 h-2']
+              return (
+                <motion.div
+                  key={`conf-${i}`}
+                  className={`absolute ${colors[i % colors.length]} ${sizes[i % sizes.length]} rounded-sm`}
+                  style={{ left: `${Math.random() * 100}%`, top: '-5%' }}
+                  initial={{ y: 0, rotate: 0, opacity: 0 }}
+                  animate={{
+                    y: '110vh',
+                    rotate: Math.random() * 720 - 360,
+                    x: (Math.random() - 0.5) * 100,
+                    opacity: [0, 1, 1, 0.6],
+                  }}
+                  transition={{ duration: 1.8 + Math.random() * 0.5, ease: 'easeIn', delay: 1.0 + i * 0.04 }}
+                />
+              )
+            })}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1398,32 +1708,52 @@ export function ScoringPage() {
         )}
       </AnimatePresence>
 
-      {/* Home-Plate-Berührung — feiert scorende Runner (eine oder mehrere) */}
+      {/* Hit/Run-Pille — einheitlich für scorende Runs UND Hit-with-Runners */}
       <AnimatePresence>
-        {scoredFlash && scoredFlash.length > 0 && (
+        {scoredFlash && (scoredFlash.runners.length > 0 || scoredFlash.hitLabel) && (
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.85 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.45, type: 'spring', stiffness: 280, damping: 22 }}
-            className="fixed top-32 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+            className="fixed top-32 left-1/2 -translate-x-1/2 z-[60]"
           >
-            <div className="bg-cream-50 border-2 border-softball-red-600 text-navy-900 px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3">
-              <span
-                className="font-display font-black text-4xl text-softball-red-600 leading-none"
-                style={{ WebkitTextStroke: '0.5px var(--color-softball-red-700)' }}
-              >
-                +{scoredFlash.length}
-              </span>
-              <div>
+            <button
+              onClick={() => setShowCorrection(true)}
+              className="bg-cream-50 border-2 border-softball-red-600 text-navy-900 px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 cursor-pointer hover:bg-white hover:shadow-2xl transition-all active:scale-95"
+              title="Tippen um Runner anzupassen"
+            >
+              {scoredFlash.runners.length > 0 ? (
+                <span
+                  className="font-display font-black text-4xl text-softball-red-600 leading-none"
+                  style={{ WebkitTextStroke: '0.5px var(--color-softball-red-700)' }}
+                >
+                  +{scoredFlash.runners.length}
+                </span>
+              ) : (
+                <span
+                  className="font-display font-black text-3xl text-softball-red-600 leading-none"
+                  style={{ WebkitTextStroke: '0.5px var(--color-softball-red-700)' }}
+                >
+                  {scoredFlash.hitLabel === 'Single' ? '1B' : scoredFlash.hitLabel === 'Double' ? '2B' : '3B'}
+                </span>
+              )}
+              <div className="text-left">
                 <div className="font-display text-[10px] font-bold tracking-widest uppercase text-gray-500">
-                  {scoredFlash.length === 1 ? 'Run' : 'Runs'}
+                  {scoredFlash.runners.length > 0
+                    ? (scoredFlash.runners.length === 1 ? 'Run' : 'Runs')
+                    : scoredFlash.hitLabel}
                 </div>
                 <div className="font-display text-base font-bold tracking-wider uppercase truncate max-w-[200px]">
-                  {scoredFlash.join(' · ')}
+                  {scoredFlash.runners.length > 0
+                    ? scoredFlash.runners.join(' · ')
+                    : 'Runner anders?'}
+                </div>
+                <div className="font-display text-[9px] font-bold tracking-widest uppercase text-softball-red-700/70 mt-0.5">
+                  Tippen → Anpassen
                 </div>
               </div>
-            </div>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

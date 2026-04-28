@@ -28,6 +28,8 @@ import {
   Trophy,
   Frown,
   Zap,
+  Send,
+  ChevronRight as LucideChevronRight,
 } from 'lucide-react'
 
 interface IconProps {
@@ -60,6 +62,8 @@ export const FootstepsIcon = (p: IconProps) => <Footprints size={p.size ?? 20} c
 export const TrophyIcon = (p: IconProps) => <Trophy size={p.size ?? 20} className={p.className} />
 export const BoltIcon = (p: IconProps) => <Zap size={p.size ?? 20} className={p.className} />
 export const SadFaceIcon = (p: IconProps) => <Frown size={p.size ?? 20} className={p.className} />
+export const SendIcon = (p: IconProps) => <Send size={p.size ?? 16} className={p.className} />
+export const ChevronRight = (p: IconProps) => <LucideChevronRight size={p.size ?? 16} className={p.className} />
 
 // Custom SVGs — keine Lucide-Equivalente passen (Brand/Baseball-spezifisch)
 export function CrossBones({ size = 24, className }: IconProps) {

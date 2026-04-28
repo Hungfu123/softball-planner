@@ -315,25 +315,16 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
         </div>
       </div>
 
-      {/* Info + Hint Box */}
-      <div className="bg-navy-900 rounded-xl px-4 py-3 space-y-2 shadow-sm shadow-navy-900/15">
-        {/* Stats */}
-        <div className="flex items-center gap-3 text-sm text-white">
-          <span className="font-bold">{sections.length} Drills</span>
-          <span className="text-white/60">·</span>
-          <span className={overTime ? 'text-softball-red-500 font-bold' : 'font-bold'}>{totalMinutes} / {plan.durationMinutes} min</span>
-          {!overTime && totalMinutes < plan.durationMinutes && (
-            <span className="text-white/50 text-xs">({plan.durationMinutes - totalMinutes} min frei)</span>
-          )}
-          {overTime && (
-            <span className="text-softball-red-500 text-xs">({totalMinutes - plan.durationMinutes} min über Limit)</span>
-          )}
-        </div>
-        {/* Hint */}
-        {selectedIndices.size === 0 && (
-          <p className="text-[11px] text-white/60">
-            💡 <span className="font-bold text-white/80">Tipp:</span> Drills per Checkbox auswählen → als Station gruppieren. Oder Drills in bestehende Stationen einfügen.
-          </p>
+      {/* Info-Strip — kompakt */}
+      <div className="flex items-center gap-3 px-1 text-sm">
+        <span className="font-display font-extrabold tracking-wide text-navy-900">{sections.length} Drills</span>
+        <span className="text-cream-300">·</span>
+        <span className={`font-display font-extrabold tracking-wide tabular-nums ${overTime ? 'text-softball-red-600' : 'text-navy-900'}`}>{totalMinutes} / {plan.durationMinutes} min</span>
+        {!overTime && totalMinutes < plan.durationMinutes && (
+          <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">{plan.durationMinutes - totalMinutes} min frei</span>
+        )}
+        {overTime && (
+          <span className="font-display text-[10px] tracking-widest uppercase text-softball-red-600 font-bold">+{totalMinutes - plan.durationMinutes} min</span>
         )}
       </div>
 

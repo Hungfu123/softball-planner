@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams, useBlocker } from 'react-router-dom'
+import { Link, useParams, useSearchParams, useBlocker, useNavigate } from 'react-router-dom'
 import { useGameDay } from '@/hooks/useGameDay'
 import { useLineup } from '@/hooks/useLineup'
 import { useStaff } from '@/hooks/useStaff'
@@ -18,7 +18,7 @@ import { SubstitutionEditor } from './SubstitutionEditor'
 import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, CarIcon, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, TrashBin, CarIcon, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -38,6 +38,8 @@ export function GameDayPlanner() {
   const [activeSection, setActiveSection] = useState<'lineup' | 'carpool'>('lineup')
   const [showPlayersModal, setShowPlayersModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const navigate = useNavigate()
   const [showCopyLineup, setShowCopyLineup] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [showAutoAllConfirm, setShowAutoAllConfirm] = useState(false)
@@ -305,14 +307,24 @@ export function GameDayPlanner() {
                 <p className="font-display text-[11px] tracking-widest uppercase text-gray-500 mt-0.5">📍 {gameDay.location}</p>
               )}
             </div>
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="p-1.5 rounded-lg text-gray-400 opacity-0 group-hover/header:opacity-100 hover:text-navy-700 hover:bg-cream-100 transition-all cursor-pointer"
-              title="Spieltag bearbeiten"
-              aria-label="Spieltag bearbeiten"
-            >
-              <Pencil size={14} />
-            </button>
+            <div className="flex items-center gap-0.5 opacity-60 sm:opacity-0 sm:group-hover/header:opacity-100 transition-opacity">
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-navy-700 hover:bg-cream-100 transition-colors cursor-pointer"
+                title="Spieltag bearbeiten"
+                aria-label="Spieltag bearbeiten"
+              >
+                <Pencil size={14} />
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 transition-colors cursor-pointer"
+                title="Spieltag löschen"
+                aria-label="Spieltag löschen"
+              >
+                <TrashBin size={14} />
+              </button>
+            </div>
           </div>
           {/* MOBILE Layout: Primary-Row + Toolbar-Strip */}
           <div className="sm:hidden flex flex-col gap-2 w-full">
@@ -462,7 +474,7 @@ export function GameDayPlanner() {
       ) : (
       <>
       {/* Tabs */}
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-4 pt-2">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-2 sm:px-4 pt-2">
       <GameTabs
         games={gameDay.games}
         activeIndex={activeTab}
@@ -688,6 +700,21 @@ export function GameDayPlanner() {
             toast.show('Spieltag aktualisiert')
           }}
           onClose={() => setShowEditModal(false)}
+        />
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Spieltag löschen"
+          message={`„${gameDay.label || 'Spieltag'} · ${formatDate(gameDay.date)}" wirklich löschen? Alle Spiele, Lineups und Scoring-Daten gehen verloren.`}
+          confirmLabel="Löschen"
+          onConfirm={async () => {
+            await api.deleteGameDay(gameDay.id)
+            setShowDeleteConfirm(false)
+            toast.show('Spieltag gelöscht')
+            navigate('/')
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
 

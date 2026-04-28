@@ -7,12 +7,82 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import type { TrainingResponse } from '@/types'
 import * as api from '@/api/client'
 
+/** Custom Period Dropdown — Cream styled, click-outside to close */
+function PeriodDropdown({
+  activeId,
+  periods,
+  onSelect,
+}: {
+  activeId: number | null
+  periods: { id: number; name: string }[]
+  onSelect: (id: number | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const active = periods.find(p => p.id === activeId)
+  const label = active ? active.name : 'Alle Zeiträume'
+
+  return (
+    <div ref={ref} className="relative inline-flex">
+      <button
+        onClick={() => setOpen(!open)}
+        className="font-display flex items-center gap-2 bg-cream-50 border border-cream-300 rounded-lg pl-3 pr-2 py-2 text-sm font-bold tracking-wide text-navy-900 hover:border-navy-400 hover:bg-white focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer transition-colors"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className="truncate max-w-[140px] sm:max-w-none">{label}</span>
+        <ChevronDown size={14} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div
+          className="absolute top-full left-0 mt-1 bg-white border border-cream-300 rounded-lg shadow-lg shadow-navy-900/10 z-30 min-w-[180px] py-1 overflow-hidden"
+          role="listbox"
+        >
+          <button
+            onClick={() => { onSelect(null); setOpen(false) }}
+            className={`w-full text-left px-3 py-2 text-sm cursor-pointer hover:bg-cream-100 transition-colors ${
+              activeId === null ? 'bg-navy-50 text-navy-900 font-semibold' : 'text-gray-700'
+            }`}
+            role="option"
+            aria-selected={activeId === null}
+          >
+            Alle Zeiträume
+          </button>
+          {periods.map(p => (
+            <button
+              key={p.id}
+              onClick={() => { onSelect(p.id); setOpen(false) }}
+              className={`w-full text-left px-3 py-2 text-sm cursor-pointer hover:bg-cream-100 transition-colors ${
+                activeId === p.id ? 'bg-navy-50 text-navy-900 font-semibold' : 'text-gray-700'
+              }`}
+              role="option"
+              aria-selected={activeId === p.id}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function TrainingPage() {
   const {
     trainings, attendance, periods, activePeriodId, loading,
     selectPeriod, toggleAttendance, createTraining, createBulk, deleteTraining, cancelTraining, renamePeriod, deletePeriod, importCsv,
   } = useTraining()
-  const { players, loading: playersLoading, update: updatePlayer } = usePlayers()
+  const { players, loading: playersLoading } = usePlayers()
   const toast = useToastContext()
 
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -125,10 +195,9 @@ export function TrainingPage() {
     return map
   }, [trainings, attendance])
 
-  // Stable sort: memoized, re-sorts only when players or totals change
+  // Stable sort: nach Anwesenheits-Total absteigend, bei Gleichstand alphabetisch
   const sortedPlayers = useMemo(() => {
     return [...players].sort((a, b) => {
-      if (a.regular !== b.regular) return a.regular ? -1 : 1
       return (playerTotals.get(b.id) ?? 0) - (playerTotals.get(a.id) ?? 0) || a.name.localeCompare(b.name)
     })
   }, [players, playerTotals])
@@ -293,19 +362,11 @@ export function TrainingPage() {
             <div className="hidden sm:flex items-center gap-2">
               {periods.length > 0 && (
                 <div className="flex items-center gap-1">
-                  <div className="relative inline-flex items-center">
-                    <select
-                      value={activePeriodId ?? ''}
-                      onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                      className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-lg pl-3 pr-9 py-2 text-sm font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400"
-                    >
-                      <option value="">Alle Zeiträume</option>
-                      {periods.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className="text-gray-400 absolute right-3 pointer-events-none" />
-                  </div>
+                  <PeriodDropdown
+                    activeId={activePeriodId}
+                    periods={periods}
+                    onSelect={selectPeriod}
+                  />
                   {activePeriodId && (
                     <>
                       <button
@@ -357,16 +418,11 @@ export function TrainingPage() {
           <div className="flex sm:hidden flex-wrap items-center gap-2">
             {periods.length > 0 && (
               <div className="flex items-center gap-1 flex-1 min-w-0">
-                <select
-                  value={activePeriodId ?? ''}
-                  onChange={e => selectPeriod(e.target.value ? Number(e.target.value) : null)}
-                  className="flex-1 min-w-0 border border-cream-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-700 outline-none cursor-pointer"
-                >
-                  <option value="">Alle Zeiträume</option>
-                  {periods.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <PeriodDropdown
+                  activeId={activePeriodId}
+                  periods={periods}
+                  onSelect={selectPeriod}
+                />
                 {activePeriodId && (
                   <>
                     <button
@@ -426,7 +482,7 @@ export function TrainingPage() {
             <CrossBones size={48} className="mx-auto mb-3 opacity-40" />
             <p className="font-display text-base sm:text-lg font-bold text-navy-900 mb-1">Erstes Training erstellen</p>
             <p className="text-sm text-gray-500 mb-4 max-w-md mx-auto">
-              Lege ein Training an um Anwesenheit zu tracken. Spieler können pro Training als <span className="font-semibold text-navy-700">anwesend</span> oder <span className="font-semibold text-softball-red-700">Pflicht/Camp</span> markiert werden.
+              Lege ein Training an um Anwesenheit zu tracken. Spieler können pro Training als <span className="font-semibold text-navy-700">anwesend</span> oder <span className="font-semibold text-softball-red-700">Pitcher / Catcher</span> markiert werden.
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
@@ -446,15 +502,11 @@ export function TrainingPage() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-flex w-5 h-5 items-center justify-center rounded bg-softball-red-600 text-white text-[11px] font-bold">✓</span>
-              Pflicht/Camp
+              Pitcher / Catcher Anwesend
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-flex w-5 h-5 items-center justify-center rounded border border-cream-300 text-gray-400 text-[11px]">—</span>
               Nicht teilgenommen
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-softball-red-600 text-sm">★</span>
-              Stammspieler
             </span>
             <span className="ml-auto text-gray-400 hidden sm:inline">Tipp: Cell tippen um Anwesenheit zu wechseln</span>
           </div>
@@ -479,24 +531,10 @@ export function TrainingPage() {
                     onMouseEnter={() => setHoveredPlayer(p.id)}
                     onMouseLeave={() => setHoveredPlayer(null)}
                   >
-                    <button
-                      onClick={async () => {
-                        try {
-                          await updatePlayer(p.id, { regular: !p.regular })
-                          toast.show(p.regular ? 'Stammspieler entfernt' : 'Als Stammspieler markiert')
-                        } catch (e: unknown) {
-                          toast.show((e as Error).message, 'error')
-                        }
-                      }}
-                      className={`text-xs cursor-pointer ${p.regular ? 'text-softball-red-600' : 'text-gray-300 hover:text-softball-red-400'}`}
-                      title={p.regular ? 'Stammspieler (klicken zum Entfernen)' : 'Als Stammspieler markieren'}
-                    >
-                      {p.regular ? '\u2605' : '\u2606'}
-                    </button>
-                    <span className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                    <span className="text-sm font-medium text-gray-900 truncate max-w-[140px]">
                       {p.name}
                     </span>
-                    <span className="text-xs text-gray-400 ml-auto tabular-nums">
+                    <span className="font-display text-[11px] tracking-wide text-gray-400 ml-auto tabular-nums font-bold">
                       {getPlayerTotal(p.id)}
                     </span>
                   </div>

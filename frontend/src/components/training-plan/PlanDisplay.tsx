@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import type { TrainingPlanResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 import PlanSection from './PlanSection'
-import { ExportDoc, Pencil, TrashBin, ClipboardIcon } from '@/icons'
+import { ExportDoc, Pencil, TrashBin, ClipboardIcon, XMark, SendIcon, ChevronDown } from '@/icons'
 
 interface Props {
   plan: TrainingPlanResponse
@@ -138,16 +139,13 @@ function buildShareText(drills: DrillResponse[], grouped: GroupedBlock[], traini
 
 // ─── Phase Header ───
 
-function PhaseHeader({ phase, startMinute }: { phase: Phase; startMinute: number }) {
-  const blockCount = phase.blocks.length
+function PhaseHeader({ phase }: { phase: Phase }) {
   return (
     <div className="flex items-center gap-3 pb-1.5 border-b border-cream-200">
       <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
       <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">{phase.label}</span>
-      {phase.id === 'STATION' && blockCount > 1 && <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">· {blockCount} Runden</span>}
-      <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">{phase.minutes} min</span>
       <div className="flex-1" />
-      <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">ab Min. {startMinute}</span>
+      <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">{phase.minutes} min</span>
     </div>
   )
 }
@@ -192,11 +190,110 @@ function CompactBreak({ block }: { block: GroupedBlock }) {
   )
 }
 
+// ─── Station Card (single station within block) ───
+
+function StationCard({ section, drill, letter, groupSizeText }: {
+  section: TrainingPlanSectionResponse
+  drill: DrillResponse | null | undefined
+  letter: string
+  groupSizeText: string
+}) {
+  const [open, setOpen] = useState(false)
+  const hasDescription = !!drill?.description
+  const hasExtra = !!(section.tips || section.setupNotes || drill?.rotation)
+  const hasExpand = hasDescription || hasExtra
+  const previewLine = drill?.description?.split('\n').map(l => l.trim()).find(l => l.length > 0) ?? ''
+
+  return (
+    <div className={`bg-cream-100 rounded-lg border border-cream-200 overflow-hidden transition-shadow ${
+      open ? 'shadow-md shadow-navy-900/[0.06]' : ''
+    }`}>
+      <div className="p-3">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span className="text-xs font-bold text-navy-700">Gruppe {letter}</span>
+          {drill?.pdfPage && (
+            <button
+              onClick={() => window.open(`/drills.pdf?t=${Date.now()}#page=${drill.pdfPage}`, 'drill-handbuch')}
+              className="text-xs font-semibold text-navy-700 hover:text-navy-900 hover:underline cursor-pointer"
+            >
+              S.{drill.pdfPage} ↗
+            </button>
+          )}
+        </div>
+        <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
+        <span className="text-xs text-gray-500">{groupSizeText} Spieler</span>
+        {!open && previewLine && (
+          <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 italic">{previewLine}</p>
+        )}
+      </div>
+
+      {hasExpand && (
+        <>
+          <AnimatePresence initial={false}>
+            {open && (
+              <motion.div
+                key="card-expand"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
+                className="overflow-hidden border-t border-cream-200 bg-cream-50"
+              >
+                <div data-print-expand className="px-3 py-2.5 text-sm text-gray-800 leading-relaxed space-y-2.5">
+                  {hasDescription && drill?.description && (
+                    <div>
+                      <p className="text-[13px] font-bold text-navy-900 mb-0.5">Beschreibung</p>
+                      <p className="whitespace-pre-line text-gray-800">{drill.description}</p>
+                    </div>
+                  )}
+                  {drill?.rotation && (
+                    <div>
+                      <p className="text-[13px] font-bold text-navy-900 mb-0.5">Rotation</p>
+                      <p className="text-gray-700">{drill.rotation}</p>
+                    </div>
+                  )}
+                  {section.setupNotes && (
+                    <div>
+                      <p className="text-[13px] font-bold text-navy-900 mb-0.5">Aufbau</p>
+                      <p className="text-gray-700">{section.setupNotes}</p>
+                    </div>
+                  )}
+                  {section.tips && (
+                    <div>
+                      <p className="text-[13px] font-bold text-navy-900 mb-0.5">Tipps</p>
+                      <p className="text-gray-700">{section.tips}</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={() => setOpen(!open)}
+            className={`w-full px-3 py-2 flex items-center justify-center gap-1 cursor-pointer border-t transition-colors no-print ${
+              open
+                ? 'border-cream-200 text-gray-500 hover:text-navy-900 bg-cream-100'
+                : 'border-cream-200 text-navy-700 hover:bg-navy-50'
+            }`}
+            aria-expanded={open}
+          >
+            <span className="text-xs font-semibold">
+              {open ? 'Zuklappen' : 'Beschreibung'}
+            </span>
+            <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ─── Station Block ───
 
 function StationBlock({ block, drills, playerCount }: { block: GroupedBlock; drills: DrillResponse[]; playerCount: number }) {
-  const duration = block.sections[0]?.durationMinutes ?? 0
   const numStations = block.sections.length
+  const duration = block.sections[0]?.durationMinutes ?? 0
   const perStation = numStations > 0 ? Math.round(duration / numStations) : 0
   const minPerGroup = Math.floor(playerCount / numStations)
   const maxPerGroup = Math.ceil(playerCount / numStations)
@@ -204,33 +301,21 @@ function StationBlock({ block, drills, playerCount }: { block: GroupedBlock; dri
 
   return (
     <div className="bg-cream-50 rounded-xl border border-cream-300 p-4 plan-section">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-gray-500">{numStations} Drills · Gruppen rotieren</span>
-        <span className="text-[11px] text-gray-400">{duration} min · {perStation} min/Drill · {groupSizeText}/Gruppe</span>
+      <div className="flex items-center justify-end mb-3">
+        <span className="font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">{perStation} min/Drill · {groupSizeText}/Gruppe</span>
       </div>
 
       <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
         {block.sections.map((section, si) => {
           const drill = section.drillId ? drills.find(d => d.id === section.drillId) : null
           return (
-            <div key={si} className="bg-cream-100 rounded-lg p-3 border border-cream-200">
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10px] font-bold text-navy-600 uppercase tracking-wider">Gruppe {String.fromCharCode(65 + si)}</span>
-                {drill?.pdfPage && (
-                  <button
-                    onClick={() => window.open(`/drills.pdf?t=${Date.now()}#page=${drill.pdfPage}`, 'drill-handbuch')}
-                    className="text-xs text-navy-600 hover:underline cursor-pointer"
-                  >
-                    S. {drill.pdfPage} ↗
-                  </button>
-                )}
-              </div>
-              <h4 className="text-sm font-semibold text-gray-900">{section.title}</h4>
-              <span className="text-xs text-gray-400">{groupSizeText} Spieler</span>
-              {drill?.description && (
-                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{drill.description.split('\n')[0]}</p>
-              )}
-            </div>
+            <StationCard
+              key={si}
+              section={section}
+              drill={drill}
+              letter={String.fromCharCode(65 + si)}
+              groupSizeText={groupSizeText}
+            />
           )
         })}
       </div>
@@ -247,6 +332,7 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
   const totalMinutes = phases.reduce((sum, p) => sum + p.minutes, 0)
   const generatedText = useMemo(() => buildShareText(drills, grouped, trainingDate), [drills, grouped, trainingDate])
   const [copied, setCopied] = useState(false)
+  const [showOverview, setShowOverview] = useState(false)
 
   let sectionIndex = 0
 
@@ -266,16 +352,25 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
             </div>
             <div className="flex gap-1.5 mt-3 pt-3 border-t border-cream-200 no-print">
               <button
-                onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
+                onClick={onEdit}
                 className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 shadow-sm shadow-navy-900/15 cursor-pointer"
               >
-                <ExportDoc size={14} /> Handbuch
+                <Pencil size={14} /> Anpassen
               </button>
               <button
-                onClick={onEdit}
-                className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-cream-300 rounded-lg text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 cursor-pointer"
+                onClick={() => setShowOverview(true)}
+                className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-cream-50 border border-cream-300 rounded-lg text-[11px] font-extrabold tracking-widest uppercase text-navy-700 hover:bg-white hover:border-navy-500 hover:text-navy-900 cursor-pointer"
+                title="Übersicht teilen — für WhatsApp / Telegram"
               >
-                <Pencil size={14} /> Anpassen
+                <SendIcon size={13} /> Teilen
+              </button>
+              <button
+                onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
+                className="flex items-center justify-center px-3 py-2 border border-cream-300 rounded-lg text-navy-700 hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 cursor-pointer"
+                aria-label="Drill-Handbuch"
+                title="Drill-Handbuch"
+              >
+                <ExportDoc size={14} />
               </button>
               <button
                 onClick={onDelete}
@@ -292,12 +387,7 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
         {/* === LEFT: Drill Cards === */}
         <div className="flex-1 min-w-0 space-y-3">
           {/* Phases with headers */}
-          {(() => {
-            let minuteOffset = 0
-            return phases.map((phase, pi) => {
-              const startMinute = minuteOffset
-              minuteOffset += phase.minutes
-
+          {phases.map((phase, pi) => {
               // BREAK: kompakte Karte ohne Phase-Header
               if (phase.id === 'BREAK') {
                 sectionIndex++
@@ -310,7 +400,7 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
 
               return (
                 <div key={pi} className={`space-y-2 ${pi > 0 ? 'mt-5' : ''}`}>
-                  <PhaseHeader phase={phase} startMinute={startMinute} />
+                  <PhaseHeader phase={phase} />
 
                   {phase.blocks.map((block, bi) => {
                     // Warmup → kompakt
@@ -332,8 +422,7 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
                   })}
                 </div>
               )
-            })
-          })()}
+            })}
         </div>
 
         {/* === RIGHT: Sticky Sidebar (Desktop only — Mobile hat Focus+Buttons oben) === */}
@@ -356,18 +445,26 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
               {/* Action buttons */}
               <div className="flex gap-1.5 mt-3 pt-3 border-t border-cream-200 no-print">
                 <button
-                  onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
-                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 shadow-sm shadow-navy-900/15 transition-colors cursor-pointer"
-                  title="Drill-Handbuch öffnen"
-                >
-                  <ExportDoc size={14} /> Handbuch
-                </button>
-                <button
                   onClick={onEdit}
-                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-cream-300 rounded-lg text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 transition-colors cursor-pointer"
+                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-navy-900 text-white rounded-lg text-[11px] font-bold tracking-widest uppercase hover:bg-navy-800 shadow-sm shadow-navy-900/15 transition-colors cursor-pointer"
                   title="Anpassen"
                 >
                   <Pencil size={14} /> Anpassen
+                </button>
+                <button
+                  onClick={() => setShowOverview(true)}
+                  className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-cream-50 border border-cream-300 rounded-lg text-[11px] font-extrabold tracking-widest uppercase text-navy-700 hover:bg-white hover:border-navy-500 hover:text-navy-900 transition-colors cursor-pointer"
+                  title="Übersicht teilen — für WhatsApp / Telegram"
+                >
+                  <SendIcon size={13} /> Teilen
+                </button>
+                <button
+                  onClick={() => window.open('/drills.pdf?t=' + Date.now(), 'drill-handbuch')}
+                  className="flex items-center justify-center px-3 py-2 border border-cream-300 rounded-lg text-navy-700 hover:bg-cream-100 hover:border-navy-400 hover:text-navy-900 transition-colors cursor-pointer"
+                  title="Drill-Handbuch öffnen"
+                  aria-label="Drill-Handbuch"
+                >
+                  <ExportDoc size={14} />
                 </button>
                 <button
                   onClick={onDelete}
@@ -377,33 +474,6 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
                 >
                   <TrashBin size={14} />
                 </button>
-              </div>
-            </div>
-
-            {/* Überblick — WhatsApp-ready + Copy */}
-            <div className="bg-cream-50 rounded-xl border border-cream-300 p-4 no-print">
-              <div className="flex items-center justify-between mb-1 pb-1.5 border-b border-cream-200">
-                <h4 className="font-display text-[12px] font-extrabold tracking-widest uppercase text-navy-900">Überblick</h4>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedText)
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 2000)
-                  }}
-                  className="font-display flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-navy-700 border border-cream-300 rounded hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
-                >
-                  <ClipboardIcon size={12} /> {copied ? 'Kopiert!' : 'Kopieren'}
-                </button>
-              </div>
-              <p className="text-[10px] text-gray-400 mb-2">Trainingsübersicht für WhatsApp — kopieren und an die Spieler schicken.</p>
-              <div className="text-xs text-gray-600 space-y-1.5 whitespace-pre-line">
-                {generatedText.split('\n').map((line, i) => {
-                  if (!line.trim()) return <div key={i} className="h-1" />
-                  if (line.startsWith('⚾')) return <p key={i} className="font-bold text-gray-900">{line}</p>
-                  if (line.startsWith('*') && line.endsWith('*')) return <p key={i} className="font-semibold text-gray-800 mt-1">{line.replace(/\*/g, '')}</p>
-                  if (line.startsWith('  •') || line.startsWith('•')) return <p key={i} className="pl-2">{line}</p>
-                  return <p key={i}>{line}</p>
-                })}
               </div>
             </div>
 
@@ -420,40 +490,66 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
         </div>
       </div>
 
-      {/* === Mobile-Only: Überblick + Gruppenaufteilung am Ende === */}
-      <div className="lg:hidden mt-4 space-y-3">
-        <div className="bg-cream-50 rounded-xl border border-cream-300 p-4 no-print">
-          <div className="flex items-center justify-between mb-1 pb-1.5 border-b border-cream-200">
-            <h4 className="font-display text-[12px] font-extrabold tracking-widest uppercase text-navy-900">Überblick</h4>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(generatedText)
-                setCopied(true)
-                setTimeout(() => setCopied(false), 2000)
-              }}
-              className="font-display flex items-center gap-1 px-2 py-1 text-[10px] font-bold tracking-widest uppercase text-navy-700 border border-cream-300 rounded hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
-            >
-              <ClipboardIcon size={12} /> {copied ? 'Kopiert!' : 'Kopieren'}
-            </button>
-          </div>
-          <p className="text-[10px] text-gray-400 mb-2">Für WhatsApp kopieren und an die Spieler schicken.</p>
-          <div className="text-xs text-gray-600 space-y-1.5 whitespace-pre-line">
-            {generatedText.split('\n').map((line, i) => {
-              if (!line.trim()) return <div key={i} className="h-1" />
-              if (line.startsWith('⚾')) return <p key={i} className="font-bold text-gray-900">{line}</p>
-              if (line.startsWith('*') && line.endsWith('*')) return <p key={i} className="font-semibold text-gray-800 mt-1">{line.replace(/\*/g, '')}</p>
-              if (line.startsWith('  •') || line.startsWith('•')) return <p key={i} className="pl-2">{line}</p>
-              return <p key={i}>{line}</p>
-            })}
+      {/* === Mobile-Only: Gruppenaufteilung am Ende === */}
+      {plan.content?.groupDistributionHint && (
+        <div className="lg:hidden mt-4 bg-yellow-50 rounded-xl p-3 text-xs text-yellow-800 leading-relaxed">
+          <h4 className="font-display font-extrabold tracking-widest uppercase text-[11px] mb-1">Gruppenaufteilung</h4>
+          <p>{plan.content.groupDistributionHint}</p>
+        </div>
+      )}
+
+      {/* === Überblick-Modal (WhatsApp-Text) === */}
+      {showOverview && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4 no-print"
+          onClick={() => setShowOverview(false)}
+        >
+          <div
+            className="bg-cream-50 w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl shadow-xl border border-cream-300 max-h-[85vh] flex flex-col animate-[slideUp_200ms_ease]"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-cream-200">
+              <h4 className="font-display text-[13px] font-extrabold tracking-widest uppercase text-navy-900">Übersicht für WhatsApp</h4>
+              <button
+                onClick={() => setShowOverview(false)}
+                className="p-1 text-gray-400 hover:text-navy-900 cursor-pointer"
+                aria-label="Schließen"
+              >
+                <XMark size={18} />
+              </button>
+            </div>
+            <div className="px-4 py-3 overflow-y-auto flex-1">
+              <div className="text-sm text-gray-700 space-y-1.5 whitespace-pre-line">
+                {generatedText.split('\n').map((line, i) => {
+                  if (!line.trim()) return <div key={i} className="h-1" />
+                  if (line.startsWith('⚾')) return <p key={i} className="font-bold text-gray-900">{line}</p>
+                  if (line.startsWith('*') && line.endsWith('*')) return <p key={i} className="font-semibold text-gray-800 mt-2">{line.replace(/\*/g, '')}</p>
+                  if (line.startsWith('  •') || line.startsWith('•')) return <p key={i} className="pl-2">{line}</p>
+                  return <p key={i}>{line}</p>
+                })}
+              </div>
+            </div>
+            <div className="px-4 py-3 border-t border-cream-200 flex gap-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedText)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 2000)
+                }}
+                className="font-display flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-softball-red-600 text-white rounded-lg text-[12px] font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/25 cursor-pointer"
+              >
+                <ClipboardIcon size={14} /> {copied ? 'Kopiert!' : 'Kopieren'}
+              </button>
+              <button
+                onClick={() => setShowOverview(false)}
+                className="font-display px-4 py-2.5 text-[12px] font-bold tracking-widest uppercase text-gray-500 hover:text-navy-900 cursor-pointer"
+              >
+                Schließen
+              </button>
+            </div>
           </div>
         </div>
-        {plan.content?.groupDistributionHint && (
-          <div className="bg-yellow-50 rounded-xl p-3 text-xs text-yellow-800 leading-relaxed">
-            <h4 className="font-display font-extrabold tracking-widest uppercase text-[11px] mb-1">Gruppenaufteilung</h4>
-            <p>{plan.content.groupDistributionHint}</p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

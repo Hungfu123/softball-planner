@@ -1,17 +1,75 @@
+import { Loader2 } from 'lucide-react'
+
 interface Props {
-  variant?: 'dots' | 'list' | 'card' | 'table'
+  variant?: 'dots' | 'list' | 'card' | 'table' | 'ball' | 'inline'
   rows?: number
   className?: string
 }
 
+/** Inline-Spinner für Buttons/kleine Bereiche — Lucide Loader2 (generic, wartungsarm) */
+export function InlineSpinner({ size = 14, className = '' }: { size?: number; className?: string }) {
+  return <Loader2 size={size} className={`animate-spin ${className}`} aria-hidden="true" />
+}
+
 /**
- * Einheitliches Loading-Feedback — drei Varianten, gleicher Style.
- * dots  → kompakter Bouncing-Indikator (für Suspense, kleine Bereiche)
- * list  → Skeleton-Zeilen für Listen (z.B. Spieler, GameDays)
- * card  → Skeleton-Block für Karten-Grids
+ * Brand-Loading-Spinner: rotierender Softball mit roten Stitches.
+ * Stadium-Pocket-Pattern statt generic Spinner.
+ */
+function SoftballSpinner({ size = 56 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      className="animate-[spin_1.2s_linear_infinite] drop-shadow-sm"
+      aria-hidden="true"
+    >
+      {/* Ball body */}
+      <circle cx="50" cy="50" r="44" fill="#FFFBF3" stroke="#E8DEC5" strokeWidth="1.5" />
+      {/* Stitches — left curve */}
+      <path
+        d="M 18 35 Q 50 50, 18 65"
+        stroke="#CC2936"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray="4 3"
+      />
+      {/* Stitches — right curve */}
+      <path
+        d="M 82 35 Q 50 50, 82 65"
+        stroke="#CC2936"
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray="4 3"
+      />
+      {/* Subtle highlight */}
+      <ellipse cx="38" cy="35" rx="10" ry="6" fill="#fff" opacity="0.5" />
+    </svg>
+  )
+}
+
+/**
+ * Einheitliches Loading-Feedback.
+ * dots → kompakter Bouncing-Indikator (für Suspense, kleine Bereiche)
+ * list → Skeleton-Zeilen für Listen
+ * card → Skeleton-Block für Karten-Grids
  * table → Tabellen-Skeleton mit Header + Rows
+ * ball → Brand-Softball-Spinner (für Page-Loads / wichtige Wartemomente)
  */
 export function LoadingSkeleton({ variant = 'dots', rows = 5, className = '' }: Props) {
+  if (variant === 'inline') {
+    return <InlineSpinner className={className} />
+  }
+  if (variant === 'ball') {
+    return (
+      <div className={`py-12 flex flex-col items-center gap-3 ${className}`} role="status" aria-label="Lade Daten">
+        <SoftballSpinner size={56} />
+        <span className="font-display text-[11px] tracking-widest uppercase font-bold text-gray-400">Laden</span>
+      </div>
+    )
+  }
   if (variant === 'list') {
     return (
       <div className={`space-y-2 ${className}`} role="status" aria-label="Lade Daten">
@@ -38,15 +96,11 @@ export function LoadingSkeleton({ variant = 'dots', rows = 5, className = '' }: 
       </div>
     )
   }
-  // dots default
+  // dots default — Brand-Softball
   return (
-    <div className={`py-12 flex flex-col items-center gap-4 ${className}`} role="status" aria-label="Lade Daten">
-      <div className="flex gap-1.5">
-        <div className="w-2.5 h-2.5 rounded-full bg-navy-600 animate-[bounce_0.6s_ease-in-out_infinite]" />
-        <div className="w-2.5 h-2.5 rounded-full bg-navy-600 animate-[bounce_0.6s_ease-in-out_0.15s_infinite]" />
-        <div className="w-2.5 h-2.5 rounded-full bg-navy-600 animate-[bounce_0.6s_ease-in-out_0.3s_infinite]" />
-      </div>
-      <span className="text-sm text-gray-400">Laden...</span>
+    <div className={`py-12 flex flex-col items-center gap-3 ${className}`} role="status" aria-label="Lade Daten">
+      <SoftballSpinner size={48} />
+      <span className="font-display text-[11px] tracking-widest uppercase font-bold text-gray-400">Laden</span>
     </div>
   )
 }

@@ -14,8 +14,8 @@ interface Props {
 }
 
 export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentChanged, onScoreChanged, onSwapped, gameCompletions }: Props) {
-  const [pickerGameId, setPickerGameId] = useState<number | null>(null)
-  const [scoreGameId, setScoreGameId] = useState<number | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [scoreOpen, setScoreOpen] = useState(false)
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
   const [swapping, setSwapping] = useState(false)
   const [leagueTeams, setLeagueTeams] = useState<LeagueTeamResponse[]>([])
@@ -51,20 +51,31 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
   const gameLabel = (g: GameResponse) =>
     g.opponentTeam ? `Spiel ${g.gameNumber} (vs ${g.opponentTeam.name})` : `Spiel ${g.gameNumber}`
 
+  const activeGame = games[activeIndex]
+  const scoreColor = (g: GameResponse) =>
+    g.scoreUs == null || g.scoreThem == null
+      ? 'text-gray-400 italic'
+      : g.scoreUs > g.scoreThem
+        ? 'text-emerald-700'
+        : g.scoreUs < g.scoreThem
+          ? 'text-softball-red-600'
+          : 'text-gray-500'
+
   return (
-    <div className="flex border-b border-cream-300 overflow-visible items-stretch">
-      {games.map((game, i) => (
-        <div key={game.id} className="relative group flex items-center">
-          <button
-            onClick={() => onSelect(i)}
-            className={`group/tab relative px-2 sm:px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
-              i === activeIndex
-                ? 'text-navy-800'
-                : 'text-gray-400 hover:text-navy-800 hover:bg-navy-50 rounded-t-lg'
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="flex items-center gap-1">
+    <div>
+      {/* Tab strip — pure nav */}
+      <div className="flex border-b border-cream-300 items-stretch">
+        {games.map((game, i) => (
+          <div key={game.id} className="relative group flex items-center">
+            <button
+              onClick={() => onSelect(i)}
+              className={`group/tab relative px-3 sm:px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                i === activeIndex
+                  ? 'text-navy-900 font-bold'
+                  : 'text-gray-400 hover:text-navy-800 hover:bg-navy-50/50 rounded-t-lg'
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
                 Spiel {game.gameNumber}
                 {(() => {
                   const c = gameCompletions?.get(game.id)
@@ -73,129 +84,118 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                   return <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title={`${c.fieldCount}/9 Feldpositionen`} />
                 })()}
               </span>
+              <span className={`absolute bottom-0 left-0 right-0 h-0.5 rounded-t transition-colors ${
+                i === activeIndex ? 'bg-softball-red-600' : 'bg-transparent group-hover/tab:bg-navy-300'
+              }`} />
+            </button>
 
-              {i === activeIndex ? (
-                <span
-                  onClick={e => { e.stopPropagation(); setPickerGameId(pickerGameId === game.id ? null : game.id) }}
-                  className={`group/opp inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md cursor-pointer transition-colors ${
-                    game.opponentTeam
-                      ? 'text-gray-600 hover:bg-navy-50 hover:text-navy-700'
-                      : 'text-gray-400 italic hover:bg-navy-50 hover:text-navy-600'
-                  }`}
-                  title="Gegner wählen"
+            {games.length > 1 && (
+              <div className="relative">
+                <button
+                  onClick={e => { e.stopPropagation(); setMenuGameId(menuGameId === game.id ? null : game.id) }}
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
+                  title="Lineup tauschen"
+                  aria-label="Lineup-Aktionen"
                 >
-                  {game.opponentTeam ? `vs ${game.opponentTeam.name}` : '+ Gegner'}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className="opacity-0 group-hover/opp:opacity-60 transition-opacity">
-                    <path d="M6 9l6 6 6-6" />
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="5" r="2" />
+                    <circle cx="12" cy="12" r="2" />
+                    <circle cx="12" cy="19" r="2" />
                   </svg>
-                </span>
-              ) : game.opponentTeam ? (
-                <span className="text-xs px-1.5 py-0.5 opacity-50 hidden sm:inline">
-                  vs {game.opponentTeam.name}
-                </span>
-              ) : null}
-
-              {/* Score badge */}
-              {game.opponentTeam && (
-                i === activeIndex ? (
-                  <span
-                    onClick={e => { e.stopPropagation(); setScoreGameId(scoreGameId === game.id ? null : game.id) }}
-                    className={`text-xs px-2 py-1 rounded-md cursor-pointer font-mono transition-colors hover:bg-navy-50 ${
-                      game.scoreUs != null
-                        ? game.scoreUs > game.scoreThem! ? 'text-emerald-700' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
-                        : 'text-gray-400 italic'
-                    }`}
-                    title="Ergebnis eintragen"
+                </button>
+                {menuGameId === game.id && (
+                  <div
+                    ref={menuRef}
+                    className="absolute top-full left-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]"
                   >
-                    {game.scoreUs != null ? `${game.scoreUs}:${game.scoreThem}` : '—:—'}
-                  </span>
-                ) : game.scoreUs != null ? (
-                  <span className={`text-xs px-1.5 py-0.5 font-mono hidden sm:inline ${
-                    game.scoreUs > game.scoreThem! ? 'text-emerald-700' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
-                  }`}>
-                    {game.scoreUs}:{game.scoreThem}
-                  </span>
-                ) : (
-                  <span className="text-xs px-1.5 py-0.5 font-mono opacity-40 italic hidden sm:inline">—:—</span>
-                )
+                    <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                      Lineup tauschen mit...
+                    </div>
+                    {games.filter(g => g.id !== game.id).map(target => (
+                      <button
+                        key={target.id}
+                        disabled={swapping}
+                        onClick={() => handleSwap(game.id, target.id)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer transition-colors"
+                      >
+                        {gameLabel(target)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Active-game meta-row: Gegner + Score (kompakt + editierbar) */}
+      {activeGame && (
+        <div className="flex flex-wrap items-center gap-2 px-1 sm:px-2 py-2.5">
+          <div className="relative">
+            <button
+              onClick={() => setPickerOpen(!pickerOpen)}
+              className={`inline-flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md cursor-pointer transition-colors ${
+                activeGame.opponentTeam
+                  ? 'text-gray-700 bg-cream-100 hover:bg-navy-50 hover:text-navy-700'
+                  : 'text-gray-500 italic bg-cream-100 hover:bg-navy-50 hover:text-navy-600'
+              }`}
+              title="Gegner wählen"
+            >
+              {activeGame.opponentTeam ? (
+                <>
+                  <span className="text-gray-400 text-xs">vs</span>
+                  <span className="font-semibold">{activeGame.opponentTeam.name}</span>
+                </>
+              ) : (
+                <span>+ Gegner wählen</span>
               )}
-            </div>
-            <span className={`absolute bottom-0 left-0 right-0 h-0.5 rounded-t transition-colors ${
-              i === activeIndex ? 'bg-navy-800' : 'bg-transparent group-hover/tab:bg-navy-300'
-            }`} />
-          </button>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            {pickerOpen && (
+              <TeamPicker
+                seasonId={seasonId}
+                teams={leagueTeams}
+                onTeamsChanged={setLeagueTeams}
+                currentTeam={activeGame.opponentTeam}
+                onSelect={async (team) => {
+                  setPickerOpen(false)
+                  onOpponentChanged(activeGame.id, team)
+                  await api.updateOpponent(activeGame.id, team?.id ?? null)
+                }}
+                onClose={() => setPickerOpen(false)}
+              />
+            )}
+          </div>
 
-          {/* Team Picker Popover */}
-          {pickerGameId === game.id && (
-            <TeamPicker
-              seasonId={seasonId}
-              teams={leagueTeams}
-              onTeamsChanged={setLeagueTeams}
-              currentTeam={game.opponentTeam}
-              onSelect={async (team) => {
-                setPickerGameId(null)
-                onOpponentChanged(game.id, team)
-                await api.updateOpponent(game.id, team?.id ?? null)
-              }}
-              onClose={() => setPickerGameId(null)}
-            />
-          )}
-
-          {/* Score Editor Popover */}
-          {scoreGameId === game.id && (
-            <ScoreEditor
-              scoreUs={game.scoreUs}
-              scoreThem={game.scoreThem}
-              onSave={async (scoreUs, scoreThem) => {
-                setScoreGameId(null)
-                onScoreChanged?.(game.id, scoreUs, scoreThem)
-                await api.updateScore(game.id, scoreUs, scoreThem)
-              }}
-              onClose={() => setScoreGameId(null)}
-            />
-          )}
-
-          {/* Three-dot menu — only show if more than 1 game */}
-          {games.length > 1 && (
+          {activeGame.opponentTeam && (
             <div className="relative">
               <button
-                onClick={e => { e.stopPropagation(); setMenuGameId(menuGameId === game.id ? null : game.id) }}
-                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
-                title="Lineup tauschen"
+                onClick={() => setScoreOpen(!scoreOpen)}
+                className={`text-sm px-2.5 py-1.5 rounded-md cursor-pointer font-mono transition-colors bg-cream-100 hover:bg-navy-50 ${scoreColor(activeGame)}`}
+                title="Ergebnis eintragen"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="5" r="2" />
-                  <circle cx="12" cy="12" r="2" />
-                  <circle cx="12" cy="19" r="2" />
-                </svg>
+                {activeGame.scoreUs != null ? `${activeGame.scoreUs} : ${activeGame.scoreThem}` : '— : —'}
               </button>
-
-              {menuGameId === game.id && (
-                <div
-                  ref={menuRef}
-                  className="absolute top-full left-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]"
-                >
-                  <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                    Lineup tauschen mit...
-                  </div>
-                  {games.filter(g => g.id !== game.id).map(target => (
-                    <button
-                      key={target.id}
-                      disabled={swapping}
-                      onClick={() => handleSwap(game.id, target.id)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer transition-colors"
-                    >
-                      {gameLabel(target)}
-                    </button>
-                  ))}
-                </div>
+              {scoreOpen && (
+                <ScoreEditor
+                  scoreUs={activeGame.scoreUs}
+                  scoreThem={activeGame.scoreThem}
+                  onSave={async (scoreUs, scoreThem) => {
+                    setScoreOpen(false)
+                    onScoreChanged?.(activeGame.id, scoreUs, scoreThem)
+                    await api.updateScore(activeGame.id, scoreUs, scoreThem)
+                  }}
+                  onClose={() => setScoreOpen(false)}
+                />
               )}
             </div>
           )}
         </div>
-      ))}
+      )}
     </div>
   )
 }
@@ -299,7 +299,6 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
     inputRef.current?.focus()
   }, [])
 
-  // Close on click outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose()
@@ -351,7 +350,6 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
           <div className="px-3 py-2 text-xs text-gray-400">Keine Teams vorhanden</div>
         ) : (
           <>
-            {/* Remove opponent option */}
             {currentTeam && (
               <button
                 onClick={() => onSelect(null)}
@@ -361,7 +359,6 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
               </button>
             )}
 
-            {/* Existing teams */}
             {filtered.map(team => (
               <button
                 key={team.id}
@@ -384,7 +381,6 @@ function TeamPicker({ seasonId, teams, onTeamsChanged, currentTeam, onSelect, on
               </div>
             )}
 
-            {/* Create new team option */}
             {showCreate && (
               <>
                 {filtered.length > 0 && <div className="border-t border-cream-200" />}
