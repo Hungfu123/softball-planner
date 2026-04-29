@@ -53,7 +53,7 @@ export function UpcomingList({ gameDays, showAll, onShowAll, onShowLess, visible
             </div>
           </Link>
           {hasActions ? (
-            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity">
+            <div className="actions-reveal flex items-center gap-0.5 sm:gap-1 shrink-0">
               {onEdit && (
                 <button
                   onClick={e => { e.preventDefault(); e.stopPropagation(); onEdit(gd.id) }}

@@ -217,7 +217,7 @@ export function PlayerManager() {
                   <span className="flex-1 text-sm font-medium text-gray-900">{p.name}</span>
                 </>
               )}
-              <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+              <div className="actions-reveal flex gap-1">
                 <button
                   onClick={() => { setEditingId(p.id); setEditName(p.name) }}
                   className="p-1.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50"

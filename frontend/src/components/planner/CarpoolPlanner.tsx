@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useCarpool, freeSeats, computeSeatStatus } from '@/hooks/useCarpool'
 import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { PlusCircle, TrashBin, XMark } from '@/icons'
+import { ResponsiveSheet } from '@/components/shared'
+import { PlusCircle, TrashBin, CarIcon, CheckCircle, AlertTriangle } from '@/icons'
 import type { Player, CarResponse } from '@/types'
 import { DIRECTION_LABELS } from '@/types'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -66,8 +67,8 @@ export function CarpoolPlanner({ gameDayId, availablePlayers }: Props) {
           )}
 
           {carpool.cars.length < 3 && (
-            <div className="flex items-center gap-2 text-xs text-amber-600">
-              <span>⚠</span>
+            <div className="flex items-center gap-2 text-xs text-amber-700">
+              <AlertTriangle size={14} className="shrink-0" />
               <span>Wenige Autos — klärt ab wer Schläger, Helme und Catcher-Ausrüstung mitnimmt</span>
             </div>
           )}
@@ -142,8 +143,8 @@ function SeatLine({ label, status }: { label: string; status: ReturnType<typeof 
   return (
     <div className="flex items-center gap-2 text-sm">
       {label && <span className="text-gray-500 w-16">{label}:</span>}
-      <span className={`font-medium ${status.ok ? 'text-emerald-600' : 'text-softball-red-600'}`}>
-        {status.ok ? '✓' : '✗'}
+      <span className={`shrink-0 ${status.ok ? 'text-emerald-600' : 'text-softball-red-600'}`}>
+        {status.ok ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
       </span>
       <span className="text-gray-600">
         {status.totalCapacity} {status.totalCapacity === 1 ? 'Platz' : 'Plätze'} für {status.needed} Mitfahrer
@@ -167,7 +168,9 @@ function CarCard({ car, onDelete }: {
   return (
     <div className="bg-cream-50 border border-cream-300 rounded-xl px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <span className="text-lg">🚗</span>
+        <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-navy-50 text-navy-700 shrink-0">
+          <CarIcon size={18} />
+        </span>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-gray-900">{car.driver.name}</span>
           <span className="text-gray-300">·</span>
@@ -208,75 +211,70 @@ function AddCarModal({ availablePlayers, onAdd, onClose }: {
   const [seats, setSeats] = useState(5)
   const [direction, setDirection] = useState('both')
 
+  const footer = (
+    <div className="flex justify-end gap-2">
+      <button
+        onClick={onClose}
+        className="font-display px-4 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
+      >
+        Abbrechen
+      </button>
+      <button
+        onClick={() => driverId && onAdd(driverId as number, seats, direction)}
+        disabled={!driverId}
+        className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-700 disabled:opacity-50 cursor-pointer"
+      >
+        Hinzufügen
+      </button>
+    </div>
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
-          <h2 className="text-lg font-bold text-gray-900">Auto hinzufügen</h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
-            <XMark size={20} />
-          </button>
-        </div>
-        <div className="p-5 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fahrer</label>
-            <select
-              value={driverId}
-              onChange={e => setDriverId(Number(e.target.value))}
-              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-            >
-              <option value="">— wählen —</option>
-              {availablePlayers.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Plätze gesamt <span className="font-normal text-gray-400">(inkl. Fahrer)</span></label>
-            <input
-              type="number"
-              min={2}
-              max={9}
-              value={seats}
-              onChange={e => setSeats(Number(e.target.value))}
-              className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Richtung</label>
-            <div className="space-y-2">
-              {(['both', 'there', 'back'] as const).map(dir => (
-                <label key={dir} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="direction"
-                    value={dir}
-                    checked={direction === dir}
-                    onChange={() => setDirection(dir)}
-                    className="accent-navy-600"
-                  />
-                  <span className="text-sm text-gray-700">{DIRECTION_LABELS[dir]}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
+    <ResponsiveSheet open onClose={onClose} title="Auto hinzufügen" footer={footer}>
+      <div className="p-5 space-y-4">
+        <div>
+          <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Fahrer</label>
+          <select
+            value={driverId}
+            onChange={e => setDriverId(Number(e.target.value))}
+            className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
           >
-            Abbrechen
-          </button>
-          <button
-            onClick={() => driverId && onAdd(driverId as number, seats, direction)}
-            disabled={!driverId}
-            className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50 cursor-pointer"
-          >
-            Hinzufügen
-          </button>
+            <option value="">— wählen —</option>
+            {availablePlayers.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Plätze gesamt <span className="text-gray-400 normal-case font-bold">(inkl. Fahrer)</span></label>
+          <input
+            type="number"
+            min={2}
+            max={9}
+            value={seats}
+            onChange={e => setSeats(Number(e.target.value))}
+            className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+          />
+        </div>
+        <div>
+          <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Richtung</label>
+          <div className="space-y-2">
+            {(['both', 'there', 'back'] as const).map(dir => (
+              <label key={dir} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="direction"
+                  value={dir}
+                  checked={direction === dir}
+                  onChange={() => setDirection(dir)}
+                  className="accent-navy-600"
+                />
+                <span className="text-sm text-gray-700">{DIRECTION_LABELS[dir]}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </ResponsiveSheet>
   )
 }

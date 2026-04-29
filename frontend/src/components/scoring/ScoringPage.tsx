@@ -4,8 +4,8 @@ import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
-import { ChevronLeft, ClipboardListIcon, SubstitutionIcon, BoltIcon } from '@/icons'
-import { Flag, RotateCcw, Undo2, Settings, Zap, X as XIcon, Footprints } from 'lucide-react'
+import { ChevronLeft, ClipboardListIcon, SubstitutionIcon, BoltIcon, TrophyIcon } from '@/icons'
+import { Flag, RotateCcw, Undo2, SquarePen, Zap, X as XIcon, Footprints, BarChart3 } from 'lucide-react'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -674,8 +674,11 @@ export function ScoringPage() {
       {gameOver && (
         <div className="bg-navy-900 text-white px-4 py-4 space-y-3">
           <div className="text-center">
-            <div className="text-2xl font-black">🏆 Spiel beendet!</div>
-            <div className="text-sm text-white/80">
+            <div className="font-display text-2xl font-black uppercase tracking-wider inline-flex items-center gap-2">
+              <TrophyIcon size={24} className="text-amber-400" />
+              Spiel beendet
+            </div>
+            <div className="font-display text-sm text-white/80 tracking-wide">
               {(scoreUs ?? 0) > (scoreThem ?? 0) ? 'Wir haben gewonnen!' :
                (scoreUs ?? 0) < (scoreThem ?? 0) ? 'Leider verloren' :
                'Unentschieden'} · Endstand {scoreUs} : {scoreThem ?? 0}
@@ -685,22 +688,64 @@ export function ScoringPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Link
                 to={`/stats?scope=game&gameId=${currentGame.id}&view=batting`}
-                className="block text-center px-4 py-3 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold text-sm cursor-pointer shadow-sm"
+                className="font-display block text-center px-4 py-3 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-extrabold text-xs tracking-widest uppercase cursor-pointer shadow-sm inline-flex items-center justify-center gap-2"
               >
-                📊 Stats dieses Spiels
+                <BarChart3 size={16} /> Stats dieses Spiels
               </Link>
               <Link
                 to={`/stats?scope=season&seasonId=${gameDay.seasonId}&view=batting`}
-                className="block text-center px-4 py-3 rounded-lg border border-white/30 text-white hover:bg-white/10 font-bold text-sm cursor-pointer"
+                className="font-display block text-center px-4 py-3 rounded-lg border border-white/30 text-white hover:bg-white/10 font-extrabold text-xs tracking-widest uppercase cursor-pointer inline-flex items-center justify-center gap-2"
               >
-                📊 Saison-Stats
+                <BarChart3 size={16} /> Saison-Stats
               </Link>
             </div>
           )}
         </div>
       )}
 
+      {/* Setup-Hinweis — kein Lineup vorhanden, kann nicht scoren */}
+      {!gameOver && !halfInningOver && atBats.length === 0 && lineup.length === 0 && (
+        <div className="flex-1 flex items-center justify-center px-4 py-8">
+          <div className="w-full max-w-md bg-cream-50 border border-cream-300 rounded-2xl p-6 sm:p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-softball-red-50 border-2 border-softball-red-200 text-softball-red-600">
+              <ClipboardListIcon size={28} />
+            </div>
+            {gameDay.availablePlayers.length === 0 ? (
+              <>
+                <h2 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-wide mb-2">
+                  Noch keine Spieler
+                </h2>
+                <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                  Vor Live-Scoring: Anwesende Spieler markieren + Lineup erstellen. Geh zum Spieltag um zu starten.
+                </p>
+                <ol className="text-left text-[12px] text-gray-700 space-y-1.5 mb-6 bg-cream-100 border border-cream-200 rounded-lg p-3">
+                  <li><span className="font-display font-extrabold text-softball-red-600 mr-1.5">1.</span>Anwesende Spieler auswählen</li>
+                  <li><span className="font-display font-extrabold text-softball-red-600 mr-1.5">2.</span>Lineup + Positionen aufstellen</li>
+                  <li><span className="font-display font-extrabold text-softball-red-600 mr-1.5">3.</span>Zurück hierher → Live scoren</li>
+                </ol>
+              </>
+            ) : (
+              <>
+                <h2 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-wide mb-2">
+                  Lineup fehlt
+                </h2>
+                <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                  Spieler stehen, aber Batting-Order + Positionen für dieses Spiel sind noch leer. Lineup im Spieltag aufstellen, dann hierher zurück.
+                </p>
+              </>
+            )}
+            <Link
+              to={`/gameday/${gameDayId}?game=${gameIndex}`}
+              className="font-display inline-flex items-center justify-center gap-2 w-full px-4 py-3 bg-softball-red-600 text-white rounded-xl text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
+            >
+              <ClipboardListIcon size={14} /> Zum Spieltag
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Diamond - kompakter */}
+      {(atBats.length > 0 || lineup.length > 0 || gameOver || halfInningOver) && (
       <div className="flex-1 flex flex-col items-center justify-center py-2 px-4 min-h-0">
         <div className="w-full max-w-[360px] sm:max-w-[420px]">
           <DiamondView
@@ -716,8 +761,10 @@ export function ScoringPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Batter Card - flach mit HR-Trenner statt Card-Frame */}
+      {(atBats.length > 0 || lineup.length > 0 || gameOver || halfInningOver) && (
       <div className="px-3 py-2 bg-cream-100 border-t border-cream-300">
         {scoreboard?.currentBatterId && !halfInningOver ? (
           <div className="px-1 py-1 space-y-1.5">
@@ -777,8 +824,10 @@ export function ScoringPage() {
           <div className="text-xs text-gray-500 text-center py-2">Kein Schlagmann — bitte Lineup erstellen</div>
         )}
       </div>
+      )}
 
       {/* Action Buttons — sticky Thumb-Zone */}
+      {(atBats.length > 0 || lineup.length > 0 || gameOver || halfInningOver) && (
       <div className="px-3 pt-3 pb-2 bg-cream-100 border-t border-cream-300 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
         <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId || halfInningOver} />
 
@@ -797,7 +846,7 @@ export function ScoringPage() {
             disabled={submitting}
             className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
           >
-            <Settings size={14} /> Korrigieren
+            <SquarePen size={14} /> Korrigieren
           </button>
           {displayRunners.length > 0 && (
             <button
@@ -812,6 +861,7 @@ export function ScoringPage() {
           )}
         </div>
       </div>
+      )}
 
       {/* Korrektur-Sheet */}
       <CorrectionSheet

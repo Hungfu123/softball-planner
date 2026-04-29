@@ -19,6 +19,7 @@ import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, TrashBin, CarIcon, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
+import { MapPin } from 'lucide-react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -298,16 +299,16 @@ export function GameDayPlanner() {
       {/* Header */}
       <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="group/header flex items-baseline gap-3">
+          <div className="group flex items-baseline gap-3">
             <div>
               <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
                 {gameDay.label || 'Spieltag'} <span className="text-softball-red-600">·</span> {formatDate(gameDay.date)}
               </h1>
               {gameDay.location && (
-                <p className="font-display text-[11px] tracking-widest uppercase text-gray-500 mt-0.5">📍 {gameDay.location}</p>
+                <p className="font-display text-[11px] tracking-widest uppercase text-gray-500 mt-0.5 inline-flex items-center gap-1"><MapPin size={11} className="shrink-0" /> {gameDay.location}</p>
               )}
             </div>
-            <div className="flex items-center gap-0.5 opacity-60 sm:opacity-0 sm:group-hover/header:opacity-100 transition-opacity">
+            <div className="actions-reveal flex items-center gap-0.5">
               <button
                 onClick={() => setShowEditModal(true)}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-navy-700 hover:bg-cream-100 transition-colors cursor-pointer"

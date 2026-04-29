@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Season } from '@/types'
-import { PlusCircle, Pencil, TrashBin, XMark } from '@/icons'
+import { PlusCircle, Pencil, TrashBin } from '@/icons'
 import { ChevronDown } from 'lucide-react'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { ResponsiveSheet } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
 
 interface Props {
@@ -176,99 +177,65 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowModal(false)}>
-          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
-              <h2 className="text-lg font-bold text-gray-900">Neue Saison</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <XMark size={20} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  placeholder="z.B. Saison 2026"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={e => setYear(Number(e.target.value))}
-                  min={2020}
-                  max={2030}
-                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                />
-              </div>
-            </div>
-            <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
+        <ResponsiveSheet
+          open
+          onClose={() => setShowModal(false)}
+          title="Neue Saison"
+          footer={
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200"
+                className="font-display px-4 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
               >
                 Abbrechen
               </button>
               <button
                 onClick={handleCreate}
                 disabled={!name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50"
+                className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-700 disabled:opacity-50 cursor-pointer"
               >
                 Erstellen
               </button>
             </div>
+          }
+        >
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Name</label>
+              <input
+                placeholder="z.B. Saison 2026"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Jahr</label>
+              <input
+                type="number"
+                value={year}
+                onChange={e => setYear(Number(e.target.value))}
+                min={2020}
+                max={2030}
+                className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              />
+            </div>
           </div>
-        </div>
+        </ResponsiveSheet>
       )}
 
       {showEditModal && selectedId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowEditModal(false)}>
-          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
-              <h2 className="text-lg font-bold text-gray-900">Saison bearbeiten</h2>
-              <button onClick={() => setShowEditModal(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                <XMark size={20} />
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && name.trim()) {
-                      onUpdate(selectedId, name.trim(), year)
-                        .then(() => { setShowEditModal(false); toast.show('Saison aktualisiert') })
-                        .catch((err: Error) => toast.show(err.message, 'error'))
-                    }
-                  }}
-                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={e => setYear(Number(e.target.value))}
-                  min={2020}
-                  max={2030}
-                  className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                />
-              </div>
-            </div>
-            <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
+        <ResponsiveSheet
+          open
+          onClose={() => setShowEditModal(false)}
+          title="Saison bearbeiten"
+          footer={
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200"
+                className="font-display px-4 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
               >
                 Abbrechen
               </button>
@@ -284,13 +251,43 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                   }
                 }}
                 disabled={!name.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-navy-800 rounded-lg hover:bg-navy-700 disabled:opacity-50"
+                className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase text-white bg-navy-800 rounded-lg hover:bg-navy-900 disabled:opacity-50 cursor-pointer"
               >
                 Speichern
               </button>
             </div>
+          }
+        >
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Name</label>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && name.trim()) {
+                    onUpdate(selectedId, name.trim(), year)
+                      .then(() => { setShowEditModal(false); toast.show('Saison aktualisiert') })
+                      .catch((err: Error) => toast.show(err.message, 'error'))
+                  }
+                }}
+                className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Jahr</label>
+              <input
+                type="number"
+                value={year}
+                onChange={e => setYear(Number(e.target.value))}
+                min={2020}
+                max={2030}
+                className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              />
+            </div>
           </div>
-        </div>
+        </ResponsiveSheet>
       )}
 
       {showDeleteConfirm && selectedId && (

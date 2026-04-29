@@ -8,11 +8,11 @@ import { SeasonTileGrid } from './SeasonTileGrid'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
 import { DetailSheet } from './DashboardSheets'
-import { PlusCircle, XMark, CrossBones } from '@/icons'
+import { PlusCircle, CrossBones } from '@/icons'
 import { EditGameDayModal } from './EditGameDayModal'
 import {
   Button,
-  ConfirmModal, LoadingSkeleton,
+  ConfirmModal, LoadingSkeleton, ResponsiveSheet,
 } from '@/components/shared'
 import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse } from '@/types'
 import * as api from '@/api/client'
@@ -109,20 +109,24 @@ export function Dashboard() {
   if (seasons.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 sm:py-20 px-4 text-center">
-        <div className="mb-6 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-softball-red-600 text-white shadow-lg shadow-softball-red-600/25">
-          <CrossBones size={32} />
+        <div className="relative mb-6">
+          <div className="absolute inset-0 bg-softball-red-600 blur-2xl opacity-30 rounded-full" />
+          <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-navy-900 text-cream-50 shadow-lg shadow-navy-900/30 border-2 border-softball-red-600">
+            <CrossBones size={40} />
+          </div>
         </div>
-        <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-wide uppercase mb-3">
-          Willkommen beim Softball Planner
+        <p className="font-display text-[10px] tracking-[0.4em] uppercase text-softball-red-600 font-bold mb-2">Dead Sox · Lineup HQ</p>
+        <h1 className="font-display text-4xl sm:text-5xl font-black text-navy-900 tracking-tight uppercase mb-2 leading-none">
+          Ready Up.
         </h1>
-        <p className="font-display text-[12px] tracking-widest uppercase text-gray-500 font-bold mb-6 max-w-md">
-          Plane Spieltage, stelle Lineups auf,<br className="hidden sm:inline" /> scoore Spiele live mit der App.
+        <p className="font-display text-[12px] tracking-widest uppercase text-gray-500 font-bold mb-8 max-w-md">
+          Spieltage planen · Lineups würfeln · Live scoren
         </p>
         <div className="bg-cream-50 border border-cream-300 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-sm">
-          <p className="font-display text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-2">Erster Schritt</p>
-          <h2 className="font-display text-xl font-extrabold text-navy-900 mb-3">Saison anlegen</h2>
+          <p className="font-display text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-2">Erster Pitch</p>
+          <h2 className="font-display text-xl font-extrabold text-navy-900 mb-3 uppercase tracking-wide">Saison anlegen</h2>
           <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-            Eine Saison gruppiert Spieltage, Lineups und Stats. Tippe unten um zu starten.
+            Saison gruppiert Spieltage, Lineups + Stats. Tap unten um zu starten.
           </p>
           <button
             onClick={() => {
@@ -133,7 +137,7 @@ export function Dashboard() {
           >
             <PlusCircle size={16} /> Saison {new Date().getFullYear()} erstellen
           </button>
-          <p className="text-[11px] text-gray-400 mt-3">Du kannst Name + Jahr später ändern.</p>
+          <p className="text-[11px] text-gray-400 mt-3">Name + Jahr später änderbar.</p>
         </div>
       </div>
     )
@@ -243,68 +247,66 @@ export function Dashboard() {
           )}
 
           {showNewGameDay && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={() => setShowNewGameDay(false)}>
-                <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-cream-300">
-                    <h2 className="text-lg font-bold text-gray-900">Neuer Spieltag</h2>
-                    <button onClick={() => setShowNewGameDay(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                      <XMark size={20} />
-                    </button>
-                  </div>
-                  <div className="p-5 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Datum</label>
-                      <input
-                        type="date"
-                        value={newGdDate}
-                        onChange={e => setNewGdDate(e.target.value)}
-                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                        autoFocus
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Anzahl Spiele</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={newGdGameCount}
-                        onChange={e => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          if (val === '') { setNewGdGameCount('' as any); return; }
-                          setNewGdGameCount(Math.max(1, Math.min(10, Number(val))));
-                        }}
-                        onBlur={() => { if (!newGdGameCount) setNewGdGameCount(1); }}
-                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Label <span className="font-normal text-gray-400">(optional)</span></label>
-                      <input
-                        placeholder="z.B. Spieltag 3"
-                        value={newGdLabel}
-                        onChange={e => setNewGdLabel(e.target.value)}
-                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ort <span className="font-normal text-gray-400">(optional)</span></label>
-                      <input
-                        placeholder="z.B. Berlin Tegel"
-                        value={newGdLocation}
-                        onChange={e => setNewGdLocation(e.target.value)}
-                        className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
+              <ResponsiveSheet
+                open
+                onClose={() => setShowNewGameDay(false)}
+                title="Neuer Spieltag"
+                footer={
+                  <div className="flex justify-end gap-2">
                     <Button variant="ghost" onClick={() => setShowNewGameDay(false)}>Abbrechen</Button>
                     <Button onClick={handleCreateGameDay} disabled={!newGdDate || !newGdGameCount}>
                       Erstellen
                     </Button>
                   </div>
+                }
+              >
+                <div className="p-5 space-y-4">
+                  <div>
+                    <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Datum</label>
+                    <input
+                      type="date"
+                      value={newGdDate}
+                      onChange={e => setNewGdDate(e.target.value)}
+                      className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Anzahl Spiele</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={newGdGameCount}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val === '') { setNewGdGameCount('' as any); return; }
+                        setNewGdGameCount(Math.max(1, Math.min(10, Number(val))));
+                      }}
+                      onBlur={() => { if (!newGdGameCount) setNewGdGameCount(1); }}
+                      className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Label <span className="text-gray-400 normal-case font-bold">(optional)</span></label>
+                    <input
+                      placeholder="z.B. Spieltag 3"
+                      value={newGdLabel}
+                      onChange={e => setNewGdLabel(e.target.value)}
+                      className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Ort <span className="text-gray-400 normal-case font-bold">(optional)</span></label>
+                    <input
+                      placeholder="z.B. Berlin Tegel"
+                      value={newGdLocation}
+                      onChange={e => setNewGdLocation(e.target.value)}
+                      className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+                    />
+                  </div>
                 </div>
-              </div>
+              </ResponsiveSheet>
             )}
 
           {/* Detail-Sheets statt embedded sections — Tiles oben triggern */}

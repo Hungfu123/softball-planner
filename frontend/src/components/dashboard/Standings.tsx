@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import type { StandingEntry, GameDayResponse, GameResponse, LeagueTeamResponse, LeagueResultResponse } from '@/types'
-import { Pencil } from '@/icons'
+import { Pencil, TrashBin, XMark } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import * as api from '@/api/client'
@@ -80,26 +80,26 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
     <section className="space-y-6">
       {/* Standings Table */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-950 mb-4 flex items-center gap-2">
-          <span className="w-1 h-5 bg-softball-red-500 rounded-full" />
+        <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 mb-3 inline-flex items-center gap-2">
+          <span className="w-1 h-5 bg-softball-red-600 rounded-full" />
           Liga-Tabelle
         </h2>
         {standings.length > 0 && (
-          <div className="rounded-xl overflow-hidden">
+          <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-cream-300 bg-cream-100">
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700 w-8">#</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-700">Team</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Spiele">Sp</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Siege">S</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Niederlagen">N</th>
-                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-12" title="Unentschieden">U</th>
-                    <th className="text-center px-3 py-3 font-semibold text-gray-700 w-16" title="Siegquote">Win%</th>
-                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-14" title="Runs Scored (erzielte Punkte)">RS</th>
-                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-14" title="Runs Against (kassierte Punkte)">RA</th>
-                    <th className="hidden sm:table-cell text-center px-3 py-3 font-semibold text-gray-700 w-14" title="Run Differential (Differenz)">+/-</th>
+                  <tr className="bg-navy-900 text-white">
+                    <th className="font-display text-left px-4 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-8">#</th>
+                    <th className="font-display text-left px-4 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Team</th>
+                    <th className="font-display text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-12" title="Spiele">Sp</th>
+                    <th className="font-display text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-12" title="Siege">S</th>
+                    <th className="font-display text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-12" title="Niederlagen">N</th>
+                    <th className="font-display hidden sm:table-cell text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-12" title="Unentschieden">U</th>
+                    <th className="font-display text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-16" title="Siegquote">Win%</th>
+                    <th className="font-display hidden sm:table-cell text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-14" title="Runs Scored (erzielte Punkte)">RS</th>
+                    <th className="font-display hidden sm:table-cell text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-14" title="Runs Against (kassierte Punkte)">RA</th>
+                    <th className="font-display hidden sm:table-cell text-center px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest w-14" title="Run Differential (Differenz)">+/-</th>
                     <th className="w-8" />
                   </tr>
                 </thead>
@@ -107,12 +107,12 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                   {standings.map((s, i) => (
                     <tr
                       key={s.team.id}
-                      className={`border-b border-cream-200 last:border-0 ${
-                        s.team.ownTeam ? 'bg-navy-50 font-semibold border-l-2 border-l-navy-600' : 'hover:bg-cream-100'
+                      className={`border-b border-cream-200 last:border-0 transition-colors ${
+                        s.team.ownTeam ? 'bg-navy-50 border-l-2 border-l-navy-600' : 'hover:bg-cream-100'
                       }`}
                     >
-                      <td className="px-4 py-2.5 text-gray-400 font-mono">{i + 1}</td>
-                      <td className="px-4 py-2.5 text-gray-900">
+                      <td className={`font-display px-4 py-2 text-left tabular-nums font-extrabold ${s.team.ownTeam ? 'text-navy-900' : 'text-gray-400'}`}>{i + 1}</td>
+                      <td className="px-4 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide">
                         {!s.team.ownTeam && editingTeam?.id === s.team.id ? (
                           <input
                             autoFocus
@@ -123,7 +123,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                               if (e.key === 'Escape') setEditingTeam(null)
                             }}
                             onBlur={handleRenameTeam}
-                            className="border border-navy-300 rounded px-2 py-0.5 text-sm outline-none focus:border-navy-600 w-full"
+                            className="font-display border border-navy-300 rounded px-2 py-0.5 text-sm outline-none focus:border-navy-600 w-full"
                           />
                         ) : (
                           <span
@@ -132,34 +132,33 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                             title={!s.team.ownTeam ? 'Klicken zum Umbenennen' : undefined}
                           >
                             {s.team.name}
-                            {!s.team.ownTeam && <Pencil size={13} className="opacity-0 group-hover/name:opacity-60 transition-opacity text-navy-600" />}
+                            {!s.team.ownTeam && <Pencil size={13} className="opacity-60 sm:opacity-0 sm:group-hover/name:opacity-60 transition-opacity text-navy-600" />}
                           </span>
                         )}
                       </td>
-                      <td className="text-center px-3 py-2.5 font-mono">{s.games}</td>
-                      <td className="text-center px-3 py-2.5 font-mono text-emerald-700">{s.wins}</td>
-                      <td className="text-center px-3 py-2.5 font-mono text-softball-red-600">{s.losses}</td>
-                      <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono text-gray-500">{s.ties}</td>
-                      <td className="text-center px-3 py-2.5 font-mono font-semibold">
+                      <td className="font-display text-center px-3 py-2 tabular-nums text-gray-700">{s.games}</td>
+                      <td className="font-display text-center px-3 py-2 tabular-nums font-bold text-emerald-700">{s.wins}</td>
+                      <td className="font-display text-center px-3 py-2 tabular-nums font-bold text-softball-red-600">{s.losses}</td>
+                      <td className="font-display hidden sm:table-cell text-center px-3 py-2 tabular-nums text-gray-500">{s.ties}</td>
+                      <td className="font-display text-center px-3 py-2 tabular-nums font-extrabold text-navy-900">
                         {s.games > 0 ? (s.winPct * 100).toFixed(0) + '%' : '—'}
                       </td>
-                      <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono">{s.runsScored}</td>
-                      <td className="hidden sm:table-cell text-center px-3 py-2.5 font-mono">{s.runsAgainst}</td>
-                      <td className={`hidden sm:table-cell text-center px-3 py-2.5 font-mono font-semibold ${
+                      <td className="font-display hidden sm:table-cell text-center px-3 py-2 tabular-nums text-gray-700">{s.runsScored}</td>
+                      <td className="font-display hidden sm:table-cell text-center px-3 py-2 tabular-nums text-gray-700">{s.runsAgainst}</td>
+                      <td className={`font-display hidden sm:table-cell text-center px-3 py-2 tabular-nums font-bold ${
                         s.runDiff > 0 ? 'text-emerald-700' : s.runDiff < 0 ? 'text-softball-red-600' : 'text-gray-500'
                       }`}>
                         {s.runDiff > 0 ? '+' : ''}{s.runDiff}
                       </td>
-                      <td className="px-1 py-2.5">
+                      <td className="px-1 py-2">
                         {!s.team.ownTeam && (
                           <button
                             onClick={() => setDeleteTeam({ id: s.team.id, name: s.team.name })}
-                            className="p-1 text-gray-200 hover:text-softball-red-500 transition-colors cursor-pointer"
+                            className="p-1 text-gray-300 hover:text-softball-red-500 hover:bg-softball-red-50 rounded transition-colors cursor-pointer"
                             title="Team löschen"
+                            aria-label="Team löschen"
                           >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
+                            <TrashBin size={14} />
                           </button>
                         )}
                       </td>
@@ -195,10 +194,10 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
         <div className="space-y-4">
           {/* Our games */}
           {gamesWithOpponent.length > 0 && (
-            <div className="bg-white border border-cream-300 rounded-xl divide-y divide-gray-100">
+            <div className="bg-cream-50 border border-cream-300 rounded-xl divide-y divide-cream-200">
               {gameDays.filter(gd => gd.games.some(g => g.opponentTeam)).map(gd => (
                 <div key={gd.id} className="px-4 py-3">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                  <div className="font-display text-[10px] font-extrabold tracking-widest uppercase text-gray-500 mb-2">
                     {gd.label || 'Spieltag'} — {formatDate(gd.date)}
                   </div>
                   <div className="space-y-1.5">
@@ -217,26 +216,25 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
 
           {/* League results (other teams) */}
           {leagueResults.length > 0 && (
-            <div className="bg-white border border-cream-300 rounded-xl px-4 py-3">
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+            <div className="bg-cream-50 border border-cream-300 rounded-xl px-4 py-3">
+              <div className="font-display text-[10px] font-extrabold tracking-widest uppercase text-gray-500 mb-2">
                 Andere Ergebnisse
               </div>
               <div className="space-y-1.5">
                 {leagueResults.map(r => (
                   <div key={r.id} className="flex items-center gap-2.5 text-sm">
-                    <span className="text-gray-700">{r.homeTeam.name}</span>
-                    <span className="font-mono font-semibold text-gray-500">
+                    <span className="font-display font-bold text-navy-900 tracking-wide">{r.homeTeam.name}</span>
+                    <span className="font-display font-extrabold tabular-nums text-gray-700">
                       {r.homeScore}:{r.awayScore}
                     </span>
-                    <span className="text-gray-700">{r.awayTeam.name}</span>
+                    <span className="font-display font-bold text-navy-900 tracking-wide">{r.awayTeam.name}</span>
                     <button
                       onClick={async () => { await api.deleteLeagueResult(r.id); reloadAll() }}
-                      className="p-0.5 text-gray-200 hover:text-softball-red-500 transition-colors cursor-pointer ml-auto"
+                      className="p-1 text-gray-300 hover:text-softball-red-500 hover:bg-softball-red-50 rounded transition-colors cursor-pointer ml-auto"
                       title="Löschen"
+                      aria-label="Ergebnis löschen"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 6L6 18M6 6l12 12" />
-                      </svg>
+                      <XMark size={12} />
                     </button>
                   </div>
                 ))}
@@ -299,28 +297,28 @@ function OurGameRow({ game, onChanged }: { game: GameResponse; onChanged: () => 
 
   return (
     <div className="flex items-center gap-2.5 text-sm">
-      <span className="text-gray-400 w-14 shrink-0">Spiel {game.gameNumber}</span>
-      <span className="text-gray-700">vs {game.opponentTeam!.name}</span>
+      <span className="font-display text-[10px] tracking-widest uppercase font-bold text-gray-400 w-16 shrink-0">Spiel {game.gameNumber}</span>
+      <span className="font-display font-bold text-navy-900 tracking-wide">vs {game.opponentTeam!.name}</span>
       {editing ? (
         <div className="flex items-center gap-1.5">
           <input ref={inputRef} type="number" min="0" value={us} onChange={e => setUs(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-            className="w-12 border border-cream-300 rounded px-1.5 py-1 text-center font-mono text-sm outline-none focus:border-navy-600" />
+            className="font-display w-12 border border-cream-300 rounded px-1.5 py-1 text-center tabular-nums text-sm outline-none focus:border-navy-600" />
           <span className="text-gray-400">:</span>
           <input type="number" min="0" value={them} onChange={e => setThem(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setEditing(false) }}
-            className="w-12 border border-cream-300 rounded px-1.5 py-1 text-center font-mono text-sm outline-none focus:border-navy-600" />
-          <button onClick={handleSave} className="text-xs text-navy-700 hover:text-navy-900 font-medium cursor-pointer ml-1">OK</button>
+            className="font-display w-12 border border-cream-300 rounded px-1.5 py-1 text-center tabular-nums text-sm outline-none focus:border-navy-600" />
+          <button onClick={handleSave} className="font-display text-[10px] tracking-widest uppercase text-navy-700 hover:text-navy-900 font-bold cursor-pointer ml-1">OK</button>
           {game.scoreUs != null && (
             <button onClick={async () => { await api.updateScore(game.id, null, null); setUs(''); setThem(''); setEditing(false); onChanged() }}
-              className="text-xs text-gray-400 hover:text-softball-red-500 cursor-pointer">Löschen</button>
+              className="font-display text-[10px] tracking-widest uppercase text-gray-400 hover:text-softball-red-500 cursor-pointer">Löschen</button>
           )}
         </div>
       ) : (
         <button onClick={() => setEditing(true)}
-          className={`font-mono cursor-pointer px-2 py-0.5 rounded hover:bg-cream-200 ${
+          className={`font-display tabular-nums font-extrabold cursor-pointer px-2 py-0.5 rounded hover:bg-cream-200 ${
             game.scoreUs != null
-              ? game.scoreUs > game.scoreThem! ? 'text-emerald-700 font-semibold' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600 font-semibold' : 'text-gray-500'
+              ? game.scoreUs > game.scoreThem! ? 'text-emerald-700' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
               : 'text-gray-300'
           }`}>
           {game.scoreUs != null ? `${game.scoreUs}:${game.scoreThem}` : '—:—'}
@@ -375,11 +373,11 @@ function AddLeagueResult({ seasonId, teams, onAdded }: {
       />
       <input type="number" min="0" value={homeScore} onChange={e => setHomeScore(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-        placeholder="—" className="w-12 border border-cream-300 rounded px-1.5 py-1.5 text-center font-mono text-sm outline-none focus:border-navy-600" />
+        placeholder="—" className="font-display w-12 border border-cream-300 rounded px-1.5 py-1.5 text-center tabular-nums text-sm outline-none focus:border-navy-600" />
       <span className="text-gray-400 font-bold">:</span>
       <input type="number" min="0" value={awayScore} onChange={e => setAwayScore(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
-        placeholder="—" className="w-12 border border-cream-300 rounded px-1.5 py-1.5 text-center font-mono text-sm outline-none focus:border-navy-600" />
+        placeholder="—" className="font-display w-12 border border-cream-300 rounded px-1.5 py-1.5 text-center tabular-nums text-sm outline-none focus:border-navy-600" />
       <TeamCombobox
         teams={teams}
         selected={awayTeam}

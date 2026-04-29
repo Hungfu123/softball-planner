@@ -70,6 +70,26 @@ button:active:not(:disabled), [role="button"]:active {
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/%3E%3C/svg%3E") 2 18, auto;
 }
 
+/*
+ * Hover-Reveal Standard: Edit/Delete-Actions sichtbar auf Mobile,
+ * auf Desktop ausgeblendet bis Container-Hover. Container braucht `group`.
+ *   <div class="group">  ... <div class="actions-reveal">[buttons]</div> ... </div>
+ */
+.actions-reveal {
+  opacity: 1;
+  transition: opacity 150ms ease;
+}
+@media (hover: hover) and (min-width: 640px) {
+  .actions-reveal {
+    opacity: 0;
+  }
+  .group:hover .actions-reveal,
+  .group:focus-within .actions-reveal,
+  .actions-reveal:focus-within {
+    opacity: 1;
+  }
+}
+
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(300%); }

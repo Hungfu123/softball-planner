@@ -38,14 +38,14 @@ export function FieldView({ entries }: Props) {
           <polygon
             points="50,70 72,50 50,30 28,50"
             fill="none"
-            stroke="#172554"
+            stroke="var(--color-navy-900)"
             strokeWidth="0.5"
           />
           {/* Bases */}
-          <rect x="48.5" y="68.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 50 70)" />
-          <rect x="70.5" y="48.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 72 50)" />
-          <rect x="48.5" y="28.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 50 30)" />
-          <rect x="26.5" y="48.5" width="3" height="3" fill="#DC2626" stroke="#B91C1C" strokeWidth="0.5" transform="rotate(45 28 50)" />
+          <rect x="48.5" y="68.5" width="3" height="3" fill="var(--color-softball-red-500)" stroke="var(--color-softball-red-700)" strokeWidth="0.5" transform="rotate(45 50 70)" />
+          <rect x="70.5" y="48.5" width="3" height="3" fill="var(--color-softball-red-500)" stroke="var(--color-softball-red-700)" strokeWidth="0.5" transform="rotate(45 72 50)" />
+          <rect x="48.5" y="28.5" width="3" height="3" fill="var(--color-softball-red-500)" stroke="var(--color-softball-red-700)" strokeWidth="0.5" transform="rotate(45 50 30)" />
+          <rect x="26.5" y="48.5" width="3" height="3" fill="var(--color-softball-red-500)" stroke="var(--color-softball-red-700)" strokeWidth="0.5" transform="rotate(45 28 50)" />
 
           {FIELD_POSITIONS.map(pos => {
             const coord = FIELD_COORDS[pos]
@@ -60,7 +60,7 @@ export function FieldView({ entries }: Props) {
                   fontSize="2.4"
                   fontWeight="700"
                   letterSpacing="0.15"
-                  fill={name ? '#CC2936' : '#9ca3af'}
+                  fill={name ? 'var(--color-softball-red-600)' : 'var(--color-gray-400)'}
                 >
                   {pos}
                 </text>
@@ -72,7 +72,7 @@ export function FieldView({ entries }: Props) {
                     textAnchor="middle"
                     fontSize="3.2"
                     fontWeight="700"
-                    fill="#0A0F5C"
+                    fill="var(--color-navy-900)"
                   >
                     {name.length > 12 ? name.slice(0, 11) + '…' : name}
                   </text>
@@ -83,7 +83,7 @@ export function FieldView({ entries }: Props) {
                     cx={coord.x}
                     cy={coord.y + 2}
                     r={1.5}
-                    fill="#d1d5db"
+                    fill="var(--color-gray-300)"
                   />
                 )}
               </g>
