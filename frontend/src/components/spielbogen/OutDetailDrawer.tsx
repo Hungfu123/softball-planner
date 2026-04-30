@@ -8,6 +8,7 @@ interface Props {
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   baseStateAfter: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
+  batterSlotId: number | null
 }
 
 const POSITION_NAMES: Record<number, string> = {
@@ -28,16 +29,77 @@ const FIELD_POSITIONS: Array<{ pos: number; cx: number; cy: number }> = [
   { pos: 2, cx: 140, cy: 180 }, // C
 ]
 
+// ---------------------------------------------------------------------------
+// Shared helper: apply runner advances to a base state
+// ---------------------------------------------------------------------------
+function applyAdvances(
+  before: BogenBaseStateDto | null,
+  advances: { fromBase: 1 | 2 | 3; advance: boolean }[],
+  batterSlotId: number | null,
+  batterToFirst: boolean,
+): { baseStateAfter: BogenBaseStateDto; runsScored: number } {
+  const b = before ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
+  const after: BogenBaseStateDto = { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
+  let runs = 0
+
+  // Process highest base first to avoid overwrite conflicts
+  const adv3 = advances.find(a => a.fromBase === 3)?.advance ?? false
+  if (b.thirdSlotId != null) {
+    if (adv3) runs += 1
+    else after.thirdSlotId = b.thirdSlotId
+  }
+
+  const adv2 = advances.find(a => a.fromBase === 2)?.advance ?? false
+  if (b.secondSlotId != null) {
+    if (adv2) {
+      if (after.thirdSlotId != null) after.secondSlotId = b.secondSlotId  // blocked
+      else after.thirdSlotId = b.secondSlotId
+    } else {
+      after.secondSlotId = b.secondSlotId
+    }
+  }
+
+  const adv1 = advances.find(a => a.fromBase === 1)?.advance ?? false
+  if (b.firstSlotId != null) {
+    if (adv1) {
+      if (after.secondSlotId != null) after.firstSlotId = b.firstSlotId  // blocked
+      else after.secondSlotId = b.firstSlotId
+    } else {
+      after.firstSlotId = b.firstSlotId
+    }
+  }
+
+  if (batterToFirst && batterSlotId != null && after.firstSlotId == null) {
+    after.firstSlotId = batterSlotId
+  }
+
+  return { baseStateAfter: after, runsScored: runs }
+}
+
+// ---------------------------------------------------------------------------
+// InfieldOptionsView
+// ---------------------------------------------------------------------------
 interface InfieldOptionsProps {
   fielder: number
   hasRunners: boolean
   baseState: BogenBaseStateDto
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   onDpPick: (fielder: number, defaultDpPartner: number) => void
+  onFcPick: (fielder: number) => void
+  onAdvancePick: (title: string, baseSubmit: Partial<SpielbogenRecordAtBatRequest>) => void
   onBack: () => void
 }
 
-function InfieldOptionsView({ fielder, hasRunners, baseState, onSubmit, onDpPick, onBack }: InfieldOptionsProps) {
+function InfieldOptionsView({
+  fielder,
+  hasRunners,
+  baseState,
+  onSubmit,
+  onDpPick,
+  onFcPick,
+  onAdvancePick,
+  onBack,
+}: InfieldOptionsProps) {
   const defaultThrow = 3
   const defaultDpPartner = fielder === 6 ? 4 : defaultThrow
 
@@ -47,10 +109,7 @@ function InfieldOptionsView({ fielder, hasRunners, baseState, onSubmit, onDpPick
       (baseState.secondSlotId != null ? 1 : 0) +
       (baseState.thirdSlotId != null ? 1 : 0)
 
-    if (runnerCount === 0) {
-      // Should not happen (button is hidden), but guard defensively
-      return
-    }
+    if (runnerCount === 0) return
 
     if (runnerCount === 1) {
       // Auto-pick the only runner — no picker needed
@@ -70,11 +129,27 @@ function InfieldOptionsView({ fielder, hasRunners, baseState, onSubmit, onDpPick
         rbi: 0,
         baseStateAfter: after,
       })
-      // Suppress unused-var warning for slotId — it's intentionally unused here
       void slotId
     } else {
-      // Multi-runner: open picker
       onDpPick(fielder, defaultDpPartner)
+    }
+  }
+
+  const handleGrounderOut = (
+    outType: 'GROUNDER' | 'UNASSISTED',
+    chain: number[],
+    label: string,
+    isError?: boolean,
+    errorPosition?: number,
+  ) => {
+    const baseSubmit: Partial<SpielbogenRecordAtBatRequest> = isError
+      ? { result: 'OUT', isError: true, errorPosition }
+      : { result: 'OUT', outType, fielderChain: chain }
+
+    if (hasRunners) {
+      onAdvancePick(label, baseSubmit)
+    } else {
+      onSubmit(baseSubmit)
     }
   }
 
@@ -83,34 +158,43 @@ function InfieldOptionsView({ fielder, hasRunners, baseState, onSubmit, onDpPick
       label: `▶ Wirft zu 1B (${fielder}-3)`,
       description: 'Normale Groundout, Throw to 1B',
       primary: true,
-      action: () => onSubmit({
-        result: 'OUT',
-        outType: 'GROUNDER',
-        fielderChain: [fielder, defaultThrow],
-      }),
+      action: () => handleGrounderOut(
+        'GROUNDER',
+        [fielder, defaultThrow],
+        `Grounder ${fielder}-3 — Runner weitergelaufen?`,
+      ),
     },
     {
       label: `Solo-Out (${fielder} unassisted)`,
       description: 'Fielder schafft Out alleine',
-      action: () => onSubmit({
-        result: 'OUT',
-        outType: 'UNASSISTED',
-        fielderChain: [fielder],
-      }),
+      action: () => handleGrounderOut(
+        'UNASSISTED',
+        [fielder],
+        `Solo-Out ${fielder} — Runner weitergelaufen?`,
+      ),
     },
-    ...(hasRunners ? [{
-      label: `Double Play (${fielder}-${defaultDpPartner}-3)`,
-      description: 'Doppelspiel — Runner wählen',
-      action: handleDpClick,
-    }] : []),
+    ...(hasRunners ? [
+      {
+        label: `Double Play (${fielder}-${defaultDpPartner}-3)`,
+        description: 'Doppelspiel — Runner wählen',
+        action: handleDpClick,
+      },
+      {
+        label: `FC — Runner out (Batter safe)`,
+        description: "Fielder's Choice: Out an Runner, Batter erreicht 1B",
+        action: () => onFcPick(fielder),
+      },
+    ] : []),
     {
       label: `Error E${fielder}`,
       description: 'Fehler beim Fielder',
-      action: () => onSubmit({
-        result: 'OUT',
-        isError: true,
-        errorPosition: fielder,
-      }),
+      action: () => handleGrounderOut(
+        'GROUNDER',
+        [],
+        `Error E${fielder} — Runner weitergelaufen?`,
+        true,
+        fielder,
+      ),
     },
   ]
 
@@ -143,9 +227,14 @@ function InfieldOptionsView({ fielder, hasRunners, baseState, onSubmit, onDpPick
   )
 }
 
+// ---------------------------------------------------------------------------
+// RunnerOutPickerView — used for Double Play and Fielder's Choice
+// ---------------------------------------------------------------------------
 interface RunnerOutPickerProps {
   fielder: number
   defaultDpPartner: number
+  title: string
+  subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
   onPick: (out: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => void
@@ -153,6 +242,8 @@ interface RunnerOutPickerProps {
 }
 
 function RunnerOutPickerView({
+  title,
+  subtitle,
   baseState,
   slots,
   onPick,
@@ -176,10 +267,10 @@ function RunnerOutPickerView({
   return (
     <div className="p-4 space-y-3">
       <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
-        Double Play — welcher Runner ist out?
+        {title}
       </h3>
       <p className="text-xs text-gray-500 font-body">
-        Batter ist immer out. Welcher Runner zusätzlich?
+        {subtitle}
       </p>
       <div className="space-y-2">
         {runners.map(r => (
@@ -207,14 +298,19 @@ function RunnerOutPickerView({
   )
 }
 
-function FlyOutTagUpView({
-  fielder,
+// ---------------------------------------------------------------------------
+// RunnerAdvancePickerView — used for Fly Out tag-up AND grounder advances
+// ---------------------------------------------------------------------------
+function RunnerAdvancePickerView({
+  title,
+  subtitle,
   baseState,
   slots,
   onConfirm,
   onBack,
 }: {
-  fielder: number
+  title: string
+  subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
   onConfirm: (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => void
@@ -235,16 +331,15 @@ function FlyOutTagUpView({
   }
 
   const [advances, setAdvances] = useState<Record<1 | 2 | 3, boolean>>({ 1: false, 2: false, 3: false })
-
   const toggle = (b: 1 | 2 | 3) => setAdvances(prev => ({ ...prev, [b]: !prev[b] }))
 
   return (
     <div className="p-4 space-y-3">
       <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
-        Fly Out F{fielder} — Tag Up?
+        {title}
       </h3>
       <p className="text-xs text-gray-500 font-body">
-        Welche Runner sind nach dem Catch weitergelaufen?
+        {subtitle}
       </p>
       <div className="space-y-2">
         {runners.map(r => {
@@ -290,10 +385,18 @@ function FlyOutTagUpView({
   )
 }
 
-export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots }: Props) {
+// ---------------------------------------------------------------------------
+// OutDetailDrawer
+// ---------------------------------------------------------------------------
+export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
   const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
+  const [pendingAdvance, setPendingAdvance] = useState<{
+    title: string
+    baseSubmit: Partial<SpielbogenRecordAtBatRequest>
+  } | null>(null)
+  const [pendingFc, setPendingFc] = useState<{ fielder: number } | null>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
 
@@ -320,52 +423,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
         })
       }
     } else {
-      // Infield: switch to options state within the same drawer
       setSelectedFielder(pos)
     }
   }
 
   const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => {
     if (pendingFlyOutRequest == null) return
-    const before = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
-    const after: BogenBaseStateDto = { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
-    let runs = 0
-
-    // Process advances in order 3B→Home, 2B→3B, 1B→2B (highest base first to avoid overwrite conflicts)
-    // 3B advance
-    const adv3 = advances.find(a => a.fromBase === 3)?.advance ?? false
-    if (before.thirdSlotId != null) {
-      if (adv3) runs += 1  // home
-      else after.thirdSlotId = before.thirdSlotId
-    }
-    // 2B advance
-    const adv2 = advances.find(a => a.fromBase === 2)?.advance ?? false
-    if (before.secondSlotId != null) {
-      if (adv2) {
-        if (after.thirdSlotId != null) {
-          // 3B occupied — can't advance to 3B; keep on 2B
-          after.secondSlotId = before.secondSlotId
-        } else {
-          after.thirdSlotId = before.secondSlotId
-        }
-      } else {
-        after.secondSlotId = before.secondSlotId
-      }
-    }
-    // 1B advance
-    const adv1 = advances.find(a => a.fromBase === 1)?.advance ?? false
-    if (before.firstSlotId != null) {
-      if (adv1) {
-        if (after.secondSlotId != null) {
-          after.firstSlotId = before.firstSlotId
-        } else {
-          after.secondSlotId = before.firstSlotId
-        }
-      } else {
-        after.firstSlotId = before.firstSlotId
-      }
-    }
-
+    const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances, batterSlotId, false)
     onSubmit({
       result: 'OUT',
       outType: 'FLY',
@@ -375,6 +439,19 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       baseStateAfter: after,
     })
     setPendingFlyOutRequest(null)
+  }
+
+  const handleAdvanceConfirm = (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => {
+    if (pendingAdvance == null) return
+    const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances, batterSlotId, false)
+    onSubmit({
+      ...pendingAdvance.baseSubmit,
+      baseStateAfter: after,
+      runsScored: runs,
+      rbi: runs,
+    })
+    setPendingAdvance(null)
+    setSelectedFielder(null)
   }
 
   const handleSkip = () => {
@@ -394,6 +471,8 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setSelectedFielder(null)
     setPendingDpRequest(null)
     setPendingFlyOutRequest(null)
+    setPendingAdvance(null)
+    setPendingFc(null)
     onClose()
   }
 
@@ -411,15 +490,47 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       rbi: 0,
       baseStateAfter: after,
     })
-    // runnerSlotId is informational (passed in to identify which runner was picked)
     void runnerSlotId
     setPendingDpRequest(null)
+    setSelectedFielder(null)
+  }
+
+  const submitFc = (fielder: number, runnerSlotId: number, runnerFromBase: 1 | 2 | 3) => {
+    const before = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
+    // Remove the picked runner from their base
+    const after: BogenBaseStateDto = {
+      firstSlotId: runnerFromBase === 1 ? null : before.firstSlotId,
+      secondSlotId: runnerFromBase === 2 ? null : before.secondSlotId,
+      thirdSlotId: runnerFromBase === 3 ? null : before.thirdSlotId,
+    }
+    // Batter goes to 1B. If 1B is now empty (runner was there and got out), place batter there.
+    // If 1B is still occupied (runner came from 2B or 3B), batter still goes to 1B (force play).
+    if (batterSlotId != null) {
+      after.firstSlotId = batterSlotId
+    }
+    // Throw destination: the base where the runner was caught
+    const throwDestination = runnerFromBase + 1 > 3 ? 4 : runnerFromBase + 1
+    onSubmit({
+      result: 'OUT',
+      outType: 'FORCE_OUT',
+      fielderChain: [fielder, throwDestination],
+      runsScored: 0,
+      rbi: 0,
+      baseStateAfter: after,
+    })
+    void runnerSlotId
+    setPendingFc(null)
     setSelectedFielder(null)
   }
 
   const handleDpRunnerOut = ({ runnerSlotId, fromBase }: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => {
     if (pendingDpRequest == null) return
     submitDp(pendingDpRequest.fielder, pendingDpRequest.defaultDpPartner, runnerSlotId, fromBase)
+  }
+
+  const handleFcRunnerOut = ({ runnerSlotId, fromBase }: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => {
+    if (pendingFc == null) return
+    submitFc(pendingFc.fielder, runnerSlotId, fromBase)
   }
 
   return (
@@ -437,9 +548,30 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {pendingFlyOutRequest != null ? (
-              <FlyOutTagUpView
-                fielder={pendingFlyOutRequest.fielder}
+            {pendingAdvance != null ? (
+              <RunnerAdvancePickerView
+                title={pendingAdvance.title}
+                subtitle="Welche Runner sind weitergelaufen?"
+                baseState={baseState}
+                slots={slots}
+                onConfirm={handleAdvanceConfirm}
+                onBack={() => setPendingAdvance(null)}
+              />
+            ) : pendingFc != null ? (
+              <RunnerOutPickerView
+                fielder={pendingFc.fielder}
+                defaultDpPartner={3}
+                title={`Fielder's Choice (${pendingFc.fielder}) — welcher Runner out?`}
+                subtitle="Batter ist SAFE an 1B. Welcher Runner wird out?"
+                baseState={baseState}
+                slots={slots}
+                onPick={handleFcRunnerOut}
+                onBack={() => setPendingFc(null)}
+              />
+            ) : pendingFlyOutRequest != null ? (
+              <RunnerAdvancePickerView
+                title={`Fly Out F${pendingFlyOutRequest.fielder} — Tag Up?`}
+                subtitle="Welche Runner sind nach dem Catch weitergelaufen?"
                 baseState={baseState}
                 slots={slots}
                 onConfirm={handleFlyOutConfirm}
@@ -449,6 +581,8 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
               <RunnerOutPickerView
                 fielder={pendingDpRequest.fielder}
                 defaultDpPartner={pendingDpRequest.defaultDpPartner}
+                title="Double Play — welcher Runner ist out?"
+                subtitle="Batter ist immer out. Welcher Runner zusätzlich?"
                 baseState={baseState}
                 slots={slots}
                 onPick={handleDpRunnerOut}
@@ -461,6 +595,8 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 baseState={baseState}
                 onSubmit={handleInfieldSubmit}
                 onDpPick={(fielder, defaultDpPartner) => setPendingDpRequest({ fielder, defaultDpPartner })}
+                onFcPick={(fielder) => setPendingFc({ fielder })}
+                onAdvancePick={(title, baseSubmit) => setPendingAdvance({ title, baseSubmit })}
                 onBack={() => setSelectedFielder(null)}
               />
             ) : (
