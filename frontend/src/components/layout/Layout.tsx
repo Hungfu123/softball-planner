@@ -28,6 +28,7 @@ const TABS = [
   { path: '/training-plan', label: 'Trainingsplan', shortLabel: 'Plan' },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler' },
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats' },
+  { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen' },
 ] as const
 
 export function Layout() {

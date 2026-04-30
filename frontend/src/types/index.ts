@@ -358,3 +358,76 @@ export const AT_BAT_RESULT_LABELS: Record<AtBatResult, string> = {
   STRIKEOUT: 'Strikeout',
   OUT: 'Aus',
 }
+
+// Spielbogen
+export type BogenSide = 'HOME' | 'AWAY'
+export type BogenStatus = 'DRAFT' | 'LIVE' | 'DONE'
+
+export interface SpielbogenResponse {
+  id: number
+  date: string
+  location: string | null
+  homeTeamName: string
+  awayTeamName: string
+  season: { id: number; name: string; year: number } | null
+  status: BogenStatus
+  currentInning: number
+  currentSide: BogenSide
+  homeRuns: number
+  awayRuns: number
+  leagueResultId: number | null
+  createdAt: string
+  updatedAt: string
+  endedAt: string | null
+}
+
+export interface SpielbogenSlotResponse {
+  id: number
+  side: BogenSide
+  slot: number
+  name: string
+  position: string | null
+  battingOrder: number
+}
+
+export interface SpielbogenLineupResponse {
+  home: SpielbogenSlotResponse[]
+  away: SpielbogenSlotResponse[]
+}
+
+export interface CreateSpielbogenRequest {
+  date: string
+  location?: string | null
+  homeTeamName: string
+  awayTeamName: string
+  seasonId?: number | null
+}
+
+export interface SetLineupRequest {
+  side: BogenSide
+  slots: Array<{
+    slot: number
+    name: string
+    position?: string | null
+    battingOrder: number
+  }>
+}
+
+export interface UpdateSlotRequest {
+  name?: string
+  position?: string | null
+  battingOrder?: number
+}
+
+export interface EndGameRequest {
+  homeRuns?: number
+  awayRuns?: number
+}
+
+export interface CopyFromGameDayRequest {
+  gameDayId: number
+  gameNumber: number
+  targetSide: BogenSide
+}
+
+export const POSITION_OPTIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH', 'DH'] as const

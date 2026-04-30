@@ -63,6 +63,14 @@ import type {
   RecordStealingEventRequest,
   ScoreboardResponse,
   PlayerBattingStatsResponse,
+  SpielbogenResponse,
+  SpielbogenLineupResponse,
+  SpielbogenSlotResponse,
+  CreateSpielbogenRequest,
+  SetLineupRequest,
+  UpdateSlotRequest,
+  EndGameRequest,
+  CopyFromGameDayRequest,
 } from '@/types'
 
 // Players
@@ -338,4 +346,68 @@ export const getSeasonBattingStats = (seasonId: number) =>
 // Substitutions: Mid-Game-Wechsel
 export const addSubstitution = (gameId: number, req: { playerOutId: number; playerInId: number; inning: number }) =>
   request<SubstitutionResponse>(`/games/${gameId}/substitutions`, { method: 'POST', body: JSON.stringify(req) })
+
+// Spielbogen
+export async function listSpielbogen(filter?: { seasonId?: number; status?: string }): Promise<SpielbogenResponse[]> {
+  const qs = new URLSearchParams()
+  if (filter?.seasonId) qs.set('seasonId', String(filter.seasonId))
+  if (filter?.status) qs.set('status', filter.status)
+  return request<SpielbogenResponse[]>(`/spielbogen${qs.toString() ? '?' + qs.toString() : ''}`)
+}
+
+export async function createSpielbogen(req: CreateSpielbogenRequest): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>('/spielbogen', { method: 'POST', body: JSON.stringify(req) })
+}
+
+export async function getSpielbogen(id: number): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${id}`)
+}
+
+export async function updateSpielbogen(id: number, req: Partial<CreateSpielbogenRequest>): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${id}`, { method: 'PATCH', body: JSON.stringify(req) })
+}
+
+export async function deleteSpielbogen(id: number): Promise<void> {
+  return request<void>(`/spielbogen/${id}`, { method: 'DELETE' })
+}
+
+export async function startSpielbogen(id: number): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${id}/start`, { method: 'POST' })
+}
+
+export async function endSpielbogen(id: number, req?: EndGameRequest): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${id}/end`, {
+    method: 'POST',
+    body: JSON.stringify(req ?? {})
+  })
+}
+
+export async function reopenSpielbogen(id: number): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${id}/reopen`, { method: 'POST' })
+}
+
+export async function getSpielbogenLineup(id: number): Promise<SpielbogenLineupResponse> {
+  return request<SpielbogenLineupResponse>(`/spielbogen/${id}/lineup`)
+}
+
+export async function setSpielbogenLineup(id: number, req: SetLineupRequest): Promise<SpielbogenSlotResponse[]> {
+  return request<SpielbogenSlotResponse[]>(`/spielbogen/${id}/lineup`, {
+    method: 'PUT',
+    body: JSON.stringify(req)
+  })
+}
+
+export async function updateSpielbogenSlot(id: number, slotId: number, req: UpdateSlotRequest): Promise<SpielbogenSlotResponse> {
+  return request<SpielbogenSlotResponse>(`/spielbogen/${id}/slots/${slotId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(req)
+  })
+}
+
+export async function copySpielbogenLineupFromGameDay(id: number, req: CopyFromGameDayRequest): Promise<SpielbogenSlotResponse[]> {
+  return request<SpielbogenSlotResponse[]>(`/spielbogen/${id}/lineup/copy-from-gameday`, {
+    method: 'POST',
+    body: JSON.stringify(req)
+  })
+}
 
