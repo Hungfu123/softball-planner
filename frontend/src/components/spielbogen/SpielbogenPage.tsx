@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
+import { Flag, RotateCcw } from 'lucide-react'
 import { useSpielbogenScoring } from '@/hooks/useSpielbogenScoring'
 import { useToastContext } from '@/components/layout/Layout'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
-import { BogenScoreboard } from './BogenScoreboard'
+import { ChevronLeft } from '@/icons'
 import { BogenSideToggle } from './BogenSideToggle'
 import { BogenDiamondView } from './BogenDiamondView'
 import { BogenActionButtons } from './BogenActionButtons'
+import { BatterCard } from './BatterCard'
 import { LastAtBatPreview } from './LastAtBatPreview'
 import { RflSheetDrawer } from './RflSheetDrawer'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
@@ -22,6 +24,21 @@ import type {
   SpielbogenStealingResponse,
   BogenBaseStateDto,
 } from '@/types'
+
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
+function romanInning(n: number): string { return ROMAN[n] ?? String(n) }
+
+function computeUpcomingSlots(
+  slots: SpielbogenSlotResponse[],
+  currentSlot: SpielbogenSlotResponse | null,
+  count: number = 3,
+): SpielbogenSlotResponse[] {
+  if (!currentSlot || slots.length === 0) return []
+  const sorted = [...slots].sort((a, b) => a.battingOrder - b.battingOrder)
+  const idx = sorted.findIndex(s => s.id === currentSlot.id)
+  if (idx === -1) return []
+  return Array.from({ length: count }, (_, i) => sorted[(idx + i + 1) % sorted.length])
+}
 
 /** Compute outs from at-bats + stealing events for the current inning + side.
  *  STRIKEOUT = 1 out, OUT = 1 out (DOUBLE_PLAY = 2, TRIPLE_PLAY = 3).
@@ -378,6 +395,8 @@ export default function SpielbogenPage() {
   const isDone = meta.status === 'DONE'
   const isLive = meta.status === 'LIVE'
 
+  const upcomingSlots = computeUpcomingSlots(slots, currentSlot)
+
   return (
     <div className="flex flex-col min-h-screen bg-cream-50">
       {/* Inning-switch flash banner */}
@@ -396,30 +415,64 @@ export default function SpielbogenPage() {
       </AnimatePresence>
 
       {/* Nav header */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-cream-100 border-b border-cream-300">
-        <Link to="/spielbogen" className="text-navy-700 hover:text-navy-900 text-sm font-body">
-          ← Spielbogen
-        </Link>
-        {isDone && (
-          <span className="ml-auto font-display text-xs font-bold uppercase tracking-widest text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            Beendet
+      <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md border-b-[3px] border-softball-red-600">
+        <div className="px-3 sm:px-4 h-14 flex items-center gap-2">
+          <Link to="/spielbogen" className="p-1 hover:bg-navy-700 rounded-lg" aria-label="Zurück">
+            <ChevronLeft size={22} />
+          </Link>
+          <Link to="/" className="flex items-center gap-2 shrink-0">
+            <img src="/deadsox.jpeg" alt="Dead Sox" className="w-7 h-7 rounded" />
+          </Link>
+          <div className="flex-1" />
+          <div className="flex items-center gap-1">
+            {isLive && (
+              <button
+                onClick={() => setShowEndConfirm(true)}
+                disabled={submitting}
+                className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                title="Spiel beenden"
+              >
+                <Flag size={14} /> Beenden
+              </button>
+            )}
+            {isDone && (
+              <button
+                onClick={handleReopenGame}
+                disabled={submitting}
+                className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                title="Spiel wieder öffnen"
+              >
+                <RotateCcw size={14} /> Reopen
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Live-State-Strip */}
+      <div className="bg-navy-900 text-white px-4 py-2 flex items-center justify-between border-b-[3px] border-softball-red-600">
+        <div className="flex items-center gap-2.5">
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Inning</span>
+          <span className="font-display text-2xl font-extrabold leading-none">{romanInning(meta.currentInning)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Outs</span>
+          <span className="flex items-center gap-1.5">
+            {[0, 1, 2].map(i => (
+              <span key={i} className={`w-2.5 h-2.5 rounded-full ${i < outs ? 'bg-softball-red-500' : 'bg-white/20'}`} />
+            ))}
           </span>
-        )}
-        {isLive && (
-          <span className="ml-auto font-display text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-            Live
-          </span>
-        )}
+        </div>
       </div>
 
-      {/* Scoreboard */}
-      <BogenScoreboard
-        meta={meta}
-        outs={outs}
-        currentSlotName={currentSlot?.name ?? null}
-        currentSlotPosition={currentSlot?.position ?? null}
-        currentBattingOrder={currentSlot?.battingOrder ?? null}
-      />
+      {/* Score-Block */}
+      <div className="px-4 py-3 bg-cream-50 flex items-center justify-center gap-3 border-b border-cream-300">
+        <span className="font-display text-sm font-bold text-gray-500 uppercase tracking-widest">{meta.homeTeamName}</span>
+        <span className="font-display text-3xl font-extrabold text-navy-800 tabular-nums">{meta.homeRuns}</span>
+        <span className="text-gray-400 text-2xl">—</span>
+        <span className="font-display text-3xl font-extrabold text-softball-red-600 tabular-nums">{meta.awayRuns}</span>
+        <span className="font-display text-sm font-bold text-gray-500 uppercase tracking-widest">{meta.awayTeamName}</span>
+      </div>
 
       {/* Side toggle */}
       <BogenSideToggle
@@ -435,6 +488,11 @@ export default function SpielbogenPage() {
         slots={slots}
         homerunRunner={homerunRunner}
       />
+
+      {/* Batter card — cream bg, below diamond, above action buttons */}
+      {isLive && (
+        <BatterCard currentSlot={currentSlot} upcomingSlots={upcomingSlots} />
+      )}
 
       {/* Action buttons (only for LIVE) */}
       {isLive && (
