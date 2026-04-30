@@ -68,7 +68,7 @@ const router = createBrowserRouter([
       { path: '/spielbogen/new', element: <LazySpielbogenWizard />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
-  { path: '/spielbogen/:id/scoring', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },
+  { path: '/spielbogen/:id', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/export', element: <LineupSheet />, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/scoring/:gameIndex', element: <LazyScoring />, errorElement: <ChunkErrorBoundary /> },
 ])
