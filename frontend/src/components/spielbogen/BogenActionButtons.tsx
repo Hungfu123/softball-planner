@@ -4,6 +4,7 @@ import type { AtBatResult, BogenSide, SpielbogenRecordAtBatRequest, BogenBaseSta
 import { OutDetailDrawer } from './OutDetailDrawer'
 import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { computeBaseStateAdvance } from '@/utils/bogenBaseAdvance'
 
 interface Props {
   side: BogenSide
@@ -47,11 +48,20 @@ export function BogenActionButtons({
     setMode('idle')
     setSubmitting(true)
     try {
+      const advance = computeBaseStateAdvance({
+        before: baseStateAfter,
+        result,
+        outType: extra?.outType,
+        batterSlotId: currentSlotId,
+      })
       await onRecord({
         side,
         slotId: currentSlotId,
         inning,
         result,
+        runsScored: advance.runsScored,
+        rbi: advance.runsScored,
+        baseStateAfter: advance.baseStateAfter,
         ...extra,
       })
     } finally {
@@ -64,11 +74,21 @@ export function BogenActionButtons({
     if (!currentSlotId) return
     setSubmitting(true)
     try {
+      const outResult = (req.result ?? 'OUT') as AtBatResult
+      const advance = computeBaseStateAdvance({
+        before: baseStateAfter,
+        result: outResult,
+        outType: req.outType,
+        batterSlotId: currentSlotId,
+      })
       await onRecord({
         side,
         slotId: currentSlotId,
         inning,
         result: 'OUT',
+        runsScored: advance.runsScored,
+        rbi: advance.runsScored,
+        baseStateAfter: advance.baseStateAfter,
         ...req,
       })
     } finally {

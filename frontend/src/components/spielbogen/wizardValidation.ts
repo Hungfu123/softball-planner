@@ -10,3 +10,10 @@ export function lineupIsValid(homeLineup: SetLineupRequest['slots'], awayLineup:
   const filledAway = awayLineup.filter(s => s.name.trim()).length
   return filledHome >= 9 && filledAway >= 9
 }
+
+export function lineupCounts(homeLineup: SetLineupRequest['slots'], awayLineup: SetLineupRequest['slots']) {
+  return {
+    homeFilled: homeLineup.filter(s => s.name.trim()).length,
+    awayFilled: awayLineup.filter(s => s.name.trim()).length,
+  }
+}

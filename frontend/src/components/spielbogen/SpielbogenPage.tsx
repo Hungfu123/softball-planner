@@ -126,7 +126,6 @@ export default function SpielbogenPage() {
   const handleRecord = async (req: SpielbogenRecordAtBatRequest) => {
     try {
       await recordAtBat(req)
-      // After 3 outs, toast a nudge to switch sides
       let increment = 0
       if (req.result === 'STRIKEOUT') {
         increment = 1
@@ -137,7 +136,12 @@ export default function SpielbogenPage() {
       }
       const projectedOuts = outs + increment
       if (projectedOuts >= 3) {
-        toast.show('3 Outs — andere Mannschaft dran? Side wechseln!')
+        try {
+          await switchSide()
+          toast.show('Inning vorbei — andere Mannschaft schlägt')
+        } catch {
+          // Backend rejected; ignore silently
+        }
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')

@@ -1,24 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { SlotEditor } from './SlotEditor'
 import { Button } from '@/components/shared'
 import { CopyFromGameDayModal } from './CopyFromGameDayModal'
 import type { SetLineupRequest, BogenSide } from '@/types'
-
-type Mode = 'manual' | 'fast'
+import { useState } from 'react'
 
 interface Props {
   homeLineup: SetLineupRequest['slots']
   awayLineup: SetLineupRequest['slots']
   onChange: (side: BogenSide, slots: SetLineupRequest['slots']) => void
 }
-
-const FAST_DEFAULT = (): SetLineupRequest['slots'] =>
-  Array.from({ length: 9 }, (_, i) => ({
-    slot: i + 1,
-    name: `Spieler ${i + 1}`,
-    position: null,
-    battingOrder: i + 1,
-  }))
 
 const EMPTY_LINEUP = (): SetLineupRequest['slots'] =>
   Array.from({ length: 10 }, (_, i) => ({
@@ -30,31 +21,29 @@ const EMPTY_LINEUP = (): SetLineupRequest['slots'] =>
 
 export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
   const [activeSide, setActiveSide] = useState<BogenSide>('HOME')
-  const [mode, setMode] = useState<Record<BogenSide, Mode>>({ HOME: 'manual', AWAY: 'manual' })
   const [showCopy, setShowCopy] = useState(false)
 
   const slots = activeSide === 'HOME' ? homeLineup : awayLineup
 
   // Initialize lineup for the active side when empty — must be in useEffect, not render body,
   // to avoid calling parent setState during render (React warning + potential infinite loops).
-  // onChange and slots.length are intentionally omitted: onChange is a new ref each render from
-  // the parent wizard, and we only want to re-initialize when activeSide or mode changes.
+  // onChange is intentionally omitted: it's a new ref each render from the parent wizard,
+  // and we only want to re-initialize when activeSide changes.
   useEffect(() => {
     if (slots.length === 0) {
-      const initial = mode[activeSide] === 'fast' ? FAST_DEFAULT() : EMPTY_LINEUP()
-      onChange(activeSide, initial)
+      onChange(activeSide, EMPTY_LINEUP())
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSide, mode])
+  }, [activeSide])
 
-  const setFastMode = () => {
-    setMode(m => ({ ...m, [activeSide]: 'fast' }))
-    onChange(activeSide, FAST_DEFAULT())
-  }
-
-  const setManualMode = () => {
-    setMode(m => ({ ...m, [activeSide]: 'manual' }))
-    onChange(activeSide, EMPTY_LINEUP())
+  const fillEmptyPlaceholders = () => {
+    const filled = slots.map(s => {
+      if (s.name.trim() === '' && s.slot <= 9) {
+        return { ...s, name: `Spieler ${s.slot}` }
+      }
+      return s
+    })
+    onChange(activeSide, filled)
   }
 
   return (
@@ -80,18 +69,11 @@ export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
 
       <div className="flex gap-2 text-xs flex-wrap">
         <Button
-          variant={mode[activeSide] === 'manual' ? 'secondary' : 'ghost'}
+          variant="ghost"
           size="sm"
-          onClick={setManualMode}
+          onClick={fillEmptyPlaceholders}
         >
-          Manuell
-        </Button>
-        <Button
-          variant={mode[activeSide] === 'fast' ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={setFastMode}
-        >
-          Schnell-Modus
+          ▶ Schnell befüllen
         </Button>
         <Button
           variant="ghost"
@@ -112,4 +94,3 @@ export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
     </div>
   )
 }
-

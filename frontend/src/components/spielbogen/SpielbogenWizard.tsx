@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button, ConfirmModal } from '@/components/shared'
 import { WizardStepMeta } from './WizardStepMeta'
 import { WizardStepLineup } from './WizardStepLineup'
-import { metaIsValid, lineupIsValid } from './wizardValidation'
+import { metaIsValid, lineupIsValid, lineupCounts } from './wizardValidation'
 import { WizardStepReview } from './WizardStepReview'
 import { useToastContext } from '@/components/layout/Layout'
 import { saveDraft, loadDraft, clearDraft, type WizardDraft } from '@/utils/spielbogenDraft'
@@ -98,23 +98,36 @@ export default function SpielbogenWizard() {
       {step === 2 && <WizardStepLineup homeLineup={homeLineup} awayLineup={awayLineup} onChange={updateLineup} />}
       {step === 3 && <WizardStepReview meta={meta} homeLineup={homeLineup} awayLineup={awayLineup} />}
 
-      <div className="flex justify-between gap-2 pt-2 border-t border-cream-300">
-        {step > 1 ? (
-          <Button variant="ghost" onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}>← Zurück</Button>
-        ) : (
-          <Button variant="ghost" onClick={() => navigate('/spielbogen')}>Abbrechen</Button>
-        )}
+      <div className="pt-2 border-t border-cream-300 space-y-2">
+        <div className="flex justify-between gap-2">
+          {step > 1 ? (
+            <Button variant="ghost" onClick={() => setStep((s) => (s - 1) as 1 | 2 | 3)}>← Zurück</Button>
+          ) : (
+            <Button variant="ghost" onClick={() => navigate('/spielbogen')}>Abbrechen</Button>
+          )}
 
-        {step === 1 && (
-          <Button variant="secondary" disabled={!canAdvanceStep1} onClick={() => setStep(2)}>Weiter →</Button>
-        )}
-        {step === 2 && (
-          <Button variant="secondary" disabled={!canAdvanceStep2} onClick={() => setStep(3)}>Weiter →</Button>
-        )}
-        {step === 3 && (
-          <div className="flex gap-2">
-            <Button variant="secondary" disabled={submitting} onClick={handleSaveDraft}>Als Entwurf speichern</Button>
-            <Button variant="primary" disabled={submitting} onClick={handleStartScoring}>Speichern + Scoren</Button>
+          {step === 1 && (
+            <Button variant="secondary" disabled={!canAdvanceStep1} onClick={() => setStep(2)}>Weiter →</Button>
+          )}
+          {step === 2 && (
+            <Button variant="secondary" disabled={!canAdvanceStep2} onClick={() => setStep(3)}>Weiter →</Button>
+          )}
+          {step === 3 && (
+            <div className="flex gap-2">
+              <Button variant="secondary" disabled={submitting} onClick={handleSaveDraft}>Als Entwurf speichern</Button>
+              <Button variant="primary" disabled={submitting} onClick={handleStartScoring}>Speichern + Scoren</Button>
+            </div>
+          )}
+        </div>
+        {step === 2 && !canAdvanceStep2 && (
+          <div className="text-xs text-amber-700 text-center">
+            {(() => {
+              const { homeFilled, awayFilled } = lineupCounts(homeLineup, awayLineup)
+              const missing: string[] = []
+              if (homeFilled < 9) missing.push(`Heim ${homeFilled}/9`)
+              if (awayFilled < 9) missing.push(`Gast ${awayFilled}/9`)
+              return `Fehlt: ${missing.join(' · ')}`
+            })()}
           </div>
         )}
       </div>
