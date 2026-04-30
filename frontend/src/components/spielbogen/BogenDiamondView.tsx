@@ -1,3 +1,5 @@
+import { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'motion/react'
 import type { BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
 
 interface Props {
@@ -5,6 +7,7 @@ interface Props {
   slots: SpielbogenSlotResponse[]
 }
 
+// Positions im 220x220 viewBox (gleich wie DiamondView)
 const POS = {
   home: { cx: 110, cy: 185 },
   first: { cx: 178, cy: 110 },
@@ -16,26 +19,89 @@ function truncate(name: string, max = 6): string {
   return name.length > max ? name.slice(0, max - 1) + '…' : name
 }
 
-function BaseMarker({ pos, label, slotId, slots }: {
-  pos: { cx: number; cy: number }
-  label: string
-  slotId: number | null | undefined
-  slots: SpielbogenSlotResponse[]
-}) {
-  const occupied = slotId != null
-  const slot = slotId != null ? slots.find(s => s.id === slotId) : null
+function posForIndex(i: number) {
+  if (i === 0) return POS.home
+  if (i === 1) return POS.first
+  if (i === 2) return POS.second
+  if (i === 3) return POS.third
+  return POS.home
+}
+
+interface RunnerData {
+  slotId: number
+  name: string
+  battingOrder: number
+  base: 1 | 2 | 3
+}
+
+function Runner({ r }: { r: RunnerData }) {
+  const [lastBase, setLastBase] = useState<number>(0)
+
+  const waypoints = useMemo(() => {
+    const xs: number[] = []
+    const ys: number[] = []
+    const start = Math.min(lastBase, r.base)
+    const end = Math.max(lastBase, r.base)
+    for (let b = start; b <= end; b++) {
+      const pos = posForIndex(b)
+      xs.push(pos.cx)
+      ys.push(pos.cy)
+    }
+    if (lastBase > r.base) { xs.reverse(); ys.reverse() }
+    return { xs, ys }
+  }, [r.base, lastBase])
+
+  const distance = Math.abs(r.base - lastBase)
+  const hasKeyframes = waypoints.xs.length > 1
 
   return (
+    <motion.g
+      initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+        x: hasKeyframes ? waypoints.xs : waypoints.xs[0],
+        y: hasKeyframes ? waypoints.ys : waypoints.ys[0],
+      }}
+      exit={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+      transition={{
+        duration: 0.3 + Math.max(1, distance) * 0.25,
+        ease: 'easeInOut',
+      }}
+      onAnimationComplete={() => { if (lastBase !== r.base) setLastBase(r.base) }}
+    >
+      <circle cx={0} cy={0} r="18" fill="#172554" stroke="#fff" strokeWidth="2" />
+      <text x={0} y={-4} textAnchor="middle" fontSize="8" fontWeight="700" fill="white" style={{ pointerEvents: 'none' }}>
+        #{r.battingOrder}
+      </text>
+      <text x={0} y={7} textAnchor="middle" fontSize="7" fontWeight="600" fill="white" style={{ pointerEvents: 'none' }}>
+        {truncate(r.name)}
+      </text>
+    </motion.g>
+  )
+}
+
+interface StaticBaseProps {
+  pos: { cx: number; cy: number }
+  label: string
+  occupied: boolean
+}
+
+function StaticBase({ pos, label, occupied }: StaticBaseProps) {
+  return (
     <g>
-      <rect
+      <motion.rect
         x={pos.cx - 14}
         y={pos.cy - 14}
         width="28"
         height="28"
         rx="3"
         transform={`rotate(45 ${pos.cx} ${pos.cy})`}
-        fill={occupied ? '#dc2626' : 'none'}
-        stroke={occupied ? '#b91c1c' : '#9ca3af'}
+        animate={{
+          fill: occupied ? '#dc2626' : 'rgba(0,0,0,0)',
+          stroke: occupied ? '#b91c1c' : '#9ca3af',
+        }}
+        transition={{ duration: 0.3 }}
         strokeWidth="1.5"
       />
       {!occupied && (
@@ -43,21 +109,28 @@ function BaseMarker({ pos, label, slotId, slots }: {
           {label}
         </text>
       )}
-      {occupied && slot && (
-        <>
-          <text x={pos.cx} y={pos.cy - 4} textAnchor="middle" fontSize="7" fontWeight="700" fill="white">
-            #{slot.battingOrder}
-          </text>
-          <text x={pos.cx} y={pos.cy + 6} textAnchor="middle" fontSize="7" fontWeight="600" fill="white">
-            {truncate(slot.name)}
-          </text>
-        </>
-      )}
     </g>
   )
 }
 
 export function BogenDiamondView({ baseState, slots }: Props) {
+  const runners: RunnerData[] = useMemo(() => {
+    if (!baseState) return []
+    const result: RunnerData[] = []
+    const pairs: Array<{ slotId: number | null | undefined; base: 1 | 2 | 3 }> = [
+      { slotId: baseState.firstSlotId, base: 1 },
+      { slotId: baseState.secondSlotId, base: 2 },
+      { slotId: baseState.thirdSlotId, base: 3 },
+    ]
+    for (const { slotId, base } of pairs) {
+      if (slotId == null) continue
+      const slot = slots.find(s => s.id === slotId)
+      if (!slot) continue
+      result.push({ slotId, name: slot.name, battingOrder: slot.battingOrder, base })
+    }
+    return result
+  }, [baseState, slots])
+
   return (
     <div className="flex justify-center py-2">
       <svg viewBox="0 0 220 220" className="w-full max-w-[280px]">
@@ -74,9 +147,9 @@ export function BogenDiamondView({ baseState, slots }: Props) {
         />
 
         {/* Bases */}
-        <BaseMarker pos={POS.first} label="1B" slotId={baseState?.firstSlotId} slots={slots} />
-        <BaseMarker pos={POS.second} label="2B" slotId={baseState?.secondSlotId} slots={slots} />
-        <BaseMarker pos={POS.third} label="3B" slotId={baseState?.thirdSlotId} slots={slots} />
+        <StaticBase pos={POS.first} label="1B" occupied={baseState?.firstSlotId != null} />
+        <StaticBase pos={POS.second} label="2B" occupied={baseState?.secondSlotId != null} />
+        <StaticBase pos={POS.third} label="3B" occupied={baseState?.thirdSlotId != null} />
 
         {/* Home plate */}
         <polygon
@@ -92,6 +165,13 @@ export function BogenDiamondView({ baseState, slots }: Props) {
         <text x={POS.home.cx} y={POS.home.cy + 24} textAnchor="middle" fontSize="8" fill="#9ca3af">
           Home
         </text>
+
+        {/* Animated runners */}
+        <AnimatePresence>
+          {runners.map(r => (
+            <Runner key={r.slotId} r={r} />
+          ))}
+        </AnimatePresence>
       </svg>
     </div>
   )

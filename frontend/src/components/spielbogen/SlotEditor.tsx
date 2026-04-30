@@ -48,9 +48,18 @@ export function SlotEditor({ slots, onChange }: Props) {
             className="bg-cream-50 border border-cream-300 rounded-md px-2 py-1.5 text-sm font-medium text-navy-900 focus:border-navy-600 outline-none cursor-pointer"
           >
             <option value="">—</option>
-            {POSITION_OPTIONS.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
+            {(() => {
+              const usedPositions = new Set(
+                slots
+                  .filter((other, i) => i !== idx && other.position && other.position !== 'EH' && other.position !== 'DH')
+                  .map(other => other.position)
+              )
+              return POSITION_OPTIONS.filter(p =>
+                p === 'EH' || p === 'DH' || !usedPositions.has(p) || p === s.position
+              ).map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))
+            })()}
           </select>
         </div>
       ))}
