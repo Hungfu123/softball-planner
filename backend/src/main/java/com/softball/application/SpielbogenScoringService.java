@@ -67,13 +67,10 @@ public class SpielbogenScoringService {
             throw new BusinessValidationException("runsScored muss >= 0 sein");
         }
 
-        Integer nextSeq = atBatRepo.findMaxSequenceForBogenSide(bogenId, side) + 1;
-
         SpielbogenAtBat atBat = new SpielbogenAtBat();
         atBat.setBogen(bogen);
         atBat.setSlot(slot);
         atBat.setSide(side);
-        atBat.setSequence(nextSeq);
         atBat.setInning(inning);
         atBat.setResult(result);
         atBat.setOutType(outType);
@@ -84,7 +81,22 @@ public class SpielbogenScoringService {
         atBat.setRbi(rbi != null ? rbi : 0);
         atBat.setBaseStateAfter(baseStateAfter != null ? baseStateAfter : BogenBaseState.empty());
 
-        SpielbogenAtBat saved = atBatRepo.save(atBat);
+        // Retry on concurrent sequence collision (UNIQUE constraint on bogen+side+sequence)
+        SpielbogenAtBat saved;
+        int retries = 0;
+        while (true) {
+            try {
+                Integer nextSeq = atBatRepo.findMaxSequenceForBogenSide(bogenId, side) + 1;
+                atBat.setSequence(nextSeq);
+                saved = atBatRepo.save(atBat);
+                break;
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                if (++retries > 3) {
+                    throw e;
+                }
+                log.warn("Spielbogen {} AtBat: sequence collision, retry {}", bogenId, retries);
+            }
+        }
 
         if (saved.getRunsScored() != null && saved.getRunsScored() > 0) {
             if (side == BogenSide.HOME) {
@@ -96,7 +108,7 @@ public class SpielbogenScoringService {
         }
 
         log.info("Spielbogen {} AtBat: side={} inning={} result={} seq={}",
-                 bogenId, side, inning, result, nextSeq);
+                 bogenId, side, inning, result, saved.getSequence());
         return saved;
     }
 

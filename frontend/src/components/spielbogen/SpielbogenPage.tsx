@@ -12,19 +12,35 @@ import { BogenActionButtons } from './BogenActionButtons'
 import { LastAtBatPreview } from './LastAtBatPreview'
 import { RflSheetDrawer } from './RflSheetDrawer'
 import * as api from '@/api/client'
-import type { SpielbogenRecordAtBatRequest, BogenSide, SpielbogenSlotResponse } from '@/types'
+import type { SpielbogenRecordAtBatRequest, BogenSide, SpielbogenSlotResponse, SpielbogenAtBatResponse, SpielbogenStealingResponse } from '@/types'
 
-/** Compute outs from at-bats for the current inning + side. */
+/** Compute outs from at-bats + stealing events for the current inning + side.
+ *  STRIKEOUT = 1 out, OUT = 1 out (DOUBLE_PLAY = 2, TRIPLE_PLAY = 3).
+ *  Errors (isError=true) do NOT count as outs.
+ *  CAUGHT_STEALING / OUT_ON_PLAY stealing events count as 1 out each.
+ */
 function computeOuts(
-  atBats: import('@/types').SpielbogenAtBatResponse[],
+  atBats: SpielbogenAtBatResponse[],
+  stealings: SpielbogenStealingResponse[],
   inning: number,
   side: BogenSide
 ): number {
-  return atBats.filter(ab =>
-    ab.inning === inning &&
-    ab.side === side &&
-    ab.result === 'OUT'
-  ).length
+  const atBatOuts = atBats
+    .filter(ab => ab.inning === inning && ab.side === side && !ab.isError)
+    .reduce((sum, ab) => {
+      if (ab.result === 'STRIKEOUT') return sum + 1
+      if (ab.result === 'OUT') {
+        if (ab.outType === 'DOUBLE_PLAY') return sum + 2
+        if (ab.outType === 'TRIPLE_PLAY') return sum + 3
+        return sum + 1
+      }
+      return sum
+    }, 0)
+  const stealingOuts = stealings
+    .filter(st => st.inning === inning && st.side === side
+                  && (st.type === 'CAUGHT_STEALING' || st.type === 'OUT_ON_PLAY'))
+    .length
+  return atBatOuts + stealingOuts
 }
 
 /** Find the next batter slot (round-robin by battingOrder). */
@@ -90,7 +106,7 @@ export default function SpielbogenPage() {
   const atBats = currentSide === 'HOME' ? homeAtBats : awayAtBats
   const allAtBats = [...homeAtBats, ...awayAtBats]
 
-  const outs = computeOuts(atBats, meta.currentInning, currentSide)
+  const outs = computeOuts(atBats, sheet.stealingEvents, meta.currentInning, currentSide)
 
   // Current batter
   const currentSlot = resolveCurrentSlot(slots, atBats, meta.currentInning, currentSide)
@@ -111,8 +127,16 @@ export default function SpielbogenPage() {
     try {
       await recordAtBat(req)
       // After 3 outs, toast a nudge to switch sides
-      const newOuts = outs + (req.result === 'OUT' ? 1 : 0)
-      if (newOuts >= 3) {
+      let increment = 0
+      if (req.result === 'STRIKEOUT') {
+        increment = 1
+      } else if (req.result === 'OUT' && !req.isError) {
+        if (req.outType === 'DOUBLE_PLAY') increment = 2
+        else if (req.outType === 'TRIPLE_PLAY') increment = 3
+        else increment = 1
+      }
+      const projectedOuts = outs + increment
+      if (projectedOuts >= 3) {
         toast.show('3 Outs — andere Mannschaft dran? Side wechseln!')
       }
     } catch (e) {

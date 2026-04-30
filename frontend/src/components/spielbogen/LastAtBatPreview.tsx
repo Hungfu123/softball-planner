@@ -24,22 +24,33 @@ const KLARTEXT: Record<string, string> = {
   'FOUL': 'Foul Out',
 }
 
+const POS_NAMES: Record<string, string> = {
+  '1': 'P', '2': 'C', '3': '1B', '4': '2B', '5': '3B', '6': 'SS',
+  '7': 'LF', '8': 'CF', '9': 'RF',
+}
+
 function klartext(label: string): string {
+  if (!label) return ''
+  // Exact match
   if (KLARTEXT[label]) return KLARTEXT[label]
-  // Grounder patterns like "6-3"
-  if (/^\d-\d/.test(label)) {
+  // Fly Out patterns: F1–F9
+  if (/^F[1-9]$/.test(label)) {
+    const pos = label[1]
+    return `Fly Out, gefangen von ${POS_NAMES[pos] ?? `Pos ${pos}`}`
+  }
+  // Error patterns: E3, E6 etc.
+  if (/^E[1-9]$/.test(label)) return `Error bei Position ${label.slice(1)}`
+  // Triple play
+  if (label.endsWith(' TP')) return `Triple Play (${label.replace(' TP', '')})`
+  // Double play
+  if (label.endsWith(' DP')) return `Double Play (${label.replace(' DP', '')})`
+  // Grounder patterns like "6-3" or "6-4-3 DP"
+  if (/^\d[-\d]/.test(label)) {
     const [from] = label.split('-')
-    const POS_NAMES: Record<string, string> = {
-      '1': 'P', '2': 'C', '3': '1B', '4': '2B', '5': '3B', '6': 'SS',
-      '7': 'LF', '8': 'CF', '9': 'RF',
-    }
     const fromName = POS_NAMES[from] ?? `Pos ${from}`
     return `Grounder von ${fromName}`
   }
-  // Error patterns: E3, E6 etc.
-  if (/^E\d/.test(label)) return `Error bei Position ${label.slice(1)}`
-  // Double play
-  if (label.endsWith(' DP')) return `Double Play (${label.replace(' DP', '')})`
+  // Fallback: show notation as-is
   return label
 }
 
