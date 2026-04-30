@@ -260,7 +260,6 @@ export default function SpielbogenPage() {
         if (req.result !== 'HOMERUN' && req.result !== 'HIT_BY_PITCH' && req.result !== 'WALK') {
           const runsScored = req.runsScored ?? 0
           const isHit = req.result === 'SINGLE' || req.result === 'DOUBLE' || req.result === 'TRIPLE'
-          const hitLabel = req.result === 'SINGLE' ? 'Single' : req.result === 'DOUBLE' ? 'Double' : req.result === 'TRIPLE' ? 'Triple' : null
           const hadRunners = displayBaseState.firstSlotId != null || displayBaseState.secondSlotId != null || displayBaseState.thirdSlotId != null
           if (runsScored > 0 || (isHit && hadRunners)) {
             // Build scored runner names from previous base state
