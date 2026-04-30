@@ -171,6 +171,7 @@ export function BogenActionButtons({
         open={showOutDrawer}
         onClose={() => setShowOutDrawer(false)}
         onSubmit={handleOutSubmit}
+        baseStateAfter={baseStateAfter}
       />
 
       {/* Cheatsheet drawer */}

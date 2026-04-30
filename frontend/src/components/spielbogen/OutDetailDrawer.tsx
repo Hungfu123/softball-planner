@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Drawer } from 'vaul'
-import type { SpielbogenRecordAtBatRequest } from '@/types'
+import type { SpielbogenRecordAtBatRequest, BogenBaseStateDto } from '@/types'
 
 interface Props {
   open: boolean
   onClose: () => void
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
+  baseStateAfter: BogenBaseStateDto | null
 }
 
 const POSITION_NAMES: Record<number, string> = {
@@ -28,11 +29,12 @@ const FIELD_POSITIONS: Array<{ pos: number; cx: number; cy: number }> = [
 
 interface InfieldOptionsProps {
   fielder: number
+  hasRunners: boolean
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   onBack: () => void
 }
 
-function InfieldOptionsView({ fielder, onSubmit, onBack }: InfieldOptionsProps) {
+function InfieldOptionsView({ fielder, hasRunners, onSubmit, onBack }: InfieldOptionsProps) {
   const defaultThrow = 3
   const defaultDpPartner = fielder === 6 ? 4 : defaultThrow
 
@@ -56,7 +58,7 @@ function InfieldOptionsView({ fielder, onSubmit, onBack }: InfieldOptionsProps) 
         fielderChain: [fielder],
       }),
     },
-    {
+    ...(hasRunners ? [{
       label: `Double Play (${fielder}-${defaultDpPartner}-3)`,
       description: 'Doppelspiel',
       action: () => onSubmit({
@@ -64,7 +66,7 @@ function InfieldOptionsView({ fielder, onSubmit, onBack }: InfieldOptionsProps) 
         outType: 'DOUBLE_PLAY',
         fielderChain: [fielder, defaultDpPartner, 3],
       }),
-    },
+    }] : []),
     {
       label: `Error E${fielder}`,
       description: 'Fehler beim Fielder',
@@ -105,8 +107,14 @@ function InfieldOptionsView({ fielder, onSubmit, onBack }: InfieldOptionsProps) 
   )
 }
 
-export function OutDetailDrawer({ open, onClose, onSubmit }: Props) {
+export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
+
+  const runnersOnBase = baseStateAfter != null && (
+    baseStateAfter.firstSlotId != null ||
+    baseStateAfter.secondSlotId != null ||
+    baseStateAfter.thirdSlotId != null
+  )
 
   const handleFielderTap = (pos: number) => {
     if (pos >= 7) {
@@ -218,6 +226,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit }: Props) {
             ) : (
               <InfieldOptionsView
                 fielder={selectedFielder}
+                hasRunners={runnersOnBase}
                 onSubmit={handleInfieldSubmit}
                 onBack={() => setSelectedFielder(null)}
               />

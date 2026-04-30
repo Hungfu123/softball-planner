@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useSpielbogenScoring } from '@/hooks/useSpielbogenScoring'
 import { useToastContext } from '@/components/layout/Layout'
@@ -11,6 +11,7 @@ import { BogenDiamondView } from './BogenDiamondView'
 import { BogenActionButtons } from './BogenActionButtons'
 import { LastAtBatPreview } from './LastAtBatPreview'
 import { RflSheetDrawer } from './RflSheetDrawer'
+import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import * as api from '@/api/client'
 import type { SpielbogenRecordAtBatRequest, BogenSide, SpielbogenSlotResponse, SpielbogenAtBatResponse, SpielbogenStealingResponse } from '@/types'
 
@@ -84,6 +85,15 @@ export default function SpielbogenPage() {
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // Auto-open sheet drawer when game transitions to DONE
+  const prevStatusRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (sheet?.meta.status === 'DONE' && prevStatusRef.current === 'LIVE') {
+      setShowSheet(true)
+    }
+    if (sheet?.meta.status) prevStatusRef.current = sheet.meta.status
+  }, [sheet?.meta.status])
 
   if (loading && !sheet) return <LoadingSkeleton />
 
@@ -283,6 +293,43 @@ export default function SpielbogenPage() {
           onEndGame={() => setShowEndConfirm(true)}
           canEndGame={isLive}
         />
+      )}
+
+      {/* Game-End-Card (only for DONE) */}
+      {!isLive && isDone && (
+        <div className="mx-4 my-4 bg-cream-50 border border-cream-300 rounded-2xl p-6 space-y-4 text-center">
+          <h2 className="font-display text-2xl font-extrabold tracking-wide uppercase text-navy-900">
+            Spiel beendet
+          </h2>
+          <div className="font-display text-3xl font-extrabold text-navy-900">
+            <span>{meta.homeTeamName}</span>
+            <span className="text-softball-red-600 mx-2">{meta.homeRuns}</span>
+            <span className="text-gray-400">:</span>
+            <span className="text-softball-red-600 mx-2">{meta.awayRuns}</span>
+            <span>{meta.awayTeamName}</span>
+          </div>
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowSheet(true)}
+              className="w-full font-display py-3 rounded-xl bg-navy-800 text-white font-extrabold tracking-widest uppercase hover:bg-navy-900 cursor-pointer"
+            >
+              📋 Spielbogen anzeigen
+            </button>
+            <button
+              onClick={() => generateSpielbogenPdf(sheet)}
+              className="w-full font-display py-3 rounded-xl bg-cream-100 border border-cream-300 text-navy-800 font-bold tracking-widest uppercase hover:bg-cream-200 cursor-pointer"
+            >
+              📄 Als PDF exportieren
+            </button>
+            <button
+              onClick={handleReopenGame}
+              disabled={submitting}
+              className="w-full font-display py-2 rounded-xl text-gray-500 text-xs font-bold tracking-widest uppercase hover:text-gray-700 cursor-pointer disabled:opacity-50"
+            >
+              ↻ Spiel wieder öffnen
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Last at-bat + Undo */}
