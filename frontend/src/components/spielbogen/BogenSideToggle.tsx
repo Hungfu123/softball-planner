@@ -3,11 +3,14 @@ import type { BogenSide } from '@/types'
 interface Props {
   currentSide: BogenSide
   outs: number
+  homeTeamName: string
+  awayTeamName: string
   onSwitchSide: () => void
   disabled?: boolean
 }
 
-export function BogenSideToggle({ currentSide, onSwitchSide, disabled }: Props) {
+export function BogenSideToggle({ currentSide, homeTeamName, awayTeamName, onSwitchSide, disabled }: Props) {
+  const battingTeam = currentSide === 'HOME' ? homeTeamName : awayTeamName
   return (
     <div className="flex items-center justify-center gap-1 p-2 bg-cream-100 border-b border-cream-300">
       <div className="flex rounded-full border border-cream-300 bg-white overflow-hidden shadow-sm">
@@ -34,8 +37,8 @@ export function BogenSideToggle({ currentSide, onSwitchSide, disabled }: Props) 
           Gast
         </button>
       </div>
-      <span className="text-xs text-gray-500 font-body ml-2">
-        {currentSide === 'HOME' ? 'Heimmannschaft schlägt' : 'Gastmannschaft schlägt'}
+      <span className="text-xs text-gray-500 font-body ml-2 truncate">
+        <span className="font-semibold text-navy-800">{battingTeam}</span> schlägt
       </span>
     </div>
   )

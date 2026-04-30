@@ -491,6 +491,8 @@ export default function SpielbogenPage() {
       <BogenSideToggle
         currentSide={currentSide}
         outs={outs}
+        homeTeamName={meta.homeTeamName}
+        awayTeamName={meta.awayTeamName}
         onSwitchSide={handleSideToggleClick}
         disabled={submitting || isDone}
       />
