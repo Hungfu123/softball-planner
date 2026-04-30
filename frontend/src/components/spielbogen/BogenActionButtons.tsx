@@ -80,21 +80,29 @@ export function BogenActionButtons({
     if (!currentSlotId) return
     setSubmitting(true)
     try {
-      const outResult = (req.result ?? 'OUT') as AtBatResult
-      const advance = computeBaseStateAdvance({
-        before: baseStateAfter,
-        result: outResult,
-        outType: req.outType,
-        batterSlotId: currentSlotId,
-      })
+      let resolvedBaseState = req.baseStateAfter
+      let runsScored = req.runsScored ?? 0
+      let rbi = req.rbi ?? 0
+      if (!resolvedBaseState) {
+        const outResult = (req.result ?? 'OUT') as AtBatResult
+        const advance = computeBaseStateAdvance({
+          before: baseStateAfter,
+          result: outResult,
+          outType: req.outType,
+          batterSlotId: currentSlotId,
+        })
+        resolvedBaseState = advance.baseStateAfter
+        runsScored = advance.runsScored
+        rbi = advance.runsScored
+      }
       await onRecord({
         side,
         slotId: currentSlotId,
         inning,
         result: 'OUT',
-        runsScored: advance.runsScored,
-        rbi: advance.runsScored,
-        baseStateAfter: advance.baseStateAfter,
+        runsScored,
+        rbi,
+        baseStateAfter: resolvedBaseState,
         ...req,
       })
     } finally {
@@ -178,6 +186,7 @@ export function BogenActionButtons({
         onClose={() => setShowOutDrawer(false)}
         onSubmit={handleOutSubmit}
         baseStateAfter={baseStateAfter}
+        slots={slots}
       />
 
       {/* Stealing drawer */}
