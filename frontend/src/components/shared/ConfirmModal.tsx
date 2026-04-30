@@ -5,11 +5,12 @@ interface Props {
   title: string
   message: string
   confirmLabel?: string
+  cancelLabel?: string
   onConfirm: () => void
   onCancel: () => void
 }
 
-export function ConfirmModal({ title, message, confirmLabel = 'Löschen', onConfirm, onCancel }: Props) {
+export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancelLabel = 'Abbrechen', onConfirm, onCancel }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', onConf
             onClick={onCancel}
             className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
           >
-            Abbrechen
+            {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
