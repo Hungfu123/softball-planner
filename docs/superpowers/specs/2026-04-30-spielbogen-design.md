@@ -42,7 +42,7 @@ domain/
 │   ├── BogenSide (enum: HOME, AWAY)
 │   ├── BogenStatus (enum: DRAFT, LIVE, DONE)
 │   └── OutType (enum: GROUNDER, FLY, FOUL, UNASSISTED,
-│                       DOUBLE_PLAY, FORCE_OUT, TAG_OUT)
+│                       DOUBLE_PLAY, TRIPLE_PLAY, FORCE_OUT, TAG_OUT)
 ├── port/out/
 │   ├── SpielbogenRepository
 │   ├── SpielbogenSlotRepository
@@ -179,7 +179,7 @@ CREATE TABLE spielbogen_at_bat (
     ),
     CONSTRAINT spielbogen_atbat_outtype_when_out CHECK (
         (result = 'OUT' AND (out_type IS NULL OR out_type IN
-            ('GROUNDER','FLY','FOUL','UNASSISTED','DOUBLE_PLAY','FORCE_OUT','TAG_OUT')))
+            ('GROUNDER','FLY','FOUL','UNASSISTED','DOUBLE_PLAY','TRIPLE_PLAY','FORCE_OUT','TAG_OUT')))
         OR (result != 'OUT' AND out_type IS NULL)
     ),
     CONSTRAINT spielbogen_atbat_error_pos_range CHECK (
@@ -265,6 +265,11 @@ DELETE /api/spielbogen/{id}                         → 204
 # Status-Transitions
 POST   /api/spielbogen/{id}/start                   → SpielbogenResponse
 POST   /api/spielbogen/{id}/end                     → SpielbogenResponse
+                                                       Body (optional): { homeRuns?, awayRuns? }
+                                                       (Override aggregierter Score für Time-Cap-Korrektur)
+POST   /api/spielbogen/{id}/switch-side              → SpielbogenResponse
+                                                       (User bestätigt Side-Wechsel nach 3 Outs;
+                                                        Backend flippt currentSide + ggf. currentInning)
 POST   /api/spielbogen/{id}/reopen                  → SpielbogenResponse
 POST   /api/spielbogen/{id}/register-league-result  → LeagueResultResponse
 
@@ -312,12 +317,36 @@ GET    /api/spielbogen/{id}/sheet                   → BogenSheetResponse
 - Sequence wird auto-vergeben (max+1 für Side)
 - Auto-Update: `homeRuns`/`awayRuns` += `runsScored`, ggf. Auto-Side-Switch
 
-**Auto-Side-Switch-Logik:**
-- Nach jedem AtBat zählt Service Outs in current Inning + current Side
-- Bei 3 Outs erreicht: `currentSide` flippen
-- Wenn beide Sides je 3 Outs in selber Inning hatten: `currentInning += 1`
-- Frontend zeigt Toast "Inning-Wechsel · andere Mannschaft schlägt"
-- User kann manuell zurücktoggeln
+**Side-Switch-Logik (soft, mit User-Bestätigung):**
+- Nach jedem AtBat oder StealingEvent berechnet Backend Outs in current Inning + current Side
+- Bei ≥3 Outs: Backend setzt `currentSide` **nicht** automatisch um, gibt aber `inningEnded: true` flag in der Response zurück
+- Frontend zeigt Toast: "Inning-Wechsel · andere Mannschaft schlägt? [Bestätigen]" — Tap → ruft `POST /api/spielbogen/{id}/switch-side` auf
+- Wenn User keinen Switch will (z.B. Korrektur in selber Inning): bleibt auf current Side, kann weiter scoren (4. Out wird akzeptiert, fließt in Notation aber zählt nicht doppelt)
+- Wenn beide Sides je ≥3 Outs in selber Inning bestätigt hatten: nächster Switch erhöht `currentInning += 1`
+- Begründung: Edge-Cases (Stealing+Strikeout gleichzeitig, Out-Korrekturen) brauchen Flexibilität. Force-Auto-Switch wäre brittle.
+
+**Manuelle Side-Toggle:**
+- Frei bei Outs < 3
+- Wenn Out-Counter == 3: Toast/Modal "Inning mit 3 Outs zu Ende. Letzten Eintrag rückgängig machen oder einfach wechseln?" → 2 Buttons "Undo + Switch" / "Nur Switch"
+- Erlaubt User: Korrektur (mit Undo) oder akzeptiertes Inning-Ende (nur Switch)
+
+**Undo-Logik:**
+- `DELETE /at-bats/last` rollt komplett zurück: AtBat löschen + `currentSide`/`currentInning` neu aggregiert + `homeRuns`/`awayRuns` neu aus verbleibenden AtBats berechnet
+- Implementierung: Service löscht AtBat, dann ruft `recomputeBogenState()` auf — re-aggregiert alle Outs+Runs+InningHistory aus verbleibenden Events
+
+**Out-Counting-Regeln (welche Events erhöhen Out-Counter):**
+
+| Event | Out-Increment |
+|-------|---------------|
+| AtBat result=STRIKEOUT | +1 |
+| AtBat result=OUT, outType ∈ {GROUNDER, FLY, FOUL, UNASSISTED, FORCE_OUT, TAG_OUT, NULL} | +1 |
+| AtBat result=OUT, outType=DOUBLE_PLAY | +2 |
+| AtBat result=OUT, outType=TRIPLE_PLAY | +3 |
+| AtBat mit isError=true | 0 (Error = Spieler kommt auf Base) |
+| AtBat result ∈ {SINGLE, DOUBLE, TRIPLE, HOMERUN, WALK, HIT_BY_PITCH} | 0 |
+| StealingEvent type=CAUGHT_STEALING | +1 |
+| StealingEvent type=OUT_ON_PLAY | +1 |
+| StealingEvent type=STOLEN_BASE | 0 |
 
 **`SpielbogenService.registerLeagueResult`:**
 - Nur Status `DONE` und `seasonId` gesetzt
@@ -556,8 +585,8 @@ Statt direkt nach Wizard-Submit (Cognitive Overload) erscheint die 3-Bubble-Tour
 RFL-Spiele werden häufig auf Zeit gespielt — das Spiel kann mitten im Inning enden, sobald die Time-Cap erreicht ist. Die App darf User nicht in eine "muss bis Inning 7 scoren"-Logik zwingen.
 
 UX-Konsequenzen:
-- "Spiel beenden"-Button immer prominent erreichbar im Sheet-Drawer (auch im Floating-Sheet-FAB als Long-Press-Option)
-- Bestätigungs-Modal: "Spiel jetzt beenden? Aktueller Stand: HOME 7 — AWAY 4. Inning V (laufend)"
+- "Spiel beenden"-Button immer prominent erreichbar im Sheet-Drawer
+- Bestätigungs-Modal: "Spiel jetzt beenden? Aktueller Stand: HOME 7 — AWAY 4. Inning V (laufend)" mit optionalem "Score korrigieren ✏" Toggle (öffnet zwei Inputs für homeRuns/awayRuns falls Liga-Regel-spezifische Anpassung nötig — z.B. unvollständiges letztes Halb-Inning verworfen)
 - Beenden funktioniert in jedem Zustand: laufendes Inning, mitten im At-Bat, ungerade Anzahl Outs
 - Nach Beenden: kein "Inning incomplete" Warnung — Spiel ist regulär zu Ende, Score ist final
 - Sheet rendert verbleibende Innings als grauen Hintergrund (`bg-cream-200`) statt leerem Diamant — visuelles Signal "Spiel war hier zu Ende"
@@ -574,7 +603,7 @@ Bestehendes Design-System "Stadium Pocket" wird konsequent wiederverwendet:
 
 ### RFL-Sheet-Drawer
 
-Vaul-Drawer (max-h 90vh) zeigt das vollständige Sheet im RFL-Layout. Header mit Liga-Logo-Platzhalter und Datum/Ort. Zwei Tabellen-Blöcke (HOME / AWAY) mit:
+Vaul-Drawer (max-h 90vh). Auf Phone (Standard-Use-Case) zeigt der Drawer **eine Side gleichzeitig** mit Pill-Toggle oben (HEIM/GAST mit aktuellem Score). User scrollt nicht beide Sides parallel. Tabelle der aktiven Side ist full-width — bei sehr schmalen Phones (<360px) horizontaler Scroll innerhalb der Tabelle mit sticky-Spalten №+Name und sticky-Header (Inning-Zahlen). PDF-Export bleibt Querformat mit beiden Sides nebeneinander (PDF wird auf Desktop / Liga-Mail-Empfänger geöffnet). Header mit Liga-Logo-Platzhalter und Datum/Ort. Zwei Tabellen-Blöcke (HOME / AWAY) mit:
 - Spalten: №, Name, Pos, Inning 1-7 (oder mehr)
 - Reihen: 10 Slots
 - Pro Zelle: Diamond-SVG mit Notation aus `BogenSheetRenderer`
@@ -596,6 +625,62 @@ Buttons unten (kontextabhängig):
 - "An Liga senden" (nur in DONE + seasonId gesetzt + `leagueResultId == null`)
 - "Bogen löschen" (immer im 3-Punkt-Menü oben rechts erreichbar)
 
+### PDF-Export
+
+Format: **A4 Querformat (landscape)**, eine Seite, 1:1 Mimicry zum offiziellen RFL-2023-Scoresheet-Template.
+
+Layout-Spezifikation (alle Werte in mm, A4 landscape = 297×210):
+
+```
+Header (Y 8-22):
+  • Logo-Platzhalter (10, 10, 18×18) — rot/grün-Diamant nachgebaut oder Placeholder
+  • Titel "RFL – Ruhr-Fun-Liga Mixed Fastpitch Softball" (32, 16)
+  • Right-Block (220, 8-22):
+    - "Ort:"   + Eingabe-Box mit location
+    - "Datum:" + formatDate(date)
+    - "Zeit:"  + meta.time
+
+Team-Banner (Y 28-36):
+  • Links  (8, 28, 130mm wide):  "Gast:"  homeTeamName  + "Summe Runs:" homeRuns
+  • Rechts (152, 28, 130mm wide): "Heim:" awayTeamName + "Summe Runs:" awayRuns
+
+Sheet-Tabelle (Y 42-180), pro Side eine Tabelle (links + rechts):
+  • Spalten-Header: №, Name, Pos, 1, 2, 3, 4, 5, 6, 7
+  • 10 Slot-Reihen, jede Reihe:
+    - Slot-Nummer (links)
+    - Zwei Linien für Name (oberer Slash: original Name, untere: Substitutions-Name falls vorhanden)
+    - Pos-Spalte
+    - 7 Diamond-Zellen mit Notation aus BogenSheetRenderer
+  • Footer: "erzielte Runs" + 7 Inning-Run-Boxen + Summe-Box (= Banner-Wert)
+
+Bei Extra-Innings (>7):
+  • Wenn Spalten passen → erweitern auf 8/9/10 Innings (Diamant-Spalten enger)
+  • Wenn nicht passt → Seite 2 mit nur Extra-Inning-Spalten (zweite Tabelle)
+```
+
+Pseudocode `rflSheetPdf.ts`:
+```typescript
+const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
+drawHeader(doc, meta)
+drawTeamBanner(doc, 8, 28, 'Gast:', homeName, totalHome, 130)
+drawTeamBanner(doc, 152, 28, 'Heim:', awayName, totalAway, 130)
+drawSheet(doc, 8,   42, homeLineup, homeAtBats, stealings, subs, inningRuns.home)
+drawSheet(doc, 152, 42, awayLineup, awayAtBats, stealings, subs, inningRuns.away)
+doc.save(`spielbogen-${date}-${homeName}-vs-${awayName}.pdf`)
+```
+
+Renderer-Logik:
+- `drawSheet` zeichnet Tabellen-Rahmen (`doc.line()`), Diamant-SVG-Pfade (`doc.path()`) und Notation (`doc.text()`)
+- Notation aus `BogenSheetRenderer` (Domain-Service) wird im Frontend dupliziert (TS-Modul `bogenSheetRenderer.ts`) — Backend-Service ist primär für Sheet-API-Endpoint, Frontend macht eigenen Render für PDF + Live-View
+- Substitution: zweite Zeile in Name-Spalte zeigt `playerInName` mit durchgestrichenem `playerOutName` darüber (zeichnen mit `doc.setLineDashPattern` oder Strichdurch via Linien)
+- Stealing: kleiner Pfeil-Pfad in Diamant der entsprechenden Inning-Zelle, von base-fromBase zu base-toBase
+
+Logo-Strategie für V1:
+- Eigenes Diamant-Logo nachbauen mit `doc.path()` (rot-grün, ~18×18)
+- Original RFL-Logo nicht eingebunden (rechtlich unklar)
+
+Referenz-Template: `/home/hungl/Downloads/RFL 2023 Scoresheet.pdf` (offizielles Liga-Template, dient als Pixel-Vorlage)
+
 ### Cheatsheet-Drawer
 
 ResponsiveSheet mit Sektionen (Hits / Outs / Walk-HBP / Stealing / Substitution). Jede Reihe: großes Notation-Symbol (Saira Condensed extrabold, navy-900) links + kurze Klartext-Erklärung rechts. Suchfeld oben filtert client-side.
@@ -609,12 +694,12 @@ Genutzt nur als Fallback — Inline-Tooltips in der Last-At-Bat-Preview machen d
 | Backend down während AtBat | Toast "Verbindung verloren — Eintrag nicht gespeichert", Undo-Button bleibt 30s |
 | AtBat-Save 5xx | Retry 1× automatisch, danach Toast + State verworfen |
 | Concurrent-Edit (zwei Geräte) | Last-Write-Wins, Frontend reload nach 30s polling |
-| Tab-Close mitten im Wizard | Nichts persistiert (kein Auto-Save in Step 1+2). Step 3 hat explizite Save-Buttons |
+| Tab-Close mitten im Wizard | localStorage-Backup (`spielbogen_wizard_draft`) speichert State debounced. Beim Wizard-Open: Resume-Prompt "Entwurf vom HH:MM wiederherstellen?". Wird beim Submit von Step 3 gelöscht. Kein Halb-Bogen in DB |
 | Bogen DRAFT, User kommt 3 Tage später wieder | Liste zeigt unter DRAFT-Filter, Klick öffnet Wizard mit State |
 | Liga-Sync fehlschlägt (Team-Conflict) | 400 mit Message, User passt Team-Namen an + retry |
 | Slot-Delete mit existierenden AtBats | Cascade DB-seitig. Confirm-Modal "X AtBats werden mitgelöscht — fortfahren?" |
 | Schnell-Modus: leerer Name während Spiel | Sheet rendert "Spieler 1"-Platzhalter, Long-Press → Inline-Edit |
-| Substitution mitten im At-Bat | Sub greift erst NACH aktuellem At-Bat. Sheet zeigt durchgestrichenen Namen für Folge-AtBats |
+| Substitution-Wahl im Sub-Modal | User wählt "Ab nächstem At-Bat" (Default) oder "Pinch-Hitter — JETZT übernimmt". Pinch-Hitter heißt: nächster gescorter At-Bat ist bereits der neue Spieler. Sheet zeigt zweizeilige Name-Spalte (alter Name oben durchgestrichen, neuer drunter) ab Sub-Inning |
 | Stealing während aktivem At-Bat | Stealing-Event vor At-Bat-Outcome geschrieben, BaseState updated, dann At-Bat-Outcome |
 | Bogen DONE → Korrektur nötig | "Reopen"-Button setzt Status `LIVE`, Korrektur-Modal mit AtBat-Liste, Score wird neu aggregiert |
 | LeagueResult schon registriert + Korrektur | Warning: "Liga-Tabelle wurde bereits aktualisiert — ggf. dort manuell anpassen" |
@@ -695,6 +780,7 @@ Spec wird in 3 Implementations-Phasen umgesetzt. Jede Phase ist eigenständig de
 
 - **Multi-Tenancy:** App ist Single-Team. Spielbogen funktioniert auch ohne Dead-Sox-Bezug. Sollte für Multi-Team-Zukunft kein Hindernis sein.
 - **Photo-OCR für Lineup-Eintrag:** User fotografiert Liga-Lineup-Karte, OCR liest aus, Vorschlag für Schnell-Setup. Kommt später bei Bedarf.
+- **Bulk-Paste/Parser für Lineup-Listen:** User pasted Liga-Email/WhatsApp-Liste, Parser extrahiert Slots. Aktuell unnötig (Listen meist analog/Papier, manuelle Eingabe akzeptabel). Bei Bedarf später ergänzen.
 - **Voice-Input für Schnell-Setup:** Spracheingabe statt Tippen. Nicht in V1.
 - **Defensive-Stats-Aggregation:** Aus `fielderChain` Daten ableitbare Errors/Putouts/Assists. User hat explizit verzichtet — kommt nur falls später angefragt.
 - **Cross-Saison Standings:** Spielbogen ist saison-gebunden, kein Cross-Saison-Aggregat. Falls gewünscht: Future Work.
