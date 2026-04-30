@@ -113,4 +113,11 @@ public class SpielbogenController {
             slotService.updateSlot(id, slotId, req.name(), req.position(), req.battingOrder())
         );
     }
+
+    @PostMapping("/{id}/lineup/copy-from-gameday")
+    public List<SpielbogenSlotResponse> copyFromGameDay(@PathVariable Long id,
+                                                        @Valid @RequestBody CopyFromGameDayRequest req) {
+        return slotService.copyFromGameDay(id, req.gameDayId(), req.gameNumber(), req.targetSide())
+                          .stream().map(SpielbogenSlotResponse::from).toList();
+    }
 }

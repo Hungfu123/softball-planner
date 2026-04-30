@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -29,13 +30,16 @@ public class SpielbogenSlotService {
     private final SpielbogenRepository bogenRepo;
     private final SpielbogenSlotRepository slotRepo;
     private final BogenLineupValidator validator;
+    private final GameDayService gameDayService;
 
     public SpielbogenSlotService(final SpielbogenRepository bogenRepo,
                                  final SpielbogenSlotRepository slotRepo,
-                                 final BogenLineupValidator validator) {
+                                 final BogenLineupValidator validator,
+                                 final GameDayService gameDayService) {
         this.bogenRepo = bogenRepo;
         this.slotRepo = slotRepo;
         this.validator = validator;
+        this.gameDayService = gameDayService;
     }
 
     public record LineupResult(List<SpielbogenSlot> home, List<SpielbogenSlot> away) {}
@@ -102,5 +106,40 @@ public class SpielbogenSlotService {
         }
 
         return slotRepo.save(existing);
+    }
+
+    @Transactional
+    public List<SpielbogenSlot> copyFromGameDay(final Long bogenId, final Long gameDayId,
+                                                final Integer gameNumber, final BogenSide targetSide) {
+        Spielbogen bogen = bogenRepo.findById(bogenId)
+            .orElseThrow(() -> new ResourceNotFoundException("Spielbogen", bogenId));
+        if (bogen.getStatus() == BogenStatus.LIVE) {
+            throw new BusinessValidationException("Lineup-Copy ist im Status LIVE nicht erlaubt");
+        }
+
+        var gd = gameDayService.findById(gameDayId);
+        var game = gd.getGames().stream()
+            .filter(g -> g.getGameNumber() != null && g.getGameNumber().equals(gameNumber))
+            .findFirst()
+            .orElseThrow(() -> new ResourceNotFoundException("Game", gameNumber.longValue()));
+
+        List<SpielbogenSlot> slots = new ArrayList<>();
+        int orderCounter = 1;
+        for (var entry : game.getLineupEntries()) {
+            SpielbogenSlot s = new SpielbogenSlot();
+            s.setBogen(bogen);
+            s.setSide(targetSide);
+            s.setSlot(orderCounter);
+            s.setBattingOrder(entry.getBattingOrder() != null ? entry.getBattingOrder() : orderCounter);
+            s.setName(entry.getPlayer().getName());
+            s.setPosition(entry.getPosition() != null ? entry.getPosition().name() : null);
+            slots.add(s);
+            orderCounter++;
+        }
+
+        slotRepo.deleteByBogenIdAndSide(bogenId, targetSide);
+        log.info("Spielbogen {} copyFromGameDay: gd={} game={} side={} → {} slots",
+                 bogenId, gameDayId, gameNumber, targetSide, slots.size());
+        return slotRepo.saveAll(slots);
     }
 }

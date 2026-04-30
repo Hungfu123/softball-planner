@@ -32,6 +32,7 @@ class SpielbogenSlotServiceTest {
     @Mock private SpielbogenRepository bogenRepo;
     @Mock private SpielbogenSlotRepository slotRepo;
     @Mock private BogenLineupValidator validator;
+    @Mock private GameDayService gameDayService;
 
     @InjectMocks
     private SpielbogenSlotService service;
@@ -158,6 +159,46 @@ class SpielbogenSlotServiceTest {
 
         assertThatThrownBy(() -> service.updateSlot(1L, 50L, "Klaus", null, null))
             .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void copyFromGameDayAddsSlotsForLineup() {
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(draftBogen));
+
+        com.softball.domain.model.Player p1 = new com.softball.domain.model.Player();
+        p1.setId(101L);
+        p1.setName("Hung");
+
+        com.softball.domain.model.Player p2 = new com.softball.domain.model.Player();
+        p2.setId(102L);
+        p2.setName("Klaus");
+
+        com.softball.domain.model.LineupEntry e1 = new com.softball.domain.model.LineupEntry();
+        e1.setPlayer(p1);
+        e1.setBattingOrder(1);
+        e1.setPosition(com.softball.domain.model.Position.SS);
+
+        com.softball.domain.model.LineupEntry e2 = new com.softball.domain.model.LineupEntry();
+        e2.setPlayer(p2);
+        e2.setBattingOrder(2);
+        e2.setPosition(com.softball.domain.model.Position.P);
+
+        com.softball.domain.model.Game game = new com.softball.domain.model.Game();
+        game.setId(99L);
+        game.setGameNumber(1);
+        game.setLineupEntries(java.util.List.of(e1, e2));
+
+        com.softball.domain.model.GameDay gd = new com.softball.domain.model.GameDay();
+        gd.setGames(java.util.List.of(game));
+
+        when(gameDayService.findById(50L)).thenReturn(gd);
+        when(slotRepo.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var result = service.copyFromGameDay(1L, 50L, 1, BogenSide.HOME);
+
+        assertThat(result).hasSize(2);
+        verify(slotRepo).deleteByBogenIdAndSide(1L, BogenSide.HOME);
+        verify(slotRepo).saveAll(any());
     }
 
     private List<SpielbogenSlot> sampleSlots(final int count) {
