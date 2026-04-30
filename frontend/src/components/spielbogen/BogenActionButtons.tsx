@@ -187,6 +187,7 @@ export function BogenActionButtons({
         onSubmit={handleOutSubmit}
         baseStateAfter={baseStateAfter}
         slots={slots}
+        batterSlotId={currentSlotId}
       />
 
       {/* Stealing drawer */}

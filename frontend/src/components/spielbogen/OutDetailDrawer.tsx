@@ -8,6 +8,7 @@ interface Props {
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   baseStateAfter: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
+  batterSlotId: number | null
 }
 
 const POSITION_NAMES: Record<number, string> = {
@@ -78,6 +79,7 @@ interface InfieldOptionsProps {
   baseState: BogenBaseStateDto
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   onDpPick: (fielder: number, defaultDpPartner: number) => void
+  onRunnerOutPick: (fielder: number) => void
   onBack: () => void
 }
 
@@ -87,6 +89,7 @@ function InfieldOptionsView({
   baseState,
   onSubmit,
   onDpPick,
+  onRunnerOutPick,
   onBack,
 }: InfieldOptionsProps) {
   const defaultThrow = 3
@@ -154,6 +157,11 @@ function InfieldOptionsView({
         label: `Double Play (${fielder}-${defaultDpPartner}-3)`,
         description: 'Doppelspiel — Runner wählen',
         action: handleDpClick,
+      },
+      {
+        label: `Fielder's Choice — Runner out, Batter safe an 1B`,
+        description: 'Z.B. Throw to Home: Runner an 3B getaggt, Batter erreicht 1B',
+        action: () => onRunnerOutPick(fielder),
       },
     ] : []),
     {
@@ -353,10 +361,11 @@ function RunnerAdvancePickerView({
 // ---------------------------------------------------------------------------
 // OutDetailDrawer
 // ---------------------------------------------------------------------------
-export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots }: Props) {
+export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
   const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
+  const [pendingRunnerOutRequest, setPendingRunnerOutRequest] = useState<{ fielder: number } | null>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
 
@@ -418,7 +427,56 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setSelectedFielder(null)
     setPendingDpRequest(null)
     setPendingFlyOutRequest(null)
+    setPendingRunnerOutRequest(null)
     onClose()
+  }
+
+  const handleRunnerOutPick = ({ runnerSlotId, fromBase }: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => {
+    if (pendingRunnerOutRequest == null || batterSlotId == null) return
+    const fielder = pendingRunnerOutRequest.fielder
+
+    const before = baseState
+    const newFirstSlot: number | null = batterSlotId  // batter takes 1B
+    let newSecondSlot: number | null = before.secondSlotId
+    let newThirdSlot: number | null = before.thirdSlotId
+
+    if (fromBase === 1) {
+      // 1B runner is out — batter takes 1B (newFirstSlot already set)
+    } else if (fromBase === 2) {
+      newSecondSlot = null
+      // If 1B had a runner, force them to 2B
+      if (before.firstSlotId != null) {
+        newSecondSlot = before.firstSlotId
+      }
+    } else if (fromBase === 3) {
+      newThirdSlot = null
+      // If 2B had runner, advance to 3B; if 1B had runner, advance to 2B (force)
+      if (before.secondSlotId != null) {
+        newThirdSlot = before.secondSlotId
+        newSecondSlot = before.firstSlotId
+      } else if (before.firstSlotId != null) {
+        newSecondSlot = before.firstSlotId
+      }
+    }
+
+    // Throw destination = base where runner was caught (or home if from 3B)
+    const throwTarget = fromBase === 3 ? 4 : fromBase + 1
+
+    onSubmit({
+      result: 'OUT',
+      outType: 'FORCE_OUT',
+      fielderChain: [fielder, throwTarget],
+      runsScored: 0,
+      rbi: 0,
+      baseStateAfter: {
+        firstSlotId: newFirstSlot,
+        secondSlotId: newSecondSlot,
+        thirdSlotId: newThirdSlot,
+      },
+    })
+    void runnerSlotId
+    setPendingRunnerOutRequest(null)
+    setSelectedFielder(null)
   }
 
   const submitDp = (fielder: number, defaultDpPartner: number, runnerSlotId: number, runnerFromBase: 1 | 2 | 3) => {
@@ -460,7 +518,18 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {pendingFlyOutRequest != null ? (
+            {pendingRunnerOutRequest != null ? (
+              <RunnerOutPickerView
+                fielder={pendingRunnerOutRequest.fielder}
+                defaultDpPartner={3}
+                title="Fielder's Choice — welcher Runner ist out?"
+                subtitle="Batter ist safe an 1B. Welcher Runner wurde getaggt?"
+                baseState={baseState}
+                slots={slots}
+                onPick={handleRunnerOutPick}
+                onBack={() => setPendingRunnerOutRequest(null)}
+              />
+            ) : pendingFlyOutRequest != null ? (
               <RunnerAdvancePickerView
                 title={`Fly Out F${pendingFlyOutRequest.fielder} — Tag Up?`}
                 subtitle="Welche Runner sind nach dem Catch weitergelaufen?"
@@ -487,6 +556,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 baseState={baseState}
                 onSubmit={handleInfieldSubmit}
                 onDpPick={(fielder, defaultDpPartner) => setPendingDpRequest({ fielder, defaultDpPartner })}
+                onRunnerOutPick={(fielder) => setPendingRunnerOutRequest({ fielder })}
                 onBack={() => setSelectedFielder(null)}
               />
             ) : (
