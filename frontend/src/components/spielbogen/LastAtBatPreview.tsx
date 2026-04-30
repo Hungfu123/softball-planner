@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SquarePen } from 'lucide-react'
 import type { SpielbogenAtBatResponse, BogenSide, SpielbogenSlotResponse } from '@/types'
 import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
 
@@ -6,6 +7,7 @@ interface Props {
   lastAtBat: SpielbogenAtBatResponse | null
   slots: SpielbogenSlotResponse[]
   onUndo: (side: BogenSide) => Promise<void>
+  onCorrect?: () => void
   submitting?: boolean
 }
 
@@ -54,7 +56,7 @@ function klartext(label: string): string {
   return label
 }
 
-export function LastAtBatPreview({ lastAtBat, slots, onUndo, submitting }: Props) {
+export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitting }: Props) {
   const [undoVisible, setUndoVisible] = useState(false)
   const [undoing, setUndoing] = useState(false)
 
@@ -105,6 +107,16 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, submitting }: Props
           className="shrink-0 font-display text-xs font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-navy-700 text-navy-700 hover:bg-navy-50 transition-colors cursor-pointer disabled:opacity-50"
         >
           {undoing ? '…' : 'Undo'}
+        </button>
+      )}
+      {lastAtBat && onCorrect && (
+        <button
+          onClick={onCorrect}
+          disabled={submitting}
+          title="Korrektur"
+          className="shrink-0 p-1.5 rounded-full border border-cream-300 text-gray-500 hover:bg-cream-100 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          <SquarePen size={14} />
         </button>
       )}
     </div>

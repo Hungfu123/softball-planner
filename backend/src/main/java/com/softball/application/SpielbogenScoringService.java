@@ -248,6 +248,43 @@ public class SpielbogenScoringService {
         return saved;
     }
 
+    @Transactional
+    public SpielbogenAtBat updateLastAtBatBaseState(final Long bogenId, final BogenSide side,
+                                                     final BogenBaseState newBaseStateAfter,
+                                                     final Integer newRunsScored) {
+        Spielbogen bogen = requireLive(bogenId);
+        SpielbogenAtBat last = atBatRepo.findLatestForSide(bogenId, side)
+            .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Bearbeiten für Side " + side));
+
+        if (newRunsScored != null && newRunsScored < 0) {
+            throw new BusinessValidationException("runsScored muss >= 0 sein");
+        }
+
+        last.setBaseStateAfter(newBaseStateAfter);
+        if (newRunsScored != null) {
+            last.setRunsScored(newRunsScored);
+        }
+        atBatRepo.save(last);
+
+        // Recompute total runs from all at-bats
+        var allAtBats = atBatRepo.findByBogenId(bogenId);
+        int homeRuns = allAtBats.stream()
+            .filter(a -> a.getSide() == BogenSide.HOME)
+            .mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0)
+            .sum();
+        int awayRuns = allAtBats.stream()
+            .filter(a -> a.getSide() == BogenSide.AWAY)
+            .mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0)
+            .sum();
+        bogen.setHomeRuns(homeRuns);
+        bogen.setAwayRuns(awayRuns);
+        bogenRepo.save(bogen);
+
+        log.info("Spielbogen {} AtBat {} corrected: baseStateAfter + runs={}",
+                 bogenId, last.getId(), newRunsScored);
+        return last;
+    }
+
     @Transactional(readOnly = true)
     public List<SpielbogenAtBat> findAtBats(final Long bogenId, final BogenSide side) {
         if (side == null) return atBatRepo.findByBogenId(bogenId);

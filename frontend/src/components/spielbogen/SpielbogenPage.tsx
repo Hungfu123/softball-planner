@@ -12,6 +12,7 @@ import { BogenDiamondView } from './BogenDiamondView'
 import { BogenActionButtons } from './BogenActionButtons'
 import { BatterCard } from './BatterCard'
 import { LastAtBatPreview } from './LastAtBatPreview'
+import { CorrectionSheet } from './CorrectionSheet'
 import { RflSheetDrawer } from './RflSheetDrawer'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import * as api from '@/api/client'
@@ -138,9 +139,10 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat } =
     useSpielbogenScoring(bogenId)
 
+  const [showCorrection, setShowCorrection] = useState(false)
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -569,13 +571,33 @@ export default function SpielbogenPage() {
         </div>
       )}
 
-      {/* Last at-bat + Undo */}
+      {/* Last at-bat + Undo + Korrektur */}
       <LastAtBatPreview
         lastAtBat={lastAtBat}
         slots={[...homeLineup, ...awayLineup]}
         onUndo={undoLast}
+        onCorrect={isLive ? () => setShowCorrection(true) : undefined}
         submitting={submitting}
       />
+
+      {/* Korrektur-Sheet */}
+      {showCorrection && lastSideAtBat && (
+        <CorrectionSheet
+          open={showCorrection}
+          onClose={() => setShowCorrection(false)}
+          baseState={lastSideAtBat.baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
+          slots={slots}
+          initialRunsScored={lastSideAtBat.runsScored}
+          onSave={async (payload) => {
+            try {
+              await correctLastAtBat(currentSide, payload)
+              toast.show('Korrektur gespeichert', 'success')
+            } catch (e) {
+              toast.show((e as Error).message, 'error')
+            }
+          }}
+        />
+      )}
 
       {/* FAB: Spielbogen */}
       <div className="fixed bottom-6 right-4 z-40">

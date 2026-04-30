@@ -471,3 +471,14 @@ export interface LeagueResultLite {
 export async function registerSpielbogenLeagueResult(bogenId: number): Promise<LeagueResultLite> {
   return request<LeagueResultLite>(`/spielbogen/${bogenId}/register-league-result`, { method: 'POST' })
 }
+
+export async function correctLastSpielbogenAtBat(
+  bogenId: number,
+  side: BogenSide,
+  payload: { firstSlotId: number | null; secondSlotId: number | null; thirdSlotId: number | null; runsScored: number }
+): Promise<SpielbogenAtBatResponse> {
+  return request<SpielbogenAtBatResponse>(
+    `/spielbogen/${bogenId}/at-bats/last?side=${side}`,
+    { method: 'PATCH', body: JSON.stringify(payload) }
+  )
+}

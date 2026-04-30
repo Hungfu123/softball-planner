@@ -169,6 +169,17 @@ public class SpielbogenController {
         scoringService.undoLast(id, side);
     }
 
+    @PatchMapping("/{id}/at-bats/last")
+    public SpielbogenAtBatResponse correctLastAtBat(@PathVariable Long id,
+                                                     @RequestParam BogenSide side,
+                                                     @Valid @RequestBody CorrectAtBatRequest req) {
+        com.softball.domain.model.BogenBaseState bs = new com.softball.domain.model.BogenBaseState(
+            req.firstSlotId(), req.secondSlotId(), req.thirdSlotId()
+        );
+        var saved = scoringService.updateLastAtBatBaseState(id, side, bs, req.runsScored());
+        return SpielbogenAtBatResponse.from(saved);
+    }
+
     @PostMapping("/{id}/stealing-events")
     @ResponseStatus(HttpStatus.CREATED)
     public SpielbogenStealingResponse recordStealing(@PathVariable Long id,
