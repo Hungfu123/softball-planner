@@ -431,3 +431,97 @@ export interface CopyFromGameDayRequest {
 }
 
 export const POSITION_OPTIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH', 'DH'] as const
+
+// Scoring types
+export type StealingEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY'
+export type OutType = 'GROUNDER' | 'FLY' | 'FOUL' | 'UNASSISTED' | 'DOUBLE_PLAY' | 'TRIPLE_PLAY' | 'FORCE_OUT' | 'TAG_OUT'
+
+export interface BogenBaseStateDto {
+  firstSlotId: number | null
+  secondSlotId: number | null
+  thirdSlotId: number | null
+}
+
+export interface SpielbogenAtBatResponse {
+  id: number
+  bogenId: number
+  slotId: number
+  side: BogenSide
+  sequence: number
+  inning: number
+  result: AtBatResult
+  outType: OutType | null
+  fielderChain: number[] | null
+  isError: boolean | null
+  errorPosition: number | null
+  runsScored: number
+  rbi: number
+  baseStateAfter: BogenBaseStateDto | null
+  createdAt: string
+}
+
+export interface SpielbogenRecordAtBatRequest {
+  side: BogenSide
+  slotId: number
+  inning: number
+  result: AtBatResult
+  outType?: OutType
+  fielderChain?: number[]
+  isError?: boolean
+  errorPosition?: number
+  runsScored?: number
+  rbi?: number
+  baseStateAfter?: BogenBaseStateDto
+}
+
+export interface SpielbogenStealingResponse {
+  id: number
+  bogenId: number
+  slotId: number
+  side: BogenSide
+  inning: number
+  type: StealingEventType
+  fromBase: number
+  toBase: number
+  createdAt: string
+}
+
+export interface SpielbogenRecordStealingRequest {
+  side: BogenSide
+  slotId: number
+  inning: number
+  type: StealingEventType
+  fromBase: number
+  toBase: number
+}
+
+export interface SpielbogenSubstitutionResponse {
+  id: number
+  bogenId: number
+  slotId: number
+  side: BogenSide
+  inning: number
+  playerOutName: string
+  playerInName: string
+  isPinchHitter: boolean
+  createdAt: string
+}
+
+export interface SpielbogenRecordSubstitutionRequest {
+  side: BogenSide
+  slotId: number
+  inning: number
+  playerInName: string
+  pinchHitter?: boolean
+}
+
+export interface BogenSheetResponse {
+  meta: SpielbogenResponse
+  homeLineup: SpielbogenSlotResponse[]
+  awayLineup: SpielbogenSlotResponse[]
+  homeAtBats: SpielbogenAtBatResponse[]
+  awayAtBats: SpielbogenAtBatResponse[]
+  stealingEvents: SpielbogenStealingResponse[]
+  substitutions: SpielbogenSubstitutionResponse[]
+  inningRuns: Record<number, { home: number; away: number }>
+}

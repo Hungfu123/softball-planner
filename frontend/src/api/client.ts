@@ -71,6 +71,14 @@ import type {
   UpdateSlotRequest,
   EndGameRequest,
   CopyFromGameDayRequest,
+  BogenSide,
+  SpielbogenAtBatResponse,
+  SpielbogenRecordAtBatRequest,
+  SpielbogenStealingResponse,
+  SpielbogenRecordStealingRequest,
+  SpielbogenSubstitutionResponse,
+  SpielbogenRecordSubstitutionRequest,
+  BogenSheetResponse,
 } from '@/types'
 
 // Players
@@ -411,3 +419,38 @@ export async function copySpielbogenLineupFromGameDay(id: number, req: CopyFromG
   })
 }
 
+// Spielbogen Scoring
+export async function recordSpielbogenAtBat(bogenId: number, req: SpielbogenRecordAtBatRequest): Promise<SpielbogenAtBatResponse> {
+  return request<SpielbogenAtBatResponse>(`/spielbogen/${bogenId}/at-bats`, {
+    method: 'POST', body: JSON.stringify(req)
+  })
+}
+
+export async function getSpielbogenAtBats(bogenId: number, side?: BogenSide): Promise<SpielbogenAtBatResponse[]> {
+  const qs = side ? `?side=${side}` : ''
+  return request<SpielbogenAtBatResponse[]>(`/spielbogen/${bogenId}/at-bats${qs}`)
+}
+
+export async function undoLastSpielbogenAtBat(bogenId: number, side: BogenSide): Promise<void> {
+  return request<void>(`/spielbogen/${bogenId}/at-bats/last?side=${side}`, { method: 'DELETE' })
+}
+
+export async function recordSpielbogenStealing(bogenId: number, req: SpielbogenRecordStealingRequest): Promise<SpielbogenStealingResponse> {
+  return request<SpielbogenStealingResponse>(`/spielbogen/${bogenId}/stealing-events`, {
+    method: 'POST', body: JSON.stringify(req)
+  })
+}
+
+export async function recordSpielbogenSubstitution(bogenId: number, req: SpielbogenRecordSubstitutionRequest): Promise<SpielbogenSubstitutionResponse> {
+  return request<SpielbogenSubstitutionResponse>(`/spielbogen/${bogenId}/substitutions`, {
+    method: 'POST', body: JSON.stringify(req)
+  })
+}
+
+export async function switchSpielbogenSide(bogenId: number): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${bogenId}/switch-side`, { method: 'POST' })
+}
+
+export async function getSpielbogenSheet(bogenId: number): Promise<BogenSheetResponse> {
+  return request<BogenSheetResponse>(`/spielbogen/${bogenId}/sheet`)
+}

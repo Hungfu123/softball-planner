@@ -1,0 +1,63 @@
+import { useCallback, useEffect, useState } from 'react'
+import * as api from '@/api/client'
+import type {
+  BogenSheetResponse,
+  SpielbogenRecordAtBatRequest,
+  SpielbogenRecordStealingRequest,
+  SpielbogenRecordSubstitutionRequest,
+  BogenSide,
+} from '@/types'
+
+export function useSpielbogenScoring(bogenId: number | null) {
+  const [sheet, setSheet] = useState<BogenSheetResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const reload = useCallback(async () => {
+    if (bogenId == null) return
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.getSpielbogenSheet(bogenId)
+      setSheet(data)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }, [bogenId])
+
+  useEffect(() => { reload() }, [reload])
+
+  const recordAtBat = useCallback(async (req: SpielbogenRecordAtBatRequest) => {
+    if (bogenId == null) return
+    await api.recordSpielbogenAtBat(bogenId, req)
+    await reload()
+  }, [bogenId, reload])
+
+  const recordStealing = useCallback(async (req: SpielbogenRecordStealingRequest) => {
+    if (bogenId == null) return
+    await api.recordSpielbogenStealing(bogenId, req)
+    await reload()
+  }, [bogenId, reload])
+
+  const recordSubstitution = useCallback(async (req: SpielbogenRecordSubstitutionRequest) => {
+    if (bogenId == null) return
+    await api.recordSpielbogenSubstitution(bogenId, req)
+    await reload()
+  }, [bogenId, reload])
+
+  const undoLast = useCallback(async (side: BogenSide) => {
+    if (bogenId == null) return
+    await api.undoLastSpielbogenAtBat(bogenId, side)
+    await reload()
+  }, [bogenId, reload])
+
+  const switchSide = useCallback(async () => {
+    if (bogenId == null) return
+    await api.switchSpielbogenSide(bogenId)
+    await reload()
+  }, [bogenId, reload])
+
+  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide }
+}
