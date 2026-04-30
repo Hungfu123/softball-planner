@@ -15,6 +15,8 @@ import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 const TrainingPlanPage = lazy(() => import('@/components/training-plan/TrainingPlanPage'))
 const ScoringPage = lazy(() => import('@/components/scoring/ScoringPage').then(m => ({ default: m.ScoringPage })))
 const StatsPage = lazy(() => import('@/components/stats/StatsPage').then(m => ({ default: m.StatsPage })))
+const SpielbogenList = lazy(() => import('@/components/spielbogen/SpielbogenList'))
+const SpielbogenWizard = lazy(() => import('@/components/spielbogen/SpielbogenWizard'))
 
 function LazyScoring() {
   // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
@@ -34,6 +36,14 @@ function LazyStats() {
   return <Suspense fallback={<LoadingSkeleton />}><StatsPage /></Suspense>
 }
 
+function LazySpielbogenList() {
+  return <Suspense fallback={<LoadingSkeleton />}><SpielbogenList /></Suspense>
+}
+
+function LazySpielbogenWizard() {
+  return <Suspense fallback={<LoadingSkeleton />}><SpielbogenWizard /></Suspense>
+}
+
 const router = createBrowserRouter([
   {
     element: <Layout />,
@@ -45,6 +55,8 @@ const router = createBrowserRouter([
       { path: '/players', element: <PlayerManager />, errorElement: <ChunkErrorBoundary /> },
       { path: '/gameday/:id', element: <GameDayPlanner />, errorElement: <ChunkErrorBoundary /> },
       { path: '/stats', element: <LazyStats />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/spielbogen', element: <LazySpielbogenList />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/spielbogen/new', element: <LazySpielbogenWizard />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   { path: '/gameday/:id/export', element: <LineupSheet />, errorElement: <ChunkErrorBoundary /> },
