@@ -85,6 +85,10 @@ public class SpielbogenSlotService {
         SpielbogenSlot existing = slotRepo.findById(slotId)
             .orElseThrow(() -> new ResourceNotFoundException("SpielbogenSlot", slotId));
 
+        if (existing.getBogen().getStatus() == BogenStatus.DONE) {
+            throw new BusinessValidationException("Slot-Bearbeitung im Status DONE nicht erlaubt — erst Spiel wieder öffnen");
+        }
+
         if (!existing.getBogen().getId().equals(bogenId)) {
             throw new ResourceNotFoundException("SpielbogenSlot", slotId);
         }

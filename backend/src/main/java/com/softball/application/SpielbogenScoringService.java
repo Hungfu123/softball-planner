@@ -179,7 +179,10 @@ public class SpielbogenScoringService {
 
         atBatRepo.deleteById(last.getId());
 
-        recomputeScores(bogen);
+        int homeRuns = bogen.getHomeRuns() - (last.getSide() == BogenSide.HOME ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0);
+        int awayRuns = bogen.getAwayRuns() - (last.getSide() == BogenSide.AWAY ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0);
+        bogen.setHomeRuns(Math.max(0, homeRuns));
+        bogen.setAwayRuns(Math.max(0, awayRuns));
         bogenRepo.save(bogen);
         log.info("Spielbogen {} Undo: AtBat id={} gelöscht", bogenId, last.getId());
     }
@@ -260,17 +263,4 @@ public class SpielbogenScoringService {
         return slot;
     }
 
-    private void recomputeScores(final Spielbogen bogen) {
-        var allAtBats = atBatRepo.findByBogenId(bogen.getId());
-        int homeRuns = allAtBats.stream()
-            .filter(a -> a.getSide() == BogenSide.HOME)
-            .mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0)
-            .sum();
-        int awayRuns = allAtBats.stream()
-            .filter(a -> a.getSide() == BogenSide.AWAY)
-            .mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0)
-            .sum();
-        bogen.setHomeRuns(homeRuns);
-        bogen.setAwayRuns(awayRuns);
-    }
 }

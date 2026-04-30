@@ -162,6 +162,26 @@ class SpielbogenSlotServiceTest {
     }
 
     @Test
+    void updateSlotRejectsDoneBogen() {
+        Spielbogen done = new Spielbogen();
+        done.setId(99L);
+        done.setStatus(BogenStatus.DONE);
+        SpielbogenSlot existing = new SpielbogenSlot();
+        existing.setId(50L);
+        existing.setBogen(done);
+        existing.setSlot(3);
+        existing.setBattingOrder(3);
+        existing.setSide(BogenSide.HOME);
+        existing.setName("Original");
+
+        when(slotRepo.findById(50L)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.updateSlot(99L, 50L, "Klaus", null, null))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("DONE");
+    }
+
+    @Test
     void copyFromGameDayAddsSlotsForLineup() {
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(draftBogen));
 

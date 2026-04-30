@@ -164,7 +164,6 @@ class SpielbogenScoringServiceTest {
         liveBogen.setHomeRuns(2);
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
         when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
-        when(atBatRepo.findByBogenId(1L)).thenReturn(List.of());
         when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.undoLast(1L, BogenSide.HOME);

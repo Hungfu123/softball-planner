@@ -161,6 +161,7 @@ public class SpielbogenService {
 
     @Transactional
     public LeagueResult registerLeagueResult(final Long bogenId) {
+        synchronized (("registerLeagueResult-" + bogenId).intern()) {
         Spielbogen bogen = findById(bogenId);
         if (bogen.getStatus() != BogenStatus.DONE) {
             throw new BusinessValidationException("Liga-Eintrag nur in Status DONE möglich (aktuell: " + bogen.getStatus() + ")");
@@ -192,6 +193,7 @@ public class SpielbogenService {
         bogenRepo.save(bogen);
         log.info("Spielbogen {} → LeagueResult {} registriert", bogenId, result.getId());
         return result;
+        } // end synchronized
     }
 
     private LeagueTeam findOrCreateLeagueTeam(final Long seasonId, final String name) {
