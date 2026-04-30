@@ -25,9 +25,6 @@ import type {
   BogenBaseStateDto,
 } from '@/types'
 
-const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
-function romanInning(n: number): string { return ROMAN[n] ?? String(n) }
-
 function computeUpcomingSlots(
   slots: SpielbogenSlotResponse[],
   currentSlot: SpielbogenSlotResponse | null,
@@ -139,10 +136,11 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide } =
     useSpielbogenScoring(bogenId)
 
   const [showCorrection, setShowCorrection] = useState(false)
+  const [showSidePicker, setShowSidePicker] = useState(false)
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -467,10 +465,16 @@ export default function SpielbogenPage() {
       <div className="bg-navy-900 text-white px-4 py-2 flex items-center justify-between border-b-[3px] border-softball-red-600">
         <div className="flex items-center gap-2.5">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Inning</span>
-          <span className="font-display text-2xl font-extrabold leading-none">{romanInning(meta.currentInning)}</span>
-          <span className="font-display inline-flex items-center text-[10px] px-2 py-0.5 border border-white/20 rounded-full text-white/85 tracking-widest uppercase">
+          <span className="font-display text-2xl font-extrabold leading-none tabular-nums">{meta.currentInning}</span>
+          <button
+            type="button"
+            onClick={() => isLive && setShowSidePicker(true)}
+            disabled={!isLive}
+            className="font-display inline-flex items-center text-[10px] px-2 py-0.5 border border-white/20 rounded-full text-white/85 tracking-widest uppercase hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            title={isLive ? 'Top/Btm tauschen' : ''}
+          >
             {meta.currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'}
-          </span>
+          </button>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Outs</span>
@@ -620,6 +624,54 @@ export default function SpielbogenPage() {
           onReopenGame={isDone ? handleReopenGame : undefined}
           onReload={reload}
         />
+      )}
+
+      {/* Side Picker — manuell Top/Btm korrigieren */}
+      {showSidePicker && (
+        <ResponsiveSheet
+          open={showSidePicker}
+          onClose={() => setShowSidePicker(false)}
+          title="Welche Mannschaft schlägt jetzt?"
+          maxWidth="sm"
+        >
+          <div className="p-4 space-y-2">
+            <p className="text-xs text-gray-500 font-body">
+              Falls du dich beim Start verwählt hast — wähle die richtige Seite. Bisherige AtBats bleiben unverändert.
+            </p>
+            <button
+              onClick={async () => {
+                setShowSidePicker(false)
+                try {
+                  await setCurrentSide('AWAY')
+                  toast.show('Top — Gastmannschaft schlägt', 'success')
+                } catch (e) {
+                  toast.show((e as Error).message, 'error')
+                }
+              }}
+              disabled={meta.currentSide === 'AWAY'}
+              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer disabled:opacity-50 text-left"
+            >
+              <div className="font-display font-bold text-navy-900 text-sm uppercase tracking-wide">↑ Top — Gast schlägt</div>
+              <div className="text-xs text-gray-500 mt-0.5">{meta.awayTeamName}</div>
+            </button>
+            <button
+              onClick={async () => {
+                setShowSidePicker(false)
+                try {
+                  await setCurrentSide('HOME')
+                  toast.show('Btm — Heimmannschaft schlägt', 'success')
+                } catch (e) {
+                  toast.show((e as Error).message, 'error')
+                }
+              }}
+              disabled={meta.currentSide === 'HOME'}
+              className="w-full px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer disabled:opacity-50 text-left"
+            >
+              <div className="font-display font-bold text-navy-900 text-sm uppercase tracking-wide">↓ Btm — Heim schlägt</div>
+              <div className="text-xs text-gray-500 mt-0.5">{meta.homeTeamName}</div>
+            </button>
+          </div>
+        </ResponsiveSheet>
       )}
 
       {/* Confirm: switch side */}

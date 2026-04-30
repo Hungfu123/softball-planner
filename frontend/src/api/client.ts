@@ -472,6 +472,10 @@ export async function registerSpielbogenLeagueResult(bogenId: number): Promise<L
   return request<LeagueResultLite>(`/spielbogen/${bogenId}/register-league-result`, { method: 'POST' })
 }
 
+export async function setSpielbogenCurrentSide(bogenId: number, side: BogenSide): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${bogenId}/set-side?side=${side}`, { method: 'POST' })
+}
+
 export async function correctLastSpielbogenAtBat(
   bogenId: number,
   side: BogenSide,

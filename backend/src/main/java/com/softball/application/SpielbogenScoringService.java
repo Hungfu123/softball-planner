@@ -285,6 +285,18 @@ public class SpielbogenScoringService {
         return last;
     }
 
+    @Transactional
+    public Spielbogen setCurrentSide(final Long bogenId, final BogenSide newSide) {
+        Spielbogen bogen = bogenRepo.findById(bogenId)
+            .orElseThrow(() -> new ResourceNotFoundException("Spielbogen", bogenId));
+        if (bogen.getStatus() != BogenStatus.LIVE) {
+            throw new BusinessValidationException("Set-Side nur in Status LIVE möglich (aktuell: " + bogen.getStatus() + ")");
+        }
+        bogen.setCurrentSide(newSide);
+        log.info("Spielbogen {} currentSide manuell gesetzt auf {}", bogenId, newSide);
+        return bogenRepo.save(bogen);
+    }
+
     @Transactional(readOnly = true)
     public List<SpielbogenAtBat> findAtBats(final Long bogenId, final BogenSide side) {
         if (side == null) return atBatRepo.findByBogenId(bogenId);

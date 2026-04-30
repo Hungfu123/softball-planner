@@ -74,5 +74,11 @@ export function useSpielbogenScoring(bogenId: number | null) {
     await reload()
   }, [bogenId, reload])
 
-  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat }
+  const setCurrentSide = useCallback(async (side: BogenSide) => {
+    if (bogenId == null) return
+    await api.setSpielbogenCurrentSide(bogenId, side)
+    await reload()
+  }, [bogenId, reload])
+
+  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide }
 }

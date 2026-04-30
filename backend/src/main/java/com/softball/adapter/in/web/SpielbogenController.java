@@ -216,6 +216,11 @@ public class SpielbogenController {
         return SpielbogenResponse.from(scoringService.switchSide(id));
     }
 
+    @PostMapping("/{id}/set-side")
+    public SpielbogenResponse setCurrentSide(@PathVariable Long id, @RequestParam BogenSide side) {
+        return SpielbogenResponse.from(scoringService.setCurrentSide(id, side));
+    }
+
     @PostMapping("/{id}/reset")
     public SpielbogenResponse resetScoring(@PathVariable Long id) {
         return SpielbogenResponse.from(scoringService.resetScoring(id));
