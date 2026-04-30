@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { AtBatResult, BogenSide, SpielbogenRecordAtBatRequest, BogenBaseStateDto } from '@/types'
 import { OutDetailDrawer } from './OutDetailDrawer'
+import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 
 interface Props {
@@ -36,6 +37,7 @@ export function BogenActionButtons({
   const [mode, setMode] = useState<Mode>('idle')
   const [showOutDrawer, setShowOutDrawer] = useState(false)
   const [showMore, setShowMore] = useState(false)
+  const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const noSlot = currentSlotId == null
@@ -151,6 +153,9 @@ export function BogenActionButtons({
         onSubmit={handleOutSubmit}
       />
 
+      {/* Cheatsheet drawer */}
+      <CheatsheetDrawer open={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
+
       {/* More menu */}
       <ResponsiveSheet
         open={showMore}
@@ -175,12 +180,11 @@ export function BogenActionButtons({
             </button>
           )}
           <button
-            onClick={() => setShowMore(false)}
-            className="w-full text-left px-4 py-3 rounded-xl border border-cream-200 bg-cream-50 text-gray-400 cursor-not-allowed opacity-60"
-            disabled
+            onClick={() => { setShowMore(false); setShowCheatsheet(true) }}
+            className="w-full text-left px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer"
           >
-            <div className="font-display font-bold text-sm uppercase tracking-wide">Cheatsheet</div>
-            <div className="text-xs mt-0.5">Kommt in Phase 3</div>
+            <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Cheatsheet</div>
+            <div className="text-xs text-gray-500 mt-0.5">Notation-Übersicht</div>
           </button>
         </div>
       </ResponsiveSheet>

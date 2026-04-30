@@ -8,7 +8,10 @@ import type {
   SpielbogenStealingResponse,
 } from '@/types'
 import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
+import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import { DiamondCell } from './DiamondCell'
+import * as api from '@/api/client'
+import { useToastContext } from '@/components/layout/Layout'
 
 interface Props {
   open: boolean
@@ -16,6 +19,7 @@ interface Props {
   sheet: BogenSheetResponse
   onEndGame?: () => void
   onReopenGame?: () => void
+  onReload?: () => void
 }
 
 const MAX_INNINGS = 7
@@ -95,8 +99,10 @@ function SideSheet({
   )
 }
 
-export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame }: Props) {
+export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, onReload }: Props) {
   const [activeSide, setActiveSide] = useState<BogenSide>(sheet.meta.currentSide)
+  const [ligaLoading, setLigaLoading] = useState(false)
+  const toast = useToastContext()
 
   const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats, stealingEvents, inningRuns } = sheet
 
@@ -105,6 +111,25 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame }
 
   const isLive = meta.status === 'LIVE'
   const isDone = meta.status === 'DONE'
+
+  const canSendToLiga = isDone && meta.season != null && meta.leagueResultId == null
+
+  const handleLigaSenden = async () => {
+    setLigaLoading(true)
+    try {
+      await api.registerSpielbogenLeagueResult(meta.id)
+      toast.show('Liga-Tabelle aktualisiert', 'success')
+      onReload?.()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setLigaLoading(false)
+    }
+  }
+
+  const handlePdfExport = () => {
+    generateSpielbogenPdf(sheet)
+  }
 
   return (
     <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
@@ -170,7 +195,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame }
 
           {/* Footer actions */}
           {(isLive || isDone) && (
-            <div className="px-4 py-3 border-t border-cream-200 shrink-0 flex gap-2"
+            <div className="px-4 py-3 border-t border-cream-200 shrink-0 flex flex-wrap gap-2"
               style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
             >
               {isLive && onEndGame && (
@@ -187,6 +212,23 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame }
                   className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
                 >
                   Spiel wieder öffnen
+                </button>
+              )}
+              {isDone && (
+                <button
+                  onClick={handlePdfExport}
+                  className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
+                >
+                  Als PDF exportieren
+                </button>
+              )}
+              {canSendToLiga && (
+                <button
+                  onClick={handleLigaSenden}
+                  disabled={ligaLoading}
+                  className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-navy-800 text-white hover:bg-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {ligaLoading ? 'Sende…' : 'An Liga senden'}
                 </button>
               )}
             </div>

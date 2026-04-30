@@ -454,3 +454,16 @@ export async function switchSpielbogenSide(bogenId: number): Promise<SpielbogenR
 export async function getSpielbogenSheet(bogenId: number): Promise<BogenSheetResponse> {
   return request<BogenSheetResponse>(`/spielbogen/${bogenId}/sheet`)
 }
+
+export interface LeagueResultLite {
+  id: number
+  homeTeam: { id: number; name: string; ownTeam: boolean }
+  awayTeam: { id: number; name: string; ownTeam: boolean }
+  homeScore: number
+  awayScore: number
+  date: string
+}
+
+export async function registerSpielbogenLeagueResult(bogenId: number): Promise<LeagueResultLite> {
+  return request<LeagueResultLite>(`/spielbogen/${bogenId}/register-league-result`, { method: 'POST' })
+}

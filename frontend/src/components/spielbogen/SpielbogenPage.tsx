@@ -284,6 +284,7 @@ export default function SpielbogenPage() {
           sheet={sheet}
           onEndGame={isLive ? () => { setShowSheet(false); setShowEndConfirm(true) } : undefined}
           onReopenGame={isDone ? handleReopenGame : undefined}
+          onReload={reload}
         />
       )}
 

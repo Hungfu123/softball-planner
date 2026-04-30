@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SlotEditor } from './SlotEditor'
 import { Button } from '@/components/shared'
+import { CopyFromGameDayModal } from './CopyFromGameDayModal'
 import type { SetLineupRequest, BogenSide } from '@/types'
 
 type Mode = 'manual' | 'fast'
@@ -30,6 +31,7 @@ const EMPTY_LINEUP = (): SetLineupRequest['slots'] =>
 export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
   const [activeSide, setActiveSide] = useState<BogenSide>('HOME')
   const [mode, setMode] = useState<Record<BogenSide, Mode>>({ HOME: 'manual', AWAY: 'manual' })
+  const [showCopy, setShowCopy] = useState(false)
 
   const slots = activeSide === 'HOME' ? homeLineup : awayLineup
 
@@ -69,7 +71,7 @@ export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
         </button>
       </div>
 
-      <div className="flex gap-2 text-xs">
+      <div className="flex gap-2 text-xs flex-wrap">
         <Button
           variant={mode[activeSide] === 'manual' ? 'secondary' : 'ghost'}
           size="sm"
@@ -84,9 +86,22 @@ export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
         >
           Schnell-Modus
         </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowCopy(true)}
+        >
+          Aus Spieltag laden
+        </Button>
       </div>
 
       <SlotEditor slots={slots} onChange={(s) => onChange(activeSide, s)} />
+
+      <CopyFromGameDayModal
+        open={showCopy}
+        onClose={() => setShowCopy(false)}
+        onCopy={(slots) => onChange(activeSide, slots)}
+      />
     </div>
   )
 }
