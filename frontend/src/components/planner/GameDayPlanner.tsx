@@ -386,78 +386,78 @@ export function GameDayPlanner() {
             </div>
           </div>
 
-          {/* DESKTOP Layout: klare Hierarchie — Text-Link / Primary / Tertiary-Group / CTA */}
-          <div className="hidden sm:flex items-center gap-2">
-            {/* Tertiary: pure Text-Link (rare action) */}
-            {availablePlayers.length > 0 && (
+          {/* DESKTOP Layout: 2-zeilig wie Mobile — Primary-Row (Anwesend + Live) + Toolbar-Strip (Auto, Fahrten, Scoring-PDF, PDF) */}
+          <div className="hidden sm:flex flex-col gap-2 items-end">
+            {/* Primary-Row: Anwesend + Live scoren */}
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowAutoAllConfirm(true)}
-                disabled={autoAllLoading}
-                className="font-display px-2 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
-                title="Alle Spiele automatisch aufstellen"
+                onClick={() => setShowPlayersModal(true)}
+                title="Wer ist am Spieltag dabei?"
+                className={`font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase rounded-lg cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
+                  availablePlayers.length === 0
+                    ? 'border-2 border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
+                    : 'bg-navy-900 text-white hover:bg-navy-800'
+                }`}
               >
-                <DiceIcon size={14} />
-                <span>Alle aufstellen</span>
+                <UsersIcon size={14} />
+                <span>Anwesend ({availablePlayers.length})</span>
+                {availablePlayers.length > 0 && availablePlayers.length < 9 && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
+                )}
               </button>
-            )}
-            {/* Primary: Anwesend (navy filled) */}
-            <button
-              onClick={() => setShowPlayersModal(true)}
-              title="Wer ist am Spieltag dabei?"
-              className={`font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase rounded-lg cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
-                availablePlayers.length === 0
-                  ? 'border-2 border-softball-red-500 bg-softball-red-50 text-softball-red-700 animate-pulse'
-                  : 'bg-navy-900 text-white hover:bg-navy-800'
-              }`}
-            >
-              <UsersIcon size={14} />
-              <span>Anwesend ({availablePlayers.length})</span>
-              {availablePlayers.length > 0 && availablePlayers.length < 9 && (
-                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Weniger als 9 Spieler — Minimum für ein Spiel" />
+              {gameDay && gameDay.games.length > 0 && (
+                <Link
+                  to={`/gameday/${gameDayId}/scoring/${activeTab}`}
+                  className="font-display px-4 py-2 rounded-lg bg-softball-red-600 text-white font-extrabold text-xs tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                  title="Live scoren"
+                >
+                  <BallIcon size={15} />
+                  <span>Live scoren</span>
+                </Link>
               )}
-            </button>
-            {/* Tertiary-Group: Icon-Only Buttons mit gap-Trennung */}
-            <div className="flex items-center gap-1 ml-1">
+            </div>
+            {/* Toolbar-Strip: Tertiary-Aktionen (Icon + Label) */}
+            <div className="flex items-center gap-1 border-t border-cream-200 pt-1.5">
+              {availablePlayers.length > 0 && (
+                <button
+                  onClick={() => setShowAutoAllConfirm(true)}
+                  disabled={autoAllLoading}
+                  className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+                  title="Alle Spiele automatisch aufstellen"
+                >
+                  <DiceIcon size={14} />
+                  <span>Auto</span>
+                </button>
+              )}
               <button
                 onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
                 title="Fahrten planen"
-                className={`p-2 rounded-lg border cursor-pointer transition-colors ${
+                className={`font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5 ${
                   activeSection === 'carpool'
-                    ? 'border-navy-600 bg-navy-50 text-navy-700'
-                    : 'border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-navy-400'
+                    ? 'bg-navy-50 text-navy-700'
+                    : 'text-gray-600 hover:text-navy-900 hover:bg-cream-100'
                 }`}
-                aria-label="Fahrten planen"
               >
-                <CarIcon size={16} />
+                <CarIcon size={14} />
+                <span>Fahrten</span>
               </button>
               <button
                 onClick={handleExportScoring}
-                className="p-2 rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
+                className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
                 title="Scoring-Sheet drucken"
-                aria-label="Scoring-Sheet drucken"
               >
-                <ClipboardIcon size={16} />
+                <ClipboardIcon size={14} />
+                <span>Scoring</span>
               </button>
               <button
                 onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
-                className="p-2 rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-navy-400 transition-colors cursor-pointer"
+                className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
                 title="Als PDF exportieren"
-                aria-label="Als PDF exportieren"
               >
-                <ExportDoc size={16} />
+                <ExportDoc size={14} />
+                <span>PDF</span>
               </button>
             </div>
-            {/* CTA: Live scoren — prominenter als Anwesend (px-4 + size up) */}
-            {gameDay && gameDay.games.length > 0 && (
-              <Link
-                to={`/gameday/${gameDayId}/scoring/${activeTab}`}
-                className="font-display ml-2 px-4 py-2 rounded-lg bg-softball-red-600 text-white font-extrabold text-xs tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 transition-colors cursor-pointer flex items-center gap-1.5"
-                title="Live scoren"
-              >
-                <BallIcon size={15} />
-                <span>Live scoren</span>
-              </Link>
-            )}
           </div>
         </div>
       </div>

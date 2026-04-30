@@ -40,8 +40,8 @@ export function LineupEditor({
   onMoveUp, onMoveDown, onReorder, onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
 }: Props) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   )
 
   const handleDragEnd = (event: DragEndEvent) => {

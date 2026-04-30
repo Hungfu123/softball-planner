@@ -63,8 +63,8 @@ export function PlayerManager() {
   const [tab, setTab] = useState<'spieler' | 'batting'>('spieler')
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   )
 
   const orderMode = tab === 'batting'
@@ -145,7 +145,7 @@ export function PlayerManager() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex gap-2 border-b border-cream-300">
         {([
           ['spieler', 'Spieler'],
           ['batting', 'Batting Reihenfolge'],
@@ -153,10 +153,10 @@ export function PlayerManager() {
           <button
             key={key}
             onClick={() => { setTab(key); setEditingId(null) }}
-            className={`py-2.5 px-4 rounded-lg text-sm font-semibold cursor-pointer transition-colors text-center ${
+            className={`font-display px-4 py-2 text-xs font-bold tracking-widest uppercase cursor-pointer border-b-2 -mb-[2px] transition-colors ${
               tab === key
-                ? 'bg-navy-800 text-white'
-                : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
+                ? 'border-softball-red-600 text-softball-red-700'
+                : 'border-transparent text-gray-500 hover:text-navy-900'
             }`}
           >
             {label}

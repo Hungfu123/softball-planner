@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse, PlayerBattingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
@@ -31,9 +32,10 @@ function formatPositions(positions: string[]): string {
 }
 
 function gameCountBadge(gc: number): string {
+  // 3 Stufen: 0 = noch nicht gespielt (Alarm-Rot), 1-2 = wenige Einsätze (Amber-Warn),
+  // 3+ = ausreichend (Emerald-OK). Keine Sonderfarbe für 2 — semantisch identisch zu 1.
   if (gc === 0) return 'bg-softball-red-100 text-softball-red-600'
-  if (gc <= 1) return 'bg-amber-100 text-amber-700'
-  if (gc <= 2) return 'bg-blue-100 text-blue-700'
+  if (gc <= 2) return 'bg-amber-100 text-amber-700'
   return 'bg-emerald-100 text-emerald-700'
 }
 
@@ -51,13 +53,30 @@ export function PlayerPool({
   battingStatsSeason = [], battingStatsYear = [], seasonYear,
   gameDayDate, onAdd,
 }: Props) {
-  const [battingScope, setBattingScope] = useState<'season' | 'year'>('year')
+  const [battingScope, setBattingScope] = useState<'season' | 'year'>(() => {
+    if (typeof window === 'undefined') return 'year'
+    const stored = localStorage.getItem('player-pool-batting-scope')
+    return stored === 'season' || stored === 'year' ? stored : 'year'
+  })
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('player-pool-batting-scope', battingScope)
+    }
+  }, [battingScope])
   const battingStats = battingScope === 'year' ? battingStatsYear : battingStatsSeason
   const battingMap = useMemo(() =>
     new Map(battingStats.map(b => [b.playerId, b])),
     [battingStats]
   )
-  const [tab, setTab] = useState<'pool' | 'overview' | 'training'>('pool')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawTab = searchParams.get('pool') as 'pool' | 'overview' | 'training' | null
+  const tab: 'pool' | 'overview' | 'training' = rawTab === 'overview' || rawTab === 'training' ? rawTab : 'pool'
+  const setTab = (next: 'pool' | 'overview' | 'training') => {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'pool') params.delete('pool')
+    else params.set('pool', next)
+    setSearchParams(params, { replace: true })
+  }
   const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('3months')
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)

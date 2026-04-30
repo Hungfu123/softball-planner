@@ -32,6 +32,8 @@ export function Dashboard() {
   const [newGdLabel, setNewGdLabel] = useState('')
   const [newGdLocation, setNewGdLocation] = useState('')
   const [newGdGameCount, setNewGdGameCount] = useState(3)
+  const [deleteGameDayId, setDeleteGameDayId] = useState<number | null>(null)
+  const [editGameDayId, setEditGameDayId] = useState<number | null>(null)
 
   // Letzte Auswahl aus localStorage (überlebt Navigation Logo→Dashboard)
   useEffect(() => {
@@ -58,17 +60,20 @@ export function Dashboard() {
       .catch(e => toast.show(e.message, 'error'))
   }, [selectedSeasonId, toast])
 
-  // Auto-Refresh wenn Dashboard sichtbar — alle 30s gameDays re-fetchen
-  // damit Live-Scores im Hero aktuell bleiben
+  // Auto-Refresh wenn Dashboard sichtbar UND keine Modal/Editor-Aktion läuft —
+  // alle 30s gameDays re-fetchen für Live-Scores im Hero. Pausiert während
+  // User editiert (Modal offen) damit Server-Reload Eingaben nicht überschreibt.
+  const editorActive = showNewGameDay || deleteGameDayId != null || editGameDayId != null || openSheet != null
   useEffect(() => {
     if (!selectedSeasonId) return
+    if (editorActive) return
     const tick = () => {
       if (document.visibilityState !== 'visible') return
       api.getGameDays(selectedSeasonId).then(setGameDays).catch(() => { /* silent */ })
     }
     const id = window.setInterval(tick, 30_000)
     return () => window.clearInterval(id)
-  }, [selectedSeasonId])
+  }, [selectedSeasonId, editorActive])
 
   const handleCreateGameDay = async () => {
     if (!selectedSeasonId || !newGdDate || !newGdGameCount) return
@@ -85,9 +90,6 @@ export function Dashboard() {
       toast.show((e as Error).message, 'error')
     }
   }
-
-  const [deleteGameDayId, setDeleteGameDayId] = useState<number | null>(null)
-  const [editGameDayId, setEditGameDayId] = useState<number | null>(null)
 
   const confirmDeleteGameDay = async () => {
     if (!deleteGameDayId) return

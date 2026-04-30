@@ -196,32 +196,42 @@ export function ScoringPage() {
         rbi: runsScored, // V1: RBI = Runs Scored (Vereinfachung)
       })
       setRecentlyScored(scoredPlayers)
+      // Reduced-Motion: User-Setting respektieren — keine Vollbild-Flashes
+      const reducedMotion = typeof window !== 'undefined'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches
       if (result === 'HOMERUN') {
-        setHomerunFlash({ batter: batterNameSnapshot, runsScored })
-        setTimeout(() => setHomerunFlash(null), 3200)
-        // Runner läuft Home → 1B → 2B → 3B → Home
-        setHomerunRunner({
-          playerId: scoreboard.currentBatterId,
-          playerName: batterNameSnapshot,
-          battingOrder: scoreboard.currentBatterOrder ?? null,
-        })
-        setTimeout(() => setHomerunRunner(null), 2200)
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        if (!reducedMotion) {
+          setHomerunFlash({ batter: batterNameSnapshot, runsScored })
+          setTimeout(() => setHomerunFlash(null), 2200)
+          setHomerunRunner({
+            playerId: scoreboard.currentBatterId,
+            playerName: batterNameSnapshot,
+            battingOrder: scoreboard.currentBatterOrder ?? null,
+          })
+          setTimeout(() => setHomerunRunner(null), 1600)
+        }
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
           try { navigator.vibrate([80, 60, 80, 60, 200]) } catch { /* vibrate not supported */ }
         }
       } else if (result === 'HIT_BY_PITCH') {
-        setHbpFlash(batterNameSnapshot)
-        setTimeout(() => setHbpFlash(null), 1500)
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        if (!reducedMotion) {
+          setHbpFlash(batterNameSnapshot)
+          setTimeout(() => setHbpFlash(null), 1500)
+        }
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
           try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
         }
       } else if (result === 'WALK') {
-        setWalkFlash({ batter: batterNameSnapshot, runsScored })
-        setTimeout(() => setWalkFlash(null), 1700)
+        if (!reducedMotion) {
+          setWalkFlash({ batter: batterNameSnapshot, runsScored })
+          setTimeout(() => setWalkFlash(null), 1700)
+        }
       } else if (result === 'STRIKEOUT') {
-        setStrikeoutFlash(batterNameSnapshot)
-        setTimeout(() => setStrikeoutFlash(null), 1600)
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        if (!reducedMotion) {
+          setStrikeoutFlash(batterNameSnapshot)
+          setTimeout(() => setStrikeoutFlash(null), 1600)
+        }
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
           try { navigator.vibrate([40, 40, 80]) } catch { /* vibrate not supported */ }
         }
       }
@@ -246,9 +256,16 @@ export function ScoringPage() {
         }
       }
 
+      // Auto-Open Korrektur-Sheet nur wenn echte Entscheidung nötig:
+      //   - Runner auf 3B → potentieller Sac-Fly oder Squeeze
+      //   - Mehrere Runner → Advancement/Double-Play-Frage
+      // Nicht bei einzelnem Force-Out auf 1B (klar = Runner steht).
       if (result === 'OUT' && hadRunners && !willBe3rdOut) {
-        // Auto-Open nach OUT: meist muss User entscheiden (Sac Fly, DP, Advancement)
-        setShowCorrection(true)
+        const runnerCount = scoreboard.runners?.length ?? 0
+        const runnerOnThird = displayBaseState.third != null
+        if (runnerOnThird || runnerCount >= 2) {
+          setShowCorrection(true)
+        }
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -1254,7 +1271,7 @@ export function ScoringPage() {
             </motion.div>
 
             {/* Ink-Splatter from center */}
-            {[...Array(16)].map((_, i) => {
+            {[...Array(10)].map((_, i) => {
               const colors = isGrandSlam
                 ? ['bg-amber-400', 'bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
                 : ['bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
@@ -1281,7 +1298,7 @@ export function ScoringPage() {
             })}
 
             {/* Confetti rain (Grand Slam: extra dichter + amber) */}
-            {[...Array(isGrandSlam ? 32 : 18)].map((_, i) => {
+            {[...Array(isGrandSlam ? 22 : 12)].map((_, i) => {
               const colors = isGrandSlam
                 ? ['bg-amber-400', 'bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
                 : ['bg-softball-red-600', 'bg-navy-900', 'bg-cream-300']
