@@ -27,8 +27,8 @@ export function BogenSideToggle({ currentSide, onSwitchSide, disabled }: Props) 
           disabled={disabled || currentSide === 'AWAY'}
           className={`font-display px-5 py-1.5 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
             ${currentSide === 'AWAY'
-              ? 'bg-navy-800 text-white'
-              : 'text-navy-600 hover:bg-navy-100 disabled:opacity-50 disabled:cursor-not-allowed'
+              ? 'bg-softball-red-600 text-white'
+              : 'text-softball-red-700 hover:bg-softball-red-50 disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
         >
           Gast

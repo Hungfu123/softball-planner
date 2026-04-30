@@ -5,6 +5,8 @@ import type { BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
 interface Props {
   baseState: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
+  /** When set: HR-Runner travels Home → 1B → 2B → 3B → Home, then fades. */
+  homerunRunner?: { slotId: number; name: string; battingOrder: number } | null
 }
 
 // Positions im 220x220 viewBox (gleich wie DiamondView)
@@ -113,7 +115,7 @@ function StaticBase({ pos, label, occupied }: StaticBaseProps) {
   )
 }
 
-export function BogenDiamondView({ baseState, slots }: Props) {
+export function BogenDiamondView({ baseState, slots, homerunRunner }: Props) {
   const runners: RunnerData[] = useMemo(() => {
     if (!baseState) return []
     const result: RunnerData[] = []
@@ -171,6 +173,32 @@ export function BogenDiamondView({ baseState, slots }: Props) {
           {runners.map(r => (
             <Runner key={r.slotId} r={r} />
           ))}
+        </AnimatePresence>
+
+        {/* Homerun runner — travels Home → 1B → 2B → 3B → Home, then fades */}
+        <AnimatePresence>
+          {homerunRunner && (
+            <motion.g
+              key={`hr-${homerunRunner.slotId}`}
+              initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+              animate={{
+                opacity: [0, 1, 1, 1, 1, 1],
+                scale: [0.6, 1, 1, 1, 1, 1.2],
+                x: [POS.home.cx, POS.first.cx, POS.second.cx, POS.third.cx, POS.home.cx, POS.home.cx],
+                y: [POS.home.cy, POS.first.cy, POS.second.cy, POS.third.cy, POS.home.cy, POS.home.cy],
+              }}
+              exit={{ opacity: 0, scale: 1.4 }}
+              transition={{ duration: 2.0, ease: 'easeInOut', times: [0, 0.25, 0.5, 0.75, 0.95, 1] }}
+            >
+              <circle cx={0} cy={0} r="18" fill="#CC2936" stroke="#fff" strokeWidth="2.5" />
+              <text x={0} y={-4} textAnchor="middle" fontSize="8" fontWeight="700" fill="white" style={{ pointerEvents: 'none' }}>
+                #{homerunRunner.battingOrder}
+              </text>
+              <text x={0} y={7} textAnchor="middle" fontSize="7" fontWeight="600" fill="white" style={{ pointerEvents: 'none' }}>
+                {truncate(homerunRunner.name)}
+              </text>
+            </motion.g>
+          )}
         </AnimatePresence>
       </svg>
     </div>

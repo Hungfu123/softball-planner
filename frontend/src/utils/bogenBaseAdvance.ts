@@ -87,8 +87,22 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
       return { baseStateAfter: { firstSlotId: newB1, secondSlotId: newB2, thirdSlotId: newB3 }, runsScored }
     }
     case 'STRIKEOUT':
-    case 'OUT':
-      // No base advancement (DP/TP base changes are handled via out-drawer detail, not here)
+    case 'OUT': {
+      // Standard DP: 1B runner forced at 2B (most common DP scenario)
+      if (input.outType === 'DOUBLE_PLAY') {
+        return {
+          baseStateAfter: { ...before, firstSlotId: null },
+          runsScored: 0,
+        }
+      }
+      // Triple Play: clear all runners
+      if (input.outType === 'TRIPLE_PLAY') {
+        return {
+          baseStateAfter: { firstSlotId: null, secondSlotId: null, thirdSlotId: null },
+          runsScored: 0,
+        }
+      }
       return { baseStateAfter: before, runsScored: 0 }
+    }
   }
 }

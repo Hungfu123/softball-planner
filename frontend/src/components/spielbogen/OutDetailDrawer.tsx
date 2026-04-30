@@ -60,7 +60,7 @@ function InfieldOptionsView({ fielder, hasRunners, onSubmit, onBack }: InfieldOp
     },
     ...(hasRunners ? [{
       label: `Double Play (${fielder}-${defaultDpPartner}-3)`,
-      description: 'Doppelspiel',
+      description: 'Doppelspiel — Runner an 1B out',
       action: () => onSubmit({
         result: 'OUT',
         outType: 'DOUBLE_PLAY',

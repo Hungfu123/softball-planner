@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { AtBatResult, BogenSide, SpielbogenRecordAtBatRequest, BogenBaseStateDto } from '@/types'
+import type { AtBatResult, BogenSide, SpielbogenRecordAtBatRequest, SpielbogenRecordStealingRequest, BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
 import { OutDetailDrawer } from './OutDetailDrawer'
 import { CheatsheetDrawer } from './CheatsheetDrawer'
+import { StealingDrawer } from './StealingDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { computeBaseStateAdvance } from '@/utils/bogenBaseAdvance'
 
@@ -11,8 +12,10 @@ interface Props {
   currentSlotId: number | null
   inning: number
   baseStateAfter: BogenBaseStateDto | null
+  slots: SpielbogenSlotResponse[]
   disabled?: boolean
   onRecord: (req: SpielbogenRecordAtBatRequest) => Promise<void>
+  onRecordStealing: (req: SpielbogenRecordStealingRequest) => Promise<void>
   onSwitchSide: () => void
   onSubstitution: () => void
   onEndGame: () => void
@@ -29,14 +32,17 @@ export function BogenActionButtons({
   currentSlotId,
   inning,
   baseStateAfter,
+  slots,
   disabled,
   onRecord,
+  onRecordStealing,
   onSubstitution,
   onEndGame,
   canEndGame,
 }: Props) {
   const [mode, setMode] = useState<Mode>('idle')
   const [showOutDrawer, setShowOutDrawer] = useState(false)
+  const [showStealing, setShowStealing] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -128,7 +134,7 @@ export function BogenActionButtons({
               <div className="flex gap-2">
                 <SmallPill
                   label="STEALING"
-                  onClick={() => {/* handled in parent/RflSheetDrawer -- placeholder */}}
+                  onClick={() => setShowStealing(true)}
                   disabled={isDisabled || !runnersPresent}
                 />
                 <SmallPill label="···" onClick={() => setShowMore(true)} disabled={submitting} />
@@ -172,6 +178,17 @@ export function BogenActionButtons({
         onClose={() => setShowOutDrawer(false)}
         onSubmit={handleOutSubmit}
         baseStateAfter={baseStateAfter}
+      />
+
+      {/* Stealing drawer */}
+      <StealingDrawer
+        open={showStealing}
+        onClose={() => setShowStealing(false)}
+        baseState={baseStateAfter}
+        slots={slots}
+        side={side}
+        inning={inning}
+        onSubmit={onRecordStealing}
       />
 
       {/* Cheatsheet drawer */}
