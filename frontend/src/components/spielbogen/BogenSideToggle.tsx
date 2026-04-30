@@ -1,0 +1,42 @@
+import type { BogenSide } from '@/types'
+
+interface Props {
+  currentSide: BogenSide
+  outs: number
+  onSwitchSide: () => void
+  disabled?: boolean
+}
+
+export function BogenSideToggle({ currentSide, onSwitchSide, disabled }: Props) {
+  return (
+    <div className="flex items-center justify-center gap-1 p-2 bg-cream-100 border-b border-cream-300">
+      <div className="flex rounded-full border border-cream-300 bg-white overflow-hidden shadow-sm">
+        <button
+          onClick={currentSide !== 'HOME' ? onSwitchSide : undefined}
+          disabled={disabled || currentSide === 'HOME'}
+          className={`font-display px-5 py-1.5 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
+            ${currentSide === 'HOME'
+              ? 'bg-navy-800 text-white'
+              : 'text-navy-600 hover:bg-navy-100 disabled:opacity-50 disabled:cursor-not-allowed'
+            }`}
+        >
+          Heim
+        </button>
+        <button
+          onClick={currentSide !== 'AWAY' ? onSwitchSide : undefined}
+          disabled={disabled || currentSide === 'AWAY'}
+          className={`font-display px-5 py-1.5 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
+            ${currentSide === 'AWAY'
+              ? 'bg-navy-800 text-white'
+              : 'text-navy-600 hover:bg-navy-100 disabled:opacity-50 disabled:cursor-not-allowed'
+            }`}
+        >
+          Gast
+        </button>
+      </div>
+      <span className="text-xs text-gray-500 font-body ml-2">
+        {currentSide === 'HOME' ? 'Heimmannschaft schlägt' : 'Gastmannschaft schlägt'}
+      </span>
+    </div>
+  )
+}
