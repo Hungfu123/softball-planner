@@ -7,18 +7,20 @@ export function useSpielbogenList(filter?: { seasonId?: number }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const seasonId = filter?.seasonId
+
   const reload = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.listSpielbogen(filter)
+      const data = await api.listSpielbogen(seasonId != null ? { seasonId } : undefined)
       setItems(data)
     } catch (e) {
       setError((e as Error).message)
     } finally {
       setLoading(false)
     }
-  }, [filter?.seasonId])
+  }, [seasonId])
 
   useEffect(() => {
     reload()

@@ -91,8 +91,3 @@ export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
   )
 }
 
-export function lineupIsValid(homeLineup: SetLineupRequest['slots'], awayLineup: SetLineupRequest['slots']): boolean {
-  const filledHome = homeLineup.filter(s => s.name.trim()).length
-  const filledAway = awayLineup.filter(s => s.name.trim()).length
-  return filledHome >= 9 && filledAway >= 9
-}

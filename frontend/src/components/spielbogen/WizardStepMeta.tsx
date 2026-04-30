@@ -54,7 +54,3 @@ export function WizardStepMeta({ meta, onChange }: Props) {
   )
 }
 
-export function metaIsValid(meta: Partial<CreateSpielbogenRequest>): boolean {
-  return !!(meta.date && meta.homeTeamName?.trim() && meta.awayTeamName?.trim()
-            && meta.homeTeamName.trim() !== meta.awayTeamName.trim())
-}
