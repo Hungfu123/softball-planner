@@ -285,11 +285,14 @@ export default function SpielbogenPage() {
                 }
               }
             }
-            setScoredFlash({
-              runners: scoredNames.length > 0 ? scoredNames : (runsScored > 0 ? [`${runsScored} Run${runsScored > 1 ? 's' : ''}`] : []),
-              hitLabel: isHit && hadRunners && scoredNames.length === 0 ? hitLabel : null,
-            })
-            setTimeout(() => setScoredFlash(null), 2200)
+            // Nur Flash zeigen wenn tatsächlich Runs scored — keine Dead-End-Frage bei 0 Runs
+            if (scoredNames.length > 0 || runsScored > 0) {
+              setScoredFlash({
+                runners: scoredNames.length > 0 ? scoredNames : [`${runsScored} Run${runsScored > 1 ? 's' : ''}`],
+                hitLabel: null,
+              })
+              setTimeout(() => setScoredFlash(null), 2200)
+            }
           }
         }
       }
@@ -979,7 +982,7 @@ export default function SpielbogenPage() {
                     : scoredFlash.hitLabel}
                 </div>
                 <div className="font-display text-base font-bold tracking-wider uppercase truncate max-w-[200px]">
-                  {scoredFlash.runners.length > 0 ? scoredFlash.runners.join(' · ') : 'Runner anders?'}
+                  {scoredFlash.runners.join(' · ')}
                 </div>
               </div>
             </div>
