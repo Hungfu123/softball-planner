@@ -207,9 +207,93 @@ function RunnerOutPickerView({
   )
 }
 
+function FlyOutTagUpView({
+  fielder,
+  baseState,
+  slots,
+  onConfirm,
+  onBack,
+}: {
+  fielder: number
+  baseState: BogenBaseStateDto
+  slots: SpielbogenSlotResponse[]
+  onConfirm: (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => void
+  onBack: () => void
+}) {
+  const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
+  if (baseState.firstSlotId != null) {
+    const slot = slots.find(s => s.id === baseState.firstSlotId)
+    if (slot) runners.push({ slotId: slot.id, fromBase: 1, name: slot.name })
+  }
+  if (baseState.secondSlotId != null) {
+    const slot = slots.find(s => s.id === baseState.secondSlotId)
+    if (slot) runners.push({ slotId: slot.id, fromBase: 2, name: slot.name })
+  }
+  if (baseState.thirdSlotId != null) {
+    const slot = slots.find(s => s.id === baseState.thirdSlotId)
+    if (slot) runners.push({ slotId: slot.id, fromBase: 3, name: slot.name })
+  }
+
+  const [advances, setAdvances] = useState<Record<1 | 2 | 3, boolean>>({ 1: false, 2: false, 3: false })
+
+  const toggle = (b: 1 | 2 | 3) => setAdvances(prev => ({ ...prev, [b]: !prev[b] }))
+
+  return (
+    <div className="p-4 space-y-3">
+      <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
+        Fly Out F{fielder} — Tag Up?
+      </h3>
+      <p className="text-xs text-gray-500 font-body">
+        Welche Runner sind nach dem Catch weitergelaufen?
+      </p>
+      <div className="space-y-2">
+        {runners.map(r => {
+          const targetBase = r.fromBase + 1
+          const targetLabel = targetBase === 4 ? 'Home (Run!)' : `${targetBase}B`
+          return (
+            <button
+              key={r.slotId}
+              onClick={() => toggle(r.fromBase)}
+              className={`w-full text-left px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                advances[r.fromBase]
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                  : 'border-cream-300 bg-white text-gray-700 hover:bg-cream-100'
+              }`}
+            >
+              <div className="font-display font-bold text-sm flex items-center justify-between">
+                <span>{r.name} (auf {r.fromBase}B)</span>
+                <span className="text-xs">
+                  {advances[r.fromBase] ? `→ ${targetLabel} ✓` : 'bleibt'}
+                </span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={onBack}
+          className="flex-1 py-2 text-sm text-gray-500 rounded-lg border border-cream-300 hover:bg-cream-100 cursor-pointer"
+        >
+          ← Zurück
+        </button>
+        <button
+          onClick={() => onConfirm(
+            ([1, 2, 3] as const).map(b => ({ fromBase: b, advance: advances[b] }))
+          )}
+          className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer"
+        >
+          Bestätigen
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
+  const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
 
@@ -220,16 +304,77 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleFielderTap = (pos: number) => {
     if (pos >= 7) {
-      // Outfield: directly submit FLY out
-      onSubmit({
-        result: 'OUT',
-        outType: 'FLY',
-        fielderChain: [pos],
-      })
+      // Outfielder — Fly Out. If runners on base, ask tag-up.
+      const hasAnyRunner = baseStateAfter && (
+        baseStateAfter.firstSlotId != null ||
+        baseStateAfter.secondSlotId != null ||
+        baseStateAfter.thirdSlotId != null
+      )
+      if (hasAnyRunner) {
+        setPendingFlyOutRequest({ fielder: pos })
+      } else {
+        onSubmit({
+          result: 'OUT',
+          outType: 'FLY',
+          fielderChain: [pos],
+        })
+      }
     } else {
       // Infield: switch to options state within the same drawer
       setSelectedFielder(pos)
     }
+  }
+
+  const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => {
+    if (pendingFlyOutRequest == null) return
+    const before = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
+    const after: BogenBaseStateDto = { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
+    let runs = 0
+
+    // Process advances in order 3B→Home, 2B→3B, 1B→2B (highest base first to avoid overwrite conflicts)
+    // 3B advance
+    const adv3 = advances.find(a => a.fromBase === 3)?.advance ?? false
+    if (before.thirdSlotId != null) {
+      if (adv3) runs += 1  // home
+      else after.thirdSlotId = before.thirdSlotId
+    }
+    // 2B advance
+    const adv2 = advances.find(a => a.fromBase === 2)?.advance ?? false
+    if (before.secondSlotId != null) {
+      if (adv2) {
+        if (after.thirdSlotId != null) {
+          // 3B occupied — can't advance to 3B; keep on 2B
+          after.secondSlotId = before.secondSlotId
+        } else {
+          after.thirdSlotId = before.secondSlotId
+        }
+      } else {
+        after.secondSlotId = before.secondSlotId
+      }
+    }
+    // 1B advance
+    const adv1 = advances.find(a => a.fromBase === 1)?.advance ?? false
+    if (before.firstSlotId != null) {
+      if (adv1) {
+        if (after.secondSlotId != null) {
+          after.firstSlotId = before.firstSlotId
+        } else {
+          after.secondSlotId = before.firstSlotId
+        }
+      } else {
+        after.firstSlotId = before.firstSlotId
+      }
+    }
+
+    onSubmit({
+      result: 'OUT',
+      outType: 'FLY',
+      fielderChain: [pendingFlyOutRequest.fielder],
+      runsScored: runs,
+      rbi: runs,
+      baseStateAfter: after,
+    })
+    setPendingFlyOutRequest(null)
   }
 
   const handleSkip = () => {
@@ -248,6 +393,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   const handleClose = () => {
     setSelectedFielder(null)
     setPendingDpRequest(null)
+    setPendingFlyOutRequest(null)
     onClose()
   }
 
@@ -291,7 +437,15 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {pendingDpRequest != null ? (
+            {pendingFlyOutRequest != null ? (
+              <FlyOutTagUpView
+                fielder={pendingFlyOutRequest.fielder}
+                baseState={baseState}
+                slots={slots}
+                onConfirm={handleFlyOutConfirm}
+                onBack={() => setPendingFlyOutRequest(null)}
+              />
+            ) : pendingDpRequest != null ? (
               <RunnerOutPickerView
                 fielder={pendingDpRequest.fielder}
                 defaultDpPartner={pendingDpRequest.defaultDpPartner}

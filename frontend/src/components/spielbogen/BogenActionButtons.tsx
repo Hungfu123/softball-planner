@@ -130,8 +130,8 @@ export function BogenActionButtons({
               {/* Tier 1: Big buttons */}
               <div className="grid grid-cols-3 gap-2">
                 <BigButton label="TREFFER" color="navy" onClick={() => setMode('hit-expanded')} disabled={isDisabled} />
-                <BigButton label="STRIKE" color="red" onClick={() => handleRecord('STRIKEOUT')} disabled={isDisabled} />
-                <BigButton label="AUS" color="gray" subtitle="Detail" onClick={() => setShowOutDrawer(true)} disabled={isDisabled} />
+                <BigButton label="STRIKEOUT" color="red" onClick={() => handleRecord('STRIKEOUT')} disabled={isDisabled} />
+                <BigButton label="AUS" color="gray" subtitle="Grounder / Fly" onClick={() => setShowOutDrawer(true)} disabled={isDisabled} />
               </div>
               {/* Tier 2: Medium buttons */}
               <div className="grid grid-cols-2 gap-2">
@@ -239,41 +239,50 @@ export function BogenActionButtons({
   )
 }
 
+/*
+ * Button-Farben nach Outcome-Semantik (WCAG-AA auf weißem Text):
+ *   navy-800    → TREFFER (Brand-Haupt, aktives Positives)
+ *   emerald-600 → WALK (free base, entspanntes Positives)
+ *   softball-red-600 → STRIKEOUT (Out, negativ)
+ *   gray-500    → AUS (neutral, Grounder/Fly)
+ *   amber-600   → HBP (Warn/Schmerz — dunkler als -500 für AA-Kontrast mit white)
+ */
+const COLOR_CLASSES = {
+  navy:    'bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white',
+  red:     'bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white',
+  gray:    'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
+  emerald: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
+  amber:   'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white',
+} as const
+
+type Color = keyof typeof COLOR_CLASSES
+
 function BigButton({ label, color, subtitle, onClick, disabled }: {
-  label: string; color: 'navy' | 'red' | 'gray'; subtitle?: string; onClick: () => void; disabled?: boolean
+  label: string; color: Color; subtitle?: string; onClick: () => void; disabled?: boolean
 }) {
-  const cls = {
-    navy: 'bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white',
-    red: 'bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white',
-    gray: 'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
-  }[color]
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`font-display h-16 rounded-xl font-extrabold text-base tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${cls}`}
+      className={`font-display h-16 sm:h-[72px] rounded-xl font-extrabold text-base sm:text-lg tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="font-body text-[9px] font-medium opacity-80 tracking-normal normal-case">{subtitle}</span>}
+      {subtitle && <span className="font-body text-[9px] sm:text-[10px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
     </button>
   )
 }
 
 function MedButton({ label, color, subtitle, onClick, disabled }: {
-  label: string; color: 'emerald' | 'amber'; subtitle?: string; onClick: () => void; disabled?: boolean
+  label: string; color: Color; subtitle?: string; onClick: () => void; disabled?: boolean
 }) {
-  const cls = {
-    emerald: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
-    amber: 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white',
-  }[color]
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`font-display h-12 rounded-xl font-extrabold text-sm tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${cls}`}
+      className={`font-display h-12 sm:h-[60px] rounded-xl font-extrabold text-sm sm:text-base tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="font-body text-[9px] font-medium opacity-80 tracking-normal normal-case">{subtitle}</span>}
+      {subtitle && <span className="font-body text-[9px] sm:text-[10px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
     </button>
   )
 }
@@ -297,7 +306,7 @@ function HitSub({ label, onClick, accent }: { label: string; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className={`font-display h-16 rounded-xl font-extrabold text-base tracking-widest uppercase cursor-pointer transition-colors ${cls}`}
+      className={`font-display h-16 sm:h-[72px] rounded-xl font-extrabold text-base sm:text-lg tracking-widest uppercase cursor-pointer transition-colors ${cls}`}
     >
       {label}
     </button>
