@@ -13,6 +13,7 @@ public class Game {
     private GameDay gameDay;
     private int lineupEntryCount;
     private Instant endedAt;
+    private String battingSide;
     private List<LineupEntry> lineupEntries = new ArrayList<>();
     private List<GameStaff> staff = new ArrayList<>();
 
@@ -44,4 +45,6 @@ public class Game {
     public Long getGameDayId() { return gameDay != null ? gameDay.getId() : null; }
     public Instant getEndedAt() { return endedAt; }
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
+    public String getBattingSide() { return battingSide; }
+    public void setBattingSide(final String battingSide) { this.battingSide = battingSide; }
 }

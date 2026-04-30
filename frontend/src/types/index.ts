@@ -36,6 +36,7 @@ export interface GameResponse {
   gameDayId: number
   lineupEntryCount: number
   endedAt?: string | null
+  battingSide?: 'top' | 'bottom' | null
   atBatCount?: number
 }
 

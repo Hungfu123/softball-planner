@@ -21,6 +21,7 @@ public class GameMapper {
         game.setOpponentTeam(leagueTeamMapper.toDomain(entity.getOpponentTeam()));
         game.setLineupEntryCount(entity.getLineupEntryCount());
         game.setEndedAt(entity.getEndedAt());
+        game.setBattingSide(entity.getBattingSide());
         if (entity.getGameDay() != null) {
             final com.softball.domain.model.GameDay gd = new com.softball.domain.model.GameDay();
             gd.setId(entity.getGameDay().getId());

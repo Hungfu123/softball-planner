@@ -58,6 +58,11 @@ public class GameController {
         return toResponseWithLive(gameService.endGame(id));
     }
 
+    @PutMapping("/{id}/batting-side")
+    public GameResponse setBattingSide(@PathVariable final Long id, @RequestBody @Valid final SetBattingSideRequest request) {
+        return toResponseWithLive(gameService.setBattingSide(id, request.battingSide()));
+    }
+
     @PostMapping("/{id}/reopen")
     public GameResponse reopenGame(@PathVariable final Long id) {
         return toResponseWithLive(gameService.reopenGame(id));

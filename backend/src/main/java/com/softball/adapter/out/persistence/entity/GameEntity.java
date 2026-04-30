@@ -35,6 +35,9 @@ public class GameEntity {
     @Column(name = "ended_at")
     private Instant endedAt;
 
+    @Column(name = "batting_side", length = 10)
+    private String battingSide;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_day_id", nullable = false)
     @JsonIgnore
@@ -74,4 +77,6 @@ public class GameEntity {
     public Long getGameDayId() { return gameDay != null ? gameDay.getId() : null; }
     public Instant getEndedAt() { return endedAt; }
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
+    public String getBattingSide() { return battingSide; }
+    public void setBattingSide(final String battingSide) { this.battingSide = battingSide; }
 }

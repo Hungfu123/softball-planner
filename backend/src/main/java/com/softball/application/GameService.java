@@ -77,6 +77,16 @@ public class GameService {
     }
 
     @Transactional
+    public Game setBattingSide(final Long gameId, final String battingSide) {
+        if (battingSide != null && !battingSide.equals("top") && !battingSide.equals("bottom")) {
+            throw new BusinessValidationException("battingSide muss 'top', 'bottom' oder null sein");
+        }
+        final Game game = findById(gameId);
+        game.setBattingSide(battingSide);
+        return gameRepository.save(game);
+    }
+
+    @Transactional
     public Game endGame(final Long gameId) {
         final Game game = findById(gameId);
         if (game.getEndedAt() != null) {

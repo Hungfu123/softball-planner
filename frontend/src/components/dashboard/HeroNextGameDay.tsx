@@ -45,10 +45,9 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
             {gameDay.games.map((g, i) => {
               const displayNum = i + 1
               const routeIdx = i  // 0-based array index — ScoringPage uses gameDay.games[gameIndex]
-              // FERTIG: Backend `endedAt` gesetzt ODER (Fallback) localStorage-Flag.
+              // FERTIG: Backend `endedAt` ist die Wahrheit. Cross-Device-konsistent.
               // Score-Presence (auch 0–0) zählt NICHT als Ende — Spiel kann mid-game 0–0 sein.
-              const manuallyEnded = typeof window !== 'undefined' && localStorage.getItem(`scoring-ended-${g.id}`) === '1'
-              const finished = g.endedAt != null || manuallyEnded
+              const finished = g.endedAt != null
               // LIVE: nicht fertig + atBats > 0 (Backend-Flag)
               const isLive = !finished && (g.atBatCount ?? 0) > 0
               const hasScore = g.scoreUs != null && g.scoreThem != null

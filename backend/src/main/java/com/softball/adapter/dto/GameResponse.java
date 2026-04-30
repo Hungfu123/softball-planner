@@ -8,6 +8,7 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
                             Integer scoreUs, Integer scoreThem, Long gameDayId,
                             int lineupEntryCount,
                             Instant endedAt,
+                            String battingSide,
                             long atBatCount) {
 
     public static GameResponse from(final Game game) {
@@ -25,6 +26,7 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
             game.getGameDayId(),
             game.getLineupEntryCount(),
             game.getEndedAt(),
+            game.getBattingSide(),
             atBatCount
         );
     }

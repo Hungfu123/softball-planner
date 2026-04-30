@@ -134,42 +134,32 @@ export function ScoringPage() {
     if (inningTransition) setExtraOuts(0)
   }, [inningTransition])
 
-  // Batting-Side + Ended-Flag + Inning-Override aus localStorage laden
+  // Batting-Side + Game-Over kommen ausschließlich vom Backend.
+  // Inning-Override ist transient (in-memory) — Reload landet sauber bei Server-Inning.
   useEffect(() => {
     if (currentGame == null) return
-    const stored = localStorage.getItem(`scoring-side-${currentGame.id}`)
-    if (stored === 'top' || stored === 'bottom') {
-      setBattingSide(stored)
+    if (currentGame.battingSide === 'top' || currentGame.battingSide === 'bottom') {
+      setBattingSide(currentGame.battingSide)
     } else if (atBats.length === 0 && scoreboard) {
       setShowSidePrompt(true)
     }
-    // Manual Game-Over-Flag persistent
-    const ended = localStorage.getItem(`scoring-ended-${currentGame.id}`)
-    if (ended === '1') setManualGameOver(true)
-    // Inning-Override persistieren: User hat "Nächstes Inning" gedrückt aber
-    // noch kein neuer AtBat → Reload würde sonst zurück zum alten Inning springen.
-    const overrideStr = localStorage.getItem(`scoring-inning-override-${currentGame.id}`)
-    if (overrideStr) {
-      const n = Number(overrideStr)
-      if (!Number.isNaN(n) && n >= 1 && n <= 99) setInningOverride(n)
-    }
+    setManualGameOver(currentGame.endedAt != null)
   }, [currentGame, atBats.length, scoreboard])
 
-  // Inning-Override-Persistierung
-  useEffect(() => {
-    if (currentGame == null) return
-    if (inningOverride == null) {
-      localStorage.removeItem(`scoring-inning-override-${currentGame.id}`)
-    } else {
-      localStorage.setItem(`scoring-inning-override-${currentGame.id}`, String(inningOverride))
-    }
-  }, [currentGame, inningOverride])
-
-  const pickSide = (side: 'top' | 'bottom') => {
+  const pickSide = async (side: 'top' | 'bottom') => {
     if (!currentGame) return
     setBattingSide(side)
-    localStorage.setItem(`scoring-side-${currentGame.id}`, side)
     setShowSidePrompt(false)
+    try {
+      const updated = await api.setBattingSide(currentGame.id, side)
+      // Local gameDay aktualisieren, damit Re-Render konsistent bleibt
+      setGameDay(prev => prev ? {
+        ...prev,
+        games: prev.games.map(g => g.id === currentGame.id ? { ...g, battingSide: updated.battingSide } : g),
+      } : prev)
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
   }
 
   const handleRecord = async (result: AtBatResult) => {
@@ -475,9 +465,10 @@ export function ScoringPage() {
       setInningOverride(null)
       setExtraOuts(0)
       setManualGameOver(false)
-      // Batting-Side + Ended-Flag resetten
+      // Cleanup ALLER scoring-localStorage-Keys für dieses Game (auch Override-Geist).
       localStorage.removeItem(`scoring-side-${currentGame.id}`)
-      localStorage.removeItem(`scoring-ended-${currentGame.id}`)
+      localStorage.removeItem(`scoring-ended-${currentGame.id}`)  // Legacy-Cleanup
+      localStorage.removeItem(`scoring-inning-override-${currentGame.id}`)  // Legacy-Cleanup
       setBattingSide(null)
       setShowSidePrompt(true)
       await reload()
@@ -1831,7 +1822,6 @@ export function ScoringPage() {
             try {
               await api.endGame(currentGame.id)
               setManualGameOver(true)
-              localStorage.setItem(`scoring-ended-${currentGame.id}`, '1')
               await reload()
               toast.show('Spiel beendet — Stats verfügbar', 'success')
             } catch (e) {

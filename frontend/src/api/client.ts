@@ -301,6 +301,8 @@ export const endGame = (gameId: number) =>
   request<GameResponse>(`/games/${gameId}/end`, { method: 'POST' })
 export const reopenGame = (gameId: number) =>
   request<GameResponse>(`/games/${gameId}/reopen`, { method: 'POST' })
+export const setBattingSide = (gameId: number, battingSide: 'top' | 'bottom' | null) =>
+  request<GameResponse>(`/games/${gameId}/batting-side`, { method: 'PUT', body: JSON.stringify({ battingSide }) })
 
 // Year / All-Time Stats
 export const getYearBattingStats = (year: number) =>
