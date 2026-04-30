@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SlotEditor } from './SlotEditor'
 import { Button } from '@/components/shared'
 import { CopyFromGameDayModal } from './CopyFromGameDayModal'
@@ -35,10 +35,17 @@ export function WizardStepLineup({ homeLineup, awayLineup, onChange }: Props) {
 
   const slots = activeSide === 'HOME' ? homeLineup : awayLineup
 
-  if (slots.length === 0) {
-    const initial = mode[activeSide] === 'fast' ? FAST_DEFAULT() : EMPTY_LINEUP()
-    onChange(activeSide, initial)
-  }
+  // Initialize lineup for the active side when empty — must be in useEffect, not render body,
+  // to avoid calling parent setState during render (React warning + potential infinite loops).
+  // onChange and slots.length are intentionally omitted: onChange is a new ref each render from
+  // the parent wizard, and we only want to re-initialize when activeSide or mode changes.
+  useEffect(() => {
+    if (slots.length === 0) {
+      const initial = mode[activeSide] === 'fast' ? FAST_DEFAULT() : EMPTY_LINEUP()
+      onChange(activeSide, initial)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSide, mode])
 
   const setFastMode = () => {
     setMode(m => ({ ...m, [activeSide]: 'fast' }))

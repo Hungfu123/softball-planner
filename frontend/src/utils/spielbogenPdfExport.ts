@@ -24,9 +24,16 @@ export function generateSpielbogenPdf(sheet: BogenSheetResponse): void {
   drawTeamBanner(doc, 8, 28, 'Gast', sheet.meta.awayTeamName, sheet.meta.awayRuns, 130)
   drawTeamBanner(doc, 152, 28, 'Heim', sheet.meta.homeTeamName, sheet.meta.homeRuns, 130)
 
+  // Compute max inning across all at-bats (default 7, extends for extra innings)
+  const maxInning = Math.max(
+    7,
+    ...sheet.homeAtBats.map(a => a.inning),
+    ...sheet.awayAtBats.map(a => a.inning),
+  )
+
   // Sheets (Y 42-180)
-  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns)
-  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns)
+  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning)
+  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning)
 
   doc.save(`spielbogen-${sheet.meta.date}-${sheet.meta.homeTeamName}-vs-${sheet.meta.awayTeamName}.pdf`)
 }
@@ -68,13 +75,13 @@ function drawSheet(
   lineup: SpielbogenSlotResponse[],
   atBats: SpielbogenAtBatResponse[],
   stealings: SpielbogenStealingResponse[],
-  inningRuns: Record<number, { home: number; away: number }>
+  inningRuns: Record<number, { home: number; away: number }>,
+  numInnings: number
 ) {
   const tableW = 137
   const colNum = 8
   const colName = 35
   const colPos = 12
-  const numInnings = 7
   const colInning = (tableW - colNum - colName - colPos) / numInnings
   const rowH = 11
   const sideKey = side === 'HOME' ? 'home' : 'away'

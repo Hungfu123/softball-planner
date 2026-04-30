@@ -372,7 +372,7 @@ export default function SpielbogenPage() {
               <option value="">Slot wählen…</option>
               {slots.map(s => (
                 <option key={s.id} value={s.id}>
-                  #{s.battingOrder} {s.name} ({s.position ?? '—'})
+                  #{s.battingOrder} {s.name} ({s.position ?? '—'}){s.id === currentSlot?.id ? ' — am Schlag' : ''}
                 </option>
               ))}
             </select>
