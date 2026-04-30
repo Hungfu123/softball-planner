@@ -1,6 +1,7 @@
 package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.*;
+import com.softball.adapter.dto.LeagueResultResponse;
 import com.softball.application.SpielbogenService;
 import com.softball.application.SpielbogenSheetService;
 import com.softball.application.SpielbogenScoringService;
@@ -93,6 +94,12 @@ public class SpielbogenController {
     @PostMapping("/{id}/reopen")
     public SpielbogenResponse reopen(@PathVariable Long id) {
         return SpielbogenResponse.from(bogenService.reopen(id));
+    }
+
+    @PostMapping("/{id}/register-league-result")
+    public LeagueResultResponse registerLeagueResult(@PathVariable Long id) {
+        var result = bogenService.registerLeagueResult(id);
+        return LeagueResultResponse.from(result);
     }
 
     @GetMapping("/{id}/lineup")

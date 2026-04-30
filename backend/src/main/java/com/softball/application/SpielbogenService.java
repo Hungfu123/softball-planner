@@ -1,6 +1,8 @@
 package com.softball.application;
 
 import com.softball.domain.model.BogenStatus;
+import com.softball.domain.model.LeagueResult;
+import com.softball.domain.model.LeagueTeam;
 import com.softball.domain.model.Season;
 import com.softball.domain.model.Spielbogen;
 import com.softball.domain.port.out.SpielbogenRepository;
@@ -24,13 +26,19 @@ public class SpielbogenService {
     private final SpielbogenRepository bogenRepo;
     private final SeasonService seasonService;
     private final SpielbogenSlotService slotService;
+    private final LeagueTeamService leagueTeamService;
+    private final LeagueResultService leagueResultService;
 
     public SpielbogenService(final SpielbogenRepository bogenRepo,
                              final SeasonService seasonService,
-                             @Lazy final SpielbogenSlotService slotService) {
+                             @Lazy final SpielbogenSlotService slotService,
+                             final LeagueTeamService leagueTeamService,
+                             final LeagueResultService leagueResultService) {
         this.bogenRepo = bogenRepo;
         this.seasonService = seasonService;
         this.slotService = slotService;
+        this.leagueTeamService = leagueTeamService;
+        this.leagueResultService = leagueResultService;
     }
 
     @Transactional(readOnly = true)
@@ -149,5 +157,44 @@ public class SpielbogenService {
         bogen.setEndedAt(null);
         log.info("Spielbogen {} reopened (LIVE)", id);
         return bogenRepo.save(bogen);
+    }
+
+    @Transactional
+    public LeagueResult registerLeagueResult(final Long bogenId) {
+        Spielbogen bogen = findById(bogenId);
+        if (bogen.getStatus() != BogenStatus.DONE) {
+            throw new BusinessValidationException("Liga-Eintrag nur in Status DONE möglich (aktuell: " + bogen.getStatus() + ")");
+        }
+        if (bogen.getSeason() == null) {
+            throw new BusinessValidationException("Spielbogen hat keine Saison zugeordnet");
+        }
+        if (bogen.getLeagueResult() != null) {
+            throw new BusinessValidationException("Liga-Eintrag bereits registriert");
+        }
+
+        LeagueTeam homeTeam = findOrCreateLeagueTeam(bogen.getSeason().getId(), bogen.getHomeTeamName());
+        LeagueTeam awayTeam = findOrCreateLeagueTeam(bogen.getSeason().getId(), bogen.getAwayTeamName());
+
+        if (Boolean.TRUE.equals(homeTeam.isOwnTeam()) || Boolean.TRUE.equals(awayTeam.isOwnTeam())) {
+            throw new BusinessValidationException("Spielbogen kann keinen ownTeam-Eintrag erzeugen");
+        }
+
+        LeagueResult result = leagueResultService.create(
+            bogen.getSeason().getId(),
+            homeTeam.getId(),
+            awayTeam.getId(),
+            bogen.getHomeRuns(),
+            bogen.getAwayRuns(),
+            bogen.getDate()
+        );
+
+        bogen.setLeagueResult(result);
+        bogenRepo.save(bogen);
+        log.info("Spielbogen {} → LeagueResult {} registriert", bogenId, result.getId());
+        return result;
+    }
+
+    private LeagueTeam findOrCreateLeagueTeam(final Long seasonId, final String name) {
+        return leagueTeamService.findOrCreateByName(seasonId, name);
     }
 }

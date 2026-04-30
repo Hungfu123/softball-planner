@@ -100,6 +100,12 @@ public class LeagueTeamService {
             .orElseThrow(() -> new ResourceNotFoundException("LeagueTeam", id));
     }
 
+    @Transactional
+    public LeagueTeam findOrCreateByName(final Long seasonId, final String name) {
+        return leagueTeamRepository.findBySeasonIdAndNameIgnoreCase(seasonId, name)
+            .orElseGet(() -> create(seasonId, name, false));
+    }
+
     @Transactional(readOnly = true)
     public List<StandingsEntry> getStandings(final Long seasonId) {
         final List<LeagueTeam> teams = leagueTeamRepository.findBySeasonIdOrderByNameAsc(seasonId);

@@ -37,6 +37,22 @@ public class LeagueResultService {
     }
 
     @Transactional
+    public LeagueResult create(final Long seasonId, final Long homeTeamId, final Long awayTeamId,
+                               final Integer homeScore, final Integer awayScore, final java.time.LocalDate date) {
+        final Season season = seasonService.findById(seasonId);
+        final LeagueTeam homeTeam = leagueTeamService.findById(homeTeamId);
+        final LeagueTeam awayTeam = leagueTeamService.findById(awayTeamId);
+
+        validate(homeTeam, awayTeam, seasonId);
+
+        log.info("Liga-Ergebnis erstellen: {} {}:{} {} (Saison {})",
+            homeTeam.getName(), homeScore, awayScore, awayTeam.getName(), seasonId);
+        final LeagueResult result = new LeagueResult(season, homeTeam, awayTeam,
+            homeScore != null ? homeScore : 0, awayScore != null ? awayScore : 0, date);
+        return leagueResultRepository.save(result);
+    }
+
+    @Transactional
     public LeagueResult create(final Long seasonId, final CreateLeagueResultRequest request) {
         final Season season = seasonService.findById(seasonId);
         final LeagueTeam homeTeam = leagueTeamService.findById(request.homeTeamId());
