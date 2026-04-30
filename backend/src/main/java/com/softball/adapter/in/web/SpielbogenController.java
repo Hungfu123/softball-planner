@@ -2,7 +2,11 @@ package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.*;
 import com.softball.application.SpielbogenService;
+import com.softball.application.SpielbogenSheetService;
+import com.softball.application.SpielbogenScoringService;
 import com.softball.application.SpielbogenSlotService;
+import com.softball.domain.model.BogenBaseState;
+import com.softball.domain.model.BogenSide;
 import com.softball.domain.model.BogenStatus;
 import com.softball.domain.model.Spielbogen;
 import com.softball.domain.model.SpielbogenSlot;
@@ -11,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/spielbogen")
@@ -18,10 +23,17 @@ public class SpielbogenController {
 
     private final SpielbogenService bogenService;
     private final SpielbogenSlotService slotService;
+    private final SpielbogenScoringService scoringService;
+    private final SpielbogenSheetService sheetService;
 
-    public SpielbogenController(final SpielbogenService bogenService, final SpielbogenSlotService slotService) {
+    public SpielbogenController(final SpielbogenService bogenService,
+                                final SpielbogenSlotService slotService,
+                                final SpielbogenScoringService scoringService,
+                                final SpielbogenSheetService sheetService) {
         this.bogenService = bogenService;
         this.slotService = slotService;
+        this.scoringService = scoringService;
+        this.sheetService = sheetService;
     }
 
     @GetMapping
@@ -119,5 +131,88 @@ public class SpielbogenController {
                                                         @Valid @RequestBody CopyFromGameDayRequest req) {
         return slotService.copyFromGameDay(id, req.gameDayId(), req.gameNumber(), req.targetSide())
                           .stream().map(SpielbogenSlotResponse::from).toList();
+    }
+
+    @PostMapping("/{id}/at-bats")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SpielbogenAtBatResponse recordAtBat(@PathVariable Long id,
+                                               @Valid @RequestBody SpielbogenRecordAtBatRequest req) {
+        BogenBaseState bs = req.baseStateAfter() != null
+            ? new BogenBaseState(
+                req.baseStateAfter().firstSlotId(),
+                req.baseStateAfter().secondSlotId(),
+                req.baseStateAfter().thirdSlotId())
+            : null;
+        var saved = scoringService.recordAtBat(id, req.side(), req.slotId(), req.inning(),
+            req.result(), req.outType(), req.fielderChain(),
+            req.isError(), req.errorPosition(),
+            req.runsScored(), req.rbi(), bs);
+        return SpielbogenAtBatResponse.from(saved);
+    }
+
+    @GetMapping("/{id}/at-bats")
+    public List<SpielbogenAtBatResponse> getAtBats(@PathVariable Long id,
+                                                    @RequestParam(required = false) BogenSide side) {
+        return scoringService.findAtBats(id, side).stream().map(SpielbogenAtBatResponse::from).toList();
+    }
+
+    @DeleteMapping("/{id}/at-bats/last")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void undoLast(@PathVariable Long id, @RequestParam BogenSide side) {
+        scoringService.undoLast(id, side);
+    }
+
+    @PostMapping("/{id}/stealing-events")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SpielbogenStealingResponse recordStealing(@PathVariable Long id,
+                                                     @Valid @RequestBody SpielbogenRecordStealingRequest req) {
+        var saved = scoringService.recordStealingEvent(id, req.side(), req.slotId(), req.inning(),
+            req.type(), req.fromBase(), req.toBase());
+        return SpielbogenStealingResponse.from(saved);
+    }
+
+    @DeleteMapping("/{id}/stealing-events/{eventId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteStealing(@PathVariable Long id, @PathVariable Long eventId) {
+        scoringService.deleteStealingEvent(id, eventId);
+    }
+
+    @PostMapping("/{id}/substitutions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SpielbogenSubstitutionResponse recordSubstitution(@PathVariable Long id,
+                                                             @Valid @RequestBody SpielbogenRecordSubstitutionRequest req) {
+        boolean pinch = req.pinchHitter() != null && req.pinchHitter();
+        var saved = scoringService.recordSubstitution(id, req.side(), req.slotId(), req.inning(),
+            req.playerInName(), pinch);
+        return SpielbogenSubstitutionResponse.from(saved);
+    }
+
+    @DeleteMapping("/{id}/substitutions/{subId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSubstitution(@PathVariable Long id, @PathVariable Long subId) {
+        scoringService.deleteSubstitution(id, subId);
+    }
+
+    @PostMapping("/{id}/switch-side")
+    public SpielbogenResponse switchSide(@PathVariable Long id) {
+        return SpielbogenResponse.from(scoringService.switchSide(id));
+    }
+
+    @GetMapping("/{id}/sheet")
+    public BogenSheetResponse getSheet(@PathVariable Long id) {
+        var data = sheetService.getSheet(id);
+        return new BogenSheetResponse(
+            SpielbogenResponse.from(data.bogen()),
+            data.homeLineup().stream().map(SpielbogenSlotResponse::from).toList(),
+            data.awayLineup().stream().map(SpielbogenSlotResponse::from).toList(),
+            data.homeAtBats().stream().map(SpielbogenAtBatResponse::from).toList(),
+            data.awayAtBats().stream().map(SpielbogenAtBatResponse::from).toList(),
+            data.stealings().stream().map(SpielbogenStealingResponse::from).toList(),
+            data.subs().stream().map(SpielbogenSubstitutionResponse::from).toList(),
+            data.inningRuns().entrySet().stream().collect(Collectors.toMap(
+                java.util.Map.Entry::getKey,
+                e -> new BogenSheetResponse.InningRuns(e.getValue().getHome(), e.getValue().getAway())
+            ))
+        );
     }
 }
