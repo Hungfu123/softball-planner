@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Flag, RotateCcw } from 'lucide-react'
+import { ChevronLeft as ChevronLeftLucide, Flag, RotateCcw } from 'lucide-react'
 import { useSpielbogenScoring } from '@/hooks/useSpielbogenScoring'
 import { useToastContext } from '@/components/layout/Layout'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
-import { ChevronLeft } from '@/icons'
 import { BogenSideToggle } from './BogenSideToggle'
 import { BogenDiamondView } from './BogenDiamondView'
 import { BogenActionButtons } from './BogenActionButtons'
@@ -139,11 +138,12 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring } =
     useSpielbogenScoring(bogenId)
 
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showSheet, setShowSheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
@@ -415,10 +415,10 @@ export default function SpielbogenPage() {
       </AnimatePresence>
 
       {/* Nav header */}
-      <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md border-b-[3px] border-softball-red-600">
+      <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md">
         <div className="px-3 sm:px-4 h-14 flex items-center gap-2">
           <Link to="/spielbogen" className="p-1 hover:bg-navy-700 rounded-lg" aria-label="Zurück">
-            <ChevronLeft size={22} />
+            <ChevronLeftLucide size={22} />
           </Link>
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <img src="/deadsox.jpeg" alt="Dead Sox" className="w-7 h-7 rounded" />
@@ -426,14 +426,24 @@ export default function SpielbogenPage() {
           <div className="flex-1" />
           <div className="flex items-center gap-1">
             {isLive && (
-              <button
-                onClick={() => setShowEndConfirm(true)}
-                disabled={submitting}
-                className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
-                title="Spiel beenden"
-              >
-                <Flag size={14} /> Beenden
-              </button>
+              <>
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  disabled={submitting}
+                  className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                  title="Scoring zurücksetzen"
+                >
+                  <RotateCcw size={14} /> Reset
+                </button>
+                <button
+                  onClick={() => setShowEndConfirm(true)}
+                  disabled={submitting}
+                  className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                  title="Spiel beenden"
+                >
+                  <Flag size={14} /> Beenden
+                </button>
+              </>
             )}
             {isDone && (
               <button
@@ -454,6 +464,9 @@ export default function SpielbogenPage() {
         <div className="flex items-center gap-2.5">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Inning</span>
           <span className="font-display text-2xl font-extrabold leading-none">{romanInning(meta.currentInning)}</span>
+          <span className="font-display inline-flex items-center text-[10px] px-2 py-0.5 border border-white/20 rounded-full text-white/85 tracking-widest uppercase">
+            {meta.currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Outs</span>
@@ -604,6 +617,26 @@ export default function SpielbogenPage() {
           cancelLabel="Abbrechen"
           onConfirm={handleEndGame}
           onCancel={() => setShowEndConfirm(false)}
+        />
+      )}
+
+      {/* Confirm: reset scoring */}
+      {showResetConfirm && (
+        <ConfirmModal
+          title="Scoring zurücksetzen?"
+          message="Alle AtBats, Stealings und Substitutions werden gelöscht. Score → 0:0, Inning → I. Lineup bleibt erhalten."
+          confirmLabel="Zurücksetzen"
+          cancelLabel="Abbrechen"
+          onConfirm={async () => {
+            setShowResetConfirm(false)
+            try {
+              await resetScoring()
+              toast.show('Scoring zurückgesetzt', 'success')
+            } catch (e) {
+              toast.show((e as Error).message, 'error')
+            }
+          }}
+          onCancel={() => setShowResetConfirm(false)}
         />
       )}
 

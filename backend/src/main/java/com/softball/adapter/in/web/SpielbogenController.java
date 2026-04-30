@@ -205,6 +205,11 @@ public class SpielbogenController {
         return SpielbogenResponse.from(scoringService.switchSide(id));
     }
 
+    @PostMapping("/{id}/reset")
+    public SpielbogenResponse resetScoring(@PathVariable Long id) {
+        return SpielbogenResponse.from(scoringService.resetScoring(id));
+    }
+
     @GetMapping("/{id}/sheet")
     public BogenSheetResponse getSheet(@PathVariable Long id) {
         var data = sheetService.getSheet(id);

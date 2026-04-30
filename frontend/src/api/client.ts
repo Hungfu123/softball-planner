@@ -455,6 +455,10 @@ export async function getSpielbogenSheet(bogenId: number): Promise<BogenSheetRes
   return request<BogenSheetResponse>(`/spielbogen/${bogenId}/sheet`)
 }
 
+export async function resetSpielbogenScoring(bogenId: number): Promise<SpielbogenResponse> {
+  return request<SpielbogenResponse>(`/spielbogen/${bogenId}/reset`, { method: 'POST' })
+}
+
 export interface LeagueResultLite {
   id: number
   homeTeam: { id: number; name: string; ownTeam: boolean }

@@ -226,6 +226,28 @@ public class SpielbogenScoringService {
         subRepo.deleteById(subId);
     }
 
+    @Transactional
+    public Spielbogen resetScoring(final Long bogenId) {
+        Spielbogen bogen = bogenRepo.findById(bogenId)
+            .orElseThrow(() -> new ResourceNotFoundException("Spielbogen", bogenId));
+        if (bogen.getStatus() != BogenStatus.LIVE) {
+            throw new BusinessValidationException(
+                "Reset nur in Status LIVE möglich (aktuell: " + bogen.getStatus() + ")"
+            );
+        }
+        atBatRepo.findByBogenId(bogenId).forEach(ab -> atBatRepo.deleteById(ab.getId()));
+        stealingRepo.findByBogenId(bogenId).forEach(st -> stealingRepo.deleteById(st.getId()));
+        subRepo.findByBogenId(bogenId).forEach(sub -> subRepo.deleteById(sub.getId()));
+
+        bogen.setHomeRuns(0);
+        bogen.setAwayRuns(0);
+        bogen.setCurrentInning(1);
+        bogen.setCurrentSide(BogenSide.AWAY);
+        Spielbogen saved = bogenRepo.save(bogen);
+        log.info("Spielbogen {} reset — alle AtBats/Stealings/Subs gelöscht", bogenId);
+        return saved;
+    }
+
     @Transactional(readOnly = true)
     public List<SpielbogenAtBat> findAtBats(final Long bogenId, final BogenSide side) {
         if (side == null) return atBatRepo.findByBogenId(bogenId);
