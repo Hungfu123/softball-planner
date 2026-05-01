@@ -2,17 +2,13 @@ import type { CellNotation } from '@/utils/bogenSheetRenderer'
 
 interface Props {
   notation: CellNotation | null | undefined
-  outIndex?: number | null
+  outIndex?: string | null
 }
 
 const HOME = { x: 30, y: 50 }
 const FIRST = { x: 55, y: 28 }
 const SECOND = { x: 30, y: 6 }
 const THIRD = { x: 5, y: 28 }
-
-function romanOut(n: number): string {
-  return n === 1 ? 'I' : n === 2 ? 'II' : n === 3 ? 'III' : ''
-}
 
 function baseToCoord(base: number) {
   if (base === 1) return FIRST
@@ -104,7 +100,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
           </>
         )
       )}
-      {effectiveOutIndex != null && effectiveOutIndex > 0 && (
+      {effectiveOutIndex && (
         <text
           x={3}
           y={10}
@@ -113,7 +109,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
           fill="#9ca3af"
           style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
         >
-          {romanOut(effectiveOutIndex)}
+          {effectiveOutIndex}
         </text>
       )}
       {rbi > 0 && Array.from({ length: Math.min(rbi, 3) }).map((_, i) => (

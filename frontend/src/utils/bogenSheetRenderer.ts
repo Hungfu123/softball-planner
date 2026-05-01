@@ -9,7 +9,7 @@ export interface CellNotation {
   primaryLabel: string
   labels: string[]
   runScored: boolean
-  outIndex: number | null
+  outIndex: string | null
   rbi: number
   reachedBase: number
   stealingArrow: { fromBase: number; toBase: number; type: string } | null
@@ -198,8 +198,12 @@ function computeScoredSet(sortedAtBats: SpielbogenAtBatResponse[]): Set<string> 
   return scored
 }
 
-function computeOutIndices(sortedAtBats: SpielbogenAtBatResponse[]): Map<number, number> {
-  const result = new Map<number, number>()
+/**
+ * Returns map ab.id → display roman label (e.g. "I", "II", "I-II" for DP, "I-III" for TP).
+ * For DP/TP we show the range so the counter doesn't appear to skip a number.
+ */
+function computeOutIndices(sortedAtBats: SpielbogenAtBatResponse[]): Map<number, string> {
+  const result = new Map<number, string>()
   const groups = new Map<string, SpielbogenAtBatResponse[]>()
   for (const ab of sortedAtBats) {
     const k = `${ab.side}|${ab.inning}`
@@ -211,16 +215,33 @@ function computeOutIndices(sortedAtBats: SpielbogenAtBatResponse[]): Map<number,
     let outs = 0
     for (const ab of arr) {
       if (ab.isError) continue
+      let added = 0
       if (ab.result === 'STRIKEOUT') {
-        outs += 1
-        if (outs <= 3) result.set(ab.id, outs)
+        added = 1
       } else if (ab.result === 'OUT') {
-        if (ab.outType === 'DOUBLE_PLAY') outs += 2
-        else if (ab.outType === 'TRIPLE_PLAY') outs += 3
-        else outs += 1
-        if (outs <= 3) result.set(ab.id, outs)
+        if (ab.outType === 'DOUBLE_PLAY') added = 2
+        else if (ab.outType === 'TRIPLE_PLAY') added = 3
+        else added = 1
+      }
+      if (added === 0) continue
+      const startOut = outs + 1
+      const endOut = outs + added
+      outs += added
+      if (endOut <= 3) {
+        const label = added === 1 ? roman(startOut) : `${roman(startOut)}-${roman(endOut)}`
+        result.set(ab.id, label)
+      } else if (startOut <= 3) {
+        // Partial (e.g. DP that closes inning when only 2 outs remain — rare)
+        const label = startOut === 3
+          ? roman(3)
+          : `${roman(startOut)}-${roman(Math.min(endOut, 3))}`
+        result.set(ab.id, label)
       }
     }
   }
   return result
+}
+
+function roman(n: number): string {
+  return n === 1 ? 'I' : n === 2 ? 'II' : n === 3 ? 'III' : ''
 }

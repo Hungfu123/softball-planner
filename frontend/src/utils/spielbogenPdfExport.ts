@@ -212,7 +212,7 @@ interface CellRenderInput {
   primaryLabel: string
   labels: string[]
   runScored: boolean
-  outIndex: number | null
+  outIndex: string | null
   rbi: number
   reachedBase: number
   abCount: number
@@ -296,12 +296,11 @@ function drawDiamondCell(
   }
 
   // Out# top-left (Roman, gray)
-  if (cell?.outIndex && cell.outIndex > 0) {
-    const roman = cell.outIndex === 1 ? 'I' : cell.outIndex === 2 ? 'II' : cell.outIndex === 3 ? 'III' : ''
+  if (cell?.outIndex) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(4.5)
     doc.setTextColor(120, 120, 120)
-    doc.text(roman, cellX + 1, cellY + 3)
+    doc.text(cell.outIndex, cellX + 1, cellY + 3)
     doc.setTextColor(0, 0, 0)
   }
 
