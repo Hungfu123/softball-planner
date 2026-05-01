@@ -27,3 +27,6 @@ CLAUDE.md
 
 # Misc
 *.deb
+
+# Git worktrees
+.worktrees/
