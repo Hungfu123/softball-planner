@@ -98,7 +98,8 @@ export function BogenActionButtons({
         })
         resolvedBaseState = advance.baseStateAfter
         runsScored = advance.runsScored
-        rbi = advance.runsScored
+        // ROE: run is unearned, no RBI — Run scored aber Batter kriegt kein RBI
+        rbi = req.isError ? 0 : advance.runsScored
       }
       await onRecord({
         side,
