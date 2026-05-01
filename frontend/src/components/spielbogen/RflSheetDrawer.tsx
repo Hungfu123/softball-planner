@@ -64,12 +64,22 @@ interface Props {
 const MAX_INNINGS = 7
 
 const cellStyle: React.CSSProperties = {
-  outline: '1px solid #374151',
-  outlineOffset: '-1px',
+  borderRight: '1px solid #374151',
+  borderBottom: '1px solid #374151',
 }
 const headerCellStyle: React.CSSProperties = {
-  outline: '1px solid #1e3a8a',
-  outlineOffset: '-1px',
+  borderRight: '1px solid #1e3a8a',
+  borderBottom: '1px solid #1e3a8a',
+}
+const firstCellStyle: React.CSSProperties = {
+  borderLeft: '1px solid #374151',
+  borderRight: '1px solid #374151',
+  borderBottom: '1px solid #374151',
+}
+const firstHeaderCellStyle: React.CSSProperties = {
+  borderLeft: '1px solid #1e3a8a',
+  borderRight: '1px solid #1e3a8a',
+  borderBottom: '1px solid #1e3a8a',
 }
 
 function SideSheet({
@@ -98,8 +108,8 @@ function SideSheet({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[460px] text-xs" style={{ borderCollapse: 'collapse' }}>
         <thead>
-          <tr className="bg-navy-800 text-white">
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6" style={headerCellStyle}>#</th>
+          <tr className="bg-navy-800 text-white" style={{ borderTop: '1px solid #1e3a8a' }}>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6" style={firstHeaderCellStyle}>#</th>
             <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide min-w-[90px]" style={headerCellStyle}>Name</th>
             <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-10" style={headerCellStyle}>Pos</th>
             {innings.map(i => (
@@ -110,7 +120,7 @@ function SideSheet({
         <tbody>
           {sorted.map((slot) => (
             <tr key={slot.id} className="bg-white">
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700" style={cellStyle}>{slot.battingOrder}</td>
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700" style={firstCellStyle}>{slot.battingOrder}</td>
               <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px]" style={cellStyle}>{slot.name}</td>
               <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
               {innings.map(inning => {
@@ -121,7 +131,7 @@ function SideSheet({
                 const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
                   <td key={inning} className="p-0 w-10 h-16" style={cellStyle}>
-                    <div className="w-10 h-16">
+                    <div className="w-full h-full">
                       <DiamondCell notation={cell} outIndex={outIdx} />
                     </div>
                   </td>
