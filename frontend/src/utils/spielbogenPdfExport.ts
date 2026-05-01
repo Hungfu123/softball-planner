@@ -175,26 +175,29 @@ function drawSheet(
         doc.triangle(third.x, third.y, home.x, home.y, cx, cy, 'F')
       }
 
-      // Diamond outline (thin: 0.4 mm)
-      doc.setDrawColor(30, 58, 138)
-      doc.setLineWidth(0.4)
+      // Diamond outline — thin BLACK (gray-800)
+      doc.setDrawColor(31, 41, 55)
+      doc.setLineWidth(0.3)
       doc.line(home.x, home.y, first.x, first.y)
       doc.line(first.x, first.y, sec.x, sec.y)
       doc.line(sec.x, sec.y, third.x, third.y)
       doc.line(third.x, third.y, home.x, home.y)
+      doc.setDrawColor(0, 0, 0)
 
-      // Advancement path segments (medium: 0.5 mm)
+      // Advancement path segments — THICK NAVY BLUE (navy-800: 0.7 mm)
       const allSegments = [
         [home, first],
         [first, sec],
         [sec, third],
         [third, home],
       ]
-      doc.setLineWidth(0.5)
+      doc.setDrawColor(30, 58, 138)
+      doc.setLineWidth(0.7)
       for (let s = 0; s < reachedBase; s++) {
         const [a, b] = allSegments[s]
         doc.line(a.x, a.y, b.x, b.y)
       }
+      doc.setDrawColor(0, 0, 0)
 
       // Notation label: HR centered on fill, others below the diamond
       if (label) {

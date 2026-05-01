@@ -55,14 +55,14 @@ export function DiamondCell({ notation, outIndex }: Props) {
 
   return (
     <svg viewBox="0 0 60 80" className="w-full h-full" style={{ display: 'block' }}>
-      {/* Diamond outline (thin navy) */}
+      {/* Diamond outline — thin BLACK */}
       <path
         d={diamondPath}
         fill={filled ? '#1e3a8a' : 'none'}
-        stroke="#1e3a8a"
-        strokeWidth="0.6"
+        stroke={filled ? '#1e3a8a' : '#1f2937'}
+        strokeWidth="0.5"
       />
-      {/* Advancement path segments (medium thickness, navy) */}
+      {/* Advancement path — THICK NAVY BLUE */}
       {activeSegments.map(([a, b], i) => (
         <line
           key={i}
@@ -71,7 +71,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
           x2={b.x}
           y2={b.y}
           stroke="#1e3a8a"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
         />
       ))}
@@ -94,11 +94,11 @@ export function DiamondCell({ notation, outIndex }: Props) {
           // Other hits: small label below the diamond (near home corner)
           <text
             x={30}
-            y={68}
+            y={64}
             textAnchor="middle"
-            fontSize="10"
+            fontSize="11"
             fontWeight="700"
-            fill="#1e3a8a"
+            fill="#1f2937"
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
           >
             {notation.label}

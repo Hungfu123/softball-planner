@@ -114,8 +114,8 @@ function SideSheet({
                 const cellAtBat = atBats.find(ab => ab.slotId === slot.id && ab.inning === inning)
                 const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
-                  <td key={inning} className="p-0 w-10 h-12 border border-gray-400">
-                    <div className="w-10 h-12">
+                  <td key={inning} style={{ border: '1px solid #6b7280' }} className="p-0 w-10 h-14">
+                    <div className="w-10 h-14">
                       <DiamondCell notation={cell} outIndex={outIdx} />
                     </div>
                   </td>
