@@ -151,7 +151,7 @@ export default function SpielbogenPage() {
   const [submitting, setSubmitting] = useState(false)
 
   // 3-Out / Side-Switch Center-Flash overlay
-  const [sideSwitchFlash, setSideSwitchFlash] = useState<{ newSide: BogenSide; reason: 'auto' | 'manual' } | null>(null)
+  const [sideSwitchFlash, setSideSwitchFlash] = useState<{ newSide: BogenSide } | null>(null)
 
   // Flash animations (ported from ScoringPage)
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -176,19 +176,24 @@ export default function SpielbogenPage() {
   const currentInningForEffect = sheet?.meta.currentInning ?? 1
   useEffect(() => {
     if (prevSideRef.current !== null && currentSideForEffect !== null && prevSideRef.current !== currentSideForEffect) {
-      setSideSwitchFlash({ newSide: currentSideForEffect, reason: 'auto' })
+      const reducedMotion = typeof window !== 'undefined'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      setSideSwitchFlash({ newSide: currentSideForEffect })
       setTimeout(() => setSideSwitchFlash(null), 1200)
       toast.show(
         `Inning ${currentInningForEffect} — ${currentSideForEffect === 'HOME' ? 'Heim' : 'Gast'} am Schlag`,
         'error',
       )
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      if (!reducedMotion && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try { navigator.vibrate([100, 50, 100, 50, 200]) } catch { /* not supported */ }
       }
     }
     prevSideRef.current = currentSideForEffect
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSideForEffect])
+
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   if (loading && !sheet) return <LoadingSkeleton />
 
@@ -330,7 +335,7 @@ export default function SpielbogenPage() {
         try {
           await switchSide()
           const newSide = currentSide === 'HOME' ? 'AWAY' : 'HOME'
-          setSideSwitchFlash({ newSide, reason: 'auto' })
+          setSideSwitchFlash({ newSide })
           setTimeout(() => setSideSwitchFlash(null), 1200)
         } catch {
           // Backend rejected; ignore silently
@@ -425,6 +430,8 @@ export default function SpielbogenPage() {
       <AnimatePresence>
         {sideSwitchFlash && (
           <motion.div
+            role="alert"
+            aria-live="assertive"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -435,7 +442,7 @@ export default function SpielbogenPage() {
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 1.2, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              transition={prefersReducedMotion ? { duration: 0.15 } : { type: 'spring', stiffness: 300, damping: 20 }}
               className="text-center text-white px-6"
             >
               <div className="font-display text-6xl sm:text-7xl font-extrabold tracking-widest mb-2">
