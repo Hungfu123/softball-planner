@@ -4,6 +4,7 @@ interface AdvanceInput {
   before: BogenBaseStateDto | null
   result: AtBatResult
   outType?: OutType
+  isError?: boolean
   batterSlotId: number
 }
 
@@ -18,6 +19,19 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
   const before = input.before ?? empty()
   const { firstSlotId: b1, secondSlotId: b2, thirdSlotId: b3 } = before
   const batter = input.batterSlotId
+
+  // ROE: result=OUT + isError=true → Batter erreicht 1B wie Single
+  if (input.result === 'OUT' && input.isError === true) {
+    const runsScored = b3 != null ? 1 : 0
+    return {
+      baseStateAfter: {
+        firstSlotId: batter,
+        secondSlotId: b1,
+        thirdSlotId: b2,
+      },
+      runsScored,
+    }
+  }
 
   switch (input.result) {
     case 'SINGLE': {
@@ -105,4 +119,27 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
       return { baseStateAfter: before, runsScored: 0 }
     }
   }
+}
+
+/**
+ * Smart-Defaults für Runner-Advance bei Grounder.
+ * Logik: wenn Throw zu 1B (Batter out an 1B), Force für Runner auf 1B fällt weg → kann zu 2B.
+ * Andere Bases: konservativ "bleibt".
+ */
+export function computeForceDefaults(
+  baseState: BogenBaseStateDto,
+  throwTarget: 1 | 2 | 3 | 4,
+): Record<1 | 2 | 3, 1 | 2 | 3 | 4> {
+  const defaults: Record<1 | 2 | 3, 1 | 2 | 3 | 4> = { 1: 1, 2: 2, 3: 3 }
+  // Throw zu 1B → Runner auf 1B nicht mehr forced, aggressive Default → 2B
+  if (throwTarget === 1 && baseState.firstSlotId != null) {
+    defaults[1] = 2
+  }
+  // Throw zu 2B: rare path (typically reached only via UNASSISTED fielder at 2B).
+  // Real Force-DP belongs in DOUBLE_PLAY-Path; hier nur konservativ Runner1B → 2B (safe).
+  // TODO: separate Force-Out modelling for grounder mit Throw-zu-2B (Issue: P2 Edge-Cases).
+  if (throwTarget === 2 && baseState.firstSlotId != null) {
+    defaults[1] = 2
+  }
+  return defaults
 }

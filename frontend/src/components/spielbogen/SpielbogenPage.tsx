@@ -150,8 +150,8 @@ export default function SpielbogenPage() {
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Inning-switch flash banner
-  const [inningSwitchFlash, setInningSwitchFlash] = useState<{ newSide: BogenSide } | null>(null)
+  // 3-Out / Side-Switch Center-Flash overlay
+  const [sideSwitchFlash, setSideSwitchFlash] = useState<{ newSide: BogenSide } | null>(null)
 
   // Flash animations (ported from ScoringPage)
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -160,6 +160,7 @@ export default function SpielbogenPage() {
   const [walkFlash, setWalkFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [scoredFlash, setScoredFlash] = useState<{ runners: string[]; hitLabel: string | null } | null>(null)
+  const [advanceFlash, setAdvanceFlash] = useState<{ runners: string[]; targets: string[] } | null>(null)
 
   // Auto-open sheet drawer when game transitions to DONE
   const prevStatusRef = useRef<string | null>(null)
@@ -176,15 +177,24 @@ export default function SpielbogenPage() {
   const currentInningForEffect = sheet?.meta.currentInning ?? 1
   useEffect(() => {
     if (prevSideRef.current !== null && currentSideForEffect !== null && prevSideRef.current !== currentSideForEffect) {
-      setInningSwitchFlash({ newSide: currentSideForEffect })
-      setTimeout(() => setInningSwitchFlash(null), 2500)
+      const reducedMotion = typeof window !== 'undefined'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      setSideSwitchFlash({ newSide: currentSideForEffect })
+      setTimeout(() => setSideSwitchFlash(null), 1200)
       toast.show(
         `Inning ${currentInningForEffect} — ${currentSideForEffect === 'HOME' ? 'Heim' : 'Gast'} am Schlag`,
+        'error',
       )
+      if (!reducedMotion && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([100, 50, 100, 50, 200]) } catch { /* not supported */ }
+      }
     }
     prevSideRef.current = currentSideForEffect
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSideForEffect])
+
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   if (loading && !sheet) return <LoadingSkeleton />
 
@@ -238,6 +248,7 @@ export default function SpielbogenPage() {
     const batterName = currentSlot?.name ?? 'Batter'
     const batterOrder = currentSlot?.battingOrder ?? 0
     const batterSlotId = currentSlot?.id ?? 0
+    const beforeBaseState = displayBaseState
 
     try {
       await recordAtBat(req)
@@ -310,6 +321,37 @@ export default function SpielbogenPage() {
             }
           }
         }
+
+        // Runner-Advance-Flash (Diff vor/nach Play)
+        if (req.baseStateAfter) {
+          const before = beforeBaseState
+          const after = req.baseStateAfter
+          const advanced: string[] = []
+          const targets: string[] = []
+          // Runner1B → 2B
+          if (before.firstSlotId != null && after.secondSlotId === before.firstSlotId) {
+            const s = slots.find(sl => sl.id === before.firstSlotId)
+            if (s) { advanced.push(s.name); targets.push('2B') }
+          }
+          // Runner1B → 3B
+          if (before.firstSlotId != null && after.thirdSlotId === before.firstSlotId) {
+            const s = slots.find(sl => sl.id === before.firstSlotId)
+            if (s) { advanced.push(s.name); targets.push('3B') }
+          }
+          // Runner2B → 3B
+          if (before.secondSlotId != null && after.thirdSlotId === before.secondSlotId) {
+            const s = slots.find(sl => sl.id === before.secondSlotId)
+            if (s) { advanced.push(s.name); targets.push('3B') }
+          }
+          // Skip wenn bereits Run scored (scoredFlash) oder HR/Hit (hat eigenen Flash)
+          const hasOwnFlash = req.result === 'HOMERUN' || req.result === 'HIT_BY_PITCH' ||
+                              req.result === 'WALK' || req.result === 'STRIKEOUT' ||
+                              ((req.runsScored ?? 0) > 0)
+          if (advanced.length > 0 && !hasOwnFlash) {
+            setAdvanceFlash({ runners: advanced, targets })
+            setTimeout(() => setAdvanceFlash(null), 1200)
+          }
+        }
       }
 
       // Auto-switch after 3 outs
@@ -326,8 +368,8 @@ export default function SpielbogenPage() {
         try {
           await switchSide()
           const newSide = currentSide === 'HOME' ? 'AWAY' : 'HOME'
-          setInningSwitchFlash({ newSide })
-          setTimeout(() => setInningSwitchFlash(null), 2500)
+          setSideSwitchFlash({ newSide })
+          setTimeout(() => setSideSwitchFlash(null), 1200)
         } catch {
           // Backend rejected; ignore silently
         }
@@ -417,17 +459,35 @@ export default function SpielbogenPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-cream-50">
-      {/* Inning-switch flash banner */}
+      {/* 3-Out / Side-Switch Center-Flash */}
       <AnimatePresence>
-        {inningSwitchFlash && (
+        {sideSwitchFlash && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed top-0 left-0 right-0 z-50 bg-navy-800 text-white py-3 text-center font-display text-base font-extrabold tracking-widest uppercase shadow-lg"
+            role="alert"
+            aria-live="assertive"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-softball-red-700/85 pointer-events-none"
           >
-            Inning-Wechsel · {inningSwitchFlash.newSide === 'HOME' ? 'HEIM' : 'GAST'} schlägt
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 1.2, opacity: 0 }}
+              transition={prefersReducedMotion ? { duration: 0.15 } : { type: 'spring', stiffness: 300, damping: 20 }}
+              className="text-center text-white px-6"
+            >
+              <div className="font-display text-6xl sm:text-7xl font-extrabold tracking-widest mb-2">
+                3 OUTS
+              </div>
+              <div className="font-display text-xl sm:text-2xl font-bold tracking-widest uppercase">
+                Seitenwechsel
+              </div>
+              <div className="font-body text-base sm:text-lg mt-2 opacity-95">
+                {sideSwitchFlash.newSide === 'HOME' ? 'Heim' : 'Gast'} schlägt jetzt
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -539,6 +599,7 @@ export default function SpielbogenPage() {
           side={currentSide}
           currentSlotId={currentSlot?.id ?? null}
           inning={meta.currentInning}
+          outs={outs}
           baseStateAfter={displayBaseState}
           slots={slots}
           disabled={submitting}
@@ -1074,6 +1135,28 @@ export default function SpielbogenPage() {
                   {scoredFlash.runners.join(' · ')}
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Runner-Advance-Flash */}
+      <AnimatePresence>
+        {advanceFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-44 left-1/2 -translate-x-1/2 z-50 bg-cream-50 border-2 border-emerald-400 px-4 py-2 rounded-xl shadow-xl pointer-events-none"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="font-display text-xs font-bold tracking-widest uppercase text-emerald-700 mb-0.5">
+              Läufer vorgerückt
+            </div>
+            <div className="text-sm text-navy-900 font-semibold">
+              {advanceFlash.runners.map((r, i) => `${r} → ${advanceFlash.targets[i]}`).join(' · ')}
             </div>
           </motion.div>
         )}

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Drawer } from 'vaul'
 import type { SpielbogenRecordAtBatRequest, BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
+import { computeForceDefaults } from '@/utils/bogenBaseAdvance'
+import { HelpPopover } from '@/components/shared/HelpPopover'
 
 interface Props {
   open: boolean
@@ -9,6 +11,8 @@ interface Props {
   baseStateAfter: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
   batterSlotId: number | null
+  /** Outs vor diesem AB (0/1/2). Bei 2 Outs zaehlt ein Fly-Catch nicht mehr Runs (Inning endet). */
+  outs: number
 }
 
 const POSITION_NAMES: Record<number, string> = {
@@ -83,8 +87,20 @@ interface InfieldOptionsProps {
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   onDpPick: (fielder: number, defaultDpPartner: number) => void
   onRunnerOutPick: (fielder: number) => void
-  onAdvancePick: (fielder: number) => void
+  onAdvancePick: (fielder: number, throwTarget: 1 | 2 | 3 | 4, baseSubmit: Partial<SpielbogenRecordAtBatRequest>) => void
   onBack: () => void
+}
+
+// Maps Infield-Fielder-Position → Base where they typically tag/throw
+// (used for Smart-Default Runner-Advance). Outfielders go through Fly-Out path, not relevant here.
+// P (1) typically pivots to 1B for unassisted plays.
+const FIELDER_TO_BASE: Record<number, 1 | 2 | 3 | 4> = {
+  1: 1, // P → 1B
+  2: 4, // C → Home
+  3: 1, // 1B → 1B
+  4: 2, // 2B → 2B
+  5: 3, // 3B → 3B
+  6: 2, // SS → 2B
 }
 
 function InfieldOptionsView({
@@ -139,14 +155,19 @@ function InfieldOptionsView({
     isError?: boolean,
     errorPosition?: number,
   ) => {
-    // Submit immediately with default (runners stay put on OUT)
     const baseSubmit: Partial<SpielbogenRecordAtBatRequest> = isError
       ? { result: 'OUT', isError: true, errorPosition }
       : { result: 'OUT', outType, fielderChain: chain, ...(isSacBunt ? { sacrificeType: 'BUNT' as const } : {}) }
+    if (hasRunners && !isError) {
+      const lastFielder = chain[chain.length - 1]
+      const throwTarget = FIELDER_TO_BASE[lastFielder] ?? 1
+      onAdvancePick(fielder, throwTarget, baseSubmit)
+      return
+    }
     onSubmit(baseSubmit)
   }
 
-  const options: Array<{ label: string; description: string; action: () => void; primary?: boolean }> = [
+  const options: Array<{ label: string; description: string; action: () => void; primary?: boolean; isError?: boolean }> = [
     {
       label: `▶ Wirft zu 1B (${fielder}-3)`,
       description: 'Normale Groundout, Throw to 1B',
@@ -171,17 +192,11 @@ function InfieldOptionsView({
       },
     ] : []),
     {
-      label: `Error E${fielder}`,
-      description: 'Fehler beim Fielder',
+      label: `Sicher an 1B durch Fehler (E${fielder})`,
+      description: 'Batter safe — kein Out, Fielder hat Fehler',
       action: () => handleGrounderOut('GROUNDER', [], true, fielder),
+      isError: true,
     },
-    ...(hasRunners ? [
-      {
-        label: '⚙ Runner-Advance editieren',
-        description: 'Default OK? Runner anders weitergelaufen (z.B. via Overthrow/E)',
-        action: () => onAdvancePick(fielder),
-      },
-    ] : []),
   ]
 
   return (
@@ -197,22 +212,42 @@ function InfieldOptionsView({
             onChange={e => setIsSacBunt(e.target.checked)}
             className="w-4 h-4 rounded border-gray-300 accent-navy-800 cursor-pointer"
           />
-          Als Sacrifice Bunt werten (SH)
+          <span>Als Sacrifice Bunt werten (SH)</span>
+          <HelpPopover
+            title="Sacrifice Bunt (SH)"
+            body={
+              <>
+                <p>Batter buntet absichtlich, damit Runner advancen kann. Batter wird out an 1B — opfert sich ("sacrifice").</p>
+                <p><strong>Wann ankreuzen:</strong> Batter hat absichtlich gebuntet um Runner weiterzubringen.</p>
+                <p><strong>Wirkung:</strong> AB zählt nicht für AVG → Batter-AVG bleibt geschützt.</p>
+              </>
+            }
+          />
         </label>
       )}
       {options.map((opt) => (
-        <button
-          key={opt.label}
-          onClick={opt.action}
-          className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
-            opt.primary
-              ? 'bg-navy-50 border-navy-300 text-navy-900 hover:bg-navy-100'
-              : 'bg-white border-cream-300 text-gray-700 hover:bg-cream-100'
-          }`}
-        >
-          <div className="text-sm font-semibold">{opt.label}</div>
-          <div className="text-xs text-gray-500 mt-0.5">{opt.description}</div>
-        </button>
+        <div key={opt.label}>
+          {opt.isError && (
+            <div className="flex items-center gap-2 my-2">
+              <div className="flex-1 h-px bg-amber-300" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-amber-700">Fehler des Fielders</span>
+              <div className="flex-1 h-px bg-amber-300" />
+            </div>
+          )}
+          <button
+            onClick={opt.action}
+            className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
+              opt.isError
+                ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                : opt.primary
+                ? 'bg-navy-50 border-navy-300 text-navy-900 hover:bg-navy-100'
+                : 'bg-white border-cream-300 text-gray-700 hover:bg-cream-100'
+            }`}
+          >
+            <div className="text-sm font-semibold">{opt.label}</div>
+            <div className="text-xs text-gray-500 mt-0.5">{opt.description}</div>
+          </button>
+        </div>
       ))}
       <button
         onClick={onBack}
@@ -306,6 +341,7 @@ function RunnerAdvancePickerView({
   onConfirm,
   onBack,
   showSacFlyToggle,
+  defaultTargets,
 }: {
   title: string
   subtitle: string
@@ -314,6 +350,7 @@ function RunnerAdvancePickerView({
   onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => void
   onBack: () => void
   showSacFlyToggle?: boolean
+  defaultTargets?: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
 }) {
   const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
   if (baseState.firstSlotId != null) {
@@ -329,7 +366,9 @@ function RunnerAdvancePickerView({
     if (slot) runners.push({ slotId: slot.id, fromBase: 3, name: slot.name })
   }
 
-  const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>({ 1: 1, 2: 2, 3: 3 })
+  const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>(
+    defaultTargets ?? { 1: 1, 2: 2, 3: 3 }
+  )
   const [isSacFly, setIsSacFly] = useState(false)
   const cycle = (b: 1 | 2 | 3) =>
     setTargets(prev => {
@@ -385,7 +424,17 @@ function RunnerAdvancePickerView({
             onChange={e => setIsSacFly(e.target.checked)}
             className="w-4 h-4 rounded border-gray-300 accent-navy-800 cursor-pointer"
           />
-          Als Sacrifice Fly werten (SF)
+          <span>Als Sacrifice Fly werten (SF)</span>
+          <HelpPopover
+            title="Sacrifice Fly (SF)"
+            body={
+              <>
+                <p>Batter schlägt Fly Ball ins Outfield. Outfielder fängt → Batter out. Aber: Runner von 3B taggt up und scored.</p>
+                <p><strong>Wann ankreuzen:</strong> Mindestens 1 Run wegen Tag-Up. Nur möglich bei &lt; 2 Outs.</p>
+                <p><strong>Wirkung:</strong> AB zählt nicht für AVG.</p>
+              </>
+            }
+          />
         </label>
       )}
       <div className="flex gap-2 mt-4">
@@ -412,7 +461,7 @@ function RunnerAdvancePickerView({
 // ---------------------------------------------------------------------------
 // OutDetailDrawer
 // ---------------------------------------------------------------------------
-export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId }: Props) {
+export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
   const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
@@ -420,6 +469,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   const [pendingAdvancePicker, setPendingAdvancePicker] = useState<null | {
     baseRequest: Partial<SpielbogenRecordAtBatRequest>
     title: string
+    defaultTargets: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
   }>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
@@ -453,11 +503,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => {
     if (pendingFlyOutRequest == null) return
-    const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
+    const { baseStateAfter: after, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
+    // Bei 2 Outs beendet der Catch das Inning — Runs zaehlen nicht mehr, Sac-Fly nicht moeglich
+    const runs = outs >= 2 ? 0 : rawRuns
     onSubmit({
       result: 'OUT',
       outType: 'FLY',
-      ...(isSacFly ? { sacrificeType: 'FLY' as const } : {}),
+      ...(isSacFly && outs < 2 ? { sacrificeType: 'FLY' as const } : {}),
       fielderChain: [pendingFlyOutRequest.fielder],
       runsScored: runs,
       rbi: runs,
@@ -466,15 +518,21 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setPendingFlyOutRequest(null)
   }
 
-  const handleAdvancePick = (fielder: number) => {
-    const defaultThrow = 3
+  const handleAdvancePick = (
+    fielder: number,
+    throwTarget: 1 | 2 | 3 | 4,
+    baseRequest: Partial<SpielbogenRecordAtBatRequest>,
+  ) => {
+    const chain = baseRequest.fielderChain
+    const last = chain && chain.length > 1 ? chain[chain.length - 1] : null
+    const titleSuffix = last != null ? `${fielder}-${last}` : `${fielder}`
     setPendingAdvancePicker({
-      baseRequest: {
-        result: 'OUT',
-        outType: 'GROUNDER',
-        fielderChain: [fielder, defaultThrow],
-      },
-      title: `Grounder ${fielder}-${defaultThrow} — Runner-Advance editieren`,
+      baseRequest,
+      title: `Out ${titleSuffix} — Runner-Advance`,
+      defaultTargets: computeForceDefaults(
+        baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null },
+        throwTarget,
+      ),
     })
   }
 
@@ -614,12 +672,16 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
             ) : pendingFlyOutRequest != null ? (
               <RunnerAdvancePickerView
                 title={`Fly Out F${pendingFlyOutRequest.fielder} — Tag Up?`}
-                subtitle="Welche Runner sind nach dem Catch weitergelaufen?"
+                subtitle={
+                  outs >= 2
+                    ? 'Catch ist 3rd Out — Runs zählen nicht (Inning beendet)'
+                    : 'Welche Runner sind nach dem Catch weitergelaufen?'
+                }
                 baseState={baseState}
                 slots={slots}
                 onConfirm={handleFlyOutConfirm}
                 onBack={() => setPendingFlyOutRequest(null)}
-                showSacFlyToggle
+                showSacFlyToggle={outs < 2}
               />
             ) : pendingDpRequest != null ? (
               <RunnerOutPickerView
@@ -635,9 +697,10 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
             ) : pendingAdvancePicker != null ? (
               <RunnerAdvancePickerView
                 title={pendingAdvancePicker.title}
-                subtitle="Runner anders weitergelaufen? Tipp zum Anpassen."
+                subtitle="Smart-Default basierend auf Throw-Target — anpassen wenn Runner anders gelaufen ist."
                 baseState={baseState}
                 slots={slots}
+                defaultTargets={pendingAdvancePicker.defaultTargets}
                 onConfirm={handleAdvancePickerConfirm}
                 onBack={() => setPendingAdvancePicker(null)}
               />

@@ -12,6 +12,7 @@ interface Props {
   side: BogenSide
   currentSlotId: number | null
   inning: number
+  outs: number
   baseStateAfter: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
   disabled?: boolean
@@ -32,6 +33,7 @@ export function BogenActionButtons({
   side,
   currentSlotId,
   inning,
+  outs,
   baseStateAfter,
   slots,
   disabled,
@@ -91,11 +93,13 @@ export function BogenActionButtons({
           before: baseStateAfter,
           result: outResult,
           outType: req.outType,
+          isError: req.isError ?? false,
           batterSlotId: currentSlotId,
         })
         resolvedBaseState = advance.baseStateAfter
         runsScored = advance.runsScored
-        rbi = advance.runsScored
+        // ROE: run is unearned, no RBI — Run scored aber Batter kriegt kein RBI
+        rbi = req.isError ? 0 : advance.runsScored
       }
       await onRecord({
         side,
@@ -195,6 +199,7 @@ export function BogenActionButtons({
         baseStateAfter={baseStateAfter}
         slots={slots}
         batterSlotId={currentSlotId}
+        outs={outs}
       />
 
       {/* Stealing drawer */}
