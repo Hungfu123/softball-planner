@@ -479,7 +479,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
     onSubmit({
       result: 'OUT',
-      outType: 'FORCE_OUT',
+      outType: 'FIELDERS_CHOICE',
       fielderChain: [fielder, throwTarget],
       runsScored: 0,
       rbi: 0,

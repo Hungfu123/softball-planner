@@ -53,6 +53,7 @@ public class BogenSheetRenderer {
             String chain = String.join("-", ab.getFielderChain().stream().map(String::valueOf).toList());
             if (ab.getOutType() == OutType.DOUBLE_PLAY) return chain + " DP";
             if (ab.getOutType() == OutType.TRIPLE_PLAY) return chain + " TP";
+            if (ab.getOutType() == OutType.FIELDERS_CHOICE) return "FC " + chain;
             if (ab.getOutType() == OutType.FLY && ab.getFielderChain().size() == 1) return "F" + ab.getFielderChain().get(0);
             return chain;
         }
@@ -65,6 +66,7 @@ public class BogenSheetRenderer {
             case TRIPLE_PLAY -> "TP";
             case FORCE_OUT -> "FO";
             case TAG_OUT -> "TO";
+            case FIELDERS_CHOICE -> "FC";
         };
     }
 
