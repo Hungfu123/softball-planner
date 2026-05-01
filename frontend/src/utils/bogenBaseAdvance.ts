@@ -120,3 +120,24 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
     }
   }
 }
+
+/**
+ * Smart-Defaults für Runner-Advance bei Grounder.
+ * Logik: wenn Throw zu 1B (Batter out an 1B), Force für Runner auf 1B fällt weg → kann zu 2B.
+ * Andere Bases: konservativ "bleibt".
+ */
+export function computeForceDefaults(
+  baseState: BogenBaseStateDto,
+  throwTarget: 1 | 2 | 3 | 4,
+): Record<1 | 2 | 3, 1 | 2 | 3 | 4> {
+  const defaults: Record<1 | 2 | 3, 1 | 2 | 3 | 4> = { 1: 1, 2: 2, 3: 3 }
+  // Throw zu 1B → Runner auf 1B nicht mehr forced, aggressive Default → 2B
+  if (throwTarget === 1 && baseState.firstSlotId != null) {
+    defaults[1] = 2
+  }
+  // Throw zu 2B (Force-Out auf 1B-Runner) → Force greift, Runner1B → 2B (auf 2B-Out)
+  if (throwTarget === 2 && baseState.firstSlotId != null) {
+    defaults[1] = 2
+  }
+  return defaults
+}

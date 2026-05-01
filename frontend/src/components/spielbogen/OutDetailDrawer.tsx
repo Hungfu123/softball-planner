@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Drawer } from 'vaul'
 import type { SpielbogenRecordAtBatRequest, BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
+import { computeForceDefaults } from '@/utils/bogenBaseAdvance'
 
 interface Props {
   open: boolean
@@ -85,9 +86,11 @@ interface InfieldOptionsProps {
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   onDpPick: (fielder: number, defaultDpPartner: number) => void
   onRunnerOutPick: (fielder: number) => void
-  onAdvancePick: (fielder: number) => void
+  onAdvancePick: (fielder: number, throwTarget: 1 | 2 | 3 | 4, baseSubmit: Partial<SpielbogenRecordAtBatRequest>) => void
   onBack: () => void
 }
+
+const FIELDER_TO_BASE: Record<number, 1 | 2 | 3 | 4> = { 3: 1, 4: 2, 6: 2, 5: 3, 2: 4 }
 
 function InfieldOptionsView({
   fielder,
@@ -141,10 +144,15 @@ function InfieldOptionsView({
     isError?: boolean,
     errorPosition?: number,
   ) => {
-    // Submit immediately with default (runners stay put on OUT)
     const baseSubmit: Partial<SpielbogenRecordAtBatRequest> = isError
       ? { result: 'OUT', isError: true, errorPosition }
       : { result: 'OUT', outType, fielderChain: chain, ...(isSacBunt ? { sacrificeType: 'BUNT' as const } : {}) }
+    if (hasRunners && !isError) {
+      const lastFielder = chain[chain.length - 1]
+      const throwTarget = FIELDER_TO_BASE[lastFielder] ?? 1
+      onAdvancePick(fielder, throwTarget, baseSubmit)
+      return
+    }
     onSubmit(baseSubmit)
   }
 
@@ -178,13 +186,6 @@ function InfieldOptionsView({
       action: () => handleGrounderOut('GROUNDER', [], true, fielder),
       isError: true,
     },
-    ...(hasRunners ? [
-      {
-        label: '⚙ Runner-Advance editieren',
-        description: 'Default OK? Runner anders weitergelaufen (z.B. via Overthrow/E)',
-        action: () => onAdvancePick(fielder),
-      },
-    ] : []),
   ]
 
   return (
@@ -319,6 +320,7 @@ function RunnerAdvancePickerView({
   onConfirm,
   onBack,
   showSacFlyToggle,
+  defaultTargets,
 }: {
   title: string
   subtitle: string
@@ -327,6 +329,7 @@ function RunnerAdvancePickerView({
   onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => void
   onBack: () => void
   showSacFlyToggle?: boolean
+  defaultTargets?: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
 }) {
   const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
   if (baseState.firstSlotId != null) {
@@ -342,7 +345,9 @@ function RunnerAdvancePickerView({
     if (slot) runners.push({ slotId: slot.id, fromBase: 3, name: slot.name })
   }
 
-  const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>({ 1: 1, 2: 2, 3: 3 })
+  const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>(
+    defaultTargets ?? { 1: 1, 2: 2, 3: 3 }
+  )
   const [isSacFly, setIsSacFly] = useState(false)
   const cycle = (b: 1 | 2 | 3) =>
     setTargets(prev => {
@@ -433,6 +438,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   const [pendingAdvancePicker, setPendingAdvancePicker] = useState<null | {
     baseRequest: Partial<SpielbogenRecordAtBatRequest>
     title: string
+    defaultTargets: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
   }>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
@@ -481,15 +487,21 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setPendingFlyOutRequest(null)
   }
 
-  const handleAdvancePick = (fielder: number) => {
-    const defaultThrow = 3
+  const handleAdvancePick = (
+    fielder: number,
+    throwTarget: 1 | 2 | 3 | 4,
+    baseRequest: Partial<SpielbogenRecordAtBatRequest>,
+  ) => {
+    const chain = baseRequest.fielderChain
+    const last = chain && chain.length > 1 ? chain[chain.length - 1] : null
+    const titleSuffix = last != null ? `${fielder}-${last}` : `${fielder}`
     setPendingAdvancePicker({
-      baseRequest: {
-        result: 'OUT',
-        outType: 'GROUNDER',
-        fielderChain: [fielder, defaultThrow],
-      },
-      title: `Grounder ${fielder}-${defaultThrow} — Runner-Advance editieren`,
+      baseRequest,
+      title: `Out ${titleSuffix} — Runner-Advance`,
+      defaultTargets: computeForceDefaults(
+        baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null },
+        throwTarget,
+      ),
     })
   }
 
@@ -654,9 +666,10 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
             ) : pendingAdvancePicker != null ? (
               <RunnerAdvancePickerView
                 title={pendingAdvancePicker.title}
-                subtitle="Runner anders weitergelaufen? Tipp zum Anpassen."
+                subtitle="Smart-Default basierend auf Throw-Target — anpassen wenn Runner anders gelaufen ist."
                 baseState={baseState}
                 slots={slots}
+                defaultTargets={pendingAdvancePicker.defaultTargets}
                 onConfirm={handleAdvancePickerConfirm}
                 onBack={() => setPendingAdvancePicker(null)}
               />
