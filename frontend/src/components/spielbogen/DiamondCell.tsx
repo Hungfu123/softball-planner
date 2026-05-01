@@ -54,15 +54,15 @@ export function DiamondCell({ notation, outIndex }: Props) {
   const diamondPath = `M ${HOME.x} ${HOME.y} L ${FIRST.x} ${FIRST.y} L ${SECOND.x} ${SECOND.y} L ${THIRD.x} ${THIRD.y} Z`
 
   return (
-    <svg viewBox="0 0 60 60" className="w-full h-full" style={{ display: 'block' }}>
-      {/* Diamond outline (always shown, light navy) */}
+    <svg viewBox="0 0 60 65" className="w-full h-full" style={{ display: 'block' }}>
+      {/* Diamond outline (thin navy) */}
       <path
         d={diamondPath}
         fill={filled ? '#1e3a8a' : 'none'}
         stroke="#1e3a8a"
-        strokeWidth="0.8"
+        strokeWidth="0.6"
       />
-      {/* Advancement path segments (thick navy lines) */}
+      {/* Advancement path segments (medium thickness, navy) */}
       {activeSegments.map(([a, b], i) => (
         <line
           key={i}
@@ -71,32 +71,48 @@ export function DiamondCell({ notation, outIndex }: Props) {
           x2={b.x}
           y2={b.y}
           stroke="#1e3a8a"
-          strokeWidth="2.5"
+          strokeWidth="1.5"
           strokeLinecap="round"
         />
       ))}
-      {/* Notation label (centered in diamond) */}
+      {/* Notation label */}
       {notation?.label && (
-        <text
-          x={30}
-          y={36}
-          textAnchor="middle"
-          fontSize="10"
-          fontWeight="700"
-          fill={filled ? '#fef3c7' : '#1e3a8a'}
-          style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
-        >
-          {notation.label}
-        </text>
+        filled ? (
+          // HR: centered cream label on navy fill
+          <text
+            x={30}
+            y={34}
+            textAnchor="middle"
+            fontSize="11"
+            fontWeight="700"
+            fill="#fef3c7"
+            style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
+          >
+            {notation.label}
+          </text>
+        ) : (
+          // Other hits: small label below the diamond (near home corner)
+          <text
+            x={30}
+            y={62}
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="#1e3a8a"
+            style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
+          >
+            {notation.label}
+          </text>
+        )
       )}
-      {/* Out index: small Roman numeral in bottom-left corner */}
+      {/* Out index: small Roman numeral in top-left, lighter */}
       {outIndex != null && outIndex > 0 && (
         <text
-          x={4}
-          y={56}
-          fontSize="7"
-          fontWeight="700"
-          fill="#6b7280"
+          x={3}
+          y={11}
+          fontSize="6"
+          fontWeight="600"
+          fill="#9ca3af"
           style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
         >
           {romanOut(outIndex)}

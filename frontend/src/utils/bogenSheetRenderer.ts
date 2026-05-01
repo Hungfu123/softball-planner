@@ -44,17 +44,18 @@ export function renderCells(
 }
 
 function renderAtBat(ab: SpielbogenAtBatResponse): CellNotation {
-  const runScored = (ab.runsScored ?? 0) > 0
+  // Only the batter's own scoring (HR) fills the diamond.
+  // Runs scored by runners on base belong to those runners' slots.
   if (ab.isError && ab.errorPosition != null) {
-    return { label: `E${ab.errorPosition}`, runScored, stealingArrow: null }
+    return { label: `E${ab.errorPosition}`, runScored: false, stealingArrow: null }
   }
   switch (ab.result) {
-    case 'SINGLE': return { label: '1B', runScored, stealingArrow: null }
-    case 'DOUBLE': return { label: '2B', runScored, stealingArrow: null }
-    case 'TRIPLE': return { label: '3B', runScored, stealingArrow: null }
+    case 'SINGLE': return { label: '1B', runScored: false, stealingArrow: null }
+    case 'DOUBLE': return { label: '2B', runScored: false, stealingArrow: null }
+    case 'TRIPLE': return { label: '3B', runScored: false, stealingArrow: null }
     case 'HOMERUN': return { label: 'HR', runScored: true, stealingArrow: null }
-    case 'WALK': return { label: 'BB', runScored, stealingArrow: null }
-    case 'HIT_BY_PITCH': return { label: 'HP', runScored, stealingArrow: null }
+    case 'WALK': return { label: 'BB', runScored: false, stealingArrow: null }
+    case 'HIT_BY_PITCH': return { label: 'HP', runScored: false, stealingArrow: null }
     case 'STRIKEOUT': return { label: 'K', runScored: false, stealingArrow: null }
     case 'OUT': return { label: renderOut(ab), runScored: false, stealingArrow: null }
   }

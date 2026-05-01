@@ -175,33 +175,41 @@ function drawSheet(
         doc.triangle(third.x, third.y, home.x, home.y, cx, cy, 'F')
       }
 
-      // Diamond outline (thicker than before: 0.6 mm)
+      // Diamond outline (thin: 0.4 mm)
       doc.setDrawColor(30, 58, 138)
-      doc.setLineWidth(0.6)
+      doc.setLineWidth(0.4)
       doc.line(home.x, home.y, first.x, first.y)
       doc.line(first.x, first.y, sec.x, sec.y)
       doc.line(sec.x, sec.y, third.x, third.y)
       doc.line(third.x, third.y, home.x, home.y)
 
-      // Advancement path segments (thick: 0.8 mm)
+      // Advancement path segments (medium: 0.5 mm)
       const allSegments = [
         [home, first],
         [first, sec],
         [sec, third],
         [third, home],
       ]
-      doc.setLineWidth(0.8)
+      doc.setLineWidth(0.5)
       for (let s = 0; s < reachedBase; s++) {
         const [a, b] = allSegments[s]
         doc.line(a.x, a.y, b.x, b.y)
       }
 
-      // Notation label inside diamond
+      // Notation label: HR centered on fill, others below the diamond
       if (label) {
         doc.setFontSize(5.5)
         doc.setFont('helvetica', 'bold')
-        doc.setTextColor(filled ? 254 : 30, filled ? 243 : 42, filled ? 199 : 143)
-        doc.text(label.slice(0, 4), cx, cy + 1, { align: 'center' })
+        if (filled) {
+          // HR: cream label centered in diamond
+          doc.setTextColor(254, 243, 199)
+          doc.text(label.slice(0, 4), cx, cy + 1, { align: 'center' })
+        } else {
+          // Other hits: small navy label just below the home corner
+          doc.setTextColor(30, 58, 138)
+          doc.setFontSize(4.5)
+          doc.text(label.slice(0, 4), cx, home.y + 2, { align: 'center' })
+        }
         doc.setTextColor(0, 0, 0)
       }
     }

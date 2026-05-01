@@ -104,9 +104,9 @@ function SideSheet({
               key={slot.id}
               className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-cream-50'}
             >
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700 border border-cream-400">{slot.battingOrder}</td>
-              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px] border border-cream-400">{slot.name}</td>
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase border border-cream-400">{slot.position ?? '—'}</td>
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700 border border-navy-300">{slot.battingOrder}</td>
+              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px] border border-navy-300">{slot.name}</td>
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase border border-navy-300">{slot.position ?? '—'}</td>
               {innings.map(inning => {
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
@@ -114,7 +114,7 @@ function SideSheet({
                 const cellAtBat = atBats.find(ab => ab.slotId === slot.id && ab.inning === inning)
                 const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
-                  <td key={inning} className="p-0 w-9 h-9 border border-cream-400">
+                  <td key={inning} className="p-0 w-9 h-9 border border-navy-300">
                     <div className="w-9 h-9">
                       <DiamondCell notation={cell} outIndex={outIdx} />
                     </div>
@@ -126,15 +126,15 @@ function SideSheet({
         </tbody>
         <tfoot>
           <tr className="bg-cream-100">
-            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide border border-cream-400">
+            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide border border-navy-300">
               Runs
             </td>
             {innings.map(i => (
-              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5 border border-cream-400">
+              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5 border border-navy-300">
                 {inningRuns[i]?.[sideKey] ?? 0}
               </td>
             ))}
-            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm border border-cream-400">{totalRuns}</td>
+            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm border border-navy-300">{totalRuns}</td>
           </tr>
         </tfoot>
       </table>
