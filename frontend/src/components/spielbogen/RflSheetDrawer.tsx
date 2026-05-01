@@ -63,8 +63,8 @@ interface Props {
 
 const MAX_INNINGS = 7
 
-const cellStyle: React.CSSProperties = { boxShadow: 'inset 0 0 0 1px #374151' }
-const headerCellStyle: React.CSSProperties = { boxShadow: 'inset 0 0 0 1px #1e3a8a' }
+const cellStyle: React.CSSProperties = { border: '1px solid #374151' }
+const headerCellStyle: React.CSSProperties = { border: '1px solid #1e3a8a' }
 
 function SideSheet({
   side,
@@ -90,7 +90,7 @@ function SideSheet({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[460px] text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+      <table className="w-full min-w-[460px] text-xs" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr className="bg-navy-800 text-white">
             <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6" style={headerCellStyle}>#</th>
@@ -114,7 +114,7 @@ function SideSheet({
                 const cellAtBat = atBats.find(ab => ab.slotId === slot.id && ab.inning === inning)
                 const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
-                  <td key={inning} style={cellStyle} className="p-0 w-10 h-16">
+                  <td key={inning} className="p-0 w-10 h-16" style={cellStyle}>
                     <div className="w-10 h-16">
                       <DiamondCell notation={cell} outIndex={outIdx} />
                     </div>
