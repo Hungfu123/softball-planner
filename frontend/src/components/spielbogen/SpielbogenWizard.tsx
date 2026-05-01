@@ -7,6 +7,7 @@ import { metaIsValid, lineupIsValid, lineupCounts } from './wizardValidation'
 import { WizardStepReview } from './WizardStepReview'
 import { useToastContext } from '@/components/layout/Layout'
 import { saveDraft, loadDraft, clearDraft, type WizardDraft } from '@/utils/spielbogenDraft'
+import { buildDemoWizardData } from '@/utils/spielbogenDemoData'
 import * as api from '@/api/client'
 import type { CreateSpielbogenRequest, SetLineupRequest, BogenSide } from '@/types'
 
@@ -90,9 +91,28 @@ export default function SpielbogenWizard() {
   const canAdvanceStep1 = metaIsValid(meta)
   const canAdvanceStep2 = lineupIsValid(homeLineup, awayLineup)
 
+  const handleDemoFill = () => {
+    const demo = buildDemoWizardData()
+    setMeta(demo.meta)
+    setHomeLineup(demo.homeLineup)
+    setAwayLineup(demo.awayLineup)
+    toast.show('Demo-Daten eingefüllt', 'success')
+  }
+
   return (
     <div className="space-y-4 max-w-xl mx-auto">
-      <Stepper step={step} />
+      <div className="flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <Stepper step={step} />
+        </div>
+        <button
+          onClick={handleDemoFill}
+          className="shrink-0 font-display text-[10px] tracking-widest font-bold uppercase px-2.5 py-1 rounded-full border border-cream-300 text-gray-500 hover:bg-cream-100 cursor-pointer"
+          title="Meta + Lineups mit Test-Daten füllen"
+        >
+          ⚡ Demo
+        </button>
+      </div>
 
       {step === 1 && <WizardStepMeta meta={meta} onChange={setMeta} />}
       {step === 2 && <WizardStepLineup homeLineup={homeLineup} awayLineup={awayLineup} onChange={updateLineup} />}
