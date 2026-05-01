@@ -74,7 +74,7 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitti
   const cellMap = renderCells([lastAtBat], [])
   const key = cellKey(lastAtBat.side, lastAtBat.slotId, lastAtBat.inning)
   const cell = cellMap.get(key)
-  const label = cell?.label ?? '?'
+  const label = cell?.primaryLabel ?? '?'
   const description = klartext(label)
 
   const handleUndo = async () => {

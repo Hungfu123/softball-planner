@@ -13,45 +13,6 @@ import { DiamondCell } from './DiamondCell'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 
-/**
- * Computes the out-index (1, 2, 3) for each at-bat that results in an out,
- * grouped by side+inning and sorted by sequence.
- */
-function computeOutIndices(atBats: SpielbogenAtBatResponse[]): Map<number, number> {
-  const result = new Map<number, number>()
-  const groups = new Map<string, SpielbogenAtBatResponse[]>()
-
-  for (const ab of atBats) {
-    const key = `${ab.side}|${ab.inning}`
-    const arr = groups.get(key) ?? []
-    arr.push(ab)
-    groups.set(key, arr)
-  }
-
-  for (const arr of groups.values()) {
-    const sorted = [...arr].sort((a, b) => a.sequence - b.sequence)
-    let outs = 0
-    for (const ab of sorted) {
-      if (ab.isError) continue
-      if (ab.result === 'STRIKEOUT') {
-        outs += 1
-        if (outs <= 3) result.set(ab.id, outs)
-      } else if (ab.result === 'OUT') {
-        if (ab.outType === 'DOUBLE_PLAY') {
-          outs += 2
-        } else if (ab.outType === 'TRIPLE_PLAY') {
-          outs += 3
-        } else {
-          outs += 1
-        }
-        if (outs <= 3) result.set(ab.id, outs)
-      }
-    }
-  }
-
-  return result
-}
-
 interface Props {
   open: boolean
   onClose: () => void
@@ -63,27 +24,13 @@ interface Props {
 
 const MAX_INNINGS = 7
 
-const BORDER = '1.5px solid #1f2937'  // gray-800, klar sichtbar auf white bg
-const HEADER_BORDER = '1.5px solid #ffffff'  // weiß für Kontrast auf navy-800 bg
+const BORDER = '2px solid #000000'
+const HEADER_BORDER = '2px solid #ffffff'
 
-const cellStyle: React.CSSProperties = {
-  borderRight: BORDER,
-  borderBottom: BORDER,
-}
-const headerCellStyle: React.CSSProperties = {
-  borderRight: HEADER_BORDER,
-  borderBottom: HEADER_BORDER,
-}
-const firstCellStyle: React.CSSProperties = {
-  borderLeft: BORDER,
-  borderRight: BORDER,
-  borderBottom: BORDER,
-}
-const firstHeaderCellStyle: React.CSSProperties = {
-  borderLeft: HEADER_BORDER,
-  borderRight: HEADER_BORDER,
-  borderBottom: HEADER_BORDER,
-}
+const cellStyle: React.CSSProperties = { border: BORDER }
+const headerCellStyle: React.CSSProperties = { border: HEADER_BORDER }
+const firstCellStyle: React.CSSProperties = { border: BORDER }
+const firstHeaderCellStyle: React.CSSProperties = { border: HEADER_BORDER }
 
 function SideSheet({
   side,
@@ -101,7 +48,6 @@ function SideSheet({
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const sorted = [...slots].sort((a, b) => a.battingOrder - b.battingOrder)
   const cellMap = renderCells(atBats, stealings)
-  const outIndexMap = computeOutIndices(atBats)
 
   const innings = Array.from({ length: MAX_INNINGS }, (_, i) => i + 1)
 
@@ -129,13 +75,10 @@ function SideSheet({
               {innings.map(inning => {
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
-                // Find the matching at-bat to get out-index
-                const cellAtBat = atBats.find(ab => ab.slotId === slot.id && ab.inning === inning)
-                const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
                   <td key={inning} className="p-0 w-10 h-16" style={cellStyle}>
                     <div className="w-full h-full">
-                      <DiamondCell notation={cell} outIndex={outIdx} />
+                      <DiamondCell notation={cell} />
                     </div>
                   </td>
                 )
