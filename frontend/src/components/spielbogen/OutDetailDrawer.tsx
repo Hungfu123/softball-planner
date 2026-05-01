@@ -99,6 +99,7 @@ function InfieldOptionsView({
 }: InfieldOptionsProps) {
   const defaultThrow = 3
   const defaultDpPartner = fielder === 6 ? 4 : defaultThrow
+  const [isSacBunt, setIsSacBunt] = useState(false)
 
   const handleDpClick = () => {
     const runnerCount =
@@ -141,7 +142,7 @@ function InfieldOptionsView({
     // Submit immediately with default (runners stay put on OUT)
     const baseSubmit: Partial<SpielbogenRecordAtBatRequest> = isError
       ? { result: 'OUT', isError: true, errorPosition }
-      : { result: 'OUT', outType, fielderChain: chain }
+      : { result: 'OUT', outType, fielderChain: chain, ...(isSacBunt ? { sacrificeType: 'BUNT' as const } : {}) }
     onSubmit(baseSubmit)
   }
 
@@ -188,6 +189,17 @@ function InfieldOptionsView({
       <p className="text-sm font-display font-bold text-navy-900 uppercase tracking-wide mb-3">
         Feldposition {POSITION_NAMES[fielder]} ({fielder})
       </p>
+      {hasRunners && (
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 pb-1">
+          <input
+            type="checkbox"
+            checked={isSacBunt}
+            onChange={e => setIsSacBunt(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 accent-navy-800 cursor-pointer"
+          />
+          Als Sacrifice Bunt werten (SH)
+        </label>
+      )}
       {options.map((opt) => (
         <button
           key={opt.label}
@@ -293,13 +305,15 @@ function RunnerAdvancePickerView({
   slots,
   onConfirm,
   onBack,
+  showSacFlyToggle,
 }: {
   title: string
   subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
-  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => void
+  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => void
   onBack: () => void
+  showSacFlyToggle?: boolean
 }) {
   const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
   if (baseState.firstSlotId != null) {
@@ -316,6 +330,7 @@ function RunnerAdvancePickerView({
   }
 
   const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>({ 1: 1, 2: 2, 3: 3 })
+  const [isSacFly, setIsSacFly] = useState(false)
   const cycle = (b: 1 | 2 | 3) =>
     setTargets(prev => {
       const curr = prev[b]
@@ -362,6 +377,17 @@ function RunnerAdvancePickerView({
           )
         })}
       </div>
+      {showSacFlyToggle && (
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 pt-1">
+          <input
+            type="checkbox"
+            checked={isSacFly}
+            onChange={e => setIsSacFly(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 accent-navy-800 cursor-pointer"
+          />
+          Als Sacrifice Fly werten (SF)
+        </label>
+      )}
       <div className="flex gap-2 mt-4">
         <button
           onClick={onBack}
@@ -371,7 +397,8 @@ function RunnerAdvancePickerView({
         </button>
         <button
           onClick={() => onConfirm(
-            runners.map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] }))
+            runners.map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] })),
+            isSacFly
           )}
           className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer"
         >
@@ -424,12 +451,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     }
   }
 
-  const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => {
+  const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => {
     if (pendingFlyOutRequest == null) return
     const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
     onSubmit({
       result: 'OUT',
       outType: 'FLY',
+      ...(isSacFly ? { sacrificeType: 'FLY' as const } : {}),
       fielderChain: [pendingFlyOutRequest.fielder],
       runsScored: runs,
       rbi: runs,
@@ -450,7 +478,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     })
   }
 
-  const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => {
+  const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], _isSacFly: boolean) => {
     if (pendingAdvancePicker == null) return
     const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
     onSubmit({
@@ -591,6 +619,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 slots={slots}
                 onConfirm={handleFlyOutConfirm}
                 onBack={() => setPendingFlyOutRequest(null)}
+                showSacFlyToggle
               />
             ) : pendingDpRequest != null ? (
               <RunnerOutPickerView

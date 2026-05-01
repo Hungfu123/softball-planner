@@ -3,6 +3,7 @@ package com.softball.adapter.dto;
 import com.softball.domain.model.AtBatResult;
 import com.softball.domain.model.BogenSide;
 import com.softball.domain.model.OutType;
+import com.softball.domain.model.SacrificeType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,6 +15,7 @@ public record SpielbogenRecordAtBatRequest(
     @NotNull @Min(1) Integer inning,
     @NotNull AtBatResult result,
     OutType outType,
+    SacrificeType sacrificeType,
     List<Integer> fielderChain,
     Boolean isError,
     Integer errorPosition,

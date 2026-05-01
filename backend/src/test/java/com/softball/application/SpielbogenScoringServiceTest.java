@@ -57,7 +57,7 @@ class SpielbogenScoringServiceTest {
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
 
         assertThatThrownBy(() -> service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.SINGLE,
-                                                     null, null, false, null, 0, 0, null))
+                                                     null, null, null, false, null, 0, 0, null))
             .isInstanceOf(BusinessValidationException.class).hasMessageContaining("LIVE");
     }
 
@@ -69,7 +69,7 @@ class SpielbogenScoringServiceTest {
         when(atBatRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         SpielbogenAtBat saved = service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.SINGLE,
-                                                    null, null, false, null, 0, 0, null);
+                                                    null, null, null, false, null, 0, 0, null);
         assertThat(saved.getSequence()).isEqualTo(5);
     }
 
@@ -81,7 +81,7 @@ class SpielbogenScoringServiceTest {
         when(atBatRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.HOMERUN, null, null, false, null, 1, 1, null);
+        service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.HOMERUN, null, null, null, false, null, 1, 1, null);
 
         assertThat(liveBogen.getHomeRuns()).isEqualTo(1);
     }
@@ -92,7 +92,7 @@ class SpielbogenScoringServiceTest {
         when(slotRepo.findById(50L)).thenReturn(Optional.of(homeSlot));
 
         assertThatThrownBy(() -> service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.SINGLE,
-                                                     OutType.GROUNDER, null, false, null, 0, 0, null))
+                                                     OutType.GROUNDER, null, null, false, null, 0, 0, null))
             .isInstanceOf(BusinessValidationException.class).hasMessageContaining("outType");
     }
 
@@ -102,7 +102,7 @@ class SpielbogenScoringServiceTest {
         when(slotRepo.findById(50L)).thenReturn(Optional.of(homeSlot));
 
         assertThatThrownBy(() -> service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.OUT,
-                                                     OutType.GROUNDER, List.of(0, 3), false, null, 0, 0, null))
+                                                     OutType.GROUNDER, null, List.of(0, 3), false, null, 0, 0, null))
             .isInstanceOf(BusinessValidationException.class).hasMessageContaining("fielderChain");
     }
 
@@ -112,7 +112,7 @@ class SpielbogenScoringServiceTest {
         when(slotRepo.findById(50L)).thenReturn(Optional.of(homeSlot));
 
         assertThatThrownBy(() -> service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.OUT,
-                                                     null, null, true, null, 0, 0, null))
+                                                     null, null, null, true, null, 0, 0, null))
             .isInstanceOf(BusinessValidationException.class).hasMessageContaining("errorPosition");
     }
 
@@ -125,7 +125,7 @@ class SpielbogenScoringServiceTest {
         when(slotRepo.findById(50L)).thenReturn(Optional.of(homeSlot));
 
         assertThatThrownBy(() -> service.recordAtBat(1L, BogenSide.HOME, 50L, 1, AtBatResult.SINGLE,
-                                                     null, null, false, null, 0, 0, null))
+                                                     null, null, null, false, null, 0, 0, null))
             .isInstanceOf(BusinessValidationException.class).hasMessageContaining("Spielbogen");
     }
 

@@ -30,6 +30,7 @@ public class SpielbogenAtBatMapper {
         a.setInning(e.getInning());
         a.setResult(AtBatResult.valueOf(e.getResult()));
         a.setOutType(e.getOutType() != null ? OutType.valueOf(e.getOutType()) : null);
+        a.setSacrificeType(e.getSacrificeType() != null ? SacrificeType.valueOf(e.getSacrificeType()) : null);
         a.setFielderChain(e.getFielderChain() != null ? Arrays.asList(e.getFielderChain()) : null);
         a.setIsError(e.getIsError());
         a.setErrorPosition(e.getErrorPosition());
@@ -60,6 +61,7 @@ public class SpielbogenAtBatMapper {
         e.setInning(a.getInning());
         e.setResult(a.getResult().name());
         e.setOutType(a.getOutType() != null ? a.getOutType().name() : null);
+        e.setSacrificeType(a.getSacrificeType() != null ? a.getSacrificeType().name() : null);
         e.setFielderChain(a.getFielderChain() != null ? a.getFielderChain().toArray(new Integer[0]) : null);
         e.setIsError(a.getIsError() != null ? a.getIsError() : Boolean.FALSE);
         e.setErrorPosition(a.getErrorPosition());

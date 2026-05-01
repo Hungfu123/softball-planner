@@ -151,7 +151,7 @@ public class SpielbogenController {
                 req.baseStateAfter().thirdSlotId())
             : null;
         var saved = scoringService.recordAtBat(id, req.side(), req.slotId(), req.inning(),
-            req.result(), req.outType(), req.fielderChain(),
+            req.result(), req.outType(), req.sacrificeType(), req.fielderChain(),
             req.isError(), req.errorPosition(),
             req.runsScored(), req.rbi(), bs);
         return SpielbogenAtBatResponse.from(saved);

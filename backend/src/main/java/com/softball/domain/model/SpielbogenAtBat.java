@@ -17,6 +17,7 @@ public class SpielbogenAtBat {
     private Integer errorPosition;
     private Integer runsScored;
     private Integer rbi;
+    private SacrificeType sacrificeType;
     private BogenBaseState baseStateAfter;
     private Instant createdAt;
     private String createdBy;
@@ -49,6 +50,8 @@ public class SpielbogenAtBat {
     public void setRunsScored(final Integer runsScored) { this.runsScored = runsScored; }
     public Integer getRbi() { return rbi; }
     public void setRbi(final Integer rbi) { this.rbi = rbi; }
+    public SacrificeType getSacrificeType() { return sacrificeType; }
+    public void setSacrificeType(final SacrificeType sacrificeType) { this.sacrificeType = sacrificeType; }
     public BogenBaseState getBaseStateAfter() { return baseStateAfter; }
     public void setBaseStateAfter(final BogenBaseState baseStateAfter) { this.baseStateAfter = baseStateAfter; }
     public Instant getCreatedAt() { return createdAt; }

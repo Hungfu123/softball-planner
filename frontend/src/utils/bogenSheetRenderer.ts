@@ -116,17 +116,25 @@ function reachedBaseForAtBat(ab: SpielbogenAtBatResponse): number {
 }
 
 function renderAtBat(ab: SpielbogenAtBatResponse): { label: string } {
-  if (ab.isError && ab.errorPosition != null) return { label: `E${ab.errorPosition}` }
+  const base = renderAtBatBase(ab)
+  if (ab.sacrificeType === 'FLY') return { label: `${base} SF` }
+  if (ab.sacrificeType === 'BUNT') return { label: `${base} SH` }
+  return { label: base }
+}
+
+function renderAtBatBase(ab: SpielbogenAtBatResponse): string {
+  if (ab.isError && ab.errorPosition != null) return `E${ab.errorPosition}`
   switch (ab.result) {
-    case 'SINGLE': return { label: '1B' }
-    case 'DOUBLE': return { label: '2B' }
-    case 'TRIPLE': return { label: '3B' }
-    case 'HOMERUN': return { label: 'HR' }
-    case 'WALK': return { label: 'BB' }
-    case 'HIT_BY_PITCH': return { label: 'HP' }
-    case 'STRIKEOUT': return { label: 'K' }
-    case 'OUT': return { label: renderOut(ab) }
+    case 'SINGLE': return '1B'
+    case 'DOUBLE': return '2B'
+    case 'TRIPLE': return '3B'
+    case 'HOMERUN': return 'HR'
+    case 'WALK': return 'BB'
+    case 'HIT_BY_PITCH': return 'HP'
+    case 'STRIKEOUT': return 'K'
+    case 'OUT': return renderOut(ab)
   }
+  return 'OUT'
 }
 
 function renderOut(ab: SpielbogenAtBatResponse): string {

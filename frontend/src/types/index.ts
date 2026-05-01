@@ -435,6 +435,7 @@ export const POSITION_OPTIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', '
 // Scoring types
 export type StealingEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'WILD_PITCH' | 'PASSED_BALL'
 export type OutType = 'GROUNDER' | 'FLY' | 'FOUL' | 'UNASSISTED' | 'DOUBLE_PLAY' | 'TRIPLE_PLAY' | 'FORCE_OUT' | 'TAG_OUT' | 'FIELDERS_CHOICE'
+export type SacrificeType = 'BUNT' | 'FLY'
 
 export interface BogenBaseStateDto {
   firstSlotId: number | null
@@ -451,6 +452,7 @@ export interface SpielbogenAtBatResponse {
   inning: number
   result: AtBatResult
   outType: OutType | null
+  sacrificeType: SacrificeType | null
   fielderChain: number[] | null
   isError: boolean | null
   errorPosition: number | null
@@ -466,6 +468,7 @@ export interface SpielbogenRecordAtBatRequest {
   inning: number
   result: AtBatResult
   outType?: OutType
+  sacrificeType?: SacrificeType
   fielderChain?: number[]
   isError?: boolean
   errorPosition?: number

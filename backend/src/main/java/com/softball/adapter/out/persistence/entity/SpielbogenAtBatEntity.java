@@ -54,6 +54,9 @@ public class SpielbogenAtBatEntity {
     @Column(nullable = false)
     private Integer rbi = 0;
 
+    @Column(name = "sacrifice_type")
+    private String sacrificeType;
+
     @Column(name = "base_state_first")
     private Long baseStateFirst;
 
@@ -100,6 +103,8 @@ public class SpielbogenAtBatEntity {
     public void setRunsScored(Integer runsScored) { this.runsScored = runsScored; }
     public Integer getRbi() { return rbi; }
     public void setRbi(Integer rbi) { this.rbi = rbi; }
+    public String getSacrificeType() { return sacrificeType; }
+    public void setSacrificeType(String sacrificeType) { this.sacrificeType = sacrificeType; }
     public Long getBaseStateFirst() { return baseStateFirst; }
     public void setBaseStateFirst(Long baseStateFirst) { this.baseStateFirst = baseStateFirst; }
     public Long getBaseStateSecond() { return baseStateSecond; }

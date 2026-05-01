@@ -3,6 +3,7 @@ package com.softball.adapter.dto;
 import com.softball.domain.model.AtBatResult;
 import com.softball.domain.model.BogenSide;
 import com.softball.domain.model.OutType;
+import com.softball.domain.model.SacrificeType;
 import com.softball.domain.model.SpielbogenAtBat;
 
 import java.time.Instant;
@@ -17,6 +18,7 @@ public record SpielbogenAtBatResponse(
     Integer inning,
     AtBatResult result,
     OutType outType,
+    SacrificeType sacrificeType,
     List<Integer> fielderChain,
     Boolean isError,
     Integer errorPosition,
@@ -35,6 +37,7 @@ public record SpielbogenAtBatResponse(
             a.getInning(),
             a.getResult(),
             a.getOutType(),
+            a.getSacrificeType(),
             a.getFielderChain(),
             a.getIsError(),
             a.getErrorPosition(),

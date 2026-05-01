@@ -37,7 +37,8 @@ public class SpielbogenScoringService {
     @Transactional
     public SpielbogenAtBat recordAtBat(final Long bogenId, final BogenSide side, final Long slotId,
                                        final Integer inning, final AtBatResult result,
-                                       final OutType outType, final List<Integer> fielderChain,
+                                       final OutType outType, final SacrificeType sacrificeType,
+                                       final List<Integer> fielderChain,
                                        final Boolean isError, final Integer errorPosition,
                                        final Integer runsScored, final Integer rbi,
                                        final BogenBaseState baseStateAfter) {
@@ -74,6 +75,7 @@ public class SpielbogenScoringService {
         atBat.setInning(inning);
         atBat.setResult(result);
         atBat.setOutType(outType);
+        atBat.setSacrificeType(sacrificeType);
         atBat.setFielderChain(fielderChain);
         atBat.setIsError(isError != null ? isError : Boolean.FALSE);
         atBat.setErrorPosition(errorPosition);

@@ -14,6 +14,7 @@ function ab(o: Partial<SpielbogenAtBatResponse>): SpielbogenAtBatResponse {
     result: 'SINGLE', outType: null, fielderChain: null, isError: null,
     errorPosition: null, runsScored: 0, rbi: 0, baseStateAfter: null, createdAt: '',
     ...o,
+    sacrificeType: o.sacrificeType ?? null,
   }
 }
 
@@ -49,5 +50,19 @@ describe('renderCells — Wild Pitch / Passed Ball', () => {
     const cell = cells.get('HOME|7|1')!
     expect(cell.runScored).toBe(true)
     expect(cell.reachedBase).toBe(4)
+  })
+})
+
+describe('renderCells — Sacrifice', () => {
+  it('Sac Fly suffix is "SF"', () => {
+    const sf = ab({ slotId: 3, result: 'OUT', outType: 'FLY', sacrificeType: 'FLY', fielderChain: [8], rbi: 1 })
+    const cells = renderCells([sf], [])
+    expect(cells.get('HOME|3|1')!.primaryLabel).toBe('F8 SF')
+  })
+
+  it('Sac Bunt suffix is "SH"', () => {
+    const sh = ab({ slotId: 3, result: 'OUT', outType: 'GROUNDER', sacrificeType: 'BUNT', fielderChain: [1, 3] })
+    const cells = renderCells([sh], [])
+    expect(cells.get('HOME|3|1')!.primaryLabel).toBe('1-3 SH')
   })
 })

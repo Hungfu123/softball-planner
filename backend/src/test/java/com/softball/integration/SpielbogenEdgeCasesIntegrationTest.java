@@ -136,4 +136,53 @@ class SpielbogenEdgeCasesIntegrationTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.type").value("PASSED_BALL"));
     }
+
+    @Test
+    void sac_fly_marks_at_bat_with_rbi() throws Exception {
+        var ctx = createLiveBogen();
+        // Slot1 doubles → on 2B
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1, "result", "DOUBLE",
+                "baseStateAfter", Map.of("secondSlotId", ctx.awaySlot1)))))
+            .andExpect(status().isCreated());
+
+        // Steal 3rd
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/stealing-events").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1,
+                "type", "STOLEN_BASE", "fromBase", 2, "toBase", 3))))
+            .andExpect(status().isCreated());
+
+        // Slot2 sac fly: result=OUT, outType=FLY, sacrificeType=FLY, runsScored=1, rbi=1
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot2, "inning", 1,
+                "result", "OUT", "outType", "FLY", "sacrificeType", "FLY",
+                "fielderChain", List.of(8),
+                "runsScored", 1, "rbi", 1,
+                "baseStateAfter", Map.of()))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.sacrificeType").value("FLY"))
+            .andExpect(jsonPath("$.rbi").value(1));
+    }
+
+    @Test
+    void sac_bunt_marks_at_bat_correctly() throws Exception {
+        var ctx = createLiveBogen();
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1, "result", "WALK",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot1)))))
+            .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot2, "inning", 1,
+                "result", "OUT", "outType", "GROUNDER", "sacrificeType", "BUNT",
+                "fielderChain", List.of(1, 3),
+                "baseStateAfter", Map.of("secondSlotId", ctx.awaySlot1)))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.sacrificeType").value("BUNT"));
+    }
 }
