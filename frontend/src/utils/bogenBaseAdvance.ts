@@ -4,6 +4,7 @@ interface AdvanceInput {
   before: BogenBaseStateDto | null
   result: AtBatResult
   outType?: OutType
+  isError?: boolean
   batterSlotId: number
 }
 
@@ -18,6 +19,19 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
   const before = input.before ?? empty()
   const { firstSlotId: b1, secondSlotId: b2, thirdSlotId: b3 } = before
   const batter = input.batterSlotId
+
+  // ROE: result=OUT + isError=true → Batter erreicht 1B wie Single
+  if (input.result === 'OUT' && input.isError === true) {
+    const runsScored = b3 != null ? 1 : 0
+    return {
+      baseStateAfter: {
+        firstSlotId: batter,
+        secondSlotId: b1,
+        thirdSlotId: b2,
+      },
+      runsScored,
+    }
+  }
 
   switch (input.result) {
     case 'SINGLE': {

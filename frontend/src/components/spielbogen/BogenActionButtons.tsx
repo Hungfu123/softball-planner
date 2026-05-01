@@ -93,6 +93,7 @@ export function BogenActionButtons({
           before: baseStateAfter,
           result: outResult,
           outType: req.outType,
+          isError: req.isError ?? false,
           batterSlotId: currentSlotId,
         })
         resolvedBaseState = advance.baseStateAfter

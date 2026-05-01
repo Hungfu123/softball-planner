@@ -148,7 +148,7 @@ function InfieldOptionsView({
     onSubmit(baseSubmit)
   }
 
-  const options: Array<{ label: string; description: string; action: () => void; primary?: boolean }> = [
+  const options: Array<{ label: string; description: string; action: () => void; primary?: boolean; isError?: boolean }> = [
     {
       label: `▶ Wirft zu 1B (${fielder}-3)`,
       description: 'Normale Groundout, Throw to 1B',
@@ -173,9 +173,10 @@ function InfieldOptionsView({
       },
     ] : []),
     {
-      label: `Error E${fielder}`,
-      description: 'Fehler beim Fielder',
+      label: `Sicher an 1B durch Fehler (E${fielder})`,
+      description: 'Batter safe — kein Out, Fielder hat Fehler',
       action: () => handleGrounderOut('GROUNDER', [], true, fielder),
+      isError: true,
     },
     ...(hasRunners ? [
       {
@@ -203,18 +204,28 @@ function InfieldOptionsView({
         </label>
       )}
       {options.map((opt) => (
-        <button
-          key={opt.label}
-          onClick={opt.action}
-          className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
-            opt.primary
-              ? 'bg-navy-50 border-navy-300 text-navy-900 hover:bg-navy-100'
-              : 'bg-white border-cream-300 text-gray-700 hover:bg-cream-100'
-          }`}
-        >
-          <div className="text-sm font-semibold">{opt.label}</div>
-          <div className="text-xs text-gray-500 mt-0.5">{opt.description}</div>
-        </button>
+        <div key={opt.label}>
+          {opt.isError && (
+            <div className="flex items-center gap-2 my-2">
+              <div className="flex-1 h-px bg-amber-300" />
+              <span className="text-[10px] font-bold tracking-widest uppercase text-amber-700">Fehler des Fielders</span>
+              <div className="flex-1 h-px bg-amber-300" />
+            </div>
+          )}
+          <button
+            onClick={opt.action}
+            className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
+              opt.isError
+                ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                : opt.primary
+                ? 'bg-navy-50 border-navy-300 text-navy-900 hover:bg-navy-100'
+                : 'bg-white border-cream-300 text-gray-700 hover:bg-cream-100'
+            }`}
+          >
+            <div className="text-sm font-semibold">{opt.label}</div>
+            <div className="text-xs text-gray-500 mt-0.5">{opt.description}</div>
+          </button>
+        </div>
       ))}
       <button
         onClick={onBack}
