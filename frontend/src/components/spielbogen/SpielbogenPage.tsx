@@ -1148,12 +1148,12 @@ export default function SpielbogenPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-32 left-1/2 -translate-x-1/2 z-50 bg-cream-50 border-2 border-emerald-400 px-4 py-2 rounded-xl shadow-xl pointer-events-none"
+            className="fixed top-44 left-1/2 -translate-x-1/2 z-50 bg-cream-50 border-2 border-emerald-400 px-4 py-2 rounded-xl shadow-xl pointer-events-none"
             role="status"
             aria-live="polite"
           >
             <div className="font-display text-xs font-bold tracking-widest uppercase text-emerald-700 mb-0.5">
-              Runner advanced
+              Läufer vorgerückt
             </div>
             <div className="text-sm text-navy-900 font-semibold">
               {advanceFlash.runners.map((r, i) => `${r} → ${advanceFlash.targets[i]}`).join(' · ')}
