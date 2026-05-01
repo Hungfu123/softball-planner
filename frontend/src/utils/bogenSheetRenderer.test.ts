@@ -31,3 +31,23 @@ describe("renderCells — Fielder's Choice", () => {
     expect(cell.outIndex).toBe('I')
   })
 })
+
+describe('renderCells — Wild Pitch / Passed Ball', () => {
+  it("attaches WP arrow to the runner's cell with correct toBase", () => {
+    const walk = ab({ slotId: 7, result: 'WALK', baseStateAfter: { firstSlotId: 7, secondSlotId: null, thirdSlotId: null } })
+    const wp = { id: 1, bogenId: 1, slotId: 7, side: 'HOME' as const, inning: 1, type: 'WILD_PITCH' as const, fromBase: 1, toBase: 2, createdAt: '' }
+    const cells = renderCells([walk], [wp])
+    const cell = cells.get('HOME|7|1')!
+    expect(cell.stealingArrow?.type).toBe('WILD_PITCH')
+    expect(cell.reachedBase).toBe(2)
+  })
+
+  it('PB advancing to home marks runScored', () => {
+    const walk = ab({ slotId: 7, result: 'WALK', baseStateAfter: { firstSlotId: null, secondSlotId: null, thirdSlotId: 7 } })
+    const pb = { id: 1, bogenId: 1, slotId: 7, side: 'HOME' as const, inning: 1, type: 'PASSED_BALL' as const, fromBase: 3, toBase: 4, createdAt: '' }
+    const cells = renderCells([walk], [pb])
+    const cell = cells.get('HOME|7|1')!
+    expect(cell.runScored).toBe(true)
+    expect(cell.reachedBase).toBe(4)
+  })
+})

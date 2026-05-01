@@ -4,6 +4,7 @@ import type { AtBatResult, BogenSide, SpielbogenRecordAtBatRequest, SpielbogenRe
 import { OutDetailDrawer } from './OutDetailDrawer'
 import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { StealingDrawer } from './StealingDrawer'
+import { PitchingEventDrawer } from './PitchingEventDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { computeBaseStateAdvance } from '@/utils/bogenBaseAdvance'
 
@@ -43,6 +44,7 @@ export function BogenActionButtons({
   const [mode, setMode] = useState<Mode>('idle')
   const [showOutDrawer, setShowOutDrawer] = useState(false)
   const [showStealing, setShowStealing] = useState(false)
+  const [showPitching, setShowPitching] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -145,6 +147,11 @@ export function BogenActionButtons({
                   onClick={() => setShowStealing(true)}
                   disabled={isDisabled || !runnersPresent}
                 />
+                <SmallPill
+                  label="WP/PB"
+                  onClick={() => setShowPitching(true)}
+                  disabled={isDisabled || !runnersPresent}
+                />
                 <SmallPill label="···" onClick={() => setShowMore(true)} disabled={submitting} />
               </div>
             </motion.div>
@@ -199,6 +206,24 @@ export function BogenActionButtons({
         side={side}
         inning={inning}
         onSubmit={onRecordStealing}
+      />
+
+      {/* WP/PB drawer */}
+      <PitchingEventDrawer
+        open={showPitching}
+        onClose={() => setShowPitching(false)}
+        baseState={baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
+        slots={slots}
+        onSubmit={async (events) => {
+          setSubmitting(true)
+          try {
+            for (const e of events) {
+              await onRecordStealing({ side, slotId: e.slotId, inning, type: e.type, fromBase: e.fromBase, toBase: e.toBase })
+            }
+          } finally {
+            setSubmitting(false)
+          }
+        }}
       />
 
       {/* Cheatsheet drawer */}

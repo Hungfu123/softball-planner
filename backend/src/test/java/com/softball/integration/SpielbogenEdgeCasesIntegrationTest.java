@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.TestcontainersConfig;
 import com.softball.adapter.out.persistence.repository.SpringSpielbogenAtBatRepository;
 import com.softball.adapter.out.persistence.repository.SpringSpielbogenRepository;
+import com.softball.adapter.out.persistence.repository.SpringSpielbogenStealingRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +34,11 @@ class SpielbogenEdgeCasesIntegrationTest {
     @Autowired private ObjectMapper json;
     @Autowired private SpringSpielbogenRepository spielbogenRepository;
     @Autowired private SpringSpielbogenAtBatRepository atBatRepository;
+    @Autowired private SpringSpielbogenStealingRepository stealingRepository;
 
     @AfterEach
     void tearDown() {
+        stealingRepository.deleteAll();
         atBatRepository.deleteAll();
         spielbogenRepository.deleteAll();
     }
@@ -95,5 +98,42 @@ class SpielbogenEdgeCasesIntegrationTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.outType").value("FIELDERS_CHOICE"))
             .andExpect(jsonPath("$.baseStateAfter.firstSlotId").value(ctx.awaySlot2));
+    }
+
+    @Test
+    void wild_pitch_advances_runner_without_sb_credit() throws Exception {
+        var ctx = createLiveBogen();
+        // Slot1 walks → on 1B
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1, "result", "WALK",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot1)))))
+            .andExpect(status().isCreated());
+
+        // Wild Pitch: runner advances 1B → 2B
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/stealing-events").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1,
+                "type", "WILD_PITCH", "fromBase", 1, "toBase", 2))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.type").value("WILD_PITCH"))
+            .andExpect(jsonPath("$.toBase").value(2));
+    }
+
+    @Test
+    void passed_ball_advances_runner_two_bases() throws Exception {
+        var ctx = createLiveBogen();
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1, "result", "WALK",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot1)))))
+            .andExpect(status().isCreated());
+
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId + "/stealing-events").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1, "inning", 1,
+                "type", "PASSED_BALL", "fromBase", 1, "toBase", 3))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.type").value("PASSED_BALL"));
     }
 }

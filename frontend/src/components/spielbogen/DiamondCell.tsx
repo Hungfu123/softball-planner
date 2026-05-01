@@ -127,10 +127,29 @@ export function DiamondCell({ notation, outIndex }: Props) {
           y1={baseToCoord(notation.stealingArrow.fromBase).y}
           x2={baseToCoord(notation.stealingArrow.toBase).x}
           y2={baseToCoord(notation.stealingArrow.toBase).y}
-          stroke="#dc2626"
+          stroke={
+            notation.stealingArrow.type === 'WILD_PITCH' || notation.stealingArrow.type === 'PASSED_BALL'
+              ? '#f97316'
+              : notation.stealingArrow.type === 'CAUGHT_STEALING' || notation.stealingArrow.type === 'OUT_ON_PLAY'
+              ? '#7c2d12'
+              : '#dc2626'
+          }
           strokeWidth="1.5"
           strokeDasharray="2 1"
         />
+      )}
+      {notation?.stealingArrow && (notation.stealingArrow.type === 'WILD_PITCH' || notation.stealingArrow.type === 'PASSED_BALL') && (
+        <text
+          x={30}
+          y={17}
+          textAnchor="middle"
+          fontSize="5"
+          fontWeight="700"
+          fill="#f97316"
+          style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
+        >
+          {notation.stealingArrow.type === 'WILD_PITCH' ? 'WP' : 'PB'}
+        </text>
       )}
     </svg>
   )
