@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Drawer } from 'vaul'
 import type {
   BogenSheetResponse,
@@ -63,6 +63,9 @@ interface Props {
 
 const MAX_INNINGS = 7
 
+const cellStyle: React.CSSProperties = { border: '1.5px solid #374151' }
+const headerCellStyle: React.CSSProperties = { border: '1.5px solid #1e3a8a' }
+
 function SideSheet({
   side,
   slots,
@@ -90,23 +93,20 @@ function SideSheet({
       <table className="w-full min-w-[460px] text-xs" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr className="bg-navy-800 text-white">
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6 border border-navy-700">#</th>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide min-w-[90px] border border-navy-700">Name</th>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-10 border border-navy-700">Pos</th>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6" style={headerCellStyle}>#</th>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide min-w-[90px]" style={headerCellStyle}>Name</th>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-10" style={headerCellStyle}>Pos</th>
             {innings.map(i => (
-              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-9 border border-navy-700">{i}</th>
+              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-9" style={headerCellStyle}>{i}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {sorted.map((slot, rowIdx) => (
-            <tr
-              key={slot.id}
-              className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-cream-50'}
-            >
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700 border border-gray-400">{slot.battingOrder}</td>
-              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px] border border-gray-400">{slot.name}</td>
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase border border-gray-400">{slot.position ?? '—'}</td>
+          {sorted.map((slot) => (
+            <tr key={slot.id} className="bg-white">
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700" style={cellStyle}>{slot.battingOrder}</td>
+              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px]" style={cellStyle}>{slot.name}</td>
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
               {innings.map(inning => {
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
@@ -114,8 +114,8 @@ function SideSheet({
                 const cellAtBat = atBats.find(ab => ab.slotId === slot.id && ab.inning === inning)
                 const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
-                  <td key={inning} style={{ border: '1px solid #6b7280' }} className="p-0 w-10 h-14">
-                    <div className="w-10 h-14">
+                  <td key={inning} style={cellStyle} className="p-0 w-10 h-16">
+                    <div className="w-10 h-16">
                       <DiamondCell notation={cell} outIndex={outIdx} />
                     </div>
                   </td>
@@ -126,15 +126,15 @@ function SideSheet({
         </tbody>
         <tfoot>
           <tr className="bg-cream-100">
-            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide border border-gray-400">
+            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide" style={cellStyle}>
               Runs
             </td>
             {innings.map(i => (
-              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5 border border-gray-400">
+              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5" style={cellStyle}>
                 {inningRuns[i]?.[sideKey] ?? 0}
               </td>
             ))}
-            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm border border-gray-400">{totalRuns}</td>
+            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm" style={cellStyle}>{totalRuns}</td>
           </tr>
         </tfoot>
       </table>

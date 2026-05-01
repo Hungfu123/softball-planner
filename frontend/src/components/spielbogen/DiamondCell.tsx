@@ -94,9 +94,9 @@ export function DiamondCell({ notation, outIndex }: Props) {
           // Other hits: small label below the diamond (near home corner)
           <text
             x={30}
-            y={64}
+            y={62}
             textAnchor="middle"
-            fontSize="11"
+            fontSize="12"
             fontWeight="700"
             fill="#1f2937"
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}

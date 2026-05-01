@@ -83,7 +83,7 @@ function drawSheet(
   const colName = 35
   const colPos = 12
   const colInning = (tableW - colNum - colName - colPos) / numInnings
-  const rowH = 13
+  const rowH = 15
   const sideKey = side === 'HOME' ? 'home' : 'away'
 
   // Header row
@@ -110,8 +110,8 @@ function drawSheet(
     const yy = y + 5 + row * rowH
 
     // Row border
-    doc.setDrawColor(180, 180, 180)
-    doc.setLineWidth(0.2)
+    doc.setDrawColor(55, 65, 81)
+    doc.setLineWidth(0.4)
     doc.line(x, yy, x + tableW, yy)
 
     // Zebra background
@@ -220,8 +220,8 @@ function drawSheet(
 
   // Bottom border for last row
   const lastRowY = y + 5 + 10 * rowH
-  doc.setDrawColor(180, 180, 180)
-  doc.setLineWidth(0.2)
+  doc.setDrawColor(55, 65, 81)
+  doc.setLineWidth(0.4)
   doc.line(x, lastRowY, x + tableW, lastRowY)
 
   // Footer: erzielte Runs per inning
