@@ -1,0 +1,38 @@
+{
+  "meta": { "homeTeamName": "Cologne Cardinals", "awayTeamName": "Krefeld Crows", "date": "2026-04-26" },
+  "homeLineup": [
+    { "slot": 1, "name": "Max", "battingOrder": 1, "position": "C" },
+    { "slot": 2, "name": "Tim", "battingOrder": 2, "position": "LF" },
+    { "slot": 3, "name": "Pascal", "battingOrder": 3, "position": "2B" },
+    { "slot": 4, "name": "Orlando", "battingOrder": 4, "position": "C" },
+    { "slot": 5, "name": "Laura", "battingOrder": 5, "position": "RF" },
+    { "slot": 6, "name": "Jochen", "battingOrder": 6, "position": "P" },
+    { "slot": 7, "name": "Andrea", "battingOrder": 7, "position": "1B" },
+    { "slot": 8, "name": "Patrick", "battingOrder": 8, "position": "SS" },
+    { "slot": 9, "name": "Alberto", "battingOrder": 9, "position": "3B" }
+  ],
+  "awayLineup": [
+    { "slot": 1, "name": "Olaf", "battingOrder": 1, "position": "3B" },
+    { "slot": 2, "name": "Allie", "battingOrder": 2, "position": "LF" },
+    { "slot": 3, "name": "Ben", "battingOrder": 3, "position": "SS" },
+    { "slot": 4, "name": "Nils", "battingOrder": 4, "position": "C" },
+    { "slot": 5, "name": "Gregor", "battingOrder": 5, "position": "RF" },
+    { "slot": 6, "name": "Daniel", "battingOrder": 6, "position": "CF" },
+    { "slot": 7, "name": "Hanne", "battingOrder": 7, "position": "P" },
+    { "slot": 8, "name": "Percy", "battingOrder": 8, "position": "1B" },
+    { "slot": 9, "name": "Carina", "battingOrder": 9, "position": "2B" }
+  ],
+  "events": [
+    { "type": "atbat", "side": "AWAY", "slotIdx": 0, "inning": 1, "result": "OUT", "outType": "FLY", "fielderChain": [6] },
+    { "type": "atbat", "side": "AWAY", "slotIdx": 1, "inning": 1, "result": "STRIKEOUT" },
+    { "type": "atbat", "side": "AWAY", "slotIdx": 2, "inning": 1, "result": "HOMERUN", "runsScored": 1, "rbi": 1 },
+    { "type": "atbat", "side": "AWAY", "slotIdx": 3, "inning": 1, "result": "SINGLE", "baseStateAfter": { "firstSlotIdx": 3 } },
+    { "type": "atbat", "side": "AWAY", "slotIdx": 4, "inning": 1, "result": "DOUBLE", "baseStateAfter": { "secondSlotIdx": 4, "thirdSlotIdx": 3 } },
+    { "type": "atbat", "side": "AWAY", "slotIdx": 5, "inning": 1, "result": "SINGLE", "runsScored": 1, "rbi": 1, "baseStateAfter": { "firstSlotIdx": 5, "secondSlotIdx": 4 } },
+    { "type": "atbat", "side": "AWAY", "slotIdx": 6, "inning": 1, "result": "OUT", "outType": "FLY", "fielderChain": [6] }
+  ],
+  "expectedFinal": {
+    "awayInningRuns": { "1": 2 },
+    "totalAtBats": 7
+  }
+}
