@@ -170,6 +170,22 @@ export default function SpielbogenPage() {
     if (sheet?.meta.status) prevStatusRef.current = sheet.meta.status
   }, [sheet?.meta.status])
 
+  // Detect auto-switch: when backend changes currentSide show inning-switch banner
+  const prevSideRef = useRef<BogenSide | null>(null)
+  const currentSideForEffect = sheet?.meta.currentSide ?? null
+  const currentInningForEffect = sheet?.meta.currentInning ?? 1
+  useEffect(() => {
+    if (prevSideRef.current !== null && currentSideForEffect !== null && prevSideRef.current !== currentSideForEffect) {
+      setInningSwitchFlash({ newSide: currentSideForEffect })
+      setTimeout(() => setInningSwitchFlash(null), 2500)
+      toast.show(
+        `Inning ${currentInningForEffect} — ${currentSideForEffect === 'HOME' ? 'Heim' : 'Gast'} am Schlag`,
+      )
+    }
+    prevSideRef.current = currentSideForEffect
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSideForEffect])
+
   if (loading && !sheet) return <LoadingSkeleton />
 
   if (error) {

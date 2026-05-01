@@ -111,6 +111,8 @@ public class SpielbogenScoringService {
 
         log.info("Spielbogen {} AtBat: side={} inning={} result={} seq={}",
                  bogenId, side, inning, result, saved.getSequence());
+
+        maybeAutoSwitchSide(bogen, side, inning);
         return saved;
     }
 
@@ -141,6 +143,8 @@ public class SpielbogenScoringService {
         SpielbogenStealingEvent saved = stealingRepo.save(event);
         log.info("Spielbogen {} Stealing: side={} inning={} type={} {}→{}",
                  bogenId, side, inning, type, fromBase, toBase);
+
+        maybeAutoSwitchSide(bogen, side, inning);
         return saved;
     }
 
@@ -313,6 +317,20 @@ public class SpielbogenScoringService {
     @Transactional(readOnly = true)
     public List<SpielbogenSubstitution> findSubstitutions(final Long bogenId) {
         return subRepo.findByBogenId(bogenId);
+    }
+
+    private void maybeAutoSwitchSide(final Spielbogen bogen, final BogenSide side, final int inning) {
+        long outs = atBatRepo.countOutsInInning(bogen.getId(), side, inning);
+        if (outs >= 3) {
+            BogenSide next = side == BogenSide.HOME ? BogenSide.AWAY : BogenSide.HOME;
+            bogen.setCurrentSide(next);
+            if (side == BogenSide.HOME) {
+                bogen.setCurrentInning(inning + 1);
+            }
+            bogenRepo.save(bogen);
+            log.info("Auto-Switch nach 3 Outs: bogen={} inning={} side={} → next={}",
+                     bogen.getId(), inning, side, next);
+        }
     }
 
     private Spielbogen requireLive(final Long bogenId) {

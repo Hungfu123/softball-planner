@@ -185,4 +185,71 @@ class SpielbogenEdgeCasesIntegrationTest {
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.sacrificeType").value("BUNT"));
     }
+
+    @Test
+    void three_strikeouts_auto_switch_side() throws Exception {
+        var ctx = createLiveBogen();
+        for (int i = 0; i < 3; i++) {
+            Long slotId = (i % 2 == 0) ? ctx.awaySlot1() : ctx.awaySlot2();
+            mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of(
+                    "side", "AWAY", "slotId", slotId, "inning", 1, "result", "STRIKEOUT"))))
+                .andExpect(status().isCreated());
+        }
+        mvc.perform(get("/api/spielbogen/" + ctx.bogenId()))
+            .andExpect(jsonPath("$.currentSide").value("HOME"));
+    }
+
+    @Test
+    void caught_stealing_as_third_out_auto_switches() throws Exception {
+        var ctx = createLiveBogen();
+        // 2 strikeouts
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of(
+                    "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "STRIKEOUT"))))
+                .andExpect(status().isCreated());
+        }
+        // Walk
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot2(), "inning", 1, "result", "WALK",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot2())))))
+            .andExpect(status().isCreated());
+        // CS
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/stealing-events").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot2(), "inning", 1,
+                "type", "CAUGHT_STEALING", "fromBase", 1, "toBase", 2))))
+            .andExpect(status().isCreated());
+
+        mvc.perform(get("/api/spielbogen/" + ctx.bogenId()))
+            .andExpect(jsonPath("$.currentSide").value("HOME"));
+    }
+
+    @Test
+    void double_play_ends_inning_and_auto_switches() throws Exception {
+        var ctx = createLiveBogen();
+        // SO
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "STRIKEOUT"))))
+            .andExpect(status().isCreated());
+        // Single → on 1B
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot2(), "inning", 1, "result", "SINGLE",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot2())))))
+            .andExpect(status().isCreated());
+        // DP — 2 more outs, total 3, end inning
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1,
+                "result", "OUT", "outType", "DOUBLE_PLAY",
+                "fielderChain", List.of(6, 4, 3),
+                "baseStateAfter", Map.of()))))
+            .andExpect(status().isCreated());
+        mvc.perform(get("/api/spielbogen/" + ctx.bogenId()))
+            .andExpect(jsonPath("$.currentSide").value("HOME"));
+    }
 }
