@@ -160,6 +160,7 @@ export default function SpielbogenPage() {
   const [walkFlash, setWalkFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [scoredFlash, setScoredFlash] = useState<{ runners: string[]; hitLabel: string | null } | null>(null)
+  const [advanceFlash, setAdvanceFlash] = useState<{ runners: string[]; targets: string[] } | null>(null)
 
   // Auto-open sheet drawer when game transitions to DONE
   const prevStatusRef = useRef<string | null>(null)
@@ -247,6 +248,7 @@ export default function SpielbogenPage() {
     const batterName = currentSlot?.name ?? 'Batter'
     const batterOrder = currentSlot?.battingOrder ?? 0
     const batterSlotId = currentSlot?.id ?? 0
+    const beforeBaseState = displayBaseState
 
     try {
       await recordAtBat(req)
@@ -317,6 +319,37 @@ export default function SpielbogenPage() {
               })
               setTimeout(() => setScoredFlash(null), 2200)
             }
+          }
+        }
+
+        // Runner-Advance-Flash (Diff vor/nach Play)
+        if (req.baseStateAfter) {
+          const before = beforeBaseState
+          const after = req.baseStateAfter
+          const advanced: string[] = []
+          const targets: string[] = []
+          // Runner1B → 2B
+          if (before.firstSlotId != null && after.secondSlotId === before.firstSlotId) {
+            const s = slots.find(sl => sl.id === before.firstSlotId)
+            if (s) { advanced.push(s.name); targets.push('2B') }
+          }
+          // Runner1B → 3B
+          if (before.firstSlotId != null && after.thirdSlotId === before.firstSlotId) {
+            const s = slots.find(sl => sl.id === before.firstSlotId)
+            if (s) { advanced.push(s.name); targets.push('3B') }
+          }
+          // Runner2B → 3B
+          if (before.secondSlotId != null && after.thirdSlotId === before.secondSlotId) {
+            const s = slots.find(sl => sl.id === before.secondSlotId)
+            if (s) { advanced.push(s.name); targets.push('3B') }
+          }
+          // Skip wenn bereits Run scored (scoredFlash) oder HR/Hit (hat eigenen Flash)
+          const hasOwnFlash = req.result === 'HOMERUN' || req.result === 'HIT_BY_PITCH' ||
+                              req.result === 'WALK' || req.result === 'STRIKEOUT' ||
+                              ((req.runsScored ?? 0) > 0)
+          if (advanced.length > 0 && !hasOwnFlash) {
+            setAdvanceFlash({ runners: advanced, targets })
+            setTimeout(() => setAdvanceFlash(null), 1200)
           }
         }
       }
@@ -1102,6 +1135,28 @@ export default function SpielbogenPage() {
                   {scoredFlash.runners.join(' · ')}
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Runner-Advance-Flash */}
+      <AnimatePresence>
+        {advanceFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-32 left-1/2 -translate-x-1/2 z-50 bg-cream-50 border-2 border-emerald-400 px-4 py-2 rounded-xl shadow-xl pointer-events-none"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="font-display text-xs font-bold tracking-widest uppercase text-emerald-700 mb-0.5">
+              Runner advanced
+            </div>
+            <div className="text-sm text-navy-900 font-semibold">
+              {advanceFlash.runners.map((r, i) => `${r} → ${advanceFlash.targets[i]}`).join(' · ')}
             </div>
           </motion.div>
         )}
