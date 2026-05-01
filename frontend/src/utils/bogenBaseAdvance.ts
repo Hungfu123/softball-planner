@@ -135,7 +135,9 @@ export function computeForceDefaults(
   if (throwTarget === 1 && baseState.firstSlotId != null) {
     defaults[1] = 2
   }
-  // Throw zu 2B (Force-Out auf 1B-Runner) → Force greift, Runner1B → 2B (auf 2B-Out)
+  // Throw zu 2B: rare path (typically reached only via UNASSISTED fielder at 2B).
+  // Real Force-DP belongs in DOUBLE_PLAY-Path; hier nur konservativ Runner1B → 2B (safe).
+  // TODO: separate Force-Out modelling for grounder mit Throw-zu-2B (Issue: P2 Edge-Cases).
   if (throwTarget === 2 && baseState.firstSlotId != null) {
     defaults[1] = 2
   }

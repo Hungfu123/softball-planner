@@ -90,7 +90,17 @@ interface InfieldOptionsProps {
   onBack: () => void
 }
 
-const FIELDER_TO_BASE: Record<number, 1 | 2 | 3 | 4> = { 3: 1, 4: 2, 6: 2, 5: 3, 2: 4 }
+// Maps Infield-Fielder-Position → Base where they typically tag/throw
+// (used for Smart-Default Runner-Advance). Outfielders go through Fly-Out path, not relevant here.
+// P (1) typically pivots to 1B for unassisted plays.
+const FIELDER_TO_BASE: Record<number, 1 | 2 | 3 | 4> = {
+  1: 1, // P → 1B
+  2: 4, // C → Home
+  3: 1, // 1B → 1B
+  4: 2, // 2B → 2B
+  5: 3, // 3B → 3B
+  6: 2, // SS → 2B
+}
 
 function InfieldOptionsView({
   fielder,
