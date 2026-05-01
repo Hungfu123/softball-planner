@@ -13,6 +13,45 @@ import { DiamondCell } from './DiamondCell'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 
+/**
+ * Computes the out-index (1, 2, 3) for each at-bat that results in an out,
+ * grouped by side+inning and sorted by sequence.
+ */
+function computeOutIndices(atBats: SpielbogenAtBatResponse[]): Map<number, number> {
+  const result = new Map<number, number>()
+  const groups = new Map<string, SpielbogenAtBatResponse[]>()
+
+  for (const ab of atBats) {
+    const key = `${ab.side}|${ab.inning}`
+    const arr = groups.get(key) ?? []
+    arr.push(ab)
+    groups.set(key, arr)
+  }
+
+  for (const arr of groups.values()) {
+    const sorted = [...arr].sort((a, b) => a.sequence - b.sequence)
+    let outs = 0
+    for (const ab of sorted) {
+      if (ab.isError) continue
+      if (ab.result === 'STRIKEOUT') {
+        outs += 1
+        if (outs <= 3) result.set(ab.id, outs)
+      } else if (ab.result === 'OUT') {
+        if (ab.outType === 'DOUBLE_PLAY') {
+          outs += 2
+        } else if (ab.outType === 'TRIPLE_PLAY') {
+          outs += 3
+        } else {
+          outs += 1
+        }
+        if (outs <= 3) result.set(ab.id, outs)
+      }
+    }
+  }
+
+  return result
+}
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -40,6 +79,7 @@ function SideSheet({
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const sorted = [...slots].sort((a, b) => a.battingOrder - b.battingOrder)
   const cellMap = renderCells(atBats, stealings)
+  const outIndexMap = computeOutIndices(atBats)
 
   const innings = Array.from({ length: MAX_INNINGS }, (_, i) => i + 1)
 
@@ -47,14 +87,14 @@ function SideSheet({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[460px] text-xs border-collapse">
+      <table className="w-full min-w-[460px] text-xs" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr className="bg-navy-800 text-white">
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6">#</th>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide min-w-[90px]">Name</th>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-10">Pos</th>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6 border border-navy-700">#</th>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide min-w-[90px] border border-navy-700">Name</th>
+            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-10 border border-navy-700">Pos</th>
             {innings.map(i => (
-              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-9">{i}</th>
+              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-9 border border-navy-700">{i}</th>
             ))}
           </tr>
         </thead>
@@ -64,16 +104,19 @@ function SideSheet({
               key={slot.id}
               className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-cream-50'}
             >
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700">{slot.battingOrder}</td>
-              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px]">{slot.name}</td>
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase">{slot.position ?? '—'}</td>
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700 border border-cream-400">{slot.battingOrder}</td>
+              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px] border border-cream-400">{slot.name}</td>
+              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase border border-cream-400">{slot.position ?? '—'}</td>
               {innings.map(inning => {
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
+                // Find the matching at-bat to get out-index
+                const cellAtBat = atBats.find(ab => ab.slotId === slot.id && ab.inning === inning)
+                const outIdx = cellAtBat ? (outIndexMap.get(cellAtBat.id) ?? null) : null
                 return (
-                  <td key={inning} className="p-0 w-9 h-9">
+                  <td key={inning} className="p-0 w-9 h-9 border border-cream-400">
                     <div className="w-9 h-9">
-                      <DiamondCell notation={cell} />
+                      <DiamondCell notation={cell} outIndex={outIdx} />
                     </div>
                   </td>
                 )
@@ -82,16 +125,16 @@ function SideSheet({
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-cream-100 border-t border-cream-300">
-            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide">
+          <tr className="bg-cream-100">
+            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide border border-cream-400">
               Runs
             </td>
             {innings.map(i => (
-              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5">
+              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5 border border-cream-400">
                 {inningRuns[i]?.[sideKey] ?? 0}
               </td>
             ))}
-            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm">{totalRuns}</td>
+            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm border border-cream-400">{totalRuns}</td>
           </tr>
         </tfoot>
       </table>

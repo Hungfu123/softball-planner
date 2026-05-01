@@ -129,7 +129,7 @@ function drawSheet(
       doc.text(slot.position ?? '—', x + colNum + colName + 2, yy + 4)
     }
 
-    // Inning cells with diamond outline + notation
+    // Inning cells with real diamond outline + path tracing + notation
     for (let inn = 1; inn <= numInnings; inn++) {
       const cellX = x + colNum + colName + colPos + (inn - 1) * colInning
       const cellW = colInning - 0.5
@@ -138,28 +138,71 @@ function drawSheet(
       const cy = yy + 1 + cellH / 2
       const r = Math.min(cellW, cellH) / 2 - 1
 
-      // Diamond outline using 4 lines
-      doc.setDrawColor(30, 42, 143)
-      doc.setLineWidth(0.3)
-      doc.line(cx, cy - r, cx + r, cy)
-      doc.line(cx + r, cy, cx, cy + r)
-      doc.line(cx, cy + r, cx - r, cy)
-      doc.line(cx - r, cy, cx, cy - r)
+      // Diamond corners (relative to center): home=bottom, 1B=right, 2B=top, 3B=left
+      const home  = { x: cx,     y: cy + r }
+      const first = { x: cx + r, y: cy     }
+      const sec   = { x: cx,     y: cy - r }
+      const third = { x: cx - r, y: cy     }
 
+      // Determine advancement from cell notation
+      let reachedBase = 0
+      let filled = false
+      let label = ''
       if (slot) {
         const cell = cellMap.get(cellKey(side, slot.id, inn))
-        if (cell?.label) {
-          if (cell.runScored) {
-            // Fill diamond with light red when run scored (approximated with rotated rect)
-            doc.setFillColor(254, 226, 226)
-            doc.rect(cx - r * 0.7, cy - r * 0.7, r * 1.4, r * 1.4, 'F')
+        if (cell) {
+          label = cell.label
+          filled = cell.runScored
+          if (filled) {
+            reachedBase = 4
+          } else {
+            if (label === '1B' || label === 'BB' || label === 'HP') reachedBase = 1
+            else if (label === '2B') reachedBase = 2
+            else if (label === '3B') reachedBase = 3
+            else if (label === 'HR') reachedBase = 4
           }
-          doc.setFontSize(6)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(30, 42, 143)
-          doc.text(cell.label.slice(0, 4), cx, cy + 0.5, { align: 'center' })
-          doc.setTextColor(0, 0, 0)
         }
+      }
+
+      // Fill diamond solid navy if run scored
+      if (filled) {
+        doc.setFillColor(30, 58, 138)
+        // Draw filled diamond as 4 triangles (approximate with lines)
+        // jsPDF doesn't support polygon fill directly, use 4 filled triangles
+        doc.triangle(home.x, home.y, first.x, first.y, cx, cy, 'F')
+        doc.triangle(first.x, first.y, sec.x, sec.y, cx, cy, 'F')
+        doc.triangle(sec.x, sec.y, third.x, third.y, cx, cy, 'F')
+        doc.triangle(third.x, third.y, home.x, home.y, cx, cy, 'F')
+      }
+
+      // Diamond outline (thicker than before: 0.6 mm)
+      doc.setDrawColor(30, 58, 138)
+      doc.setLineWidth(0.6)
+      doc.line(home.x, home.y, first.x, first.y)
+      doc.line(first.x, first.y, sec.x, sec.y)
+      doc.line(sec.x, sec.y, third.x, third.y)
+      doc.line(third.x, third.y, home.x, home.y)
+
+      // Advancement path segments (thick: 0.8 mm)
+      const allSegments = [
+        [home, first],
+        [first, sec],
+        [sec, third],
+        [third, home],
+      ]
+      doc.setLineWidth(0.8)
+      for (let s = 0; s < reachedBase; s++) {
+        const [a, b] = allSegments[s]
+        doc.line(a.x, a.y, b.x, b.y)
+      }
+
+      // Notation label inside diamond
+      if (label) {
+        doc.setFontSize(5.5)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(filled ? 254 : 30, filled ? 243 : 42, filled ? 199 : 143)
+        doc.text(label.slice(0, 4), cx, cy + 1, { align: 'center' })
+        doc.setTextColor(0, 0, 0)
       }
     }
   }
