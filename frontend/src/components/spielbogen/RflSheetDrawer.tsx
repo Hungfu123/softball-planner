@@ -63,8 +63,14 @@ interface Props {
 
 const MAX_INNINGS = 7
 
-const cellStyle: React.CSSProperties = { border: '1px solid #374151' }
-const headerCellStyle: React.CSSProperties = { border: '1px solid #1e3a8a' }
+const cellStyle: React.CSSProperties = {
+  outline: '1px solid #374151',
+  outlineOffset: '-1px',
+}
+const headerCellStyle: React.CSSProperties = {
+  outline: '1px solid #1e3a8a',
+  outlineOffset: '-1px',
+}
 
 function SideSheet({
   side,
