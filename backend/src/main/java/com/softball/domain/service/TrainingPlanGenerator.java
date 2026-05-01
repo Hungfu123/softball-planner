@@ -36,6 +36,9 @@ public class TrainingPlanGenerator {
     private static final int MIN_DRILL_MINUTES = 10;
     private static final int BREAK_MINUTES = 5;
     private static final int OVERTIME_BUFFER = 5;
+    private static final int PARTNER_ROUTINE_DRILL_MINUTES = 5;
+    private static final int MAX_PARTNER_ROUTINE_DRILLS = 2;
+    private static final int HITTING_PRE_DRILL_MINUTES = 10;
 
     private static final Map<String, List<DrillCategory>> FOCUS_CATEGORY_MAP = Map.ofEntries(
             Map.entry("WERFEN", List.of(DrillCategory.THROWING)),
@@ -54,6 +57,7 @@ public class TrainingPlanGenerator {
                                          final String focus, final int totalMinutes) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
         int remainingMinutes = totalMinutes + OVERTIME_BUFFER;
+        final Set<String> usedDrillIds = new HashSet<>();
 
         // --- SCHRITT 1: Aufwärmen + Trinkpause ---
         final Drill warmupDrill = findById(allDrills, WARMUP_DRILL_ID);
@@ -61,6 +65,21 @@ public class TrainingPlanGenerator {
             sections.add(buildDrillSection(warmupDrill, "WARMUP", WARMUP_MINUTES, playerCount));
             sections.add(buildBreakSection("Trinken."));
             remainingMinutes -= WARMUP_MINUTES + BREAK_MINUTES;
+        }
+
+        // --- SCHRITT 1b: Partner-Routine (Wurf/Fielding-Aktivierung zu zweit) ---
+        final List<Drill> partnerRoutineDrills = new ArrayList<>(allDrills.stream()
+                .filter(d -> d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
+                .filter(d -> d.getMinPlayers() <= playerCount)
+                .filter(d -> !d.getId().equals(WARMUP_DRILL_ID))
+                .toList());
+        Collections.shuffle(partnerRoutineDrills);
+        final int numPartnerRoutine = Math.min(MAX_PARTNER_ROUTINE_DRILLS, partnerRoutineDrills.size());
+        for (int i = 0; i < numPartnerRoutine; i++) {
+            sections.add(buildDrillSection(partnerRoutineDrills.get(i), "DRILL",
+                    PARTNER_ROUTINE_DRILL_MINUTES, playerCount));
+            usedDrillIds.add(partnerRoutineDrills.get(i).getId());
+            remainingMinutes -= PARTNER_ROUTINE_DRILL_MINUTES;
         }
 
         // --- SCHRITT 2: Spiel reservieren ---
@@ -86,7 +105,6 @@ public class TrainingPlanGenerator {
         // Nach Warmup: Trinkpause (gehört zum Warmup-Block, nicht extra reserviert)
         int totalDrillMinutes = remainingMinutes;
         int usedDrillMinutes = 0;
-        final Set<String> usedDrillIds = new HashSet<>();
 
         // Drill-Zeit gleichmäßig auf Schwerpunkte verteilen
         final int minutesPerFocus = focuses.isEmpty() ? 0 : totalDrillMinutes / focuses.size();
@@ -178,7 +196,26 @@ public class TrainingPlanGenerator {
         final Drill hittingDrill = findById(allDrills, HITTING_DRILL_ID);
         if (hittingDrill != null && battingMinutes > 0) {
             sections.add(buildBreakSection("Trinken. Batting-Stationen aufbauen: Tees, Netz, Bälle bereitlegen. Wer die Station kennt, hilft beim Aufbau."));
-            sections.add(buildDrillSection(hittingDrill, "BATTING", battingMinutes, playerCount));
+
+            // Optional: Hitting Pre-Drill (Aktivierung vor den Stationen)
+            int actualBattingMinutes = battingMinutes;
+            if (battingMinutes >= HITTING_PRE_DRILL_MINUTES + MIN_DRILL_MINUTES) {
+                final List<Drill> hittingPreDrills = new ArrayList<>(allDrills.stream()
+                        .filter(d -> d.getCategories().contains(DrillCategory.HITTING))
+                        .filter(d -> !d.getId().equals(HITTING_DRILL_ID))
+                        .filter(d -> !usedDrillIds.contains(d.getId()))
+                        .filter(d -> d.getMinPlayers() <= playerCount)
+                        .toList());
+                if (!hittingPreDrills.isEmpty()) {
+                    Collections.shuffle(hittingPreDrills);
+                    final Drill preDrill = hittingPreDrills.get(0);
+                    sections.add(buildDrillSection(preDrill, "BATTING", HITTING_PRE_DRILL_MINUTES, playerCount));
+                    usedDrillIds.add(preDrill.getId());
+                    actualBattingMinutes -= HITTING_PRE_DRILL_MINUTES;
+                }
+            }
+
+            sections.add(buildDrillSection(hittingDrill, "BATTING", actualBattingMinutes, playerCount));
         }
 
         // --- SCHRITT 6: Pause + Spiel ---

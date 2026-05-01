@@ -18,5 +18,6 @@ public enum DrillCategory {
     BUNT_DEFENSE,
     COMINGS,
     PITCHER,
-    RELAY
+    RELAY,
+    PARTNER_ROUTINE
 }

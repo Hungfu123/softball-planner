@@ -114,3 +114,118 @@
   ],
   rotation: [Alle drei Teile werden nacheinander durchgespielt (2B bekommt 3 Bälle), dann wird rotiert: 2B → 1B → Spieler → SS → 2B (jeder durchläuft jede Position). Optional bei mehr Spielern: jeder macht 2–3 Runden auf einer Position bevor gewechselt wird.],
 )
+
+#drill(
+  name: "2B Double Play Pivots (Hüftdrehung / Backhand / Empfangen an 2nd)",
+  kategorien: ("2B", "SS", "1B", "Double Play", "Fielding"),
+  spieler: 4,
+  equipment: ("Bälle", "Bases"),
+  beschreibung: [
+    Drei aufeinanderfolgende Bälle für die 2B, die typische Double-Play-Situationen abdecken. Aufstellung: 1B an der 1st Base, SS an der 2nd Base bzw. SS-Position, 2B in normaler Spielposition, Tosser rollt/wirft die Bälle.
+
+    *Ball 1 — Frontaler Grounder mit Hüftdrehung & Wurf zum SS:*
+    Tosser rollt den Ball frontal zur 2B. Die 2B fängt den Ball, dreht die Hüfte nach rechts (Richtung 2nd Base), macht zwei Schritte Richtung Base und wirft zum SS. Der SS empfängt den Ball, berührt 2nd Base und wirft weiter zur 1B → Double Play.
+
+    *Ball 2 — Ball Richtung 2nd Base (Backhand):*
+    Tosser rollt den Ball links von der 2B Richtung 2nd Base. Die 2B nimmt den Ball mit Backhand auf und wirft direkt zur 1B.
+
+    *Ball 3 — Empfangen & Pivot an der 2nd Base:*
+    Der SS wirft aus seiner Position zur 2B, die ready an der 2nd Base steht. Die 2B fängt den Ball mit dem Handschuh, nimmt gleichzeitig den Fuß von der Base weg, macht einen Schritt nach hinten und wirft zur 1B → Double Play.
+  ],
+  diagramm: [
+    #grid(
+      columns: (1fr, 1fr, 1fr),
+      gutter: 8pt,
+      [
+        #align(center)[*Ball 1: Hüftdrehung*]
+        #canvas(length: 0.7cm, {
+          import draw: *
+          // Bases: 2nd links, 1st rechts
+          rect((-3.2, 3.3), (-2.8, 3.7), fill: white, stroke: 1pt + black)
+          content((-3, 4.1), text(size: 6pt, fill: rgb("#888"))[2nd])
+          rect((2.8, 3.3), (3.2, 3.7), fill: white, stroke: 1pt + black)
+          content((3, 4.1), text(size: 6pt, fill: rgb("#888"))[1st])
+          // 2B Startposition (mitte) — markiert mit ×
+          content((0, 3.5), text(size: 11pt, fill: rgb("#aaa"))[×])
+          // 2B nach 2 Schritten Richtung 2nd
+          circle((-1.2, 3.5), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((-1.2, 3.5), text(size: 7pt, weight: "bold", fill: white)[2B])
+          // SS auf 2nd Base
+          circle((-3, 2.5), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((-3, 2.5), text(size: 7pt, weight: "bold", fill: white)[SS])
+          // 1B bei 1st Base
+          circle((3, 2.5), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((3, 2.5), text(size: 7pt, weight: "bold", fill: white)[1B])
+          // Tosser unten
+          circle((0, 1), radius: 0.35, fill: rgb("#888"), stroke: 0.5pt + black)
+          content((0, 1), text(size: 7pt, weight: "bold", fill: white)[T])
+          // Grounder: Tosser → 2B Startposition
+          line((0, 1.4), (0, 3.1), stroke: (paint: rgb("#2d8a2d"), thickness: 1pt, dash: "dotted"), mark: (end: ">", fill: rgb("#2d8a2d")))
+          // Laufweg 2B: 2 Schritte nach links
+          line((-0.3, 3.5), (-0.85, 3.5), stroke: (paint: rgb("#1a1a5e"), thickness: 1pt, dash: "dashed"), mark: (end: ">", fill: rgb("#1a1a5e")))
+          // Wurf: 2B → SS
+          line((-1.5, 3.3), (-2.7, 2.7), stroke: 1pt + rgb("#cc0000"), mark: (end: ">", fill: rgb("#cc0000")))
+          // Wurf: SS → 1B
+          line((-2.7, 2.3), (2.7, 2.4), stroke: 1pt + rgb("#cc0000"), mark: (end: ">", fill: rgb("#cc0000")))
+        })
+      ],
+      [
+        #align(center)[*Ball 2: Backhand → 1B*]
+        #canvas(length: 0.7cm, {
+          import draw: *
+          // Bases
+          rect((-3.2, 3.3), (-2.8, 3.7), fill: white, stroke: 1pt + black)
+          content((-3, 4.1), text(size: 6pt, fill: rgb("#888"))[2nd])
+          rect((2.8, 3.3), (3.2, 3.7), fill: white, stroke: 1pt + black)
+          content((3, 4.1), text(size: 6pt, fill: rgb("#888"))[1st])
+          // 2B Startposition (mitte) — × Marker
+          content((0, 3.5), text(size: 11pt, fill: rgb("#aaa"))[×])
+          // 2B Backhand-Position (links)
+          circle((-1.5, 3.2), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((-1.5, 3.2), text(size: 7pt, weight: "bold", fill: white)[2B])
+          // 1B bei 1st Base
+          circle((3, 2.5), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((3, 2.5), text(size: 7pt, weight: "bold", fill: white)[1B])
+          // Tosser unten
+          circle((0, 1), radius: 0.35, fill: rgb("#888"), stroke: 0.5pt + black)
+          content((0, 1), text(size: 7pt, weight: "bold", fill: white)[T])
+          // Grounder: Tosser → links Richtung 2nd
+          line((-0.2, 1.3), (-1.4, 2.85), stroke: (paint: rgb("#2d8a2d"), thickness: 1pt, dash: "dotted"), mark: (end: ">", fill: rgb("#2d8a2d")))
+          // Laufweg 2B nach links
+          line((-0.3, 3.45), (-1.15, 3.25), stroke: (paint: rgb("#1a1a5e"), thickness: 1pt, dash: "dashed"), mark: (end: ">", fill: rgb("#1a1a5e")))
+          // Wurf: 2B → 1B
+          line((-1.15, 3.0), (2.7, 2.6), stroke: 1pt + rgb("#cc0000"), mark: (end: ">", fill: rgb("#cc0000")))
+        })
+      ],
+      [
+        #align(center)[*Ball 3: Empfangen an 2nd*]
+        #canvas(length: 0.7cm, {
+          import draw: *
+          // Bases
+          rect((-3.2, 3.3), (-2.8, 3.7), fill: white, stroke: 1pt + black)
+          content((-3, 4.1), text(size: 6pt, fill: rgb("#888"))[2nd])
+          rect((2.8, 3.3), (3.2, 3.7), fill: white, stroke: 1pt + black)
+          content((3, 4.1), text(size: 6pt, fill: rgb("#888"))[1st])
+          // 2B Startposition an 2nd Base
+          content((-3, 3.5), text(size: 11pt, fill: rgb("#aaa"))[×])
+          // 2B nach Schritt zurück (von Base weg)
+          circle((-2.3, 3.0), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((-2.3, 3.0), text(size: 7pt, weight: "bold", fill: white)[2B])
+          // SS in SS-Position (zwischen 2nd und 3rd)
+          circle((-2.3, 1.5), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((-2.3, 1.5), text(size: 7pt, weight: "bold", fill: white)[SS])
+          // 1B bei 1st Base
+          circle((3, 2.5), radius: 0.35, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+          content((3, 2.5), text(size: 7pt, weight: "bold", fill: white)[1B])
+          // Wurf: SS → 2B (an 2nd Base)
+          line((-2.3, 1.85), (-2.85, 3.3), stroke: 1pt + rgb("#cc0000"), mark: (end: ">", fill: rgb("#cc0000")))
+          // Schritt zurück: 2nd Base → 2B-Position
+          line((-2.85, 3.4), (-2.5, 3.15), stroke: (paint: rgb("#1a1a5e"), thickness: 1pt, dash: "dashed"), mark: (end: ">", fill: rgb("#1a1a5e")))
+          // Wurf: 2B → 1B
+          line((-1.95, 2.9), (2.7, 2.6), stroke: 1pt + rgb("#cc0000"), mark: (end: ">", fill: rgb("#cc0000")))
+        })
+      ],
+    )
+  ],
+  rotation: [Alle drei Bälle werden nacheinander durchgespielt (2B bekommt 3 Bälle in Folge). Danach rotieren: 2B → SS → 1B → Tosser → 2B. Jeder durchläuft jede Position. Bei mehr Spielern: 2–3 Runden pro Position vor dem Wechsel.],
+)

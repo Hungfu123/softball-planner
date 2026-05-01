@@ -4,6 +4,7 @@ import { XMark } from '@/icons'
 
 const CATEGORY_LABELS: Partial<Record<DrillCategory, string>> = {
   WARMUP: 'Warmup',
+  PARTNER_ROUTINE: 'Partner-Routine',
   THROWING: 'Throwing',
   BASERUNNING: 'Baserunning',
   CONDITIONING: 'Conditioning',
