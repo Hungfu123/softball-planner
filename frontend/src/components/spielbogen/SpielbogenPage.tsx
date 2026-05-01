@@ -150,8 +150,8 @@ export default function SpielbogenPage() {
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  // Inning-switch flash banner
-  const [inningSwitchFlash, setInningSwitchFlash] = useState<{ newSide: BogenSide } | null>(null)
+  // 3-Out / Side-Switch Center-Flash overlay
+  const [sideSwitchFlash, setSideSwitchFlash] = useState<{ newSide: BogenSide; reason: 'auto' | 'manual' } | null>(null)
 
   // Flash animations (ported from ScoringPage)
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -176,11 +176,15 @@ export default function SpielbogenPage() {
   const currentInningForEffect = sheet?.meta.currentInning ?? 1
   useEffect(() => {
     if (prevSideRef.current !== null && currentSideForEffect !== null && prevSideRef.current !== currentSideForEffect) {
-      setInningSwitchFlash({ newSide: currentSideForEffect })
-      setTimeout(() => setInningSwitchFlash(null), 2500)
+      setSideSwitchFlash({ newSide: currentSideForEffect, reason: 'auto' })
+      setTimeout(() => setSideSwitchFlash(null), 1200)
       toast.show(
         `Inning ${currentInningForEffect} — ${currentSideForEffect === 'HOME' ? 'Heim' : 'Gast'} am Schlag`,
+        'error',
       )
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate([100, 50, 100, 50, 200]) } catch { /* not supported */ }
+      }
     }
     prevSideRef.current = currentSideForEffect
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -326,8 +330,8 @@ export default function SpielbogenPage() {
         try {
           await switchSide()
           const newSide = currentSide === 'HOME' ? 'AWAY' : 'HOME'
-          setInningSwitchFlash({ newSide })
-          setTimeout(() => setInningSwitchFlash(null), 2500)
+          setSideSwitchFlash({ newSide, reason: 'auto' })
+          setTimeout(() => setSideSwitchFlash(null), 1200)
         } catch {
           // Backend rejected; ignore silently
         }
@@ -417,17 +421,33 @@ export default function SpielbogenPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-cream-50">
-      {/* Inning-switch flash banner */}
+      {/* 3-Out / Side-Switch Center-Flash */}
       <AnimatePresence>
-        {inningSwitchFlash && (
+        {sideSwitchFlash && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed top-0 left-0 right-0 z-50 bg-navy-800 text-white py-3 text-center font-display text-base font-extrabold tracking-widest uppercase shadow-lg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-softball-red-700/85 pointer-events-none"
           >
-            Inning-Wechsel · {inningSwitchFlash.newSide === 'HOME' ? 'HEIM' : 'GAST'} schlägt
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 1.2, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              className="text-center text-white px-6"
+            >
+              <div className="font-display text-6xl sm:text-7xl font-extrabold tracking-widest mb-2">
+                3 OUTS
+              </div>
+              <div className="font-display text-xl sm:text-2xl font-bold tracking-widest uppercase">
+                Seitenwechsel
+              </div>
+              <div className="font-body text-base sm:text-lg mt-2 opacity-95">
+                {sideSwitchFlash.newSide === 'HOME' ? 'Heim' : 'Gast'} schlägt jetzt
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
