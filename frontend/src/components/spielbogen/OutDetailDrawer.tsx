@@ -9,6 +9,8 @@ interface Props {
   baseStateAfter: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
   batterSlotId: number | null
+  /** Outs vor diesem AB (0/1/2). Bei 2 Outs zaehlt ein Fly-Catch nicht mehr Runs (Inning endet). */
+  outs: number
 }
 
 const POSITION_NAMES: Record<number, string> = {
@@ -412,7 +414,7 @@ function RunnerAdvancePickerView({
 // ---------------------------------------------------------------------------
 // OutDetailDrawer
 // ---------------------------------------------------------------------------
-export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId }: Props) {
+export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
   const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
@@ -453,11 +455,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => {
     if (pendingFlyOutRequest == null) return
-    const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
+    const { baseStateAfter: after, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
+    // Bei 2 Outs beendet der Catch das Inning — Runs zaehlen nicht mehr, Sac-Fly nicht moeglich
+    const runs = outs >= 2 ? 0 : rawRuns
     onSubmit({
       result: 'OUT',
       outType: 'FLY',
-      ...(isSacFly ? { sacrificeType: 'FLY' as const } : {}),
+      ...(isSacFly && outs < 2 ? { sacrificeType: 'FLY' as const } : {}),
       fielderChain: [pendingFlyOutRequest.fielder],
       runsScored: runs,
       rbi: runs,
@@ -614,12 +618,16 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
             ) : pendingFlyOutRequest != null ? (
               <RunnerAdvancePickerView
                 title={`Fly Out F${pendingFlyOutRequest.fielder} — Tag Up?`}
-                subtitle="Welche Runner sind nach dem Catch weitergelaufen?"
+                subtitle={
+                  outs >= 2
+                    ? 'Catch ist 3rd Out — Runs zählen nicht (Inning beendet)'
+                    : 'Welche Runner sind nach dem Catch weitergelaufen?'
+                }
                 baseState={baseState}
                 slots={slots}
                 onConfirm={handleFlyOutConfirm}
                 onBack={() => setPendingFlyOutRequest(null)}
-                showSacFlyToggle
+                showSacFlyToggle={outs < 2}
               />
             ) : pendingDpRequest != null ? (
               <RunnerOutPickerView

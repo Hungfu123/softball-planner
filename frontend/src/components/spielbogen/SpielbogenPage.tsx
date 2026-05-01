@@ -539,6 +539,7 @@ export default function SpielbogenPage() {
           side={currentSide}
           currentSlotId={currentSlot?.id ?? null}
           inning={meta.currentInning}
+          outs={outs}
           baseStateAfter={displayBaseState}
           slots={slots}
           disabled={submitting}

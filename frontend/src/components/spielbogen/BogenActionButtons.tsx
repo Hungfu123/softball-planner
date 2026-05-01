@@ -12,6 +12,7 @@ interface Props {
   side: BogenSide
   currentSlotId: number | null
   inning: number
+  outs: number
   baseStateAfter: BogenBaseStateDto | null
   slots: SpielbogenSlotResponse[]
   disabled?: boolean
@@ -32,6 +33,7 @@ export function BogenActionButtons({
   side,
   currentSlotId,
   inning,
+  outs,
   baseStateAfter,
   slots,
   disabled,
@@ -195,6 +197,7 @@ export function BogenActionButtons({
         baseStateAfter={baseStateAfter}
         slots={slots}
         batterSlotId={currentSlotId}
+        outs={outs}
       />
 
       {/* Stealing drawer */}

@@ -18,6 +18,7 @@ describe('OutDetailDrawer — Multi-Base-Advance bei Grounder', () => {
       baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
       slots={slots}
       batterSlotId={99}
+      outs={0}
     />)
     // Tap auf Position 5 (3B) for Grounder
     const fielderBtn = screen.getByRole('button', { name: /5/i })
@@ -35,6 +36,7 @@ describe('OutDetailDrawer — Multi-Base-Advance bei Grounder', () => {
       baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
       slots={slots}
       batterSlotId={99}
+      outs={0}
     />)
     // Tap auf Position 5 (3B) for Grounder
     const fielderBtn = screen.getByRole('button', { name: /5/i })
@@ -56,6 +58,7 @@ describe('OutDetailDrawer — Multi-Base-Advance bei Grounder', () => {
       baseStateAfter={{ firstSlotId: 1, secondSlotId: null, thirdSlotId: null }}
       slots={slots}
       batterSlotId={99}
+      outs={0}
     />)
     // Select fielder 5
     const fielderBtn = screen.getByRole('button', { name: /5/i })
@@ -67,6 +70,66 @@ describe('OutDetailDrawer — Multi-Base-Advance bei Grounder', () => {
     fireEvent.click(confirmBtn)
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ result: 'OUT', outType: 'GROUNDER' })
+    )
+  })
+})
+
+describe('OutDetailDrawer FlyOut + 2 Outs', () => {
+  const flyOutSlots: SpielbogenSlotResponse[] = [
+    { id: 1, side: 'HOME', slot: 1, name: 'A', position: null, battingOrder: 1 },
+  ]
+
+  it('mit 2 outs + Runner3B-Tag-Up: kein Run, weil Catch das Inning beendet', async () => {
+    const onSubmit = vi.fn()
+    render(
+      <OutDetailDrawer
+        open
+        onClose={() => {}}
+        onSubmit={onSubmit}
+        baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: 1 }}
+        slots={flyOutSlots}
+        batterSlotId={1}
+        outs={2}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('Feldposition 8 CF'))
+    // Tag-up runner: cycle from "bleibt" → 4 (Home). 3B has cycle: 3 → 4 (one click).
+    const runnerBtn = await screen.findByText(/auf 3B/i)
+    fireEvent.click(runnerBtn) // cycles 3 → 4 (Home)
+    fireEvent.click(screen.getByText(/Bestätigen/i))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: 'OUT',
+        outType: 'FLY',
+        runsScored: 0,
+        rbi: 0,
+      })
+    )
+  })
+
+  it('mit 1 out + Runner3B-Tag-Up: Run zählt (Sac Fly möglich)', async () => {
+    const onSubmit = vi.fn()
+    render(
+      <OutDetailDrawer
+        open
+        onClose={() => {}}
+        onSubmit={onSubmit}
+        baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: 1 }}
+        slots={flyOutSlots}
+        batterSlotId={1}
+        outs={1}
+      />
+    )
+    fireEvent.click(screen.getByLabelText('Feldposition 8 CF'))
+    fireEvent.click(await screen.findByText(/auf 3B/i)) // 3 → 4 (Home)
+    fireEvent.click(screen.getByText(/Bestätigen/i))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: 'OUT',
+        outType: 'FLY',
+        runsScored: 1,
+        rbi: 1,
+      })
     )
   })
 })
