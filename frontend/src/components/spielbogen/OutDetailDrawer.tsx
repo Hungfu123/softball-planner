@@ -34,37 +34,40 @@ const FIELD_POSITIONS: Array<{ pos: number; cx: number; cy: number }> = [
 // ---------------------------------------------------------------------------
 function applyAdvances(
   before: BogenBaseStateDto | null,
-  advances: { fromBase: 1 | 2 | 3; advance: boolean }[],
+  advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[],
 ): { baseStateAfter: BogenBaseStateDto; runsScored: number } {
   const b = before ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
   const after: BogenBaseStateDto = { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
   let runs = 0
 
   // Process highest base first to avoid overwrite conflicts
-  const adv3 = advances.find(a => a.fromBase === 3)?.advance ?? false
+  const place = (slotId: number, target: 1 | 2 | 3 | 4) => {
+    if (target === 4) { runs += 1; return }
+    if (target === 3) {
+      if (after.thirdSlotId == null) after.thirdSlotId = slotId
+      else if (after.secondSlotId == null) after.secondSlotId = slotId
+      else after.firstSlotId = slotId
+      return
+    }
+    if (target === 2) {
+      if (after.secondSlotId == null) after.secondSlotId = slotId
+      else after.firstSlotId = slotId
+      return
+    }
+    after.firstSlotId = slotId
+  }
+
   if (b.thirdSlotId != null) {
-    if (adv3) runs += 1
-    else after.thirdSlotId = b.thirdSlotId
+    const t = advances.find(a => a.fromBase === 3)?.toBase ?? 3
+    place(b.thirdSlotId, t)
   }
-
-  const adv2 = advances.find(a => a.fromBase === 2)?.advance ?? false
   if (b.secondSlotId != null) {
-    if (adv2) {
-      if (after.thirdSlotId != null) after.secondSlotId = b.secondSlotId  // blocked
-      else after.thirdSlotId = b.secondSlotId
-    } else {
-      after.secondSlotId = b.secondSlotId
-    }
+    const t = advances.find(a => a.fromBase === 2)?.toBase ?? 2
+    place(b.secondSlotId, t)
   }
-
-  const adv1 = advances.find(a => a.fromBase === 1)?.advance ?? false
   if (b.firstSlotId != null) {
-    if (adv1) {
-      if (after.secondSlotId != null) after.firstSlotId = b.firstSlotId  // blocked
-      else after.secondSlotId = b.firstSlotId
-    } else {
-      after.firstSlotId = b.firstSlotId
-    }
+    const t = advances.find(a => a.fromBase === 1)?.toBase ?? 1
+    place(b.firstSlotId, t)
   }
 
   return { baseStateAfter: after, runsScored: runs }
@@ -286,7 +289,7 @@ function RunnerAdvancePickerView({
   subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
-  onConfirm: (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => void
+  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => void
   onBack: () => void
 }) {
   const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
@@ -303,8 +306,19 @@ function RunnerAdvancePickerView({
     if (slot) runners.push({ slotId: slot.id, fromBase: 3, name: slot.name })
   }
 
-  const [advances, setAdvances] = useState<Record<1 | 2 | 3, boolean>>({ 1: false, 2: false, 3: false })
-  const toggle = (b: 1 | 2 | 3) => setAdvances(prev => ({ ...prev, [b]: !prev[b] }))
+  const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>({ 1: 1, 2: 2, 3: 3 })
+  const cycle = (b: 1 | 2 | 3) =>
+    setTargets(prev => {
+      const curr = prev[b]
+      const next = curr === 4 ? b : (curr + 1) as 1 | 2 | 3 | 4
+      return { ...prev, [b]: next }
+    })
+
+  const labelFor = (from: 1 | 2 | 3, to: 1 | 2 | 3 | 4) => {
+    if (to === from) return 'bleibt'
+    if (to === 4) return '→ Home (Run!)'
+    return `→ ${to}B`
+  }
 
   return (
     <div className="p-4 space-y-3">
@@ -312,27 +326,28 @@ function RunnerAdvancePickerView({
         {title}
       </h3>
       <p className="text-xs text-gray-500 font-body">
-        {subtitle}
+        {subtitle} <span className="block mt-1 text-gray-400">Tipp zum Wechseln (bleibt → 2B → 3B → Home).</span>
       </p>
       <div className="space-y-2">
         {runners.map(r => {
-          const targetBase = r.fromBase + 1
-          const targetLabel = targetBase === 4 ? 'Home (Run!)' : `${targetBase}B`
+          const t = targets[r.fromBase]
+          const advanced = t !== r.fromBase
+          const scored = t === 4
           return (
             <button
               key={r.slotId}
-              onClick={() => toggle(r.fromBase)}
+              onClick={() => cycle(r.fromBase)}
               className={`w-full text-left px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
-                advances[r.fromBase]
+                scored
+                  ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-900'
+                  : advanced
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
                   : 'border-cream-300 bg-white text-gray-700 hover:bg-cream-100'
               }`}
             >
               <div className="font-display font-bold text-sm flex items-center justify-between">
                 <span>{r.name} (auf {r.fromBase}B)</span>
-                <span className="text-xs">
-                  {advances[r.fromBase] ? `→ ${targetLabel} ✓` : 'bleibt'}
-                </span>
+                <span className="text-xs">{labelFor(r.fromBase, t)}</span>
               </div>
             </button>
           )
@@ -347,7 +362,7 @@ function RunnerAdvancePickerView({
         </button>
         <button
           onClick={() => onConfirm(
-            ([1, 2, 3] as const).map(b => ({ fromBase: b, advance: advances[b] }))
+            runners.map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] }))
           )}
           className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer"
         >
@@ -396,7 +411,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     }
   }
 
-  const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; advance: boolean }[]) => {
+  const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => {
     if (pendingFlyOutRequest == null) return
     const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
     onSubmit({
