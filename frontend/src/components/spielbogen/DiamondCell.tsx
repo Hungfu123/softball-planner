@@ -54,7 +54,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
   const diamondPath = `M ${HOME.x} ${HOME.y} L ${FIRST.x} ${FIRST.y} L ${SECOND.x} ${SECOND.y} L ${THIRD.x} ${THIRD.y} Z`
 
   return (
-    <svg viewBox="0 0 60 65" className="w-full h-full" style={{ display: 'block' }}>
+    <svg viewBox="0 0 60 80" className="w-full h-full" style={{ display: 'block' }}>
       {/* Diamond outline (thin navy) */}
       <path
         d={diamondPath}
@@ -94,9 +94,9 @@ export function DiamondCell({ notation, outIndex }: Props) {
           // Other hits: small label below the diamond (near home corner)
           <text
             x={30}
-            y={62}
+            y={68}
             textAnchor="middle"
-            fontSize="8"
+            fontSize="10"
             fontWeight="700"
             fill="#1e3a8a"
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}

@@ -83,7 +83,7 @@ function drawSheet(
   const colName = 35
   const colPos = 12
   const colInning = (tableW - colNum - colName - colPos) / numInnings
-  const rowH = 11
+  const rowH = 13
   const sideKey = side === 'HOME' ? 'home' : 'away'
 
   // Header row
@@ -207,8 +207,8 @@ function drawSheet(
         } else {
           // Other hits: small navy label just below the home corner
           doc.setTextColor(30, 58, 138)
-          doc.setFontSize(4.5)
-          doc.text(label.slice(0, 4), cx, home.y + 2, { align: 'center' })
+          doc.setFontSize(5.5)
+          doc.text(label.slice(0, 4), cx, home.y + 2.5, { align: 'center' })
         }
         doc.setTextColor(0, 0, 0)
       }
