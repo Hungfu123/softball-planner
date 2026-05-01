@@ -83,6 +83,7 @@ interface InfieldOptionsProps {
   onSubmit: (req: Partial<SpielbogenRecordAtBatRequest>) => void
   onDpPick: (fielder: number, defaultDpPartner: number) => void
   onRunnerOutPick: (fielder: number) => void
+  onAdvancePick: (fielder: number) => void
   onBack: () => void
 }
 
@@ -93,6 +94,7 @@ function InfieldOptionsView({
   onSubmit,
   onDpPick,
   onRunnerOutPick,
+  onAdvancePick,
   onBack,
 }: InfieldOptionsProps) {
   const defaultThrow = 3
@@ -172,6 +174,13 @@ function InfieldOptionsView({
       description: 'Fehler beim Fielder',
       action: () => handleGrounderOut('GROUNDER', [], true, fielder),
     },
+    ...(hasRunners ? [
+      {
+        label: '⚙ Runner-Advance editieren',
+        description: 'Default OK? Runner anders weitergelaufen (z.B. via Overthrow/E)',
+        action: () => onAdvancePick(fielder),
+      },
+    ] : []),
   ]
 
   return (
@@ -381,6 +390,10 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
   const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
   const [pendingRunnerOutRequest, setPendingRunnerOutRequest] = useState<{ fielder: number } | null>(null)
+  const [pendingAdvancePicker, setPendingAdvancePicker] = useState<null | {
+    baseRequest: Partial<SpielbogenRecordAtBatRequest>
+    title: string
+  }>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
 
@@ -425,6 +438,31 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setPendingFlyOutRequest(null)
   }
 
+  const handleAdvancePick = (fielder: number) => {
+    const defaultThrow = 3
+    setPendingAdvancePicker({
+      baseRequest: {
+        result: 'OUT',
+        outType: 'GROUNDER',
+        fielderChain: [fielder, defaultThrow],
+      },
+      title: `Grounder ${fielder}-${defaultThrow} — Runner-Advance editieren`,
+    })
+  }
+
+  const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => {
+    if (pendingAdvancePicker == null) return
+    const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
+    onSubmit({
+      ...pendingAdvancePicker.baseRequest,
+      runsScored: runs,
+      rbi: runs,
+      baseStateAfter: after,
+    })
+    setPendingAdvancePicker(null)
+    setSelectedFielder(null)
+  }
+
   const handleSkip = () => {
     onSubmit({ result: 'OUT' })
   }
@@ -443,6 +481,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setPendingDpRequest(null)
     setPendingFlyOutRequest(null)
     setPendingRunnerOutRequest(null)
+    setPendingAdvancePicker(null)
     onClose()
   }
 
@@ -564,6 +603,15 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 onPick={handleDpRunnerOut}
                 onBack={() => setPendingDpRequest(null)}
               />
+            ) : pendingAdvancePicker != null ? (
+              <RunnerAdvancePickerView
+                title={pendingAdvancePicker.title}
+                subtitle="Runner anders weitergelaufen? Tipp zum Anpassen."
+                baseState={baseState}
+                slots={slots}
+                onConfirm={handleAdvancePickerConfirm}
+                onBack={() => setPendingAdvancePicker(null)}
+              />
             ) : selectedFielder != null ? (
               <InfieldOptionsView
                 fielder={selectedFielder}
@@ -572,6 +620,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 onSubmit={handleInfieldSubmit}
                 onDpPick={(fielder, defaultDpPartner) => setPendingDpRequest({ fielder, defaultDpPartner })}
                 onRunnerOutPick={(fielder) => setPendingRunnerOutRequest({ fielder })}
+                onAdvancePick={handleAdvancePick}
                 onBack={() => setSelectedFielder(null)}
               />
             ) : (
@@ -599,7 +648,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                   />
 
                   {FIELD_POSITIONS.map(({ pos, cx, cy }) => (
-                    <g key={pos} onClick={() => handleFielderTap(pos)} style={{ cursor: 'pointer' }}>
+                    <g key={pos} role="button" aria-label={`Feldposition ${pos} ${POSITION_NAMES[pos]}`} onClick={() => handleFielderTap(pos)} style={{ cursor: 'pointer' }}>
                       <circle
                         cx={cx}
                         cy={cy}

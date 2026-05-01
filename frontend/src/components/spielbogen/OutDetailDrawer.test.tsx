@@ -1,0 +1,72 @@
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { OutDetailDrawer } from './OutDetailDrawer'
+import type { SpielbogenSlotResponse } from '@/types'
+
+const slots: SpielbogenSlotResponse[] = [
+  { id: 1, side: 'HOME', slot: 1, name: 'Runner-1B', position: null, battingOrder: 1 },
+  { id: 2, side: 'HOME', slot: 2, name: 'Runner-2B', position: null, battingOrder: 2 },
+]
+
+describe('OutDetailDrawer — Multi-Base-Advance bei Grounder', () => {
+  it('zeigt Runner-Advance-editieren Option bei Grounder-Out wenn Runner auf Base', async () => {
+    const onSubmit = vi.fn()
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={onSubmit}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+    />)
+    // Tap auf Position 5 (3B) for Grounder
+    const fielderBtn = screen.getByRole('button', { name: /5/i })
+    fireEvent.click(fielderBtn)
+    // Edit-Runner-Advance Button visible
+    expect(screen.getByText(/Runner-Advance editieren/i)).toBeInTheDocument()
+  })
+
+  it('öffnet Runner-Advance-Picker nach Klick auf editieren', async () => {
+    const onSubmit = vi.fn()
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={onSubmit}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+    />)
+    // Tap auf Position 5 (3B) for Grounder
+    const fielderBtn = screen.getByRole('button', { name: /5/i })
+    fireEvent.click(fielderBtn)
+    // Click the edit advance button
+    const editBtn = screen.getByText(/Runner-Advance editieren/i)
+    fireEvent.click(editBtn)
+    // Should show the RunnerAdvancePickerView with runner names
+    expect(screen.getByText(/Runner-1B/)).toBeInTheDocument()
+    expect(screen.getByText(/Runner-2B/)).toBeInTheDocument()
+  })
+
+  it('submits mit angepassten Advances nach Bestätigen', async () => {
+    const onSubmit = vi.fn()
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={onSubmit}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: null, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+    />)
+    // Select fielder 5
+    const fielderBtn = screen.getByRole('button', { name: /5/i })
+    fireEvent.click(fielderBtn)
+    // Click edit advance
+    fireEvent.click(screen.getByText(/Runner-Advance editieren/i))
+    // Confirm with default (runner stays)
+    const confirmBtn = screen.getByText(/Bestätigen/i)
+    fireEvent.click(confirmBtn)
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ result: 'OUT', outType: 'GROUNDER' })
+    )
+  })
+})
