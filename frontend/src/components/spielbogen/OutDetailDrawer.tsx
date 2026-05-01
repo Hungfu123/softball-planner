@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Drawer } from 'vaul'
 import type { SpielbogenRecordAtBatRequest, BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
 import { computeForceDefaults } from '@/utils/bogenBaseAdvance'
+import { HelpPopover } from '@/components/shared/HelpPopover'
 
 interface Props {
   open: boolean
@@ -211,7 +212,17 @@ function InfieldOptionsView({
             onChange={e => setIsSacBunt(e.target.checked)}
             className="w-4 h-4 rounded border-gray-300 accent-navy-800 cursor-pointer"
           />
-          Als Sacrifice Bunt werten (SH)
+          <span>Als Sacrifice Bunt werten (SH)</span>
+          <HelpPopover
+            title="Sacrifice Bunt (SH)"
+            body={
+              <>
+                <p>Batter buntet absichtlich, damit Runner advancen kann. Batter wird out an 1B — opfert sich ("sacrifice").</p>
+                <p><strong>Wann ankreuzen:</strong> Batter hat absichtlich gebuntet um Runner weiterzubringen.</p>
+                <p><strong>Wirkung:</strong> AB zählt nicht für AVG → Batter-AVG bleibt geschützt.</p>
+              </>
+            }
+          />
         </label>
       )}
       {options.map((opt) => (
@@ -413,7 +424,17 @@ function RunnerAdvancePickerView({
             onChange={e => setIsSacFly(e.target.checked)}
             className="w-4 h-4 rounded border-gray-300 accent-navy-800 cursor-pointer"
           />
-          Als Sacrifice Fly werten (SF)
+          <span>Als Sacrifice Fly werten (SF)</span>
+          <HelpPopover
+            title="Sacrifice Fly (SF)"
+            body={
+              <>
+                <p>Batter schlägt Fly Ball ins Outfield. Outfielder fängt → Batter out. Aber: Runner von 3B taggt up und scored.</p>
+                <p><strong>Wann ankreuzen:</strong> Mindestens 1 Run wegen Tag-Up. Nur möglich bei &lt; 2 Outs.</p>
+                <p><strong>Wirkung:</strong> AB zählt nicht für AVG.</p>
+              </>
+            }
+          />
         </label>
       )}
       <div className="flex gap-2 mt-4">
