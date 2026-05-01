@@ -63,23 +63,26 @@ interface Props {
 
 const MAX_INNINGS = 7
 
+const BORDER = '1.5px solid #1f2937'  // gray-800, klar sichtbar auf white bg
+const HEADER_BORDER = '1.5px solid #ffffff'  // weiß für Kontrast auf navy-800 bg
+
 const cellStyle: React.CSSProperties = {
-  borderRight: '1px solid #374151',
-  borderBottom: '1px solid #374151',
+  borderRight: BORDER,
+  borderBottom: BORDER,
 }
 const headerCellStyle: React.CSSProperties = {
-  borderRight: '1px solid #1e3a8a',
-  borderBottom: '1px solid #1e3a8a',
+  borderRight: HEADER_BORDER,
+  borderBottom: HEADER_BORDER,
 }
 const firstCellStyle: React.CSSProperties = {
-  borderLeft: '1px solid #374151',
-  borderRight: '1px solid #374151',
-  borderBottom: '1px solid #374151',
+  borderLeft: BORDER,
+  borderRight: BORDER,
+  borderBottom: BORDER,
 }
 const firstHeaderCellStyle: React.CSSProperties = {
-  borderLeft: '1px solid #1e3a8a',
-  borderRight: '1px solid #1e3a8a',
-  borderBottom: '1px solid #1e3a8a',
+  borderLeft: HEADER_BORDER,
+  borderRight: HEADER_BORDER,
+  borderBottom: HEADER_BORDER,
 }
 
 function SideSheet({
