@@ -239,3 +239,20 @@
   ],
   rotation: [Werfer und 3B tauschen nach 30 Bällen.],
 )
+
+#drill(
+  name: "3B Forehand & Backhand zur 1B",
+  kategorien: ("3B", "Fielding"),
+  spieler: 3,
+  equipment: ("Bälle", "Base (1B)"),
+  beschreibung: [
+    Isolierte Bewegungs-Übung für 3B-Fielding zur 1B.
+
+    *Phase 1 — Forehand:* Tosser rollt links Richtung 2B-Seite. 3B nimmt den Ball forehand auf, wirft zur 1B.
+
+    *Phase 2 — Backhand:* Tosser rollt rechts Richtung Foul-Line. 3B Crossover-Schritt nach rechts, Ball backhand aufnehmen, Wurf zur 1B.
+
+    Keine Spielsituation, keine Bunts — nur die saubere Bewegung und der Wurf.
+  ],
+  rotation: [Rotation 3B → 1B → Tosser → 3B nach 6–8 Bällen pro Phase.],
+)
