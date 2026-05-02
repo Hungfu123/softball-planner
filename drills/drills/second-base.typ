@@ -229,3 +229,18 @@
   ],
   rotation: [Alle drei Bälle werden nacheinander durchgespielt (2B bekommt 3 Bälle in Folge). Danach rotieren: 2B → SS → 1B → Tosser → 2B. Jeder durchläuft jede Position. Bei mehr Spielern: 2–3 Runden pro Position vor dem Wechsel.],
 )
+
+#drill(
+  name: "2B Hocke-Wurf zur 1B",
+  kategorien: ("2B", "Fielding"),
+  spieler: 3,
+  equipment: ("Bälle", "Base (1B)"),
+  beschreibung: [
+    Isolierte BASIC-Übung — Phase 1 vom 2B-Komplett als Stand-alone für die Aufwärm-/Aktivierungsphase.
+
+    *Ablauf:* Tosser rollt frontal zur 2B. Die 2B fängt den Ball, bleibt in der Hocke und wirft direkt aus der Hocke heraus zur 1B. Keine Drehung, kein Aufstehen, kein Toss zum SS — nur die saubere Hocke-Wurf-Mechanik.
+
+    *Fokus:* Tiefer Stand, Augen auf den Ball, Wurf aus der Schulter ohne Zwischenschritte.
+  ],
+  rotation: [Rotation 2B → 1B → Tosser → 2B nach 5–8 Bällen.],
+)
