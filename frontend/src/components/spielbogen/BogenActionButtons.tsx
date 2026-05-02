@@ -171,7 +171,7 @@ export function BogenActionButtons({
               <div className="grid grid-cols-3 gap-2">
                 <MedButton label="WALK" color="emerald" onClick={() => handleRecord('WALK')} disabled={isDisabled} />
                 <MedButton label="HBP" subtitle="Hit-by-Pitch" color="amber" onClick={() => handleRecord('HIT_BY_PITCH')} disabled={isDisabled} />
-                <MedButton label="ERROR" subtitle="Batter safe" color="orange" onClick={() => setShowErrorDrawer(true)} disabled={isDisabled} />
+                <MedButton label="ERROR" subtitle="Batter safe" color="errorRed" onClick={() => setShowErrorDrawer(true)} disabled={isDisabled} />
               </div>
               {/* Tier 3: Small pills */}
               <div className="flex gap-2">
@@ -320,7 +320,7 @@ const COLOR_CLASSES = {
   gray:    'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
   emerald: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
   amber:   'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white',
-  orange:  'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white',
+  errorRed: 'bg-softball-red-500 hover:bg-softball-red-600 active:bg-softball-red-700 text-white',
 } as const
 
 type Color = keyof typeof COLOR_CLASSES

@@ -498,7 +498,7 @@ function ChainPickerView({ initialFielder, onConfirm, onBack }: ChainPickerProps
               <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={isInChain ? 'white' : '#1e3a5f'}>{pos}</text>
               <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill={isInChain ? 'white' : '#374151'}>{POSITION_NAMES[pos]}</text>
               {isInChain && (
-                <text x={cx + 16} y={cy - 14} textAnchor="middle" fontSize="9" fontWeight="700" fill="#dc2626">{idx + 1}</text>
+                <text x={cx + 16} y={cy - 14} textAnchor="middle" fontSize="9" fontWeight="700" fill="#CC2936">{idx + 1}</text>
               )}
             </g>
           )
