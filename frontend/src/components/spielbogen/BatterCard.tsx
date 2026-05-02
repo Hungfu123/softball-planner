@@ -3,12 +3,14 @@ import type { SpielbogenSlotResponse } from '@/types'
 interface Props {
   currentSlot: SpielbogenSlotResponse | null
   upcomingSlots: SpielbogenSlotResponse[]
+  /** Während Auto-Switch / Reload: Card dimmen um Flicker bei Side-Wechsel zu verhindern. */
+  pending?: boolean
 }
 
-export function BatterCard({ currentSlot, upcomingSlots }: Props) {
+export function BatterCard({ currentSlot, upcomingSlots, pending }: Props) {
   if (!currentSlot) return null
   return (
-    <div className="px-3 py-2 bg-cream-100 border-t border-cream-300">
+    <div className={`px-3 py-2 bg-cream-100 border-t border-cream-300 transition-opacity duration-200 ${pending ? 'opacity-40 pointer-events-none' : ''}`}>
       <div className="px-1 py-1 space-y-1.5">
         <div className="flex items-center gap-2.5">
           <span className="font-display shrink-0 text-xl bg-navy-900 text-white font-extrabold tabular-nums w-10 h-10 rounded-lg flex items-center justify-center">
