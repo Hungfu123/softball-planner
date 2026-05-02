@@ -57,11 +57,15 @@ public enum DrillComplexity {
 
 ### Drill-Modell + DTO erweitert
 
-`Drill` (Domain) und `DrillResponse` (DTO) bekommen Feld `complexity: DrillComplexity` (default `BASIC`, JSON-deserialisiert mit `null` → BASIC).
+`Drill` (Domain, POJO) und `DrillResponse` (DTO) bekommen Feld `complexity: DrillComplexity`.
+
+**Default:** Im Drill-POJO als Initializer `private DrillComplexity complexity = DrillComplexity.BASIC;`. Damit deserialisiert Jackson auch JSON ohne das Feld korrekt → BASIC. JSON mit explizitem `null` würde überschrieben — daher in `drills.json` einfach Feld weglassen oder explizit `"BASIC"` / `"ADVANCED"` setzen.
 
 ### `drills.json` Tagging
 
-Position-Drills bekommen explizites Tag:
+`complexity` ist **per-Drill**, nicht per-Position. Ein Drill mit mehreren Position-Cats (z.B. "2B Komplett-Drill" mit 2B+SS) gilt automatisch für jede dieser Positionen, je nach Tag.
+
+**Position-spezifische Drills (Hauptpool):**
 
 | Position | BASIC | ADVANCED |
 |---|---|---|
@@ -70,7 +74,23 @@ Position-Drills bekommen explizites Tag:
 | **SS** | SS Halbkreis Fielding, SS Backhand zur 1B, SS Fielding mit Bat | SS Komplett-Drill, SS Force 3B + Bogen zur 1B |
 | **3B** | **3B Short Hop Reaction** *(neu)*, **3B Forehand & Backhand zur 1B** *(neu)*, **3B Reaktion „Jetzt!"** *(neu)* | 3B Komplett-Drill, 3B Bunt Defense |
 
-Alle anderen Drills (THROWING, OUTFIELD, CATCHER, …) werden default `BASIC` getaggt — hat keinen Effekt, da Sub-Focus-Logik nur für INFIELD_DEFENSE greift.
+**Cross-Position-Drills (zählen für mehrere Positionen, alle ADVANCED):**
+
+| Drill | Zählt für |
+|---|---|
+| Infield Plays (aufgebautes Infield) | 1B, 2B, SS, 3B |
+| Infield Wurf nach Home (Runner auf 3rd) | 1B, SS, 3B |
+| Rundown | 1B, 2B, SS, 3B |
+| Second/Short Double Play Übung | 2B, SS |
+| 1B 3-6-3 Double Play | 1B, SS |
+| 2B Double Play Pivots | 1B, 2B, SS |
+| 2B Komplett-Drill | 2B, SS |
+| SS Komplett-Drill | 2B, SS |
+| SS Force 3B + Bogen zur 1B | SS, 3B |
+
+Diese Drills landen in jedem ADVANCED-Pool, dessen Position-Cat sie haben → erweitert Variation, weniger Wiederholung.
+
+Alle Nicht-Position-Drills (THROWING, OUTFIELD, CATCHER, …) bleiben default `BASIC` — hat keinen Effekt, da Sub-Focus-Logik nur INFIELD-Position-Pools nutzt.
 
 ### 4 neue Drills
 
@@ -187,13 +207,15 @@ Drill-Phase (T = remainingMinutes für Drill-Phase):
 
 2. Aufbaupause 5 min (wie heute). **Wenn BASICS-Block leer war (kein Drill gepickt) → Aufbaupause auch übersprungen.**
 
-3. STATIONS-Block (parallel, Gruppen rotieren)
-   - 1 Station pro gewählter Position mit ADVANCED-Drill.
-   - Stations-Cap wie heute: max 3 (≥12 Spieler), max 2 (<12 Spieler).
-   - Mehr Positionen als Cap → zufällige Auswahl der `cap` Positionen.
+3. STATIONS-Block
+   - **Wenn nur 1 Position gewählt** → sequenzieller ADVANCED-Drill (alle zusammen, kein paralleler Stationsbetrieb). Restliche Drill-Zeit komplett auf 1 Drill (Deep Dive). Keine Aufbaupause vor diesem Block notwendig (alle bleiben zusammen).
+   - **Wenn 2+ Positionen gewählt** → parallele Stationen, Gruppen rotieren wie heute:
+     - 1 Station pro gewählter Position mit ADVANCED-Drill.
+     - Stations-Cap wie heute: max 3 (≥12 Spieler), max 2 (<12 Spieler).
+     - Mehr Positionen als Cap → zufällige Auswahl der `cap` Positionen.
    - Drill-Wahl pro Position (Priorität):
-     1. ADVANCED der Position (nicht aus Basics-Block, nicht usedDrillIds).
-     2. Sonst: zweite BASIC der Position (anders als in Basics).
+     1. ADVANCED der Position (Position-Cat im Drill, complexity=ADVANCED, nicht in usedDrillIds).
+     2. Sonst: zweite BASIC der Position (anders als in BASICS-Block).
      3. Sonst: ADVANCED einer anderen gewählten Infield-Position, die noch keine eigene Station hat.
      4. Sonst: ADVANCED irgendeiner Infield-Position (Slot-Filler).
    - Restliche Drill-Zeit gleichmäßig auf die Stationen.
@@ -215,11 +237,12 @@ Drill-Phase (T = remainingMinutes für Drill-Phase):
 95–125 BATTING   Hitting Stationen (30 min)
 ```
 
-### Beispiel — Position=[3B] alone
+### Beispiel — Position=[3B] alone (Deep Dive)
 
 ```
 BASICS-Block: 3B Short Hop Reaction (BASIC, 5 min)
-STATIONS-Block: 3B Komplett-Drill als einzige Station (Rest der Drill-Zeit)
+keine Aufbaupause (alle bleiben zusammen)
+STATIONS-Block: 3B Komplett-Drill sequenziell, alle zusammen (Rest der Drill-Zeit, z.B. 25 min)
 ```
 
 ### Beispiel — Fallback bei dünner Position-Liste
@@ -288,7 +311,7 @@ Inline unter dem `INFIELD_DEFENSE`-Toggle erscheinen 4 Position-Chips (multi-tog
 
 `TrainingPlanGeneratorTest` + `TrainingPlanGeneratorIntegrationTest` erweitern um:
 
-- Sub-Focus mit 1 Position → BASICS-Block mit 1 Drill, 1 Station.
+- Sub-Focus mit 1 Position → BASICS-Block mit 1 Drill + sequenzieller ADVANCED-Drill (kein Stationsbetrieb, alle zusammen).
 - Sub-Focus mit 2 Positionen → 2 BASICs, 2 Stationen.
 - Sub-Focus mit 3 Positionen, 10 Spieler → Cap 2 Stationen, 1 Position fällt raus.
 - Sub-Focus mit 4 Positionen, 16 Spieler → 2 BASICs (von 4), 3 Stationen (Cap).
