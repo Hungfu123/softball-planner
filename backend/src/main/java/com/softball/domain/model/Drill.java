@@ -13,6 +13,7 @@ public class Drill {
     private Integer pdfPage;
     private String rotation;
     private String variants;
+    private DrillComplexity complexity = DrillComplexity.BASIC;
 
     public Drill() {}
 
@@ -51,4 +52,8 @@ public class Drill {
     public void setRotation(final String rotation) { this.rotation = rotation; }
     public String getVariants() { return variants; }
     public void setVariants(final String variants) { this.variants = variants; }
+    public DrillComplexity getComplexity() { return complexity; }
+    public void setComplexity(final DrillComplexity complexity) {
+        this.complexity = complexity;
+    }
 }
