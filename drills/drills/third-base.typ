@@ -256,3 +256,18 @@
   ],
   rotation: [Rotation 3B → 1B → Tosser → 3B nach 6–8 Bällen pro Phase.],
 )
+
+#drill(
+  name: "3B Reaktion „Jetzt!\"",
+  kategorien: ("3B", "Fielding"),
+  spieler: 2,
+  equipment: ("Bälle",),
+  beschreibung: [
+    Reaktions-Drill mit erstem Schritt-Footwork.
+
+    *Ablauf:* 3B steht mit Rücken zum Werfer. Werfer wirft einen Grounder und ruft gleichzeitig „Jetzt!". 3B dreht sich, sucht den Ball, fieldet ihn und wirft zur 1B (oder Stand-in).
+
+    *Fokus:* Reaktion, schneller First-Step (Jab → Crossover), Ball schnell finden. 10 Bälle pro Runde.
+  ],
+  rotation: [Werfer und 3B tauschen nach 10 Bällen.],
+)

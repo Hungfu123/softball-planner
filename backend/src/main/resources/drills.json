@@ -649,7 +649,7 @@
     ],
     "description": "Grundübung für Outfielder: Einer zeigt die Richtung, der andere läuft und fängt. Trainiert das Lesen der Flugbahn und das Laufen zum Ball.\n\nBasic: Der Werfer steht mit dem Ball in der Hand und zeigt in eine Richtung (links, rechts oder nach hinten). Der Outfielder startet und läuft in die gezeigte Richtung. Der Werfer wirft den Ball dorthin, der Outfielder fängt und wirft zurück.\n\nWichtig: Der Outfielder soll den Ball im Laufen fangen, nicht stehen bleiben und warten. Ersten Schritt in die richtige Richtung machen, dann zum Ball laufen.",
     "hasImage": true,
-    "pdfPage": 29,
+    "pdfPage": 30,
     "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
     "variants": "Advanced: Werfer zeigt erst rechts, dann schnell links (Richtungswechsel). Oder: Werfer wirft ohne vorher zu zeigen (Reaktion auf Flugbahn)."
   },
@@ -1039,6 +1039,24 @@
     "description": "Isolierte Bewegungs-Übung für 3B-Fielding zur 1B.\n\nPhase 1 — Forehand: Tosser rollt links Richtung 2B-Seite. 3B nimmt den Ball forehand auf, wirft zur 1B.\n\nPhase 2 — Backhand: Tosser rollt rechts Richtung Foul-Line. 3B Crossover-Schritt nach rechts, Ball backhand aufnehmen, Wurf zur 1B.\n\nKeine Spielsituation, keine Bunts — nur die saubere Bewegung und der Wurf.",
     "hasImage": false,
     "rotation": "Rotation 3B → 1B → Tosser → 3B nach 6–8 Bällen pro Phase.",
+    "variants": null,
+    "complexity": "BASIC",
+    "pdfPage": 29
+  },
+  {
+    "id": "3b-reaktion-jetzt",
+    "name": "3B Reaktion „Jetzt!\"",
+    "categories": [
+      "THIRD_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Reaktions-Drill mit erstem Schritt-Footwork.\n\nAblauf: 3B steht mit Rücken zum Werfer. Werfer wirft einen Grounder und ruft gleichzeitig „Jetzt!\". 3B dreht sich, sucht den Ball, fieldet ihn und wirft zur 1B (oder Stand-in).\n\nFokus: Reaktion, schneller First-Step (Jab → Crossover), Ball schnell finden. 10 Bälle pro Runde.",
+    "hasImage": false,
+    "rotation": "Werfer und 3B tauschen nach 10 Bällen.",
     "variants": null,
     "complexity": "BASIC",
     "pdfPage": 29
