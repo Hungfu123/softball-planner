@@ -33,10 +33,10 @@ Trainingsplan-Generator erweitern, sodass:
 ```
 Frontend (React)
   └─ Plan-Erstellen-UI: Inline Position-Chips unter INFIELD_DEFENSE-Toggle
-     ↓ POST /api/trainings/{id}/plan?focus=INFIELD_DEFENSE&infieldPositions=SS,2B&...
+     ↓ POST /api/training-plans/generate (Body: GeneratePlanRequest mit infieldPositions[])
 
 Backend (Spring Boot)
-  └─ TrainingController → TrainingPlanService → TrainingPlanGenerator
+  └─ TrainingPlanController → TrainingPlanService → TrainingPlanGenerator
      ├─ Hybrid Drill-Phase: BASICS-Block (sequenziell) + STATIONS-Block (parallel) mit Fallback
      ├─ Filter PARTNER_ROUTINE und WARMUP weiterhin aus Drill-Phase
      └─ Drill-Auswahl pro Position aus complexity-Tag
@@ -100,16 +100,47 @@ Alle anderen Drills (THROWING, OUTFIELD, CATCHER, …) werden default `BASIC` ge
 
 ### Endpoint-Erweiterung
 
-`POST /api/trainings/{id}/plan` bekommt neuen optionalen Query-Param:
+Existierender Endpoint: `POST /api/training-plans/generate` mit `@RequestBody GeneratePlanRequest`.
 
-```
-?focus=INFIELD_DEFENSE,OUTFIELD
-&infieldPositions=SS,2B          ← NEU, optional, kommagetrennt
-&playerCount=10
-&durationMinutes=120
+`GeneratePlanRequest` (record) bekommt neues Feld `infieldPositions`:
+
+```java
+public record GeneratePlanRequest(
+        @NotNull Long trainingId,
+        @NotNull @Min(1) Integer playerCount,
+        @NotBlank String focus,
+        @NotNull @Min(30) Integer durationMinutes,
+        List<InfieldPosition> infieldPositions    // NEU, optional, default null/leer
+) {}
 ```
 
-Werte für `infieldPositions`: Subset von `{1B, 2B, SS, 3B}`. Wird ignoriert wenn `INFIELD_DEFENSE` nicht im Focus ist. Leer/fehlend → wie bisher (alle Infield-Positionen, zufällige Auswahl).
+Beispiel-Body:
+```json
+{
+  "trainingId": 42,
+  "playerCount": 10,
+  "focus": "INFIELD_DEFENSE,OUTFIELD",
+  "durationMinutes": 120,
+  "infieldPositions": ["SS", "SECOND_BASE"]
+}
+```
+
+**Validierung:** Werte für `infieldPositions` aus Java-Enum `InfieldPosition { FIRST_BASE, SECOND_BASE, SS, THIRD_BASE }` → ungültige Werte werfen 400 (Jackson-Deserialisierungsfehler). `null` oder leere Liste → wie bisher. `INFIELD_DEFENSE` nicht im Focus → Liste ignoriert (kein Fehler).
+
+### Neuer Enum `InfieldPosition`
+
+```java
+package com.softball.domain.model;
+
+public enum InfieldPosition {
+    FIRST_BASE,
+    SECOND_BASE,
+    SS,
+    THIRD_BASE
+}
+```
+
+Mapping zu `DrillCategory` 1:1 — vereinfacht Filterung im Generator.
 
 ### Service-Signatur
 
@@ -119,7 +150,7 @@ public TrainingPlanResponse generate(
     int playerCount,
     String focus,
     int durationMinutes,
-    List<String> infieldPositions   // NEU, optional, default leere Liste
+    List<InfieldPosition> infieldPositions   // NEU, optional, default leere Liste
 );
 ```
 
@@ -131,11 +162,11 @@ public TrainingPlanContent generate(
     int playerCount,
     String focus,
     int totalMinutes,
-    List<String> infieldPositions   // NEU
+    List<InfieldPosition> infieldPositions   // NEU
 );
 ```
 
-Bestehende Methode mit 4 Parametern wird via Overload (delegiert auf 5-Param-Variante mit leerer Liste) erhalten — Backward-Kompatibilität für Tests.
+Bestehende 4-Param-Methode wird via Overload (delegiert auf 5-Param-Variante mit leerer Liste) erhalten — Backward-Kompatibilität für Tests.
 
 ## Generator-Logik
 
@@ -154,7 +185,7 @@ Drill-Phase (T = remainingMinutes für Drill-Phase):
    - Wenn Position keine BASIC hat → Position übersprungen (kein Stand-in im BASICS-Block).
    - Ganzer Block übersprungen wenn T < 25 min.
 
-2. Aufbaupause 5 min (wie heute).
+2. Aufbaupause 5 min (wie heute). **Wenn BASICS-Block leer war (kein Drill gepickt) → Aufbaupause auch übersprungen.**
 
 3. STATIONS-Block (parallel, Gruppen rotieren)
    - 1 Station pro gewählter Position mit ADVANCED-Drill.
@@ -245,9 +276,9 @@ Inline unter dem `INFIELD_DEFENSE`-Toggle erscheinen 4 Position-Chips (multi-tog
 - Mindestens 1 Position aktiv → Plan-API mit `infieldPositions=...`.
 
 **Komponenten:**
-- Bestehende Focus-Auswahl-Komponente erweitert. Neuer State: `selectedInfieldPositions: ('1B'|'2B'|'SS'|'3B')[]`.
-- `DrillCategory`-Type bleibt unverändert (Position-Codes sind Sub-Focus, keine Kategorien).
-- API-Aufruf in `useTrainingPlan` Hook (oder vergleichbar) übergibt `infieldPositions`.
+- Bestehende Focus-Auswahl-Komponente erweitert. Neuer State: `selectedInfieldPositions: InfieldPosition[]` mit Type `InfieldPosition = 'FIRST_BASE' | 'SECOND_BASE' | 'SS' | 'THIRD_BASE'`.
+- `DrillCategory`-Type bleibt unverändert (Position-Codes sind Sub-Focus, keine Kategorien — passend, weil `InfieldPosition`-Werte 1:1 mit `DrillCategory`-Werten matchen).
+- API-Aufruf im Plan-Erstellen-Hook (vermutlich `useTrainingPlan` oder direkt im API-Client `client.ts`) übergibt `infieldPositions` im Request-Body.
 
 **Frontend-Design Skill** wird beim Implementieren herangezogen für Polish (Chip-Visual, Hover-States, Animation beim Aufklappen).
 
