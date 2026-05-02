@@ -190,7 +190,6 @@ export default function SpielbogenPage() {
   // Detect auto-switch: when backend changes currentSide show inning-switch banner
   const prevSideRef = useRef<BogenSide | null>(null)
   const currentSideForEffect = sheet?.meta.currentSide ?? null
-  const currentInningForEffect = sheet?.meta.currentInning ?? 1
   useEffect(() => {
     if (prevSideRef.current !== null && currentSideForEffect !== null && prevSideRef.current !== currentSideForEffect) {
       const reducedMotion = typeof window !== 'undefined'
@@ -198,10 +197,7 @@ export default function SpielbogenPage() {
       const lastOutType = lastOutTypeRef.current ?? undefined
       setSideSwitchFlash({ newSide: currentSideForEffect, lastOutType })
       setTimeout(() => setSideSwitchFlash(null), 1200)
-      toast.show(
-        `Inning ${currentInningForEffect} — ${currentSideForEffect === 'HOME' ? 'Heim' : 'Gast'} am Schlag`,
-        'error',
-      )
+      // Toast skipped — Center-Flash zeigt bereits Inning + Side + lastOutType.
       if (!reducedMotion && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try { navigator.vibrate([100, 50, 100, 50, 200]) } catch { /* not supported */ }
       }

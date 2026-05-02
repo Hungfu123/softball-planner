@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Drawer } from 'vaul'
 
 interface Props {
@@ -24,6 +25,18 @@ const FIELD_POSITIONS: Array<{ pos: number; cx: number; cy: number }> = [
 ]
 
 export function ErrorPickerDrawer({ open, onClose, onPick }: Props) {
+  const [selected, setSelected] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!open) setSelected(null)
+  }, [open])
+
+  const handleConfirm = () => {
+    if (selected == null) return
+    onPick(selected)
+    onClose()
+  }
+
   return (
     <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <Drawer.Portal>
@@ -39,31 +52,57 @@ export function ErrorPickerDrawer({ open, onClose, onPick }: Props) {
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             <p className="text-xs text-gray-500 text-center mb-3 font-body">
-              Tippe auf die Feldposition, die den Fehler gemacht hat. Batter erreicht 1B safe.
+              Tippe auf Feldposition mit Fehler. Batter erreicht 1B safe.
             </p>
             <svg viewBox="0 0 280 220" className="w-full max-w-xs mx-auto block">
               <path d="M 30 200 Q 140 20 250 200" fill="none" stroke="#e5e7eb" strokeWidth="1.5" strokeDasharray="4 3" />
               <path d="M 140 175 L 210 120 L 140 65 L 70 120 Z" fill="none" stroke="#d1d5db" strokeWidth="1" strokeDasharray="3 2" />
-              {FIELD_POSITIONS.map(({ pos, cx, cy }) => (
-                <g
-                  key={pos}
-                  role="button"
-                  aria-label={`Feldposition ${pos} ${POSITION_NAMES[pos]}`}
-                  onClick={() => { onPick(pos); onClose() }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <circle cx={cx} cy={cy} r="22" fill="#FFF5F5" stroke="#E63946" strokeWidth="1.5" />
-                  <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e3a5f">{pos}</text>
-                  <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="#374151">{POSITION_NAMES[pos]}</text>
-                </g>
-              ))}
+              {FIELD_POSITIONS.map(({ pos, cx, cy }) => {
+                const isSelected = selected === pos
+                return (
+                  <g
+                    key={pos}
+                    role="button"
+                    aria-label={`Feldposition ${pos} ${POSITION_NAMES[pos]}`}
+                    aria-pressed={isSelected}
+                    onClick={() => setSelected(pos)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <circle
+                      cx={cx} cy={cy} r="22"
+                      fill={isSelected ? '#E63946' : '#FFF5F5'}
+                      stroke={isSelected ? '#B91C2A' : '#E63946'}
+                      strokeWidth={isSelected ? '2.5' : '1.5'}
+                    />
+                    <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={isSelected ? 'white' : '#1e3a5f'}>{pos}</text>
+                    <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill={isSelected ? 'white' : '#374151'}>{POSITION_NAMES[pos]}</text>
+                  </g>
+                )
+              })}
             </svg>
-            <button
-              onClick={onClose}
-              className="w-full mt-2 py-2 text-xs text-gray-500 hover:text-gray-700 cursor-pointer"
-            >
-              Abbrechen
-            </button>
+            {selected != null && (
+              <div className="mt-3 bg-softball-red-50 border border-softball-red-300 rounded-lg p-2.5 text-center">
+                <div className="text-[10px] tracking-widest uppercase text-gray-500 font-bold">Gewählt</div>
+                <div className="font-display text-base font-extrabold text-softball-red-700">
+                  E{selected} — {POSITION_NAMES[selected]}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={onClose}
+                className="flex-1 py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={selected == null}
+                className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-softball-red-600 hover:bg-softball-red-700 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Bestätigen
+              </button>
+            </div>
           </div>
         </Drawer.Content>
       </Drawer.Portal>

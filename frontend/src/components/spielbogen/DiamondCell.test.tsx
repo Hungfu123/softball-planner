@@ -11,6 +11,7 @@ const empty: CellNotation = {
   rbi: 0,
   reachedBase: 0,
   stealingArrow: null,
+  stealingArrows: [],
   abCount: 0,
 }
 
@@ -138,7 +139,7 @@ describe('DiamondCell', () => {
     expect(arrowLine?.getAttribute('stroke')).toBe('#dc2626')
   })
 
-  it('Multi-AB cell stacks both labels', () => {
+  it('Multi-AB cell (Wrap-Around) zeigt beide Labels in Diagonal-Split', () => {
     const cell: CellNotation = {
       ...empty,
       primaryLabel: 'E6',
@@ -150,6 +151,22 @@ describe('DiamondCell', () => {
     const texts = Array.from(container.querySelectorAll('text')).map(t => t.textContent)
     expect(texts).toContain('1B')
     expect(texts).toContain('E6')
+    // Diagonal-Divider line
+    const lines = Array.from(container.querySelectorAll('line'))
+    const divider = lines.find(l => l.getAttribute('x1') === '60' && l.getAttribute('y1') === '0' && l.getAttribute('x2') === '0' && l.getAttribute('y2') === '80')
+    expect(divider).toBeTruthy()
+  })
+
+  it('3+ ABs in same inning: ×N Badge sichtbar', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: 'K',
+      labels: ['1B', 'BB', 'K'],
+      reachedBase: 1,
+      abCount: 3,
+    }
+    const { getByText } = render(<DiamondCell notation={cell} />)
+    expect(getByText('×3')).toBeTruthy()
   })
 
   it('Range out index "I-II" for double play', () => {
