@@ -274,36 +274,98 @@ Beispiel — `INFIELD_DEFENSE,OUTFIELD`, Positions=[SS, 2B], 120 min, 16 Spieler
 
 ## Frontend
 
-### UI-Änderung in Plan-Erstellen-Komponente
+### Bestehende UI-Konvention
 
-Inline unter dem `INFIELD_DEFENSE`-Toggle erscheinen 4 Position-Chips (multi-toggle):
+`PlanForm.tsx` nutzt:
+- Top-Level Focus-Chips mit `px-3 py-1.5 rounded-lg text-sm font-medium`, navy-800 selected, cream-50 unselected.
+- Spieleranzahl, Dauer, Schwerpunkte als gestapelte Felder mit kleinen Helper-Texten in `text-xs text-gray-400`.
+- Cream/navy-Aesthetik, refined minimal — keine Animations, keine Decorations.
+
+Sub-Focus-UI muss **dazu passen**: refined minimal, kein neues visuelles Vokabular.
+
+### UI-Layout: Sub-Section UNTER dem Focus-Chip-Block
+
+Wenn `INFIELD_DEFENSE` ausgewählt ist, erscheint eine eigene Sub-Section **unterhalb** des kompletten Focus-Chip-Blocks (nicht inline zwischen den Chips — `flex-wrap` würde zerschießen).
 
 ```
-┌─ Schwerpunkt ──────────────────────────────────────┐
-│  ☐ Werfen                                          │
-│  ☑ Infield Defense                                 │
-│      Positionen (optional, multi-select):          │
-│      ☐ 1B   ☑ 2B   ☑ SS   ☐ 3B                     │
-│  ☐ Outfield                                        │
-│  ☐ Baserunning                                     │
-│  ☐ Catcher                                         │
-│  ☐ Situational                                     │
-│  ☐ Relay                                           │
-│  ☐ Allround                                        │
+┌─ Schwerpunkte ─────────────────────────────────────┐
+│  Mehrere auswählbar. "Allround" wählt alles.       │
+│  [Werfen] [Infield Defense✓] [Outfield] [...]      │
+│                                                    │
+│  ┌─ Infield-Positionen (Sub-Section, conditional) ─┐
+│  │  Optional. Leer = alle Positionen (Standard).  │
+│  │  [1B] [2B✓] [SS✓] [3B]                          │
+│  └─────────────────────────────────────────────────┘
 └────────────────────────────────────────────────────┘
 ```
 
-**State-Verhalten:**
-- INFIELD_DEFENSE deaktiviert → Position-Chips ausgeblendet, ausgewählte Positionen reset.
-- INFIELD_DEFENSE aktiv aber keine Position → Plan-API ohne `infieldPositions`-Param → wie heute.
-- Mindestens 1 Position aktiv → Plan-API mit `infieldPositions=...`.
+**Visual-Hierarchy:**
+- Sub-Chips sind kleiner: `px-2 py-1 rounded-md text-xs` (vs `px-3 py-1.5 text-sm` Top-Level).
+- Sub-Section: Hintergrund cream-100 oder leicht eingerückt + dünne linke Border (`border-l-2 border-cream-300 pl-3`) für Sub-Hierarchie-Signal.
+- Helper-Text: `text-xs text-gray-400` darüber.
+- Smooth auf-/zuklappen via `transition-all duration-200` mit `max-height`.
 
-**Komponenten:**
-- Bestehende Focus-Auswahl-Komponente erweitert. Neuer State: `selectedInfieldPositions: InfieldPosition[]` mit Type `InfieldPosition = 'FIRST_BASE' | 'SECOND_BASE' | 'SS' | 'THIRD_BASE'`.
-- `DrillCategory`-Type bleibt unverändert (Position-Codes sind Sub-Focus, keine Kategorien — passend, weil `InfieldPosition`-Werte 1:1 mit `DrillCategory`-Werten matchen).
-- API-Aufruf im Plan-Erstellen-Hook (vermutlich `useTrainingPlan` oder direkt im API-Client `client.ts`) übergibt `infieldPositions` im Request-Body.
+### State-Verhalten
 
-**Frontend-Design Skill** wird beim Implementieren herangezogen für Polish (Chip-Visual, Hover-States, Animation beim Aufklappen).
+- `selectedInfieldPositions: InfieldPosition[]` als Zusatz-State im PlanForm.
+- INFIELD_DEFENSE aus Focus-Set entfernt → Sub-Section ausblenden, **aber State preservieren** (damit User bei Re-Toggle nicht neu auswählen muss).
+- Beim Submit: `infieldPositions` nur dann an API senden, wenn INFIELD_DEFENSE im aktuellen Focus-Set UND mindestens 1 Position ausgewählt ist. Sonst `null`/leere Liste.
+- Reset auf "alle Infield-Positionen" über Helper-Hint klar kommuniziert ("Leer = alle").
+
+### Plan-Output zeigt Sub-Focus
+
+Wenn ein Plan mit Sub-Focus generiert wurde, soll die Plan-Anzeige (`PlanDisplay.tsx`) klar machen, mit welchem Fokus er erstellt wurde:
+
+- Plan-Header (oder Schwerpunkt-Pill) zeigt "Infield Defense — SS, 2B" statt nur "Infield Defense".
+- Erlaubt Wiedererkennung beim späteren Wiederöffnen des Plans.
+- Backend-Response (`TrainingPlanResponse`) muss `infieldPositions` mitliefern.
+
+### Persistierung
+
+`TrainingPlan`-Entity bekommt neues Feld `infieldPositions` (kommagetrennter String, z.B. `"SS,SECOND_BASE"`):
+
+- **Flyway-Migration:** Neue Datei `V{n}__add_infield_positions_to_training_plans.sql`:
+  ```sql
+  ALTER TABLE training_plans ADD COLUMN infield_positions VARCHAR(100);
+  ```
+- **Entity:** `@Column(name = "infield_positions", length = 100) private String infieldPositions;` (nullable).
+- **Domain `TrainingPlan`:** `private List<InfieldPosition> infieldPositions = new ArrayList<>();`
+- **Mapper:** Entity → Domain: parse comma-separated string. Domain → Entity: join with comma.
+- **Default:** null/leer → keine Sub-Focus-Anzeige im Plan-Header.
+
+### Frontend-Types
+
+```ts
+// types/index.ts
+export type InfieldPosition = 'FIRST_BASE' | 'SECOND_BASE' | 'SS' | 'THIRD_BASE'
+
+export interface GeneratePlanRequest {
+  trainingId: number
+  playerCount: number
+  focus: string
+  durationMinutes: number
+  infieldPositions?: InfieldPosition[]   // NEU
+}
+
+export interface TrainingPlanResponse {
+  // bisher...
+  infieldPositions?: InfieldPosition[]   // NEU, für Plan-Header-Anzeige
+}
+```
+
+### Komponenten-Aufteilung
+
+- `PlanForm.tsx` bekommt:
+  - Neuer State `selectedInfieldPositions: Set<InfieldPosition>`.
+  - Neue Komponente (in derselben Datei oder separat) `InfieldPositionPicker` für die Sub-Chips, conditional gerendert.
+  - Submit-Logik passt `infieldPositions` an Request an.
+- `PlanDisplay.tsx` rendert Sub-Focus im Header.
+
+### Frontend-Design-Skill-Polish (Implementierungsphase)
+
+- Chip-Hover-States subtil: leichter scale 1.02 + border-color → navy-300.
+- Sub-Section-Aufklappen: `motion-safe:animate-fadeIn` (oder CSS `@keyframes`) + `transform-origin: top`.
+- Plan-Header-Sub-Focus-Pill: navy-800 mit weißer Schrift, kleiner als Haupt-Focus-Pill.
 
 ## Tests
 
@@ -333,17 +395,19 @@ Optional: Komponententest für Position-Chip-Verhalten (zeigt sich nur bei INFIE
 
 ## Implementation-Reihenfolge
 
-1. Backend Domain: Enum + Feld in `Drill` und DTO.
-2. drills.json: complexity-Tags + 4 neue Drills + WARMUP-Removal.
-3. Typst: 4 neue Drills + PDF rebuild.
-4. Generator: Logik für BASICS-Block + STATIONS-Block mit Fallback.
-5. API: Param-Annahme im Controller, Service-Signatur erweitern.
-6. Backend-Tests.
-7. Frontend Types: `infieldPositions` im Plan-Request-Body.
-8. Frontend UI: Inline-Chips, State, API-Call.
-9. Frontend Polish via frontend-design Skill (Chip-Visual).
-10. Doku update.
-11. Build (`mvn test`, `npm run build`), commit, push.
+1. Backend Domain: `DrillComplexity`-Enum + `InfieldPosition`-Enum + Feld `complexity` in `Drill` und `DrillResponse`.
+2. drills.json: complexity-Tags pro Position-Drill + 4 neue Drills + WARMUP-Removal von Sprintübung/Agility.
+3. Typst: 4 neue Drills (3× 3B BASIC, 1× 2B BASIC) + PDF rebuild.
+4. Persistierung: Flyway-Migration für `infield_positions`-Spalte. `TrainingPlanEntity` + Mapper + Domain `TrainingPlan` erweitern.
+5. Generator: Logik für BASICS-Block + STATIONS-Block (1-Position-Deep-Dive vs Multi-Position-Stations) mit Fallback.
+6. API: `GeneratePlanRequest` erweitern, Service- und Generator-Signatur erweitern, `TrainingPlanResponse` erweitern.
+7. Backend-Tests (Generator + Integration mit Sub-Focus-Pfaden).
+8. Frontend Types: `InfieldPosition` + `infieldPositions?` in `GeneratePlanRequest` und `TrainingPlanResponse`.
+9. Frontend UI in `PlanForm.tsx`: Sub-Section unterhalb Focus-Chips, State, Submit-Logik.
+10. Frontend Plan-Header in `PlanDisplay.tsx`: Sub-Focus-Anzeige.
+11. Frontend Polish via frontend-design Skill (Chip-Visual, Transition).
+12. Doku update (`trainingsplan-algorithmus.md`).
+13. Build (`mvn test -s .mvn/local-settings.xml`, `npm run build`), commit, push.
 
 ## Risiken & Offene Punkte
 
