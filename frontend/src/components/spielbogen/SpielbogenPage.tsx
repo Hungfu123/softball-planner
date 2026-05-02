@@ -131,6 +131,17 @@ function computeDisplayBaseState(
   return state
 }
 
+function deriveLastOutType(req: SpielbogenRecordAtBatRequest): 'strikeout' | 'fly' | 'grounder' | undefined {
+  if (req.result === 'STRIKEOUT') return 'strikeout'
+  if (req.result === 'OUT') {
+    if (req.outType === 'FLY') return 'fly'
+    if (req.outType === 'GROUNDER' || req.outType === 'UNASSISTED' ||
+        req.outType === 'DOUBLE_PLAY' || req.outType === 'TRIPLE_PLAY' ||
+        req.outType === 'FIELDERS_CHOICE') return 'grounder'
+  }
+  return undefined
+}
+
 export default function SpielbogenPage() {
   const { id: idParam } = useParams()
   const bogenId = idParam ? Number(idParam) : null
@@ -151,7 +162,10 @@ export default function SpielbogenPage() {
   const [submitting, setSubmitting] = useState(false)
 
   // 3-Out / Side-Switch Center-Flash overlay
-  const [sideSwitchFlash, setSideSwitchFlash] = useState<{ newSide: BogenSide } | null>(null)
+  const [sideSwitchFlash, setSideSwitchFlash] = useState<{
+    newSide: BogenSide
+    lastOutType?: 'strikeout' | 'fly' | 'grounder'
+  } | null>(null)
 
   // Flash animations (ported from ScoringPage)
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -250,6 +264,17 @@ export default function SpielbogenPage() {
     const batterSlotId = currentSlot?.id ?? 0
     const beforeBaseState = displayBaseState
 
+    // projectedOuts vor Flash-Block — wird genutzt um Strikeout-Flash bei 3rd-Out zu skippen
+    let increment = 0
+    if (req.result === 'STRIKEOUT') {
+      increment = 1
+    } else if (req.result === 'OUT' && !req.isError) {
+      if (req.outType === 'DOUBLE_PLAY') increment = 2
+      else if (req.outType === 'TRIPLE_PLAY') increment = 3
+      else increment = 1
+    }
+    const projectedOuts = outs + increment
+
     try {
       await recordAtBat(req)
 
@@ -275,7 +300,7 @@ export default function SpielbogenPage() {
         } else if (req.result === 'WALK') {
           setWalkFlash({ batter: batterName, runsScored: req.runsScored ?? 0 })
           setTimeout(() => setWalkFlash(null), 1700)
-        } else if (req.result === 'STRIKEOUT') {
+        } else if (req.result === 'STRIKEOUT' && projectedOuts < 3) {
           setStrikeoutFlash(batterName)
           setTimeout(() => setStrikeoutFlash(null), 1600)
           if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -355,20 +380,11 @@ export default function SpielbogenPage() {
       }
 
       // Auto-switch after 3 outs
-      let increment = 0
-      if (req.result === 'STRIKEOUT') {
-        increment = 1
-      } else if (req.result === 'OUT' && !req.isError) {
-        if (req.outType === 'DOUBLE_PLAY') increment = 2
-        else if (req.outType === 'TRIPLE_PLAY') increment = 3
-        else increment = 1
-      }
-      const projectedOuts = outs + increment
       if (projectedOuts >= 3) {
         try {
           await switchSide()
           const newSide = currentSide === 'HOME' ? 'AWAY' : 'HOME'
-          setSideSwitchFlash({ newSide })
+          setSideSwitchFlash({ newSide, lastOutType: deriveLastOutType(req) })
           setTimeout(() => setSideSwitchFlash(null), 1200)
         } catch {
           // Backend rejected; ignore silently
@@ -482,7 +498,10 @@ export default function SpielbogenPage() {
                 3 OUTS
               </div>
               <div className="font-display text-xl sm:text-2xl font-bold tracking-widest uppercase">
-                Seitenwechsel
+                {sideSwitchFlash.lastOutType === 'strikeout' ? 'Strikeout · Seitenwechsel'
+                  : sideSwitchFlash.lastOutType === 'fly' ? 'Fly Out · Seitenwechsel'
+                  : sideSwitchFlash.lastOutType === 'grounder' ? 'Grounder Out · Seitenwechsel'
+                  : 'Seitenwechsel'}
               </div>
               <div className="font-body text-base sm:text-lg mt-2 opacity-95">
                 {sideSwitchFlash.newSide === 'HOME' ? 'Heim' : 'Gast'} schlägt jetzt

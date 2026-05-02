@@ -5,6 +5,7 @@ import { OutDetailDrawer } from './OutDetailDrawer'
 import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { StealingDrawer } from './StealingDrawer'
 import { PitchingEventDrawer } from './PitchingEventDrawer'
+import { ErrorPickerDrawer } from './ErrorPickerDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { computeBaseStateAdvance } from '@/utils/bogenBaseAdvance'
 
@@ -49,7 +50,34 @@ export function BogenActionButtons({
   const [showPitching, setShowPitching] = useState(false)
   const [showMore, setShowMore] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
+  const [showErrorDrawer, setShowErrorDrawer] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  const handleErrorPick = async (errorPosition: number) => {
+    if (!currentSlotId) return
+    setSubmitting(true)
+    try {
+      const advance = computeBaseStateAdvance({
+        before: baseStateAfter,
+        result: 'OUT',
+        isError: true,
+        batterSlotId: currentSlotId,
+      })
+      await onRecord({
+        side,
+        slotId: currentSlotId,
+        inning,
+        result: 'OUT',
+        isError: true,
+        errorPosition,
+        runsScored: advance.runsScored,
+        rbi: 0,
+        baseStateAfter: advance.baseStateAfter,
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const noSlot = currentSlotId == null
 
@@ -140,9 +168,10 @@ export function BogenActionButtons({
                 <BigButton label="AUS" color="gray" subtitle="Grounder / Fly" onClick={() => setShowOutDrawer(true)} disabled={isDisabled} />
               </div>
               {/* Tier 2: Medium buttons */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <MedButton label="WALK" color="emerald" onClick={() => handleRecord('WALK')} disabled={isDisabled} />
                 <MedButton label="HBP" subtitle="Hit-by-Pitch" color="amber" onClick={() => handleRecord('HIT_BY_PITCH')} disabled={isDisabled} />
+                <MedButton label="ERROR" subtitle="Batter safe" color="orange" onClick={() => setShowErrorDrawer(true)} disabled={isDisabled} />
               </div>
               {/* Tier 3: Small pills */}
               <div className="flex gap-2">
@@ -231,6 +260,13 @@ export function BogenActionButtons({
         }}
       />
 
+      {/* Error picker drawer */}
+      <ErrorPickerDrawer
+        open={showErrorDrawer}
+        onClose={() => setShowErrorDrawer(false)}
+        onPick={handleErrorPick}
+      />
+
       {/* Cheatsheet drawer */}
       <CheatsheetDrawer open={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
 
@@ -284,6 +320,7 @@ const COLOR_CLASSES = {
   gray:    'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
   emerald: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
   amber:   'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white',
+  orange:  'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white',
 } as const
 
 type Color = keyof typeof COLOR_CLASSES
