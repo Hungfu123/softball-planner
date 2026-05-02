@@ -52,7 +52,7 @@ export function ErrorPickerDrawer({ open, onClose, onPick }: Props) {
                   onClick={() => { onPick(pos); onClose() }}
                   style={{ cursor: 'pointer' }}
                 >
-                  <circle cx={cx} cy={cy} r="22" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1.5" />
+                  <circle cx={cx} cy={cy} r="22" fill="#FFF5F5" stroke="#E63946" strokeWidth="1.5" />
                   <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e3a5f">{pos}</text>
                   <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="#374151">{POSITION_NAMES[pos]}</text>
                 </g>
