@@ -5,6 +5,12 @@ import type {
   BogenBaseStateDto,
 } from '@/types'
 
+export interface StealingArrow {
+  fromBase: number
+  toBase: number
+  type: string
+}
+
 export interface CellNotation {
   primaryLabel: string
   labels: string[]
@@ -12,7 +18,10 @@ export interface CellNotation {
   outIndex: string | null
   rbi: number
   reachedBase: number
-  stealingArrow: { fromBase: number; toBase: number; type: string } | null
+  /** Erster Stealing-Arrow (für Backwards-Compat). Bei Multi-AB-Cells im Wrap-Around mehrere möglich → siehe stealingArrows. */
+  stealingArrow: StealingArrow | null
+  /** Alle Stealing-Arrows der Cell — Wrap-Around Inning kann mehrere haben. */
+  stealingArrows: StealingArrow[]
   abCount: number
 }
 
@@ -47,6 +56,7 @@ export function renderCells(
         rbi: existing.rbi + (ab.rbi ?? 0),
         reachedBase: Math.max(existing.reachedBase, reach),
         stealingArrow: existing.stealingArrow,
+        stealingArrows: existing.stealingArrows,
         abCount: existing.abCount + 1,
       })
     } else {
@@ -58,6 +68,7 @@ export function renderCells(
         rbi: ab.rbi ?? 0,
         reachedBase: reach,
         stealingArrow: null,
+        stealingArrows: [],
         abCount: 1,
       })
     }
@@ -66,7 +77,10 @@ export function renderCells(
   for (const st of stealings) {
     const key = cellKey(st.side, st.slotId, st.inning)
     const existing = cells.get(key) ?? emptyCell()
-    existing.stealingArrow = { fromBase: st.fromBase, toBase: st.toBase, type: st.type }
+    const arrow: StealingArrow = { fromBase: st.fromBase, toBase: st.toBase, type: st.type }
+    existing.stealingArrows = [...existing.stealingArrows, arrow]
+    // First arrow stays als primaryLabel-equivalent für legacy single-arrow rendering
+    if (existing.stealingArrow == null) existing.stealingArrow = arrow
     if (st.toBase === 4 && existing.reachedBase < 4) {
       existing.reachedBase = 4
       existing.runScored = true
@@ -88,6 +102,7 @@ function emptyCell(): CellNotation {
     rbi: 0,
     reachedBase: 0,
     stealingArrow: null,
+    stealingArrows: [],
     abCount: 0,
   }
 }

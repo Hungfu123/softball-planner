@@ -217,6 +217,7 @@ interface CellRenderInput {
   reachedBase: number
   abCount: number
   stealingArrow: { fromBase: number; toBase: number; type: string } | null
+  stealingArrows: { fromBase: number; toBase: number; type: string }[]
 }
 
 function drawDiamondCell(
@@ -276,12 +277,29 @@ function drawDiamondCell(
     }
   }
 
+  const isMulti = (cell?.abCount ?? 0) >= 2
+
+  // Multi-AB diagonal divider (Wrap-Around: gleicher Slot 2+ Bats im selben Inning)
+  if (isMulti) {
+    doc.setDrawColor(156, 163, 175)
+    doc.setLineWidth(0.15)
+    doc.line(cellX + cellW, cellY, cellX, cellY + cellH)
+  }
+
   if (cell?.primaryLabel) {
     doc.setFont('helvetica', 'bold')
     if (filled) {
       doc.setFontSize(6)
       doc.setTextColor(254, 243, 199)
       doc.text(cell.primaryLabel.slice(0, 5), cx, cy + 1, { align: 'center' })
+    } else if (isMulti && cell.labels.length >= 2) {
+      // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle
+      doc.setTextColor(...COLOR_NAVY)
+      doc.setFontSize(4.5)
+      const firstLbl = cell.labels[cell.labels.length - 2] ?? ''
+      const lastLbl = cell.labels[cell.labels.length - 1] ?? ''
+      doc.text(firstLbl.slice(0, 5), cellX + 1.5, cellY + 5)
+      doc.text(lastLbl.slice(0, 5), cellX + cellW - 1.5, cellY + cellH - 1.5, { align: 'right' })
     } else {
       const labels = cell.labels.length > 1 ? cell.labels.slice(-2) : [cell.primaryLabel]
       doc.setTextColor(...COLOR_NAVY)
@@ -292,6 +310,17 @@ function drawDiamondCell(
         doc.text(lbl.slice(0, 6), cx, baseY + i * (fontSize - 1), { align: 'center' })
       })
     }
+    doc.setTextColor(0, 0, 0)
+  }
+
+  // ×N Badge bei 3+ ABs (mehr als nur 2 sichtbar)
+  if ((cell?.abCount ?? 0) >= 3) {
+    doc.setFillColor(...COLOR_RED)
+    doc.circle(cellX + 2.5, cellY + cellH - 2.2, 1.6, 'F')
+    doc.setFontSize(3.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(255, 255, 255)
+    doc.text(`x${cell?.abCount}`, cellX + 2.5, cellY + cellH - 1.6, { align: 'center' })
     doc.setTextColor(0, 0, 0)
   }
 
@@ -314,13 +343,13 @@ function drawDiamondCell(
     }
   }
 
-  // Stealing arrow (dashed red line between bases)
-  if (cell?.stealingArrow) {
-    const from = baseCenter(cell.stealingArrow.fromBase, home, first, sec, third)
-    const to = baseCenter(cell.stealingArrow.toBase, home, first, sec, third)
+  // Stealing arrows (dashed red lines between bases) — Multi-Stealing pro Cell unterstützt
+  const arrows = cell?.stealingArrows ?? (cell?.stealingArrow ? [cell.stealingArrow] : [])
+  for (const arrow of arrows) {
+    const from = baseCenter(arrow.fromBase, home, first, sec, third)
+    const to = baseCenter(arrow.toBase, home, first, sec, third)
     doc.setDrawColor(...COLOR_RED)
     doc.setLineWidth(0.4)
-    // jsPDF doesn't support dashed natively without setLineDashPattern; use short segments
     const steps = 6
     for (let s = 0; s < steps; s += 2) {
       const t1 = s / steps

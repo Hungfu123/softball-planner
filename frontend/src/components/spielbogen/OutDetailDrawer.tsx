@@ -327,6 +327,7 @@ function RunnerAdvancePickerView({
   onBack,
   showSacFlyToggle,
   defaultTargets,
+  force3rdOutHint,
 }: {
   title: string
   subtitle: string
@@ -336,6 +337,7 @@ function RunnerAdvancePickerView({
   onBack: () => void
   showSacFlyToggle?: boolean
   defaultTargets?: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
+  force3rdOutHint?: boolean
 }) {
   const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
   if (baseState.firstSlotId != null) {
@@ -376,6 +378,11 @@ function RunnerAdvancePickerView({
       <p className="text-xs text-gray-500 font-body">
         {subtitle} <span className="block mt-1 text-gray-400">Tipp zum Wechseln (bleibt → 2B → 3B → Home).</span>
       </p>
+      {force3rdOutHint && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-2.5 text-xs text-amber-900 font-body">
+          ⚠ <strong>3rd-Out Force-Play</strong> — Run zählt nicht (Softball-Regel). Force-Out an 1B beendet Inning bevor Run gewertet wird.
+        </div>
+      )}
       <div className="space-y-2">
         {runners.map(r => {
           const t = targets[r.fromBase]
@@ -799,6 +806,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 defaultTargets={pendingAdvancePicker.defaultTargets}
                 onConfirm={handleAdvancePickerConfirm}
                 onBack={() => setPendingAdvancePicker(null)}
+                force3rdOutHint={outs >= 2}
               />
             ) : selectedFielder != null ? (
               <InfieldOptionsView
