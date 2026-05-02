@@ -164,8 +164,10 @@ export default function SpielbogenPage() {
   // 3-Out / Side-Switch Center-Flash overlay
   const [sideSwitchFlash, setSideSwitchFlash] = useState<{
     newSide: BogenSide
-    lastOutType?: 'strikeout' | 'fly' | 'grounder'
+    lastOutType?: 'strikeout' | 'fly' | 'grounder' | 'caughtStealing'
   } | null>(null)
+  // Ref: bei Auto-Switch via handleRecord/handleRecordStealing setzen, useEffect liest beim Side-Change
+  const lastOutTypeRef = useRef<'strikeout' | 'fly' | 'grounder' | 'caughtStealing' | null>(null)
 
   // Flash animations (ported from ScoringPage)
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -193,7 +195,8 @@ export default function SpielbogenPage() {
     if (prevSideRef.current !== null && currentSideForEffect !== null && prevSideRef.current !== currentSideForEffect) {
       const reducedMotion = typeof window !== 'undefined'
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      setSideSwitchFlash({ newSide: currentSideForEffect })
+      const lastOutType = lastOutTypeRef.current ?? undefined
+      setSideSwitchFlash({ newSide: currentSideForEffect, lastOutType })
       setTimeout(() => setSideSwitchFlash(null), 1200)
       toast.show(
         `Inning ${currentInningForEffect} — ${currentSideForEffect === 'HOME' ? 'Heim' : 'Gast'} am Schlag`,
@@ -202,6 +205,7 @@ export default function SpielbogenPage() {
       if (!reducedMotion && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try { navigator.vibrate([100, 50, 100, 50, 200]) } catch { /* not supported */ }
       }
+      lastOutTypeRef.current = null
     }
     prevSideRef.current = currentSideForEffect
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,6 +260,14 @@ export default function SpielbogenPage() {
     meta.currentInning,
     lastSideAtBat?.createdAt ?? null,
   )
+
+  const handleRecordStealing = async (req: import('@/types').SpielbogenRecordStealingRequest) => {
+    // Bei stealing-induced 3rd-Out lastOutType setzen, damit useEffect Center-Flash mit Kontext zeigt
+    if ((req.type === 'CAUGHT_STEALING' || req.type === 'OUT_ON_PLAY') && outs + 1 >= 3) {
+      lastOutTypeRef.current = 'caughtStealing'
+    }
+    await recordStealing(req)
+  }
 
   const handleRecord = async (req: SpielbogenRecordAtBatRequest) => {
     // Capture batter name BEFORE reload changes it
@@ -379,15 +391,14 @@ export default function SpielbogenPage() {
         }
       }
 
-      // Auto-switch after 3 outs
+      // Auto-switch after 3 outs — Flash via useEffect (single source of truth)
       if (projectedOuts >= 3) {
+        lastOutTypeRef.current = deriveLastOutType(req) ?? null
         try {
           await switchSide()
-          const newSide = currentSide === 'HOME' ? 'AWAY' : 'HOME'
-          setSideSwitchFlash({ newSide, lastOutType: deriveLastOutType(req) })
-          setTimeout(() => setSideSwitchFlash(null), 1200)
-        } catch {
-          // Backend rejected; ignore silently
+        } catch (e) {
+          lastOutTypeRef.current = null
+          toast.show(`Side-Switch fehlgeschlagen: ${(e as Error).message}`, 'error')
         }
       }
     } catch (e) {
@@ -501,6 +512,7 @@ export default function SpielbogenPage() {
                 {sideSwitchFlash.lastOutType === 'strikeout' ? 'Strikeout · Seitenwechsel'
                   : sideSwitchFlash.lastOutType === 'fly' ? 'Fly Out · Seitenwechsel'
                   : sideSwitchFlash.lastOutType === 'grounder' ? 'Grounder Out · Seitenwechsel'
+                  : sideSwitchFlash.lastOutType === 'caughtStealing' ? 'Caught Stealing · Seitenwechsel'
                   : 'Seitenwechsel'}
               </div>
               <div className="font-body text-base sm:text-lg mt-2 opacity-95">
@@ -623,7 +635,7 @@ export default function SpielbogenPage() {
           slots={slots}
           disabled={submitting}
           onRecord={handleRecord}
-          onRecordStealing={recordStealing}
+          onRecordStealing={handleRecordStealing}
           onSwitchSide={handleSideToggleClick}
           onSubstitution={() => {
             setSubSlotId(currentSlot?.id ?? null)

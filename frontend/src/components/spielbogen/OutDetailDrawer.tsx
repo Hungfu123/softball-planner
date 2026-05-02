@@ -530,6 +530,11 @@ function ChainPickerView({ initialFielder, onConfirm, onBack }: ChainPickerProps
 
 // ---------------------------------------------------------------------------
 // OutDetailDrawer
+//
+// Known Limitation: Triple Play (TRIPLE_PLAY) hat keinen UI-Pfad. Sehr seltenes
+// Event (statistisch <1 / Saison). Backend akzeptiert outType=TRIPLE_PLAY via API,
+// aber Spielbogen-UI bietet aktuell nur Single-Out + Double-Play. Workaround:
+// User kann via correctLastAtBat (Korrektur-Sheet) outType nachträglich anpassen.
 // ---------------------------------------------------------------------------
 export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
@@ -616,7 +621,9 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], _isSacFly: boolean) => {
     if (pendingAdvancePicker == null) return
-    const { baseStateAfter: after, runsScored: runs } = applyAdvances(baseStateAfter, advances)
+    const { baseStateAfter: after, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
+    // Force-Out 3rd-Out: Run zählt nicht (Softball/Baseball-Regel) — Grounder/Unassisted = +1 Out
+    const runs = outs >= 2 ? 0 : rawRuns
     onSubmit({
       ...pendingAdvancePicker.baseRequest,
       runsScored: runs,
