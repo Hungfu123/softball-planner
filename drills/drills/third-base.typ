@@ -224,3 +224,18 @@
   rotation: [3B → SS → 1B → Spieler → 3B. Erst mehrere Runden Variante 1, dann Variante 2. Optional bei mehr Spielern: zusätzlicher Runner auf 1st für Variante 2.],
   varianten: [Barehand-Pickup: Ball liegt still, 3B nimmt mit der bloßen Hand auf und wirft aus dem Laufen. Oder: Coach ruft "Eins!" (1B) oder "Zwei!" (2nd) erst nach dem Aufnehmen — 3B muss schnell reagieren.],
 )
+
+#drill(
+  name: "3B Short Hop Reaction",
+  kategorien: ("3B", "Fielding"),
+  spieler: 2,
+  equipment: ("Bälle",),
+  beschreibung: [
+    Reaktions- und Hände-Drill für 3B. Werfer steht ca. 1.5–2 m vor 3B und wirft Short Hops abwechselnd middle / forehand / backhand.
+
+    *Ablauf:* 10 Würfe middle, 10 forehand, 10 backhand. Tempo zügig, 3B bleibt tief in der Hocke.
+
+    *Fokus:* Schnelle Hände, kein Zurückweichen, Ball aus der Hocke fangen — nicht stehen bleiben.
+  ],
+  rotation: [Werfer und 3B tauschen nach 30 Bällen.],
+)

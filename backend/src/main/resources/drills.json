@@ -666,7 +666,7 @@
     ],
     "description": "Der Werfer steht vor dem Outfielder und hält den Ball hoch. Der Outfielder läuft schräg nach hinten und behält dabei den Ball im Blick.\n\nDer Werfer zeigt den Ball nach links oder rechts. Der Outfielder dreht seinen Körper in die angezeigte Richtung und läuft los. Der Werfer wechselt dann die Richtung (1-3 Mal). Der Outfielder muss jedes Mal reagieren und sich über innen drehen — also über die Seite wo der Ball ist. Nie nach außen drehen, sonst verliert man den Ball kurz aus den Augen.\n\nSobald der Werfer den Ball wirft, fängt der Outfielder und wirft zurück.\n\nWichtig beim Richtungswechsel: Immer über die Ballseite drehen (Innendrehung). Bei einer Außendrehung hat man den Ball vorübergehend nicht im Blick — das kann im Spiel fatal sein.",
     "hasImage": true,
-    "pdfPage": 29,
+    "pdfPage": 30,
     "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
     "variants": null
   },
@@ -739,7 +739,7 @@
     ],
     "description": "Vereinfachte Relay-Übung ohne vollen Diamond. 3-4 Spieler stehen in einer Linie mit Abstand.\n\nAblauf zu dritt: Spieler 1 (Outfielder) wirft zum Spieler 2 (Cutoff). Spieler 2 fängt, dreht sich um und wirft zu Spieler 3 (Ziel/Home). Zurück: Spieler 3 wirft zu 2, Spieler 2 wirft zu 1.\n\nAblauf zu viert: Spieler 1 wirft zu 2, Spieler 2 wirft zu 3, Spieler 3 wirft zu 4. Zurück in umgekehrter Reihenfolge.\n\nWichtig: Der Cutoff-Man muss sich in der Linie zwischen Werfer und Ziel aufstellen. Arme hoch damit der Outfielder ihn sieht. Schnell fangen, umdrehen, werfen.",
     "hasImage": true,
-    "pdfPage": 32,
+    "pdfPage": 33,
     "rotation": "Alle rotieren eine Position weiter nach jedem Durchgang.",
     "variants": "Zu viert: einen vierten Spieler ans Ende stellen. Distanz vergrößern für stärkere Würfe."
   },
@@ -1005,5 +1005,23 @@
     "variants": null,
     "complexity": "BASIC",
     "pdfPage": 24
+  },
+  {
+    "id": "3b-short-hop-reaction",
+    "name": "3B Short Hop Reaction",
+    "categories": [
+      "THIRD_BASE",
+      "FIELDING"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Reaktions- und Hände-Drill für 3B. Werfer steht ca. 1.5–2 m vor 3B und wirft Short Hops abwechselnd middle / forehand / backhand.\n\nAblauf: 10 Würfe middle, 10 forehand, 10 backhand. Tempo zügig, 3B bleibt tief in der Hocke.\n\nFokus: Schnelle Hände, kein Zurückweichen, Ball aus der Hocke fangen — nicht stehen bleiben.",
+    "hasImage": false,
+    "rotation": "Werfer und 3B tauschen nach 30 Bällen.",
+    "variants": null,
+    "complexity": "BASIC",
+    "pdfPage": 29
   }
 ]
