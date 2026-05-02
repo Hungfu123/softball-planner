@@ -294,7 +294,8 @@
     "hasImage": true,
     "pdfPage": 18,
     "rotation": "Werfer und 1B tauschen nach einer Runde.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "1b-scoops",
@@ -312,7 +313,8 @@
     "hasImage": true,
     "pdfPage": 18,
     "rotation": "Werfer und 1B tauschen nach jedem Durchgang.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "1b-bunt-defense",
@@ -332,7 +334,8 @@
     "hasImage": true,
     "pdfPage": 19,
     "rotation": "1B → 2B (Cover) → Spieler → 1B.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "1b-3-1-putout",
@@ -350,7 +353,8 @@
     "hasImage": true,
     "pdfPage": 19,
     "rotation": "1B und Spieler tauschen nach jedem Durchgang.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "1b-3-6-3-double-play",
@@ -370,7 +374,8 @@
     "hasImage": true,
     "pdfPage": 20,
     "rotation": "1B → SS → Spieler → 1B.",
-    "variants": "3-6-1: Pitcher covered die 1st Base statt die 1B zurückzulaufen. Braucht einen 4. Spieler."
+    "variants": "3-6-1: Pitcher covered die 1st Base statt die 1B zurückzulaufen. Braucht einen 4. Spieler.",
+    "complexity": "ADVANCED"
   },
   {
     "id": "1b-bad-throws",
@@ -388,7 +393,8 @@
     "hasImage": true,
     "pdfPage": 21,
     "rotation": "Werfer und 1B tauschen nach jedem Durchgang.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "1b-receiving-alle-positionen",
@@ -406,7 +412,8 @@
     "hasImage": true,
     "pdfPage": 21,
     "rotation": "Nach einer Runde wechselt die 1B. Alle Positionen rotieren durch.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "1b-wurf-home-3rd",
@@ -425,7 +432,8 @@
     "hasImage": true,
     "pdfPage": 22,
     "rotation": "1B → Catcher/3B → Spieler → 1B.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "2b-komplett-drill",
@@ -445,7 +453,8 @@
     "hasImage": true,
     "pdfPage": 23,
     "rotation": "2B → 1B → Spieler → SS → 2B. Jeder durchläuft jede Position.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "2b-double-play-pivots",
@@ -466,7 +475,8 @@
     "hasImage": false,
     "rotation": "2B → SS → 1B → Tosser → 2B. Jeder durchläuft jede Position. Bei mehr Spielern: 2–3 Runden pro Position vor dem Wechsel.",
     "variants": null,
-    "pdfPage": 23
+    "pdfPage": 23,
+    "complexity": "ADVANCED"
   },
   {
     "id": "ss-komplett-drill",
@@ -486,7 +496,8 @@
     "hasImage": true,
     "pdfPage": 24,
     "rotation": "SS → 1B → Spieler → 2B → SS. Jeder durchläuft jede Position.",
-    "variants": "Wenn 5 Teile zu viel sind: 3 Teile auswählen."
+    "variants": "Wenn 5 Teile zu viel sind: 3 Teile auswählen.",
+    "complexity": "ADVANCED"
   },
   {
     "id": "ss-fielding-bat",
@@ -505,7 +516,8 @@
     "hasImage": false,
     "pdfPage": null,
     "rotation": "SS fieldet 5 Bälle pro Variante, dann tauschen SS und 1B. Batter bleibt oder rotiert.",
-    "variants": "Batter variiert Geschwindigkeit und Platzierung ohne Ansage — SS weiß nicht welche Variante kommt."
+    "variants": "Batter variiert Geschwindigkeit und Platzierung ohne Ansage — SS weiß nicht welche Variante kommt.",
+    "complexity": "BASIC"
   },
   {
     "id": "2b-fielding-bat",
@@ -524,7 +536,8 @@
     "hasImage": false,
     "pdfPage": null,
     "rotation": "2B fieldet 5 Bälle pro Variante, dann rotieren 2B → 1B → SS → Batter → 2B.",
-    "variants": "Batter variiert ohne Ansage. Oder: SS covered 2nd Base nach jedem Grounder (Force-Play-Simulation)."
+    "variants": "Batter variiert ohne Ansage. Oder: SS covered 2nd Base nach jedem Grounder (Force-Play-Simulation).",
+    "complexity": "BASIC"
   },
   {
     "id": "ss-halbkreis-fielding",
@@ -543,7 +556,8 @@
     "hasImage": false,
     "rotation": "SS → 1B → Tosser → SS. Bei mehr Spielern: 2–3 Runden pro Position vor dem Wechsel.",
     "variants": "Statt Rollen auch Werfen lassen (Linedrives). Tempo steigern: SS soll während der Bewegung fielden, nicht stehen bleiben. Hütchen enger setzen = engerer Bogen, schwerer.",
-    "pdfPage": 26
+    "pdfPage": 26,
+    "complexity": "BASIC"
   },
   {
     "id": "ss-backhand-1b",
@@ -561,7 +575,8 @@
     "hasImage": true,
     "pdfPage": 25,
     "rotation": "SS → 1B → Spieler → SS.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "ss-force-3b-bogen-1b",
@@ -580,7 +595,8 @@
     "hasImage": true,
     "pdfPage": 26,
     "rotation": "SS → 3B → 1B → Spieler → SS.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "3b-komplett-drill",
@@ -598,7 +614,8 @@
     "hasImage": true,
     "pdfPage": 27,
     "rotation": "3B → 1B → Spieler → 3B.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "3b-bunt-defense",
@@ -618,7 +635,8 @@
     "hasImage": true,
     "pdfPage": 28,
     "rotation": "3B → SS → 1B → Spieler → 3B. Erst mehrere Runden Variante 1, dann Variante 2.",
-    "variants": "Barehand-Pickup: Ball liegt still, 3B nimmt mit der bloßen Hand auf und wirft aus dem Laufen. Oder: Coach ruft \"Eins!\" (1B) oder \"Zwei!\" (2nd) erst nach dem Aufnehmen — 3B muss schnell reagieren."
+    "variants": "Barehand-Pickup: Ball liegt still, 3B nimmt mit der bloßen Hand auf und wirft aus dem Laufen. Oder: Coach ruft \"Eins!\" (1B) oder \"Zwei!\" (2nd) erst nach dem Aufnehmen — 3B muss schnell reagieren.",
+    "complexity": "ADVANCED"
   },
   {
     "id": "outfield-basic-laufen-fangen",
@@ -746,7 +764,8 @@
     "hasImage": true,
     "pdfPage": 33,
     "rotation": "Infielder rotieren nach jedem Durchgang. Jeder spielt jede Position.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "infield-plays-aufgebaut",
@@ -769,7 +788,8 @@
     "hasImage": true,
     "pdfPage": 33,
     "rotation": "Infielder rotieren nach jeder Runde. Jeder spielt jede Position.",
-    "variants": "Ohne Runner starten, dann mit Runner steigern. Trainer ruft verschiedene Situationen an."
+    "variants": "Ohne Runner starten, dann mit Runner steigern. Trainer ruft verschiedene Situationen an.",
+    "complexity": "ADVANCED"
   },
   {
     "id": "second-short-double-play",
@@ -789,7 +809,8 @@
     "hasImage": true,
     "pdfPage": 34,
     "rotation": "SS und 2B tauschen Positionen nach jeder Runde.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "relay-cutoff",
@@ -832,7 +853,8 @@
     "hasImage": true,
     "pdfPage": 36,
     "rotation": "Runner wechselt nach jedem Durchgang. Bei mehr Spielern: mehrere pro Base.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "hitting-stationen",
