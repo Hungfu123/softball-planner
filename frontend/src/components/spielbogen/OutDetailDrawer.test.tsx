@@ -47,6 +47,59 @@ describe('OutDetailDrawer — Auto-Picker bei Grounder mit Runnern', () => {
   })
 })
 
+describe('OutDetailDrawer 3rd-Out Force-Play Run-Cap', () => {
+  it('Grounder + 2 outs + Runner3B Toggle nach Home → runs=0 (Force-Out 3rd, Run zählt nicht)', async () => {
+    const onSubmit = vi.fn()
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={onSubmit}
+      baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: 1 }}
+      slots={slots}
+      batterSlotId={42}
+      outs={2}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
+    fireEvent.click(screen.getByText(/Wirft zu 1B/i))
+    // Toggle Runner-3B → Home
+    fireEvent.click(await screen.findByText(/Runner-1B \(auf 3B\)/i))
+    fireEvent.click(screen.getByText(/Bestätigen/i))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: 'OUT',
+        outType: 'GROUNDER',
+        runsScored: 0,
+        rbi: 0,
+      })
+    )
+  })
+
+  it('Grounder + 1 out + Runner3B Toggle nach Home → runs=1 (kein Cap)', async () => {
+    const onSubmit = vi.fn()
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={onSubmit}
+      baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: 1 }}
+      slots={slots}
+      batterSlotId={42}
+      outs={1}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
+    fireEvent.click(screen.getByText(/Wirft zu 1B/i))
+    fireEvent.click(await screen.findByText(/Runner-1B \(auf 3B\)/i))
+    fireEvent.click(screen.getByText(/Bestätigen/i))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: 'OUT',
+        outType: 'GROUNDER',
+        runsScored: 1,
+        rbi: 1,
+      })
+    )
+  })
+})
+
 describe('OutDetailDrawer Smart-Defaults', () => {
   it('Grounder + Runner1B → Picker öffnet sich automatisch mit default 1B → 2B', async () => {
     const onSubmit = vi.fn()
