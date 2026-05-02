@@ -617,7 +617,7 @@ export default function SpielbogenPage() {
 
       {/* Batter card — cream bg, below diamond, above action buttons */}
       {isLive && (
-        <BatterCard currentSlot={currentSlot} upcomingSlots={upcomingSlots} />
+        <BatterCard currentSlot={currentSlot} upcomingSlots={upcomingSlots} pending={submitting} />
       )}
 
       {/* Action buttons (only for LIVE) */}
@@ -643,41 +643,73 @@ export default function SpielbogenPage() {
       )}
 
       {/* Game-End-Card (only for DONE) */}
-      {!isLive && isDone && (
-        <div className="mx-4 my-4 bg-cream-50 border border-cream-300 rounded-2xl p-6 space-y-4 text-center">
-          <h2 className="font-display text-2xl font-extrabold tracking-wide uppercase text-navy-900">
-            Spiel beendet
-          </h2>
-          <div className="font-display text-3xl font-extrabold text-navy-900">
-            <span>{meta.homeTeamName}</span>
-            <span className="text-softball-red-600 mx-2">{meta.homeRuns}</span>
-            <span className="text-gray-400">:</span>
-            <span className="text-softball-red-600 mx-2">{meta.awayRuns}</span>
-            <span>{meta.awayTeamName}</span>
+      {!isLive && isDone && (() => {
+        const homeWon = meta.homeRuns > meta.awayRuns
+        const awayWon = meta.awayRuns > meta.homeRuns
+        const tied = meta.homeRuns === meta.awayRuns
+        return (
+          <div className="mx-4 my-4 bg-cream-50 border border-cream-300 rounded-2xl p-5 space-y-4">
+            <h2 className="font-display text-xl sm:text-2xl font-extrabold tracking-wide uppercase text-navy-900 text-center">
+              Spiel beendet
+            </h2>
+
+            {/* Score-Grid: Team-Name links (truncate), Score rechts (tabular-nums) */}
+            <div className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 items-center">
+              <div className="min-w-0">
+                <div className="text-[10px] font-display tracking-widest uppercase text-gray-500 font-bold">
+                  Heim {homeWon && <span className="text-softball-red-600 ml-1">★ Sieg</span>}
+                </div>
+                <div className={`font-display text-base sm:text-lg font-extrabold uppercase truncate ${homeWon ? 'text-navy-900' : 'text-gray-700'}`} title={meta.homeTeamName}>
+                  {meta.homeTeamName}
+                </div>
+              </div>
+              <div className={`font-display text-4xl sm:text-5xl font-extrabold tabular-nums leading-none ${homeWon ? 'text-softball-red-600' : tied ? 'text-gray-700' : 'text-gray-400'}`}>
+                {meta.homeRuns}
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-[10px] font-display tracking-widest uppercase text-gray-500 font-bold">
+                  Gast {awayWon && <span className="text-softball-red-600 ml-1">★ Sieg</span>}
+                </div>
+                <div className={`font-display text-base sm:text-lg font-extrabold uppercase truncate ${awayWon ? 'text-navy-900' : 'text-gray-700'}`} title={meta.awayTeamName}>
+                  {meta.awayTeamName}
+                </div>
+              </div>
+              <div className={`font-display text-4xl sm:text-5xl font-extrabold tabular-nums leading-none ${awayWon ? 'text-softball-red-600' : tied ? 'text-gray-700' : 'text-gray-400'}`}>
+                {meta.awayRuns}
+              </div>
+            </div>
+
+            {tied && (
+              <div className="text-center text-xs font-display tracking-widest uppercase text-gray-500 font-bold">
+                Unentschieden
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowSheet(true)}
+                className="w-full font-display py-3 rounded-xl bg-navy-800 text-white font-extrabold tracking-widest uppercase hover:bg-navy-900 cursor-pointer"
+              >
+                📋 Spielbogen anzeigen
+              </button>
+              <button
+                onClick={() => generateSpielbogenPdf(sheet)}
+                className="w-full font-display py-3 rounded-xl bg-cream-100 border border-cream-300 text-navy-800 font-bold tracking-widest uppercase hover:bg-cream-200 cursor-pointer"
+              >
+                📄 Als PDF exportieren
+              </button>
+              <button
+                onClick={handleReopenGame}
+                disabled={submitting}
+                className="w-full font-display py-2 rounded-xl text-gray-500 text-xs font-bold tracking-widest uppercase hover:text-gray-700 cursor-pointer disabled:opacity-50"
+              >
+                ↻ Spiel wieder öffnen
+              </button>
+            </div>
           </div>
-          <div className="space-y-2">
-            <button
-              onClick={() => setShowSheet(true)}
-              className="w-full font-display py-3 rounded-xl bg-navy-800 text-white font-extrabold tracking-widest uppercase hover:bg-navy-900 cursor-pointer"
-            >
-              📋 Spielbogen anzeigen
-            </button>
-            <button
-              onClick={() => generateSpielbogenPdf(sheet)}
-              className="w-full font-display py-3 rounded-xl bg-cream-100 border border-cream-300 text-navy-800 font-bold tracking-widest uppercase hover:bg-cream-200 cursor-pointer"
-            >
-              📄 Als PDF exportieren
-            </button>
-            <button
-              onClick={handleReopenGame}
-              disabled={submitting}
-              className="w-full font-display py-2 rounded-xl text-gray-500 text-xs font-bold tracking-widest uppercase hover:text-gray-700 cursor-pointer disabled:opacity-50"
-            >
-              ↻ Spiel wieder öffnen
-            </button>
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Last at-bat + Undo + Korrektur */}
       <LastAtBatPreview
