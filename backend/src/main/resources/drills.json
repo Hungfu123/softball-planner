@@ -21,7 +21,6 @@
     "id": "sprintubung-fielding-position",
     "name": "Sprintübung aus Fielding Position",
     "categories": [
-      "WARMUP",
       "CONDITIONING"
     ],
     "minPlayers": 1,
@@ -191,8 +190,7 @@
     "id": "agility-ladder-beinubungen",
     "name": "Agility Ladder — Beinübungen",
     "categories": [
-      "CONDITIONING",
-      "WARMUP"
+      "CONDITIONING"
     ],
     "minPlayers": 1,
     "equipment": [
