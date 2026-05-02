@@ -360,6 +360,12 @@ export interface TrainingPlanResponse {
   - Neue Komponente (in derselben Datei oder separat) `InfieldPositionPicker` für die Sub-Chips, conditional gerendert.
   - Submit-Logik passt `infieldPositions` an Request an.
 - `PlanDisplay.tsx` rendert Sub-Focus im Header.
+- `PlanEditor.tsx` (Plan-Edit-Modus):
+  - Liest `plan.infieldPositions` und schränkt `focusCategories` für `DrillPickerModal` entsprechend ein.
+  - Konkret: wenn `INFIELD_DEFENSE` im plan.focus UND `plan.infieldPositions` nicht leer → ersetze die Default-Erweiterung von INFIELD_DEFENSE → `[FIRST_BASE, SECOND_BASE, SS, THIRD_BASE, ...]` durch nur die in `infieldPositions` enthaltenen Positions-Cats. So sieht User beim Drill-Hinzufügen primär SS+2B-Drills (markiert), kann aber via Filter-Dropdown im Picker auf andere Cats umstellen.
+- `DrillPickerModal.tsx`:
+  - Optional: Complexity-Badge pro Drill in der Liste anzeigen ("BASIC" / "ADVANCED" als kleines Label) — hilft beim manuellen Picken in Stations vs Basics.
+  - Filter-Dropdown bekommt zusätzlich `Complexity`-Filter (BASIC/ADVANCED) — optional, falls UX-Aufwand vertretbar.
 
 ### Frontend-Design-Skill-Polish (Implementierungsphase)
 
@@ -405,9 +411,10 @@ Optional: Komponententest für Position-Chip-Verhalten (zeigt sich nur bei INFIE
 8. Frontend Types: `InfieldPosition` + `infieldPositions?` in `GeneratePlanRequest` und `TrainingPlanResponse`.
 9. Frontend UI in `PlanForm.tsx`: Sub-Section unterhalb Focus-Chips, State, Submit-Logik.
 10. Frontend Plan-Header in `PlanDisplay.tsx`: Sub-Focus-Anzeige.
-11. Frontend Polish via frontend-design Skill (Chip-Visual, Transition).
-12. Doku update (`trainingsplan-algorithmus.md`).
-13. Build (`mvn test -s .mvn/local-settings.xml`, `npm run build`), commit, push.
+11. Frontend Plan-Editor in `PlanEditor.tsx`: `focusCategories` für DrillPicker auf Sub-Focus eingrenzen + (optional) Complexity-Badge in DrillPickerModal.
+12. Frontend Polish via frontend-design Skill (Chip-Visual, Transition).
+13. Doku update (`trainingsplan-algorithmus.md`).
+14. Build (`mvn test -s .mvn/local-settings.xml`, `npm run build`), commit, push.
 
 ## Risiken & Offene Punkte
 
