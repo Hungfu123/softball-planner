@@ -295,12 +295,13 @@ function drawDiamondCell(
     doc.setTextColor(0, 0, 0)
   }
 
-  // Out# top-left (Roman, gray)
+  // Out# top-left (Roman, schwarz + bold)
   if (cell?.outIndex) {
+    doc.setFontSize(5.5)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(4.5)
-    doc.setTextColor(120, 120, 120)
+    doc.setTextColor(0, 0, 0)
     doc.text(cell.outIndex, cellX + 1, cellY + 3)
+    doc.setFont('helvetica', 'normal')
     doc.setTextColor(0, 0, 0)
   }
 
