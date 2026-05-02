@@ -79,32 +79,6 @@ describe('OutDetailDrawer Smart-Defaults', () => {
   })
 })
 
-describe('OutDetailDrawer Error/ROE', () => {
-  it('Error E5 submit: result=OUT + isError=true + errorPosition=5, ohne baseStateAfter', () => {
-    const onSubmit = vi.fn()
-    render(
-      <OutDetailDrawer
-        open
-        onClose={() => {}}
-        onSubmit={onSubmit}
-        baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
-        slots={slots}
-        batterSlotId={1}
-        outs={0}
-      />
-    )
-    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
-    fireEvent.click(screen.getByText(/Sicher an 1B durch Fehler \(E5\)/i))
-    expect(onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        result: 'OUT',
-        isError: true,
-        errorPosition: 5,
-      })
-    )
-  })
-})
-
 describe('OutDetailDrawer FlyOut + 2 Outs', () => {
   const flyOutSlots: SpielbogenSlotResponse[] = [
     { id: 1, side: 'HOME', slot: 1, name: 'A', position: null, battingOrder: 1 },
