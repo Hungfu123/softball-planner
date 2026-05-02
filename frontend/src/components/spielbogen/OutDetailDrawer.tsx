@@ -444,6 +444,91 @@ function RunnerAdvancePickerView({
 }
 
 // ---------------------------------------------------------------------------
+// ChainPickerView — Mini-Field für Fielder-Chain bei FC/DP
+// ---------------------------------------------------------------------------
+interface ChainPickerProps {
+  initialFielder: number
+  onConfirm: (chain: number[]) => void
+  onBack: () => void
+}
+
+function ChainPickerView({ initialFielder, onConfirm, onBack }: ChainPickerProps) {
+  const [chain, setChain] = useState<number[]>([initialFielder])
+
+  const tap = (pos: number) => {
+    setChain(prev => {
+      if (prev.includes(pos)) return prev
+      return [...prev, pos]
+    })
+  }
+
+  const reset = () => setChain([])
+
+  const chainLabel = chain.length === 0
+    ? '(Kein Fielder gewählt)'
+    : chain.length === 1
+    ? `Solo (${chain[0]} unassisted)`
+    : chain.join('-')
+
+  return (
+    <div className="p-4 space-y-3">
+      <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
+        Wer hat den Runner getaggt? Wer hat geworfen?
+      </h3>
+      <p className="text-xs text-gray-500 font-body">
+        Erster Tap = Tagger. Weitere Taps fügen Assister hinzu (in Reihenfolge des Wurfs). Default: Solo.
+      </p>
+      <div className="bg-navy-50 border border-navy-300 rounded-lg p-2 text-center">
+        <div className="text-[10px] tracking-widest uppercase text-gray-500 font-bold">Chain</div>
+        <div className="font-display text-lg font-extrabold text-navy-900 tabular-nums">{chainLabel}</div>
+      </div>
+      <svg viewBox="0 0 280 220" className="w-full max-w-xs mx-auto block">
+        <path d="M 30 200 Q 140 20 250 200" fill="none" stroke="#e5e7eb" strokeWidth="1.5" strokeDasharray="4 3" />
+        <path d="M 140 175 L 210 120 L 140 65 L 70 120 Z" fill="none" stroke="#d1d5db" strokeWidth="1" strokeDasharray="3 2" />
+        {FIELD_POSITIONS.map(({ pos, cx, cy }) => {
+          const isInChain = chain.includes(pos)
+          const idx = chain.indexOf(pos)
+          return (
+            <g key={pos} role="button" aria-label={`Feldposition ${pos} ${POSITION_NAMES[pos]}`}
+               onClick={() => tap(pos)} style={{ cursor: 'pointer' }}>
+              <circle cx={cx} cy={cy} r="22"
+                fill={isInChain ? '#1e3a5f' : (pos >= 7 ? '#dbeafe' : '#f0f4f8')}
+                stroke={isInChain ? '#0f1f33' : (pos >= 7 ? '#3b82f6' : '#6b7280')}
+                strokeWidth="1.5" />
+              <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={isInChain ? 'white' : '#1e3a5f'}>{pos}</text>
+              <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill={isInChain ? 'white' : '#374151'}>{POSITION_NAMES[pos]}</text>
+              {isInChain && (
+                <text x={cx + 16} y={cy - 14} textAnchor="middle" fontSize="9" fontWeight="700" fill="#dc2626">{idx + 1}</text>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={reset}
+          className="flex-1 py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer"
+        >
+          Reset
+        </button>
+        <button
+          onClick={onBack}
+          className="flex-1 py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer"
+        >
+          ← Zurück
+        </button>
+        <button
+          onClick={() => onConfirm(chain.length === 0 ? [initialFielder] : chain)}
+          className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer"
+        >
+          Bestätigen
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // OutDetailDrawer
 // ---------------------------------------------------------------------------
 export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
@@ -455,6 +540,11 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     baseRequest: Partial<SpielbogenRecordAtBatRequest>
     title: string
     defaultTargets: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
+  }>(null)
+  const [pendingChainPicker, setPendingChainPicker] = useState<null | {
+    initialFielder: number
+    baseRequest: Partial<SpielbogenRecordAtBatRequest>
+    baseStateAfter: BogenBaseStateDto
   }>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
@@ -556,6 +646,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setPendingFlyOutRequest(null)
     setPendingRunnerOutRequest(null)
     setPendingAdvancePicker(null)
+    setPendingChainPicker(null)
     onClose()
   }
 
@@ -569,16 +660,14 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     let newThirdSlot: number | null = before.thirdSlotId
 
     if (fromBase === 1) {
-      // 1B runner is out — batter takes 1B (newFirstSlot already set)
+      // 1B runner out — batter takes 1B
     } else if (fromBase === 2) {
       newSecondSlot = null
-      // If 1B had a runner, force them to 2B
       if (before.firstSlotId != null) {
         newSecondSlot = before.firstSlotId
       }
     } else if (fromBase === 3) {
       newThirdSlot = null
-      // If 2B had runner, advance to 3B; if 1B had runner, advance to 2B (force)
       if (before.secondSlotId != null) {
         newThirdSlot = before.secondSlotId
         newSecondSlot = before.firstSlotId
@@ -587,48 +676,54 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       }
     }
 
-    // Throw destination = base where runner was caught (or home if from 3B)
-    const throwTarget = fromBase === 3 ? 4 : fromBase + 1
-
-    onSubmit({
-      result: 'OUT',
-      outType: 'FIELDERS_CHOICE',
-      fielderChain: [fielder, throwTarget],
-      runsScored: 0,
-      rbi: 0,
+    void runnerSlotId
+    setPendingRunnerOutRequest(null)
+    setPendingChainPicker({
+      initialFielder: fielder,
+      baseRequest: {
+        result: 'OUT',
+        outType: 'FIELDERS_CHOICE',
+        runsScored: 0,
+        rbi: 0,
+      },
       baseStateAfter: {
         firstSlotId: newFirstSlot,
         secondSlotId: newSecondSlot,
         thirdSlotId: newThirdSlot,
       },
     })
-    void runnerSlotId
-    setPendingRunnerOutRequest(null)
-    setSelectedFielder(null)
-  }
-
-  const submitDp = (fielder: number, defaultDpPartner: number, runnerSlotId: number, runnerFromBase: 1 | 2 | 3) => {
-    const after: BogenBaseStateDto = {
-      firstSlotId: runnerFromBase === 1 ? null : baseState.firstSlotId,
-      secondSlotId: runnerFromBase === 2 ? null : baseState.secondSlotId,
-      thirdSlotId: runnerFromBase === 3 ? null : baseState.thirdSlotId,
-    }
-    onSubmit({
-      result: 'OUT',
-      outType: 'DOUBLE_PLAY',
-      fielderChain: [fielder, defaultDpPartner, 3],
-      runsScored: 0,
-      rbi: 0,
-      baseStateAfter: after,
-    })
-    void runnerSlotId
-    setPendingDpRequest(null)
-    setSelectedFielder(null)
   }
 
   const handleDpRunnerOut = ({ runnerSlotId, fromBase }: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => {
     if (pendingDpRequest == null) return
-    submitDp(pendingDpRequest.fielder, pendingDpRequest.defaultDpPartner, runnerSlotId, fromBase)
+    const after: BogenBaseStateDto = {
+      firstSlotId: fromBase === 1 ? null : baseState.firstSlotId,
+      secondSlotId: fromBase === 2 ? null : baseState.secondSlotId,
+      thirdSlotId: fromBase === 3 ? null : baseState.thirdSlotId,
+    }
+    void runnerSlotId
+    setPendingDpRequest(null)
+    setPendingChainPicker({
+      initialFielder: pendingDpRequest.fielder,
+      baseRequest: {
+        result: 'OUT',
+        outType: 'DOUBLE_PLAY',
+        runsScored: 0,
+        rbi: 0,
+      },
+      baseStateAfter: after,
+    })
+  }
+
+  const handleChainPickerConfirm = (chain: number[]) => {
+    if (pendingChainPicker == null) return
+    onSubmit({
+      ...pendingChainPicker.baseRequest,
+      fielderChain: chain,
+      baseStateAfter: pendingChainPicker.baseStateAfter,
+    })
+    setPendingChainPicker(null)
+    setSelectedFielder(null)
   }
 
   return (
@@ -646,7 +741,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {pendingRunnerOutRequest != null ? (
+            {pendingChainPicker != null ? (
+              <ChainPickerView
+                initialFielder={pendingChainPicker.initialFielder}
+                onConfirm={handleChainPickerConfirm}
+                onBack={() => setPendingChainPicker(null)}
+              />
+            ) : pendingRunnerOutRequest != null ? (
               <RunnerOutPickerView
                 fielder={pendingRunnerOutRequest.fielder}
                 defaultDpPartner={3}
