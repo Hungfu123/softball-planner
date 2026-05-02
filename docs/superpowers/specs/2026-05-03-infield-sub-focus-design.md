@@ -32,14 +32,20 @@ Trainingsplan-Generator erweitern, sodass:
 
 ```
 Frontend (React)
-  └─ Plan-Erstellen-UI: Inline Position-Chips unter INFIELD_DEFENSE-Toggle
-     ↓ POST /api/training-plans/generate (Body: GeneratePlanRequest mit infieldPositions[])
+  ├─ Plan-Erstellen-UI (PlanForm.tsx): Sub-Section UNTER Focus-Chip-Block
+  │   mit Position-Chips wenn INFIELD_DEFENSE aktiv (multi-toggle)
+  ├─ Plan-Anzeige (PlanDisplay.tsx): Sub-Focus-Pill im Plan-Header
+  ├─ Plan-Edit (PlanEditor.tsx): DrillPicker filtert auf Sub-Focus-Positionen
+  └─ ↓ POST /api/training-plans/generate
+       (Body: GeneratePlanRequest mit infieldPositions[])
 
 Backend (Spring Boot)
   └─ TrainingPlanController → TrainingPlanService → TrainingPlanGenerator
-     ├─ Hybrid Drill-Phase: BASICS-Block (sequenziell) + STATIONS-Block (parallel) mit Fallback
+     ├─ Hybrid Drill-Phase: BASICS-Block (sequenziell) + STATIONS-Block
+     │   (1-Position = sequenziell, 2+ = parallel) mit Fallback
      ├─ Filter PARTNER_ROUTINE und WARMUP weiterhin aus Drill-Phase
-     └─ Drill-Auswahl pro Position aus complexity-Tag
+     ├─ Drill-Auswahl pro Position aus complexity-Tag
+     └─ Persistierung: training_plans.infield_positions (VARCHAR)
 ```
 
 ## Daten-Modell
@@ -396,8 +402,10 @@ Optional: Komponententest für Position-Chip-Verhalten (zeigt sich nur bei INFIE
 
 `docs/trainingsplan-algorithmus.md` aktualisieren:
 - Neue Phase: BASICS-Block (sub-focus) zwischen Partner-Routine und Stationen.
-- API-Param `infieldPositions` dokumentieren.
-- BASIC/ADVANCED Mapping pro Position als Tabelle.
+- 1-Position-Deep-Dive vs Multi-Position-Stations dokumentieren.
+- API-Body-Feld `infieldPositions` dokumentieren.
+- BASIC/ADVANCED Mapping pro Position als Tabelle (inkl. Cross-Position-Drills).
+- Stranded-Drill-Fix: WARMUP-Cat-Removal von Sprintübung/Agility erwähnen.
 
 ## Implementation-Reihenfolge
 
@@ -420,5 +428,7 @@ Optional: Komponententest für Position-Chip-Verhalten (zeigt sich nur bei INFIE
 
 - **Drill-Knappheit bei 3B:** Vor den neuen Drills hatte 3B 0 BASIC + 2 ADVANCED. Mit den 3 neuen 3B-BASICs ist 3B vollwertig.
 - **Cap-Konflikt bei 4 Positionen + 10 Spielern:** 4 Positionen, aber max 2 Stationen → 2 fallen raus. Nutzer könnte überrascht sein. Mitigation: Frontend-Hinweis "Bei wenigen Spielern werden manche Positionen nicht zu Stationen — wähle gezielt."
-- **Backward-Kompatibilität:** Bestehende Plans (ohne `infieldPositions`) verhalten sich unverändert.
+- **Backward-Kompatibilität:** Bestehende Plans (ohne `infieldPositions`) verhalten sich unverändert. Existierende Drills ohne `complexity`-Feld in JSON laden korrekt mit Default `BASIC`.
+- **PlanEditor-Override:** DrillPicker filtert per Default auf Sub-Focus-Positionen, aber via Cat-Dropdown im Picker kann User immer auf andere Cats umstellen — keine harte Einschränkung beim manuellen Editieren.
 - **Performance:** Drill-Auswahl bleibt O(n), `n` ~50 Drills — irrelevant.
+- **Doppelte Position-Enum-Werte:** `InfieldPosition` und `DrillCategory` haben identische Subset-Werte (FIRST_BASE, SECOND_BASE, SS, THIRD_BASE). Bewusste Duplizierung für Type-Safety beim API-Eingang. Conversion via `DrillCategory.valueOf(infieldPosition.name())` im Generator.
