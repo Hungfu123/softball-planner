@@ -68,7 +68,15 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitti
     return () => clearTimeout(t)
   }, [lastAtBatId])
 
-  if (!lastAtBat) return null
+  if (!lastAtBat) {
+    return (
+      <div className="flex items-center gap-2 px-4 py-2 bg-cream-100 border-t border-cream-200 min-h-[44px]">
+        <p className="text-xs text-gray-500 font-body italic">
+          Noch keine AB. Tippe <span className="font-display font-bold text-navy-800 not-italic">TREFFER</span>, <span className="font-display font-bold text-softball-red-600 not-italic">STRIKEOUT</span> oder <span className="font-display font-bold text-gray-700 not-italic">AUS</span> für ersten Spielzug.
+        </p>
+      </div>
+    )
+  }
 
   const slot = slots.find(s => s.id === lastAtBat.slotId)
   const cellMap = renderCells([lastAtBat], [])

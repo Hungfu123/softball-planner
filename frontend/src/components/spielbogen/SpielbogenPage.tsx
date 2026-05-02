@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronLeft as ChevronLeftLucide, Flag, RotateCcw } from 'lucide-react'
+import { ChevronLeft as ChevronLeftLucide, Flag, RotateCcw, HelpCircle } from 'lucide-react'
+import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { useSpielbogenScoring } from '@/hooks/useSpielbogenScoring'
 import { useToastContext } from '@/components/layout/Layout'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -156,6 +157,7 @@ export default function SpielbogenPage() {
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showSheet, setShowSheet] = useState(false)
+  const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [subPlayerInName, setSubPlayerInName] = useState('')
@@ -530,6 +532,14 @@ export default function SpielbogenPage() {
           </Link>
           <div className="flex-1" />
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowCheatsheet(true)}
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium cursor-pointer inline-flex items-center gap-1"
+              title="Notation-Cheatsheet"
+              aria-label="Hilfe / Cheatsheet"
+            >
+              <HelpCircle size={14} /> <span className="hidden sm:inline">Hilfe</span>
+            </button>
             {isLive && (
               <>
                 <button
@@ -1220,6 +1230,9 @@ export default function SpielbogenPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Cheatsheet drawer */}
+      <CheatsheetDrawer open={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
     </div>
   )
 }
