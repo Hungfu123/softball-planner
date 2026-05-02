@@ -8,6 +8,7 @@ import { PitchingEventDrawer } from './PitchingEventDrawer'
 import { ErrorPickerDrawer } from './ErrorPickerDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { computeBaseStateAdvance } from '@/utils/bogenBaseAdvance'
+import { useToastContext } from '@/components/layout/Layout'
 
 interface Props {
   side: BogenSide
@@ -52,6 +53,7 @@ export function BogenActionButtons({
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showErrorDrawer, setShowErrorDrawer] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const toast = useToastContext()
 
   const handleErrorPick = async (errorPosition: number) => {
     if (!currentSlotId) return
@@ -74,6 +76,7 @@ export function BogenActionButtons({
         rbi: 0,
         baseStateAfter: advance.baseStateAfter,
       })
+      toast.show(`E${errorPosition} erfasst — Batter auf 1B`, 'success')
     } finally {
       setSubmitting(false)
     }
@@ -185,7 +188,7 @@ export function BogenActionButtons({
                   onClick={() => setShowPitching(true)}
                   disabled={isDisabled || !runnersPresent}
                 />
-                <SmallPill label="···" onClick={() => setShowMore(true)} disabled={submitting} />
+                <SmallPill label="MEHR" onClick={() => setShowMore(true)} disabled={submitting} />
               </div>
             </motion.div>
           ) : (

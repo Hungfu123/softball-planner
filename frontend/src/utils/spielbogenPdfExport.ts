@@ -83,13 +83,15 @@ function drawSheet(
   const colNum = 8
   const colName = 35
   const colPos = 12
-  const colInning = (tableW - colNum - colName - colPos) / numInnings
+  const colSum = 9
+  const colInning = (tableW - colNum - colName - colPos - colSum) / numInnings
   const rowH = 15
   const numRows = 10
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const headerH = 5
   const footerH = 6
   const tableH = headerH + numRows * rowH
+  const sumX = x + colNum + colName + colPos + numInnings * colInning
 
   doc.setFontSize(7)
   doc.setFont('helvetica', 'bold')
@@ -102,6 +104,10 @@ function drawSheet(
   for (let i = 1; i <= numInnings; i++) {
     doc.text(String(i), x + colNum + colName + colPos + (i - 0.5) * colInning, y + 3.5, { align: 'center' })
   }
+  // Σ Total-Runs Header
+  doc.setTextColor(...COLOR_NAVY)
+  doc.text('Σ', sumX + colSum / 2, y + 3.5, { align: 'center' })
+  doc.setTextColor(0, 0, 0)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
@@ -143,14 +149,20 @@ function drawSheet(
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(17, 27, 107)
   doc.text('erzielte Runs', x + 2, lastRowY + 4)
+  let totalRuns = 0
   for (let inn = 1; inn <= numInnings; inn++) {
     const runs = inningRuns[inn]
     const value = runs ? runs[sideKey] : 0
+    totalRuns += value
     doc.text(String(value), x + colNum + colName + colPos + (inn - 0.5) * colInning, lastRowY + 4, { align: 'center' })
   }
+  // Σ Total-Runs Footer-Cell
+  doc.setFontSize(8.5)
+  doc.text(String(totalRuns), sumX + colSum / 2, lastRowY + 4, { align: 'center' })
+  doc.setFontSize(7)
   doc.setTextColor(0, 0, 0)
 
-  // Footer outer border + vertical separators on inning footer cells
+  // Footer outer border + vertical separators on inning footer cells (incl. Σ)
   doc.setDrawColor(...COLOR_BORDER_DARK)
   doc.setLineWidth(0.4)
   doc.rect(x, lastRowY, tableW, footerH)
@@ -158,6 +170,8 @@ function drawSheet(
     const xv = x + colNum + colName + colPos + i * colInning
     doc.line(xv, lastRowY, xv, lastRowY + footerH)
   }
+  // Σ-column separator
+  doc.line(sumX, lastRowY, sumX, lastRowY + footerH)
 }
 
 function drawTableGrid(
@@ -206,6 +220,11 @@ function drawTableGrid(
     const xv = x + colNum + colName + colPos + i * colInning
     doc.line(xv, y, xv, y + tableH)
   }
+  // Σ-column thicker divider (separates Inning-block from Total-block)
+  doc.setDrawColor(...COLOR_BORDER_DARK)
+  doc.setLineWidth(0.4)
+  const sumXLocal = x + colNum + colName + colPos + numInnings * colInning
+  doc.line(sumXLocal, y, sumXLocal, y + tableH)
 }
 
 interface CellRenderInput {
