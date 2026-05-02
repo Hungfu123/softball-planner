@@ -198,6 +198,20 @@ Wenn nur 2B gewählt, aber 16 Spieler (Cap = 3):
 - Station 2 (Fallback): 2B Double Play Pivots (zweite ADVANCED derselben Position)
 - Station 3 (Fallback): ADVANCED einer anderen Infield-Position (z.B. SS Komplett-Drill, da SS am besten zu 2B passt)
 
+### Multi-Focus-Interaktion
+
+Wenn `infieldPositions` gesetzt ist UND der Focus mehrere Schwerpunkte enthält (z.B. `INFIELD_DEFENSE,OUTFIELD`):
+
+- Drill-Zeit wird wie heute gleichmäßig auf die Schwerpunkte aufgeteilt (`minutesPerFocus = totalDrillMinutes / focuses.size()`).
+- **Nur der INFIELD_DEFENSE-Block** läuft mit Sub-Focus-Logik (BASICS-Block + STATIONS-Block + Fallback).
+- Andere Schwerpunkte (OUTFIELD/CATCHER/etc.) laufen mit der **bestehenden Logik** (Basics + Advanced-Stationen aus dem jeweiligen Focus-Pool).
+- `infieldPositions` wird ignoriert wenn `INFIELD_DEFENSE` nicht im Focus ist.
+
+Beispiel — `INFIELD_DEFENSE,OUTFIELD`, Positions=[SS, 2B], 120 min, 16 Spieler:
+- INFIELD_DEFENSE-Block: SS BASIC + 2B BASIC + 2 Stationen (SS Komplett, 2B Komplett)
+- OUTFIELD-Block: 1 Throwing/Outfield-Basic + 2 Outfield-Stationen (heutige Logik)
+- Aufbaupause(n) zwischen Basics und Stationen pro Focus wie heute
+
 ## Side-Fix: Stranded Drills
 
 `sprintubung-fielding-position` und `agility-ladder-beinubungen` haben aktuell die `WARMUP`-Kategorie. Dadurch werden sie aus der Drill-Phase ausgefiltert und nie gepickt.
@@ -243,11 +257,11 @@ Inline unter dem `INFIELD_DEFENSE`-Toggle erscheinen 4 Position-Chips (multi-tog
 
 `TrainingPlanGeneratorTest` + `TrainingPlanGeneratorIntegrationTest` erweitern um:
 
-- Sub-Focus mit 1 Position → BASIC-Block mit 1 Drill, 1 Station.
+- Sub-Focus mit 1 Position → BASICS-Block mit 1 Drill, 1 Station.
 - Sub-Focus mit 2 Positionen → 2 BASICs, 2 Stationen.
 - Sub-Focus mit 3 Positionen, 10 Spieler → Cap 2 Stationen, 1 Position fällt raus.
 - Sub-Focus mit 4 Positionen, 16 Spieler → 2 BASICs (von 4), 3 Stationen (Cap).
-- Position ohne BASIC (3B vor neuen Drills, später z.B. testweise) → BASIC-Block überspringt.
+- Position ohne BASIC (3B vor neuen Drills, später z.B. testweise) → BASICS-Block überspringt.
 - Position ohne ADVANCED → Fallback auf andere Position.
 - `infieldPositions` ohne INFIELD_DEFENSE-Focus → ignoriert.
 - Sprintübung + Agility nach WARMUP-Removal → reachable in BASERUNNING-Focus.
