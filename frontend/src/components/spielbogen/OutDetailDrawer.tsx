@@ -481,19 +481,22 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleFielderTap = (pos: number) => {
     if (pos >= 7) {
-      // Outfielder — Fly Out. If runners on base, ask tag-up.
+      // Outfielder — Fly Out. If runners on base AND <2 outs, ask tag-up.
+      // Bei 2 Outs beendet der Catch das Inning — Tag-Up-Runs zaehlen nicht, Picker ueberspringen.
       const hasAnyRunner = baseStateAfter && (
         baseStateAfter.firstSlotId != null ||
         baseStateAfter.secondSlotId != null ||
         baseStateAfter.thirdSlotId != null
       )
-      if (hasAnyRunner) {
+      if (hasAnyRunner && outs < 2) {
         setPendingFlyOutRequest({ fielder: pos })
       } else {
         onSubmit({
           result: 'OUT',
           outType: 'FLY',
           fielderChain: [pos],
+          runsScored: 0,
+          rbi: 0,
         })
       }
     } else {
