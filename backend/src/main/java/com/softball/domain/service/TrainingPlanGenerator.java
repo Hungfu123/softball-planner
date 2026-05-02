@@ -380,6 +380,7 @@ public class TrainingPlanGenerator {
                 .filter(d -> !d.getId().equals(HITTING_DRILL_ID))
                 .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
                 .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
+                .filter(d -> !d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
                 .filter(d -> d.getMinPlayers() <= maxPlayers)
                 .filter(d -> d.getCategories().stream().anyMatch(categories::contains))
                 .toList();
