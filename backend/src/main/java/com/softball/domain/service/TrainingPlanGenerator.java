@@ -41,6 +41,9 @@ public class TrainingPlanGenerator {
     private static final int PARTNER_ROUTINE_DRILL_MINUTES = 5;
     private static final int MAX_PARTNER_ROUTINE_DRILLS = 2;
     private static final int HITTING_PRE_DRILL_MINUTES = 10;
+    private static final int SUB_FOCUS_BASIC_MINUTES = 5;
+    private static final int SUB_FOCUS_MAX_BASICS = 2;
+    private static final int SUB_FOCUS_MIN_T_FOR_BASICS = 25;
 
     private static final Map<String, List<DrillCategory>> FOCUS_CATEGORY_MAP = Map.ofEntries(
             Map.entry("WERFEN", List.of(DrillCategory.THROWING)),
@@ -117,8 +120,73 @@ public class TrainingPlanGenerator {
         // Drill-Zeit gleichmäßig auf Schwerpunkte verteilen
         final int minutesPerFocus = focuses.isEmpty() ? 0 : totalDrillMinutes / focuses.size();
 
+        // --- Sub-Focus-Pfad: BASICS-Block + STATIONS/Deep-Dive für ausgewählte Infield-Positionen ---
+        final boolean useSubFocus = infieldPositions != null && !infieldPositions.isEmpty()
+                && focuses.stream().anyMatch(f -> f.equalsIgnoreCase("INFIELD_DEFENSE"));
+
+        if (useSubFocus) {
+            // Sub-Focus bekommt die Slice von INFIELD_DEFENSE (oder alles bei Single-Focus)
+            int subFocusMinutes = focuses.size() == 1 ? totalDrillMinutes : minutesPerFocus;
+            final int subFocusBudget = subFocusMinutes;
+            final List<InfieldPosition> shuffledPositions = new ArrayList<>(infieldPositions);
+            Collections.shuffle(shuffledPositions);
+
+            int basicsAdded = 0;
+            if (subFocusMinutes >= SUB_FOCUS_MIN_T_FOR_BASICS) {
+                for (final InfieldPosition pos : shuffledPositions) {
+                    if (basicsAdded >= SUB_FOCUS_MAX_BASICS) break;
+                    final List<Drill> basics = findBasicsForPosition(allDrills, pos, usedDrillIds, playerCount);
+                    if (basics.isEmpty()) continue;
+                    final List<Drill> shuffled = new ArrayList<>(basics);
+                    Collections.shuffle(shuffled);
+                    final Drill drill = shuffled.get(0);
+                    sections.add(buildDrillSection(drill, "DRILL", SUB_FOCUS_BASIC_MINUTES, playerCount));
+                    usedDrillIds.add(drill.getId());
+                    subFocusMinutes -= SUB_FOCUS_BASIC_MINUTES;
+                    basicsAdded++;
+                }
+            }
+
+            final int stationsCap = playerCount >= 12 ? 3 : 2;
+            if (shuffledPositions.size() == 1) {
+                final InfieldPosition pos = shuffledPositions.get(0);
+                final Drill chosen = pickAdvancedWithFallback(allDrills, pos, shuffledPositions, usedDrillIds, playerCount);
+                if (chosen != null && subFocusMinutes >= MIN_DRILL_MINUTES) {
+                    sections.add(buildDrillSection(chosen, "DRILL", subFocusMinutes, playerCount));
+                    usedDrillIds.add(chosen.getId());
+                    subFocusMinutes = 0;
+                }
+            } else {
+                if (basicsAdded > 0 && subFocusMinutes >= BREAK_MINUTES + 2 * MIN_DRILL_MINUTES) {
+                    sections.add(buildBreakSection("Trinken, nächste Übungen kurz erklären. Wer die Übung kennt, hilft beim Stationen aufbauen.", BREAK_MINUTES));
+                    subFocusMinutes -= BREAK_MINUTES;
+                }
+                final List<InfieldPosition> stationPositions = shuffledPositions.subList(0,
+                        Math.min(stationsCap, shuffledPositions.size()));
+                final List<Drill> stationDrills = new ArrayList<>();
+                for (final InfieldPosition pos : stationPositions) {
+                    final Drill chosen = pickAdvancedWithFallback(allDrills, pos, stationPositions, usedDrillIds, playerCount);
+                    if (chosen != null) {
+                        stationDrills.add(chosen);
+                        usedDrillIds.add(chosen.getId());
+                    }
+                }
+                if (!stationDrills.isEmpty() && subFocusMinutes >= MIN_DRILL_MINUTES) {
+                    sections.addAll(buildStationBlock(stationDrills, playerCount, subFocusMinutes, parallelGroupCounter));
+                    parallelGroupCounter++;
+                    subFocusMinutes = 0;
+                }
+            }
+
+            usedDrillMinutes += subFocusBudget - subFocusMinutes;
+        }
+
         for (int fi = 0; fi < focuses.size(); fi++) {
             final String singleFocus = focuses.get(fi);
+            // Sub-Focus hat INFIELD_DEFENSE bereits abgedeckt — überspringen
+            if (useSubFocus && singleFocus.equalsIgnoreCase("INFIELD_DEFENSE")) {
+                continue;
+            }
             final List<Drill> focusDrills = filterDrillsForFocus(allDrills, singleFocus, playerCount).stream()
                     .filter(d -> !usedDrillIds.contains(d.getId()))
                     .toList();
@@ -441,5 +509,71 @@ public class TrainingPlanGenerator {
         result.addAll(level2);
         result.addAll(level3);
         return result;
+    }
+
+    // ─── Sub-Focus Helpers ───
+
+    private List<Drill> findBasicsForPosition(final List<Drill> allDrills, final InfieldPosition pos,
+                                                final java.util.Set<String> usedDrillIds, final int maxPlayers) {
+        final DrillCategory cat = pos.toDrillCategory();
+        return allDrills.stream()
+            .filter(d -> d.getCategories().contains(cat))
+            .filter(d -> d.getComplexity() == DrillComplexity.BASIC)
+            .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
+            .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
+            .filter(d -> !d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
+            .filter(d -> d.getMinPlayers() <= maxPlayers)
+            .filter(d -> !usedDrillIds.contains(d.getId()))
+            .toList();
+    }
+
+    private List<Drill> findAdvancedForPosition(final List<Drill> allDrills, final InfieldPosition pos,
+                                                  final java.util.Set<String> usedDrillIds, final int maxPlayers) {
+        final DrillCategory cat = pos.toDrillCategory();
+        return allDrills.stream()
+            .filter(d -> d.getCategories().contains(cat))
+            .filter(d -> d.getComplexity() == DrillComplexity.ADVANCED)
+            .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
+            .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
+            .filter(d -> !d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
+            .filter(d -> d.getMinPlayers() <= maxPlayers)
+            .filter(d -> !usedDrillIds.contains(d.getId()))
+            .toList();
+    }
+
+    private Drill pickAdvancedWithFallback(final List<Drill> allDrills, final InfieldPosition pos,
+                                              final List<InfieldPosition> selectedPositions,
+                                              final java.util.Set<String> usedDrillIds, final int playerCount) {
+        final List<Drill> own = findAdvancedForPosition(allDrills, pos, usedDrillIds, playerCount);
+        if (!own.isEmpty()) {
+            final List<Drill> shuffled = new java.util.ArrayList<>(own);
+            java.util.Collections.shuffle(shuffled);
+            return shuffled.get(0);
+        }
+        final List<Drill> basics = findBasicsForPosition(allDrills, pos, usedDrillIds, playerCount);
+        if (!basics.isEmpty()) {
+            final List<Drill> shuffled = new java.util.ArrayList<>(basics);
+            java.util.Collections.shuffle(shuffled);
+            return shuffled.get(0);
+        }
+        for (final InfieldPosition other : selectedPositions) {
+            if (other == pos) continue;
+            final List<Drill> otherDrills = findAdvancedForPosition(allDrills, other, usedDrillIds, playerCount);
+            if (!otherDrills.isEmpty()) {
+                final List<Drill> shuffled = new java.util.ArrayList<>(otherDrills);
+                java.util.Collections.shuffle(shuffled);
+                return shuffled.get(0);
+            }
+        }
+        for (final InfieldPosition any : InfieldPosition.values()) {
+            if (selectedPositions.contains(any)) continue;
+            final List<Drill> anyDrills = findAdvancedForPosition(allDrills, any, usedDrillIds, playerCount);
+            if (!anyDrills.isEmpty()) {
+                final List<Drill> shuffled = new java.util.ArrayList<>(anyDrills);
+                java.util.Collections.shuffle(shuffled);
+                return shuffled.get(0);
+            }
+        }
+        return null;
     }
 }
