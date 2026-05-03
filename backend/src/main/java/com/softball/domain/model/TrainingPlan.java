@@ -1,6 +1,8 @@
 package com.softball.domain.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 
 public class TrainingPlan {
     private Long id;
@@ -9,6 +11,7 @@ public class TrainingPlan {
     private String focus;
     private int durationMinutes;
     private TrainingPlanContent content;
+    private List<InfieldPosition> infieldPositions = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -38,4 +41,6 @@ public class TrainingPlan {
     public void setCreatedAt(final LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(final LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public List<InfieldPosition> getInfieldPositions() { return infieldPositions; }
+    public void setInfieldPositions(final List<InfieldPosition> infieldPositions) { this.infieldPositions = infieldPositions; }
 }
