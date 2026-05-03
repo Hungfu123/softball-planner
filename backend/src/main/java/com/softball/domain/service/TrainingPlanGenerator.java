@@ -2,6 +2,8 @@ package com.softball.domain.service;
 
 import com.softball.domain.model.Drill;
 import com.softball.domain.model.DrillCategory;
+import com.softball.domain.model.DrillComplexity;
+import com.softball.domain.model.InfieldPosition;
 import com.softball.domain.model.TrainingPlanContent;
 import com.softball.domain.model.TrainingPlanSection;
 
@@ -55,6 +57,12 @@ public class TrainingPlanGenerator {
 
     public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
                                          final String focus, final int totalMinutes) {
+        return generate(allDrills, playerCount, focus, totalMinutes, List.of());
+    }
+
+    public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
+                                         final String focus, final int totalMinutes,
+                                         final List<InfieldPosition> infieldPositions) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
         int remainingMinutes = totalMinutes + OVERTIME_BUFFER;
         final Set<String> usedDrillIds = new HashSet<>();
