@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.adapter.out.persistence.entity.TrainingPlanEntity;
+import com.softball.domain.model.InfieldPosition;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,16 @@ public class TrainingPlanMapper {
         plan.setContent(deserializeContent(entity.getPlanContent()));
         plan.setCreatedAt(entity.getCreatedAt());
         plan.setUpdatedAt(entity.getUpdatedAt());
+        final String posStr = entity.getInfieldPositions();
+        if (posStr != null && !posStr.isBlank()) {
+            plan.setInfieldPositions(
+                java.util.Arrays.stream(posStr.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(InfieldPosition::valueOf)
+                    .toList()
+            );
+        }
         return plan;
     }
 
@@ -45,6 +56,13 @@ public class TrainingPlanMapper {
         entity.setFocus(domain.getFocus());
         entity.setDurationMinutes(domain.getDurationMinutes());
         entity.setPlanContent(serializeContent(domain.getContent()));
+        if (domain.getInfieldPositions() != null && !domain.getInfieldPositions().isEmpty()) {
+            entity.setInfieldPositions(
+                domain.getInfieldPositions().stream()
+                    .map(InfieldPosition::name)
+                    .collect(java.util.stream.Collectors.joining(","))
+            );
+        }
         return entity;
     }
 
