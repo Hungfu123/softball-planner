@@ -35,6 +35,9 @@ public class TrainingPlanEntity {
     @Column(name = "plan_content", columnDefinition = "jsonb", nullable = false)
     private String planContent;
 
+    @Column(name = "infield_positions", length = 100)
+    private String infieldPositions;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -73,4 +76,6 @@ public class TrainingPlanEntity {
     public void setCreatedAt(final LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(final LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public String getInfieldPositions() { return infieldPositions; }
+    public void setInfieldPositions(final String infieldPositions) { this.infieldPositions = infieldPositions; }
 }
