@@ -197,6 +197,17 @@ export type DrillCategory =
 export type TrainingFocus =
   | 'WERFEN' | 'INFIELD_DEFENSE' | 'OUTFIELD' | 'BASERUNNING' | 'SITUATIONAL' | 'CATCHER' | 'RELAY' | 'ALLROUND'
 
+export type DrillComplexity = 'BASIC' | 'ADVANCED'
+
+export type InfieldPosition = 'FIRST_BASE' | 'SECOND_BASE' | 'SS' | 'THIRD_BASE'
+
+export const INFIELD_POSITION_LABELS: Record<InfieldPosition, string> = {
+  FIRST_BASE: '1B',
+  SECOND_BASE: '2B',
+  SS: 'SS',
+  THIRD_BASE: '3B',
+}
+
 export interface DrillResponse {
   id: string
   name: string
@@ -208,6 +219,7 @@ export interface DrillResponse {
   pdfPage: number | null
   rotation: string | null
   variants: string | null
+  complexity?: DrillComplexity
 }
 
 export interface TrainingPlanSectionResponse {
@@ -241,6 +253,7 @@ export interface TrainingPlanResponse {
   content: TrainingPlanContentResponse | null
   createdAt: string
   updatedAt: string
+  infieldPositions?: InfieldPosition[]
 }
 
 export interface GeneratePlanRequest {
@@ -248,6 +261,7 @@ export interface GeneratePlanRequest {
   playerCount: number
   focus: string
   durationMinutes: number
+  infieldPositions?: InfieldPosition[]
 }
 
 // Live-Scoring
