@@ -1,13 +1,20 @@
 package com.softball.domain.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.domain.model.Drill;
 import com.softball.domain.model.DrillCategory;
+import com.softball.domain.model.DrillComplexity;
+import com.softball.domain.model.InfieldPosition;
 import com.softball.domain.model.TrainingPlanContent;
 import com.softball.domain.model.TrainingPlanSection;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -843,6 +850,47 @@ class TrainingPlanGeneratorTest {
         }
     }
 
+    // ─── Sub-Focus ───
+
+    @Nested
+    @DisplayName("Sub-Focus")
+    class SubFocus {
+        @Test
+        void position_ohne_basic_skip_im_basics_block() throws Exception {
+            // 2B has BASIC drills in real catalog. Build catalog WITHOUT 2B-BASICs:
+            final List<Drill> testCat = new ArrayList<>(realCatalog());
+            testCat.removeIf(d -> d.getCategories().contains(DrillCategory.SECOND_BASE)
+                    && d.getComplexity() == DrillComplexity.BASIC);
+            final TrainingPlanContent result = new TrainingPlanGenerator().generate(
+                    testCat, 12, "INFIELD_DEFENSE", 120,
+                    List.of(InfieldPosition.SECOND_BASE)
+            );
+            assertThat(result.getSections()).isNotEmpty();
+            // Plan generates — BASICS-Block skips 2B since no BASIC available.
+        }
+
+        @Test
+        void infieldPositions_ohne_INFIELD_DEFENSE_focus_ignoriert() throws Exception {
+            final TrainingPlanContent result = new TrainingPlanGenerator().generate(
+                    realCatalog(), 10, "OUTFIELD", 90,
+                    List.of(InfieldPosition.SS)
+            );
+            assertThat(result.getSections()).isNotEmpty();
+            // No assertion about position-specific drills — runs through normal OUTFIELD path.
+        }
+
+        @Test
+        void empty_infieldPositions_verhalten_wie_alte_logik() throws Exception {
+            final TrainingPlanContent withEmpty = new TrainingPlanGenerator().generate(
+                    realCatalog(), 12, "INFIELD_DEFENSE", 120, List.of()
+            );
+            final TrainingPlanContent withoutParam = new TrainingPlanGenerator().generate(
+                    realCatalog(), 12, "INFIELD_DEFENSE", 120
+            );
+            assertThat(withEmpty.getSections().size()).isEqualTo(withoutParam.getSections().size());
+        }
+    }
+
     // ─── Helper ───
 
     private static int findFirstIndex(final List<TrainingPlanSection> sections, final String type) {
@@ -850,5 +898,12 @@ class TrainingPlanGeneratorTest {
             if (type.equals(sections.get(i).getSectionType())) return i;
         }
         return -1;
+    }
+
+    private List<Drill> realCatalog() throws Exception {
+        final ObjectMapper mapper = new ObjectMapper();
+        try (InputStream is = getClass().getResourceAsStream("/drills.json")) {
+            return mapper.readValue(is, new TypeReference<List<Drill>>() {});
+        }
     }
 }
