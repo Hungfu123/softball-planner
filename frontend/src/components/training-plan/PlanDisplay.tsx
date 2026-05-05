@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import type { TrainingPlanResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
+import type { TrainingPlanResponse, TrainingPlanSectionResponse, DrillResponse, InfieldPosition } from '@/types'
+import { INFIELD_POSITION_LABELS } from '@/types'
 import PlanSection from './PlanSection'
 import { ExportDoc, Pencil, TrashBin, ClipboardIcon, XMark, SendIcon, ChevronDown } from '@/icons'
 
@@ -344,7 +345,14 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
         <div className="lg:hidden">
           <div className="bg-cream-50 rounded-xl border border-cream-300 p-4">
             <p className="font-display text-[10px] text-gray-500 uppercase tracking-widest font-bold">Schwerpunkt</p>
-            <h3 className="font-display text-base font-extrabold text-navy-900 tracking-wide">{formatFocus(plan.focus)}</h3>
+            <h3 className="font-display text-base font-extrabold text-navy-900 tracking-wide">
+              {formatFocus(plan.focus)}
+              {plan.infieldPositions && plan.infieldPositions.length > 0 && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-navy-800 text-white">
+                  {plan.infieldPositions.map((p: InfieldPosition) => INFIELD_POSITION_LABELS[p]).join(', ')}
+                </span>
+              )}
+            </h3>
             <div className="font-display flex gap-3 mt-1 text-[11px] text-gray-500 tracking-wide font-bold">
               <span>{plan.playerCount} Spieler</span>
               <span>·</span>
@@ -432,7 +440,14 @@ export default function PlanDisplay({ plan, drills, trainingDate, onEdit, onDele
             {/* Focus + Actions */}
             <div className="bg-cream-50 rounded-xl border border-cream-300 p-4">
               <p className="font-display text-[10px] text-gray-500 uppercase tracking-widest font-bold">Schwerpunkt</p>
-              <h3 className="font-display text-lg font-extrabold text-navy-900 tracking-wide">{formatFocus(plan.focus)}</h3>
+              <h3 className="font-display text-lg font-extrabold text-navy-900 tracking-wide">
+                {formatFocus(plan.focus)}
+                {plan.infieldPositions && plan.infieldPositions.length > 0 && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-navy-800 text-white">
+                    {plan.infieldPositions.map((p: InfieldPosition) => INFIELD_POSITION_LABELS[p]).join(', ')}
+                  </span>
+                )}
+              </h3>
               <div className="font-display flex gap-3 mt-1 text-[11px] text-gray-500 tracking-wide font-bold">
                 <span>{plan.playerCount} Spieler</span>
                 <span>·</span>
