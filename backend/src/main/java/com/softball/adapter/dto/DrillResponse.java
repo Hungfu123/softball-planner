@@ -2,12 +2,13 @@ package com.softball.adapter.dto;
 
 import com.softball.domain.model.Drill;
 import com.softball.domain.model.DrillCategory;
+import com.softball.domain.model.DrillComplexity;
 
 import java.util.List;
 
 public record DrillResponse(String id, String name, List<DrillCategory> categories, int minPlayers,
                             List<String> equipment, String description, boolean hasImage, Integer pdfPage,
-                            String rotation, String variants) {
+                            String rotation, String variants, DrillComplexity complexity) {
 
     public static DrillResponse from(final Drill drill) {
         return new DrillResponse(
@@ -20,7 +21,8 @@ public record DrillResponse(String id, String name, List<DrillCategory> categori
             drill.isHasImage(),
             drill.getPdfPage(),
             drill.getRotation(),
-            drill.getVariants()
+            drill.getVariants(),
+            drill.getComplexity()
         );
     }
 }

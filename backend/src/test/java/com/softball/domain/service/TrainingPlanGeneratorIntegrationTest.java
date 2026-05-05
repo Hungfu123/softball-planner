@@ -140,6 +140,59 @@ class TrainingPlanGeneratorIntegrationTest {
         assertThat(sections.stream().noneMatch(s -> "GAME".equals(s.getSectionType()))).isTrue();
     }
 
+    @Test
+    void subFocus_eine_position_deep_dive() {
+        final TrainingPlanContent result = generator.generate(
+            realCatalog, 10, "INFIELD_DEFENSE", 120,
+            java.util.List.of(com.softball.domain.model.InfieldPosition.SS)
+        );
+        final List<TrainingPlanSection> sections = result.getSections();
+        System.out.println("\n=== Sub-Focus 1 Position (SS) ===");
+        printPlan(sections);
+        final List<TrainingPlanSection> drills = sections.stream()
+            .filter(s -> "DRILL".equals(s.getSectionType())).toList();
+        assertThat(drills).isNotEmpty();
+        // Stations-Block bei 1 Position = sequenziell, kein parallelGroup
+        assertThat(drills.stream().noneMatch(s -> s.getParallelGroup() != null)).isTrue();
+    }
+
+    @Test
+    void subFocus_zwei_positionen_zwei_stationen() {
+        final TrainingPlanContent result = generator.generate(
+            realCatalog, 12, "INFIELD_DEFENSE", 120,
+            java.util.List.of(
+                com.softball.domain.model.InfieldPosition.SS,
+                com.softball.domain.model.InfieldPosition.SECOND_BASE
+            )
+        );
+        final List<TrainingPlanSection> sections = result.getSections();
+        System.out.println("\n=== Sub-Focus 2 Positionen (SS+2B) ===");
+        printPlan(sections);
+        final long stationGroups = sections.stream()
+            .filter(s -> "DRILL".equals(s.getSectionType()) && s.getParallelGroup() != null)
+            .map(TrainingPlanSection::getParallelGroup)
+            .distinct().count();
+        assertThat(stationGroups).isGreaterThan(0);
+    }
+
+    @Test
+    void sprintubung_und_agility_reachable_in_baserunning_focus() {
+        // Multiple trainings — drills appear via shuffle eventually
+        boolean sprintFound = false;
+        boolean agilityFound = false;
+        for (int i = 0; i < 30 && !(sprintFound && agilityFound); i++) {
+            final TrainingPlanContent result = generator.generate(
+                    realCatalog, 10, "BASERUNNING", 120
+            );
+            for (final TrainingPlanSection s : result.getSections()) {
+                if ("sprintubung-fielding-position".equals(s.getDrillId())) sprintFound = true;
+                if ("agility-ladder-beinubungen".equals(s.getDrillId())) agilityFound = true;
+            }
+        }
+        assertThat(sprintFound).as("Sprintübung reachable").isTrue();
+        assertThat(agilityFound).as("Agility Ladder reachable").isTrue();
+    }
+
     private void printPlan(final List<TrainingPlanSection> sections) {
         int startMin = 0;
         for (final TrainingPlanSection s : sections) {

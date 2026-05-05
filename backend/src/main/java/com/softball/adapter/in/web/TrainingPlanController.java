@@ -25,7 +25,8 @@ public class TrainingPlanController {
     public TrainingPlanResponse generate(@Valid @RequestBody final GeneratePlanRequest request) {
         return trainingPlanService.generate(
                 request.trainingId(), request.playerCount(),
-                request.focus(), request.durationMinutes());
+                request.focus(), request.durationMinutes(),
+                request.infieldPositionsOrEmpty());
     }
 
     @GetMapping("/training/{trainingId}")

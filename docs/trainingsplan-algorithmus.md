@@ -80,6 +80,42 @@ Level 2 + 3 werden gemeinsam als "Advanced" behandelt und in den Stationsblock g
 | CATCHER | 5 Throwing | 5 Catcher-Drills |
 | RELAY | 5 Throwing | 2 Relay-Drills |
 
+## Sub-Focus für INFIELD_DEFENSE (optional)
+
+Bei INFIELD_DEFENSE können konkrete Positionen angegeben werden (`infieldPositions=[FIRST_BASE,SECOND_BASE,SS,THIRD_BASE]`).
+
+**Wenn Sub-Focus aktiv:**
+1. **BASICS-Block:** Pro Position 1 BASIC-Drill (5 min, max 2 Drills, 3+ Positionen werden geshuffled).
+2. **STATIONS-Block:**
+   - 1 Position → sequenziell, 1 Deep-Dive-ADVANCED-Drill, alle zusammen.
+   - 2+ Positionen → parallele Stationen wie heute.
+3. **Fallback** wenn Position keine ADVANCED hat: zweite BASIC der Position → ADVANCED einer anderen gewählten Position → ADVANCED irgendeiner Infield-Position.
+
+**Wenn Sub-Focus leer:** aktuelle Logik unverändert.
+
+### BASIC vs ADVANCED Tagging
+
+Position-Drills sind im Drill-Katalog explizit als BASIC oder ADVANCED getaggt (Feld `complexity` in `drills.json`). BASIC = isolierte Einzeltechnik. ADVANCED = Spielsituation / Mehrphasen-Drill.
+
+Cross-Position-Drills (Infield Plays, Rundown, 2B Komplett mit SS-Cat, etc.) sind ADVANCED und zählen für jede ihrer Position-Cats.
+
+### API-Body
+
+`POST /api/training-plans/generate` (Body):
+```json
+{
+  "trainingId": 42,
+  "playerCount": 12,
+  "focus": "INFIELD_DEFENSE,OUTFIELD",
+  "durationMinutes": 120,
+  "infieldPositions": ["SS", "SECOND_BASE"]
+}
+```
+
+### Stranded-Drill-Fix
+
+`sprintubung-fielding-position` und `agility-ladder-beinubungen` haben die `WARMUP`-Cat verloren — sie sind jetzt über BASERUNNING-Focus reachable.
+
 ## Stationen-Logik
 
 | Regel | Wert |

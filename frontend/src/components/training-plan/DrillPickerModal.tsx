@@ -120,7 +120,19 @@ export default function DrillPickerModal({ drills, focusCategories, onSelect, on
                   className="flex-1 text-left px-4 py-3 hover:bg-navy-50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900">{drill.name}</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {drill.name}
+                      {drill.complexity === 'ADVANCED' && (
+                        <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
+                          ADVANCED
+                        </span>
+                      )}
+                      {drill.complexity === 'BASIC' && (
+                        <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gray-100 text-gray-700">
+                          BASIC
+                        </span>
+                      )}
+                    </span>
                     <span className="text-xs text-gray-400">mind. {drill.minPlayers} Spieler</span>
                   </div>
                   <div className="flex gap-1 mt-1">

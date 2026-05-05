@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import type { TrainingFocus, GeneratePlanRequest, TrainingResponse } from '@/types'
+import type { TrainingFocus, GeneratePlanRequest, TrainingResponse, InfieldPosition } from '@/types'
+import { INFIELD_POSITION_LABELS } from '@/types'
 
 const FOCUS_OPTIONS: { value: TrainingFocus; label: string }[] = [
   { value: 'WERFEN', label: 'Werfen' },
@@ -36,6 +37,16 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
   const [playerCount, setPlayerCount] = useState(10)
   const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set(['ALLROUND']))
   const [duration, setDuration] = useState(defaultDuration)
+  const [selectedInfieldPositions, setSelectedInfieldPositions] = useState<Set<InfieldPosition>>(new Set())
+
+  const toggleInfieldPosition = (pos: InfieldPosition) => {
+    setSelectedInfieldPositions(prev => {
+      const next = new Set(prev)
+      if (next.has(pos)) next.delete(pos)
+      else next.add(pos)
+      return next
+    })
+  }
 
   const toggleFocus = (f: TrainingFocus) => {
     setFocuses(prev => {
@@ -53,12 +64,16 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onGenerate({
+    const data: GeneratePlanRequest = {
       trainingId,
       playerCount,
       focus: [...focuses].join(','),
       durationMinutes: duration,
-    })
+    }
+    if (focuses.has('INFIELD_DEFENSE') && selectedInfieldPositions.size > 0) {
+      data.infieldPositions = [...selectedInfieldPositions]
+    }
+    onGenerate(data)
   }
 
   return (
@@ -100,6 +115,33 @@ export default function PlanForm({ trainingId, training, generating, onGenerate,
               {opt.label}
             </button>
           ))}
+        </div>
+        <div
+          className={`overflow-hidden transition-all duration-200 ease-out ${
+            focuses.has('INFIELD_DEFENSE') ? 'max-h-32 opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'
+          }`}
+        >
+          <div className="ml-2 pl-3 border-l-2 border-cream-300">
+            <p className="text-xs text-gray-400 mb-2">
+              Infield-Positionen (optional). Leer = alle Positionen (Standard).
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(INFIELD_POSITION_LABELS) as InfieldPosition[]).map(pos => (
+                <button
+                  key={pos}
+                  type="button"
+                  onClick={() => toggleInfieldPosition(pos)}
+                  className={`px-2 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                    selectedInfieldPositions.has(pos)
+                      ? 'bg-navy-800 text-white border-navy-800'
+                      : 'bg-cream-50 text-gray-600 border-cream-300 hover:border-navy-300'
+                  }`}
+                >
+                  {INFIELD_POSITION_LABELS[pos]}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

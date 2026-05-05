@@ -224,3 +224,50 @@
   rotation: [3B → SS → 1B → Spieler → 3B. Erst mehrere Runden Variante 1, dann Variante 2. Optional bei mehr Spielern: zusätzlicher Runner auf 1st für Variante 2.],
   varianten: [Barehand-Pickup: Ball liegt still, 3B nimmt mit der bloßen Hand auf und wirft aus dem Laufen. Oder: Coach ruft "Eins!" (1B) oder "Zwei!" (2nd) erst nach dem Aufnehmen — 3B muss schnell reagieren.],
 )
+
+#drill(
+  name: "3B Short Hop Reaction",
+  kategorien: ("3B", "Fielding"),
+  spieler: 2,
+  equipment: ("Bälle",),
+  beschreibung: [
+    Reaktions- und Hände-Drill für 3B. Werfer steht ca. 1.5–2 m vor 3B und wirft Short Hops abwechselnd middle / forehand / backhand.
+
+    *Ablauf:* 10 Würfe middle, 10 forehand, 10 backhand. Tempo zügig, 3B bleibt tief in der Hocke.
+
+    *Fokus:* Schnelle Hände, kein Zurückweichen, Ball aus der Hocke fangen — nicht stehen bleiben.
+  ],
+  rotation: [Werfer und 3B tauschen nach 30 Bällen.],
+)
+
+#drill(
+  name: "3B Forehand & Backhand zur 1B",
+  kategorien: ("3B", "Fielding"),
+  spieler: 3,
+  equipment: ("Bälle", "Base (1B)"),
+  beschreibung: [
+    Isolierte Bewegungs-Übung für 3B-Fielding zur 1B.
+
+    *Phase 1 — Forehand:* Tosser rollt links Richtung 2B-Seite. 3B nimmt den Ball forehand auf, wirft zur 1B.
+
+    *Phase 2 — Backhand:* Tosser rollt rechts Richtung Foul-Line. 3B Crossover-Schritt nach rechts, Ball backhand aufnehmen, Wurf zur 1B.
+
+    Keine Spielsituation, keine Bunts — nur die saubere Bewegung und der Wurf.
+  ],
+  rotation: [Rotation 3B → 1B → Tosser → 3B nach 6–8 Bällen pro Phase.],
+)
+
+#drill(
+  name: "3B Reaktion „Jetzt!\"",
+  kategorien: ("3B", "Fielding"),
+  spieler: 2,
+  equipment: ("Bälle",),
+  beschreibung: [
+    Reaktions-Drill mit erstem Schritt-Footwork.
+
+    *Ablauf:* 3B steht mit Rücken zum Werfer. Werfer wirft einen Grounder und ruft gleichzeitig „Jetzt!". 3B dreht sich, sucht den Ball, fieldet ihn und wirft zur 1B (oder Stand-in).
+
+    *Fokus:* Reaktion, schneller First-Step (Jab → Crossover), Ball schnell finden. 10 Bälle pro Runde.
+  ],
+  rotation: [Werfer und 3B tauschen nach 10 Bällen.],
+)
