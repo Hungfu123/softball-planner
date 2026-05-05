@@ -139,11 +139,18 @@ export default function PlanEditor({ plan, drills, onSave, onCancel }: Props) {
     if (!plan.focus) return undefined
     const cats = new Set<DrillCategory>()
     for (const f of plan.focus.split(',')) {
-      const mapped = FOCUS_CATEGORIES[f.trim()]
+      const trimmed = f.trim()
+      if (trimmed === 'INFIELD_DEFENSE' && plan.infieldPositions && plan.infieldPositions.length > 0) {
+        // Sub-Focus aktiv → nur die gewählten Positionen, nicht alle
+        plan.infieldPositions.forEach(pos => cats.add(pos as DrillCategory))
+        cats.add('FIELDING')
+        continue
+      }
+      const mapped = FOCUS_CATEGORIES[trimmed]
       if (mapped) mapped.forEach(c => cats.add(c))
     }
     return cats.size > 0 ? [...cats] : undefined
-  }, [plan.focus])
+  }, [plan.focus, plan.infieldPositions])
 
   const dndId = useId()
   const sectionIds = sections.map((_, i) => `section-${i}`)
