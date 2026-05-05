@@ -517,7 +517,10 @@ public class TrainingPlanGenerator {
                                                 final java.util.Set<String> usedDrillIds, final int maxPlayers) {
         final DrillCategory cat = pos.toDrillCategory();
         return allDrills.stream()
-            .filter(d -> d.getCategories().contains(cat))
+            .filter(d -> {
+                final int idx = d.getCategories().indexOf(cat);
+                return idx >= 0 && idx <= 1;
+            })
             .filter(d -> d.getComplexity() == DrillComplexity.BASIC)
             .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
             .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
@@ -531,7 +534,10 @@ public class TrainingPlanGenerator {
                                                   final java.util.Set<String> usedDrillIds, final int maxPlayers) {
         final DrillCategory cat = pos.toDrillCategory();
         return allDrills.stream()
-            .filter(d -> d.getCategories().contains(cat))
+            .filter(d -> {
+                final int idx = d.getCategories().indexOf(cat);
+                return idx >= 0 && idx <= 1;
+            })
             .filter(d -> d.getComplexity() == DrillComplexity.ADVANCED)
             .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
             .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
