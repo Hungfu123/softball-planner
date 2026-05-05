@@ -175,6 +175,24 @@ class TrainingPlanGeneratorIntegrationTest {
         assertThat(stationGroups).isGreaterThan(0);
     }
 
+    @Test
+    void sprintubung_und_agility_reachable_in_baserunning_focus() {
+        // Multiple trainings — drills appear via shuffle eventually
+        boolean sprintFound = false;
+        boolean agilityFound = false;
+        for (int i = 0; i < 30 && !(sprintFound && agilityFound); i++) {
+            final TrainingPlanContent result = generator.generate(
+                    realCatalog, 10, "BASERUNNING", 120
+            );
+            for (final TrainingPlanSection s : result.getSections()) {
+                if ("sprintubung-fielding-position".equals(s.getDrillId())) sprintFound = true;
+                if ("agility-ladder-beinubungen".equals(s.getDrillId())) agilityFound = true;
+            }
+        }
+        assertThat(sprintFound).as("Sprintübung reachable").isTrue();
+        assertThat(agilityFound).as("Agility Ladder reachable").isTrue();
+    }
+
     private void printPlan(final List<TrainingPlanSection> sections) {
         int startMin = 0;
         for (final TrainingPlanSection s : sections) {
