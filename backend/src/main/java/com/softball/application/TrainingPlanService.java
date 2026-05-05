@@ -3,6 +3,7 @@ package com.softball.application;
 import com.softball.adapter.dto.TrainingPlanContentResponse;
 import com.softball.adapter.dto.TrainingPlanResponse;
 import com.softball.domain.model.Drill;
+import com.softball.domain.model.InfieldPosition;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
 import com.softball.domain.port.out.TrainingPlanRepository;
@@ -36,6 +37,12 @@ public class TrainingPlanService {
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
                                          final String focus, final int durationMinutes) {
+        return generate(trainingId, playerCount, focus, durationMinutes, List.of());
+    }
+
+    public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
+                                         final String focus, final int durationMinutes,
+                                         final List<InfieldPosition> infieldPositions) {
         if (!trainingRepository.existsById(trainingId)) {
             throw new ResourceNotFoundException("Training", trainingId);
         }
@@ -44,12 +51,15 @@ public class TrainingPlanService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainingsplan existiert bereits für dieses Training");
         }
 
+        final List<InfieldPosition> safePositions = infieldPositions != null ? infieldPositions : List.of();
+
         // Deterministischer Generator — kein KI-Call nötig
         final List<Drill> drills = drillService.filterByFocus(focus, playerCount);
-        final TrainingPlanContent content = generator.generate(drills, playerCount, focus, durationMinutes);
+        final TrainingPlanContent content = generator.generate(drills, playerCount, focus, durationMinutes, safePositions);
 
         final TrainingPlan plan = new TrainingPlan(trainingId, playerCount, focus, durationMinutes);
         plan.setContent(content);
+        plan.setInfieldPositions(safePositions);
         return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
     }
 
