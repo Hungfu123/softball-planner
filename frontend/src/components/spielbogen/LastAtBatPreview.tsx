@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { SquarePen } from 'lucide-react'
 import type { SpielbogenAtBatResponse, BogenSide, SpielbogenSlotResponse } from '@/types'
 import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
@@ -57,16 +57,9 @@ function klartext(label: string): string {
 }
 
 export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitting }: Props) {
-  const [undoVisible, setUndoVisible] = useState(false)
   const [undoing, setUndoing] = useState(false)
-
-  const lastAtBatId = lastAtBat?.id
-  useEffect(() => {
-    if (lastAtBatId == null) { setUndoVisible(false); return }
-    setUndoVisible(true)
-    const t = setTimeout(() => setUndoVisible(false), 5000)
-    return () => clearTimeout(t)
-  }, [lastAtBatId])
+  // Undo bleibt dauerhaft sichtbar solange lastAtBat existiert (kein Auto-Hide-Timeout)
+  const undoVisible = lastAtBat != null
 
   if (!lastAtBat) {
     return (
@@ -89,7 +82,6 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitti
     setUndoing(true)
     try {
       await onUndo(lastAtBat.side)
-      setUndoVisible(false)
     } finally {
       setUndoing(false)
     }
