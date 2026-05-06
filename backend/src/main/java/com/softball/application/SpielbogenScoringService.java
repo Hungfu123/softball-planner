@@ -183,12 +183,29 @@ public class SpielbogenScoringService {
         SpielbogenAtBat last = atBatRepo.findLatestForSide(bogenId, side)
             .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Rückgängigmachen für Side " + side));
 
+        BogenSide undoneSide = last.getSide();
+        Integer undoneInning = last.getInning();
+
         atBatRepo.deleteById(last.getId());
 
         int homeRuns = bogen.getHomeRuns() - (last.getSide() == BogenSide.HOME ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0);
         int awayRuns = bogen.getAwayRuns() - (last.getSide() == BogenSide.AWAY ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0);
         bogen.setHomeRuns(Math.max(0, homeRuns));
         bogen.setAwayRuns(Math.max(0, awayRuns));
+
+        // Revert Auto-Switch: wenn der gelöschte AB ein 3rd-Out war (Inning hatte vorher
+        // automatisch gewechselt), und die Outs jetzt wieder unter 3 sind, müssen Side und
+        // Inning zurückgesetzt werden — sonst bleibt User im falschen Inning hängen.
+        long outsAfterUndo = atBatRepo.countOutsInInning(bogenId, undoneSide, undoneInning);
+        boolean sideOrInningChanged = bogen.getCurrentSide() != undoneSide
+            || !undoneInning.equals(bogen.getCurrentInning());
+        if (outsAfterUndo < 3 && sideOrInningChanged) {
+            bogen.setCurrentSide(undoneSide);
+            bogen.setCurrentInning(undoneInning);
+            log.info("Spielbogen {} Undo: side/inning revert auf {}/{} (outs now {})",
+                     bogenId, undoneSide, undoneInning, outsAfterUndo);
+        }
+
         bogenRepo.save(bogen);
         log.info("Spielbogen {} Undo: AtBat id={} gelöscht", bogenId, last.getId());
     }

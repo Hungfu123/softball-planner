@@ -173,6 +173,51 @@ class SpielbogenScoringServiceTest {
     }
 
     @Test
+    void undoLastRevertsSideAndInningWhenOutsDropBelow3() {
+        // Scenario: HOME hatte 3rd-Out, Auto-Switch zu AWAY (inning 1).
+        // User undoed das 3rd-Out → outs nun unter 3 → side soll zurück zu HOME, inning 1.
+        SpielbogenAtBat last = new SpielbogenAtBat();
+        last.setId(99L);
+        last.setRunsScored(0);
+        last.setSide(BogenSide.HOME);
+        last.setInning(1);
+        liveBogen.setCurrentSide(BogenSide.AWAY);
+        liveBogen.setCurrentInning(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 1)).thenReturn(2L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.undoLast(1L, BogenSide.HOME);
+
+        verify(atBatRepo).deleteById(99L);
+        assertThat(liveBogen.getCurrentSide()).isEqualTo(BogenSide.HOME);
+        assertThat(liveBogen.getCurrentInning()).isEqualTo(1);
+    }
+
+    @Test
+    void undoLastRevertsInningWhenAwayThirdOutEndedInning() {
+        // Scenario: AWAY 3rd-Out in inning 2 → Side-Switch zu HOME, inning 3.
+        // User undoed → outs <3 in AWAY/2 → revert zu AWAY, inning 2.
+        SpielbogenAtBat last = new SpielbogenAtBat();
+        last.setId(101L);
+        last.setRunsScored(0);
+        last.setSide(BogenSide.AWAY);
+        last.setInning(2);
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(3);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.AWAY)).thenReturn(Optional.of(last));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.AWAY, 2)).thenReturn(2L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.undoLast(1L, BogenSide.AWAY);
+
+        assertThat(liveBogen.getCurrentSide()).isEqualTo(BogenSide.AWAY);
+        assertThat(liveBogen.getCurrentInning()).isEqualTo(2);
+    }
+
+    @Test
     void switchSideFlipsCurrentSideWhenOutsReach3() {
         liveBogen.setCurrentSide(BogenSide.AWAY);
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
