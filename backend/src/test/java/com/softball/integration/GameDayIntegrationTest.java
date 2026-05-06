@@ -120,6 +120,32 @@ class GameDayIntegrationTest {
     }
 
     @Test
+    void createGameDay_with4Games_works() throws Exception {
+        // Regression: V10 hatte H2-Constraint-Namen, der auf Postgres nicht
+        // gedroppt wurde → 1..3 blieb aktiv → INSERT 4 = 500 Server Error.
+        // V25 dropt richtigen Postgres-Constraint-Namen.
+        mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "date", "2026-04-03", "numberOfGames", 4))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.games.length()").value(4))
+            .andExpect(jsonPath("$.games[3].gameNumber").value(4));
+    }
+
+    @Test
+    void createGameDay_with10Games_works() throws Exception {
+        // Edge-Case: Maximum laut games_number_check.
+        mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "date", "2026-04-04", "numberOfGames", 10))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.games.length()").value(10))
+            .andExpect(jsonPath("$.games[9].gameNumber").value(10));
+    }
+
+    @Test
     void setAvailablePlayers_andRetrieve() throws Exception {
         final MvcResult result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
