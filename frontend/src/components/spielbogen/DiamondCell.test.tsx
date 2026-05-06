@@ -169,6 +169,44 @@ describe('DiamondCell', () => {
     expect(getByText('×3')).toBeTruthy()
   })
 
+  it('Filled+Multi: ×N Badge statt Slash (Slash auf gefülltem Diamond = Strikethrough)', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: '1B',
+      labels: ['1B', '1B'],
+      runScored: true,
+      reachedBase: 4,
+      abCount: 2,
+    }
+    const { container, getByText } = render(<DiamondCell notation={cell} />)
+    expect(getByText('×2')).toBeTruthy()
+    const lines = Array.from(container.querySelectorAll('line'))
+    const divider = lines.find(l =>
+      l.getAttribute('x1') === '60' && l.getAttribute('y1') === '0'
+      && l.getAttribute('x2') === '0' && l.getAttribute('y2') === '80'
+    )
+    expect(divider).toBeFalsy()
+  })
+
+  it('Filled+Single: kein ×N Badge, kein Slash', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: 'HR',
+      labels: ['HR'],
+      runScored: true,
+      reachedBase: 4,
+      abCount: 1,
+    }
+    const { container, queryByText } = render(<DiamondCell notation={cell} />)
+    expect(queryByText('×1')).toBeNull()
+    const lines = Array.from(container.querySelectorAll('line'))
+    const divider = lines.find(l =>
+      l.getAttribute('x1') === '60' && l.getAttribute('y1') === '0'
+      && l.getAttribute('x2') === '0' && l.getAttribute('y2') === '80'
+    )
+    expect(divider).toBeFalsy()
+  })
+
   it('Range out index "I-II" for double play', () => {
     const cell: CellNotation = {
       ...empty,
