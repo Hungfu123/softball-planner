@@ -91,6 +91,16 @@ interface InfieldOptionsProps {
   onBack: () => void
 }
 
+// Force-Out-Detection: Runner an base B ist forced wenn alle bases 1..B-1
+// vor dem Play besetzt waren (Batter zaehlt als garantiert auf 1B → forciert 1B-Runner).
+// fromBase=1 → IMMER force (batter geht 1B). fromBase=2 → force iff 1B besetzt.
+// fromBase=3 → force iff 1B UND 2B besetzt.
+function isForceOutFromBase(before: BogenBaseStateDto, fromBase: 1 | 2 | 3): boolean {
+  if (fromBase === 1) return true
+  if (fromBase === 2) return before.firstSlotId != null
+  return before.firstSlotId != null && before.secondSlotId != null
+}
+
 // Maps Infield-Fielder-Position → Base where they typically tag/throw
 // (used for Smart-Default Runner-Advance). Outfielders go through Fly-Out path, not relevant here.
 // P (1) typically pivots to 1B for unassisted plays.
@@ -483,7 +493,7 @@ interface ChainPickerProps {
   onBack: () => void
 }
 
-function ChainPickerView({ initialFielder, onConfirm, onBack }: ChainPickerProps) {
+function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: ChainPickerProps & { isForceOut?: boolean }) {
   const [chain, setChain] = useState<number[]>([initialFielder])
 
   const tap = (pos: number) => {
@@ -504,10 +514,12 @@ function ChainPickerView({ initialFielder, onConfirm, onBack }: ChainPickerProps
   return (
     <div className="p-4 space-y-3">
       <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
-        Wer hat den Runner getaggt? Wer hat geworfen?
+        {isForceOut ? 'Force-Out — wer hat Base touched? Wer hat geworfen?' : 'Wer hat den Runner getaggt? Wer hat geworfen?'}
       </h3>
       <p className="text-xs text-gray-500 font-body">
-        Erster Tap = Tagger. Weitere Taps fügen Assister hinzu (in Reihenfolge des Wurfs). Default: Solo.
+        {isForceOut
+          ? 'Kein Tag nötig — Fielder muss nur Base berühren. Erster Tap = wer touched, weitere Taps = Werfer (in Wurf-Reihenfolge). Default: Solo.'
+          : 'Erster Tap = Tagger. Weitere Taps fügen Assister hinzu (in Reihenfolge des Wurfs). Default: Solo.'}
       </p>
       <div className="bg-navy-50 border border-navy-300 rounded-lg p-2 text-center">
         <div className="text-[10px] tracking-widest uppercase text-gray-500 font-bold">Chain</div>
@@ -581,6 +593,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     initialFielder: number
     baseRequest: Partial<SpielbogenRecordAtBatRequest>
     baseStateAfter: BogenBaseStateDto
+    isForceOut?: boolean
   }>(null)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
@@ -729,6 +742,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
         secondSlotId: newSecondSlot,
         thirdSlotId: newThirdSlot,
       },
+      isForceOut: isForceOutFromBase(before, fromBase),
     })
   }
 
@@ -750,6 +764,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
         rbi: 0,
       },
       baseStateAfter: after,
+      isForceOut: isForceOutFromBase(baseState, fromBase),
     })
   }
 
@@ -784,6 +799,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 initialFielder={pendingChainPicker.initialFielder}
                 onConfirm={handleChainPickerConfirm}
                 onBack={() => setPendingChainPicker(null)}
+                isForceOut={pendingChainPicker.isForceOut}
               />
             ) : pendingRunnerOutRequest != null ? (
               <RunnerOutPickerView
