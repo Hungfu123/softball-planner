@@ -25,7 +25,7 @@ describe('renderCells — outIndex multi-event', () => {
     const andrea_out = ab({ id: 2, slotId: 79, sequence: 7, inning: 1, result: 'OUT', outType: 'GROUNDER', fielderChain: [6, 3], createdAt: '2026-01-01T10:01:00Z' })
     const cs = { id: 1, bogenId: 1, slotId: 76, side: 'HOME' as const, inning: 1, type: 'OUT_ON_PLAY' as const, fromBase: 2, toBase: 3, createdAt: '2026-01-01T10:02:00Z' }
     const cells = renderCells([tim_k, andrea_out], [cs])
-    expect(cells.get('HOME|76|1')!.outIndex).toBe('I, III')
+    expect(cells.get('HOME|76|1')!.outIndex).toBe('I·III')
     expect(cells.get('HOME|79|1')!.outIndex).toBe('II')
   })
 
@@ -33,7 +33,7 @@ describe('renderCells — outIndex multi-event', () => {
     const dp = ab({ id: 1, slotId: 5, sequence: 1, inning: 1, result: 'OUT', outType: 'DOUBLE_PLAY', fielderChain: [6, 4, 3], createdAt: '2026-01-01T10:00:00Z' })
     const cs = { id: 2, bogenId: 1, slotId: 5, side: 'HOME' as const, inning: 1, type: 'CAUGHT_STEALING' as const, fromBase: 1, toBase: 2, createdAt: '2026-01-01T10:01:00Z' }
     const cells = renderCells([dp], [cs])
-    expect(cells.get('HOME|5|1')!.outIndex).toBe('I-II, III')
+    expect(cells.get('HOME|5|1')!.outIndex).toBe('I-II·III')
   })
 })
 

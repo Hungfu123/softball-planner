@@ -312,7 +312,8 @@ function computeCellOutIndices(
   }
   const result = new Map<string, string>()
   for (const [k, arr] of cellLabels) {
-    result.set(k, arr.join(', '))
+    // Kompakter Separator '·' (statt ', ') um Cell-Platz zu sparen
+    result.set(k, arr.join('·'))
   }
   return result
 }
