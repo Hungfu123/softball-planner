@@ -370,6 +370,21 @@ function RunnerAdvancePickerView({
     return `→ ${to}B`
   }
 
+  // Validation: zwei Runner können nicht auf derselben Base landen.
+  // Home (4) ist ausgenommen — beliebig viele scoren möglich.
+  const collidingBases = (() => {
+    const counts: Record<number, number> = {}
+    for (const r of runners) {
+      const t = targets[r.fromBase]
+      if (t === 4) continue // Home unlimited
+      counts[t] = (counts[t] ?? 0) + 1
+    }
+    return Object.entries(counts)
+      .filter(([, c]) => c > 1)
+      .map(([b]) => Number(b) as 1 | 2 | 3)
+  })()
+  const hasCollision = collidingBases.length > 0
+
   return (
     <div className="p-4 space-y-3">
       <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
@@ -388,12 +403,15 @@ function RunnerAdvancePickerView({
           const t = targets[r.fromBase]
           const advanced = t !== r.fromBase
           const scored = t === 4
+          const colliding = t !== 4 && collidingBases.includes(t as 1 | 2 | 3)
           return (
             <button
               key={r.slotId}
               onClick={() => cycle(r.fromBase)}
               className={`w-full text-left px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
-                scored
+                colliding
+                  ? 'border-softball-red-500 bg-softball-red-100 text-softball-red-900 ring-2 ring-softball-red-300'
+                  : scored
                   ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-900'
                   : advanced
                   ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
@@ -408,6 +426,11 @@ function RunnerAdvancePickerView({
           )
         })}
       </div>
+      {hasCollision && (
+        <div className="bg-softball-red-50 border border-softball-red-300 rounded-lg p-2.5 text-xs text-softball-red-900 font-body">
+          ⚠ <strong>Konflikt:</strong> Zwei Runner auf derselben Base ({collidingBases.map(b => `${b}B`).join(', ')}). Anpassen — ein Runner muss weiter advancen oder out sein.
+        </div>
+      )}
       {showSacFlyToggle && (
         <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 pt-1">
           <input
@@ -441,7 +464,8 @@ function RunnerAdvancePickerView({
             runners.map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] })),
             isSacFly
           )}
-          className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer"
+          disabled={hasCollision}
+          className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Bestätigen
         </button>
