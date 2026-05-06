@@ -892,6 +892,7 @@ export function ScoringPage() {
             ? 'post-out'
             : 'manual'
         }
+        outsAfter={scoreboard?.outsInCurrentInning ?? 0}
         onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context }) => {
           if (atBats.length === 0) {
             toast.show('Noch kein AtBat — kann nicht korrigieren', 'error')

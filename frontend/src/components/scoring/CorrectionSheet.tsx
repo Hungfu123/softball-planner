@@ -25,6 +25,8 @@ interface Props {
   runners: RunnerOnBase[]
   recentlyScored?: { playerId: number; playerName: string }[]
   context?: CorrectionContext
+  /** Outs im aktuellen Inning NACH dem Abschluss dieses AtBats (0/1/2/3). Bei 3 → Force-Out-Regel-Hinweis. */
+  outsAfter?: number
   onSave: (data: {
     newState: BaseStateDto
     extraRuns: number
@@ -34,7 +36,7 @@ interface Props {
   }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', outsAfter, onSave }: Props) {
   const initial = useMemo<RunnerAssignment[]>(() => {
     const onBase = runners.map(r => ({
       playerId: r.playerId,
@@ -80,6 +82,18 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
       return a
     }))
   }
+
+  /**
+   * Quick-Action: Nur Runner-3B nach Home (Tag-up nach Fly Out).
+   * Andere Runner bleiben — typisch bei Fly Out wo nur 3B-Runner taggt.
+   */
+  const tagUp3BHome = () => {
+    setAssignments(arr => arr.map(a => {
+      if (a.position === 3) return { ...a, position: 'home' as Position }
+      return a
+    }))
+  }
+  const has3BRunner = assignments.some(a => a.position === 3)
 
   // Build new base state
   // Conflict-Resolution: last assignment wins. User sollte nicht zwei Runner auf gleiche Base packen.
@@ -153,18 +167,47 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
           </div>
           <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
 
-            {/* Quick-Action: alle +1 Base — nur bei post-out (Grounder-Force).
+            {/* 3rd-Out Force-Play Warnung — Softball-Regel:
+                Wenn 3. Out via Force-Out fällt, zählt KEIN Run der davor erzielt
+                wurde (Inning endet bevor Run gewertet wird). Bei manueller
+                Korrektur "3B → Home" muss User wissen ob Force-Play vorlag. */}
+            {outsAfter === 3 && (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
+                <span className="text-amber-700 text-base leading-none mt-0.5" aria-hidden>⚠</span>
+                <div className="flex-1">
+                  <div className="text-xs font-bold text-amber-900 uppercase tracking-wide">3. Out im Inning</div>
+                  <div className="text-[11px] text-amber-800 mt-0.5">
+                    Bei <strong>Force-Out</strong> als 3. Out zählt der Run NICHT (Softball-Regel) — auch wenn Runner Home gekreuzt hat.
+                    Nur Tag-Out / Fly-Out: Run zählt wenn Runner vor Out gescort hat.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick-Actions — nur bei post-out (Grounder-Force / Fly-Tag-up).
                 Nach Hit (manual) sind Runner bereits via Default-Advance verschoben,
-                Button würde sie nochmal weiterschieben → meist falsch. */}
+                Buttons würden sie nochmal weiterschieben → meist falsch. */}
             {context === 'post-out' && assignments.some(a => a.position === 1 || a.position === 2 || a.position === 3) && (
-              <button
-                onClick={advanceAllOneBase}
-                className="w-full min-h-[44px] px-3 py-2 rounded-lg border border-navy-300 bg-navy-50 text-navy-800 text-sm font-semibold cursor-pointer hover:bg-navy-100 hover:border-navy-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                title="Alle Runner rücken eine Base weiter (typisch bei Grounder-Force)"
-              >
-                <span>Alle Runner +1 Base</span>
-                <span className="text-xs font-normal opacity-70">(danach fein-korrigieren)</span>
-              </button>
+              <div className={`grid gap-2 ${has3BRunner ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <button
+                  onClick={advanceAllOneBase}
+                  className="min-h-[44px] px-3 py-2 rounded-lg border border-navy-300 bg-navy-50 text-navy-800 text-sm font-semibold cursor-pointer hover:bg-navy-100 hover:border-navy-500 active:scale-[0.98] transition-all flex flex-col items-center justify-center"
+                  title="Alle Runner rücken eine Base weiter (typisch bei Grounder-Force)"
+                >
+                  <span>Alle +1 Base</span>
+                  <span className="text-[10px] font-normal opacity-70">Grounder-Force</span>
+                </button>
+                {has3BRunner && (
+                  <button
+                    onClick={tagUp3BHome}
+                    className="min-h-[44px] px-3 py-2 rounded-lg border border-emerald-400 bg-emerald-50 text-emerald-900 text-sm font-semibold cursor-pointer hover:bg-emerald-100 hover:border-emerald-500 active:scale-[0.98] transition-all flex flex-col items-center justify-center"
+                    title="Nur Runner-3B scort (Tag-up nach Fly Out)"
+                  >
+                    <span>3B → Home</span>
+                    <span className="text-[10px] font-normal opacity-70">Tag-up Fly</span>
+                  </button>
+                )}
+              </div>
             )}
 
             {assignments.length === 0 && (
