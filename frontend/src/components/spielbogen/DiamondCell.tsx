@@ -65,8 +65,9 @@ export function DiamondCell({ notation, outIndex }: Props) {
           strokeLinecap="round"
         />
       ))}
-      {/* Multi-AB diagonal divider (Wrap-Around Inning) */}
-      {isMulti && (
+      {/* Multi-AB diagonal divider (Wrap-Around Inning) — nur bei nicht-filled
+          (sonst sieht Slash auf gefülltem Diamond aus wie Strikethrough). */}
+      {isMulti && !filled && (
         <line x1={60} y1={0} x2={0} y2={80} stroke="#9ca3af" strokeWidth="0.5" strokeDasharray="2 1.5" />
       )}
       {primary && (
@@ -122,8 +123,8 @@ export function DiamondCell({ notation, outIndex }: Props) {
           </text>
         )
       )}
-      {/* ×N Badge bei 3+ ABs (mehr als nur 2 sichtbar) */}
-      {abCount >= 3 && (
+      {/* ×N Badge — bei 3+ ABs (immer) ODER filled+multi (statt Slash). */}
+      {(abCount >= 3 || (filled && isMulti)) && (
         <g>
           <circle cx={6} cy={73} r={5} fill="#CC2936" />
           <text
