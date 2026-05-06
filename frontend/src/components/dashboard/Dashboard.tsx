@@ -28,6 +28,7 @@ export function Dashboard() {
   const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | null>(null)
   const [showStatsDetails, setShowStatsDetails] = useState(false)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
+  const [showAllPastGameDays, setShowAllPastGameDays] = useState(false)
   const [showNewGameDay, setShowNewGameDay] = useState(false)
   const [newGdDate, setNewGdDate] = useState('')
   const [newGdLabel, setNewGdLabel] = useState('')
@@ -53,6 +54,7 @@ export function Dashboard() {
   useEffect(() => {
     if (!selectedSeasonId) return
     setShowAllGameDays(false)
+    setShowAllPastGameDays(false)
     Promise.all([
       api.getGameDays(selectedSeasonId),
       api.getSeasonStats(selectedSeasonId),
@@ -200,41 +202,71 @@ export function Dashboard() {
 
       {selectedSeasonId && (
         <>
-          {/* Anstehende Spieltage — Header immer sichtbar */}
+          {/* Anstehende + vergangene Spieltage — separate Listen */}
           {(() => {
             const upcoming = gameDays.filter(gd => gd.date >= today && gd.id !== heroGameDay?.id)
             const past = [...gameDays].reverse().filter(gd => gd.date < today && gd.id !== heroGameDay?.id)
-            // Wenn Hero ein Upcoming ist → Liste nur weitere Upcoming (kein Past mischen)
-            // Wenn Hero ein Past ist → Liste zeigt Past
             const heroIsUpcoming = heroVariant === 'today' || heroVariant === 'upcoming'
-            const showList = heroIsUpcoming ? upcoming : past
-            const listLabel = heroIsUpcoming ? 'Anstehend' : 'Letzte Spieltage'
             return (
-              <div>
-                <div className="flex items-center justify-between px-1 mb-2">
-                  <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
-                    {listLabel}
-                  </h2>
-                  <button
-                    onClick={() => setShowNewGameDay(true)}
-                    className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <PlusCircle size={14} />
-                    Neuer Spieltag
-                  </button>
-                </div>
-                {showList.length > 0 && (
-                  <UpcomingList
-                    gameDays={showList}
-                    showAll={showAllGameDays}
-                    onShowAll={() => setShowAllGameDays(true)}
-                    onShowLess={() => setShowAllGameDays(false)}
-                    visibleCount={3}
-                    onEdit={id => setEditGameDayId(id)}
-                    onDelete={id => setDeleteGameDayId(id)}
-                  />
+              <>
+                {/* Anstehend-Sektion: nur wenn Hero=Upcoming UND weitere Upcoming existieren */}
+                {heroIsUpcoming && (
+                  <div>
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
+                        Anstehend
+                      </h2>
+                      <button
+                        onClick={() => setShowNewGameDay(true)}
+                        className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <PlusCircle size={14} />
+                        Neuer Spieltag
+                      </button>
+                    </div>
+                    {upcoming.length > 0 && (
+                      <UpcomingList
+                        gameDays={upcoming}
+                        showAll={showAllGameDays}
+                        onShowAll={() => setShowAllGameDays(true)}
+                        onShowLess={() => setShowAllGameDays(false)}
+                        visibleCount={3}
+                        onEdit={id => setEditGameDayId(id)}
+                        onDelete={id => setDeleteGameDayId(id)}
+                      />
+                    )}
+                  </div>
                 )}
-              </div>
+
+                {/* Letzte Spieltage — IMMER sichtbar wenn Past existieren */}
+                {past.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between px-1 mb-2 mt-1">
+                      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
+                        Letzte Spieltage
+                      </h2>
+                      {!heroIsUpcoming && (
+                        <button
+                          onClick={() => setShowNewGameDay(true)}
+                          className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <PlusCircle size={14} />
+                          Neuer Spieltag
+                        </button>
+                      )}
+                    </div>
+                    <UpcomingList
+                      gameDays={past}
+                      showAll={showAllPastGameDays}
+                      onShowAll={() => setShowAllPastGameDays(true)}
+                      onShowLess={() => setShowAllPastGameDays(false)}
+                      visibleCount={3}
+                      onEdit={id => setEditGameDayId(id)}
+                      onDelete={id => setDeleteGameDayId(id)}
+                    />
+                  </div>
+                )}
+              </>
             )
           })()}
 
