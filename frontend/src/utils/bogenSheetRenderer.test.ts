@@ -18,6 +18,48 @@ function ab(o: Partial<SpielbogenAtBatResponse>): SpielbogenAtBatResponse {
   }
 }
 
+describe('renderCells — inningEnd-Marker', () => {
+  it('markiert NUR Cell des AB der outs auf 3 hebt', () => {
+    // Inning 2: Tim K (out 1), other ABs no out, Pascal DP (outs 2-3 → 3rd out)
+    const tim = ab({ id: 1, slotId: 4, sequence: 10, inning: 2, result: 'STRIKEOUT' })
+    const reach1 = ab({ id: 2, slotId: 6, sequence: 11, inning: 2, result: 'SINGLE' })
+    const reach2 = ab({ id: 3, slotId: 7, sequence: 12, inning: 2, result: 'SINGLE' })
+    const pascal = ab({ id: 4, slotId: 5, sequence: 20, inning: 2, result: 'OUT', outType: 'DOUBLE_PLAY', fielderChain: [6, 4, 3] })
+    const cells = renderCells([tim, reach1, reach2, pascal], [])
+    expect(cells.get('HOME|4|2')!.inningEnd).toBe(false)
+    expect(cells.get('HOME|6|2')!.inningEnd).toBe(false)
+    expect(cells.get('HOME|7|2')!.inningEnd).toBe(false)
+    expect(cells.get('HOME|5|2')!.inningEnd).toBe(true)
+  })
+
+  it('markiert nicht wenn Inning <3 outs hat (laufendes Inning)', () => {
+    const tim = ab({ id: 1, slotId: 4, sequence: 10, inning: 2, result: 'STRIKEOUT' })
+    const cells = renderCells([tim], [])
+    expect(cells.get('HOME|4|2')!.inningEnd).toBe(false)
+  })
+
+  it('Stealing OUT_ON_PLAY als 3rd-Out markiert Stealing-Cell', () => {
+    const ab1 = ab({ id: 1, slotId: 4, sequence: 10, inning: 2, result: 'STRIKEOUT', createdAt: '2026-01-01T10:00:00Z' })
+    const ab2 = ab({ id: 2, slotId: 5, sequence: 11, inning: 2, result: 'STRIKEOUT', createdAt: '2026-01-01T10:01:00Z' })
+    const cs = { id: 1, bogenId: 1, slotId: 6, side: 'HOME' as const, inning: 2, type: 'CAUGHT_STEALING' as const, fromBase: 1, toBase: 2, createdAt: '2026-01-01T10:02:00Z' }
+    const cells = renderCells([ab1, ab2], [cs])
+    expect(cells.get('HOME|4|2')!.inningEnd).toBe(false)
+    expect(cells.get('HOME|5|2')!.inningEnd).toBe(false)
+    expect(cells.get('HOME|6|2')!.inningEnd).toBe(true)
+  })
+
+  it('Sequence-basiert: ignoriert createdAt-Zeitstempel-Verschiebung durch correctLastAtBat', () => {
+    // Tim K wurde corrected → createdAt updated zu "later" als Pascal DP.
+    // Aber sequence bleibt korrekt: Tim seq=10 vor Pascal seq=20.
+    // Marker muss Pascal kriegen, nicht Tim.
+    const tim = ab({ id: 1, slotId: 4, sequence: 10, inning: 2, result: 'STRIKEOUT', createdAt: '2026-01-01T11:00:00Z' })
+    const pascal = ab({ id: 2, slotId: 5, sequence: 20, inning: 2, result: 'OUT', outType: 'DOUBLE_PLAY', fielderChain: [6, 4, 3], createdAt: '2026-01-01T10:00:00Z' })
+    const cells = renderCells([tim, pascal], [])
+    expect(cells.get('HOME|4|2')!.inningEnd).toBe(false)
+    expect(cells.get('HOME|5|2')!.inningEnd).toBe(true)
+  })
+})
+
 describe("renderCells — Fielder's Choice", () => {
   it("labels FC + chain, batter on 1B counts as reach=1", () => {
     const fc = ab({

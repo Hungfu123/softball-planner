@@ -94,6 +94,8 @@ export function renderCells(
     } else if (st.toBase > existing.reachedBase) {
       existing.reachedBase = st.toBase
     }
+    // Inning-End-Marker auch bei Stealing-induzierten 3rd-Outs auf Stealing-Cell anwenden
+    if (inningEndKeys.has(key)) existing.inningEnd = true
     cells.set(key, existing)
   }
 
