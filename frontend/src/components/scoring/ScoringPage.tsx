@@ -261,22 +261,16 @@ export function ScoringPage() {
 
       // Auto-Open Korrektur-Sheet bei OUT mit Runnern — User entscheidet via
       // Tap-Cycle ob Runner advancen (Grounder: Force-Play, Fly: Tag-up).
-      //   - advanceBases bei OUT lässt State UNCHANGED (Runner bleibt) → User
-      //     muss aktiv cyclen wenn Runner doch advanced.
-      //   - Ohne Sheet würde User manuell "Korrigieren" tippen müssen → Reibung.
-      // HIT mit Runner auf 2B/3B → advanceBases zählt sie optimistisch Richtung
-      //   Home (SINGLE: 3B→Home, DOUBLE: 2B+3B→Home, TRIPLE: alle→Home).
-      //   User soll bestätigen ob Runner wirklich gescort hat oder thrown-out
-      //   wurde (unscoredPlayerIds).
-      // Nicht bei WALK/HBP (Force-Advance, advanceBases setzt korrekt).
-      // Nicht bei HOMERUN (alle scoren per Definition).
-      // Nicht bei 3. Out: Side-Switch passiert automatisch, Run-Logik ergibt
-      //   nichts (Banner via outsAfter erscheint wenn User manuell öffnet).
+      // advanceBases bei OUT lässt State UNCHANGED → User muss aktiv cyclen
+      // wenn Runner doch advanced.
+      //
+      // Nicht bei Hits: advanceBases ist optimistisch (Runner advancen sicher),
+      //   das passt in 95% der Fälle. Wenn doch jemand thrown-out an Home →
+      //   User öffnet manuell Korrigieren-Button. Auto-Open für jeden Hit mit
+      //   Runs wäre zu nervig.
+      // Nicht bei WALK/HBP/HOMERUN: keine Mehrdeutigkeit.
+      // Nicht bei 3. Out: Side-Switch automatisch.
       if (result === 'OUT' && hadRunners && !willBe3rdOut) {
-        setShowCorrection(true)
-      } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && runsScored > 0) {
-        // Hit mit gezählten Runs → Korrektur-Sheet zur Bestätigung öffnen.
-        // User kann unscoredPlayerIds setzen falls Runner an Home thrown-out wurde.
         setShowCorrection(true)
       }
     } catch (e) {
