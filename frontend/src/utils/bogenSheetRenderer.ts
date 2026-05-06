@@ -287,7 +287,9 @@ function computeInningEndKeys(
   // Combine + sort all events by inning + sequence-equivalent
   type Evt = { side: BogenSide; inning: number; slotId: number; outsAdded: number; sortKey: number }
   const events: Evt[] = []
-  // ABs: use createdAt-Timestamp als sortKey (stealing nutzt gleichen Zeitstrahl)
+  // ABs: nutze sequence als sortKey — matched computeOutIndices.
+  // createdAt wäre falsch weil correctLastAtBat den Timestamp aktualisiert
+  // und dann corrected ABs ans Ende rutschen würden.
   for (const ab of sortedAtBats) {
     if (ab.isError) continue
     let added = 0
@@ -298,15 +300,30 @@ function computeInningEndKeys(
       else added = 1
     }
     if (added > 0) {
-      const t = ab.createdAt ? new Date(ab.createdAt).getTime() : ab.sequence
-      events.push({ side: ab.side, inning: ab.inning, slotId: ab.slotId, outsAdded: added, sortKey: t })
+      events.push({ side: ab.side, inning: ab.inning, slotId: ab.slotId, outsAdded: added, sortKey: ab.sequence })
     }
   }
-  // Stealing-Outs (CS / OUT_ON_PLAY)
+  // Stealing-Outs (CS / OUT_ON_PLAY) — keine sequence vorhanden, daher
+  // via createdAt zur nächsten AB-sequence interpolieren. Approximation:
+  // sortKey = sequence der letzten AB ≤ stealing-createdAt + 0.5 (zwischen ABs).
+  // Vereinfacht: nutze stealing-createdAt vs AB-createdAt.
+  const abByCreated = [...sortedAtBats].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    return ta - tb
+  })
   for (const st of stealings) {
     if (st.type !== 'CAUGHT_STEALING' && st.type !== 'OUT_ON_PLAY') continue
-    const t = st.createdAt ? new Date(st.createdAt).getTime() : 0
-    events.push({ side: st.side, inning: st.inning, slotId: st.slotId, outsAdded: 1, sortKey: t })
+    const stTime = st.createdAt ? new Date(st.createdAt).getTime() : 0
+    // Find last AB (same side+inning) with createdAt <= stTime → use its sequence + 0.5
+    let priorSeq = 0
+    for (const ab of abByCreated) {
+      if (ab.side !== st.side || ab.inning !== st.inning) continue
+      const abTime = ab.createdAt ? new Date(ab.createdAt).getTime() : 0
+      if (abTime <= stTime) priorSeq = ab.sequence
+      else break
+    }
+    events.push({ side: st.side, inning: st.inning, slotId: st.slotId, outsAdded: 1, sortKey: priorSeq + 0.5 })
   }
   // Group by side+inning, walk in sortKey order, find the event that pushes outs to >=3
   const groups = new Map<string, Evt[]>()
