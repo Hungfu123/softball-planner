@@ -396,6 +396,19 @@ export default function SpielbogenPage() {
       if (projectedOuts >= 3) {
         lastOutTypeRef.current = deriveLastOutType(req) ?? null
       }
+
+      // Auto-Open CorrectionSheet bei SINGLE/DOUBLE/TRIPLE mit Runnern —
+      // computeBaseStateAdvance ist optimistisch (Runner advancen sicher).
+      // User soll bestätigen ob Runner wirklich gescort hat oder thrown-out
+      // wurde an Home. Skip bei 3rd-Out (Side-Switch automatisch).
+      const hadRunnersBefore = beforeBaseState != null
+        && (beforeBaseState.firstSlotId != null
+          || beforeBaseState.secondSlotId != null
+          || beforeBaseState.thirdSlotId != null)
+      const isHit = req.result === 'SINGLE' || req.result === 'DOUBLE' || req.result === 'TRIPLE'
+      if (isHit && hadRunnersBefore && projectedOuts < 3) {
+        setShowCorrection(true)
+      }
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
