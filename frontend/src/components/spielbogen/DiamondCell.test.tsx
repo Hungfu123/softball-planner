@@ -169,7 +169,7 @@ describe('DiamondCell', () => {
     expect(getByText('×3')).toBeTruthy()
   })
 
-  it('Filled+Multi: ×N Badge statt Slash (Slash auf gefülltem Diamond = Strikethrough)', () => {
+  it('Filled+Multi: alle Labels inline ("1B 1B"), kein Slash, kein ×N-Badge', () => {
     const cell: CellNotation = {
       ...empty,
       primaryLabel: '1B',
@@ -178,14 +178,28 @@ describe('DiamondCell', () => {
       reachedBase: 4,
       abCount: 2,
     }
-    const { container, getByText } = render(<DiamondCell notation={cell} />)
-    expect(getByText('×2')).toBeTruthy()
+    const { container, getByText, queryByText } = render(<DiamondCell notation={cell} />)
+    expect(getByText('1B 1B')).toBeTruthy()
+    expect(queryByText('×2')).toBeNull()
     const lines = Array.from(container.querySelectorAll('line'))
     const divider = lines.find(l =>
       l.getAttribute('x1') === '60' && l.getAttribute('y1') === '0'
       && l.getAttribute('x2') === '0' && l.getAttribute('y2') === '80'
     )
     expect(divider).toBeFalsy()
+  })
+
+  it('Filled+Multi mixed Labels: "1B 2B" inline', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: '2B',
+      labels: ['1B', '2B'],
+      runScored: true,
+      reachedBase: 4,
+      abCount: 2,
+    }
+    const { getByText } = render(<DiamondCell notation={cell} />)
+    expect(getByText('1B 2B')).toBeTruthy()
   })
 
   it('Filled+Single: kein ×N Badge, kein Slash', () => {

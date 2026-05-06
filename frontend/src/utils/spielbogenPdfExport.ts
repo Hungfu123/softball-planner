@@ -309,9 +309,15 @@ function drawDiamondCell(
   if (cell?.primaryLabel) {
     doc.setFont('helvetica', 'bold')
     if (filled) {
-      doc.setFontSize(6)
       doc.setTextColor(254, 243, 199)
-      doc.text(cell.primaryLabel.slice(0, 5), cx, cy + 1, { align: 'center' })
+      if (isMulti && cell.labels.length >= 2) {
+        // Filled+Multi: alle Labels inline ("1B 1B" / "1B 2B")
+        doc.setFontSize(cell.labels.length >= 3 ? 4 : 5)
+        doc.text(cell.labels.join(' ').slice(0, 12), cx, cy + 1, { align: 'center' })
+      } else {
+        doc.setFontSize(6)
+        doc.text(cell.primaryLabel.slice(0, 5), cx, cy + 1, { align: 'center' })
+      }
     } else if (isMulti && cell.labels.length >= 2) {
       // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle
       doc.setTextColor(...COLOR_NAVY)
@@ -333,8 +339,9 @@ function drawDiamondCell(
     doc.setTextColor(0, 0, 0)
   }
 
-  // ×N Badge — bei 3+ ABs (immer) ODER filled+multi (statt Slash)
-  if ((cell?.abCount ?? 0) >= 3 || (filled && isMulti)) {
+  // ×N Badge — nur bei 3+ ABs in NICHT-filled (Slash zeigt nur 2 Labels,
+  // Badge gibt Total-Count). Bei filled+multi sind alle Labels inline → Badge redundant.
+  if ((cell?.abCount ?? 0) >= 3 && !filled) {
     doc.setFillColor(...COLOR_RED)
     doc.circle(cellX + 2.5, cellY + cellH - 2.2, 1.6, 'F')
     doc.setFontSize(3.5)

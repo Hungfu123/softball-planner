@@ -72,17 +72,33 @@ export function DiamondCell({ notation, outIndex }: Props) {
       )}
       {primary && (
         filled ? (
-          <text
-            x={30}
-            y={32}
-            textAnchor="middle"
-            fontSize="11"
-            fontWeight="700"
-            fill="#fef3c7"
-            style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
-          >
-            {primary}
-          </text>
+          isMulti ? (
+            // Filled + Multi: alle Labels zeigen ("1B 1B" / "1B 2B")
+            // statt nur primary — ×N-Badge allein zu cryptisch.
+            <text
+              x={30}
+              y={32}
+              textAnchor="middle"
+              fontSize={labels.length >= 3 ? 6 : 8}
+              fontWeight="700"
+              fill="#fef3c7"
+              style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
+            >
+              {labels.join(' ')}
+            </text>
+          ) : (
+            <text
+              x={30}
+              y={32}
+              textAnchor="middle"
+              fontSize="11"
+              fontWeight="700"
+              fill="#fef3c7"
+              style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
+            >
+              {primary}
+            </text>
+          )
         ) : isMulti ? (
           <>
             {/* 1. AB Label oben-links Triangle */}
@@ -123,8 +139,10 @@ export function DiamondCell({ notation, outIndex }: Props) {
           </text>
         )
       )}
-      {/* ×N Badge — bei 3+ ABs (immer) ODER filled+multi (statt Slash). */}
-      {(abCount >= 3 || (filled && isMulti)) && (
+      {/* ×N Badge — nur bei 3+ ABs in NICHT-filled-Cell (Slash zeigt nur 2
+          Labels, Badge gibt Total-Count). Bei filled+multi sind alle Labels
+          inline sichtbar — Badge wäre redundant. */}
+      {abCount >= 3 && !filled && (
         <g>
           <circle cx={6} cy={73} r={5} fill="#CC2936" />
           <text
