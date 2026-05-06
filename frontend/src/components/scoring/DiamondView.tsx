@@ -143,6 +143,24 @@ function Runner({ r, onRunnerTap }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 
     return { xs, ys }
   }, [r.base, lastBase])
 
+  // Exit-Waypoints: wenn Runner scort (verlässt baseList), Animation über
+  // verbleibende Bases zu Home, statt direkt zu teleportieren.
+  // Beispiel: Runner war auf 1B, scort via Double → Animation 1B → 2B → 3B → Home.
+  const exitWaypoints = useMemo(() => {
+    const xs: number[] = []
+    const ys: number[] = []
+    // Start = aktuelle Position (r.base, gleich der letzten animierten Position)
+    for (let b = r.base; b <= 3; b++) {
+      const pos = posForIndex(b)
+      xs.push(pos.cx)
+      ys.push(pos.cy)
+    }
+    // End = Home
+    xs.push(POS.home.cx)
+    ys.push(POS.home.cy)
+    return { xs, ys }
+  }, [r.base])
+
   const distance = Math.abs(r.base - lastBase)
   const hasKeyframes = waypoints.xs.length > 1
 
@@ -155,7 +173,16 @@ function Runner({ r, onRunnerTap }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 
         x: hasKeyframes ? waypoints.xs : waypoints.xs[0],
         y: hasKeyframes ? waypoints.ys : waypoints.ys[0],
       }}
-      exit={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+      exit={{
+        opacity: [1, 1, 0],
+        scale: [1, 1, 0.6],
+        x: exitWaypoints.xs,
+        y: exitWaypoints.ys,
+        transition: {
+          duration: 0.3 + (4 - r.base) * 0.25,
+          ease: 'easeInOut',
+        },
+      }}
       transition={{
         duration: 0.3 + Math.max(1, distance) * 0.25,
         ease: 'easeInOut',
