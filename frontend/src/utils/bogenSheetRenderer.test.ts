@@ -18,6 +18,25 @@ function ab(o: Partial<SpielbogenAtBatResponse>): SpielbogenAtBatResponse {
   }
 }
 
+describe('renderCells — outIndex multi-event', () => {
+  it('Cell mit AB-Out (I) + späterem Stealing-Out (III) zeigt "I, III"', () => {
+    // Tim slot=76: AB seq 4 K (1st out), Stealing OUT_ON_PLAY auf seinem Slot (3rd out)
+    const tim_k = ab({ id: 1, slotId: 76, sequence: 4, inning: 1, result: 'STRIKEOUT', createdAt: '2026-01-01T10:00:00Z' })
+    const andrea_out = ab({ id: 2, slotId: 79, sequence: 7, inning: 1, result: 'OUT', outType: 'GROUNDER', fielderChain: [6, 3], createdAt: '2026-01-01T10:01:00Z' })
+    const cs = { id: 1, bogenId: 1, slotId: 76, side: 'HOME' as const, inning: 1, type: 'OUT_ON_PLAY' as const, fromBase: 2, toBase: 3, createdAt: '2026-01-01T10:02:00Z' }
+    const cells = renderCells([tim_k, andrea_out], [cs])
+    expect(cells.get('HOME|76|1')!.outIndex).toBe('I, III')
+    expect(cells.get('HOME|79|1')!.outIndex).toBe('II')
+  })
+
+  it('DP outIndex "I-II" + späteres Stealing "III" auf gleicher Cell → "I-II, III"', () => {
+    const dp = ab({ id: 1, slotId: 5, sequence: 1, inning: 1, result: 'OUT', outType: 'DOUBLE_PLAY', fielderChain: [6, 4, 3], createdAt: '2026-01-01T10:00:00Z' })
+    const cs = { id: 2, bogenId: 1, slotId: 5, side: 'HOME' as const, inning: 1, type: 'CAUGHT_STEALING' as const, fromBase: 1, toBase: 2, createdAt: '2026-01-01T10:01:00Z' }
+    const cells = renderCells([dp], [cs])
+    expect(cells.get('HOME|5|1')!.outIndex).toBe('I-II, III')
+  })
+})
+
 describe('renderCells — inningEnd-Marker', () => {
   it('markiert NUR Cell des AB der outs auf 3 hebt', () => {
     // Inning 2: Tim K (out 1), other ABs no out, Pascal DP (outs 2-3 → 3rd out)

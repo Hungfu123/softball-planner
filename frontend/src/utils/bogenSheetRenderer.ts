@@ -41,14 +41,14 @@ export function renderCells(
   const cells: CellMap = new Map()
   const sorted = [...atBats].sort((a, b) => a.sequence - b.sequence)
   const scoredSet = computeScoredSet(sorted)
-  const outIdxMap = computeOutIndices(sorted)
+  const cellOutIdxMap = computeCellOutIndices(sorted, stealings)
   const inningEndKeys = computeInningEndKeys(sorted, stealings)
 
   for (const ab of sorted) {
     const key = cellKey(ab.side, ab.slotId, ab.inning)
     const single = renderAtBat(ab)
     const scored = scoredSet.has(`${ab.side}|${ab.slotId}|${ab.inning}`)
-    const outIdx = outIdxMap.get(ab.id) ?? null
+    const outIdx = cellOutIdxMap.get(key) ?? null
     const reach = scored ? 4 : reachedBaseForAtBat(ab)
     const existing = cells.get(key)
     const cellEnds = inningEndKeys.has(key)
@@ -96,6 +96,9 @@ export function renderCells(
     }
     // Inning-End-Marker auch bei Stealing-induzierten 3rd-Outs auf Stealing-Cell anwenden
     if (inningEndKeys.has(key)) existing.inningEnd = true
+    // Out-Index aus computeCellOutIndices übernehmen (kombiniert AB-Outs + Stealing-Outs)
+    const cellOut = cellOutIdxMap.get(key) ?? null
+    if (cellOut) existing.outIndex = cellOut
     cells.set(key, existing)
   }
 
@@ -233,45 +236,83 @@ function computeScoredSet(sortedAtBats: SpielbogenAtBatResponse[]): Set<string> 
 }
 
 /**
- * Returns map ab.id → display roman label (e.g. "I", "II", "I-II" for DP, "I-III" for TP).
- * For DP/TP we show the range so the counter doesn't appear to skip a number.
+ * Returns map cellKey → display roman label combinining ALL outs auf der Cell.
+ * Format: einzelner Out "I", DP "I-II", TP "I-III", multi-events "I, III"
+ * (z.B. AB-Out + späterer Stealing-Out auf gleichem Slot).
+ * Berücksichtigt sowohl AB-Outs als auch Stealing-Outs (CS/OUT_ON_PLAY).
  */
-function computeOutIndices(sortedAtBats: SpielbogenAtBatResponse[]): Map<number, string> {
-  const result = new Map<number, string>()
-  const groups = new Map<string, SpielbogenAtBatResponse[]>()
+function computeCellOutIndices(
+  sortedAtBats: SpielbogenAtBatResponse[],
+  stealings: SpielbogenStealingResponse[]
+): Map<string, string> {
+  // Sammle alle Out-Events mit sortKey für deterministische Out-Numerierung
+  type Evt = { side: BogenSide; inning: number; slotId: number; outsAdded: number; sortKey: number }
+  const events: Evt[] = []
   for (const ab of sortedAtBats) {
-    const k = `${ab.side}|${ab.inning}`
+    if (ab.isError) continue
+    let added = 0
+    if (ab.result === 'STRIKEOUT') added = 1
+    else if (ab.result === 'OUT') {
+      if (ab.outType === 'DOUBLE_PLAY') added = 2
+      else if (ab.outType === 'TRIPLE_PLAY') added = 3
+      else added = 1
+    }
+    if (added > 0) {
+      events.push({ side: ab.side, inning: ab.inning, slotId: ab.slotId, outsAdded: added, sortKey: ab.sequence })
+    }
+  }
+  const abByCreated = [...sortedAtBats].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    return ta - tb
+  })
+  for (const st of stealings) {
+    if (st.type !== 'CAUGHT_STEALING' && st.type !== 'OUT_ON_PLAY') continue
+    const stTime = st.createdAt ? new Date(st.createdAt).getTime() : 0
+    let priorSeq = 0
+    for (const ab of abByCreated) {
+      if (ab.side !== st.side || ab.inning !== st.inning) continue
+      const abTime = ab.createdAt ? new Date(ab.createdAt).getTime() : 0
+      if (abTime <= stTime) priorSeq = ab.sequence
+      else break
+    }
+    events.push({ side: st.side, inning: st.inning, slotId: st.slotId, outsAdded: 1, sortKey: priorSeq + 0.5 })
+  }
+
+  // Gruppiere nach side+inning, walke in sortKey-Reihenfolge, zähle Outs hoch
+  const groups = new Map<string, Evt[]>()
+  for (const e of events) {
+    const k = `${e.side}|${e.inning}`
     const arr = groups.get(k) ?? []
-    arr.push(ab)
+    arr.push(e)
     groups.set(k, arr)
   }
+  // Per-cell-Labels gesammelt — multiple Events auf gleicher Cell → join mit ", "
+  const cellLabels = new Map<string, string[]>()
   for (const arr of groups.values()) {
+    arr.sort((a, b) => a.sortKey - b.sortKey)
     let outs = 0
-    for (const ab of arr) {
-      if (ab.isError) continue
-      let added = 0
-      if (ab.result === 'STRIKEOUT') {
-        added = 1
-      } else if (ab.result === 'OUT') {
-        if (ab.outType === 'DOUBLE_PLAY') added = 2
-        else if (ab.outType === 'TRIPLE_PLAY') added = 3
-        else added = 1
-      }
-      if (added === 0) continue
+    for (const e of arr) {
       const startOut = outs + 1
-      const endOut = outs + added
-      outs += added
+      const endOut = outs + e.outsAdded
+      outs += e.outsAdded
+      const k = cellKey(e.side, e.slotId, e.inning)
+      let label: string | null = null
       if (endOut <= 3) {
-        const label = added === 1 ? roman(startOut) : `${roman(startOut)}-${roman(endOut)}`
-        result.set(ab.id, label)
+        label = e.outsAdded === 1 ? roman(startOut) : `${roman(startOut)}-${roman(endOut)}`
       } else if (startOut <= 3) {
-        // Partial (e.g. DP that closes inning when only 2 outs remain — rare)
-        const label = startOut === 3
-          ? roman(3)
-          : `${roman(startOut)}-${roman(Math.min(endOut, 3))}`
-        result.set(ab.id, label)
+        label = startOut === 3 ? roman(3) : `${roman(startOut)}-${roman(Math.min(endOut, 3))}`
+      }
+      if (label) {
+        const arr2 = cellLabels.get(k) ?? []
+        arr2.push(label)
+        cellLabels.set(k, arr2)
       }
     }
+  }
+  const result = new Map<string, string>()
+  for (const [k, arr] of cellLabels) {
+    result.set(k, arr.join(', '))
   }
   return result
 }
