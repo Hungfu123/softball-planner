@@ -744,6 +744,7 @@ export default function SpielbogenPage() {
           baseState={lastSideAtBat.baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
           slots={slots}
           initialRunsScored={lastSideAtBat.runsScored}
+          outsAfter={outs}
           onSave={async (payload) => {
             try {
               await correctLastAtBat(currentSide, payload)

@@ -8,6 +8,8 @@ interface Props {
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
   initialRunsScored: number
+  /** Outs im aktuellen Inning. Bei 3 → Force-Out-Regel-Hinweis. */
+  outsAfter?: number
   onSave: (payload: {
     firstSlotId: number | null
     secondSlotId: number | null
@@ -16,7 +18,7 @@ interface Props {
   }) => Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, baseState, slots, initialRunsScored, onSave }: Props) {
+export function CorrectionSheet({ open, onClose, baseState, slots, initialRunsScored, outsAfter, onSave }: Props) {
   const [first, setFirst] = useState<number | null>(baseState.firstSlotId)
   const [second, setSecond] = useState<number | null>(baseState.secondSlotId)
   const [third, setThird] = useState<number | null>(baseState.thirdSlotId)
@@ -72,6 +74,18 @@ export function CorrectionSheet({ open, onClose, baseState, slots, initialRunsSc
   return (
     <ResponsiveSheet open={open} onClose={onClose} title="Korrektur — Letzter AtBat" maxWidth="md" footer={footer}>
       <div className="p-4 space-y-3">
+        {outsAfter === 3 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
+            <span className="text-amber-700 text-base leading-none mt-0.5" aria-hidden>⚠</span>
+            <div className="flex-1">
+              <div className="text-xs font-bold text-amber-900 uppercase tracking-wide">3. Out im Inning</div>
+              <div className="text-[11px] text-amber-800 mt-0.5">
+                Bei <strong>Force-Out</strong> als 3. Out zählt der Run NICHT (Softball-Regel) — auch wenn Runner Home gekreuzt hat.
+                Nur Tag-Out / Fly-Out: Run zählt wenn Runner vor Out gescort hat.
+              </div>
+            </div>
+          </div>
+        )}
         <p className="text-xs text-gray-500 font-body">
           Korrigiere Runner-Positionen + Anzahl Runs für den letzten AtBat. Score wird neu berechnet.
         </p>
