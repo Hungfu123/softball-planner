@@ -7,6 +7,8 @@ interface Props {
   slots: SpielbogenSlotResponse[]
   /** When set: HR-Runner travels Home → 1B → 2B → 3B → Home, then fades. */
   homerunRunner?: { slotId: number; name: string; battingOrder: number } | null
+  /** Tap auf Runner → callback (z.B. für Quick-Stealing). */
+  onRunnerTap?: (runner: { slotId: number; name: string; battingOrder: number; base: 1 | 2 | 3 }) => void
 }
 
 // Positions im 220x220 viewBox (gleich wie DiamondView)
@@ -36,7 +38,7 @@ interface RunnerData {
   base: 1 | 2 | 3
 }
 
-function Runner({ r }: { r: RunnerData }) {
+function Runner({ r, onTap }: { r: RunnerData; onTap?: (r: RunnerData) => void }) {
   const [lastBase, setLastBase] = useState<number>(0)
 
   const waypoints = useMemo(() => {
@@ -71,6 +73,8 @@ function Runner({ r }: { r: RunnerData }) {
         ease: 'easeInOut',
       }}
       onAnimationComplete={() => { if (lastBase !== r.base) setLastBase(r.base) }}
+      style={{ cursor: onTap ? 'pointer' : 'default' }}
+      onClick={() => onTap?.(r)}
     >
       <circle cx={0} cy={0} r="18" fill="#172554" stroke="#fff" strokeWidth="2" />
       <text x={0} y={-4} textAnchor="middle" fontSize="8" fontWeight="700" fill="white" style={{ pointerEvents: 'none' }}>
@@ -115,7 +119,7 @@ function StaticBase({ pos, label, occupied }: StaticBaseProps) {
   )
 }
 
-export function BogenDiamondView({ baseState, slots, homerunRunner }: Props) {
+export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap }: Props) {
   const runners: RunnerData[] = useMemo(() => {
     if (!baseState) return []
     const result: RunnerData[] = []
@@ -171,7 +175,7 @@ export function BogenDiamondView({ baseState, slots, homerunRunner }: Props) {
         {/* Animated runners */}
         <AnimatePresence>
           {runners.map(r => (
-            <Runner key={r.slotId} r={r} />
+            <Runner key={r.slotId} r={r} onTap={onRunnerTap} />
           ))}
         </AnimatePresence>
 

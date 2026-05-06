@@ -160,6 +160,7 @@ export default function SpielbogenPage() {
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
+  const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -619,7 +620,16 @@ export default function SpielbogenPage() {
         baseState={displayBaseState}
         slots={slots}
         homerunRunner={homerunRunner}
+        onRunnerTap={isLive ? (r) => setQuickStealingRunner({ slotId: r.slotId, name: r.name, base: r.base }) : undefined}
       />
+      {isLive && displayBaseState && (displayBaseState.firstSlotId != null || displayBaseState.secondSlotId != null || displayBaseState.thirdSlotId != null) && (
+        <p className="text-[11px] text-gray-500 text-center -mt-1 mb-1">
+          <span className="font-bold text-navy-800">Tipp</span> auf Runner für{' '}
+          <span className="font-bold text-emerald-700">Stolen Base</span>
+          {' / '}
+          <span className="font-bold text-softball-red-600">Caught Stealing</span>
+        </p>
+      )}
 
       {/* Batter card — cream bg, below diamond, above action buttons */}
       {isLive && (
@@ -1229,6 +1239,81 @@ export default function SpielbogenPage() {
 
       {/* Cheatsheet drawer */}
       <CheatsheetDrawer open={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
+
+      {/* Quick-Stealing Sheet — Tap-on-Runner-Pattern (vom Old Scoring portiert).
+          Schneller als StealingDrawer-via-MEHR-Pill für Live-Tempo. */}
+      <ResponsiveSheet
+        open={quickStealingRunner !== null}
+        onClose={() => setQuickStealingRunner(null)}
+        title="Base Running"
+      >
+        {quickStealingRunner && (
+          <div className="px-4 pt-2 pb-6 space-y-3" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+            <h3 className="text-base font-bold text-gray-900 text-center">
+              {quickStealingRunner.name} auf {quickStealingRunner.base}B
+            </h3>
+            <p className="text-xs text-gray-500 text-center">
+              Was ist zwischen den Pitches passiert?
+            </p>
+            <button
+              onClick={async () => {
+                const r = quickStealingRunner
+                setQuickStealingRunner(null)
+                try {
+                  await handleRecordStealing({
+                    side: currentSide,
+                    slotId: r.slotId,
+                    inning: meta.currentInning,
+                    type: 'STOLEN_BASE',
+                    fromBase: r.base,
+                    toBase: (r.base + 1) as 2 | 3 | 4,
+                  })
+                  toast.show(`${r.name} stiehlt Base`, 'success')
+                } catch (e) {
+                  toast.show(`Stolen Base fehlgeschlagen: ${(e as Error).message}`, 'error')
+                }
+              }}
+              className="font-display w-full h-16 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer flex flex-col items-center justify-center gap-0.5"
+            >
+              <span>✓ Stolen Base</span>
+              <span className="font-body text-[10px] font-normal opacity-90 tracking-normal normal-case">
+                Läuft zur nächsten Base
+              </span>
+            </button>
+            <button
+              onClick={async () => {
+                const r = quickStealingRunner
+                setQuickStealingRunner(null)
+                try {
+                  await handleRecordStealing({
+                    side: currentSide,
+                    slotId: r.slotId,
+                    inning: meta.currentInning,
+                    type: 'CAUGHT_STEALING',
+                    fromBase: r.base,
+                    toBase: (r.base + 1) as 2 | 3 | 4,
+                  })
+                  toast.show(`${r.name} caught stealing — Out`, 'success')
+                } catch (e) {
+                  toast.show(`Caught Stealing fehlgeschlagen: ${(e as Error).message}`, 'error')
+                }
+              }}
+              className="font-display w-full h-16 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer flex flex-col items-center justify-center gap-0.5"
+            >
+              <span>✕ Caught Stealing</span>
+              <span className="font-body text-[10px] font-normal opacity-90 tracking-normal normal-case">
+                Beim Klauen gefangen · +1 Out
+              </span>
+            </button>
+            <button
+              onClick={() => setQuickStealingRunner(null)}
+              className="w-full h-11 rounded-xl border border-cream-300 text-gray-600 font-medium cursor-pointer hover:bg-cream-100"
+            >
+              Abbrechen
+            </button>
+          </div>
+        )}
+      </ResponsiveSheet>
     </div>
   )
 }
