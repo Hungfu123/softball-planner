@@ -176,13 +176,9 @@ export function BogenActionButtons({
                 <MedButton label="HBP" subtitle="Hit-by-Pitch" color="amber" onClick={() => handleRecord('HIT_BY_PITCH')} disabled={isDisabled} />
                 <MedButton label="ERROR" subtitle="Batter safe" color="errorAmber" onClick={() => setShowErrorDrawer(true)} disabled={isDisabled} />
               </div>
-              {/* Tier 3: Small pills */}
+              {/* Tier 3: Small pills — STEALING entfernt (Tap-on-Runner-Diamond
+                  ist primärer Pfad). Edge-Cases (OUT_ON_PLAY etc) via MEHR-Menu. */}
               <div className="flex gap-2">
-                <SmallPill
-                  label="STEALING"
-                  onClick={() => setShowStealing(true)}
-                  disabled={isDisabled || !runnersPresent}
-                />
                 <SmallPill
                   label="WP/PB"
                   onClick={() => setShowPitching(true)}
@@ -286,6 +282,14 @@ export function BogenActionButtons({
           >
             <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Auswechseln</div>
             <div className="text-xs text-gray-500 mt-0.5">Spieler wechseln</div>
+          </button>
+          <button
+            onClick={() => { setShowMore(false); setShowStealing(true) }}
+            disabled={!runnersPresent}
+            className="w-full text-left px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Stealing (Edge-Cases)</div>
+            <div className="text-xs text-gray-500 mt-0.5">OUT_ON_PLAY oder mehrere Stealings · Standard: Tap auf Runner-Diamond</div>
           </button>
           {canEndGame && (
             <button
