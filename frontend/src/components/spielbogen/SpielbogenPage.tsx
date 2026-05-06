@@ -389,15 +389,12 @@ export default function SpielbogenPage() {
         }
       }
 
-      // Auto-switch after 3 outs — Flash via useEffect (single source of truth)
+      // Auto-switch after 3 outs happens SERVER-side via maybeAutoSwitchSide.
+      // recordAtBat() already reloads sheet with new side. Just set lastOutType
+      // for the side-switch Flash (useEffect detects currentSide change and
+      // triggers Center-Flash with lastOutType context).
       if (projectedOuts >= 3) {
         lastOutTypeRef.current = deriveLastOutType(req) ?? null
-        try {
-          await switchSide()
-        } catch (e) {
-          lastOutTypeRef.current = null
-          toast.show(`Side-Switch fehlgeschlagen: ${(e as Error).message}`, 'error')
-        }
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
