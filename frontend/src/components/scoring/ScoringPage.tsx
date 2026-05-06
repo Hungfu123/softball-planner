@@ -772,7 +772,10 @@ export function ScoringPage() {
           />
           {displayRunners.length > 0 && !halfInningOver && (
             <p className="text-[11px] text-gray-500 text-center mt-1">
-              Tipp auf Runner für Stolen Base / Caught Stealing
+              <span className="font-bold text-navy-800">Tipp</span> auf Runner für{' '}
+              <span className="font-bold text-emerald-700">Stolen Base</span>
+              {' / '}
+              <span className="font-bold text-softball-red-600">Caught Stealing</span>
             </p>
           )}
         </div>
