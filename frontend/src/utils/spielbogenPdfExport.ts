@@ -237,6 +237,7 @@ interface CellRenderInput {
   abCount: number
   stealingArrow: { fromBase: number; toBase: number; type: string } | null
   stealingArrows: { fromBase: number; toBase: number; type: string }[]
+  inningEnd: boolean
 }
 
 function drawDiamondCell(
@@ -359,6 +360,17 @@ function drawDiamondCell(
     doc.text(cell.outIndex, cellX + 1, cellY + 3)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(0, 0, 0)
+  }
+
+  // Inning-End-Marker — RFL-Konvention: kleine Diagonale am rechten Cell-Border
+  if (cell?.inningEnd) {
+    doc.setDrawColor(31, 41, 55)
+    doc.setLineWidth(0.4)
+    const x1 = cellX + cellW - 2
+    const y1 = cellY + cellH * 0.78
+    const x2 = cellX + cellW
+    const y2 = cellY + cellH - 0.5
+    doc.line(x1, y1, x2, y2)
   }
 
   // RBI dots top-right (red)

@@ -13,6 +13,7 @@ const empty: CellNotation = {
   stealingArrow: null,
   stealingArrows: [],
   abCount: 0,
+  inningEnd: false,
 }
 
 describe('DiamondCell', () => {
@@ -219,6 +220,25 @@ describe('DiamondCell', () => {
       && l.getAttribute('x2') === '0' && l.getAttribute('y2') === '80'
     )
     expect(divider).toBeFalsy()
+  })
+
+  it('inningEnd: kleiner Slash am rechten Cell-Border (Inning-End-Marker)', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: 'K',
+      labels: ['K'],
+      reachedBase: 0,
+      outIndex: 'III',
+      abCount: 1,
+      inningEnd: true,
+    }
+    const { container } = render(<DiamondCell notation={cell} />)
+    const lines = Array.from(container.querySelectorAll('line'))
+    const slash = lines.find(l =>
+      l.getAttribute('x1') === '56' && l.getAttribute('y1') === '64'
+      && l.getAttribute('x2') === '60' && l.getAttribute('y2') === '76'
+    )
+    expect(slash).toBeTruthy()
   })
 
   it('Range out index "I-II" for double play', () => {

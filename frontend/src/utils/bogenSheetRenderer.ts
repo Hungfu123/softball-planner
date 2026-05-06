@@ -23,6 +23,9 @@ export interface CellNotation {
   /** Alle Stealing-Arrows der Cell — Wrap-Around Inning kann mehrere haben. */
   stealingArrows: StealingArrow[]
   abCount: number
+  /** RFL-Konvention: kleiner Slash am Cell-Border markiert wo das 3. Out fiel.
+   *  Hilft Scorekeeper zu sehen wer im nächsten Inning die Lineup-Reihenfolge fortsetzt. */
+  inningEnd: boolean
 }
 
 export type CellMap = Map<string, CellNotation>
@@ -39,6 +42,7 @@ export function renderCells(
   const sorted = [...atBats].sort((a, b) => a.sequence - b.sequence)
   const scoredSet = computeScoredSet(sorted)
   const outIdxMap = computeOutIndices(sorted)
+  const inningEndKeys = computeInningEndKeys(sorted, stealings)
 
   for (const ab of sorted) {
     const key = cellKey(ab.side, ab.slotId, ab.inning)
@@ -47,6 +51,7 @@ export function renderCells(
     const outIdx = outIdxMap.get(ab.id) ?? null
     const reach = scored ? 4 : reachedBaseForAtBat(ab)
     const existing = cells.get(key)
+    const cellEnds = inningEndKeys.has(key)
     if (existing) {
       cells.set(key, {
         primaryLabel: single.label,
@@ -58,6 +63,7 @@ export function renderCells(
         stealingArrow: existing.stealingArrow,
         stealingArrows: existing.stealingArrows,
         abCount: existing.abCount + 1,
+        inningEnd: existing.inningEnd || cellEnds,
       })
     } else {
       cells.set(key, {
@@ -70,6 +76,7 @@ export function renderCells(
         stealingArrow: null,
         stealingArrows: [],
         abCount: 1,
+        inningEnd: cellEnds,
       })
     }
   }
@@ -104,6 +111,7 @@ function emptyCell(): CellNotation {
     stealingArrow: null,
     stealingArrows: [],
     abCount: 0,
+    inningEnd: false,
   }
 }
 
@@ -260,6 +268,63 @@ function computeOutIndices(sortedAtBats: SpielbogenAtBatResponse[]): Map<number,
           ? roman(3)
           : `${roman(startOut)}-${roman(Math.min(endOut, 3))}`
         result.set(ab.id, label)
+      }
+    }
+  }
+  return result
+}
+
+/**
+ * Returns Set of cellKeys where the 3rd out fell — RFL-Konvention markiert das
+ * mit kleinem Slash am Cell-Border (Scorekeeper-Hilfe für nächste Inning-Lineup).
+ * Berücksichtigt sowohl AB-Outs (Strikeout/Out/DP/TP) als auch Stealing-Outs (CS/OUT_ON_PLAY).
+ */
+function computeInningEndKeys(
+  sortedAtBats: SpielbogenAtBatResponse[],
+  stealings: SpielbogenStealingResponse[]
+): Set<string> {
+  const result = new Set<string>()
+  // Combine + sort all events by inning + sequence-equivalent
+  type Evt = { side: BogenSide; inning: number; slotId: number; outsAdded: number; sortKey: number }
+  const events: Evt[] = []
+  // ABs: use createdAt-Timestamp als sortKey (stealing nutzt gleichen Zeitstrahl)
+  for (const ab of sortedAtBats) {
+    if (ab.isError) continue
+    let added = 0
+    if (ab.result === 'STRIKEOUT') added = 1
+    else if (ab.result === 'OUT') {
+      if (ab.outType === 'DOUBLE_PLAY') added = 2
+      else if (ab.outType === 'TRIPLE_PLAY') added = 3
+      else added = 1
+    }
+    if (added > 0) {
+      const t = ab.createdAt ? new Date(ab.createdAt).getTime() : ab.sequence
+      events.push({ side: ab.side, inning: ab.inning, slotId: ab.slotId, outsAdded: added, sortKey: t })
+    }
+  }
+  // Stealing-Outs (CS / OUT_ON_PLAY)
+  for (const st of stealings) {
+    if (st.type !== 'CAUGHT_STEALING' && st.type !== 'OUT_ON_PLAY') continue
+    const t = st.createdAt ? new Date(st.createdAt).getTime() : 0
+    events.push({ side: st.side, inning: st.inning, slotId: st.slotId, outsAdded: 1, sortKey: t })
+  }
+  // Group by side+inning, walk in sortKey order, find the event that pushes outs to >=3
+  const groups = new Map<string, Evt[]>()
+  for (const e of events) {
+    const k = `${e.side}|${e.inning}`
+    const arr = groups.get(k) ?? []
+    arr.push(e)
+    groups.set(k, arr)
+  }
+  for (const arr of groups.values()) {
+    arr.sort((a, b) => a.sortKey - b.sortKey)
+    let outs = 0
+    for (const e of arr) {
+      const before = outs
+      outs += e.outsAdded
+      if (before < 3 && outs >= 3) {
+        result.add(cellKey(e.side, e.slotId, e.inning))
+        break
       }
     }
   }

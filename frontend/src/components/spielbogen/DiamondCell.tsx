@@ -26,6 +26,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
   const primary = notation?.primaryLabel ?? ''
   const abCount = notation?.abCount ?? 0
   const isMulti = abCount >= 2
+  const inningEnd = notation?.inningEnd ?? false
   const stealingArrows = (notation?.stealingArrows && notation.stealingArrows.length > 0)
     ? notation.stealingArrows
     : (notation?.stealingArrow ? [notation.stealingArrow] : [])
@@ -157,6 +158,12 @@ export function DiamondCell({ notation, outIndex }: Props) {
             ×{abCount}
           </text>
         </g>
+      )}
+      {/* Inning-End-Marker — RFL-Konvention: kleine Diagonale am rechten
+          Cell-Border markiert wo das 3. Out fiel. Hilft Scorekeeper für
+          Lineup-Reihenfolge im nächsten Inning. */}
+      {inningEnd && (
+        <line x1={56} y1={64} x2={60} y2={76} stroke="#1f2937" strokeWidth="1.2" strokeLinecap="round" />
       )}
       {effectiveOutIndex && (
         <text
