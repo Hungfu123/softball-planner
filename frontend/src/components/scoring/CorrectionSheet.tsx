@@ -45,10 +45,14 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
   // Sheet zeigt die Assignments im Moment des Öffnens, danach lokale Edits.
   useEffect(() => {
     if (!open) return
+    // Bei post-out: Auto-Default = +1 Base (Force-Out-Standard).
+    //   1B → 2B, 2B → 3B, 3B → Home. User fixt wenn Runner doch out oder bleibt.
+    // Bei manual: Default = bleibt (User passt nur an was geändert hat).
+    const advanceByOne = (b: 1 | 2 | 3): Position => (b === 3 ? 'home' : ((b + 1) as Position))
     const onBase = runners.map(r => ({
       playerId: r.playerId,
       playerName: r.playerName,
-      position: r.base as 1 | 2 | 3,
+      position: context === 'post-out' ? advanceByOne(r.base as 1 | 2 | 3) : (r.base as 1 | 2 | 3),
       wasOnBase: r.base as 1 | 2 | 3,
     } as RunnerAssignment))
     const scored = recentlyScored.map(s => ({
@@ -69,32 +73,6 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
     setAssignments(arr => arr.filter(a => a.playerId !== playerId))
   }
 
-  /**
-   * Quick-Action: alle Runner um eine Base weiter.
-   * Typisch bei Grounder-Out (force-play) — 3B scort, 2B→3B, 1B→2B.
-   * User kann danach einzelne Runner noch korrigieren (z.B. einer war Aus).
-   */
-  const advanceAllOneBase = () => {
-    setAssignments(arr => arr.map(a => {
-      if (a.position === 'home' || a.position === 'out') return a
-      if (a.position === 3) return { ...a, position: 'home' as Position }
-      if (a.position === 2) return { ...a, position: 3 as Position }
-      if (a.position === 1) return { ...a, position: 2 as Position }
-      return a
-    }))
-  }
-
-  /**
-   * Quick-Action: Nur Runner-3B nach Home (Tag-up nach Fly Out).
-   * Andere Runner bleiben — typisch bei Fly Out wo nur 3B-Runner taggt.
-   */
-  const tagUp3BHome = () => {
-    setAssignments(arr => arr.map(a => {
-      if (a.position === 3) return { ...a, position: 'home' as Position }
-      return a
-    }))
-  }
-  const has3BRunner = assignments.some(a => a.position === 3)
 
   // Build new base state
   // Conflict-Resolution: last assignment wins. User sollte nicht zwei Runner auf gleiche Base packen.
@@ -185,46 +163,31 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
               </div>
             )}
 
-            {/* Quick-Actions — nur bei post-out (Grounder-Force / Fly-Tag-up).
-                Nach Hit (manual) sind Runner bereits via Default-Advance verschoben,
-                Buttons würden sie nochmal weiterschieben → meist falsch. */}
-            {context === 'post-out' && assignments.some(a => a.position === 1 || a.position === 2 || a.position === 3) && (
-              <div className={`grid gap-2 ${has3BRunner ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                <button
-                  onClick={advanceAllOneBase}
-                  className="min-h-[44px] px-3 py-2 rounded-lg border border-navy-300 bg-navy-50 text-navy-800 text-sm font-semibold cursor-pointer hover:bg-navy-100 hover:border-navy-500 active:scale-[0.98] transition-all flex flex-col items-center justify-center"
-                  title="Alle Runner rücken eine Base weiter (typisch bei Grounder-Force)"
-                >
-                  <span>Alle +1 Base</span>
-                  <span className="text-[10px] font-normal opacity-70">Grounder-Force</span>
-                </button>
-                {has3BRunner && (
-                  <button
-                    onClick={tagUp3BHome}
-                    className="min-h-[44px] px-3 py-2 rounded-lg border border-emerald-400 bg-emerald-50 text-emerald-900 text-sm font-semibold cursor-pointer hover:bg-emerald-100 hover:border-emerald-500 active:scale-[0.98] transition-all flex flex-col items-center justify-center"
-                    title="Nur Runner-3B scort (Tag-up nach Fly Out)"
-                  >
-                    <span>3B → Home</span>
-                    <span className="text-[10px] font-normal opacity-70">Tag-up Fly</span>
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Quick-Actions raus: Auto-Default ist jetzt +1 Base bei post-out,
+                User fixt nur Ausnahmen (Runner blieb / wurde out). */}
 
             {assignments.length === 0 && (
               <p className="text-sm text-gray-500 text-center py-4">Kein Runner auf Base.</p>
             )}
 
-            {assignments.map(a => (
-              <RunnerCard
-                key={a.playerId}
-                assignment={a}
-                onCycle={() => setPosition(a.playerId, nextCyclePosition(a))}
-                onToggleOut={() => setPosition(a.playerId, a.position === 'out' ? (a.wasOnBase ?? 'home') : 'out')}
-                onToggleHome={() => setPosition(a.playerId, a.position === 'home' ? (a.wasOnBase ?? 'home') : 'home')}
-                onRemove={() => removeAssignment(a.playerId)}
-              />
-            ))}
+            {assignments.length > 0 && (
+              <p className="text-[11px] text-gray-500 italic px-1 -mb-1">
+                Tipp auf Pille = nächste Base · Tipp erneut für weitere
+              </p>
+            )}
+
+            <div className="space-y-1.5">
+              {assignments.map(a => (
+                <RunnerCard
+                  key={a.playerId}
+                  assignment={a}
+                  onCycle={() => setPosition(a.playerId, nextCyclePosition(a))}
+                  onToggleOut={() => setPosition(a.playerId, a.position === 'out' ? (a.wasOnBase ?? 'home') : 'out')}
+                  onToggleHome={() => setPosition(a.playerId, a.position === 'home' ? (a.wasOnBase ?? 'home') : 'home')}
+                  onRemove={() => removeAssignment(a.playerId)}
+                />
+              ))}
+            </div>
 
 
             {hasConflict && (
@@ -344,59 +307,51 @@ interface RunnerCardProps {
 function RunnerCard({ assignment: a, onCycle, onToggleOut, onToggleHome, onRemove }: RunnerCardProps) {
   const fromHome = a.wasOnBase == null
   return (
-    <div className="border border-cream-300 rounded-xl p-3 bg-cream-100">
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <div className="font-bold text-gray-900">{a.playerName}</div>
-          {a.wasOnBase != null && (
-            <div className="text-xs text-gray-500">war auf {a.wasOnBase}B</div>
-          )}
-          {fromHome && (
-            <div className="text-xs text-gray-500">war Home (gescort)</div>
-          )}
+    <div className="border border-cream-300 rounded-lg px-2 py-1.5 bg-cream-100 flex items-center gap-2">
+      <div className="min-w-0 flex-shrink-0 w-20">
+        <div className="text-sm font-bold text-gray-900 truncate leading-tight">{a.playerName}</div>
+        <div className="text-[10px] text-gray-500 leading-tight">
+          {fromHome ? 'war Home' : `war ${a.wasOnBase}B`}
         </div>
-        <button
-          onClick={onRemove}
-          className="text-gray-400 hover:text-gray-600 text-sm"
-          title="Eintrag entfernen"
-        >
-          ✕
-        </button>
       </div>
-      <div className="flex items-stretch gap-2">
-        {fromHome ? (
-          // Recently-scored Runner: Toggle zwischen Home und (kein Run)
-          <button
-            onClick={onToggleHome}
-            className={`flex-1 px-3 py-2.5 rounded-lg border text-sm font-semibold cursor-pointer transition-colors ${
-              a.position === 'home'
-                ? 'bg-softball-red-600 border-softball-red-700 text-white'
-                : 'bg-cream-50 border-cream-300 text-gray-700 hover:bg-cream-200'
-            }`}
-          >
-            {a.position === 'home' ? '✓ Home (Run!)' : '✕ doch nicht gescort'}
-          </button>
-        ) : (
-          <button
-            onClick={onCycle}
-            disabled={a.position === 'out'}
-            className={`flex-1 px-3 py-2.5 rounded-lg border text-sm font-semibold cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${cycleColor(a)}`}
-          >
-            {cycleLabel(a)}
-          </button>
-        )}
+      {fromHome ? (
         <button
-          onClick={onToggleOut}
-          className={`px-3 py-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
-            a.position === 'out'
+          onClick={onToggleHome}
+          className={`flex-1 px-2 py-2 rounded-md border text-xs font-semibold cursor-pointer transition-colors ${
+            a.position === 'home'
               ? 'bg-softball-red-600 border-softball-red-700 text-white'
-              : 'bg-white border-softball-red-200 text-softball-red-700 hover:bg-softball-red-50'
+              : 'bg-cream-50 border-cream-300 text-gray-700 hover:bg-cream-200'
           }`}
-          title={a.position === 'out' ? 'Wieder auf Base' : 'Als Out markieren'}
         >
-          {a.position === 'out' ? '✕ Aus' : 'Aus?'}
+          {a.position === 'home' ? '✓ Home (Run!)' : '✕ doch nicht gescort'}
         </button>
-      </div>
+      ) : (
+        <button
+          onClick={onCycle}
+          disabled={a.position === 'out'}
+          className={`flex-1 px-2 py-2 rounded-md border text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${cycleColor(a)}`}
+        >
+          {cycleLabel(a)}
+        </button>
+      )}
+      <button
+        onClick={onToggleOut}
+        className={`px-2 py-2 rounded-md border text-[11px] font-semibold cursor-pointer transition-colors ${
+          a.position === 'out'
+            ? 'bg-softball-red-600 border-softball-red-700 text-white'
+            : 'bg-white border-softball-red-200 text-softball-red-700 hover:bg-softball-red-50'
+        }`}
+        title={a.position === 'out' ? 'Wieder auf Base' : 'Als Out markieren'}
+      >
+        {a.position === 'out' ? '✕ Aus' : 'Aus?'}
+      </button>
+      <button
+        onClick={onRemove}
+        className="text-gray-400 hover:text-gray-600 text-xs leading-none px-1"
+        title="Eintrag entfernen"
+      >
+        ✕
+      </button>
     </div>
   )
 }

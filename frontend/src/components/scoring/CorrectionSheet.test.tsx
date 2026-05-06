@@ -10,15 +10,15 @@ const runner = (id: number, name: string, base: 1 | 2 | 3): RunnerOnBase => ({
   battingOrder: id,
 })
 
-describe('CorrectionSheet — Tap-Cycle Runner UX', () => {
+describe('CorrectionSheet — Tap-Cycle Runner UX (manual context)', () => {
   it('Cycle 1B-Runner: bleibt 1B → 2B → 3B → Home → bleibt', () => {
-    const onSave = vi.fn()
     render(
       <CorrectionSheet
         open
         onClose={() => {}}
         runners={[runner(1, 'Anton', 1)]}
-        onSave={onSave}
+        context="manual"
+        onSave={vi.fn()}
       />
     )
     const cycle = screen.getByRole('button', { name: /bleibt 1B/ })
@@ -32,12 +32,13 @@ describe('CorrectionSheet — Tap-Cycle Runner UX', () => {
     expect(screen.getByRole('button', { name: /bleibt 1B/ })).toBeInTheDocument()
   })
 
-  it('Cycle 3B-Runner: bleibt 3B → Home → bleibt (kein 1B/2B)', () => {
+  it('Cycle 3B-Runner: bleibt 3B → Home → bleibt', () => {
     render(
       <CorrectionSheet
         open
         onClose={() => {}}
         runners={[runner(1, 'Carla', 3)]}
+        context="manual"
         onSave={vi.fn()}
       />
     )
@@ -54,15 +55,68 @@ describe('CorrectionSheet — Tap-Cycle Runner UX', () => {
         open
         onClose={() => {}}
         runners={[runner(1, 'Anton', 1)]}
+        context="manual"
         onSave={vi.fn()}
       />
     )
     fireEvent.click(screen.getByRole('button', { name: 'Aus?' }))
-    // Aus-Pill aktiv → Label wechselt zu "✕ Aus"
     expect(screen.getByRole('button', { name: '✕ Aus' })).toBeInTheDocument()
-    // Cycle-Button noch da (zeigt original-bleibt) aber disabled
     const cycle = screen.getByRole('button', { name: /bleibt 1B/ }) as HTMLButtonElement
     expect(cycle.disabled).toBe(true)
+  })
+})
+
+describe('CorrectionSheet — Auto-Default +1 Base bei post-out', () => {
+  it('1B-Runner: Default = "→ 2B"', () => {
+    render(
+      <CorrectionSheet
+        open
+        onClose={() => {}}
+        runners={[runner(1, 'Anton', 1)]}
+        context="post-out"
+        onSave={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('button', { name: /→ 2B/ })).toBeInTheDocument()
+  })
+
+  it('2B-Runner: Default = "→ 3B"', () => {
+    render(
+      <CorrectionSheet
+        open
+        onClose={() => {}}
+        runners={[runner(1, 'Berta', 2)]}
+        context="post-out"
+        onSave={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('button', { name: /→ 3B/ })).toBeInTheDocument()
+  })
+
+  it('3B-Runner: Default = "→ Home"', () => {
+    render(
+      <CorrectionSheet
+        open
+        onClose={() => {}}
+        runners={[runner(1, 'Carla', 3)]}
+        context="post-out"
+        onSave={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('button', { name: /→ Home \(Run!\)/ })).toBeInTheDocument()
+  })
+
+  it('Hint-Text "Tipp auf Pille = nächste Base" sichtbar wenn Runner', () => {
+    render(
+      <CorrectionSheet
+        open
+        onClose={() => {}}
+        runners={[runner(1, 'Anton', 1)]}
+        context="post-out"
+        onSave={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/Tipp auf Pille = nächste Base/)).toBeInTheDocument()
   })
 })
 
@@ -92,65 +146,5 @@ describe('CorrectionSheet — 3rd-Out Force-Play Warnung', () => {
       />
     )
     expect(screen.queryByText(/3\. Out im Inning/)).not.toBeInTheDocument()
-  })
-})
-
-describe('CorrectionSheet — Quick-Action Tag-up Home', () => {
-  it('Tag-up-Button sichtbar nur wenn 3B-Runner + post-out', () => {
-    render(
-      <CorrectionSheet
-        open
-        onClose={() => {}}
-        runners={[runner(1, 'Carla', 3)]}
-        context="post-out"
-        onSave={vi.fn()}
-      />
-    )
-    expect(screen.getByRole('button', { name: /3B → Home/ })).toBeInTheDocument()
-  })
-
-  it('Tag-up-Button NICHT sichtbar ohne 3B-Runner', () => {
-    render(
-      <CorrectionSheet
-        open
-        onClose={() => {}}
-        runners={[runner(1, 'Anton', 1)]}
-        context="post-out"
-        onSave={vi.fn()}
-      />
-    )
-    expect(screen.queryByRole('button', { name: /3B → Home/ })).not.toBeInTheDocument()
-  })
-
-  it('Tap auf Tag-up setzt nur 3B-Runner auf Home', () => {
-    render(
-      <CorrectionSheet
-        open
-        onClose={() => {}}
-        runners={[runner(1, 'Anton', 1), runner(3, 'Carla', 3)]}
-        context="post-out"
-        onSave={vi.fn()}
-      />
-    )
-    fireEvent.click(screen.getByRole('button', { name: /3B → Home/ }))
-    // Anton bleibt auf 1B
-    expect(screen.getByRole('button', { name: /bleibt 1B/ })).toBeInTheDocument()
-    // Carla scort → Cycle-Label "→ Home (Run!)"
-    expect(screen.getByRole('button', { name: /→ Home \(Run!\)/ })).toBeInTheDocument()
-  })
-
-  it('Quick-Action "Alle +1 Base" rückt alle Runner einen weiter', () => {
-    render(
-      <CorrectionSheet
-        open
-        onClose={() => {}}
-        runners={[runner(1, 'Anton', 1), runner(2, 'Berta', 2)]}
-        context="post-out"
-        onSave={vi.fn()}
-      />
-    )
-    fireEvent.click(screen.getByRole('button', { name: /Alle \+1 Base/ }))
-    expect(screen.getByRole('button', { name: /→ 2B/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /→ 3B/ })).toBeInTheDocument()
   })
 })
