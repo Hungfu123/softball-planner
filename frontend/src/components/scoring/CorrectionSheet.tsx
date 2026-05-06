@@ -219,7 +219,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
                   disabled={saving || hasConflict}
                   className="h-11 rounded-lg bg-softball-red-600 text-white font-bold cursor-pointer hover:bg-softball-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {saving ? 'Speichern…' : '✓ Speichern'}
+                  {saving ? 'Speichern…' : '✓ Bestätigen'}
                 </button>
               </div>
             </div>
