@@ -9,6 +9,9 @@ interface Props {
   homerunRunner?: { slotId: number; name: string; battingOrder: number } | null
   /** Tap auf Runner → callback (z.B. für Quick-Stealing). */
   onRunnerTap?: (runner: { slotId: number; name: string; battingOrder: number; base: 1 | 2 | 3 }) => void
+  /** SlotIds die als OUT (statt scored) verschwinden. Exit-Animation fadet
+   *  in-place statt durch Bases zu Home zu laufen. */
+  outSlotIds?: ReadonlySet<number>
 }
 
 // Positions im 220x220 viewBox (gleich wie DiamondView)
@@ -38,7 +41,7 @@ interface RunnerData {
   base: 1 | 2 | 3
 }
 
-function Runner({ r, onTap }: { r: RunnerData; onTap?: (r: RunnerData) => void }) {
+function Runner({ r, onTap, isOut }: { r: RunnerData; onTap?: (r: RunnerData) => void; isOut?: boolean }) {
   const [lastBase, setLastBase] = useState<number>(0)
 
   const waypoints = useMemo(() => {
@@ -73,6 +76,7 @@ function Runner({ r, onTap }: { r: RunnerData; onTap?: (r: RunnerData) => void }
 
   const distance = Math.abs(r.base - lastBase)
   const hasKeyframes = waypoints.xs.length > 1
+  const currentPos = posForIndex(r.base)
 
   return (
     <motion.g
@@ -83,7 +87,15 @@ function Runner({ r, onTap }: { r: RunnerData; onTap?: (r: RunnerData) => void }
         x: hasKeyframes ? waypoints.xs : waypoints.xs[0],
         y: hasKeyframes ? waypoints.ys : waypoints.ys[0],
       }}
-      exit={{
+      exit={isOut ? {
+        // OUT: in-place fade (Runner geht NICHT nach Home)
+        opacity: 0,
+        scale: 0.4,
+        x: currentPos.cx,
+        y: currentPos.cy,
+        transition: { duration: 0.4, ease: 'easeOut' },
+      } : {
+        // SCORED: Animation durch verbleibende Bases zu Home
         opacity: [1, 1, 0],
         scale: [1, 1, 0.6],
         x: exitWaypoints.xs,
@@ -144,7 +156,7 @@ function StaticBase({ pos, label, occupied }: StaticBaseProps) {
   )
 }
 
-export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap }: Props) {
+export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap, outSlotIds }: Props) {
   const runners: RunnerData[] = useMemo(() => {
     if (!baseState) return []
     const result: RunnerData[] = []
@@ -200,7 +212,7 @@ export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap 
         {/* Animated runners */}
         <AnimatePresence>
           {runners.map(r => (
-            <Runner key={r.slotId} r={r} onTap={onRunnerTap} />
+            <Runner key={r.slotId} r={r} onTap={onRunnerTap} isOut={outSlotIds?.has(r.slotId)} />
           ))}
         </AnimatePresence>
 

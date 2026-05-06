@@ -182,6 +182,7 @@ export default function SpielbogenPage() {
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [scoredFlash, setScoredFlash] = useState<{ runners: string[]; hitLabel: string | null } | null>(null)
   const [advanceFlash, setAdvanceFlash] = useState<{ runners: string[]; targets: string[] } | null>(null)
+  const [outSlotIds, setOutSlotIds] = useState<ReadonlySet<number>>(() => new Set())
 
   // Auto-open sheet drawer when game transitions to DONE
   const prevStatusRef = useRef<string | null>(null)
@@ -266,6 +267,15 @@ export default function SpielbogenPage() {
     if ((req.type === 'CAUGHT_STEALING' || req.type === 'OUT_ON_PLAY') && outs + 1 >= 3) {
       lastOutTypeRef.current = 'caughtStealing'
     }
+    // Mark slot as OUT for diamond exit-animation (in-place fade, kein Lauf zu Home)
+    if (req.type === 'CAUGHT_STEALING' || req.type === 'OUT_ON_PLAY') {
+      setOutSlotIds(prev => new Set([...prev, req.slotId]))
+      setTimeout(() => setOutSlotIds(prev => {
+        const next = new Set(prev)
+        next.delete(req.slotId)
+        return next
+      }), 1500)
+    }
     await recordStealing(req)
   }
 
@@ -288,6 +298,36 @@ export default function SpielbogenPage() {
     const projectedOuts = outs + increment
 
     try {
+      // Detect runners die als OUT verschwinden (DP/FC/Force-Out): vorher
+      // auf Base, nachher nicht mehr UND nicht gescort. Markieren für
+      // in-place fade-Exit statt Lauf zu Home.
+      if (req.baseStateAfter && beforeBaseState) {
+        const before = beforeBaseState
+        const after = req.baseStateAfter
+        const beforeRunners: Array<{ slotId: number; base: 1 | 2 | 3 }> = []
+        if (before.firstSlotId != null) beforeRunners.push({ slotId: before.firstSlotId, base: 1 })
+        if (before.secondSlotId != null) beforeRunners.push({ slotId: before.secondSlotId, base: 2 })
+        if (before.thirdSlotId != null) beforeRunners.push({ slotId: before.thirdSlotId, base: 3 })
+        const afterSet = new Set<number>()
+        if (after.firstSlotId != null) afterSet.add(after.firstSlotId)
+        if (after.secondSlotId != null) afterSet.add(after.secondSlotId)
+        if (after.thirdSlotId != null) afterSet.add(after.thirdSlotId)
+        // Disappeared by base-DESC (3B → 2B → 1B), die ersten N=runsScored sind scored
+        const disappeared = beforeRunners
+          .filter(r => !afterSet.has(r.slotId))
+          .sort((a, b) => b.base - a.base)
+        const runs = req.runsScored ?? 0
+        const outRunners = disappeared.slice(runs).map(r => r.slotId)
+        if (outRunners.length > 0) {
+          setOutSlotIds(prev => new Set([...prev, ...outRunners]))
+          setTimeout(() => setOutSlotIds(prev => {
+            const next = new Set(prev)
+            for (const id of outRunners) next.delete(id)
+            return next
+          }), 1500)
+        }
+      }
+
       await recordAtBat(req)
 
       const reducedMotion = typeof window !== 'undefined'
@@ -635,6 +675,7 @@ export default function SpielbogenPage() {
         slots={slots}
         homerunRunner={homerunRunner}
         onRunnerTap={isLive ? (r) => setQuickStealingRunner({ slotId: r.slotId, name: r.name, base: r.base }) : undefined}
+        outSlotIds={outSlotIds}
       />
       {isLive && displayBaseState && (displayBaseState.firstSlotId != null || displayBaseState.secondSlotId != null || displayBaseState.thirdSlotId != null) && (
         <p className="text-[11px] text-gray-500 text-center -mt-1 mb-1">
@@ -1270,7 +1311,7 @@ export default function SpielbogenPage() {
               await correctLastAtBat(currentSide, payload)
               // Runner-Outs als OUT_ON_PLAY-Events recorden für PDF-Notation
               for (const out of outsFromRunners) {
-                await recordStealing({
+                await handleRecordStealing({
                   side: currentSide,
                   slotId: out.slotId,
                   inning: meta.currentInning,
