@@ -26,6 +26,7 @@ export function Dashboard() {
   const [stats, setStats] = useState<SeasonPlayerStats[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
   const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | null>(null)
+  const [showStatsDetails, setShowStatsDetails] = useState(false)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
   const [showNewGameDay, setShowNewGameDay] = useState(false)
   const [newGdDate, setNewGdDate] = useState('')
@@ -282,7 +283,7 @@ export function Dashboard() {
                       value={newGdGameCount}
                       onChange={e => {
                         const val = e.target.value.replace(/\D/g, '');
-                        if (val === '') { setNewGdGameCount('' as any); return; }
+                        if (val === '') { setNewGdGameCount('' as unknown as number); return; }
                         setNewGdGameCount(Math.max(1, Math.min(10, Number(val))));
                       }}
                       onBlur={() => { if (!newGdGameCount) setNewGdGameCount(1); }}
@@ -328,6 +329,14 @@ export function Dashboard() {
               <p className="text-sm text-gray-500 text-center py-6">Noch keine Daten in dieser Saison.</p>
             ) : (
               <>
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={() => setShowStatsDetails(x => !x)}
+                    className="font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer"
+                  >
+                    {showStatsDetails ? '− Weniger' : '+ Mehr Details (SLG, OPS)'}
+                  </button>
+                </div>
                 <div className="overflow-x-auto rounded-xl border border-cream-300">
                   <table className="w-full text-sm">
                     <thead>
@@ -336,6 +345,12 @@ export function Dashboard() {
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-20">Spiele</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">AVG</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">OBP</th>
+                        {showStatsDetails && (
+                          <>
+                            <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">SLG</th>
+                            <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">OPS</th>
+                          </>
+                        )}
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-12 hidden sm:table-cell">H</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-12 hidden sm:table-cell">PA</th>
                         <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 hidden md:table-cell">Positionen</th>
@@ -375,6 +390,20 @@ export function Dashboard() {
                                   ? <span className="font-display font-semibold text-gray-700">{fmtAvg(Number(bat.onBasePct))}</span>
                                   : <span className="text-gray-300">—</span>}
                               </td>
+                              {showStatsDetails && (
+                                <>
+                                  <td className="px-3 py-2.5 text-right tabular-nums">
+                                    {bat && bat.atBats > 0
+                                      ? <span className="font-display font-semibold text-gray-700">{fmtAvg(Number(bat.sluggingPct))}</span>
+                                      : <span className="text-gray-300">—</span>}
+                                  </td>
+                                  <td className="px-3 py-2.5 text-right tabular-nums">
+                                    {bat && bat.plateAppearances > 0
+                                      ? <span className="font-display font-semibold text-navy-800">{fmtAvg(Number(bat.ops))}</span>
+                                      : <span className="text-gray-300">—</span>}
+                                  </td>
+                                </>
+                              )}
                               <td className="px-3 py-2.5 text-right tabular-nums hidden sm:table-cell">
                                 {bat && bat.plateAppearances > 0
                                   ? <span className="text-gray-700">{bat.hits}</span>
@@ -393,7 +422,9 @@ export function Dashboard() {
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-2 text-[11px] text-gray-400 italic">AVG = Schlag-Durchschnitt · OBP = On-Base Percentage · H = Hits · PA = Plate Appearances</p>
+                <p className="mt-2 text-[11px] text-gray-400 italic">
+                  AVG = Schlag-Durchschnitt · OBP = On-Base Percentage{showStatsDetails ? ' · SLG = Slugging · OPS = OBP+SLG' : ''} · H = Hits · PA = Plate Appearances
+                </p>
                 <div className="mt-3 text-right">
                   <Link
                     to={`/stats?scope=season&seasonId=${selectedSeasonId}&view=batting`}

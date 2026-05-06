@@ -206,7 +206,6 @@ export default function SpielbogenPage() {
       lastOutTypeRef.current = null
     }
     prevSideRef.current = currentSideForEffect
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSideForEffect])
 
   const prefersReducedMotion = typeof window !== 'undefined'

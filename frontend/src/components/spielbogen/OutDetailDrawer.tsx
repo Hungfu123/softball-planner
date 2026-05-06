@@ -626,7 +626,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     })
   }
 
-  const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], _isSacFly: boolean) => {
+  const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => {
     if (pendingAdvancePicker == null) return
     const { baseStateAfter: after, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
     // Force-Out 3rd-Out: Run zählt nicht (Softball/Baseball-Regel) — Grounder/Unassisted = +1 Out

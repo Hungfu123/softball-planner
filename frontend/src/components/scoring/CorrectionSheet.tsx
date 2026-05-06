@@ -37,7 +37,14 @@ interface Props {
 }
 
 export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', outsAfter, onSave }: Props) {
-  const initial = useMemo<RunnerAssignment[]>(() => {
+  const [assignments, setAssignments] = useState<RunnerAssignment[]>([])
+  const [saving, setSaving] = useState(false)
+
+  // Initialisiere Runner-Assignments nur beim Öffnen — vermeidet Loop wenn
+  // Parent neue Array-Referenz für `runners`-Prop bei jedem Render erzeugt.
+  // Sheet zeigt die Assignments im Moment des Öffnens, danach lokale Edits.
+  useEffect(() => {
+    if (!open) return
     const onBase = runners.map(r => ({
       playerId: r.playerId,
       playerName: r.playerName,
@@ -50,15 +57,9 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
       position: 'home' as Position,
       wasOnBase: null,
     }))
-    return [...onBase, ...scored]
-  }, [runners, recentlyScored])
-
-  const [assignments, setAssignments] = useState<RunnerAssignment[]>(initial)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    setAssignments(initial)
-  }, [initial, open])
+    setAssignments([...onBase, ...scored])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const setPosition = (playerId: number, pos: Position) => {
     setAssignments(arr => arr.map(a => a.playerId === playerId ? { ...a, position: pos } : a))
@@ -312,7 +313,11 @@ function nextCyclePosition(a: RunnerAssignment): Position {
 }
 
 function cycleLabel(a: RunnerAssignment): string {
-  if (a.position === 'out') return '✕ Aus'
+  if (a.position === 'out') {
+    // Cycle-Button ist disabled wenn Aus aktiv — Label zeigt Original-Position als Kontext.
+    if (a.wasOnBase != null) return `bleibt ${a.wasOnBase}B`
+    return 'Home'
+  }
   if (a.position === 'home') return '→ Home (Run!)'
   if (a.wasOnBase != null && a.position === a.wasOnBase) return `bleibt ${a.wasOnBase}B`
   if (typeof a.position === 'number') return `→ ${a.position}B`

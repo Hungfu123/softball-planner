@@ -259,16 +259,18 @@ export function ScoringPage() {
       // Auto-Open Korrektur-Sheet nur wenn echte Entscheidung nötig:
       //   - OUT mit Runner auf 3B → potentieller Sac-Fly oder Squeeze
       //   - OUT mit mehreren Runnern → Advancement/Double-Play-Frage
+      //   - OUT als 3. Out mit Runnern → Force-Out-Regel-Hinweis (Run zählt evtl. nicht)
       //   - HIT mit Runner auf 2B/3B → Runner advance.Bases zählt sie optimistisch
       //     Richtung Home (SINGLE: 3B→Home, DOUBLE: 2B+3B→Home, TRIPLE: alle→Home).
       //     User soll bestätigen ob Runner wirklich gescort hat oder thrown-out wurde.
       // Nicht bei einzelnem Force-Out auf 1B (klar = Runner steht).
       // Nicht bei WALK/HBP (Force-Advance, kein Risiko).
       // Nicht bei HOMERUN (alle scoren per Definition).
-      if (result === 'OUT' && hadRunners && !willBe3rdOut) {
+      if (result === 'OUT' && hadRunners) {
         const runnerCount = scoreboard.runners?.length ?? 0
         const runnerOnThird = displayBaseState.third != null
-        if (runnerOnThird || runnerCount >= 2) {
+        // Bei 3. Out IMMER öffnen (Force-Out-Regel-Hinweis), sonst nur wenn 3B-Runner oder 2+ Runner
+        if (willBe3rdOut || runnerOnThird || runnerCount >= 2) {
           setShowCorrection(true)
         }
       } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && runsScored > 0) {
