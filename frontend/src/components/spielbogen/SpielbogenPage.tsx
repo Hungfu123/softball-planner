@@ -1264,9 +1264,23 @@ export default function SpielbogenPage() {
           initialRunsScored={lastSideAtBat.runsScored}
           hitResult={showHitAdjust.result}
           slots={slots}
-          onConfirm={async (payload) => {
+          onConfirm={async ({ outsFromRunners, ...payload }) => {
             try {
               await correctLastAtBat(currentSide, payload)
+              // Runner-Outs als OUT_ON_PLAY-Events recorden für PDF-Notation
+              for (const out of outsFromRunners) {
+                await recordStealing({
+                  side: currentSide,
+                  slotId: out.slotId,
+                  inning: meta.currentInning,
+                  type: 'OUT_ON_PLAY',
+                  fromBase: out.fromBase,
+                  toBase: (out.fromBase + 1) as 2 | 3 | 4,
+                })
+              }
+              if (outsFromRunners.length > 0) {
+                toast.show(`${outsFromRunners.length} Runner-Out auf Hit erfasst`, 'success')
+              }
             } catch (e) {
               toast.show((e as Error).message, 'error')
             }

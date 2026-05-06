@@ -17,6 +17,9 @@ interface Props {
     secondSlotId: number | null
     thirdSlotId: number | null
     runsScored: number
+    /** Runner-SlotIds die als out markiert wurden (z.B. thrown-out an Home).
+     *  Werden vom Parent als OUT_ON_PLAY-Events recorded für PDF-Notation. */
+    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[]
   }) => Promise<void>
 }
 
@@ -137,6 +140,13 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScore
     return scoredCount + delta
   })()
 
+  const outsFromRunners = assignments
+    .filter(a => a.position === 'out' && a.startBase !== 'home-after-hit')
+    .map(a => ({
+      slotId: a.slotId,
+      fromBase: a.startBase as 1 | 2 | 3,
+    }))
+
   const handleConfirm = async () => {
     if (hasCollision) return
     setSaving(true)
@@ -146,6 +156,7 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScore
         secondSlotId: newState.secondSlotId,
         thirdSlotId: newState.thirdSlotId,
         runsScored: Math.max(0, finalRuns),
+        outsFromRunners,
       })
       onClose()
     } finally {
