@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useSeasons } from '@/hooks/useSeasons'
 import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
@@ -19,6 +19,7 @@ import * as api from '@/api/client'
 
 
 export function Dashboard() {
+  const navigate = useNavigate()
   const { seasons, loading: seasonsLoading, create: createSeason, update: updateSeason, remove: removeSeason } = useSeasons()
   const toast = useToastContext()
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
@@ -243,7 +244,7 @@ export function Dashboard() {
               gameDays={gameDays}
               battingStats={battingStats}
               onOpenLiga={() => setOpenSheet('liga')}
-              onOpenStats={() => setOpenSheet('stats')}
+              onOpenStats={() => navigate(`/stats?scope=season&seasonId=${selectedSeasonId}&view=batting`)}
               onOpenResults={() => setOpenSheet('results')}
             />
           )}
