@@ -262,16 +262,17 @@ export function ScoringPage() {
       // Auto-Open Korrektur-Sheet:
       //   - OUT + Runner → Force-Play/Tag-up Entscheidung (advanceBases lässt
       //     State unchanged, User muss aktiv cyclen).
-      //   - SINGLE/DOUBLE + Runner → mehrdeutige Advance (1B-Runner kann auf
-      //     2B/3B/Home, je nach Hit-Tiefe; advanceBases ist konservativ +1).
-      //     User cyclet zur tatsächlichen End-Position.
+      //   - SINGLE/DOUBLE/TRIPLE + Runner → Bestätigung der Advance.
+      //     SINGLE: 1B könnte 2B/3B, 2B könnte 3B/Home.
+      //     DOUBLE: 1B könnte 3B/Home.
+      //     TRIPLE: alle scoren default — Sheet als Sicherheit (Runner an Home thrown-out).
       //
-      // Nicht bei TRIPLE/HOMERUN: alle Runner scoren per Definition.
+      // Nicht bei HOMERUN: alle scoren per Definition (Ball über Zaun).
       // Nicht bei WALK/HBP: Force eindeutig.
       // Nicht bei 3. Out: Side-Switch automatisch.
       if (result === 'OUT' && hadRunners && !willBe3rdOut) {
         setShowCorrection(true)
-      } else if ((result === 'SINGLE' || result === 'DOUBLE') && hadRunners) {
+      } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
         setShowCorrection(true)
       }
     } catch (e) {
