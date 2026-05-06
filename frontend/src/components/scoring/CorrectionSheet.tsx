@@ -172,45 +172,14 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
             )}
 
             {assignments.map(a => (
-              <div key={a.playerId} className="border border-cream-300 rounded-xl p-3 bg-cream-100">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className="font-bold text-gray-900">{a.playerName}</div>
-                    {a.wasOnBase && (
-                      <div className="text-xs text-gray-500">war auf {a.wasOnBase}B</div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => removeAssignment(a.playerId)}
-                    className="text-gray-400 hover:text-gray-600 text-sm"
-                    title="Eintrag entfernen"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {([1, 2, 3] as const).map(b => (
-                    <Chip
-                      key={b}
-                      label={`${b}B`}
-                      active={a.position === b}
-                      onClick={() => setPosition(a.playerId, b)}
-                    />
-                  ))}
-                  <Chip
-                    label="Home ✓"
-                    active={a.position === 'home'}
-                    onClick={() => setPosition(a.playerId, 'home')}
-                    color="emerald"
-                  />
-                  <Chip
-                    label="✕ Aus"
-                    active={a.position === 'out'}
-                    onClick={() => setPosition(a.playerId, 'out')}
-                    color="red"
-                  />
-                </div>
-              </div>
+              <RunnerCard
+                key={a.playerId}
+                assignment={a}
+                onCycle={() => setPosition(a.playerId, nextCyclePosition(a))}
+                onToggleOut={() => setPosition(a.playerId, a.position === 'out' ? (a.wasOnBase ?? 'home') : 'out')}
+                onToggleHome={() => setPosition(a.playerId, a.position === 'home' ? (a.wasOnBase ?? 'home') : 'home')}
+                onRemove={() => removeAssignment(a.playerId)}
+              />
             ))}
 
 
@@ -276,12 +245,110 @@ function baseStateSummary(state: BaseStateDto, assignments: RunnerAssignment[]):
   return parts.join(' · ')
 }
 
-function Chip({ label, active, onClick, color = 'navy' }: { label: string; active: boolean; onClick: () => void; color?: 'navy' | 'emerald' | 'red' }) {
-  const base = 'px-3 py-1.5 text-xs font-semibold rounded-full cursor-pointer transition-colors'
-  const variants = {
-    navy: active ? 'bg-navy-800 text-white' : 'bg-white text-navy-700 border border-navy-200 hover:bg-navy-50',
-    emerald: active ? 'bg-emerald-600 text-white' : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50',
-    red: active ? 'bg-softball-red-600 text-white' : 'bg-white text-softball-red-700 border border-softball-red-200 hover:bg-softball-red-50',
+/**
+ * Cycle: bleibt → +1 Base → +2 Bases → Home → bleibt.
+ * Range basiert auf Start-Base (1B-Runner: 1→2→3→Home; 2B: 2→3→Home; 3B: 3→Home).
+ * Kein Rückwärts-Cycle (Runner kann nicht zu vorheriger Base laufen).
+ */
+function nextCyclePosition(a: RunnerAssignment): Position {
+  const from = a.wasOnBase ?? 'home'
+  if (from === 'home') {
+    // Recently-scored Runner — Toggle zwischen home ↔ ausgangs-base unmöglich, daher Cycle ist No-op.
+    // Hat eigene UI in RunnerCard (Home-Toggle).
+    return a.position
   }
-  return <button onClick={onClick} className={`${base} ${variants[color]}`}>{label}</button>
+  // Cycle steps abhängig vom Start
+  const steps: Position[] = []
+  for (let b = from; b <= 3; b++) steps.push(b as Position)
+  steps.push('home')
+  // Wenn aktuell out: zurück zur Start-Base
+  if (a.position === 'out') return from
+  const idx = steps.indexOf(a.position)
+  if (idx === -1) return from
+  return steps[(idx + 1) % steps.length]
+}
+
+function cycleLabel(a: RunnerAssignment): string {
+  if (a.position === 'out') return '✕ Aus'
+  if (a.position === 'home') return '→ Home (Run!)'
+  if (a.wasOnBase != null && a.position === a.wasOnBase) return `bleibt ${a.wasOnBase}B`
+  if (typeof a.position === 'number') return `→ ${a.position}B`
+  return 'bleibt'
+}
+
+function cycleColor(a: RunnerAssignment): string {
+  if (a.position === 'out') return 'bg-softball-red-50 border-softball-red-300 text-softball-red-800'
+  if (a.position === 'home') return 'bg-softball-red-600 border-softball-red-700 text-white'
+  if (a.wasOnBase != null && a.position !== a.wasOnBase) {
+    return 'bg-emerald-100 border-emerald-400 text-emerald-900'
+  }
+  return 'bg-cream-50 border-cream-300 text-gray-700'
+}
+
+interface RunnerCardProps {
+  assignment: RunnerAssignment
+  onCycle: () => void
+  onToggleOut: () => void
+  onToggleHome: () => void
+  onRemove: () => void
+}
+
+function RunnerCard({ assignment: a, onCycle, onToggleOut, onToggleHome, onRemove }: RunnerCardProps) {
+  const fromHome = a.wasOnBase == null
+  return (
+    <div className="border border-cream-300 rounded-xl p-3 bg-cream-100">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <div className="font-bold text-gray-900">{a.playerName}</div>
+          {a.wasOnBase != null && (
+            <div className="text-xs text-gray-500">war auf {a.wasOnBase}B</div>
+          )}
+          {fromHome && (
+            <div className="text-xs text-gray-500">war Home (gescort)</div>
+          )}
+        </div>
+        <button
+          onClick={onRemove}
+          className="text-gray-400 hover:text-gray-600 text-sm"
+          title="Eintrag entfernen"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="flex items-stretch gap-2">
+        {fromHome ? (
+          // Recently-scored Runner: Toggle zwischen Home und (kein Run)
+          <button
+            onClick={onToggleHome}
+            className={`flex-1 px-3 py-2.5 rounded-lg border text-sm font-semibold cursor-pointer transition-colors ${
+              a.position === 'home'
+                ? 'bg-softball-red-600 border-softball-red-700 text-white'
+                : 'bg-cream-50 border-cream-300 text-gray-700 hover:bg-cream-200'
+            }`}
+          >
+            {a.position === 'home' ? '✓ Home (Run!)' : '✕ doch nicht gescort'}
+          </button>
+        ) : (
+          <button
+            onClick={onCycle}
+            disabled={a.position === 'out'}
+            className={`flex-1 px-3 py-2.5 rounded-lg border text-sm font-semibold cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${cycleColor(a)}`}
+          >
+            {cycleLabel(a)}
+          </button>
+        )}
+        <button
+          onClick={onToggleOut}
+          className={`px-3 py-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors ${
+            a.position === 'out'
+              ? 'bg-softball-red-600 border-softball-red-700 text-white'
+              : 'bg-white border-softball-red-200 text-softball-red-700 hover:bg-softball-red-50'
+          }`}
+          title={a.position === 'out' ? 'Wieder auf Base' : 'Als Out markieren'}
+        >
+          {a.position === 'out' ? '✕ Aus' : 'Aus?'}
+        </button>
+      </div>
+    </div>
+  )
 }
