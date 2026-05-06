@@ -248,3 +248,109 @@ describe('OutDetailDrawer FlyOut + 2 Outs Picker skip', () => {
     expect(screen.queryByText(/Tag Up/i)).toBeNull()
   })
 })
+
+describe('OutDetailDrawer — Runner-Advance-Picker Validation', () => {
+  it('Collision-Banner erscheint automatisch bei Force-Default mit Runner-Stay', () => {
+    // Runner-1B forced auf 2B (Smart-Default Throw-zu-1B), Runner-2B bleibt 2B
+    // → Auto-Collision direkt beim Öffnen
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={vi.fn()}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+      outs={0}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
+    fireEvent.click(screen.getByText(/Wirft zu 1B/i))
+    expect(screen.getByText(/Konflikt/)).toBeInTheDocument()
+  })
+
+  it('Bestätigen-Button disabled bei Collision', () => {
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={vi.fn()}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+      outs={0}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
+    fireEvent.click(screen.getByText(/Wirft zu 1B/i))
+    // Bestätigen-Button im Picker (nicht der initial Wirft-zu-1B)
+    const buttons = screen.getAllByRole('button', { name: /Bestätigen/i }) as HTMLButtonElement[]
+    const confirmInPicker = buttons[buttons.length - 1]
+    expect(confirmInPicker.disabled).toBe(true)
+  })
+
+  it('Collision lösbar durch weiteres Cyclen — Runner-1B → 3B', () => {
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={vi.fn()}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+      outs={0}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
+    fireEvent.click(screen.getByText(/Wirft zu 1B/i))
+    // Cycle Runner-1B von 2B (default) weiter → 3B. Runner-2B bleibt 2B. Kein Konflikt mehr.
+    fireEvent.click(screen.getByRole('button', { name: /Runner-1B \(auf 1B\)/ }))
+    expect(screen.queryByText(/Konflikt/)).toBeNull()
+  })
+
+  it('Home (4) ist von Collision ausgenommen — beliebig viele scoren möglich', () => {
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={vi.fn()}
+      baseStateAfter={{ firstSlotId: 1, secondSlotId: 2, thirdSlotId: null }}
+      slots={slots}
+      batterSlotId={99}
+      outs={0}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 5 3B'))
+    fireEvent.click(screen.getByText(/Wirft zu 1B/i))
+    // Runner-1B: default 2B → cycle 3B → Home (2 Klicks)
+    const r1 = screen.getByRole('button', { name: /Runner-1B \(auf 1B\)/ })
+    fireEvent.click(r1); fireEvent.click(r1)
+    // Runner-2B: bleibt 2B → cycle 3B → Home (2 Klicks)
+    const r2 = screen.getByRole('button', { name: /Runner-2B \(auf 2B\)/ })
+    fireEvent.click(r2); fireEvent.click(r2)
+    // Beide auf Home → keine Kollision
+    expect(screen.queryByText(/Konflikt/)).toBeNull()
+  })
+})
+
+describe('OutDetailDrawer — Sac Fly Toggle Visibility', () => {
+  it('Sac-Fly-Toggle sichtbar bei outs < 2 (Fly Out mit 3B-Runner)', () => {
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={vi.fn()}
+      baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: 1 }}
+      slots={[{ id: 1, side: 'HOME', slot: 1, name: 'Runner-3B', position: null, battingOrder: 1 }]}
+      batterSlotId={99}
+      outs={1}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 8 CF'))
+    expect(screen.getByText(/Sacrifice Fly/i)).toBeInTheDocument()
+  })
+
+  it('Sac-Fly-Toggle hidden bei 2 Outs (Fly-Catch beendet Inning)', () => {
+    render(<OutDetailDrawer
+      open={true}
+      onClose={() => {}}
+      onSubmit={vi.fn()}
+      baseStateAfter={{ firstSlotId: null, secondSlotId: null, thirdSlotId: 1 }}
+      slots={[{ id: 1, side: 'HOME', slot: 1, name: 'Runner-3B', position: null, battingOrder: 1 }]}
+      batterSlotId={99}
+      outs={2}
+    />)
+    fireEvent.click(screen.getByLabelText('Feldposition 8 CF'))
+    expect(screen.queryByText(/Sacrifice Fly/i)).toBeNull()
+  })
+})
