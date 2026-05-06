@@ -11,6 +11,9 @@ interface Props {
   initialRunsScored: number
   /** Hit-Type für Hint (Single/Double/Triple). */
   hitResult: 'SINGLE' | 'DOUBLE' | 'TRIPLE'
+  /** Outs im aktuellen Inning VOR diesem Hit. Wird mit outsFromRunners
+   *  kombiniert um Force-Play-3rd-Out-Regel zu prüfen. */
+  outsBefore: number
   slots: SpielbogenSlotResponse[]
   onConfirm: (payload: {
     firstSlotId: number | null
@@ -32,10 +35,11 @@ interface Assignment {
   position: Position
 }
 
-export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScored, hitResult, slots, onConfirm }: Props) {
+export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScored, hitResult, outsBefore, slots, onConfirm }: Props) {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [scoredCount, setScoredCount] = useState(initialRunsScored)
   const [saving, setSaving] = useState(false)
+  const [forceOutRule, setForceOutRule] = useState(false)
 
   // Initial state aus baseStateAfter — alle aktuell auf base + recently scored.
   // Für recently-scored bauen wir Pseudo-Einträge auf: jeder Run, der laut
@@ -128,24 +132,28 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScore
   })()
   const hasCollision = collidingBases.length > 0
 
-  // Runs = ursprüngliche scored (bereits beim Hit Home gegangen) + delta
-  // delta = (extra-home aus assignments) - (assignments die jetzt 'out' sind und vorher Home hätten sein können)
-  // Vereinfacht: scoredCount + alle die in assignments auf 'home' stehen aber NICHT direkt nach Hit dort waren
-  const finalRuns = (() => {
-    let delta = 0
-    for (const a of assignments) {
-      if (a.position === 'home' && a.startBase !== 'home-after-hit') delta += 1
-      // Runner als out → falls war auf Base, abziehen wenn er sonst gescort hätte (komplex). Vereinfacht: keine negativen runs hier.
-    }
-    return scoredCount + delta
-  })()
-
   const outsFromRunners = assignments
     .filter(a => a.position === 'out' && a.startBase !== 'home-after-hit')
     .map(a => ({
       slotId: a.slotId,
       fromBase: a.startBase as 1 | 2 | 3,
     }))
+
+  // Runs = ursprüngliche scored (bereits beim Hit Home gegangen) + delta
+  const baseRuns = (() => {
+    let delta = 0
+    for (const a of assignments) {
+      if (a.position === 'home' && a.startBase !== 'home-after-hit') delta += 1
+    }
+    return scoredCount + delta
+  })()
+
+  // Force-Out-3rd-Out-Regel: wenn ein Runner-Out das 3. Out wird UND ein Run
+  // gleichzeitig scort → bei Force-Out zählt Run NICHT (Inning endet vor Run).
+  // Nur Tag-Out / non-force: Run zählt.
+  const wouldBe3rdOutViaRunner = outsBefore + outsFromRunners.length >= 3 && outsFromRunners.length > 0
+  const showForceOutOption = wouldBe3rdOutViaRunner && baseRuns > 0
+  const finalRuns = showForceOutOption && forceOutRule ? 0 : baseRuns
 
   const handleConfirm = async () => {
     if (hasCollision) return
@@ -227,6 +235,24 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScore
         {hasCollision && (
           <div className="bg-softball-red-50 border border-softball-red-300 rounded-lg p-2.5 text-xs text-softball-red-900 font-body">
             ⚠ <strong>Konflikt:</strong> Zwei Runner auf gleicher Base ({collidingBases.map(b => `${b}B`).join(', ')}). Anpassen.
+          </div>
+        )}
+        {showForceOutOption && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg p-2.5 text-xs text-amber-900 font-body space-y-2">
+            <div>
+              ⚠ <strong>3. Out durch Runner-Out + Run gleichzeitig.</strong>
+              {' '}Bei <strong>Force-Out</strong> zählt der Run NICHT (Softball-Regel — Inning endet vor Run).
+              {' '}Nur bei Tag-Out (non-force) zählt der Run.
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer text-amber-900">
+              <input
+                type="checkbox"
+                checked={forceOutRule}
+                onChange={e => setForceOutRule(e.target.checked)}
+                className="w-4 h-4 rounded border-amber-400 accent-amber-700 cursor-pointer"
+              />
+              <span className="font-semibold">Force-Out — Run zählt nicht (auf 0 setzen)</span>
+            </label>
           </div>
         )}
         <div className="text-[11px] text-gray-500 pt-1 border-t border-cream-300">

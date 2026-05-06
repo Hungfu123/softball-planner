@@ -1263,6 +1263,7 @@ export default function SpielbogenPage() {
           baseStateAfter={lastSideAtBat.baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
           initialRunsScored={lastSideAtBat.runsScored}
           hitResult={showHitAdjust.result}
+          outsBefore={outs}
           slots={slots}
           onConfirm={async ({ outsFromRunners, ...payload }) => {
             try {
