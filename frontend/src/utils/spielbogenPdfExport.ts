@@ -299,7 +299,8 @@ function drawDiamondCell(
   const isMulti = (cell?.abCount ?? 0) >= 2
 
   // Multi-AB diagonal divider (Wrap-Around: gleicher Slot 2+ Bats im selben Inning)
-  if (isMulti) {
+  // Nur bei nicht-filled — Slash auf gefülltem Diamond sieht aus wie Strikethrough.
+  if (isMulti && !filled) {
     doc.setDrawColor(156, 163, 175)
     doc.setLineWidth(0.15)
     doc.line(cellX + cellW, cellY, cellX, cellY + cellH)
@@ -332,8 +333,8 @@ function drawDiamondCell(
     doc.setTextColor(0, 0, 0)
   }
 
-  // ×N Badge bei 3+ ABs (mehr als nur 2 sichtbar)
-  if ((cell?.abCount ?? 0) >= 3) {
+  // ×N Badge — bei 3+ ABs (immer) ODER filled+multi (statt Slash)
+  if ((cell?.abCount ?? 0) >= 3 || (filled && isMulti)) {
     doc.setFillColor(...COLOR_RED)
     doc.circle(cellX + 2.5, cellY + cellH - 2.2, 1.6, 'F')
     doc.setFontSize(3.5)
