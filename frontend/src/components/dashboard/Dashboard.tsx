@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useSeasons } from '@/hooks/useSeasons'
 import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
@@ -19,7 +19,6 @@ import * as api from '@/api/client'
 
 
 export function Dashboard() {
-  const navigate = useNavigate()
   const { seasons, loading: seasonsLoading, create: createSeason, update: updateSeason, remove: removeSeason } = useSeasons()
   const toast = useToastContext()
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
@@ -244,7 +243,7 @@ export function Dashboard() {
               gameDays={gameDays}
               battingStats={battingStats}
               onOpenLiga={() => setOpenSheet('liga')}
-              onOpenStats={() => navigate(`/stats?scope=season&seasonId=${selectedSeasonId}&view=batting`)}
+              onOpenStats={() => setOpenSheet('stats')}
               onOpenResults={() => setOpenSheet('results')}
             />
           )}
@@ -334,29 +333,53 @@ export function Dashboard() {
                     <thead>
                       <tr className="border-b border-cream-300 bg-cream-100">
                         <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700">Spieler</th>
-                        <th className="text-right px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-24">Spiele</th>
-                        <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 hidden sm:table-cell">Positionen</th>
+                        <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-20">Spiele</th>
+                        <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">AVG</th>
+                        <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-12 hidden sm:table-cell">H</th>
+                        <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-12 hidden sm:table-cell">PA</th>
+                        <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 hidden md:table-cell">Positionen</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(() => {
                         const maxGames = Math.max(...stats.map(st => st.totalGames), 1)
+                        const battingByPlayer = new Map(battingStats.map(b => [b.playerId, b]))
+                        const fmtAvg = (v: number) => {
+                          const s = v.toFixed(3)
+                          return s.startsWith('0') ? s.slice(1) : s
+                        }
                         return stats.map(s => {
                           const entries = Object.entries(s.positionCounts)
                           entries.sort((a, b) => b[1] - a[1])
                           const positions = entries.length === 0 ? '—' : entries.map(([pos, count]) => `${pos} (${count}x)`).join(', ')
+                          const bat = battingByPlayer.get(s.playerId)
                           return (
                             <tr key={s.playerId} className="border-b border-cream-200 last:border-0 hover:bg-cream-100">
                               <td className="px-4 py-2.5 font-medium text-gray-900">{s.playerName}</td>
-                              <td className="px-4 py-2.5 text-right">
+                              <td className="px-3 py-2.5 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <div className="w-12 sm:w-16 h-1.5 bg-cream-200 rounded-full overflow-hidden">
+                                  <div className="w-8 sm:w-12 h-1.5 bg-cream-200 rounded-full overflow-hidden">
                                     <div className="h-full bg-navy-800 rounded-full" style={{ width: `${(s.totalGames / maxGames) * 100}%` }} />
                                   </div>
-                                  <span className="font-display font-bold text-gray-900 w-6 text-right">{s.totalGames}</span>
+                                  <span className="font-display font-bold text-gray-900 tabular-nums w-6 text-right">{s.totalGames}</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-2.5 text-gray-600 hidden sm:table-cell">{positions}</td>
+                              <td className="px-3 py-2.5 text-right tabular-nums">
+                                {bat && bat.atBats > 0
+                                  ? <span className="font-display font-bold text-navy-900">{fmtAvg(Number(bat.battingAverage))}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums hidden sm:table-cell">
+                                {bat && bat.plateAppearances > 0
+                                  ? <span className="text-gray-700">{bat.hits}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums hidden sm:table-cell">
+                                {bat && bat.plateAppearances > 0
+                                  ? <span className="text-gray-500">{bat.plateAppearances}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
+                              <td className="px-4 py-2.5 text-gray-600 hidden md:table-cell">{positions}</td>
                             </tr>
                           )
                         })
@@ -364,9 +387,10 @@ export function Dashboard() {
                     </tbody>
                   </table>
                 </div>
+                <p className="mt-2 text-[11px] text-gray-400 italic">AVG = Schlag-Durchschnitt · H = Hits · PA = Plate Appearances</p>
                 <div className="mt-3 text-right">
                   <Link
-                    to={`/stats?scope=season&seasonId=${selectedSeasonId}`}
+                    to={`/stats?scope=season&seasonId=${selectedSeasonId}&view=batting`}
                     onClick={() => setOpenSheet(null)}
                     className="inline-flex items-center gap-1 text-sm text-navy-700 hover:text-softball-red-600 hover:underline"
                   >
