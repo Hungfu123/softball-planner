@@ -104,9 +104,9 @@ export function DiamondCell({ notation, outIndex }: Props) {
           <>
             {/* 1. AB Label oben-links Triangle */}
             <text
-              x={4}
-              y={20}
-              fontSize="7"
+              x={6}
+              y={26}
+              fontSize="9"
               fontWeight="700"
               fill="#1f2937"
               style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
@@ -115,10 +115,10 @@ export function DiamondCell({ notation, outIndex }: Props) {
             </text>
             {/* Latest AB Label unten-rechts Triangle */}
             <text
-              x={56}
-              y={75}
+              x={54}
+              y={72}
               textAnchor="end"
-              fontSize="7"
+              fontSize="9"
               fontWeight="700"
               fill="#1f2937"
               style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}

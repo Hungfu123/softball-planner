@@ -320,13 +320,13 @@ function drawDiamondCell(
         doc.text(cell.primaryLabel.slice(0, 5), cx, cy + 1, { align: 'center' })
       }
     } else if (isMulti && cell.labels.length >= 2) {
-      // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle
+      // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle — größere Schrift für Lesbarkeit
       doc.setTextColor(...COLOR_NAVY)
-      doc.setFontSize(4.5)
+      doc.setFontSize(5.5)
       const firstLbl = cell.labels[cell.labels.length - 2] ?? ''
       const lastLbl = cell.labels[cell.labels.length - 1] ?? ''
-      doc.text(firstLbl.slice(0, 5), cellX + 1.5, cellY + 5)
-      doc.text(lastLbl.slice(0, 5), cellX + cellW - 1.5, cellY + cellH - 1.5, { align: 'right' })
+      doc.text(firstLbl.slice(0, 5), cellX + 2, cellY + 6.5)
+      doc.text(lastLbl.slice(0, 5), cellX + cellW - 2, cellY + cellH - 2, { align: 'right' })
     } else {
       const labels = cell.labels.length > 1 ? cell.labels.slice(-2) : [cell.primaryLabel]
       doc.setTextColor(...COLOR_NAVY)
