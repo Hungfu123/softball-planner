@@ -14,6 +14,7 @@ import { BogenActionButtons } from './BogenActionButtons'
 import { BatterCard } from './BatterCard'
 import { LastAtBatPreview } from './LastAtBatPreview'
 import { CorrectionSheet } from './CorrectionSheet'
+import { HitAdjustSheet } from './HitAdjustSheet'
 import { RflSheetDrawer } from './RflSheetDrawer'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import * as api from '@/api/client'
@@ -161,6 +162,7 @@ export default function SpielbogenPage() {
   const [showSubModal, setShowSubModal] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
+  const [showHitAdjust, setShowHitAdjust] = useState<null | { result: 'SINGLE' | 'DOUBLE' | 'TRIPLE' }>(null)
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -397,17 +399,16 @@ export default function SpielbogenPage() {
         lastOutTypeRef.current = deriveLastOutType(req) ?? null
       }
 
-      // Auto-Open CorrectionSheet bei SINGLE/DOUBLE/TRIPLE mit Runnern —
-      // computeBaseStateAdvance ist optimistisch (Runner advancen sicher).
-      // User soll bestätigen ob Runner wirklich gescort hat oder thrown-out
-      // wurde an Home. Skip bei 3rd-Out (Side-Switch automatisch).
+      // Auto-Open Hit-Adjust-Sheet (Tap-Cycle) bei SINGLE/DOUBLE/TRIPLE mit
+      // Runnern — computeBaseStateAdvance ist optimistisch. User cyclet
+      // Runner zur tatsächlichen End-Position. Skip bei 3rd-Out.
       const hadRunnersBefore = beforeBaseState != null
         && (beforeBaseState.firstSlotId != null
           || beforeBaseState.secondSlotId != null
           || beforeBaseState.thirdSlotId != null)
       const isHit = req.result === 'SINGLE' || req.result === 'DOUBLE' || req.result === 'TRIPLE'
       if (isHit && hadRunnersBefore && projectedOuts < 3) {
-        setShowCorrection(true)
+        setShowHitAdjust({ result: req.result as 'SINGLE' | 'DOUBLE' | 'TRIPLE' })
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -1253,6 +1254,25 @@ export default function SpielbogenPage() {
 
       {/* Cheatsheet drawer */}
       <CheatsheetDrawer open={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
+
+      {/* Hit-Adjust-Sheet — Tap-Cycle nach SINGLE/DOUBLE/TRIPLE mit Runnern */}
+      {showHitAdjust && lastSideAtBat && (
+        <HitAdjustSheet
+          open={true}
+          onClose={() => setShowHitAdjust(null)}
+          baseStateAfter={lastSideAtBat.baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
+          initialRunsScored={lastSideAtBat.runsScored}
+          hitResult={showHitAdjust.result}
+          slots={slots}
+          onConfirm={async (payload) => {
+            try {
+              await correctLastAtBat(currentSide, payload)
+            } catch (e) {
+              toast.show((e as Error).message, 'error')
+            }
+          }}
+        />
+      )}
 
       {/* Quick-Stealing Sheet — Tap-on-Runner-Pattern (vom Old Scoring portiert).
           Schneller als StealingDrawer-via-MEHR-Pill für Live-Tempo. */}
