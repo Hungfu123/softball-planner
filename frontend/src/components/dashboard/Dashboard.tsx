@@ -335,6 +335,7 @@ export function Dashboard() {
                         <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700">Spieler</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-20">Spiele</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">AVG</th>
+                        <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-16">OBP</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-12 hidden sm:table-cell">H</th>
                         <th className="text-right px-3 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 w-12 hidden sm:table-cell">PA</th>
                         <th className="text-left px-4 py-3 font-display font-bold tracking-wider uppercase text-[11px] text-gray-700 hidden md:table-cell">Positionen</th>
@@ -369,6 +370,11 @@ export function Dashboard() {
                                   ? <span className="font-display font-bold text-navy-900">{fmtAvg(Number(bat.battingAverage))}</span>
                                   : <span className="text-gray-300">—</span>}
                               </td>
+                              <td className="px-3 py-2.5 text-right tabular-nums">
+                                {bat && bat.plateAppearances > 0
+                                  ? <span className="font-display font-semibold text-gray-700">{fmtAvg(Number(bat.onBasePct))}</span>
+                                  : <span className="text-gray-300">—</span>}
+                              </td>
                               <td className="px-3 py-2.5 text-right tabular-nums hidden sm:table-cell">
                                 {bat && bat.plateAppearances > 0
                                   ? <span className="text-gray-700">{bat.hits}</span>
@@ -387,7 +393,7 @@ export function Dashboard() {
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-2 text-[11px] text-gray-400 italic">AVG = Schlag-Durchschnitt · H = Hits · PA = Plate Appearances</p>
+                <p className="mt-2 text-[11px] text-gray-400 italic">AVG = Schlag-Durchschnitt · OBP = On-Base Percentage · H = Hits · PA = Plate Appearances</p>
                 <div className="mt-3 text-right">
                   <Link
                     to={`/stats?scope=season&seasonId=${selectedSeasonId}&view=batting`}
