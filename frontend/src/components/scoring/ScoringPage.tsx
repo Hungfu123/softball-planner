@@ -173,9 +173,12 @@ export function ScoringPage() {
     try {
       const nextState = advanceBases(displayBaseState, result, scoreboard.currentBatterId)
       const runsScored = countScored(displayBaseState, nextState, result, scoreboard.currentBatterId)
-      // Ermittle Runner die durch diesen AtBat gescort haben (für Korrigieren-Sheet)
+      // Ermittle Runner die durch diesen AtBat gescort haben (für Korrigieren-Sheet).
+      // displayRunners statt scoreboard.runners: scoreboard hat stale state aus
+      // vorherigem Inning bis erster AtBat im neuen Inning kommt — würde sonst
+      // beim ersten Out im neuen Inning fälschlich +N Runs anzeigen.
       const newRunnerIds = new Set([nextState.first, nextState.second, nextState.third].filter(Boolean) as number[])
-      const scoredPlayers = (scoreboard.runners ?? [])
+      const scoredPlayers = displayRunners
         .filter(r => !newRunnerIds.has(r.playerId))
         .map(r => ({ playerId: r.playerId, playerName: r.playerName }))
       // Homerun-Batter auch als "gescort" markieren (falls HR) damit er in Korrektur auftaucht
@@ -236,7 +239,7 @@ export function ScoringPage() {
         }
       }
 
-      const hadRunners = (scoreboard.runners?.length ?? 0) > 0
+      const hadRunners = displayRunners.length > 0
       const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
       const hitLabel = result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : result === 'TRIPLE' ? 'Triple' : null
       // Wenn dieser Out der 3. Out ist → Half-Inning ist vorbei
