@@ -259,18 +259,19 @@ export function ScoringPage() {
         }
       }
 
-      // Auto-Open Korrektur-Sheet bei OUT mit Runnern — User entscheidet via
-      // Tap-Cycle ob Runner advancen (Grounder: Force-Play, Fly: Tag-up).
-      // advanceBases bei OUT lässt State UNCHANGED → User muss aktiv cyclen
-      // wenn Runner doch advanced.
+      // Auto-Open Korrektur-Sheet:
+      //   - OUT + Runner → Force-Play/Tag-up Entscheidung (advanceBases lässt
+      //     State unchanged, User muss aktiv cyclen).
+      //   - SINGLE/DOUBLE + Runner → mehrdeutige Advance (1B-Runner kann auf
+      //     2B/3B/Home, je nach Hit-Tiefe; advanceBases ist konservativ +1).
+      //     User cyclet zur tatsächlichen End-Position.
       //
-      // Nicht bei Hits: advanceBases ist optimistisch (Runner advancen sicher),
-      //   das passt in 95% der Fälle. Wenn doch jemand thrown-out an Home →
-      //   User öffnet manuell Korrigieren-Button. Auto-Open für jeden Hit mit
-      //   Runs wäre zu nervig.
-      // Nicht bei WALK/HBP/HOMERUN: keine Mehrdeutigkeit.
+      // Nicht bei TRIPLE/HOMERUN: alle Runner scoren per Definition.
+      // Nicht bei WALK/HBP: Force eindeutig.
       // Nicht bei 3. Out: Side-Switch automatisch.
       if (result === 'OUT' && hadRunners && !willBe3rdOut) {
+        setShowCorrection(true)
+      } else if ((result === 'SINGLE' || result === 'DOUBLE') && hadRunners) {
         setShowCorrection(true)
       }
     } catch (e) {
