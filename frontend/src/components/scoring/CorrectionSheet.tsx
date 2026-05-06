@@ -171,7 +171,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
             )}
 
             {assignments.length > 0 && (
-              <p className="text-[11px] text-gray-500 italic px-1 -mb-1">
+              <p className="text-[11px] text-gray-500 italic px-1 mb-2">
                 Tipp auf Pille = nächste Base · Tipp erneut für weitere
               </p>
             )}
@@ -291,7 +291,8 @@ function cycleColor(a: RunnerAssignment): string {
   if (a.position === 'out') return 'bg-softball-red-50 border-softball-red-300 text-softball-red-800'
   if (a.position === 'home') return 'bg-softball-red-600 border-softball-red-700 text-white'
   if (a.wasOnBase != null && a.position !== a.wasOnBase) {
-    return 'bg-emerald-100 border-emerald-400 text-emerald-900'
+    // Soft emerald — harmoniert mit cream/navy-Palette, nicht zu mint-aqua.
+    return 'bg-emerald-50 border-emerald-300 text-emerald-800'
   }
   return 'bg-cream-50 border-cream-300 text-gray-700'
 }
