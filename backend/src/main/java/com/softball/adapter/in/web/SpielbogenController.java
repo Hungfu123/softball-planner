@@ -211,6 +211,18 @@ public class SpielbogenController {
         scoringService.deleteSubstitution(id, subId);
     }
 
+    @PostMapping("/{id}/position-swaps")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<SpielbogenPositionChangeResponse> recordPositionSwap(@PathVariable Long id,
+                                                                     @Valid @RequestBody SpielbogenRecordPositionSwapRequest req) {
+        var entries = req.changes().stream()
+            .map(c -> new SpielbogenScoringService.SwapEntry(c.slotId(), c.newPosition()))
+            .toList();
+        return scoringService.recordPositionSwap(id, req.side(), req.inning(), entries).stream()
+            .map(SpielbogenPositionChangeResponse::from)
+            .toList();
+    }
+
     @PostMapping("/{id}/switch-side")
     public SpielbogenResponse switchSide(@PathVariable Long id) {
         return SpielbogenResponse.from(scoringService.switchSide(id));
