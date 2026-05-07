@@ -1,10 +1,11 @@
 import { jsPDF } from 'jspdf'
-import { renderCells, cellKey } from './bogenSheetRenderer'
+import { renderCells, cellKey, computePositionHistoryPerSlot, positionDisplay } from './bogenSheetRenderer'
 import type {
   BogenSheetResponse,
   SpielbogenSlotResponse,
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
+  SpielbogenPositionChangeResponse,
   BogenSide,
 } from '@/types'
 
@@ -41,8 +42,8 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
     ...sheet.awayAtBats.map(a => a.inning),
   )
 
-  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning)
-  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning)
+  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges)
+  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges)
 
   doc.save(`spielbogen-${sheet.meta.date}-${sheet.meta.homeTeamName}-vs-${sheet.meta.awayTeamName}.pdf`)
 }
@@ -146,7 +147,8 @@ function drawSheet(
   atBats: SpielbogenAtBatResponse[],
   stealings: SpielbogenStealingResponse[],
   inningRuns: Record<number, { home: number; away: number }>,
-  numInnings: number
+  numInnings: number,
+  positionChanges: SpielbogenPositionChangeResponse[],
 ) {
   const tableW = 137
   const colNum = 8
@@ -177,6 +179,11 @@ function drawSheet(
 
   const cellMap = renderCells(atBats, stealings)
   const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
+  const sideChanges = positionChanges.filter(pc => pc.side === side)
+  const historyPerSlot = computePositionHistoryPerSlot(
+    sorted.map(s => ({ id: s.id, position: s.position })),
+    sideChanges,
+  )
 
   for (let row = 0; row < numRows; row++) {
     const slot = sorted[row] ?? null
@@ -193,7 +200,11 @@ function drawSheet(
       doc.setTextColor(0, 0, 0)
       doc.text(String(slot.battingOrder), x + 2, yy + 4)
       doc.text(slot.name.slice(0, 18), x + colNum + 2, yy + 4)
-      doc.text(slot.position ?? '—', x + colNum + colName + 2, yy + 4)
+      const history = historyPerSlot.get(slot.id) ?? [slot.position ?? '']
+      const yPositions = [yy + 4, yy + rowH * 0.45 + 3, yy + rowH * 0.75 + 3]
+      for (let i = 0; i < Math.min(history.length, 3); i++) {
+        doc.text(positionDisplay(history[i]), x + colNum + colName + 2, yPositions[i])
+      }
     }
 
     // Substitution-Linien in Name- und Pos-Zelle: 2 dünne graue Linien zum Eintragen.

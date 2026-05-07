@@ -395,3 +395,56 @@ function computeInningEndKeys(
 function roman(n: number): string {
   return n === 1 ? 'I' : n === 2 ? 'II' : n === 3 ? 'III' : ''
 }
+
+const POSITION_NUMBER_MAP: Record<string, string> = {
+  P: '1',
+  C: '2',
+  '1B': '3',
+  '2B': '4',
+  '3B': '5',
+  SS: '6',
+  LF: '7',
+  CF: '8',
+  RF: '9',
+}
+
+export function positionToNumber(pos: string | null | undefined): string | null {
+  if (!pos) return null
+  if (POSITION_NUMBER_MAP[pos]) return POSITION_NUMBER_MAP[pos]
+  if (/^[1-9]$/.test(pos)) return pos
+  return null
+}
+
+export function positionDisplay(pos: string | null | undefined): string {
+  if (!pos) return '—'
+  const num = positionToNumber(pos)
+  return num ?? pos
+}
+
+export function computePositionHistoryPerSlot(
+  slots: { id: number; position: string | null }[],
+  changes: { slotId: number; inning: number; oldPosition: string | null; newPosition: string | null; createdAt: string }[],
+): Map<number, string[]> {
+  const result = new Map<number, string[]>()
+  const sortedChanges = [...changes].sort((a, b) =>
+    a.inning !== b.inning ? a.inning - b.inning : a.createdAt.localeCompare(b.createdAt),
+  )
+  const grouped = new Map<number, typeof sortedChanges>()
+  for (const c of sortedChanges) {
+    const arr = grouped.get(c.slotId) ?? []
+    arr.push(c)
+    grouped.set(c.slotId, arr)
+  }
+  for (const slot of slots) {
+    const slotChanges = grouped.get(slot.id) ?? []
+    if (slotChanges.length === 0) {
+      result.set(slot.id, [slot.position ?? ''].filter(Boolean))
+      continue
+    }
+    const list: string[] = []
+    list.push(slotChanges[0].oldPosition ?? '')
+    for (const c of slotChanges) list.push(c.newPosition ?? '')
+    result.set(slot.id, list.filter(s => s !== ''))
+  }
+  return result
+}

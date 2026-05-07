@@ -1,6 +1,7 @@
 package com.softball.application;
 
 import com.softball.domain.model.*;
+import com.softball.domain.model.SpielbogenPositionChange;
 import com.softball.domain.port.out.SpielbogenRepository;
 import com.softball.domain.service.BogenScoreCalculator;
 import com.softball.shared.exception.ResourceNotFoundException;
@@ -37,6 +38,7 @@ public class SpielbogenSheetService {
         List<SpielbogenAtBat> awayAtBats,
         List<SpielbogenStealingEvent> stealings,
         List<SpielbogenSubstitution> subs,
+        List<SpielbogenPositionChange> positionChanges,
         Map<Integer, BogenScoreCalculator.InningRuns> inningRuns
     ) {}
 
@@ -61,6 +63,7 @@ public class SpielbogenSheetService {
             awayAtBats,
             scoringService.findStealingEvents(bogenId),
             scoringService.findSubstitutions(bogenId),
+            scoringService.findPositionChanges(bogenId),
             scoreCalc.calculateInningRuns(allAtBats)
         );
     }

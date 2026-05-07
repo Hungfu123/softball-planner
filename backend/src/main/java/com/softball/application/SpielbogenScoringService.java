@@ -9,7 +9,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class SpielbogenScoringService {
@@ -21,17 +27,20 @@ public class SpielbogenScoringService {
     private final SpielbogenAtBatRepository atBatRepo;
     private final SpielbogenStealingRepository stealingRepo;
     private final SpielbogenSubstitutionRepository subRepo;
+    private final SpielbogenPositionChangeRepository positionChangeRepo;
 
     public SpielbogenScoringService(final SpielbogenRepository bogenRepo,
                                     final SpielbogenSlotRepository slotRepo,
                                     final SpielbogenAtBatRepository atBatRepo,
                                     final SpielbogenStealingRepository stealingRepo,
-                                    final SpielbogenSubstitutionRepository subRepo) {
+                                    final SpielbogenSubstitutionRepository subRepo,
+                                    final SpielbogenPositionChangeRepository positionChangeRepo) {
         this.bogenRepo = bogenRepo;
         this.slotRepo = slotRepo;
         this.atBatRepo = atBatRepo;
         this.stealingRepo = stealingRepo;
         this.subRepo = subRepo;
+        this.positionChangeRepo = positionChangeRepo;
     }
 
     @Transactional
@@ -336,6 +345,11 @@ public class SpielbogenScoringService {
         return subRepo.findByBogenId(bogenId);
     }
 
+    @Transactional(readOnly = true)
+    public List<SpielbogenPositionChange> findPositionChanges(final Long bogenId) {
+        return positionChangeRepo.findByBogenId(bogenId);
+    }
+
     private void maybeAutoSwitchSide(final Spielbogen bogen, final BogenSide side, final int inning) {
         long outs = atBatRepo.countOutsInInning(bogen.getId(), side, inning);
         if (outs >= 3) {
@@ -348,6 +362,86 @@ public class SpielbogenScoringService {
             log.info("Auto-Switch nach 3 Outs: bogen={} inning={} side={} → next={}",
                      bogen.getId(), inning, side, next);
         }
+    }
+
+    public record SwapEntry(Long slotId, String newPosition) {}
+
+    private static final Set<String> VALID_SWAP_POSITIONS = Set.of(
+        "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "EH", "DH",
+        "1", "2", "3", "4", "5", "6", "7", "8", "9"
+    );
+
+    @Transactional
+    public List<SpielbogenPositionChange> recordPositionSwap(final Long bogenId, final BogenSide side,
+                                                             final Integer inning,
+                                                             final List<SwapEntry> entries) {
+        Spielbogen bogen = requireLive(bogenId);
+        if (entries == null || entries.isEmpty()) {
+            throw new BusinessValidationException("Mindestens 1 Position-Wechsel erforderlich");
+        }
+        if (inning == null || inning < 1) {
+            throw new BusinessValidationException("inning muss >= 1 sein");
+        }
+
+        var loaded = new ArrayList<SpielbogenSlot>();
+        var loadedNewPos = new ArrayList<String>();
+        var seenSlotIds = new HashSet<Long>();
+        for (SwapEntry entry : entries) {
+            if (entry.slotId() == null) {
+                throw new BusinessValidationException("slotId darf nicht null sein");
+            }
+            if (!seenSlotIds.add(entry.slotId())) {
+                throw new BusinessValidationException("Slot " + entry.slotId() + " mehrfach im Swap");
+            }
+            String newPos = entry.newPosition();
+            if (newPos != null && !newPos.isBlank() && !VALID_SWAP_POSITIONS.contains(newPos)) {
+                throw new BusinessValidationException("Ungültige Position: " + newPos);
+            }
+            SpielbogenSlot slot = requireSlotForBogenAndSide(entry.slotId(), bogenId, side);
+            loaded.add(slot);
+            loadedNewPos.add(newPos == null || newPos.isBlank() ? null : newPos);
+        }
+
+        var sideSlots = slotRepo.findByBogenIdAndSide(bogenId, side);
+        var resultingPositions = new HashMap<Long, String>();
+        for (SpielbogenSlot s : sideSlots) {
+            resultingPositions.put(s.getId(), s.getPosition());
+        }
+        for (int i = 0; i < loaded.size(); i++) {
+            resultingPositions.put(loaded.get(i).getId(), loadedNewPos.get(i));
+        }
+        var seenFieldPositions = new HashSet<String>();
+        for (String pos : resultingPositions.values()) {
+            if (pos == null || "EH".equals(pos)) continue;
+            if (!seenFieldPositions.add(pos)) {
+                throw new BusinessValidationException("Position " + pos + " ist doppelt belegt");
+            }
+        }
+
+        String groupId = UUID.randomUUID().toString();
+        var saved = new ArrayList<SpielbogenPositionChange>();
+        for (int i = 0; i < loaded.size(); i++) {
+            SpielbogenSlot slot = loaded.get(i);
+            String oldPos = slot.getPosition();
+            String newPos = loadedNewPos.get(i);
+            if (Objects.equals(oldPos, newPos)) continue;
+
+            SpielbogenPositionChange change = new SpielbogenPositionChange();
+            change.setBogen(bogen);
+            change.setSlot(slot);
+            change.setSide(side);
+            change.setInning(inning);
+            change.setGroupId(groupId);
+            change.setOldPosition(oldPos);
+            change.setNewPosition(newPos);
+
+            slot.setPosition(newPos);
+            slotRepo.save(slot);
+            saved.add(positionChangeRepo.save(change));
+        }
+        log.info("Spielbogen {} PositionSwap: side={} inning={} groupId={} changes={}",
+                 bogenId, side, inning, groupId, saved.size());
+        return saved;
     }
 
     private Spielbogen requireLive(final Long bogenId) {

@@ -211,6 +211,18 @@ public class SpielbogenController {
         scoringService.deleteSubstitution(id, subId);
     }
 
+    @PostMapping("/{id}/position-swaps")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<SpielbogenPositionChangeResponse> recordPositionSwap(@PathVariable Long id,
+                                                                     @Valid @RequestBody SpielbogenRecordPositionSwapRequest req) {
+        var entries = req.changes().stream()
+            .map(c -> new SpielbogenScoringService.SwapEntry(c.slotId(), c.newPosition()))
+            .toList();
+        return scoringService.recordPositionSwap(id, req.side(), req.inning(), entries).stream()
+            .map(SpielbogenPositionChangeResponse::from)
+            .toList();
+    }
+
     @PostMapping("/{id}/switch-side")
     public SpielbogenResponse switchSide(@PathVariable Long id) {
         return SpielbogenResponse.from(scoringService.switchSide(id));
@@ -237,6 +249,7 @@ public class SpielbogenController {
             data.awayAtBats().stream().map(SpielbogenAtBatResponse::from).toList(),
             data.stealings().stream().map(SpielbogenStealingResponse::from).toList(),
             data.subs().stream().map(SpielbogenSubstitutionResponse::from).toList(),
+            data.positionChanges().stream().map(SpielbogenPositionChangeResponse::from).toList(),
             data.inningRuns().entrySet().stream().collect(Collectors.toMap(
                 java.util.Map.Entry::getKey,
                 e -> new BogenSheetResponse.InningRuns(e.getValue().getHome(), e.getValue().getAway())

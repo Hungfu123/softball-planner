@@ -11,6 +11,7 @@ public record BogenSheetResponse(
     List<SpielbogenAtBatResponse> awayAtBats,
     List<SpielbogenStealingResponse> stealingEvents,
     List<SpielbogenSubstitutionResponse> substitutions,
+    List<SpielbogenPositionChangeResponse> positionChanges,
     Map<Integer, InningRuns> inningRuns
 ) {
     public record InningRuns(int home, int away) {}

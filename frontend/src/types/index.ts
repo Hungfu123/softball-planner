@@ -533,6 +533,29 @@ export interface SpielbogenRecordSubstitutionRequest {
   pinchHitter?: boolean
 }
 
+export interface SpielbogenPositionChangeResponse {
+  id: number
+  bogenId: number
+  slotId: number
+  side: BogenSide
+  inning: number
+  groupId: string
+  oldPosition: string | null
+  newPosition: string | null
+  createdAt: string
+}
+
+export interface SpielbogenRecordPositionSwapRequest {
+  side: BogenSide
+  inning: number
+  changes: PositionSwapEntry[]
+}
+
+export interface PositionSwapEntry {
+  slotId: number
+  newPosition: string | null
+}
+
 export interface BogenSheetResponse {
   meta: SpielbogenResponse
   homeLineup: SpielbogenSlotResponse[]
@@ -541,5 +564,6 @@ export interface BogenSheetResponse {
   awayAtBats: SpielbogenAtBatResponse[]
   stealingEvents: SpielbogenStealingResponse[]
   substitutions: SpielbogenSubstitutionResponse[]
+  positionChanges: SpielbogenPositionChangeResponse[]
   inningRuns: Record<number, { home: number; away: number }>
 }

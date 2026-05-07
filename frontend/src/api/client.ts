@@ -78,6 +78,8 @@ import type {
   SpielbogenRecordStealingRequest,
   SpielbogenSubstitutionResponse,
   SpielbogenRecordSubstitutionRequest,
+  SpielbogenPositionChangeResponse,
+  SpielbogenRecordPositionSwapRequest,
   BogenSheetResponse,
 } from '@/types'
 
@@ -444,6 +446,13 @@ export async function recordSpielbogenStealing(bogenId: number, req: SpielbogenR
 export async function recordSpielbogenSubstitution(bogenId: number, req: SpielbogenRecordSubstitutionRequest): Promise<SpielbogenSubstitutionResponse> {
   return request<SpielbogenSubstitutionResponse>(`/spielbogen/${bogenId}/substitutions`, {
     method: 'POST', body: JSON.stringify(req)
+  })
+}
+
+export async function recordSpielbogenPositionSwap(bogenId: number, req: SpielbogenRecordPositionSwapRequest): Promise<SpielbogenPositionChangeResponse[]> {
+  return request<SpielbogenPositionChangeResponse[]>(`/spielbogen/${bogenId}/position-swaps`, {
+    method: 'POST',
+    body: JSON.stringify(req),
   })
 }
 

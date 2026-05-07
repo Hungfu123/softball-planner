@@ -21,6 +21,7 @@ interface Props {
   onRecordStealing: (req: SpielbogenRecordStealingRequest) => Promise<void>
   onSwitchSide: () => void
   onSubstitution: () => void
+  onPositionSwap: () => void
   onEndGame: () => void
   canEndGame: boolean
 }
@@ -41,6 +42,7 @@ export function BogenActionButtons({
   onRecord,
   onRecordStealing,
   onSubstitution,
+  onPositionSwap,
   onEndGame,
   canEndGame,
 }: Props) {
@@ -281,6 +283,13 @@ export function BogenActionButtons({
           >
             <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Auswechseln</div>
             <div className="text-xs text-gray-500 mt-0.5">Spieler wechseln</div>
+          </button>
+          <button
+            onClick={() => { setShowMore(false); onPositionSwap() }}
+            className="w-full text-left px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer"
+          >
+            <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Positionen tauschen</div>
+            <div className="text-xs text-gray-500 mt-0.5">Feldpositionen zwischen Spielern tauschen</div>
           </button>
           <button
             onClick={() => { setShowMore(false); setShowStealing(true) }}
