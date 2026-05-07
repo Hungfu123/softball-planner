@@ -196,6 +196,14 @@ function drawSheet(
       doc.text(slot.position ?? '—', x + colNum + colName + 2, yy + 4)
     }
 
+    // Substitution-Linien in Name-Zelle: 2 dünne graue Linien zum Eintragen.
+    doc.setDrawColor(180, 180, 180)
+    doc.setLineWidth(0.15)
+    const nameX1 = x + colNum + 1.5
+    const nameX2 = x + colNum + colName - 1.5
+    doc.line(nameX1, yy + rowH * 0.45, nameX2, yy + rowH * 0.45)
+    doc.line(nameX1, yy + rowH * 0.75, nameX2, yy + rowH * 0.75)
+
     for (let inn = 1; inn <= numInnings; inn++) {
       const cellX = x + colNum + colName + colPos + (inn - 1) * colInning
       const cell = slot ? cellMap.get(cellKey(side, slot.id, inn)) : undefined
