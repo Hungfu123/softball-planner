@@ -479,6 +479,7 @@ function drawDiamondCell(
       : arrow.type === 'PASSED_BALL' ? 'PB'
       : arrow.type === 'CAUGHT_STEALING' ? 'CS'
       : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
+      : arrow.type === 'STOLEN_BASE' ? 'SB'
       : null
     if (label) {
       const labelColor: [number, number, number] =
