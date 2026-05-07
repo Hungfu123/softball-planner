@@ -345,6 +345,11 @@ public class SpielbogenScoringService {
         return subRepo.findByBogenId(bogenId);
     }
 
+    @Transactional(readOnly = true)
+    public List<SpielbogenPositionChange> findPositionChanges(final Long bogenId) {
+        return positionChangeRepo.findByBogenId(bogenId);
+    }
+
     private void maybeAutoSwitchSide(final Spielbogen bogen, final BogenSide side, final int inning) {
         long outs = atBatRepo.countOutsInInning(bogen.getId(), side, inning);
         if (outs >= 3) {

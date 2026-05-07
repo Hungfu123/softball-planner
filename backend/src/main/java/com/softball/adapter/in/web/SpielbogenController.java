@@ -249,6 +249,7 @@ public class SpielbogenController {
             data.awayAtBats().stream().map(SpielbogenAtBatResponse::from).toList(),
             data.stealings().stream().map(SpielbogenStealingResponse::from).toList(),
             data.subs().stream().map(SpielbogenSubstitutionResponse::from).toList(),
+            data.positionChanges().stream().map(SpielbogenPositionChangeResponse::from).toList(),
             data.inningRuns().entrySet().stream().collect(Collectors.toMap(
                 java.util.Map.Entry::getKey,
                 e -> new BogenSheetResponse.InningRuns(e.getValue().getHome(), e.getValue().getAway())
