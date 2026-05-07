@@ -28,6 +28,7 @@ import type {
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
   BogenBaseStateDto,
+  UpdateSlotRequest,
 } from '@/types'
 
 function computeUpcomingSlots(
@@ -152,7 +153,7 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot } =
     useSpielbogenScoring(bogenId)
 
   const [showCorrection, setShowCorrection] = useState(false)
@@ -533,6 +534,11 @@ export default function SpielbogenPage() {
     }
   }
 
+  const handleSlotUpdate = async (slotId: number, req: UpdateSlotRequest) => {
+    await updateSlot(slotId, req)
+    toast.show('Slot aktualisiert', 'success')
+  }
+
   const isDone = meta.status === 'DONE'
   const isLive = meta.status === 'LIVE'
 
@@ -844,6 +850,7 @@ export default function SpielbogenPage() {
           onEndGame={isLive ? () => { setShowSheet(false); setShowEndConfirm(true) } : undefined}
           onReopenGame={isDone ? handleReopenGame : undefined}
           onReload={reload}
+          onSlotUpdate={handleSlotUpdate}
         />
       )}
 
