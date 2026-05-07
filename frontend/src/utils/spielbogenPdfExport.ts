@@ -72,6 +72,10 @@ function drawHeaderField(doc: jsPDF, label: string, value: string, x: number, y:
   const boxH = 4
   doc.setFillColor(220, 220, 220)
   doc.rect(boxX, boxY, boxW, boxH, 'F')
+  // Schwarzer Strich unter Box (Eintragsfeld-Look)
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.3)
+  doc.line(boxX, boxY + boxH, boxX + boxW, boxY + boxH)
   if (value) {
     doc.setTextColor(0, 0, 0)
     doc.text(value, boxX + 1.5, y)
@@ -92,10 +96,13 @@ async function drawLogo(doc: jsPDF, x: number, y: number, w: number, h: number) 
 }
 
 function drawTeamBanner(doc: jsPDF, x: number, y: number, label: string, team: string, runs: number, width: number) {
-  // Cream-Hintergrund (kein Outer-Border).
   const bannerH = 8
+  const summeAreaW = 28 // Gap + Summe-Runs-Bereich rechts
+  const creamW = width - summeAreaW
+
+  // Cream-Hintergrund nur für Gast/Heim-Bereich, dann Lücke vor Summe-Box.
   doc.setFillColor(...COLOR_CREAM)
-  doc.rect(x, y, width, bannerH, 'F')
+  doc.rect(x, y, creamW, bannerH, 'F')
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
@@ -199,8 +206,6 @@ function drawSheet(
   drawTableGrid(doc, x, y, tableW, tableH, headerH, rowH, numRows, colNum, colName, colPos, colInning, numInnings)
 
   const lastRowY = y + headerH + numRows * rowH
-  doc.setFillColor(...COLOR_CREAM)
-  doc.rect(x, lastRowY, tableW, footerH, 'F')
   doc.setFontSize(7)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(0, 0, 0)
@@ -215,7 +220,7 @@ function drawSheet(
 
   // Footer outer border + vertical separators on inning footer cells
   doc.setDrawColor(...COLOR_BORDER_DARK)
-  doc.setLineWidth(0.4)
+  doc.setLineWidth(0.2)
   doc.rect(x, lastRowY, tableW, footerH)
   for (let i = 0; i <= numInnings; i++) {
     const xv = x + colNum + colName + colPos + i * colInning
@@ -239,7 +244,7 @@ function drawTableGrid(
   numInnings: number
 ) {
   doc.setDrawColor(...COLOR_BORDER_DARK)
-  doc.setLineWidth(0.4)
+  doc.setLineWidth(0.2)
 
   // Outer rectangle
   doc.rect(x, y, tableW, tableH)
@@ -249,7 +254,7 @@ function drawTableGrid(
 
   // Horizontal row separators
   doc.setDrawColor(...COLOR_BORDER)
-  doc.setLineWidth(0.3)
+  doc.setLineWidth(0.15)
   for (let r = 1; r < numRows; r++) {
     const yy = y + headerH + r * rowH
     doc.line(x, yy, x + tableW, yy)
@@ -257,14 +262,14 @@ function drawTableGrid(
 
   // Vertical separators (Nr / Name / Pos)
   doc.setDrawColor(...COLOR_BORDER_DARK)
-  doc.setLineWidth(0.4)
+  doc.setLineWidth(0.2)
   doc.line(x + colNum, y, x + colNum, y + tableH)
   doc.line(x + colNum + colName, y, x + colNum + colName, y + tableH)
   doc.line(x + colNum + colName + colPos, y, x + colNum + colName + colPos, y + tableH)
 
   // Vertical separators between every inning column
   doc.setDrawColor(...COLOR_BORDER)
-  doc.setLineWidth(0.3)
+  doc.setLineWidth(0.15)
   for (let i = 1; i < numInnings; i++) {
     const xv = x + colNum + colName + colPos + i * colInning
     doc.line(xv, y, xv, y + tableH)
