@@ -76,7 +76,7 @@ function SideSheet({
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
                 return (
-                  <td key={inning} className="p-0 h-14 lg:h-24" style={cellStyle}>
+                  <td key={inning} className="p-0 h-14 lg:h-20" style={cellStyle}>
                     <div className="w-full h-full">
                       <DiamondCell notation={cell} />
                     </div>
@@ -142,7 +142,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
         <Drawer.Content
           className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl flex flex-col focus:outline-none"
-          style={{ maxHeight: '90vh' }}
+          style={{ maxHeight: '95vh' }}
         >
           <Drawer.Title className="sr-only">Spielbogen</Drawer.Title>
           <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
