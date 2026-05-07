@@ -16,6 +16,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -279,5 +280,99 @@ class SpielbogenScoringServiceTest {
         assertEquals(result.get(0).getGroupId(), result.get(1).getGroupId());
         assertEquals("P", result.get(0).getOldPosition());
         assertEquals("C", result.get(0).getNewPosition());
+    }
+
+    @Test
+    void recordPositionSwap_ringSwap_threeSlots() {
+        SpielbogenSlot p = new SpielbogenSlot();
+        p.setId(100L);
+        p.setBogen(liveBogen);
+        p.setSide(BogenSide.HOME);
+        p.setPosition("P");
+
+        SpielbogenSlot c = new SpielbogenSlot();
+        c.setId(101L);
+        c.setBogen(liveBogen);
+        c.setSide(BogenSide.HOME);
+        c.setPosition("C");
+
+        SpielbogenSlot ss = new SpielbogenSlot();
+        ss.setId(102L);
+        ss.setBogen(liveBogen);
+        ss.setSide(BogenSide.HOME);
+        ss.setPosition("SS");
+
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(slotRepo.findById(100L)).thenReturn(Optional.of(p));
+        when(slotRepo.findById(101L)).thenReturn(Optional.of(c));
+        when(slotRepo.findById(102L)).thenReturn(Optional.of(ss));
+        when(slotRepo.findByBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(List.of(p, c, ss));
+        when(slotRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(positionChangeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var entries = List.of(
+            new SpielbogenScoringService.SwapEntry(100L, "C"),
+            new SpielbogenScoringService.SwapEntry(101L, "SS"),
+            new SpielbogenScoringService.SwapEntry(102L, "P")
+        );
+        var result = service.recordPositionSwap(1L, BogenSide.HOME, 5, entries);
+
+        assertEquals(3, result.size());
+        assertEquals("C", p.getPosition());
+        assertEquals("SS", c.getPosition());
+        assertEquals("P", ss.getPosition());
+        String gid = result.get(0).getGroupId();
+        assertEquals(gid, result.get(1).getGroupId());
+        assertEquals(gid, result.get(2).getGroupId());
+    }
+
+    @Test
+    void recordPositionSwap_duplicatePosition_throws() {
+        SpielbogenSlot p = new SpielbogenSlot();
+        p.setId(100L);
+        p.setBogen(liveBogen);
+        p.setSide(BogenSide.HOME);
+        p.setPosition("P");
+
+        SpielbogenSlot c = new SpielbogenSlot();
+        c.setId(101L);
+        c.setBogen(liveBogen);
+        c.setSide(BogenSide.HOME);
+        c.setPosition("C");
+
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(slotRepo.findById(100L)).thenReturn(Optional.of(p));
+        when(slotRepo.findById(101L)).thenReturn(Optional.of(c));
+        when(slotRepo.findByBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(List.of(p, c));
+
+        var entries = List.of(
+            new SpielbogenScoringService.SwapEntry(100L, "C"),
+            new SpielbogenScoringService.SwapEntry(101L, "C")
+        );
+        assertThrows(BusinessValidationException.class,
+            () -> service.recordPositionSwap(1L, BogenSide.HOME, 3, entries));
+    }
+
+    @Test
+    void recordPositionSwap_invalidPosition_throws() {
+        SpielbogenSlot slot = new SpielbogenSlot();
+        slot.setId(100L);
+        slot.setBogen(liveBogen);
+        slot.setSide(BogenSide.HOME);
+        slot.setPosition("P");
+
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+
+        var entries = List.of(new SpielbogenScoringService.SwapEntry(100L, "XYZ"));
+        assertThrows(BusinessValidationException.class,
+            () -> service.recordPositionSwap(1L, BogenSide.HOME, 3, entries));
+    }
+
+    @Test
+    void recordPositionSwap_emptyEntries_throws() {
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+
+        assertThrows(BusinessValidationException.class,
+            () -> service.recordPositionSwap(1L, BogenSide.HOME, 3, List.of()));
     }
 }
