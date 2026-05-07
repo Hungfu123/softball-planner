@@ -6,10 +6,13 @@ import type {
   SpielbogenSlotResponse,
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
+  UpdateSlotRequest,
 } from '@/types'
 import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import { DiamondCell } from './DiamondCell'
+import { BogenSlotEditModal } from './BogenSlotEditModal'
+import { Pencil } from '@/icons'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 
@@ -20,6 +23,7 @@ interface Props {
   onEndGame?: () => void
   onReopenGame?: () => void
   onReload?: () => void
+  onSlotUpdate?: (slotId: number, req: UpdateSlotRequest) => Promise<void>
 }
 
 const MAX_INNINGS = 7
@@ -38,70 +42,100 @@ function SideSheet({
   atBats,
   stealings,
   inningRuns,
+  onSlotUpdate,
 }: {
   side: BogenSide
   slots: SpielbogenSlotResponse[]
   atBats: SpielbogenAtBatResponse[]
   stealings: SpielbogenStealingResponse[]
   inningRuns: Record<number, { home: number; away: number }>
+  onSlotUpdate?: (slotId: number, req: UpdateSlotRequest) => Promise<void>
 }) {
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const sorted = [...slots].sort((a, b) => a.battingOrder - b.battingOrder)
   const cellMap = renderCells(atBats, stealings)
+  const [editingSlot, setEditingSlot] = useState<SpielbogenSlotResponse | null>(null)
 
   const innings = Array.from({ length: MAX_INNINGS }, (_, i) => i + 1)
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full table-fixed text-[11px] lg:text-sm" style={{ borderCollapse: 'collapse' }}>
-        <thead>
-          <tr className="bg-navy-800 text-white" style={{ borderTop: '1px solid #1e3a8a' }}>
-            <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-5 lg:w-10" style={firstHeaderCellStyle}>#</th>
-            <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-16 lg:w-40" style={headerCellStyle}>Name</th>
-            <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-7 lg:w-14" style={headerCellStyle}>Pos</th>
-            {innings.map(i => (
-              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center" style={headerCellStyle}>{i}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((slot) => (
-            <tr key={slot.id} className="bg-white">
-              <td className="px-1 py-0.5 font-display font-bold text-navy-700" style={firstCellStyle}>{slot.battingOrder}</td>
-              <td className="px-1 py-0.5 font-body text-navy-900 truncate" style={cellStyle}>{slot.name}</td>
-              <td className="px-1 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
-              {innings.map(inning => {
-                const key = cellKey(side, slot.id, inning)
-                const cell = cellMap.get(key)
-                return (
-                  <td key={inning} className="p-0 h-14 lg:h-20" style={cellStyle}>
-                    <div className="w-full h-full">
-                      <DiamondCell notation={cell} />
-                    </div>
-                  </td>
-                )
-              })}
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed text-[11px] lg:text-sm" style={{ borderCollapse: 'collapse' }}>
+          <thead>
+            <tr className="bg-navy-800 text-white" style={{ borderTop: '1px solid #1e3a8a' }}>
+              <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-5 lg:w-10" style={firstHeaderCellStyle}>#</th>
+              <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-16 lg:w-40" style={headerCellStyle}>Name</th>
+              <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-7 lg:w-14" style={headerCellStyle}>Pos</th>
+              {innings.map(i => (
+                <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center" style={headerCellStyle}>{i}</th>
+              ))}
+              {onSlotUpdate && (
+                <th className="px-1 py-1.5 w-6" style={headerCellStyle}></th>
+              )}
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="bg-cream-100">
-            <td colSpan={3} className="px-1 py-1.5 font-display font-bold text-navy-700 text-[11px] uppercase tracking-wide" style={cellStyle}>
-              Runs
-            </td>
-            {innings.map(i => (
-              <td key={i} className="text-center font-display font-bold text-navy-800 text-[11px] py-1.5" style={cellStyle}>
-                {inningRuns[i]?.[sideKey] ?? 0}
-              </td>
+          </thead>
+          <tbody>
+            {sorted.map((slot) => (
+              <tr key={slot.id} className="bg-white">
+                <td className="px-1 py-0.5 font-display font-bold text-navy-700" style={firstCellStyle}>{slot.battingOrder}</td>
+                <td className="px-1 py-0.5 font-body text-navy-900 truncate" style={cellStyle}>{slot.name}</td>
+                <td className="px-1 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
+                {innings.map(inning => {
+                  const key = cellKey(side, slot.id, inning)
+                  const cell = cellMap.get(key)
+                  return (
+                    <td key={inning} className="p-0 h-14 lg:h-20" style={cellStyle}>
+                      <div className="w-full h-full">
+                        <DiamondCell notation={cell} />
+                      </div>
+                    </td>
+                  )
+                })}
+                {onSlotUpdate && (
+                  <td className="p-0 text-center align-middle" style={cellStyle}>
+                    <button
+                      onClick={() => setEditingSlot(slot)}
+                      className="p-1 text-gray-400 hover:text-navy-700 cursor-pointer"
+                      aria-label="Slot bearbeiten"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                  </td>
+                )}
+              </tr>
             ))}
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+          </tbody>
+          <tfoot>
+            <tr className="bg-cream-100">
+              <td colSpan={3} className="px-1 py-1.5 font-display font-bold text-navy-700 text-[11px] uppercase tracking-wide" style={cellStyle}>
+                Runs
+              </td>
+              {innings.map(i => (
+                <td key={i} className="text-center font-display font-bold text-navy-800 text-[11px] py-1.5" style={cellStyle}>
+                  {inningRuns[i]?.[sideKey] ?? 0}
+                </td>
+              ))}
+              {onSlotUpdate && <td style={cellStyle}></td>}
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {onSlotUpdate && (
+        <BogenSlotEditModal
+          open={editingSlot != null}
+          onClose={() => setEditingSlot(null)}
+          slot={editingSlot}
+          onSubmit={async (slotId, req) => {
+            await onSlotUpdate(slotId, req)
+          }}
+        />
+      )}
+    </>
   )
 }
 
-export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, onReload }: Props) {
+export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, onReload, onSlotUpdate }: Props) {
   const [activeSide, setActiveSide] = useState<BogenSide>(sheet.meta.currentSide)
   const [ligaLoading, setLigaLoading] = useState(false)
   const toast = useToastContext()
@@ -191,6 +225,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
                 atBats={atBats}
                 stealings={stealingEvents}
                 inningRuns={inningRuns}
+                onSlotUpdate={onSlotUpdate}
               />
             )}
           </div>
