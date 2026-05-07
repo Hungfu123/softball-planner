@@ -8,7 +8,7 @@
   name: "Hitting Stationen",
   kategorien: ("Hitting",),
   spieler: 10,
-  equipment: ("Bälle", "Schläger", "Tees", "Netz (optional)", "Korken / Whiffleballs", "Besenstange (optional)"),
+  equipment: ("Bälle", "Schläger", "Tees", "Netz (optional)", "Korken / Whiffleballs", "Besenstange (optional)", "Hütchen (für Gasse)"),
   beschreibung: [
     Stationen-Training für verschiedene Schlag-Situationen. Pro Station mind. 2 Spieler. Nach einer festgelegten Zeit (z.B. 5–10 Minuten) wird zur nächsten Station rotiert.
 
@@ -29,6 +29,9 @@
 
     *Station 6 — Besenstange Hüftrotation:*
     Eine Besenstange hinter dem Rücken halten (in den Ellbogen eingehakt). Mit der Hüfte drehen und versuchen, den Ball am Tee mit der Stange zu berühren. Trainiert die Hüftrotation ohne Arme.
+
+    *Station 7 — Knie-Drill durch Hütchen-Gasse:*
+    Zwei parallele Hütchen-Linien bilden eine Gasse vor dem Batter. Ball auf Tee am Anfang der Gasse. Batter geht auf das vordere Knie (Bein abgelegt, hinteres Bein in Hocke). Schultern bleiben hinten und geschlossen. Aus der Schulter-Rotation den Ball gerade durch die Gasse drücken — kein Schritt nach vorne, kein wilder Schwung. Geht der Ball schräg = Schulter zu früh geöffnet oder Hände abgewichen. Isoliert Oberkörper-Rotation komplett.
 
     _Je nach Anzahl der Spieler und verfügbarem Equipment können Stationen weggelassen oder hinzugefügt werden. Nicht alle Stationen müssen gleichzeitig laufen._
   ],
