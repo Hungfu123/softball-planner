@@ -375,7 +375,8 @@
       ],
     )
   ],
-  rotation: [Outfielder, Cutoff und Infielder rotieren nach jeder Runde. Optional bei mehr Spielern: jeder macht 2–3 Runden auf einer Position bevor gewechselt wird.],
+  rotation: [Outfielder, Cutoff und Infielder rotieren nach jeder Runde. Bei *>12 Spielern*: 2 Gruppen parallel aufmachen — z.B. eine Gruppe LF→SS→Ziel, andere RF→2B→Ziel. Halbiert Wartezeit, verdoppelt Wiederholungen pro Spieler.],
+  varianten: [Bei großem Kader (>12 Spieler) in *2 parallele Gruppen* aufteilen — jede mit eigenem Outfield-Sektor (LF-Seite und RF-Seite). Jede Gruppe braucht mindestens Outfielder + Cutoff + Ziel-Spieler. Doppelt so viele Reps in gleicher Zeit.],
 )
 
 #drill(

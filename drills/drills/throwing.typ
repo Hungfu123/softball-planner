@@ -392,3 +392,54 @@
   rotation: [Beide üben abwechselnd. Nach 5–8 Bällen pro Spieler tauschen — Werfer wird Fielder, Fielder wird Werfer.],
   varianten: [Härter rollen, sodass weniger Zeit zum Aufnehmen bleibt. Längere Distanz für Outfielder (Bälle als Linedrives oder One-Hopper). Wurf-Ziel variieren — manchmal hoch werfen lassen, sodass der Partner Flyball annimmt.],
 )
+
+#drill(
+  name: "Partner Short-Hop Outfield (One-Hopper)",
+  kategorien: ("Throwing", "Outfield", "Fielding", "Partner-Routine"),
+  spieler: 2,
+  equipment: ("Bälle",),
+  beschreibung: [
+    Partner-Übung für Outfield-Short-Hops — Ball landet punktuell kurz vor dem Fielder, wird im Aufprall angenommen und direkt zurückgeworfen. Gehört in die Routine nach dem Warmwerfen und ergänzt Partner Fly Balls + Partner Grounder im Laufen.
+
+    *Aufbau:*
+    Zwei Spieler stehen sich gegenüber, ca. 15–25 m auseinander.
+
+    *Ablauf:*
+    - Werfer wirft den Ball gezielt so, dass er ca. 1–2 m vor dem Fielder einmal punktuell aufkommt (One-Hopper).
+    - Fielder nimmt den Ball direkt aus dem Aufprall an (Short-Hop) — entweder im Stand oder mit kurzem Ausfallschritt — und wirft sofort zurück.
+    - Werfer fängt zurück und macht denselben Move.
+
+    *Fokus:*
+    - Hände nach unten — Handschuh tief halten, Wurfhand drüber bereit.
+    - Short-Hop früh sehen und entscheiden: Ball im Aufprall annehmen ODER kurz davor schon greifen, NICHT zurückweichen oder nach dem Hop warten (Long-Hop).
+    - Ball aus der Position direkt zurückwerfen — kein Stoppen, kein Re-Set.
+    - Wurfziel: Brust-Höhe Partner.
+
+    *Anwendung:*
+    Outfielder kriegen oft One-Hopper bei Cutoff- oder Relay-Würfen vom Infield. Wer Short-Hops sauber annimmt, verliert keine Zeit beim Weiterspielen.
+  ],
+  diagramm: [
+    #canvas(length: 0.7cm, {
+      import draw: *
+      // Werfer links
+      circle((-3, 1), radius: 0.4, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+      content((-3, 1), text(size: 7pt, weight: "bold", fill: white)[W])
+      // Fielder rechts
+      circle((3, 1), radius: 0.4, fill: rgb("#2255aa"), stroke: 0.5pt + black)
+      content((3, 1), text(size: 7pt, weight: "bold", fill: white)[F])
+      // Wurf-Bogen mit Aufprall-Punkt vor Fielder
+      bezier((-2.6, 1.2), (1.3, 1.0), (-1, 2.5), (0.5, 2.5), stroke: 1pt + rgb("#2d8a2d"), mark: (end: ">", fill: rgb("#2d8a2d")))
+      content((-1, 2.9), text(size: 5pt, fill: rgb("#2d8a2d"))[One-Hopper])
+      // Aufprall-Punkt
+      circle((1.5, 0.95), radius: 0.12, fill: rgb("#cc0000"), stroke: none)
+      content((1.5, 0.4), text(size: 5pt, fill: rgb("#cc0000"))[Aufprall])
+      // Boden
+      line((-3.5, 0.7), (3.5, 0.7), stroke: 0.4pt + rgb("#888"))
+      // Wurf zurück
+      bezier((2.6, 1.4), (-2.6, 1.4), (1, 2.7), (-1.5, 2.7), stroke: 1pt + rgb("#1a1a5e"), mark: (end: ">", fill: rgb("#1a1a5e")))
+      content((0, 3.0), text(size: 5pt, fill: rgb("#1a1a5e"))[Direkt-Wurf zurück])
+    })
+  ],
+  rotation: [Beide werfen sich abwechselnd Short-Hops zu. Dauer: 3–5 Minuten oder bis 15–20 Bälle pro Spieler.],
+  varianten: [Punkt variieren — mal direkt vor den Füßen, mal 2 m vor dem Fielder, mal seitlich versetzt (Forehand/Backhand-Short-Hop). Tempo steigern. Distanz erhöhen für längere Aufprall-Wege. Auch absichtlich tricky werfen (uneven Hops simulieren).],
+)

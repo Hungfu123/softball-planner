@@ -824,11 +824,11 @@
       "Bases",
       "Schläger (optional)"
     ],
-    "description": "Relay-Situationen je nach Outfield-Position üben. Ball wird geschlagen oder ins Outfield geworfen. Der Cutoff-Man (SS oder 2B) positioniert sich in der Relay-Linie und leitet den Ball weiter zum Ziel (Home, 3rd oder 2nd Base).\n\nBall im LF: SS ist Cutoff. Relay-Ziele: Home, 3rd Base oder 2nd Base.\nBall im CF: SS oder 2B ist Cutoff (je nach Seite). Relay-Ziele: Home, 3rd oder 2nd.\nBall im RF: 2B ist Cutoff. Relay-Ziele: Home, 3rd oder 2nd.\n\nWichtig:\n- Der Catcher positioniert die Relay-Person — er ruft Anweisungen wo sich der Cutoff-Man hinstellen soll.\n- Der Cutoff-Man stellt sich in einer geraden Linie zwischen Outfielder und Ziel-Base auf. Arme hoch damit der Outfielder ihn sieht.\n- Der Outfielder wirft immer gerade Richtung Home — der Cutoff-Man fängt den Ball ab, wenn der Catcher das Kommando gibt.\n- Die Position des Cutoff-Man hängt von der Wurfstärke des Outfielders ab.\n- Catcher ruft wohin der Ball gehen soll und wann der Cutoff-Man abfangen soll.",
+    "description": "Relay-Situationen je nach Outfield-Position üben. Ball wird geschlagen oder ins Outfield geworfen. Der Cutoff-Man (SS oder 2B) positioniert sich in der Relay-Linie und leitet den Ball weiter zum Ziel (Home, 3rd oder 2nd Base).\n\nBall im LF: SS ist Cutoff. Relay-Ziele: Home, 3rd Base oder 2nd Base.\nBall im CF: SS oder 2B ist Cutoff (je nach Seite). Relay-Ziele: Home, 3rd oder 2nd.\nBall im RF: 2B ist Cutoff. Relay-Ziele: Home, 3rd oder 2nd.\n\nWichtig:\n- Der Catcher positioniert die Relay-Person — er ruft Anweisungen wo sich der Cutoff-Man hinstellen soll.\n- Der Cutoff-Man stellt sich in einer geraden Linie zwischen Outfielder und Ziel-Base auf. Arme hoch damit der Outfielder ihn sieht.\n- Der Outfielder wirft immer gerade Richtung Home — der Cutoff-Man fängt den Ball ab, wenn der Catcher das Kommando gibt.\n- Die Position des Cutoff-Man hängt von der Wurfstärke des Outfielders ab.\n- Catcher ruft wohin der Ball gehen soll und wann der Cutoff-Man abfangen soll.\n\nGruppen-Splitting bei großem Kader (>12 Spieler): zwei parallele Gruppen aufmachen — z.B. eine Gruppe LF→SS→Ziel, andere Gruppe RF→2B→Ziel. Doppelt so viele Wiederholungen pro Spieler, weniger Wartezeit.",
     "hasImage": true,
     "pdfPage": 36,
-    "rotation": "Outfielder, Cutoff und Infielder rotieren nach jeder Runde.",
-    "variants": null
+    "rotation": "Outfielder, Cutoff und Infielder rotieren nach jeder Runde. Bei >12 Spielern: 2 Gruppen parallel, jede mit eigenem Outfield-Sektor.",
+    "variants": "Bei großem Kader (>12 Spieler) in 2 Gruppen aufteilen — z.B. LF-Seite und RF-Seite parallel. Jede Gruppe braucht mindestens Outfielder + Cutoff + Ziel-Spieler. Halbiert Wartezeit und verdoppelt die Wiederholungen pro Spieler."
   },
   {
     "id": "rundown",
@@ -986,6 +986,25 @@
     "rotation": "Beide üben abwechselnd. Nach 5–8 Bällen pro Spieler tauschen — Werfer wird Fielder, Fielder wird Werfer.",
     "variants": "Härter rollen, sodass weniger Zeit zum Aufnehmen bleibt. Längere Distanz für Outfielder (Bälle als Linedrives oder One-Hopper). Wurf-Ziel variieren — manchmal hoch werfen lassen, sodass der Partner Flyball annimmt.",
     "pdfPage": 11
+  },
+  {
+    "id": "partner-short-hop-outfield",
+    "name": "Partner Short-Hop Outfield (One-Hopper)",
+    "categories": [
+      "THROWING",
+      "OUTFIELD",
+      "FIELDING",
+      "PARTNER_ROUTINE"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle"
+    ],
+    "description": "Partner-Übung für Outfield-Short-Hops — Ball landet punktuell kurz vor dem Fielder, wird im Aufprall angenommen und direkt zurückgeworfen. Gehört in die Routine nach dem Warmwerfen und ergänzt Partner Fly Balls + Partner Grounder im Laufen.\n\nAufbau: Zwei Spieler stehen sich gegenüber, ca. 15–25 m auseinander.\n\nAblauf: Werfer wirft den Ball gezielt so, dass er ca. 1–2 m vor dem Fielder einmal punktuell aufkommt (One-Hopper). Der Fielder nimmt den Ball direkt aus dem Aufprall an (Short-Hop) — entweder im Stand oder mit kurzem Ausfallschritt — und wirft sofort zurück. Werfer fängt zurück und macht denselben Move.\n\nFokus: Hände nach unten — Handschuh tief halten, Wurfhand drüber bereit. Short-Hop früh sehen und entscheiden: Ball im Aufprall annehmen ODER kurz davor schon greifen, NICHT zurückweichen oder nach dem Hop warten (Long-Hop). Ball aus der Position direkt zurückwerfen — kein Stoppen, kein Re-Set. Wurfziel: Brust-Höhe Partner.\n\nAnwendung: Outfielder kriegen oft One-Hopper bei Cutoff- oder Relay-Würfen vom Infield. Wer Short-Hops sauber annimmt, verliert keine Zeit beim Weiterspielen.",
+    "hasImage": false,
+    "rotation": "Beide werfen sich abwechselnd Short-Hops zu. Dauer: 3–5 Minuten oder bis 15–20 Bälle pro Spieler.",
+    "variants": "Punkt variieren — mal direkt vor den Füßen, mal 2 m vor dem Fielder, mal seitlich versetzt (Forehand/Backhand-Short-Hop). Tempo steigern. Distanz erhöhen für längere Aufprall-Wege. Auch absichtlich tricky werfen (uneven Hops simulieren).",
+    "pdfPage": 12
   },
   {
     "id": "2b-hocke-wurf-1b",
