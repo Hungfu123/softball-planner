@@ -16,6 +16,7 @@ import { LastAtBatPreview } from './LastAtBatPreview'
 import { CorrectionSheet } from './CorrectionSheet'
 import { HitAdjustSheet } from './HitAdjustSheet'
 import { RflSheetDrawer } from './RflSheetDrawer'
+import { PositionSwapDrawer } from './PositionSwapDrawer'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import * as api from '@/api/client'
 import type {
@@ -149,7 +150,7 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide } =
     useSpielbogenScoring(bogenId)
 
   const [showCorrection, setShowCorrection] = useState(false)
@@ -160,6 +161,7 @@ export default function SpielbogenPage() {
   const [showSheet, setShowSheet] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
+  const [showPositionSwapDrawer, setShowPositionSwapDrawer] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
   const [showHitAdjust, setShowHitAdjust] = useState<null | { result: 'SINGLE' | 'DOUBLE' | 'TRIPLE' }>(null)
@@ -708,6 +710,7 @@ export default function SpielbogenPage() {
             setSubSlotId(currentSlot?.id ?? null)
             setShowSubModal(true)
           }}
+          onPositionSwap={() => setShowPositionSwapDrawer(true)}
           onEndGame={() => setShowEndConfirm(true)}
           canEndGame={isLive}
         />
@@ -923,6 +926,21 @@ export default function SpielbogenPage() {
             }
           }}
           onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
+
+      {/* Position Swap Drawer */}
+      {sheet && (
+        <PositionSwapDrawer
+          open={showPositionSwapDrawer}
+          onClose={() => setShowPositionSwapDrawer(false)}
+          side={sheet.meta.currentSide}
+          slots={sheet.meta.currentSide === 'HOME' ? sheet.homeLineup : sheet.awayLineup}
+          currentInning={sheet.meta.currentInning}
+          onSubmit={async ({ inning, changes }) => {
+            await recordPositionSwap({ side: sheet.meta.currentSide, inning, changes })
+            toast.show('Positionen getauscht', 'success')
+          }}
         />
       )}
 
