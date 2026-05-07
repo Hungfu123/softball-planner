@@ -5,6 +5,7 @@ import type {
   SpielbogenRecordAtBatRequest,
   SpielbogenRecordStealingRequest,
   SpielbogenRecordSubstitutionRequest,
+  SpielbogenRecordPositionSwapRequest,
   BogenSide,
 } from '@/types'
 
@@ -47,6 +48,12 @@ export function useSpielbogenScoring(bogenId: number | null) {
     await reload()
   }, [bogenId, reload])
 
+  const recordPositionSwap = useCallback(async (req: SpielbogenRecordPositionSwapRequest) => {
+    if (bogenId == null) return
+    await api.recordSpielbogenPositionSwap(bogenId, req)
+    await reload()
+  }, [bogenId, reload])
+
   const undoLast = useCallback(async (side: BogenSide) => {
     if (bogenId == null) return
     await api.undoLastSpielbogenAtBat(bogenId, side)
@@ -80,5 +87,5 @@ export function useSpielbogenScoring(bogenId: number | null) {
     await reload()
   }, [bogenId, reload])
 
-  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide }
+  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide }
 }
