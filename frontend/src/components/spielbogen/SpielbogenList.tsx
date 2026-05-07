@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSpielbogenList } from '@/hooks/useSpielbogenList'
 import { Button, EmptyState, LoadingSkeleton, ConfirmModal } from '@/components/shared'
-import { CrossBones, PlusCircle, TrashBin } from '@/icons'
+import { CrossBones, PlusCircle, TrashBin, Pencil } from '@/icons'
 import type { SpielbogenResponse, BogenStatus } from '@/types'
+import { BogenMetaEditModal } from './BogenMetaEditModal'
 
 const STATUS_LABEL: Record<BogenStatus, string> = {
   DRAFT: 'Entwurf',
@@ -18,8 +19,9 @@ const STATUS_PILL: Record<BogenStatus, string> = {
 }
 
 export default function SpielbogenList() {
-  const { items, loading, remove } = useSpielbogenList()
+  const { items, loading, remove, update } = useSpielbogenList()
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [editBogen, setEditBogen] = useState<SpielbogenResponse | null>(null)
 
   if (loading) return <LoadingSkeleton />
 
@@ -41,7 +43,7 @@ export default function SpielbogenList() {
       ) : (
         <div className="space-y-2">
           {items.map(b => (
-            <BogenTile key={b.id} bogen={b} onDelete={() => setDeleteId(b.id)} />
+            <BogenTile key={b.id} bogen={b} onDelete={() => setDeleteId(b.id)} onEdit={() => setEditBogen(b)} />
           ))}
         </div>
       )}
@@ -57,11 +59,22 @@ export default function SpielbogenList() {
           onCancel={() => setDeleteId(null)}
         />
       )}
+
+      {editBogen && (
+        <BogenMetaEditModal
+          open={editBogen != null}
+          onClose={() => setEditBogen(null)}
+          meta={editBogen}
+          onSubmit={async (req) => {
+            await update(editBogen.id, req)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function BogenTile({ bogen, onDelete }: { bogen: SpielbogenResponse; onDelete: () => void }) {
+function BogenTile({ bogen, onDelete, onEdit }: { bogen: SpielbogenResponse; onDelete: () => void; onEdit: () => void }) {
   const date = new Date(bogen.date + 'T00:00:00').toLocaleDateString('de-DE', {
     weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric'
   })
@@ -86,6 +99,13 @@ function BogenTile({ bogen, onDelete }: { bogen: SpielbogenResponse; onDelete: (
             <div className="font-body text-[11px] text-emerald-700 mt-0.5">Liga-Tabelle: registriert ✓</div>
           )}
         </Link>
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit() }}
+          className="actions-reveal p-1.5 text-gray-400 hover:text-navy-700 cursor-pointer rounded"
+          aria-label="Bearbeiten"
+        >
+          <Pencil size={16} />
+        </button>
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete() }}
           className="actions-reveal p-1.5 text-gray-400 hover:text-softball-red-600 cursor-pointer rounded"

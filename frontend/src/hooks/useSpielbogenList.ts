@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as api from '@/api/client'
-import type { SpielbogenResponse } from '@/types'
+import type { SpielbogenResponse, CreateSpielbogenRequest } from '@/types'
 
 export function useSpielbogenList(filter?: { seasonId?: number }) {
   const [items, setItems] = useState<SpielbogenResponse[]>([])
@@ -31,5 +31,10 @@ export function useSpielbogenList(filter?: { seasonId?: number }) {
     await reload()
   }, [reload])
 
-  return { items, loading, error, reload, remove }
+  const update = useCallback(async (id: number, req: Partial<CreateSpielbogenRequest>) => {
+    await api.updateSpielbogen(id, req)
+    await reload()
+  }, [reload])
+
+  return { items, loading, error, reload, remove, update }
 }
