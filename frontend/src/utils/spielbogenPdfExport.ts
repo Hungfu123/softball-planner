@@ -17,7 +17,7 @@ const COLOR_ORANGE: [number, number, number] = [249, 115, 22]
 const COLOR_CREAM: [number, number, number] = [240, 240, 240]
 const COLOR_CREAM_LIGHT: [number, number, number] = [255, 255, 255]
 
-export function generateSpielbogenPdf(sheet: BogenSheetResponse): void {
+export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
 
   doc.setFontSize(14)
@@ -30,7 +30,7 @@ export function generateSpielbogenPdf(sheet: BogenSheetResponse): void {
   const date = new Date(sheet.meta.date + 'T00:00:00').toLocaleDateString('de-DE')
   doc.text(`Datum: ${date}`, 220, 16)
 
-  drawLogo(doc, 10, 8, 16, 16)
+  await drawLogo(doc, 10, 6, 18, 18)
 
   drawTeamBanner(doc, 8, 28, 'Gast', sheet.meta.awayTeamName, sheet.meta.awayRuns, 130)
   drawTeamBanner(doc, 152, 28, 'Heim', sheet.meta.homeTeamName, sheet.meta.homeRuns, 130)
@@ -47,15 +47,33 @@ export function generateSpielbogenPdf(sheet: BogenSheetResponse): void {
   doc.save(`spielbogen-${sheet.meta.date}-${sheet.meta.homeTeamName}-vs-${sheet.meta.awayTeamName}.pdf`)
 }
 
-function drawLogo(doc: jsPDF, x: number, y: number, w: number, h: number) {
-  doc.setFillColor(204, 41, 54)
-  doc.rect(x + w / 2, y, w / 2, h / 2, 'F')
-  doc.setFillColor(40, 100, 70)
-  doc.rect(x, y, w / 2, h / 2, 'F')
-  doc.setFillColor(40, 100, 70)
-  doc.rect(x + w / 2, y + h / 2, w / 2, h / 2, 'F')
-  doc.setFillColor(204, 41, 54)
-  doc.rect(x, y + h / 2, w / 2, h / 2, 'F')
+let cachedLogoDataUrl: string | null = null
+
+async function loadLogoDataUrl(): Promise<string> {
+  if (cachedLogoDataUrl) return cachedLogoDataUrl
+  const response = await fetch('/rfl-logo.png')
+  const blob = await response.blob()
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+  cachedLogoDataUrl = dataUrl
+  return dataUrl
+}
+
+async function drawLogo(doc: jsPDF, x: number, y: number, w: number, h: number) {
+  try {
+    const dataUrl = await loadLogoDataUrl()
+    doc.addImage(dataUrl, 'PNG', x, y, w, h)
+  } catch {
+    // Fallback: Pentagon mit rot/grün-Split falls Logo-Asset nicht ladbar.
+    doc.setFillColor(204, 41, 54)
+    doc.rect(x, y, w, h, 'F')
+    doc.setFillColor(40, 100, 70)
+    doc.triangle(x, y, x + w * 0.5, y, x, y + h * 0.5, 'F')
+  }
 }
 
 function drawTeamBanner(doc: jsPDF, x: number, y: number, label: string, team: string, runs: number, width: number) {
