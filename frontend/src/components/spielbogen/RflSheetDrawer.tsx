@@ -55,14 +55,14 @@ function SideSheet({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[11px] lg:text-sm" style={{ borderCollapse: 'collapse' }}>
+      <table className="w-full table-fixed text-[11px] lg:text-sm" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr className="bg-navy-800 text-white" style={{ borderTop: '1px solid #1e3a8a' }}>
             <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-5 lg:w-10" style={firstHeaderCellStyle}>#</th>
             <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-16 lg:w-40" style={headerCellStyle}>Name</th>
             <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-7 lg:w-14" style={headerCellStyle}>Pos</th>
             {innings.map(i => (
-              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-9 lg:w-auto" style={headerCellStyle}>{i}</th>
+              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center" style={headerCellStyle}>{i}</th>
             ))}
           </tr>
         </thead>
@@ -70,13 +70,13 @@ function SideSheet({
           {sorted.map((slot) => (
             <tr key={slot.id} className="bg-white">
               <td className="px-1 py-0.5 font-display font-bold text-navy-700" style={firstCellStyle}>{slot.battingOrder}</td>
-              <td className="px-1 py-0.5 font-body text-navy-900 truncate max-w-[56px] lg:max-w-[160px]" style={cellStyle}>{slot.name}</td>
+              <td className="px-1 py-0.5 font-body text-navy-900 truncate" style={cellStyle}>{slot.name}</td>
               <td className="px-1 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
               {innings.map(inning => {
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
                 return (
-                  <td key={inning} className="p-0 w-9 h-14 lg:h-24" style={cellStyle}>
+                  <td key={inning} className="p-0 h-14 lg:h-24" style={cellStyle}>
                     <div className="w-full h-full">
                       <DiamondCell notation={cell} />
                     </div>
