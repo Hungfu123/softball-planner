@@ -7,6 +7,10 @@ import type {
   SpielbogenRecordSubstitutionRequest,
   SpielbogenRecordPositionSwapRequest,
   BogenSide,
+  CreateSpielbogenRequest,
+  UpdateSlotRequest,
+  SpielbogenResponse,
+  SpielbogenSlotResponse,
 } from '@/types'
 
 export function useSpielbogenScoring(bogenId: number | null) {
@@ -87,5 +91,19 @@ export function useSpielbogenScoring(bogenId: number | null) {
     await reload()
   }, [bogenId, reload])
 
-  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide }
+  const updateMeta = useCallback(async (req: Partial<CreateSpielbogenRequest>): Promise<SpielbogenResponse> => {
+    if (bogenId == null) throw new Error('bogenId is required')
+    const result = await api.updateSpielbogen(bogenId, req)
+    await reload()
+    return result
+  }, [bogenId, reload])
+
+  const updateSlot = useCallback(async (slotId: number, req: UpdateSlotRequest): Promise<SpielbogenSlotResponse> => {
+    if (bogenId == null) throw new Error('bogenId is required')
+    const result = await api.updateSpielbogenSlot(bogenId, slotId, req)
+    await reload()
+    return result
+  }, [bogenId, reload])
+
+  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot }
 }
