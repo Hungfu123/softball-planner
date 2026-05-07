@@ -17,6 +17,8 @@ import { CorrectionSheet } from './CorrectionSheet'
 import { HitAdjustSheet } from './HitAdjustSheet'
 import { RflSheetDrawer } from './RflSheetDrawer'
 import { PositionSwapDrawer } from './PositionSwapDrawer'
+import { BogenMetaEditModal } from './BogenMetaEditModal'
+import { Pencil } from '@/icons'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import * as api from '@/api/client'
 import type {
@@ -150,7 +152,7 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta } =
     useSpielbogenScoring(bogenId)
 
   const [showCorrection, setShowCorrection] = useState(false)
@@ -161,6 +163,7 @@ export default function SpielbogenPage() {
   const [showSheet, setShowSheet] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
+  const [showMetaEdit, setShowMetaEdit] = useState(false)
   const [showPositionSwapDrawer, setShowPositionSwapDrawer] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
@@ -659,6 +662,13 @@ export default function SpielbogenPage() {
         <span className="text-gray-400 text-2xl">—</span>
         <span className="font-display text-3xl font-extrabold text-softball-red-600 tabular-nums">{meta.awayRuns}</span>
         <span className="font-display text-sm font-bold text-gray-500 uppercase tracking-widest">{meta.awayTeamName}</span>
+        <button
+          onClick={() => setShowMetaEdit(true)}
+          className="p-1 text-gray-400 hover:text-navy-700 cursor-pointer"
+          aria-label="Spielbogen bearbeiten"
+        >
+          <Pencil size={16} />
+        </button>
       </div>
 
       {/* Side toggle */}
@@ -940,6 +950,19 @@ export default function SpielbogenPage() {
           onSubmit={async ({ inning, changes }) => {
             await recordPositionSwap({ side: sheet.meta.currentSide, inning, changes })
             toast.show('Positionen getauscht', 'success')
+          }}
+        />
+      )}
+
+      {/* BogenMeta Edit Modal */}
+      {sheet && (
+        <BogenMetaEditModal
+          open={showMetaEdit}
+          onClose={() => setShowMetaEdit(false)}
+          meta={sheet.meta}
+          onSubmit={async (req) => {
+            await updateMeta(req)
+            toast.show('Spielbogen aktualisiert', 'success')
           }}
         />
       )}
