@@ -15,6 +15,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ class SpielbogenScoringServiceTest {
     @Mock private SpielbogenAtBatRepository atBatRepo;
     @Mock private SpielbogenStealingRepository stealingRepo;
     @Mock private SpielbogenSubstitutionRepository subRepo;
+    @Mock private SpielbogenPositionChangeRepository positionChangeRepo;
 
     @InjectMocks
     private SpielbogenScoringService service;
@@ -242,5 +244,40 @@ class SpielbogenScoringServiceTest {
 
         assertThat(liveBogen.getCurrentSide()).isEqualTo(BogenSide.AWAY);
         assertThat(liveBogen.getCurrentInning()).isEqualTo(2);
+    }
+
+    @Test
+    void recordPositionSwap_basicTwoSlotSwap_updatesBothSlots() {
+        SpielbogenSlot slotP = new SpielbogenSlot();
+        slotP.setId(100L);
+        slotP.setBogen(liveBogen);
+        slotP.setSide(BogenSide.HOME);
+        slotP.setPosition("P");
+
+        SpielbogenSlot slotC = new SpielbogenSlot();
+        slotC.setId(101L);
+        slotC.setBogen(liveBogen);
+        slotC.setSide(BogenSide.HOME);
+        slotC.setPosition("C");
+
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(slotRepo.findById(100L)).thenReturn(Optional.of(slotP));
+        when(slotRepo.findById(101L)).thenReturn(Optional.of(slotC));
+        when(slotRepo.findByBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(List.of(slotP, slotC));
+        when(slotRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(positionChangeRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var entries = List.of(
+            new SpielbogenScoringService.SwapEntry(100L, "C"),
+            new SpielbogenScoringService.SwapEntry(101L, "P")
+        );
+        var result = service.recordPositionSwap(1L, BogenSide.HOME, 3, entries);
+
+        assertEquals(2, result.size());
+        assertEquals("C", slotP.getPosition());
+        assertEquals("P", slotC.getPosition());
+        assertEquals(result.get(0).getGroupId(), result.get(1).getGroupId());
+        assertEquals("P", result.get(0).getOldPosition());
+        assertEquals("C", result.get(0).getNewPosition());
     }
 }
