@@ -206,14 +206,14 @@ export function DiamondCell({ notation, outIndex }: Props) {
           : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
           : null
         if (!label) return null
-        const fill = (arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL') ? '#f97316' : '#7c2d12'
+        const fill = (arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL') ? '#f97316' : '#1f2937'
         return (
           <text
             key={`lbl-${i}`}
             x={30}
-            y={17 + i * 6}
+            y={5 + i * 5}
             textAnchor="middle"
-            fontSize="5"
+            fontSize="4.5"
             fontWeight="700"
             fill={fill}
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}

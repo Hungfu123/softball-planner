@@ -24,11 +24,10 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
   doc.setFont('helvetica', 'bold')
   doc.text('RFL — Ruhr-Fun-Liga Mixed Fastpitch Softball', 30, 16)
 
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Ort: ${sheet.meta.location ?? '—'}`, 220, 10)
   const date = new Date(sheet.meta.date + 'T00:00:00').toLocaleDateString('de-DE')
-  doc.text(`Datum: ${date}`, 220, 16)
+  drawHeaderField(doc, 'Ort:', sheet.meta.location ?? '', 232, 10, 50)
+  drawHeaderField(doc, 'Datum:', date, 232, 15, 50)
+  drawHeaderField(doc, 'Zeit:', '', 232, 20, 50)
 
   await drawLogo(doc, 10, 6, 18, 18)
 
@@ -63,6 +62,23 @@ async function loadLogoDataUrl(): Promise<string> {
   return dataUrl
 }
 
+function drawHeaderField(doc: jsPDF, label: string, value: string, x: number, y: number, boxW: number) {
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(0, 0, 0)
+  doc.text(label, x, y)
+  const labelW = doc.getTextWidth(label)
+  const boxX = x + labelW + 1.5
+  const boxY = y - 3.2
+  const boxH = 4
+  doc.setFillColor(220, 220, 220)
+  doc.rect(boxX, boxY, boxW, boxH, 'F')
+  if (value) {
+    doc.setTextColor(0, 0, 0)
+    doc.text(value, boxX + 1.5, y)
+  }
+}
+
 async function drawLogo(doc: jsPDF, x: number, y: number, w: number, h: number) {
   try {
     const dataUrl = await loadLogoDataUrl()
@@ -77,15 +93,28 @@ async function drawLogo(doc: jsPDF, x: number, y: number, w: number, h: number) 
 }
 
 function drawTeamBanner(doc: jsPDF, x: number, y: number, label: string, team: string, runs: number, width: number) {
+  // Cream-Hintergrund + schwarzer Rahmen.
   doc.setFillColor(...COLOR_CREAM)
   doc.rect(x, y, width, 6, 'F')
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.4)
+  doc.rect(x, y, width, 6)
+
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(17, 27, 107)
-  doc.text(`${label}: ${team}`, x + 2, y + 4)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`Summe: ${runs}`, x + width - 25, y + 4)
+
+  // Label "Gast:" / "Heim:" schwarz, Team-Name danach navy.
+  const labelText = `${label}:`
   doc.setTextColor(0, 0, 0)
+  doc.text(labelText, x + 2, y + 4)
+  const labelW = doc.getTextWidth(labelText)
+  doc.setTextColor(17, 27, 107)
+  doc.text(team, x + 2 + labelW + 1.5, y + 4)
+
+  // Summe schwarz.
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(0, 0, 0)
+  doc.text(`Summe: ${runs}`, x + width - 25, y + 4)
 }
 
 function drawSheet(
@@ -161,11 +190,12 @@ function drawSheet(
   doc.rect(x, lastRowY, tableW, footerH, 'F')
   doc.setFontSize(7)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(17, 27, 107)
+  doc.setTextColor(0, 0, 0)
   doc.text('erzielte Runs', x + 2, lastRowY + 4)
   for (let inn = 1; inn <= numInnings; inn++) {
     const runs = inningRuns[inn]
     const value = runs ? runs[sideKey] : 0
+    doc.setTextColor(...COLOR_NAVY)
     doc.text(String(value), x + colNum + colName + colPos + (inn - 0.5) * colInning, lastRowY + 4, { align: 'center' })
   }
   doc.setTextColor(0, 0, 0)
@@ -414,11 +444,13 @@ function drawDiamondCell(
       : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
       : null
     if (label) {
-      doc.setFontSize(3.2)
+      const labelColor: [number, number, number] =
+        arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL' ? COLOR_ORANGE : [0, 0, 0]
+      doc.setFontSize(2.8)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...arrowColor)
+      doc.setTextColor(...labelColor)
       const labelX = cellX + cellW * 0.5
-      const labelY = cellY + cellH * 0.22 + labelIdx * 1.6
+      const labelY = cellY + 1.4 + labelIdx * 1.4
       doc.text(label, labelX, labelY, { align: 'center' })
       doc.setTextColor(0, 0, 0)
       labelIdx++
