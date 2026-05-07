@@ -55,28 +55,28 @@ function SideSheet({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[460px] text-xs" style={{ borderCollapse: 'collapse' }}>
+      <table className="w-full text-[11px]" style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr className="bg-navy-800 text-white" style={{ borderTop: '1px solid #1e3a8a' }}>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-6" style={firstHeaderCellStyle}>#</th>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide min-w-[90px]" style={headerCellStyle}>Name</th>
-            <th className="px-1.5 py-1.5 text-left font-display font-bold tracking-wide w-10" style={headerCellStyle}>Pos</th>
+            <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-5" style={firstHeaderCellStyle}>#</th>
+            <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-14" style={headerCellStyle}>Name</th>
+            <th className="px-1 py-1.5 text-left font-display font-bold tracking-wide w-7" style={headerCellStyle}>Pos</th>
             {innings.map(i => (
-              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-9" style={headerCellStyle}>{i}</th>
+              <th key={i} className="px-0.5 py-1.5 font-display font-bold text-center w-8" style={headerCellStyle}>{i}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {sorted.map((slot) => (
             <tr key={slot.id} className="bg-white">
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-700" style={firstCellStyle}>{slot.battingOrder}</td>
-              <td className="px-1.5 py-0.5 font-body text-navy-900 truncate max-w-[90px]" style={cellStyle}>{slot.name}</td>
-              <td className="px-1.5 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
+              <td className="px-1 py-0.5 font-display font-bold text-navy-700" style={firstCellStyle}>{slot.battingOrder}</td>
+              <td className="px-1 py-0.5 font-body text-navy-900 truncate max-w-[56px]" style={cellStyle}>{slot.name}</td>
+              <td className="px-1 py-0.5 font-display font-bold text-navy-500 uppercase" style={cellStyle}>{slot.position ?? '—'}</td>
               {innings.map(inning => {
                 const key = cellKey(side, slot.id, inning)
                 const cell = cellMap.get(key)
                 return (
-                  <td key={inning} className="p-0 w-10 h-16" style={cellStyle}>
+                  <td key={inning} className="p-0 w-8 h-14" style={cellStyle}>
                     <div className="w-full h-full">
                       <DiamondCell notation={cell} />
                     </div>
@@ -88,15 +88,15 @@ function SideSheet({
         </tbody>
         <tfoot>
           <tr className="bg-cream-100">
-            <td colSpan={3} className="px-1.5 py-1.5 font-display font-bold text-navy-700 text-xs uppercase tracking-wide" style={cellStyle}>
+            <td colSpan={3} className="px-1 py-1.5 font-display font-bold text-navy-700 text-[11px] uppercase tracking-wide" style={cellStyle}>
               Runs
             </td>
             {innings.map(i => (
-              <td key={i} className="text-center font-display font-bold text-navy-800 text-xs py-1.5" style={cellStyle}>
+              <td key={i} className="text-center font-display font-bold text-navy-800 text-[11px] py-1.5" style={cellStyle}>
                 {inningRuns[i]?.[sideKey] ?? 0}
               </td>
             ))}
-            <td className="px-1.5 py-1.5 font-display font-extrabold text-navy-900 text-sm" style={cellStyle}>{totalRuns}</td>
+            <td className="px-1 py-1.5 font-display font-extrabold text-navy-900 text-xs" style={cellStyle}>{totalRuns}</td>
           </tr>
         </tfoot>
       </table>
