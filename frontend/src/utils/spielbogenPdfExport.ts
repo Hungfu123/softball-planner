@@ -25,9 +25,10 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
   doc.text('RFL — Ruhr-Fun-Liga Mixed Fastpitch Softball', 30, 16)
 
   const date = new Date(sheet.meta.date + 'T00:00:00').toLocaleDateString('de-DE')
-  drawHeaderField(doc, 'Ort:', sheet.meta.location ?? '', 232, 10, 50)
-  drawHeaderField(doc, 'Datum:', date, 232, 15, 50)
-  drawHeaderField(doc, 'Zeit:', '', 232, 20, 50)
+  // Boxen alle bei gleichem X starten (rechts vom breitesten Label "Datum:")
+  drawHeaderField(doc, 'Ort:', sheet.meta.location ?? '', 232, 10, 244, 38)
+  drawHeaderField(doc, 'Datum:', date, 232, 15, 244, 38)
+  drawHeaderField(doc, 'Zeit:', '', 232, 20, 244, 38)
 
   await drawLogo(doc, 10, 6, 18, 18)
 
@@ -62,13 +63,11 @@ async function loadLogoDataUrl(): Promise<string> {
   return dataUrl
 }
 
-function drawHeaderField(doc: jsPDF, label: string, value: string, x: number, y: number, boxW: number) {
+function drawHeaderField(doc: jsPDF, label: string, value: string, x: number, y: number, boxX: number, boxW: number) {
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(0, 0, 0)
   doc.text(label, x, y)
-  const labelW = doc.getTextWidth(label)
-  const boxX = x + labelW + 1.5
   const boxY = y - 3.2
   const boxH = 4
   doc.setFillColor(220, 220, 220)
@@ -93,12 +92,10 @@ async function drawLogo(doc: jsPDF, x: number, y: number, w: number, h: number) 
 }
 
 function drawTeamBanner(doc: jsPDF, x: number, y: number, label: string, team: string, runs: number, width: number) {
-  // Cream-Hintergrund + schwarzer Rahmen.
+  // Cream-Hintergrund (kein Outer-Border).
+  const bannerH = 8
   doc.setFillColor(...COLOR_CREAM)
-  doc.rect(x, y, width, 6, 'F')
-  doc.setDrawColor(0, 0, 0)
-  doc.setLineWidth(0.4)
-  doc.rect(x, y, width, 6)
+  doc.rect(x, y, width, bannerH, 'F')
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
@@ -106,15 +103,31 @@ function drawTeamBanner(doc: jsPDF, x: number, y: number, label: string, team: s
   // Label "Gast:" / "Heim:" schwarz, Team-Name danach navy.
   const labelText = `${label}:`
   doc.setTextColor(0, 0, 0)
-  doc.text(labelText, x + 2, y + 4)
+  doc.text(labelText, x + 2, y + 5)
   const labelW = doc.getTextWidth(labelText)
   doc.setTextColor(17, 27, 107)
-  doc.text(team, x + 2 + labelW + 1.5, y + 4)
+  doc.text(team, x + 2 + labelW + 1.5, y + 5)
 
-  // Summe schwarz.
+  // "Summe Runs:" Label rechts + kleiner Box mit schwarzem Rahmen für Wert.
+  const boxW = 12
+  const boxH = 6
+  const boxX = x + width - boxW - 1
+  const boxY = y + (bannerH - boxH) / 2
+  doc.setFontSize(7)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(0, 0, 0)
-  doc.text(`Summe: ${runs}`, x + width - 25, y + 4)
+  doc.text('Summe', boxX - 2, y + 3.4, { align: 'right' })
+  doc.text('Runs:', boxX - 2, y + 6, { align: 'right' })
+  // Box mit Cream-Fill + dickem schwarzem Border
+  doc.setFillColor(...COLOR_CREAM)
+  doc.rect(boxX, boxY, boxW, boxH, 'F')
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.6)
+  doc.rect(boxX, boxY, boxW, boxH)
+  // Wert mittig in Box
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.text(String(runs), boxX + boxW / 2, boxY + 4.2, { align: 'center' })
 }
 
 function drawSheet(
