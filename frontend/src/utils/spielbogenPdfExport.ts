@@ -12,8 +12,10 @@ const COLOR_BORDER: [number, number, number] = [55, 65, 81]
 const COLOR_BORDER_DARK: [number, number, number] = [17, 24, 39]
 const COLOR_NAVY: [number, number, number] = [30, 58, 138]
 const COLOR_RED: [number, number, number] = [220, 38, 38]
-const COLOR_CREAM: [number, number, number] = [245, 235, 215]
-const COLOR_CREAM_LIGHT: [number, number, number] = [250, 247, 240]
+const COLOR_RED_DARK: [number, number, number] = [124, 45, 18]
+const COLOR_ORANGE: [number, number, number] = [249, 115, 22]
+const COLOR_CREAM: [number, number, number] = [240, 240, 240]
+const COLOR_CREAM_LIGHT: [number, number, number] = [255, 255, 255]
 
 export function generateSpielbogenPdf(sheet: BogenSheetResponse): void {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
@@ -83,15 +85,13 @@ function drawSheet(
   const colNum = 8
   const colName = 35
   const colPos = 12
-  const colSum = 9
-  const colInning = (tableW - colNum - colName - colPos - colSum) / numInnings
+  const colInning = (tableW - colNum - colName - colPos) / numInnings
   const rowH = 15
   const numRows = 10
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const headerH = 5
   const footerH = 6
   const tableH = headerH + numRows * rowH
-  const sumX = x + colNum + colName + colPos + numInnings * colInning
 
   doc.setFontSize(7)
   doc.setFont('helvetica', 'bold')
@@ -104,10 +104,6 @@ function drawSheet(
   for (let i = 1; i <= numInnings; i++) {
     doc.text(String(i), x + colNum + colName + colPos + (i - 0.5) * colInning, y + 3.5, { align: 'center' })
   }
-  // Σ Total-Runs Header
-  doc.setTextColor(...COLOR_NAVY)
-  doc.text('Σ', sumX + colSum / 2, y + 3.5, { align: 'center' })
-  doc.setTextColor(0, 0, 0)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
@@ -149,20 +145,14 @@ function drawSheet(
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(17, 27, 107)
   doc.text('erzielte Runs', x + 2, lastRowY + 4)
-  let totalRuns = 0
   for (let inn = 1; inn <= numInnings; inn++) {
     const runs = inningRuns[inn]
     const value = runs ? runs[sideKey] : 0
-    totalRuns += value
     doc.text(String(value), x + colNum + colName + colPos + (inn - 0.5) * colInning, lastRowY + 4, { align: 'center' })
   }
-  // Σ Total-Runs Footer-Cell
-  doc.setFontSize(8.5)
-  doc.text(String(totalRuns), sumX + colSum / 2, lastRowY + 4, { align: 'center' })
-  doc.setFontSize(7)
   doc.setTextColor(0, 0, 0)
 
-  // Footer outer border + vertical separators on inning footer cells (incl. Σ)
+  // Footer outer border + vertical separators on inning footer cells
   doc.setDrawColor(...COLOR_BORDER_DARK)
   doc.setLineWidth(0.4)
   doc.rect(x, lastRowY, tableW, footerH)
@@ -170,8 +160,6 @@ function drawSheet(
     const xv = x + colNum + colName + colPos + i * colInning
     doc.line(xv, lastRowY, xv, lastRowY + footerH)
   }
-  // Σ-column separator
-  doc.line(sumX, lastRowY, sumX, lastRowY + footerH)
 }
 
 function drawTableGrid(
@@ -220,11 +208,6 @@ function drawTableGrid(
     const xv = x + colNum + colName + colPos + i * colInning
     doc.line(xv, y, xv, y + tableH)
   }
-  // Σ-column thicker divider (separates Inning-block from Total-block)
-  doc.setDrawColor(...COLOR_BORDER_DARK)
-  doc.setLineWidth(0.4)
-  const sumXLocal = x + colNum + colName + colPos + numInnings * colInning
-  doc.line(sumXLocal, y, sumXLocal, y + tableH)
 }
 
 interface CellRenderInput {
@@ -382,12 +365,18 @@ function drawDiamondCell(
     }
   }
 
-  // Stealing arrows (dashed red lines between bases) — Multi-Stealing pro Cell unterstützt
+  // Stealing arrows (dashed lines between bases) — Multi-Stealing pro Cell unterstützt.
+  // Farbe + Label per Type: SB rot, CS/OUT_ON_PLAY dunkelrot, WP/PB orange.
   const arrows = cell?.stealingArrows ?? (cell?.stealingArrow ? [cell.stealingArrow] : [])
+  let labelIdx = 0
   for (const arrow of arrows) {
     const from = baseCenter(arrow.fromBase, home, first, sec, third)
     const to = baseCenter(arrow.toBase, home, first, sec, third)
-    doc.setDrawColor(...COLOR_RED)
+    const arrowColor: [number, number, number] =
+      arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL' ? COLOR_ORANGE
+      : arrow.type === 'CAUGHT_STEALING' || arrow.type === 'OUT_ON_PLAY' ? COLOR_RED_DARK
+      : COLOR_RED
+    doc.setDrawColor(...arrowColor)
     doc.setLineWidth(0.4)
     const steps = 6
     for (let s = 0; s < steps; s += 2) {
@@ -399,6 +388,22 @@ function drawDiamondCell(
         from.x + (to.x - from.x) * t2,
         from.y + (to.y - from.y) * t2,
       )
+    }
+    const label =
+      arrow.type === 'WILD_PITCH' ? 'WP'
+      : arrow.type === 'PASSED_BALL' ? 'PB'
+      : arrow.type === 'CAUGHT_STEALING' ? 'CS'
+      : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
+      : null
+    if (label) {
+      doc.setFontSize(3.2)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...arrowColor)
+      const labelX = cellX + cellW * 0.5
+      const labelY = cellY + cellH * 0.22 + labelIdx * 1.6
+      doc.text(label, labelX, labelY, { align: 'center' })
+      doc.setTextColor(0, 0, 0)
+      labelIdx++
     }
   }
 }

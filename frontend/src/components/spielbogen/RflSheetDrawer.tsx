@@ -51,8 +51,6 @@ function SideSheet({
 
   const innings = Array.from({ length: MAX_INNINGS }, (_, i) => i + 1)
 
-  const totalRuns = Object.values(inningRuns).reduce((sum, r) => sum + (r[sideKey] ?? 0), 0)
-
   return (
     <div className="overflow-x-auto">
       <table className="w-full table-fixed text-[11px] lg:text-sm" style={{ borderCollapse: 'collapse' }}>
@@ -96,7 +94,6 @@ function SideSheet({
                 {inningRuns[i]?.[sideKey] ?? 0}
               </td>
             ))}
-            <td className="px-1 py-1.5 font-display font-extrabold text-navy-900 text-xs" style={cellStyle}>{totalRuns}</td>
           </tr>
         </tfoot>
       </table>

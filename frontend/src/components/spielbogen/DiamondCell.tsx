@@ -198,8 +198,16 @@ export function DiamondCell({ notation, outIndex }: Props) {
           strokeDasharray="2 1"
         />
       ))}
-      {stealingArrows.map((arrow, i) => (
-        (arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL') && (
+      {stealingArrows.map((arrow, i) => {
+        const label =
+          arrow.type === 'WILD_PITCH' ? 'WP'
+          : arrow.type === 'PASSED_BALL' ? 'PB'
+          : arrow.type === 'CAUGHT_STEALING' ? 'CS'
+          : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
+          : null
+        if (!label) return null
+        const fill = (arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL') ? '#f97316' : '#7c2d12'
+        return (
           <text
             key={`lbl-${i}`}
             x={30}
@@ -207,13 +215,13 @@ export function DiamondCell({ notation, outIndex }: Props) {
             textAnchor="middle"
             fontSize="5"
             fontWeight="700"
-            fill="#f97316"
+            fill={fill}
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
           >
-            {arrow.type === 'WILD_PITCH' ? 'WP' : 'PB'}
+            {label}
           </text>
         )
-      ))}
+      })}
     </svg>
   )
 }
