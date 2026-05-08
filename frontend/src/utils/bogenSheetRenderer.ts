@@ -324,6 +324,7 @@ function renderOut(ab: SpielbogenAtBatResponse): string {
       return `${prefix}${chain} TP`
     }
     if (ab.outType === 'FLY' && ab.fielderChain.length === 1) return `F${ab.fielderChain[0]}`
+    if (ab.outType === 'FOUL' && ab.fielderChain.length === 1) return `f${ab.fielderChain[0]}`
     return chain
   }
   switch (ab.outType) {
