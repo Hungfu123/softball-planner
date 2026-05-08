@@ -175,9 +175,9 @@ export function DiamondCell({ notation, outIndex }: Props) {
       )}
       {effectiveOutIndex && (
         <text
-          x={3}
-          y={77}
-          fontSize="7"
+          x={1}
+          y={78}
+          fontSize="5"
           fontWeight="700"
           fill="#1e3a8a"
           style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
