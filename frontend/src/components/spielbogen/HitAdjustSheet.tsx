@@ -46,10 +46,15 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
   const [forceOutRule, setForceOutRule] = useState(false)
 
   // Initial state aus baseStateAfter — alle aktuell auf base + recently scored.
-  // Für recently-scored bauen wir Pseudo-Einträge auf: jeder Run, der laut
-  // initialRunsScored zählte, kriegt eine Home-Toggle-Card.
+  // Batter wird ausgeschlossen (war nicht in baseStateBefore) — sein Reach via Hit
+  // ist vorgegeben (1B/2B/3B), keine Anpassung nötig.
   useEffect(() => {
     if (!open) return
+    const beforeSlotIds = new Set<number>([
+      baseStateBefore?.firstSlotId,
+      baseStateBefore?.secondSlotId,
+      baseStateBefore?.thirdSlotId,
+    ].filter((id): id is number => id != null))
     const onBase: Assignment[] = []
     const pairs: Array<{ slotId: number | null; base: 1 | 2 | 3 }> = [
       { slotId: baseStateAfter.firstSlotId, base: 1 },
@@ -58,13 +63,14 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
     ]
     for (const { slotId, base } of pairs) {
       if (slotId == null) continue
+      if (!beforeSlotIds.has(slotId)) continue // skip Batter
       const slot = slots.find(s => s.id === slotId)
       if (!slot) continue
       onBase.push({ slotId, name: slot.name, startBase: base, position: base })
     }
     setAssignments(onBase)
     setScoredCount(initialRunsScored)
-  }, [open, baseStateAfter.firstSlotId, baseStateAfter.secondSlotId, baseStateAfter.thirdSlotId, initialRunsScored, slots])
+  }, [open, baseStateAfter.firstSlotId, baseStateAfter.secondSlotId, baseStateAfter.thirdSlotId, baseStateBefore?.firstSlotId, baseStateBefore?.secondSlotId, baseStateBefore?.thirdSlotId, initialRunsScored, slots])
 
   const cycle = (slotId: number) => {
     setAssignments(arr => arr.map(a => {
