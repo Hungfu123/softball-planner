@@ -144,9 +144,9 @@ export function renderCells(
     } else if (adv.toBase > cell.reachedBase) {
       cell.reachedBase = adv.toBase
     }
-    // Side-annotation: alle Advances bekommen Side-Label (auch 3b-home für Score-Reason).
-    const side = fromToToSide(adv.fromBase, adv.toBase)
-    if (side) cell.advanceLabels.push({ side, label })
+    // Side-annotation: alle traversierten Seiten bekommen Label (Multi-Hop in einer AB → mehrere Labels).
+    const sides = fromToTraversedSides(adv.fromBase, adv.toBase)
+    for (const side of sides) cell.advanceLabels.push({ side, label })
   }
 
   return cells
@@ -243,17 +243,23 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): str
 }
 
 function fromToToSide(fromBase: number, toBase: number): AdvanceLabel['side'] | null {
-  if (toBase <= fromBase) return null
-  // Score (toBase=4) immer an 3b-home-Seite — Konvention: Reason am Home-Eck.
-  if (toBase >= 4) {
-    if (fromBase === 0) return null // Batter HR → eigenes AB-Label
-    return '3b-home'
+  // Single-side wrapper für legacy callers — gibt LETZTE traversierte Seite zurück.
+  const sides = fromToTraversedSides(fromBase, toBase)
+  return sides.length > 0 ? sides[sides.length - 1] : null
+}
+
+function fromToTraversedSides(fromBase: number, toBase: number): AdvanceLabel['side'][] {
+  if (toBase <= fromBase) return []
+  const sides: AdvanceLabel['side'][] = []
+  for (let b = fromBase; b < toBase; b++) {
+    if (b === 0) sides.push('home-1b')
+    else if (b === 1) sides.push('1b-2b')
+    else if (b === 2) sides.push('2b-3b')
+    else if (b === 3) sides.push('3b-home')
   }
-  // Non-scoring: letzte traversierte Seite.
-  if (toBase === 3) return '2b-3b'
-  if (toBase === 2) return '1b-2b'
-  if (toBase === 1) return 'home-1b'
-  return null
+  // Batter Homerun (0→4) → eigenes AB-Label, kein Side-Label.
+  if (fromBase === 0 && toBase >= 4) return []
+  return sides
 }
 
 function reachedBaseForAtBat(ab: SpielbogenAtBatResponse): number {
