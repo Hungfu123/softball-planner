@@ -650,16 +650,34 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     throwTarget: 1 | 2 | 3 | 4,
     baseRequest: Partial<SpielbogenRecordAtBatRequest>,
   ) => {
+    const defaults = computeForceDefaults(
+      baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null },
+      throwTarget,
+    )
+    // 3rd-Out: Runner-Advance egal (Inning endet, Runs zählen nicht). Skip Picker, auto-confirm mit Default.
+    if (outs >= 2) {
+      const advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[] = []
+      for (const fromBase of [1, 2, 3] as const) {
+        const toBase = defaults[fromBase]
+        if (toBase !== fromBase) advances.push({ fromBase, toBase })
+      }
+      const { baseStateAfter: after } = applyAdvances(baseStateAfter, advances)
+      onSubmit({
+        ...baseRequest,
+        runsScored: 0,
+        rbi: 0,
+        baseStateAfter: after,
+      })
+      setSelectedFielder(null)
+      return
+    }
     const chain = baseRequest.fielderChain
     const last = chain && chain.length > 1 ? chain[chain.length - 1] : null
     const titleSuffix = last != null ? `${fielder}-${last}` : `${fielder}`
     setPendingAdvancePicker({
       baseRequest,
       title: `Out ${titleSuffix} — Runner-Advance`,
-      defaultTargets: computeForceDefaults(
-        baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null },
-        throwTarget,
-      ),
+      defaultTargets: defaults,
     })
   }
 
