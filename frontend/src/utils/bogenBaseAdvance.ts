@@ -71,7 +71,8 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
       }
     }
     case 'WALK':
-    case 'HIT_BY_PITCH': {
+    case 'HIT_BY_PITCH':
+    case 'REACHED_ON_ERROR': {
       // Force-advance only consecutive runners
       let newB1 = batter
       let newB2 = b2
