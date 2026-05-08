@@ -157,7 +157,6 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
   const positionAsNumber = (a: Assignment): number => {
     if (a.position === 'out') return -1
     if (a.position === 'home') return 4
-    if (a.position === 'home-after-hit') return 4
     return typeof a.position === 'number' ? a.position : -1
   }
   const startAsNumber = (a: Assignment): number => {
