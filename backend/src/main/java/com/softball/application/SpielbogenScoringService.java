@@ -290,10 +290,43 @@ public class SpielbogenScoringService {
         BogenSide undoneSide = last.getSide();
         Integer undoneInning = last.getInning();
 
+        // Stealing-Events die nach dem vorletzten AB (oder seit Start, wenn keiner)
+        // passiert sind, gehören chronologisch zum gerade undone AB → mit löschen.
+        // Sonst hängen WP/PB/SB-Labels stale am State und überschreiben neue Runs.
+        java.time.Instant cutoff = atBatRepo.findByBogenId(bogenId).stream()
+            .filter(ab -> !ab.getId().equals(last.getId()))
+            .map(SpielbogenAtBat::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(java.time.Instant.EPOCH);
+        var staleStealing = stealingRepo.findByBogenId(bogenId).stream()
+            .filter(ev -> ev.getCreatedAt() != null && ev.getCreatedAt().isAfter(cutoff))
+            .toList();
+        int staleHomeRuns = 0;
+        int staleAwayRuns = 0;
+        for (var ev : staleStealing) {
+            boolean scoredRun = ev.getToBase() != null && ev.getToBase() == 4 && (
+                ev.getType() == StealingEventType.STOLEN_BASE ||
+                ev.getType() == StealingEventType.WILD_PITCH ||
+                ev.getType() == StealingEventType.PASSED_BALL
+            );
+            if (scoredRun) {
+                if (ev.getSide() == BogenSide.HOME) staleHomeRuns++;
+                else staleAwayRuns++;
+            }
+            stealingRepo.deleteById(ev.getId());
+        }
+        if (!staleStealing.isEmpty()) {
+            log.info("Spielbogen {} Undo: {} Stealing-Events mit-gelöscht (nach cutoff {})",
+                     bogenId, staleStealing.size(), cutoff);
+        }
+
         atBatRepo.deleteById(last.getId());
 
-        int homeRuns = bogen.getHomeRuns() - (last.getSide() == BogenSide.HOME ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0);
-        int awayRuns = bogen.getAwayRuns() - (last.getSide() == BogenSide.AWAY ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0);
+        int abHomeRuns = last.getSide() == BogenSide.HOME ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0;
+        int abAwayRuns = last.getSide() == BogenSide.AWAY ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0;
+        int homeRuns = bogen.getHomeRuns() - abHomeRuns - staleHomeRuns;
+        int awayRuns = bogen.getAwayRuns() - abAwayRuns - staleAwayRuns;
         bogen.setHomeRuns(Math.max(0, homeRuns));
         bogen.setAwayRuns(Math.max(0, awayRuns));
 
