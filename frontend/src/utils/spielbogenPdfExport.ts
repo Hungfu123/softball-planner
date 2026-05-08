@@ -500,7 +500,7 @@ function drawDiamondCell(
     if (label) {
       const labelColor: [number, number, number] =
         arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL' ? COLOR_ORANGE : [0, 0, 0]
-      doc.setFontSize(3)
+      doc.setFontSize(4.5)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(...labelColor)
       // Position per Steal-Direction (analog Advance-Labels).

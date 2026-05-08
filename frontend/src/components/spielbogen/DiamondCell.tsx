@@ -254,7 +254,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
             x={pos.x}
             y={pos.y}
             textAnchor="middle"
-            fontSize="5"
+            fontSize="7"
             fontWeight="700"
             fill={fill}
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
