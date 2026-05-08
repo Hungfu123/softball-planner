@@ -1397,6 +1397,7 @@ export default function SpielbogenPage() {
           outsBefore={outs}
           slots={slots}
           onConfirm={async ({ outsFromRunners, runnerAdvances, ...payload }) => {
+            setUndoAnimSkip(true)
             try {
               await correctLastAtBat(currentSide, { ...payload, runnerAdvances })
               // Runner-Outs als OUT_ON_PLAY-Events recorden für PDF-Notation
@@ -1415,6 +1416,8 @@ export default function SpielbogenPage() {
               }
             } catch (e) {
               toast.show((e as Error).message, 'error')
+            } finally {
+              setTimeout(() => setUndoAnimSkip(false), 500)
             }
           }}
         />
