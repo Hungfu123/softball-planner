@@ -193,9 +193,12 @@ public class SpielbogenScoringService {
             .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Rückgängigmachen für Side " + side));
 
         if (side != bogen.getCurrentSide()) {
-            boolean priorAutoSwitchCandidate = last.getInning() != null
-                && bogen.getCurrentInning() != null
-                && last.getInning() == bogen.getCurrentInning() - 1;
+            // Auto-switch cases:
+            //  - HOME 3rd-out → next=AWAY, inning unchanged → last.inning == currentInning
+            //  - AWAY 3rd-out → next=HOME, inning+1 → last.inning == currentInning - 1
+            int curInning = bogen.getCurrentInning() != null ? bogen.getCurrentInning() : 0;
+            int lastInning = last.getInning() != null ? last.getInning() : -1;
+            boolean priorAutoSwitchCandidate = lastInning == curInning || lastInning == curInning - 1;
             if (!priorAutoSwitchCandidate) {
                 throw new BusinessValidationException(
                     "Undo nur für aktuelle Side oder direkten Auto-Switch-Vorgänger erlaubt"

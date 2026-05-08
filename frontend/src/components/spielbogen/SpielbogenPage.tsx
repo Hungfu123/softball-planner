@@ -570,6 +570,8 @@ export default function SpielbogenPage() {
       } else {
         await undoLast(latestAction.side)
       }
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
     } finally {
       // Reset after one frame so subsequent runner-changes animate normally.
       setTimeout(() => setUndoAnimSkip(false), 500)
