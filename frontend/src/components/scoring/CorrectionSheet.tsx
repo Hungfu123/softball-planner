@@ -27,6 +27,9 @@ interface Props {
   context?: CorrectionContext
   /** Outs im aktuellen Inning NACH dem Abschluss dieses AtBats (0/1/2/3). Bei 3 → Force-Out-Regel-Hinweis. */
   outsAfter?: number
+  /** Batter der durch dieses AB auf eine Base kommt (z.B. ROE → defaultBase=1).
+   *  Wird als Assignment hinzugefügt, damit User Position via Tap-Cycle anpassen kann. */
+  extraBatter?: { playerId: number; playerName: string; defaultBase: 1 | 2 | 3 }
   onSave: (data: {
     newState: BaseStateDto
     extraRuns: number
@@ -36,7 +39,7 @@ interface Props {
   }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', outsAfter, onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', outsAfter, extraBatter, onSave }: Props) {
   const [assignments, setAssignments] = useState<RunnerAssignment[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -61,7 +64,14 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
       position: 'home' as Position,
       wasOnBase: null,
     }))
-    setAssignments([...onBase, ...scored])
+    // Batter (z.B. ROE): Default auf defaultBase, wasOnBase=defaultBase damit Cycle ab dort
+    const batter: RunnerAssignment[] = extraBatter ? [{
+      playerId: extraBatter.playerId,
+      playerName: extraBatter.playerName,
+      position: extraBatter.defaultBase as Position,
+      wasOnBase: extraBatter.defaultBase,
+    }] : []
+    setAssignments([...onBase, ...scored, ...batter])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 

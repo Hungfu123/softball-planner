@@ -898,9 +898,14 @@ export function ScoringPage() {
         runners={displayRunners}
         recentlyScored={recentlyScored}
         context={
-          atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'
+          atBats.length > 0 && (atBats[atBats.length - 1]?.result === 'OUT' || atBats[atBats.length - 1]?.result === 'REACHED_ON_ERROR')
             ? 'post-out'
             : 'manual'
+        }
+        extraBatter={
+          atBats.length > 0 && atBats[atBats.length - 1]?.result === 'REACHED_ON_ERROR'
+            ? { playerId: atBats[atBats.length - 1].batterId, playerName: atBats[atBats.length - 1].batterName, defaultBase: 1 }
+            : undefined
         }
         outsAfter={scoreboard?.outsInCurrentInning ?? 0}
         onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context }) => {
@@ -1984,19 +1989,14 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
       return next
     }
     case 'REACHED_ON_ERROR': {
-      // ROE: Batter→1B + Force-Minimum (1B-Runner→2B, etc. nur wenn forced).
-      // Andere Runner bleiben — Korrektur-Sheet fragt User für non-forced advances.
-      if (state.first == null) {
-        return { first: batterId, second: state.second, third: state.third }
+      // ROE mit Runnern: state UNCHANGED — Korrektur-Sheet fragt User wo alle landen.
+      // Sheet fügt Batter als extra-Assignment auf 1B hinzu (defaultBase).
+      // Ohne Runner: Batter direkt auf 1B (kein Sheet).
+      const hasRunners = state.first != null || state.second != null || state.third != null
+      if (!hasRunners) {
+        return { first: batterId, second: null, third: null }
       }
-      if (state.second == null) {
-        return { first: batterId, second: state.first, third: state.third }
-      }
-      if (state.third == null) {
-        return { first: batterId, second: state.first, third: state.second }
-      }
-      // Bases loaded — alle forced inkl. 3B-Runner Home (unvermeidbar nach Softball-Regel)
-      return { first: batterId, second: state.first, third: state.second }
+      return state
     }
     case 'SINGLE': {
       // Konservativ: Batter auf 1B, Runner jeweils +1 Base
