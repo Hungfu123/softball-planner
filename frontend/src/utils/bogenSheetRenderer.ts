@@ -101,7 +101,11 @@ export function renderCells(
 
   for (const st of stealings) {
     const key = cellKey(st.side, st.slotId, st.inning)
-    const existing = cells.get(key) ?? emptyCell()
+    // Defensiv: Stealing-Event ohne zugehörige AB-Cell (orphan nach undo) → skip.
+    // Runner muss in dieser Side+Inning zuvor via AB on-base gekommen sein, sonst
+    // ist das Event nicht renderbar und resultiert in Phantom-Cell mit stale Labels.
+    const existing = cells.get(key)
+    if (!existing) continue
     const arrow: StealingArrow = { fromBase: st.fromBase, toBase: st.toBase, type: st.type }
     existing.stealingArrows = [...existing.stealingArrows, arrow]
     // First arrow stays als primaryLabel-equivalent für legacy single-arrow rendering
@@ -152,21 +156,6 @@ export function renderCells(
   return cells
 }
 
-function emptyCell(): CellNotation {
-  return {
-    primaryLabel: '',
-    labels: [],
-    runScored: false,
-    outIndex: null,
-    rbi: 0,
-    reachedBase: 0,
-    stealingArrow: null,
-    stealingArrows: [],
-    abCount: 0,
-    inningEnd: false,
-    advanceLabels: [],
-  }
-}
 
 /** Synthesize RunnerAdvance-Records aus AB-baseStateAfter-Diffs (für alte Bögen ohne Records). */
 function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[], skipAbIds: Set<number> = new Set()): SpielbogenRunnerAdvanceResponse[] {
