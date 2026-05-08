@@ -118,12 +118,21 @@ export function renderCells(
   for (const adv of runnerAdvances) {
     const ab = atBats.find(a => a.id === adv.atBatId)
     if (!ab) continue
-    const side = fromToToSide(adv.fromBase, adv.toBase)
-    if (!side) continue
     const label = reasonToLabel(adv.reason, ab.result)
     const key = cellKey(adv.side, adv.slotId, adv.inning)
     const cell = cells.get(key)
-    if (cell) cell.advanceLabels.push({ side, label })
+    if (!cell) continue
+    // Update reachedBase: runner's cell reflects max base reached this inning
+    // (including pushes via subsequent ABs). Diamond-fill grows accordingly.
+    if (adv.toBase === 4 && cell.reachedBase < 4) {
+      cell.reachedBase = 4
+      cell.runScored = true
+    } else if (adv.toBase > cell.reachedBase) {
+      cell.reachedBase = adv.toBase
+    }
+    // Side-annotation: only direct single-base advances get a side label.
+    const side = fromToToSide(adv.fromBase, adv.toBase)
+    if (side) cell.advanceLabels.push({ side, label })
   }
 
   return cells
