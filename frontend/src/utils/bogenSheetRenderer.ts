@@ -52,6 +52,8 @@ export function renderCells(
   const cells: CellMap = new Map()
   const sorted = [...atBats].sort((a, b) => a.sequence - b.sequence)
   const scoredSet = computeScoredSet(sorted)
+  // Backfill: alte Bögen ohne RunnerAdvance-Records → synthesize aus baseStateAfter-Diffs.
+  const effectiveAdvances = runnerAdvances.length > 0 ? runnerAdvances : synthesizeAdvances(sorted)
   const cellOutIdxMap = computeCellOutIndices(sorted, stealings)
   const inningEndKeys = computeInningEndKeys(sorted, stealings)
 
@@ -115,7 +117,7 @@ export function renderCells(
     cells.set(key, existing)
   }
 
-  for (const adv of runnerAdvances) {
+  for (const adv of effectiveAdvances) {
     const ab = atBats.find(a => a.id === adv.atBatId)
     if (!ab) continue
     const label = reasonToLabel(adv.reason, ab.result)
@@ -152,6 +154,61 @@ function emptyCell(): CellNotation {
     inningEnd: false,
     advanceLabels: [],
   }
+}
+
+/** Synthesize RunnerAdvance-Records aus AB-baseStateAfter-Diffs (für alte Bögen ohne Records). */
+function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[]): SpielbogenRunnerAdvanceResponse[] {
+  const result: SpielbogenRunnerAdvanceResponse[] = []
+  const bySide: Record<BogenSide, SpielbogenAtBatResponse[]> = { HOME: [], AWAY: [] }
+  for (const ab of sortedAtBats) bySide[ab.side].push(ab)
+  for (const side of ['HOME', 'AWAY'] as BogenSide[]) {
+    let prevAfter: BogenBaseStateDto | null = null
+    let prevInning = -1
+    for (const ab of bySide[side]) {
+      const before: BogenBaseStateDto | null = ab.inning !== prevInning ? null : prevAfter
+      const after = ab.baseStateAfter ?? null
+      const reason = mapResultToReason(ab.result)
+      if (reason && before && after) {
+        const beforeMap = baseStateToMap(before)
+        const afterMap = baseStateToMap(after)
+        for (const [slotId, fromBase] of beforeMap.entries()) {
+          const toBase = afterMap.get(slotId) ?? 4
+          if (toBase > fromBase) {
+            result.push({
+              id: -result.length - 1,
+              bogenId: ab.bogenId ?? 0,
+              atBatId: ab.id,
+              slotId,
+              side: ab.side,
+              inning: ab.inning,
+              fromBase,
+              toBase,
+              reason,
+              createdAt: ab.createdAt,
+            })
+          }
+        }
+      }
+      prevAfter = after
+      prevInning = ab.inning
+    }
+  }
+  return result
+}
+
+function mapResultToReason(r: AtBatResult): RunnerAdvanceReason | null {
+  if (r === 'SINGLE' || r === 'DOUBLE' || r === 'TRIPLE' || r === 'HOMERUN') return 'HIT_PUSH'
+  if (r === 'WALK') return 'BB_FORCE'
+  if (r === 'HIT_BY_PITCH') return 'HBP_FORCE'
+  return null
+}
+
+function baseStateToMap(s: BogenBaseStateDto): Map<number, number> {
+  const m = new Map<number, number>()
+  if (s.firstSlotId != null) m.set(s.firstSlotId, 1)
+  if (s.secondSlotId != null) m.set(s.secondSlotId, 2)
+  if (s.thirdSlotId != null) m.set(s.thirdSlotId, 3)
+  return m
 }
 
 function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): string {
