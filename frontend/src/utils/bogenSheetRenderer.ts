@@ -312,8 +312,17 @@ function renderOut(ab: SpielbogenAtBatResponse): string {
   const chain = ab.fielderChain && ab.fielderChain.length > 0 ? ab.fielderChain.join('-') : ''
   if (ab.outType === 'FIELDERS_CHOICE') return chain ? `FC ${chain}` : 'FC'
   if (ab.fielderChain && ab.fielderChain.length > 0) {
-    if (ab.outType === 'DOUBLE_PLAY') return `${chain} DP`
-    if (ab.outType === 'TRIPLE_PLAY') return `${chain} TP`
+    const first = ab.fielderChain[0]
+    const isOutfieldOrigin = first === 7 || first === 8 || first === 9
+    if (ab.outType === 'DOUBLE_PLAY') {
+      // Fly+DP behält "F"-Prefix damit Reader sieht: Fly + Throw, nicht Grounder.
+      const prefix = isOutfieldOrigin && ab.fielderChain.length > 1 ? 'F' : ''
+      return `${prefix}${chain} DP`
+    }
+    if (ab.outType === 'TRIPLE_PLAY') {
+      const prefix = isOutfieldOrigin && ab.fielderChain.length > 1 ? 'F' : ''
+      return `${prefix}${chain} TP`
+    }
     if (ab.outType === 'FLY' && ab.fielderChain.length === 1) return `F${ab.fielderChain[0]}`
     return chain
   }
