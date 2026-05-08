@@ -28,19 +28,22 @@ public class SpielbogenScoringService {
     private final SpielbogenStealingRepository stealingRepo;
     private final SpielbogenSubstitutionRepository subRepo;
     private final SpielbogenPositionChangeRepository positionChangeRepo;
+    private final SpielbogenRunnerAdvanceRepository runnerAdvanceRepo;
 
     public SpielbogenScoringService(final SpielbogenRepository bogenRepo,
                                     final SpielbogenSlotRepository slotRepo,
                                     final SpielbogenAtBatRepository atBatRepo,
                                     final SpielbogenStealingRepository stealingRepo,
                                     final SpielbogenSubstitutionRepository subRepo,
-                                    final SpielbogenPositionChangeRepository positionChangeRepo) {
+                                    final SpielbogenPositionChangeRepository positionChangeRepo,
+                                    final SpielbogenRunnerAdvanceRepository runnerAdvanceRepo) {
         this.bogenRepo = bogenRepo;
         this.slotRepo = slotRepo;
         this.atBatRepo = atBatRepo;
         this.stealingRepo = stealingRepo;
         this.subRepo = subRepo;
         this.positionChangeRepo = positionChangeRepo;
+        this.runnerAdvanceRepo = runnerAdvanceRepo;
     }
 
     @Transactional
@@ -51,6 +54,19 @@ public class SpielbogenScoringService {
                                        final Boolean isError, final Integer errorPosition,
                                        final Integer runsScored, final Integer rbi,
                                        final BogenBaseState baseStateAfter) {
+        return recordAtBat(bogenId, side, slotId, inning, result, outType, sacrificeType,
+            fielderChain, isError, errorPosition, runsScored, rbi, baseStateAfter, null);
+    }
+
+    @Transactional
+    public SpielbogenAtBat recordAtBat(final Long bogenId, final BogenSide side, final Long slotId,
+                                       final Integer inning, final AtBatResult result,
+                                       final OutType outType, final SacrificeType sacrificeType,
+                                       final List<Integer> fielderChain,
+                                       final Boolean isError, final Integer errorPosition,
+                                       final Integer runsScored, final Integer rbi,
+                                       final BogenBaseState baseStateAfter,
+                                       final List<RunnerAdvanceEntry> runnerAdvances) {
         Spielbogen bogen = requireLive(bogenId);
         SpielbogenSlot slot = requireSlotForBogenAndSide(slotId, bogenId, side);
 
@@ -120,6 +136,29 @@ public class SpielbogenScoringService {
 
         log.info("Spielbogen {} AtBat: side={} inning={} result={} seq={}",
                  bogenId, side, inning, result, saved.getSequence());
+
+        if (runnerAdvances != null && !runnerAdvances.isEmpty()) {
+            final SpielbogenAtBat savedRef = saved;
+            var entities = runnerAdvances.stream().map(entry -> {
+                if (entry.fromBase() == null || entry.toBase() == null || entry.fromBase() >= entry.toBase()) {
+                    throw new BusinessValidationException(
+                        "Ungültiger RunnerAdvance: fromBase=" + entry.fromBase() + ", toBase=" + entry.toBase()
+                    );
+                }
+                SpielbogenSlot runnerSlot = requireSlotForBogenAndSide(entry.slotId(), bogenId, side);
+                SpielbogenRunnerAdvance ra = new SpielbogenRunnerAdvance();
+                ra.setBogen(bogen);
+                ra.setAtBat(savedRef);
+                ra.setSlot(runnerSlot);
+                ra.setSide(side);
+                ra.setInning(inning);
+                ra.setFromBase(entry.fromBase());
+                ra.setToBase(entry.toBase());
+                ra.setReason(entry.reason());
+                return ra;
+            }).toList();
+            runnerAdvanceRepo.saveAll(entities);
+        }
 
         maybeAutoSwitchSide(bogen, side, inning);
         return saved;
@@ -364,6 +403,16 @@ public class SpielbogenScoringService {
         return positionChangeRepo.findByBogenId(bogenId);
     }
 
+    @Transactional(readOnly = true)
+    public List<SpielbogenRunnerAdvance> findRunnerAdvances(final Long bogenId) {
+        return runnerAdvanceRepo.findByBogenId(bogenId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SpielbogenRunnerAdvance> findRunnerAdvancesForAtBat(final Long atBatId) {
+        return runnerAdvanceRepo.findByAtBatId(atBatId);
+    }
+
     private void maybeAutoSwitchSide(final Spielbogen bogen, final BogenSide side, final int inning) {
         long outs = atBatRepo.countOutsInInning(bogen.getId(), side, inning);
         if (outs >= 3) {
@@ -379,6 +428,8 @@ public class SpielbogenScoringService {
     }
 
     public record SwapEntry(Long slotId, String newPosition) {}
+
+    public record RunnerAdvanceEntry(Long slotId, Integer fromBase, Integer toBase, RunnerAdvanceReason reason) {}
 
     private static final Set<String> VALID_SWAP_POSITIONS = Set.of(
         "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "EH", "DH",
