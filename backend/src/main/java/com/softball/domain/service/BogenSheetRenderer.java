@@ -44,6 +44,7 @@ public class BogenSheetRenderer {
             case HIT_BY_PITCH -> new CellNotation("HP", runScored, null);
             case STRIKEOUT -> new CellNotation("K", false, null);
             case OUT -> new CellNotation(renderOutNotation(ab), false, null);
+            case REACHED_ON_ERROR -> new CellNotation("E", runScored, null);
         };
     }
 

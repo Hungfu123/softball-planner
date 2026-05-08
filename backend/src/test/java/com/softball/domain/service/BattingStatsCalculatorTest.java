@@ -62,6 +62,30 @@ class BattingStatsCalculatorTest {
     }
 
     @Test
+    void reachedOnError_countsAsAtBatNoHit() {
+        final List<AtBat> atBats = List.of(
+            atBat(AtBatResult.SINGLE),
+            atBat(AtBatResult.REACHED_ON_ERROR),
+            atBat(AtBatResult.REACHED_ON_ERROR),
+            atBat(AtBatResult.OUT)
+        );
+
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+
+        assertThat(s.plateAppearances()).isEqualTo(4);
+        assertThat(s.atBats()).isEqualTo(4);          // ROE zählt als AB
+        assertThat(s.hits()).isEqualTo(1);            // nur Single
+        assertThat(s.reachedOnError()).isEqualTo(2);
+        assertThat(s.outs()).isEqualTo(1);
+        // BA = 1/4 = 0.250 (BA-Penalty wirkt)
+        assertThat(s.battingAverage()).isEqualByComparingTo("0.250");
+        // OBP = (1 hit + 0 BB + 0 HBP) / 4 PA = 0.250 (ROE zählt NICHT als On-Base)
+        assertThat(s.onBasePct()).isEqualByComparingTo("0.250");
+        // SLG = 1 TB / 4 AB = 0.250
+        assertThat(s.sluggingPct()).isEqualByComparingTo("0.250");
+    }
+
+    @Test
     void battingAverageFormula() {
         final List<AtBat> atBats = List.of(
             atBat(AtBatResult.SINGLE),

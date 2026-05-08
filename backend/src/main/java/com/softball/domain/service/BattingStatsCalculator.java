@@ -54,6 +54,7 @@ public class BattingStatsCalculator {
         int atBats = 0;
         int hits = 0, singles = 0, doubles = 0, triples = 0, homeRuns = 0;
         int walks = 0, hbp = 0, strikeouts = 0, outs = 0;
+        int reachedOnError = 0;
         int totalBases = 0;
         int rbi = 0;
 
@@ -72,6 +73,7 @@ public class BattingStatsCalculator {
                 case HIT_BY_PITCH -> hbp++;
                 case STRIKEOUT -> strikeouts++;
                 case OUT -> outs++;
+                case REACHED_ON_ERROR -> reachedOnError++;
             }
             totalBases += r.totalBases();
             if (ab.getRbi() != null) rbi += ab.getRbi();
@@ -94,6 +96,7 @@ public class BattingStatsCalculator {
             plateAppearances, atBats, hits,
             singles, doubles, triples, homeRuns,
             walks, hbp, strikeouts, outs,
+            reachedOnError,
             stolenBases, caughtStealing, rbi, totalBases,
             ba, obp, slg
         );
