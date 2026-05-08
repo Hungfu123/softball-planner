@@ -201,7 +201,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
         <circle
           key={i}
           cx={56 - i * 4}
-          cy={6}
+          cy={76}
           r={1.4}
           fill="#dc2626"
         />

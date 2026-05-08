@@ -446,12 +446,12 @@ function drawDiamondCell(
     doc.line(x1, y1, x2, y2)
   }
 
-  // RBI dots top-right (red)
+  // RBI dots bottom-right (red)
   if (cell?.rbi && cell.rbi > 0) {
     doc.setFillColor(...COLOR_RED)
     const dots = Math.min(cell.rbi, 3)
     for (let i = 0; i < dots; i++) {
-      doc.circle(cellX + cellW - 1.2 - i * 1.4, cellY + 1.6, 0.5, 'F')
+      doc.circle(cellX + cellW - 1.2 - i * 1.4, cellY + cellH - 1.4, 0.5, 'F')
     }
   }
 
