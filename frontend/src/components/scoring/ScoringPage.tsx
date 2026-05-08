@@ -1971,10 +1971,8 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
       // Alle Runner laufen Home, Batter auf 3B
       return { first: null, second: null, third: batterId }
     case 'WALK':
-    case 'HIT_BY_PITCH':
-    case 'REACHED_ON_ERROR': {
-      // Force-Advance: nur wenn bases vor Batter besetzt sind.
-      // ROE verhält sich mechanisch wie Walk (Batter→1B, forced runners +1).
+    case 'HIT_BY_PITCH': {
+      // Force-Advance: nur wenn bases vor Batter besetzt sind
       const next: BaseStateDto = { first: batterId, second: state.second, third: state.third }
       if (state.first != null) {
         next.second = state.first
@@ -1984,6 +1982,21 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
         }
       }
       return next
+    }
+    case 'REACHED_ON_ERROR': {
+      // ROE: Batter→1B + Force-Minimum (1B-Runner→2B, etc. nur wenn forced).
+      // Andere Runner bleiben — Korrektur-Sheet fragt User für non-forced advances.
+      if (state.first == null) {
+        return { first: batterId, second: state.second, third: state.third }
+      }
+      if (state.second == null) {
+        return { first: batterId, second: state.first, third: state.third }
+      }
+      if (state.third == null) {
+        return { first: batterId, second: state.first, third: state.second }
+      }
+      // Bases loaded — alle forced inkl. 3B-Runner Home (unvermeidbar nach Softball-Regel)
+      return { first: batterId, second: state.first, third: state.second }
     }
     case 'SINGLE': {
       // Konservativ: Batter auf 1B, Runner jeweils +1 Base
