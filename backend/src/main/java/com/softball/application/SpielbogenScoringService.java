@@ -192,6 +192,17 @@ public class SpielbogenScoringService {
         SpielbogenAtBat last = atBatRepo.findLatestForSide(bogenId, side)
             .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Rückgängigmachen für Side " + side));
 
+        if (side != bogen.getCurrentSide()) {
+            boolean priorAutoSwitchCandidate = last.getInning() != null
+                && bogen.getCurrentInning() != null
+                && last.getInning() == bogen.getCurrentInning() - 1;
+            if (!priorAutoSwitchCandidate) {
+                throw new BusinessValidationException(
+                    "Undo nur für aktuelle Side oder direkten Auto-Switch-Vorgänger erlaubt"
+                );
+            }
+        }
+
         BogenSide undoneSide = last.getSide();
         Integer undoneInning = last.getInning();
 
