@@ -195,6 +195,12 @@ public class SpielbogenController {
         scoringService.deleteStealingEvent(id, eventId);
     }
 
+    @DeleteMapping("/{id}/stealing/last")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLastStealing(@PathVariable Long id, @RequestParam BogenSide side) {
+        scoringService.deleteLastStealingForSide(id, side);
+    }
+
     @PostMapping("/{id}/substitutions")
     @ResponseStatus(HttpStatus.CREATED)
     public SpielbogenSubstitutionResponse recordSubstitution(@PathVariable Long id,
