@@ -322,7 +322,7 @@ function RunnerAdvancePickerView({
   subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
-  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean, outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[]) => void
+  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean, outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3; tagFielder: number }[]) => void
   onBack: () => void
   showSacFlyToggle?: boolean
   defaultTargets?: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
@@ -346,6 +346,8 @@ function RunnerAdvancePickerView({
     defaultTargets ?? { 1: 1, 2: 2, 3: 3 }
   )
   const [outBases, setOutBases] = useState<Set<1 | 2 | 3>>(new Set())
+  // Tag-Target-Fielder pro out-Runner. Default: 1B→SS(6), 2B→3B(5), 3B→C(2).
+  const [tagFielders, setTagFielders] = useState<Record<1 | 2 | 3, number>>({ 1: 6, 2: 5, 3: 2 })
   const [isSacFly, setIsSacFly] = useState(false)
   const cycle = (b: 1 | 2 | 3) => {
     if (outBases.has(b)) return
@@ -361,6 +363,20 @@ function RunnerAdvancePickerView({
       if (next.has(b)) next.delete(b)
       else next.add(b)
       return next
+    })
+  }
+  const cycleTagFielder = (fromBase: 1 | 2 | 3) => {
+    // Reihenfolge per fromBase priorisiert plausible Cover-Fielder.
+    const options: Record<1 | 2 | 3, number[]> = {
+      1: [6, 4, 3, 1, 2, 5, 7, 8, 9],
+      2: [5, 6, 4, 1, 2, 3, 7, 8, 9],
+      3: [2, 5, 1, 6, 3, 4, 7, 8, 9],
+    }
+    setTagFielders(prev => {
+      const opts = options[fromBase]
+      const idx = opts.indexOf(prev[fromBase])
+      const next = opts[(idx + 1) % opts.length]
+      return { ...prev, [fromBase]: next }
     })
   }
 
@@ -425,9 +441,18 @@ function RunnerAdvancePickerView({
               >
                 <div className="font-display font-bold text-sm flex items-center justify-between">
                   <span>{r.name} (auf {r.fromBase}B)</span>
-                  <span className="text-xs">{isOut ? 'OUT' : labelFor(r.fromBase, t)}</span>
+                  <span className="text-xs">{isOut ? `OUT ↦ ${tagFielders[r.fromBase]}` : labelFor(r.fromBase, t)}</span>
                 </div>
               </button>
+              {isOut && (
+                <button
+                  onClick={() => cycleTagFielder(r.fromBase)}
+                  title="Tag-Fielder wechseln"
+                  className="px-3 py-2 rounded-xl border border-softball-red-300 bg-softball-red-50 text-softball-red-800 text-xs font-display font-bold cursor-pointer hover:bg-softball-red-100"
+                >
+                  {tagFielders[r.fromBase]}
+                </button>
+              )}
               <button
                 onClick={() => toggleOut(r.fromBase)}
                 className={`px-3 py-2 rounded-xl border text-xs font-display font-bold cursor-pointer transition-colors ${
@@ -479,7 +504,7 @@ function RunnerAdvancePickerView({
           onClick={() => onConfirm(
             runners.filter(r => !outBases.has(r.fromBase)).map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] })),
             isSacFly,
-            runners.filter(r => outBases.has(r.fromBase)).map(r => ({ slotId: r.slotId, fromBase: r.fromBase }))
+            runners.filter(r => outBases.has(r.fromBase)).map(r => ({ slotId: r.slotId, fromBase: r.fromBase, tagFielder: tagFielders[r.fromBase] }))
           )}
           disabled={hasCollision}
           className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -645,7 +670,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   const handleFlyOutConfirm = (
     advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[],
     isSacFly: boolean,
-    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[],
+    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3; tagFielder: number }[],
   ) => {
     if (pendingFlyOutRequest == null) return
     const { baseStateAfter: afterAdvances, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
@@ -656,12 +681,8 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       thirdSlotId: outsFromRunners.some(o => o.fromBase === 3) ? null : afterAdvances.thirdSlotId,
     }
     const runs = outs >= 2 ? 0 : rawRuns
-    // Bei DP: fielderChain extended mit Tag-Target-Fielder.
-    //   fromBase 3 → versucht Home → Catcher (2)
-    //   fromBase 2 → versucht 3B → 5
-    //   fromBase 1 → versucht 2B → 6 (SS, statistisch häufiger als 4 bei Right-Handed-Battern)
-    const coverFielder = (b: 1 | 2 | 3): number => b === 1 ? 6 : b === 2 ? 5 : 2
-    const dpChain: number[] = [pendingFlyOutRequest.fielder, ...outsFromRunners.map(o => coverFielder(o.fromBase))]
+    // Bei DP: fielderChain extended mit user-gewähltem Tag-Target-Fielder pro out-Runner.
+    const dpChain: number[] = [pendingFlyOutRequest.fielder, ...outsFromRunners.map(o => o.tagFielder)]
     onSubmit({
       result: 'OUT',
       outType: outsFromRunners.length > 0 ? 'DOUBLE_PLAY' : 'FLY',
@@ -713,7 +734,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   const handleAdvancePickerConfirm = (
     advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[],
     _isSacFly: boolean,
-    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[],
+    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3; tagFielder: number }[],
   ) => {
     if (pendingAdvancePicker == null) return
     void _isSacFly
