@@ -437,6 +437,10 @@ export async function undoLastSpielbogenAtBat(bogenId: number, side: BogenSide):
   return request<void>(`/spielbogen/${bogenId}/at-bats/last?side=${side}`, { method: 'DELETE' })
 }
 
+export async function deleteLastSpielbogenStealing(bogenId: number, side: BogenSide): Promise<void> {
+  await request<void>(`/spielbogen/${bogenId}/stealing/last?side=${side}`, { method: 'DELETE' })
+}
+
 export async function recordSpielbogenStealing(bogenId: number, req: SpielbogenRecordStealingRequest): Promise<SpielbogenStealingResponse> {
   return request<SpielbogenStealingResponse>(`/spielbogen/${bogenId}/stealing-events`, {
     method: 'POST', body: JSON.stringify(req)

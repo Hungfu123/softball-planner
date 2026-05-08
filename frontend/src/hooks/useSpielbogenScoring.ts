@@ -64,6 +64,12 @@ export function useSpielbogenScoring(bogenId: number | null) {
     await reload()
   }, [bogenId, reload])
 
+  const undoLastStealing = useCallback(async (side: BogenSide) => {
+    if (bogenId == null) return
+    await api.deleteLastSpielbogenStealing(bogenId, side)
+    await reload()
+  }, [bogenId, reload])
+
   const switchSide = useCallback(async () => {
     if (bogenId == null) return
     await api.switchSpielbogenSide(bogenId)
@@ -105,5 +111,5 @@ export function useSpielbogenScoring(bogenId: number | null) {
     return result
   }, [bogenId, reload])
 
-  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot }
+  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, undoLastStealing, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot }
 }

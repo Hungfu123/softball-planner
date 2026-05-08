@@ -5,9 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SpringSpielbogenStealingRepository extends JpaRepository<SpielbogenStealingEventEntity, Long> {
     List<SpielbogenStealingEventEntity> findByBogen_IdOrderByIdAsc(Long bogenId);
+
+    Optional<SpielbogenStealingEventEntity> findFirstByBogen_IdAndSideOrderByIdDesc(Long bogenId, String side);
 
     @Query("""
         SELECT COUNT(s) FROM SpielbogenStealingEventEntity s

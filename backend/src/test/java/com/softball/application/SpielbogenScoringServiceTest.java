@@ -164,9 +164,13 @@ class SpielbogenScoringServiceTest {
         last.setId(99L);
         last.setRunsScored(2);
         last.setSide(BogenSide.HOME);
+        last.setInning(1);
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(1);
         liveBogen.setHomeRuns(2);
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
         when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 1)).thenReturn(0L);
         when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         service.undoLast(1L, BogenSide.HOME);
@@ -177,7 +181,7 @@ class SpielbogenScoringServiceTest {
 
     @Test
     void undoLastRevertsSideAndInningWhenOutsDropBelow3() {
-        // Scenario: HOME hatte 3rd-Out, Auto-Switch zu AWAY (inning 1).
+        // Scenario: HOME hatte 3rd-Out in inning 1, Auto-Switch zu AWAY inning 2 (HOME-Out zählt neues Inning hoch).
         // User undoed das 3rd-Out → outs nun unter 3 → side soll zurück zu HOME, inning 1.
         SpielbogenAtBat last = new SpielbogenAtBat();
         last.setId(99L);
@@ -185,7 +189,7 @@ class SpielbogenScoringServiceTest {
         last.setSide(BogenSide.HOME);
         last.setInning(1);
         liveBogen.setCurrentSide(BogenSide.AWAY);
-        liveBogen.setCurrentInning(1);
+        liveBogen.setCurrentInning(2); // HOME-Out in inning 1 → currentInning increments to 2
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
         when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
         when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 1)).thenReturn(2L);
@@ -374,5 +378,47 @@ class SpielbogenScoringServiceTest {
 
         assertThrows(BusinessValidationException.class,
             () -> service.recordPositionSwap(1L, BogenSide.HOME, 3, List.of()));
+    }
+
+    @Test
+    void deleteLastStealingForSide_basic_deletesLatest() {
+        SpielbogenStealingEvent ev = new SpielbogenStealingEvent();
+        ev.setId(99L);
+        ev.setBogen(liveBogen);
+        ev.setSide(BogenSide.HOME);
+        ev.setInning(2);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(Optional.of(ev));
+
+        service.deleteLastStealingForSide(1L, BogenSide.HOME);
+
+        verify(stealingRepo).deleteById(99L);
+    }
+
+    @Test
+    void deleteLastStealingForSide_noEvent_throws() {
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(Optional.empty());
+
+        assertThrows(BusinessValidationException.class,
+            () -> service.deleteLastStealingForSide(1L, BogenSide.HOME));
+    }
+
+    @Test
+    void undoLast_wrongSideAndNotPriorAutoSwitch_throws() {
+        // currentSide=AWAY, currentInning=3 — passing HOME side with last.inning=1 (not inning 2 = currentInning-1)
+        liveBogen.setCurrentSide(BogenSide.AWAY);
+        liveBogen.setCurrentInning(3);
+        SpielbogenAtBat oldHome = new SpielbogenAtBat();
+        oldHome.setId(50L);
+        oldHome.setSide(BogenSide.HOME);
+        oldHome.setInning(1); // Not currentInning - 1 (which would be 2), so not a direct auto-switch predecessor
+        oldHome.setSequence(10);
+        oldHome.setRunsScored(0);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(oldHome));
+
+        assertThrows(BusinessValidationException.class,
+            () -> service.undoLast(1L, BogenSide.HOME));
     }
 }

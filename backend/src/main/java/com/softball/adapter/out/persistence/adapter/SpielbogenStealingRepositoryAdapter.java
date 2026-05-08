@@ -61,6 +61,11 @@ public class SpielbogenStealingRepositoryAdapter implements SpielbogenStealingRe
     }
 
     @Override
+    public Optional<SpielbogenStealingEvent> findLatestForBogenIdAndSide(final Long bogenId, final BogenSide side) {
+        return repo.findFirstByBogen_IdAndSideOrderByIdDesc(bogenId, side.name()).map(mapper::toDomain);
+    }
+
+    @Override
     public long countOutsInInning(final Long bogenId, final BogenSide side, final Integer inning) {
         return repo.countOutsInInning(bogenId, side.name(), inning);
     }

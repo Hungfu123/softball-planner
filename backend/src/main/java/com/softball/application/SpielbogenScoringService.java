@@ -192,6 +192,17 @@ public class SpielbogenScoringService {
         SpielbogenAtBat last = atBatRepo.findLatestForSide(bogenId, side)
             .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Rückgängigmachen für Side " + side));
 
+        if (side != bogen.getCurrentSide()) {
+            boolean priorAutoSwitchCandidate = last.getInning() != null
+                && bogen.getCurrentInning() != null
+                && last.getInning() == bogen.getCurrentInning() - 1;
+            if (!priorAutoSwitchCandidate) {
+                throw new BusinessValidationException(
+                    "Undo nur für aktuelle Side oder direkten Auto-Switch-Vorgänger erlaubt"
+                );
+            }
+        }
+
         BogenSide undoneSide = last.getSide();
         Integer undoneInning = last.getInning();
 
@@ -442,6 +453,15 @@ public class SpielbogenScoringService {
         log.info("Spielbogen {} PositionSwap: side={} inning={} groupId={} changes={}",
                  bogenId, side, inning, groupId, saved.size());
         return saved;
+    }
+
+    @Transactional
+    public void deleteLastStealingForSide(final Long bogenId, final BogenSide side) {
+        requireLive(bogenId);
+        SpielbogenStealingEvent latest = stealingRepo.findLatestForBogenIdAndSide(bogenId, side)
+            .orElseThrow(() -> new BusinessValidationException("Kein Stealing-Event zum Rückgängigmachen für Side " + side));
+        stealingRepo.deleteById(latest.getId());
+        log.info("Spielbogen {} Stealing-Undo: Event id={} side={} gelöscht", bogenId, latest.getId(), side);
     }
 
     private Spielbogen requireLive(final Long bogenId) {
