@@ -513,12 +513,6 @@ export function GameDayPlanner() {
             games: gd.games.map(g => g.id === gameId ? { ...g, opponentTeam } : g),
           } : gd)
         }}
-        onScoreChanged={(gameId, scoreUs, scoreThem) => {
-          setGameDay(gd => gd ? {
-            ...gd,
-            games: gd.games.map(g => g.id === gameId ? { ...g, scoreUs, scoreThem } : g),
-          } : gd)
-        }}
         onSwapped={async () => {
           lineup.invalidateCache()
           await reload()

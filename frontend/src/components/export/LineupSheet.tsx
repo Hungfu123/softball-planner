@@ -77,9 +77,6 @@ export function LineupSheet() {
             <h2 className="text-xs font-bold text-gray-800 border-b-2 border-navy-800 pb-0.5">
               Spiel {game.gameNumber}
               {game.opponentTeam && <span className="font-normal text-gray-600"> vs {game.opponentTeam.name}</span>}
-              {game.scoreUs != null && (
-                <span className="font-normal text-gray-500 ml-1">({game.scoreUs}:{game.scoreThem})</span>
-              )}
               {staff.length > 0 && (
                 <span className="font-normal text-gray-400 ml-2">
                   {staff.map(s => `${s.role === 'BASE_COACH_1ST' ? '1B' : '3B'}: ${s.player.name}`).join(' · ')}

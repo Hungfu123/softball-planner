@@ -55,7 +55,6 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
     doc.setFont('helvetica', 'bold')
     let gameTitle = `Spiel ${game.gameNumber}`
     if (game.opponentTeam) gameTitle += ` vs ${game.opponentTeam.name}`
-    if (game.scoreUs != null && game.scoreThem != null) gameTitle += ` (${game.scoreUs}:${game.scoreThem})`
 
     doc.text(gameTitle, contentLeft, y)
     doc.setDrawColor(30, 41, 59) // navy
