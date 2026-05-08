@@ -375,4 +375,28 @@ class SpielbogenScoringServiceTest {
         assertThrows(BusinessValidationException.class,
             () -> service.recordPositionSwap(1L, BogenSide.HOME, 3, List.of()));
     }
+
+    @Test
+    void deleteLastStealingForSide_basic_deletesLatest() {
+        SpielbogenStealingEvent ev = new SpielbogenStealingEvent();
+        ev.setId(99L);
+        ev.setBogen(liveBogen);
+        ev.setSide(BogenSide.HOME);
+        ev.setInning(2);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(Optional.of(ev));
+
+        service.deleteLastStealingForSide(1L, BogenSide.HOME);
+
+        verify(stealingRepo).deleteById(99L);
+    }
+
+    @Test
+    void deleteLastStealingForSide_noEvent_throws() {
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(Optional.empty());
+
+        assertThrows(BusinessValidationException.class,
+            () -> service.deleteLastStealingForSide(1L, BogenSide.HOME));
+    }
 }

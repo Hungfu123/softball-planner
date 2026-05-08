@@ -444,6 +444,15 @@ public class SpielbogenScoringService {
         return saved;
     }
 
+    @Transactional
+    public void deleteLastStealingForSide(final Long bogenId, final BogenSide side) {
+        requireLive(bogenId);
+        SpielbogenStealingEvent latest = stealingRepo.findLatestForBogenIdAndSide(bogenId, side)
+            .orElseThrow(() -> new BusinessValidationException("Kein Stealing-Event zum Rückgängigmachen für Side " + side));
+        stealingRepo.deleteById(latest.getId());
+        log.info("Spielbogen {} Stealing-Undo: Event id={} side={} gelöscht", bogenId, latest.getId(), side);
+    }
+
     private Spielbogen requireLive(final Long bogenId) {
         Spielbogen bogen = bogenRepo.findById(bogenId)
             .orElseThrow(() -> new ResourceNotFoundException("Spielbogen", bogenId));
