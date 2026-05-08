@@ -774,8 +774,18 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   }
 
   const handleFoulOut = () => {
-    // Default fielder = 2 (Catcher) — häufigster Foul-Catch. User kann via Korrektur ändern.
-    onSubmit({ result: 'OUT', outType: 'FOUL', fielderChain: [2] })
+    // Öffne ChainPicker leer — User tappt den catching Fielder (jeder kann Foul fangen).
+    setPendingChainPicker({
+      initialFielder: 2, // Fallback wenn User nicht tappt = Catcher
+      initialChain: [],
+      baseRequest: {
+        result: 'OUT',
+        outType: 'FOUL',
+        runsScored: 0,
+        rbi: 0,
+      },
+      baseStateAfter: baseState,
+    })
   }
 
   const handleInfieldSubmit = (req: Partial<SpielbogenRecordAtBatRequest>) => {
