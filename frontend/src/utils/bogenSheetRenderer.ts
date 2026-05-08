@@ -177,7 +177,7 @@ function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[]): Spielbogen
     for (const ab of bySide[side]) {
       const before: BogenBaseStateDto | null = ab.inning !== prevInning ? null : prevAfter
       const after = ab.baseStateAfter ?? null
-      const reason = mapResultToReason(ab.result)
+      const reason = ab.isError ? 'ERROR' : mapResultToReason(ab.result)
       if (reason && before && after) {
         const beforeMap = baseStateToMap(before)
         const afterMap = baseStateToMap(after)
