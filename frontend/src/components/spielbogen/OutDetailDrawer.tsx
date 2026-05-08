@@ -638,7 +638,7 @@ function ChainPickerView({ initialFielder, initialChain, onConfirm, onBack, isFo
 export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
-  const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number } | null>(null)
+  const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number; isFoul?: boolean } | null>(null)
   const [pendingRunnerOutRequest, setPendingRunnerOutRequest] = useState<{ fielder: number } | null>(null)
   const [pendingAdvancePicker, setPendingAdvancePicker] = useState<null | {
     baseRequest: Partial<SpielbogenRecordAtBatRequest>
@@ -699,12 +699,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       thirdSlotId: outsFromRunners.some(o => o.fromBase === 3) ? null : afterAdvances.thirdSlotId,
     }
     const runs = outs >= 2 ? 0 : rawRuns
-    // Bei DP: fielderChain extended mit user-gewähltem Tag-Target-Fielder pro out-Runner.
     const dpChain: number[] = [pendingFlyOutRequest.fielder, ...outsFromRunners.map(o => o.tagFielder)]
+    const isFoul = pendingFlyOutRequest.isFoul ?? false
+    const baseOutType = outsFromRunners.length > 0 ? 'DOUBLE_PLAY' : (isFoul ? 'FOUL' : 'FLY')
     onSubmit({
       result: 'OUT',
-      outType: outsFromRunners.length > 0 ? 'DOUBLE_PLAY' : 'FLY',
-      ...(isSacFly && outs < 2 && outsFromRunners.length === 0 ? { sacrificeType: 'FLY' as const } : {}),
+      outType: baseOutType,
+      ...(isSacFly && outs < 2 && outsFromRunners.length === 0 && !isFoul ? { sacrificeType: 'FLY' as const } : {}),
       fielderChain: outsFromRunners.length > 0 ? dpChain : [pendingFlyOutRequest.fielder],
       runsScored: runs,
       rbi: runs,
@@ -876,6 +877,14 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleChainPickerConfirm = (chain: number[]) => {
     if (pendingChainPicker == null) return
+    // Bei FOUL: nach Fielder-Pick zu FlyOut-Picker (Tag-Up + Aus?-Toggles für Runner).
+    if (pendingChainPicker.baseRequest.outType === 'FOUL' && chain.length >= 1) {
+      const fielder = chain[0]
+      setPendingChainPicker(null)
+      setSelectedFielder(null)
+      setPendingFlyOutRequest({ fielder, isFoul: true })
+      return
+    }
     onSubmit({
       ...pendingChainPicker.baseRequest,
       fielderChain: chain,
@@ -921,7 +930,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
               />
             ) : pendingFlyOutRequest != null ? (
               <RunnerAdvancePickerView
-                title={`Fly Out F${pendingFlyOutRequest.fielder} — Tag Up?`}
+                title={`${pendingFlyOutRequest.isFoul ? 'Foul' : 'Fly'} Out ${pendingFlyOutRequest.isFoul ? 'f' : 'F'}${pendingFlyOutRequest.fielder} — Tag Up?`}
                 subtitle={
                   outs >= 2
                     ? 'Catch ist 3rd Out — Runs zählen nicht (Inning beendet)'
