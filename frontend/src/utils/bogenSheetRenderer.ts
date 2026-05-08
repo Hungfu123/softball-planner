@@ -133,8 +133,9 @@ export function renderCells(
       cell.reachedBase = adv.toBase
     }
     // Side-annotation: only direct single-base advances get a side label.
+    // 3b-home (Score) wird NICHT annotiert — gefüllter Diamond zeigt Score bereits.
     const side = fromToToSide(adv.fromBase, adv.toBase)
-    if (side) cell.advanceLabels.push({ side, label })
+    if (side && side !== '3b-home') cell.advanceLabels.push({ side, label })
   }
 
   return cells

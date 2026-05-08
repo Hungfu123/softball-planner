@@ -456,7 +456,7 @@ function drawDiamondCell(
   }
 
   if (cell?.advanceLabels?.length) {
-    doc.setFontSize(2.5)
+    doc.setFontSize(4)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(0, 0, 0)
     for (const adv of cell.advanceLabels) {
@@ -531,12 +531,13 @@ function pdfSidePosition(
   cellW: number,
   cellH: number,
 ) {
-  // Offset OUTWARD vom Diamond-Mittelpunkt damit Label nicht auf Diamond-Stroke liegt.
-  const dx = cellW * 0.34
-  const dy = cellH * 0.22
-  if (side === 'home-1b') return { x: mid.x + dx, y: mid.y + dy }
-  if (side === '1b-2b') return { x: mid.x + dx, y: mid.y - dy }
-  if (side === '2b-3b') return { x: mid.x - dx, y: mid.y - dy }
-  if (side === '3b-home') return { x: mid.x - dx, y: mid.y + dy }
+  // Außerhalb Diamond-Stroke. Top-Sides ganz oben in Cell.
+  const dx = cellW * 0.38
+  const dyTop = cellH * 0.32
+  const dyBot = cellH * 0.28
+  if (side === 'home-1b') return { x: mid.x + dx, y: mid.y + dyBot }
+  if (side === '1b-2b') return { x: mid.x + dx, y: mid.y - dyTop }
+  if (side === '2b-3b') return { x: mid.x - dx, y: mid.y - dyTop }
+  if (side === '3b-home') return { x: mid.x - dx, y: mid.y + dyBot }
   return { x: mid.x, y: mid.y }
 }
