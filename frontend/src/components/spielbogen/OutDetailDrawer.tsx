@@ -322,7 +322,7 @@ function RunnerAdvancePickerView({
   subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
-  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => void
+  onConfirm: (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean, outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[]) => void
   onBack: () => void
   showSacFlyToggle?: boolean
   defaultTargets?: Record<1 | 2 | 3, 1 | 2 | 3 | 4>
@@ -345,13 +345,24 @@ function RunnerAdvancePickerView({
   const [targets, setTargets] = useState<Record<1 | 2 | 3, 1 | 2 | 3 | 4>>(
     defaultTargets ?? { 1: 1, 2: 2, 3: 3 }
   )
+  const [outBases, setOutBases] = useState<Set<1 | 2 | 3>>(new Set())
   const [isSacFly, setIsSacFly] = useState(false)
-  const cycle = (b: 1 | 2 | 3) =>
+  const cycle = (b: 1 | 2 | 3) => {
+    if (outBases.has(b)) return
     setTargets(prev => {
       const curr = prev[b]
       const next = curr === 4 ? b : (curr + 1) as 1 | 2 | 3 | 4
       return { ...prev, [b]: next }
     })
+  }
+  const toggleOut = (b: 1 | 2 | 3) => {
+    setOutBases(prev => {
+      const next = new Set(prev)
+      if (next.has(b)) next.delete(b)
+      else next.add(b)
+      return next
+    })
+  }
 
   const labelFor = (from: 1 | 2 | 3, to: 1 | 2 | 3 | 4) => {
     if (to === from) return 'bleibt'
@@ -360,12 +371,13 @@ function RunnerAdvancePickerView({
   }
 
   // Validation: zwei Runner können nicht auf derselben Base landen.
-  // Home (4) ist ausgenommen — beliebig viele scoren möglich.
+  // Home (4) ist ausgenommen — beliebig viele scoren möglich. Out-Runner werden auch ausgenommen.
   const collidingBases = (() => {
     const counts: Record<number, number> = {}
     for (const r of runners) {
+      if (outBases.has(r.fromBase)) continue
       const t = targets[r.fromBase]
-      if (t === 4) continue // Home unlimited
+      if (t === 4) continue
       counts[t] = (counts[t] ?? 0) + 1
     }
     return Object.entries(counts)
@@ -390,28 +402,43 @@ function RunnerAdvancePickerView({
       <div className="space-y-2">
         {runners.map(r => {
           const t = targets[r.fromBase]
-          const advanced = t !== r.fromBase
-          const scored = t === 4
-          const colliding = t !== 4 && collidingBases.includes(t as 1 | 2 | 3)
+          const isOut = outBases.has(r.fromBase)
+          const advanced = !isOut && t !== r.fromBase
+          const scored = !isOut && t === 4
+          const colliding = !isOut && t !== 4 && collidingBases.includes(t as 1 | 2 | 3)
           return (
-            <button
-              key={r.slotId}
-              onClick={() => cycle(r.fromBase)}
-              className={`w-full text-left px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
-                colliding
-                  ? 'border-softball-red-500 bg-softball-red-100 text-softball-red-900 ring-2 ring-softball-red-300'
-                  : scored
-                  ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-900'
-                  : advanced
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                  : 'border-cream-300 bg-white text-gray-700 hover:bg-cream-100'
-              }`}
-            >
-              <div className="font-display font-bold text-sm flex items-center justify-between">
-                <span>{r.name} (auf {r.fromBase}B)</span>
-                <span className="text-xs">{labelFor(r.fromBase, t)}</span>
-              </div>
-            </button>
+            <div key={r.slotId} className="flex gap-2">
+              <button
+                onClick={() => cycle(r.fromBase)}
+                disabled={isOut}
+                className={`flex-1 text-left px-4 py-3 rounded-xl border cursor-pointer transition-colors disabled:opacity-50 ${
+                  isOut
+                    ? 'border-softball-red-500 bg-softball-red-100 text-softball-red-900'
+                    : colliding
+                    ? 'border-softball-red-500 bg-softball-red-100 text-softball-red-900 ring-2 ring-softball-red-300'
+                    : scored
+                    ? 'border-softball-red-500 bg-softball-red-50 text-softball-red-900'
+                    : advanced
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                    : 'border-cream-300 bg-white text-gray-700 hover:bg-cream-100'
+                }`}
+              >
+                <div className="font-display font-bold text-sm flex items-center justify-between">
+                  <span>{r.name} (auf {r.fromBase}B)</span>
+                  <span className="text-xs">{isOut ? 'OUT' : labelFor(r.fromBase, t)}</span>
+                </div>
+              </button>
+              <button
+                onClick={() => toggleOut(r.fromBase)}
+                className={`px-3 py-2 rounded-xl border text-xs font-display font-bold cursor-pointer transition-colors ${
+                  isOut
+                    ? 'border-softball-red-700 bg-softball-red-700 text-white'
+                    : 'border-softball-red-300 text-softball-red-700 hover:bg-softball-red-50'
+                }`}
+              >
+                {isOut ? 'safe' : 'Aus?'}
+              </button>
+            </div>
           )
         })}
       </div>
@@ -450,8 +477,9 @@ function RunnerAdvancePickerView({
         </button>
         <button
           onClick={() => onConfirm(
-            runners.map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] })),
-            isSacFly
+            runners.filter(r => !outBases.has(r.fromBase)).map(r => ({ fromBase: r.fromBase, toBase: targets[r.fromBase] })),
+            isSacFly,
+            runners.filter(r => outBases.has(r.fromBase)).map(r => ({ slotId: r.slotId, fromBase: r.fromBase }))
           )}
           disabled={hasCollision}
           className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-navy-800 hover:bg-navy-900 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -614,15 +642,24 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     }
   }
 
-  const handleFlyOutConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[], isSacFly: boolean) => {
+  const handleFlyOutConfirm = (
+    advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[],
+    isSacFly: boolean,
+    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[],
+  ) => {
     if (pendingFlyOutRequest == null) return
-    const { baseStateAfter: after, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
-    // Bei 2 Outs beendet der Catch das Inning — Runs zaehlen nicht mehr, Sac-Fly nicht moeglich
+    const { baseStateAfter: afterAdvances, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
+    // Out-Runners auch von Bases entfernen.
+    const after: BogenBaseStateDto = {
+      firstSlotId: outsFromRunners.some(o => o.fromBase === 1) ? null : afterAdvances.firstSlotId,
+      secondSlotId: outsFromRunners.some(o => o.fromBase === 2) ? null : afterAdvances.secondSlotId,
+      thirdSlotId: outsFromRunners.some(o => o.fromBase === 3) ? null : afterAdvances.thirdSlotId,
+    }
     const runs = outs >= 2 ? 0 : rawRuns
     onSubmit({
       result: 'OUT',
-      outType: 'FLY',
-      ...(isSacFly && outs < 2 ? { sacrificeType: 'FLY' as const } : {}),
+      outType: outsFromRunners.length > 0 ? 'DOUBLE_PLAY' : 'FLY',
+      ...(isSacFly && outs < 2 && outsFromRunners.length === 0 ? { sacrificeType: 'FLY' as const } : {}),
       fielderChain: [pendingFlyOutRequest.fielder],
       runsScored: runs,
       rbi: runs,
@@ -667,10 +704,15 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     })
   }
 
-  const handleAdvancePickerConfirm = (advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[]) => {
+  const handleAdvancePickerConfirm = (
+    advances: { fromBase: 1 | 2 | 3; toBase: 1 | 2 | 3 | 4 }[],
+    _isSacFly: boolean,
+    outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[],
+  ) => {
     if (pendingAdvancePicker == null) return
+    void _isSacFly
+    void outsFromRunners
     const { baseStateAfter: after, runsScored: rawRuns } = applyAdvances(baseStateAfter, advances)
-    // Force-Out 3rd-Out: Run zählt nicht (Softball/Baseball-Regel) — Grounder/Unassisted = +1 Out
     const runs = outs >= 2 ? 0 : rawRuns
     onSubmit({
       ...pendingAdvancePicker.baseRequest,
