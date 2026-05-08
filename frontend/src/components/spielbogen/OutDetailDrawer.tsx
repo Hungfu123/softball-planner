@@ -171,8 +171,8 @@ function InfieldOptionsView({
     },
     ...(hasRunners ? [
       {
-        label: `Double Play (${fielder}-${defaultDpPartner}-3)`,
-        description: 'Doppelspiel — Runner wählen',
+        label: `Double Play`,
+        description: `Doppelspiel — Runner wählen, dann Fielder-Chain (Default: ${fielder}-${defaultDpPartner}-3)`,
         action: handleDpClick,
       },
       {
