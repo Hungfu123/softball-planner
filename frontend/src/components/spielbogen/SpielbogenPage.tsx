@@ -474,8 +474,21 @@ export default function SpielbogenPage() {
         && (beforeBaseState.firstSlotId != null
           || beforeBaseState.secondSlotId != null
           || beforeBaseState.thirdSlotId != null)
+      // Modal nur wenn ≥1 Runner-from-before noch auf Base nach AB (= adjustable).
+      // Wenn alle scoren / batter is alone → nichts zu tun, skip Modal.
+      const beforeIds = beforeBaseState ? [
+        beforeBaseState.firstSlotId,
+        beforeBaseState.secondSlotId,
+        beforeBaseState.thirdSlotId,
+      ].filter((id): id is number => id != null) : []
+      const afterIds = req.baseStateAfter ? [
+        req.baseStateAfter.firstSlotId,
+        req.baseStateAfter.secondSlotId,
+        req.baseStateAfter.thirdSlotId,
+      ].filter((id): id is number => id != null) : []
+      const adjustableRunners = beforeIds.filter(id => afterIds.includes(id))
       const isHit = req.result === 'SINGLE' || req.result === 'DOUBLE' || req.result === 'TRIPLE'
-      if (isHit && hadRunnersBefore && projectedOuts < 3) {
+      if (isHit && hadRunnersBefore && adjustableRunners.length > 0 && projectedOuts < 3) {
         setShowHitAdjust({ result: req.result as 'SINGLE' | 'DOUBLE' | 'TRIPLE', baseStateBefore: beforeBaseState })
       }
     } catch (e) {
