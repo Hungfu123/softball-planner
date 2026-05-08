@@ -628,6 +628,43 @@ function ChainPickerView({ initialFielder, initialChain, onConfirm, onBack, isFo
 }
 
 // ---------------------------------------------------------------------------
+// FoulFielderPickView — Single-Tap Field-Picker für Foul-Out (jede Position erlaubt)
+// ---------------------------------------------------------------------------
+function FoulFielderPickView({ onPick, onBack }: { onPick: (pos: number) => void; onBack: () => void }) {
+  return (
+    <div className="p-4 space-y-3">
+      <h3 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
+        Foul Out — wer hat gefangen?
+      </h3>
+      <p className="text-xs text-gray-500 font-body">
+        Tippe auf die Feldposition, die den Foul-Ball gefangen hat.
+      </p>
+      <svg viewBox="0 0 280 220" className="w-full max-w-xs mx-auto block">
+        <path d="M 30 200 Q 140 20 250 200" fill="none" stroke="#e5e7eb" strokeWidth="1.5" strokeDasharray="4 3" />
+        <path d="M 140 175 L 210 120 L 140 65 L 70 120 Z" fill="none" stroke="#d1d5db" strokeWidth="1" strokeDasharray="3 2" />
+        {FIELD_POSITIONS.map(({ pos, cx, cy }) => (
+          <g key={pos} role="button" aria-label={`Feldposition ${pos} ${POSITION_NAMES[pos]}`}
+             onClick={() => onPick(pos)} style={{ cursor: 'pointer' }}>
+            <circle cx={cx} cy={cy} r="22"
+              fill={pos >= 7 ? '#dbeafe' : '#f0f4f8'}
+              stroke={pos >= 7 ? '#3b82f6' : '#6b7280'}
+              strokeWidth="1.5" />
+            <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill="#1e3a5f">{pos}</text>
+            <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="#374151">{POSITION_NAMES[pos]}</text>
+          </g>
+        ))}
+      </svg>
+      <button
+        onClick={onBack}
+        className="w-full py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer"
+      >
+        ← Zurück
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // OutDetailDrawer
 //
 // Known Limitation: Triple Play (TRIPLE_PLAY) hat keinen UI-Pfad. Sehr seltenes
@@ -652,6 +689,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     baseStateAfter: BogenBaseStateDto
     isForceOut?: boolean
   }>(null)
+  const [foulFielderPickOpen, setFoulFielderPickOpen] = useState(false)
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
 
@@ -775,18 +813,22 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   }
 
   const handleFoulOut = () => {
-    // Öffne ChainPicker leer — User tappt den catching Fielder (jeder kann Foul fangen).
-    setPendingChainPicker({
-      initialFielder: 2, // Fallback wenn User nicht tappt = Catcher
-      initialChain: [],
-      baseRequest: {
+    setFoulFielderPickOpen(true)
+  }
+
+  const handleFoulFielderPick = (pos: number) => {
+    setFoulFielderPickOpen(false)
+    if (runnersOnBase && outs < 2) {
+      setPendingFlyOutRequest({ fielder: pos, isFoul: true })
+    } else {
+      onSubmit({
         result: 'OUT',
         outType: 'FOUL',
+        fielderChain: [pos],
         runsScored: 0,
         rbi: 0,
-      },
-      baseStateAfter: baseState,
-    })
+      })
+    }
   }
 
   const handleInfieldSubmit = (req: Partial<SpielbogenRecordAtBatRequest>) => {
@@ -801,6 +843,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     setPendingRunnerOutRequest(null)
     setPendingAdvancePicker(null)
     setPendingChainPicker(null)
+    setFoulFielderPickOpen(false)
     onClose()
   }
 
@@ -877,14 +920,6 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
 
   const handleChainPickerConfirm = (chain: number[]) => {
     if (pendingChainPicker == null) return
-    // Bei FOUL: nach Fielder-Pick zu FlyOut-Picker (Tag-Up + Aus?-Toggles für Runner).
-    if (pendingChainPicker.baseRequest.outType === 'FOUL' && chain.length >= 1) {
-      const fielder = chain[0]
-      setPendingChainPicker(null)
-      setSelectedFielder(null)
-      setPendingFlyOutRequest({ fielder, isFoul: true })
-      return
-    }
     onSubmit({
       ...pendingChainPicker.baseRequest,
       fielderChain: chain,
@@ -909,7 +944,12 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
           </div>
 
           <div className="flex-1 overflow-y-auto p-4">
-            {pendingChainPicker != null ? (
+            {foulFielderPickOpen ? (
+              <FoulFielderPickView
+                onPick={handleFoulFielderPick}
+                onBack={() => setFoulFielderPickOpen(false)}
+              />
+            ) : pendingChainPicker != null ? (
               <ChainPickerView
                 initialFielder={pendingChainPicker.initialFielder}
                 initialChain={pendingChainPicker.initialChain}
