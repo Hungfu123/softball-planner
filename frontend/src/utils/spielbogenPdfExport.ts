@@ -177,7 +177,7 @@ function drawSheet(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
 
-  const cellMap = renderCells(atBats, stealings)
+  const cellMap = renderCells(atBats, stealings, [])
   const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
   const sideChanges = positionChanges.filter(pc => pc.side === side)
   const historyPerSlot = computePositionHistoryPerSlot(

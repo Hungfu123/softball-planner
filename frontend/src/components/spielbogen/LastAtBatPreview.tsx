@@ -73,7 +73,7 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitti
   }
 
   const slot = slots.find(s => s.id === lastAtBat.slotId)
-  const cellMap = renderCells([lastAtBat], [])
+  const cellMap = renderCells([lastAtBat], [], [])
   const key = cellKey(lastAtBat.side, lastAtBat.slotId, lastAtBat.inning)
   const cell = cellMap.get(key)
   const label = cell?.primaryLabel ?? '?'
