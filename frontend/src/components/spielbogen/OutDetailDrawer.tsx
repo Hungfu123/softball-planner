@@ -497,10 +497,8 @@ function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: Chai
   const [chain, setChain] = useState<number[]>([initialFielder])
 
   const tap = (pos: number) => {
-    setChain(prev => {
-      if (prev.includes(pos)) return prev
-      return [...prev, pos]
-    })
+    // Append immer — Repetition erlaubt (z.B. 5-5-3 = solo-tag + throw).
+    setChain(prev => [...prev, pos])
   }
 
   const reset = () => setChain([])
@@ -518,8 +516,8 @@ function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: Chai
       </h3>
       <p className="text-xs text-gray-500 font-body">
         {isForceOut
-          ? 'Kein Tag nötig — Fielder muss nur Base berühren. Erster Tap = wer touched, weitere Taps = Werfer (in Wurf-Reihenfolge). Default: Solo.'
-          : 'Erster Tap = Tagger. Weitere Taps fügen Assister hinzu (in Reihenfolge des Wurfs). Default: Solo.'}
+          ? 'Kein Tag nötig — Fielder muss nur Base berühren. Erster Tap = wer touched, weitere Taps = Werfer (in Wurf-Reihenfolge). Doppel-Tap auf Fielder = solo-touch + throw (z.B. 5-5-3). Default: Solo.'
+          : 'Erster Tap = Tagger. Weitere Taps fügen Assister hinzu (in Reihenfolge des Wurfs). Doppel-Tap auf Fielder = solo + throw. Default: Solo.'}
       </p>
       <div className="bg-navy-50 border border-navy-300 rounded-lg p-2 text-center">
         <div className="text-[10px] tracking-widest uppercase text-gray-500 font-bold">Chain</div>
@@ -530,7 +528,8 @@ function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: Chai
         <path d="M 140 175 L 210 120 L 140 65 L 70 120 Z" fill="none" stroke="#d1d5db" strokeWidth="1" strokeDasharray="3 2" />
         {FIELD_POSITIONS.map(({ pos, cx, cy }) => {
           const isInChain = chain.includes(pos)
-          const idx = chain.indexOf(pos)
+          const orderIndices = chain.map((c, i) => c === pos ? (i + 1) : null).filter((v): v is number => v != null)
+          const orderLabel = orderIndices.join(',')
           return (
             <g key={pos} role="button" aria-label={`Feldposition ${pos} ${POSITION_NAMES[pos]}`}
                onClick={() => tap(pos)} style={{ cursor: 'pointer' }}>
@@ -541,7 +540,7 @@ function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: Chai
               <text x={cx} y={cy - 4} textAnchor="middle" fontSize="11" fontWeight="700" fill={isInChain ? 'white' : '#1e3a5f'}>{pos}</text>
               <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill={isInChain ? 'white' : '#374151'}>{POSITION_NAMES[pos]}</text>
               {isInChain && (
-                <text x={cx + 16} y={cy - 14} textAnchor="middle" fontSize="9" fontWeight="700" fill="#CC2936">{idx + 1}</text>
+                <text x={cx + 16} y={cy - 14} textAnchor="middle" fontSize="9" fontWeight="700" fill="#CC2936">{orderLabel}</text>
               )}
             </g>
           )
