@@ -497,10 +497,11 @@ function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: Chai
   const [chain, setChain] = useState<number[]>([initialFielder])
 
   const tap = (pos: number) => {
-    // Append immer — Repetition erlaubt (z.B. 5-5-3 = solo-tag + throw).
-    setChain(prev => [...prev, pos])
+    // Append immer — Repetition erlaubt (z.B. 5-5-3 = solo-tag + throw). Max 5 Einträge (DP/TP genug).
+    setChain(prev => prev.length >= 5 ? prev : [...prev, pos])
   }
 
+  const undoLastTap = () => setChain(prev => prev.slice(0, -1))
   const reset = () => setChain([])
 
   const chainLabel = chain.length === 0
@@ -547,6 +548,13 @@ function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: Chai
         })}
       </svg>
       <div className="flex gap-2 mt-2">
+        <button
+          onClick={undoLastTap}
+          disabled={chain.length === 0}
+          className="flex-1 py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          ↶ Letzter Tap
+        </button>
         <button
           onClick={reset}
           className="flex-1 py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer"
