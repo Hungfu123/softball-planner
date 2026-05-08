@@ -22,8 +22,20 @@ function sidePosition(side: 'home-1b' | '1b-2b' | '2b-3b' | '3b-home') {
   if (side === 'home-1b') return { x: 52, y: 48 }   // unten-rechts außerhalb
   if (side === '1b-2b') return { x: 52, y: 6 }      // ganz oben rechts
   if (side === '2b-3b') return { x: 8, y: 6 }       // ganz oben links
-  if (side === '3b-home') return { x: 8, y: 48 }    // unten-links (nicht gerendert)
+  if (side === '3b-home') return { x: 8, y: 48 }    // unten-links
   return { x: 30, y: 30 }
+}
+
+function stealSide(fromBase: number, toBase: number): 'home-1b' | '1b-2b' | '2b-3b' | '3b-home' | null {
+  if (fromBase === 0 && toBase === 1) return 'home-1b'
+  if (fromBase === 1 && toBase === 2) return '1b-2b'
+  if (fromBase === 2 && toBase === 3) return '2b-3b'
+  if (fromBase === 3 && toBase === 4) return '3b-home'
+  // Multi-base: letzte Seite
+  if (toBase >= 4) return '3b-home'
+  if (toBase === 3) return '2b-3b'
+  if (toBase === 2) return '1b-2b'
+  return null
 }
 
 export function DiamondCell({ notation, outIndex }: Props) {
@@ -233,13 +245,16 @@ export function DiamondCell({ notation, outIndex }: Props) {
           : null
         if (!label) return null
         const fill = (arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL') ? '#f97316' : '#1f2937'
+        // Position per Direction des Steal-Pfeils (analog Advance-Labels).
+        const side = stealSide(arrow.fromBase, arrow.toBase)
+        const pos = side ? sidePosition(side) : { x: 30, y: 5 + i * 5 }
         return (
           <text
             key={`lbl-${i}`}
-            x={30}
-            y={5 + i * 5}
+            x={pos.x}
+            y={pos.y}
             textAnchor="middle"
-            fontSize="4.5"
+            fontSize="5"
             fontWeight="700"
             fill={fill}
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
