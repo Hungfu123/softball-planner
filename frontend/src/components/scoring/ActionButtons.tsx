@@ -38,10 +38,11 @@ export function ActionButtons({ onRecord, disabled }: Props) {
               <PrimaryButton color="red" label="STRIKEOUT" onClick={() => handleRecord('STRIKEOUT')} disabled={disabled} />
               <PrimaryButton color="gray" label="AUS" subtitle="Grounder / Fly" onClick={() => handleRecord('OUT')} disabled={disabled} />
             </div>
-            {/* Reihe 2: 2 Secondary Buttons (60px) */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Reihe 2: 3 Secondary Buttons (60px) */}
+            <div className="grid grid-cols-3 gap-2">
               <SecondaryButton color="sky" label="WALK" onClick={() => handleRecord('WALK')} disabled={disabled} />
               <SecondaryButton color="amber" label="HBP" subtitle="Hit-by-Pitch" onClick={() => handleRecord('HIT_BY_PITCH')} disabled={disabled} />
+              <SecondaryButton color="rose" label="ERROR" subtitle="Reached on Error" onClick={() => handleRecord('REACHED_ON_ERROR')} disabled={disabled} />
             </div>
           </motion.div>
         ) : (
@@ -86,6 +87,7 @@ const COLOR_CLASSES = {
   gray: 'bg-gray-500 hover:bg-gray-600 active:bg-gray-700 text-white',
   sky: 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white',
   amber: 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white',
+  rose: 'bg-rose-700 hover:bg-rose-800 active:bg-rose-900 text-white',
 } as const
 
 type Color = keyof typeof COLOR_CLASSES
