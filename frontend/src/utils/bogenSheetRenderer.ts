@@ -242,12 +242,6 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): str
   }
 }
 
-function fromToToSide(fromBase: number, toBase: number): AdvanceLabel['side'] | null {
-  // Single-side wrapper für legacy callers — gibt LETZTE traversierte Seite zurück.
-  const sides = fromToTraversedSides(fromBase, toBase)
-  return sides.length > 0 ? sides[sides.length - 1] : null
-}
-
 function fromToTraversedSides(fromBase: number, toBase: number): AdvanceLabel['side'][] {
   if (toBase <= fromBase) return []
   const sides: AdvanceLabel['side'][] = []
