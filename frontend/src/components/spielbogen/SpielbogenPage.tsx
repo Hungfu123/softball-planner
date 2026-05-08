@@ -169,7 +169,7 @@ export default function SpielbogenPage() {
   const [showPositionSwapDrawer, setShowPositionSwapDrawer] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
-  const [showHitAdjust, setShowHitAdjust] = useState<null | { result: 'SINGLE' | 'DOUBLE' | 'TRIPLE' }>(null)
+  const [showHitAdjust, setShowHitAdjust] = useState<null | { result: 'SINGLE' | 'DOUBLE' | 'TRIPLE'; baseStateBefore: BogenBaseStateDto }>(null)
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -476,7 +476,7 @@ export default function SpielbogenPage() {
           || beforeBaseState.thirdSlotId != null)
       const isHit = req.result === 'SINGLE' || req.result === 'DOUBLE' || req.result === 'TRIPLE'
       if (isHit && hadRunnersBefore && projectedOuts < 3) {
-        setShowHitAdjust({ result: req.result as 'SINGLE' | 'DOUBLE' | 'TRIPLE' })
+        setShowHitAdjust({ result: req.result as 'SINGLE' | 'DOUBLE' | 'TRIPLE', baseStateBefore: beforeBaseState })
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -1391,13 +1391,14 @@ export default function SpielbogenPage() {
           open={true}
           onClose={() => setShowHitAdjust(null)}
           baseStateAfter={lastSideAtBat.baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }}
+          baseStateBefore={showHitAdjust.baseStateBefore}
           initialRunsScored={lastSideAtBat.runsScored}
           hitResult={showHitAdjust.result}
           outsBefore={outs}
           slots={slots}
-          onConfirm={async ({ outsFromRunners, ...payload }) => {
+          onConfirm={async ({ outsFromRunners, runnerAdvances, ...payload }) => {
             try {
-              await correctLastAtBat(currentSide, payload)
+              await correctLastAtBat(currentSide, { ...payload, runnerAdvances })
               // Runner-Outs als OUT_ON_PLAY-Events recorden für PDF-Notation
               for (const out of outsFromRunners) {
                 await handleRecordStealing({

@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
-import type { BogenBaseStateDto, SpielbogenSlotResponse, AtBatResult } from '@/types'
+import type { BogenBaseStateDto, RunnerAdvanceEntry, SpielbogenSlotResponse, AtBatResult } from '@/types'
+import { computeDefaultAdvances } from '@/utils/runnerAdvanceDefaults'
 
 interface Props {
   open: boolean
   onClose: () => void
   /** State NACH dem Hit (optimistisch via computeBaseStateAdvance gesetzt). */
   baseStateAfter: BogenBaseStateDto
+  /** State VOR dem Hit — wird für RunnerAdvance-Berechnung benötigt. */
+  baseStateBefore: BogenBaseStateDto | null
   /** Vom Hit gezählte Runs (optimistisch). */
   initialRunsScored: number
   /** Hit-Type für Hint (Single/Double/Triple). */
@@ -20,6 +23,7 @@ interface Props {
     secondSlotId: number | null
     thirdSlotId: number | null
     runsScored: number
+    runnerAdvances: RunnerAdvanceEntry[]
     /** Runner-SlotIds die als out markiert wurden (z.B. thrown-out an Home).
      *  Werden vom Parent als OUT_ON_PLAY-Events recorded für PDF-Notation. */
     outsFromRunners: { slotId: number; fromBase: 1 | 2 | 3 }[]
@@ -35,7 +39,7 @@ interface Assignment {
   position: Position
 }
 
-export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScored, hitResult, outsBefore, slots, onConfirm }: Props) {
+export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore, initialRunsScored, hitResult, outsBefore, slots, onConfirm }: Props) {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [scoredCount, setScoredCount] = useState(initialRunsScored)
   const [saving, setSaving] = useState(false)
@@ -159,11 +163,17 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, initialRunsScore
     if (hasCollision) return
     setSaving(true)
     try {
+      const advances = computeDefaultAdvances({
+        abResult: hitResult,
+        baseStateBefore,
+        baseStateAfter: newState,
+      })
       await onConfirm({
         firstSlotId: newState.firstSlotId,
         secondSlotId: newState.secondSlotId,
         thirdSlotId: newState.thirdSlotId,
         runsScored: Math.max(0, finalRuns),
+        runnerAdvances: advances,
         outsFromRunners,
       })
       onClose()

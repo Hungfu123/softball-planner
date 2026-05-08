@@ -81,6 +81,7 @@ import type {
   SpielbogenPositionChangeResponse,
   SpielbogenRecordPositionSwapRequest,
   BogenSheetResponse,
+  RunnerAdvanceEntry,
 } from '@/types'
 
 // Players
@@ -492,7 +493,7 @@ export async function setSpielbogenCurrentSide(bogenId: number, side: BogenSide)
 export async function correctLastSpielbogenAtBat(
   bogenId: number,
   side: BogenSide,
-  payload: { firstSlotId: number | null; secondSlotId: number | null; thirdSlotId: number | null; runsScored: number }
+  payload: { firstSlotId: number | null; secondSlotId: number | null; thirdSlotId: number | null; runsScored: number; runnerAdvances?: RunnerAdvanceEntry[] }
 ): Promise<SpielbogenAtBatResponse> {
   return request<SpielbogenAtBatResponse>(
     `/spielbogen/${bogenId}/at-bats/last?side=${side}`,
