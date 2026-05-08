@@ -177,7 +177,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
         <text
           x={1}
           y={78}
-          fontSize="5"
+          fontSize="6.5"
           fontWeight="700"
           fill="#1e3a8a"
           style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}

@@ -427,7 +427,7 @@ function drawDiamondCell(
 
   // Out# unten-links (Roman, navy + bold, klein) — kein Konflikt mit AB-Label
   if (cell?.outIndex) {
-    doc.setFontSize(3.5)
+    doc.setFontSize(4.5)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(...COLOR_NAVY)
     doc.text(cell.outIndex, cellX + 0.5, cellY + cellH - 0.7)
