@@ -416,6 +416,21 @@ public class SpielbogenScoringService {
     private void maybeAutoSwitchSide(final Spielbogen bogen, final BogenSide side, final int inning) {
         long outs = atBatRepo.countOutsInInning(bogen.getId(), side, inning);
         if (outs >= 3) {
+            // Convention: AWAY = top (batting first), HOME = bottom (batting last).
+            // Game-End-Check: HOME 3rd-Out in Inning ≥ 7 = bottom-7 done = volles Inning durch.
+            // Wenn nicht tied → status DONE. Sonst Extra-Innings.
+            if (side == BogenSide.HOME && inning >= 7) {
+                int home = bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0;
+                int away = bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0;
+                if (home != away) {
+                    bogen.setStatus(BogenStatus.DONE);
+                    bogen.setEndedAt(java.time.Instant.now());
+                    bogenRepo.save(bogen);
+                    log.info("Game-End nach Inning {}: bogen={} score={}:{}", inning, bogen.getId(), home, away);
+                    return;
+                }
+                // Tied → Extra-Innings, weiter switchen
+            }
             BogenSide next = side == BogenSide.HOME ? BogenSide.AWAY : BogenSide.HOME;
             bogen.setCurrentSide(next);
             if (side == BogenSide.HOME) {
