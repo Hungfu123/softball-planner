@@ -132,7 +132,7 @@ export function renderCells(
   for (const adv of effectiveAdvances) {
     const ab = atBats.find(a => a.id === adv.atBatId)
     if (!ab) continue
-    const label = reasonToLabel(adv.reason, ab.result, ab.fielderChain)
+    const label = reasonToLabel(adv.reason, ab.result, ab.fielderChain, ab.outType)
     const key = cellKey(adv.side, adv.slotId, adv.inning)
     const cell = cells.get(key)
     if (!cell) continue
@@ -225,7 +225,7 @@ function baseStateToMap(s: BogenBaseStateDto): Map<number, number> {
   return m
 }
 
-function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult, abFielderChain?: number[] | null): string {
+function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult, abFielderChain?: number[] | null, abOutType?: string | null): string {
   switch (reason) {
     case 'HIT_PUSH':
       if (abResult === 'SINGLE') return '1B'
@@ -236,8 +236,10 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult, abFi
     case 'BB_FORCE': return 'BB'
     case 'HBP_FORCE': return 'HBP'
     case 'FIELDERS_CHOICE':
-      // Bei productive-out: zeige fielder-chain (z.B. "5-3") als Reason.
-      return abFielderChain && abFielderChain.length > 0 ? abFielderChain.join('-') : 'FC'
+      if (!abFielderChain || abFielderChain.length === 0) return 'FC'
+      // Fly-Out: F-Prefix (z.B. F8). Grounder/anderer Out: chain (z.B. 5-3).
+      if (abOutType === 'FLY' && abFielderChain.length === 1) return `F${abFielderChain[0]}`
+      return abFielderChain.join('-')
     case 'ERROR':
       return abFielderChain && abFielderChain.length > 0 ? `E${abFielderChain[0]}` : 'E'
     case 'SAC': return 'SAC'
