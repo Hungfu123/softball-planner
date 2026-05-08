@@ -243,8 +243,10 @@ interface RunnerOutPickerProps {
   subtitle: string
   baseState: BogenBaseStateDto
   slots: SpielbogenSlotResponse[]
-  onPick: (out: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => void
+  onPick: (out: { runnerSlotId: number; fromBase: 1 | 2 | 3; thirdBaseRunnerScores?: boolean }) => void
   onBack: () => void
+  /** Zeigt Toggle "3B-Runner scort während Play" wenn 3B-Runner existiert. */
+  showThirdScoreToggle?: boolean
 }
 
 function RunnerOutPickerView({
@@ -254,7 +256,10 @@ function RunnerOutPickerView({
   slots,
   onPick,
   onBack,
+  showThirdScoreToggle,
 }: RunnerOutPickerProps) {
+  const [thirdScores, setThirdScores] = useState(false)
+  const has3BRunner = baseState.thirdSlotId != null
   const runners: Array<{ slotId: number; fromBase: 1 | 2 | 3; name: string }> = []
 
   if (baseState.firstSlotId != null) {
@@ -282,7 +287,7 @@ function RunnerOutPickerView({
         {runners.map(r => (
           <button
             key={r.slotId}
-            onClick={() => onPick({ runnerSlotId: r.slotId, fromBase: r.fromBase })}
+            onClick={() => onPick({ runnerSlotId: r.slotId, fromBase: r.fromBase, thirdBaseRunnerScores: thirdScores && r.fromBase !== 3 })}
             className="w-full text-left px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer"
           >
             <div className="font-display font-bold text-navy-900 text-sm">
@@ -294,6 +299,17 @@ function RunnerOutPickerView({
           </button>
         ))}
       </div>
+      {showThirdScoreToggle && has3BRunner && (
+        <label className="flex items-center gap-2 cursor-pointer text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 mt-2">
+          <input
+            type="checkbox"
+            checked={thirdScores}
+            onChange={e => setThirdScores(e.target.checked)}
+            className="w-4 h-4 rounded border-amber-400 accent-amber-700 cursor-pointer"
+          />
+          <span className="font-body">3B-Runner scort während Play (rare DP-Edge-Case)</span>
+        </label>
+      )}
       <button
         onClick={onBack}
         className="w-full mt-4 py-2 text-sm text-gray-500 rounded-lg border border-cream-300 hover:bg-cream-100 cursor-pointer"
@@ -821,27 +837,26 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     })
   }
 
-  const handleDpRunnerOut = ({ runnerSlotId, fromBase }: { runnerSlotId: number; fromBase: 1 | 2 | 3 }) => {
+  const handleDpRunnerOut = ({ runnerSlotId, fromBase, thirdBaseRunnerScores }: { runnerSlotId: number; fromBase: 1 | 2 | 3; thirdBaseRunnerScores?: boolean }) => {
     if (pendingDpRequest == null) return
     const after: BogenBaseStateDto = {
       firstSlotId: fromBase === 1 ? null : baseState.firstSlotId,
       secondSlotId: fromBase === 2 ? null : baseState.secondSlotId,
-      thirdSlotId: fromBase === 3 ? null : baseState.thirdSlotId,
+      thirdSlotId: (fromBase === 3 || thirdBaseRunnerScores) ? null : baseState.thirdSlotId,
     }
     void runnerSlotId
     setPendingDpRequest(null)
-    // Pre-fill DP-Chain: [grounder-fielder, cover-of-runner-target-base, 1B-fielder=3].
-    // Cover: Runner-from-1B forced bei 2B → SS(6). Runner-from-2B → 5. Runner-from-3B → 2.
     const cover = fromBase === 1 ? 6 : fromBase === 2 ? 5 : 2
     const dpDefaultChain: number[] = [pendingDpRequest.fielder, cover, 3]
+    const extraRuns = thirdBaseRunnerScores ? 1 : 0
     setPendingChainPicker({
       initialFielder: pendingDpRequest.fielder,
       initialChain: dpDefaultChain,
       baseRequest: {
         result: 'OUT',
         outType: 'DOUBLE_PLAY',
-        runsScored: 0,
-        rbi: 0,
+        runsScored: extraRuns,
+        rbi: 0, // Run via DP zählt klassisch nicht als RBI (Force-Play)
       },
       baseStateAfter: after,
       isForceOut: isForceOutFromBase(baseState, fromBase),
@@ -917,6 +932,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
                 slots={slots}
                 onPick={handleDpRunnerOut}
                 onBack={() => setPendingDpRequest(null)}
+                showThirdScoreToggle={outs < 2}
               />
             ) : pendingAdvancePicker != null ? (
               <RunnerAdvancePickerView
