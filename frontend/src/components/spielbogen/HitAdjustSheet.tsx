@@ -116,11 +116,21 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
     return 'bg-cream-50 border-cream-300 text-gray-700'
   }
 
-  // Compute new state from assignments
+  // Compute new state: starte mit baseStateAfter (enthält Batter auf seiner Hit-Base),
+  // dann Runner-Assignments draufmappen. Batter wird nicht in assignments geführt
+  // (war nicht in baseStateBefore), bleibt deshalb auf default-Position.
   const newState = (() => {
     const state: { firstSlotId: number | null; secondSlotId: number | null; thirdSlotId: number | null } = {
-      firstSlotId: null, secondSlotId: null, thirdSlotId: null,
+      firstSlotId: baseStateAfter.firstSlotId,
+      secondSlotId: baseStateAfter.secondSlotId,
+      thirdSlotId: baseStateAfter.thirdSlotId,
     }
+    // Erst Assignments-Slots aus state entfernen (alte Position) damit kein Doppel-Eintrag
+    const assignedSlotIds = new Set(assignments.map(a => a.slotId))
+    if (state.firstSlotId != null && assignedSlotIds.has(state.firstSlotId)) state.firstSlotId = null
+    if (state.secondSlotId != null && assignedSlotIds.has(state.secondSlotId)) state.secondSlotId = null
+    if (state.thirdSlotId != null && assignedSlotIds.has(state.thirdSlotId)) state.thirdSlotId = null
+    // Dann assignments-Positionen setzen
     for (const a of assignments) {
       if (a.position === 1) state.firstSlotId = a.slotId
       else if (a.position === 2) state.secondSlotId = a.slotId
