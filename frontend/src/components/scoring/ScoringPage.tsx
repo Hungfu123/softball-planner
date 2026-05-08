@@ -280,6 +280,8 @@ export function ScoringPage() {
         setShowCorrection(true)
       } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
         setShowCorrection(true)
+      } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
+        setShowCorrection(true)
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
