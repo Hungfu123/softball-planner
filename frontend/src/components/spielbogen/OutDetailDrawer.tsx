@@ -521,12 +521,13 @@ function RunnerAdvancePickerView({
 // ---------------------------------------------------------------------------
 interface ChainPickerProps {
   initialFielder: number
+  initialChain?: number[]
   onConfirm: (chain: number[]) => void
   onBack: () => void
 }
 
-function ChainPickerView({ initialFielder, onConfirm, onBack, isForceOut }: ChainPickerProps & { isForceOut?: boolean }) {
-  const [chain, setChain] = useState<number[]>([initialFielder])
+function ChainPickerView({ initialFielder, initialChain, onConfirm, onBack, isForceOut }: ChainPickerProps & { isForceOut?: boolean }) {
+  const [chain, setChain] = useState<number[]>(initialChain && initialChain.length > 0 ? initialChain : [initialFielder])
 
   const tap = (pos: number) => {
     // Append immer — Repetition erlaubt (z.B. 5-5-3 = solo-tag + throw). Max 5 Einträge (DP/TP genug).
@@ -630,6 +631,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   }>(null)
   const [pendingChainPicker, setPendingChainPicker] = useState<null | {
     initialFielder: number
+    initialChain?: number[]
     baseRequest: Partial<SpielbogenRecordAtBatRequest>
     baseStateAfter: BogenBaseStateDto
     isForceOut?: boolean
@@ -828,8 +830,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     }
     void runnerSlotId
     setPendingDpRequest(null)
+    // Pre-fill DP-Chain: [grounder-fielder, cover-of-runner-target-base, 1B-fielder=3].
+    // Cover: Runner-from-1B forced bei 2B → SS(6). Runner-from-2B → 5. Runner-from-3B → 2.
+    const cover = fromBase === 1 ? 6 : fromBase === 2 ? 5 : 2
+    const dpDefaultChain: number[] = [pendingDpRequest.fielder, cover, 3]
     setPendingChainPicker({
       initialFielder: pendingDpRequest.fielder,
+      initialChain: dpDefaultChain,
       baseRequest: {
         result: 'OUT',
         outType: 'DOUBLE_PLAY',
@@ -870,6 +877,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
             {pendingChainPicker != null ? (
               <ChainPickerView
                 initialFielder={pendingChainPicker.initialFielder}
+                initialChain={pendingChainPicker.initialChain}
                 onConfirm={handleChainPickerConfirm}
                 onBack={() => setPendingChainPicker(null)}
                 isForceOut={pendingChainPicker.isForceOut}
