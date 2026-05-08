@@ -11,5 +11,6 @@ public interface SpielbogenStealingRepository {
     Optional<SpielbogenStealingEvent> findById(Long id);
     SpielbogenStealingEvent save(SpielbogenStealingEvent event);
     void deleteById(Long id);
+    Optional<SpielbogenStealingEvent> findLatestForBogenIdAndSide(Long bogenId, BogenSide side);
     long countOutsInInning(Long bogenId, BogenSide side, Integer inning);
 }
