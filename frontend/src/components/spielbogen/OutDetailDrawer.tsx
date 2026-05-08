@@ -134,29 +134,8 @@ function InfieldOptionsView({
       (baseState.thirdSlotId != null ? 1 : 0)
 
     if (runnerCount === 0) return
-
-    if (runnerCount === 1) {
-      // Auto-pick the only runner — no picker needed
-      const slotId = baseState.firstSlotId ?? baseState.secondSlotId ?? baseState.thirdSlotId
-      const fromBase: 1 | 2 | 3 =
-        baseState.firstSlotId != null ? 1 : baseState.secondSlotId != null ? 2 : 3
-      const after: BogenBaseStateDto = {
-        firstSlotId: fromBase === 1 ? null : baseState.firstSlotId,
-        secondSlotId: fromBase === 2 ? null : baseState.secondSlotId,
-        thirdSlotId: fromBase === 3 ? null : baseState.thirdSlotId,
-      }
-      onSubmit({
-        result: 'OUT',
-        outType: 'DOUBLE_PLAY',
-        fielderChain: [fielder, defaultDpPartner, 3],
-        runsScored: 0,
-        rbi: 0,
-        baseStateAfter: after,
-      })
-      void slotId
-    } else {
-      onDpPick(fielder, defaultDpPartner)
-    }
+    // Auch bei 1 Runner DpPicker öffnen — sonst kein Tap-Picker für Fielder-Chain.
+    onDpPick(fielder, defaultDpPartner)
   }
 
   const handleGrounderOut = (
