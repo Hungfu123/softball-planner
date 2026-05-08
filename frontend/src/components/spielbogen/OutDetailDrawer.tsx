@@ -774,7 +774,8 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
   }
 
   const handleFoulOut = () => {
-    onSubmit({ result: 'OUT', outType: 'FOUL' })
+    // Default fielder = 2 (Catcher) — häufigster Foul-Catch. User kann via Korrektur ändern.
+    onSubmit({ result: 'OUT', outType: 'FOUL', fielderChain: [2] })
   }
 
   const handleInfieldSubmit = (req: Partial<SpielbogenRecordAtBatRequest>) => {
