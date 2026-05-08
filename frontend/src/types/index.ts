@@ -597,5 +597,6 @@ export interface BogenSheetResponse {
   stealingEvents: SpielbogenStealingResponse[]
   substitutions: SpielbogenSubstitutionResponse[]
   positionChanges: SpielbogenPositionChangeResponse[]
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   inningRuns: Record<number, { home: number; away: number }>
 }

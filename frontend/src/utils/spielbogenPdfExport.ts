@@ -6,6 +6,7 @@ import type {
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
   SpielbogenPositionChangeResponse,
+  SpielbogenRunnerAdvanceResponse,
   BogenSide,
 } from '@/types'
 
@@ -42,8 +43,8 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
     ...sheet.awayAtBats.map(a => a.inning),
   )
 
-  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges)
-  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges)
+  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances)
+  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances)
 
   doc.save(`spielbogen-${sheet.meta.date}-${sheet.meta.homeTeamName}-vs-${sheet.meta.awayTeamName}.pdf`)
 }
@@ -149,6 +150,7 @@ function drawSheet(
   inningRuns: Record<number, { home: number; away: number }>,
   numInnings: number,
   positionChanges: SpielbogenPositionChangeResponse[],
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[],
 ) {
   const tableW = 137
   const colNum = 8
@@ -177,7 +179,7 @@ function drawSheet(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
 
-  const cellMap = renderCells(atBats, stealings, [])
+  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [])
   const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
   const sideChanges = positionChanges.filter(pc => pc.side === side)
   const historyPerSlot = computePositionHistoryPerSlot(
