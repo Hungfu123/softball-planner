@@ -82,15 +82,14 @@ export function DiamondCell({ notation, outIndex }: Props) {
       {primary && (
         filled ? (
           isMulti ? (
-            // Filled + Multi: alle Labels zeigen ("1B 1B" / "1B 2B")
-            // statt nur primary — ×N-Badge allein zu cryptisch.
+            // Filled + Multi: alle Labels unten zeigen ("1B 1B" / "1B 2B")
             <text
               x={30}
-              y={32}
+              y={72}
               textAnchor="middle"
-              fontSize={labels.length >= 3 ? 6 : 8}
+              fontSize={labels.length >= 3 ? 8 : 10}
               fontWeight="700"
-              fill="#fef3c7"
+              fill="#1f2937"
               style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
             >
               {labels.join(' ')}
@@ -98,11 +97,11 @@ export function DiamondCell({ notation, outIndex }: Props) {
           ) : (
             <text
               x={30}
-              y={32}
+              y={72}
               textAnchor="middle"
               fontSize="11"
               fontWeight="700"
-              fill="#fef3c7"
+              fill="#1f2937"
               style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
             >
               {primary}

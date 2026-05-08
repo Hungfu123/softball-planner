@@ -382,14 +382,15 @@ function drawDiamondCell(
   if (cell?.primaryLabel) {
     doc.setFont('helvetica', 'bold')
     if (filled) {
-      doc.setTextColor(254, 243, 199)
+      // Below-always: AB-Label unten unter Diamond statt cream-on-blue inside.
+      doc.setTextColor(...COLOR_NAVY)
+      const baseY = home.y + 2.5
       if (isMulti && cell.labels.length >= 2) {
-        // Filled+Multi: alle Labels inline ("1B 1B" / "1B 2B")
         doc.setFontSize(cell.labels.length >= 3 ? 4 : 5)
-        doc.text(cell.labels.join(' ').slice(0, 12), cx, cy + 1, { align: 'center' })
+        doc.text(cell.labels.join(' ').slice(0, 12), cx, baseY, { align: 'center' })
       } else {
-        doc.setFontSize(6)
-        doc.text(cell.primaryLabel.slice(0, 5), cx, cy + 1, { align: 'center' })
+        doc.setFontSize(5.5)
+        doc.text(cell.primaryLabel.slice(0, 5), cx, baseY, { align: 'center' })
       }
     } else if (isMulti && cell.labels.length >= 2) {
       // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle — größere Schrift für Lesbarkeit
