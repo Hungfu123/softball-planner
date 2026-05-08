@@ -8,6 +8,7 @@ import { PitchingEventDrawer } from './PitchingEventDrawer'
 import { ErrorPickerDrawer } from './ErrorPickerDrawer'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { computeBaseStateAdvance } from '@/utils/bogenBaseAdvance'
+import { computeDefaultAdvances } from '@/utils/runnerAdvanceDefaults'
 
 interface Props {
   side: BogenSide
@@ -96,6 +97,14 @@ export function BogenActionButtons({
         outType: extra?.outType,
         batterSlotId: currentSlotId,
       })
+      const runnerAdvances =
+        result === 'WALK' || result === 'HIT_BY_PITCH'
+          ? computeDefaultAdvances({
+              abResult: result,
+              baseStateBefore: baseStateAfter,
+              baseStateAfter: advance.baseStateAfter,
+            })
+          : []
       await onRecord({
         side,
         slotId: currentSlotId,
@@ -104,6 +113,7 @@ export function BogenActionButtons({
         runsScored: advance.runsScored,
         rbi: advance.runsScored,
         baseStateAfter: advance.baseStateAfter,
+        runnerAdvances,
         ...extra,
       })
     } finally {
