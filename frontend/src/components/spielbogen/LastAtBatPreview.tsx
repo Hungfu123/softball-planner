@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { SquarePen } from 'lucide-react'
-import type { SpielbogenAtBatResponse, BogenSide, SpielbogenSlotResponse } from '@/types'
+import type { SpielbogenAtBatResponse, SpielbogenSlotResponse } from '@/types'
 import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
 
 interface Props {
   lastAtBat: SpielbogenAtBatResponse | null
   slots: SpielbogenSlotResponse[]
-  onUndo: (side: BogenSide) => Promise<void>
+  onUndo: () => Promise<void>
   onCorrect?: () => void
   submitting?: boolean
+  disabled?: boolean
 }
 
 const KLARTEXT: Record<string, string> = {
@@ -56,7 +57,7 @@ function klartext(label: string): string {
   return label
 }
 
-export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitting }: Props) {
+export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitting, disabled }: Props) {
   const [undoing, setUndoing] = useState(false)
   // Undo bleibt dauerhaft sichtbar solange lastAtBat existiert (kein Auto-Hide-Timeout)
   const undoVisible = lastAtBat != null
@@ -81,7 +82,7 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitti
   const handleUndo = async () => {
     setUndoing(true)
     try {
-      await onUndo(lastAtBat.side)
+      await onUndo()
     } finally {
       setUndoing(false)
     }
@@ -103,7 +104,7 @@ export function LastAtBatPreview({ lastAtBat, slots, onUndo, onCorrect, submitti
       {undoVisible && (
         <button
           onClick={handleUndo}
-          disabled={undoing || submitting}
+          disabled={undoing || submitting || disabled}
           className="shrink-0 font-display text-xs font-bold tracking-widest uppercase px-3 py-1.5 rounded-full border border-navy-700 text-navy-700 hover:bg-navy-50 transition-colors cursor-pointer disabled:opacity-50"
         >
           {undoing ? '…' : 'Undo'}

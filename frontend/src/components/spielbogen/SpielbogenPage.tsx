@@ -153,7 +153,7 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot } =
+  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, undoLastStealing, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot } =
     useSpielbogenScoring(bogenId)
 
   const [showCorrection, setShowCorrection] = useState(false)
@@ -251,6 +251,27 @@ export default function SpielbogenPage() {
   const lastAtBat = allAtBats.length > 0
     ? allAtBats.reduce((a, b) => a.sequence > b.sequence ? a : b)
     : null
+
+  // Latest action on current side + inning (for Undo dispatch). AB or Stealing.
+  const currentInningAtBats = atBats.filter(ab => ab.side === currentSide && ab.inning === meta.currentInning)
+  const currentInningStealings = sheet.stealingEvents.filter(s => s.side === currentSide && s.inning === meta.currentInning)
+  const latestCurrentAB = currentInningAtBats.length > 0
+    ? currentInningAtBats.reduce((a, b) => new Date(a.createdAt) > new Date(b.createdAt) ? a : b)
+    : null
+  const latestCurrentStealing = currentInningStealings.length > 0
+    ? currentInningStealings.reduce((a, b) => new Date(a.createdAt) > new Date(b.createdAt) ? a : b)
+    : null
+  const latestAction: { type: 'AB' | 'STEALING' | 'AB_PREVIOUS'; side: BogenSide } | null = (() => {
+    if (latestCurrentAB && latestCurrentStealing) {
+      return new Date(latestCurrentAB.createdAt) > new Date(latestCurrentStealing.createdAt)
+        ? { type: 'AB' as const, side: currentSide }
+        : { type: 'STEALING' as const, side: currentSide }
+    }
+    if (latestCurrentAB) return { type: 'AB' as const, side: currentSide }
+    if (latestCurrentStealing) return { type: 'STEALING' as const, side: currentSide }
+    if (lastAtBat) return { type: 'AB_PREVIOUS' as const, side: lastAtBat.side }
+    return null
+  })()
 
   // Base state from last at-bat of the current side + inning
   const currentSideAtBats = atBats
@@ -539,6 +560,15 @@ export default function SpielbogenPage() {
     toast.show('Slot aktualisiert', 'success')
   }
 
+  const handleUndo = async () => {
+    if (!latestAction) return
+    if (latestAction.type === 'STEALING') {
+      await undoLastStealing(latestAction.side)
+    } else {
+      await undoLast(latestAction.side)
+    }
+  }
+
   const isDone = meta.status === 'DONE'
   const isLive = meta.status === 'LIVE'
 
@@ -805,9 +835,10 @@ export default function SpielbogenPage() {
       <LastAtBatPreview
         lastAtBat={lastAtBat}
         slots={[...homeLineup, ...awayLineup]}
-        onUndo={undoLast}
+        onUndo={handleUndo}
         onCorrect={isLive ? () => setShowCorrection(true) : undefined}
         submitting={submitting}
+        disabled={!latestAction}
       />
 
       {/* Korrektur-Sheet */}
