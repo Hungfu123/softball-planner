@@ -6,6 +6,7 @@ import type {
   SpielbogenSlotResponse,
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
+  SpielbogenRunnerAdvanceResponse,
   UpdateSlotRequest,
 } from '@/types'
 import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
@@ -41,6 +42,7 @@ function SideSheet({
   slots,
   atBats,
   stealings,
+  runnerAdvances,
   inningRuns,
   onSlotUpdate,
 }: {
@@ -48,12 +50,13 @@ function SideSheet({
   slots: SpielbogenSlotResponse[]
   atBats: SpielbogenAtBatResponse[]
   stealings: SpielbogenStealingResponse[]
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   inningRuns: Record<number, { home: number; away: number }>
   onSlotUpdate?: (slotId: number, req: UpdateSlotRequest) => Promise<void>
 }) {
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const sorted = [...slots].sort((a, b) => a.battingOrder - b.battingOrder)
-  const cellMap = renderCells(atBats, stealings)
+  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [])
   const [editingSlot, setEditingSlot] = useState<SpielbogenSlotResponse | null>(null)
 
   const innings = Array.from({ length: MAX_INNINGS }, (_, i) => i + 1)
@@ -140,7 +143,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
   const [ligaLoading, setLigaLoading] = useState(false)
   const toast = useToastContext()
 
-  const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats, stealingEvents, inningRuns } = sheet
+  const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats, stealingEvents, runnerAdvances, inningRuns } = sheet
 
   const slots = activeSide === 'HOME' ? homeLineup : awayLineup
   const atBats = activeSide === 'HOME' ? homeAtBats : awayAtBats
@@ -224,6 +227,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
                 slots={slots}
                 atBats={atBats}
                 stealings={stealingEvents}
+                runnerAdvances={runnerAdvances ?? []}
                 inningRuns={inningRuns}
                 onSlotUpdate={onSlotUpdate}
               />

@@ -12,6 +12,7 @@ public record BogenSheetResponse(
     List<SpielbogenStealingResponse> stealingEvents,
     List<SpielbogenSubstitutionResponse> substitutions,
     List<SpielbogenPositionChangeResponse> positionChanges,
+    List<SpielbogenRunnerAdvanceResponse> runnerAdvances,
     Map<Integer, InningRuns> inningRuns
 ) {
     public record InningRuns(int home, int away) {}

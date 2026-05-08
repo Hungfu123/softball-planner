@@ -150,11 +150,17 @@ public class SpielbogenController {
                 req.baseStateAfter().secondSlotId(),
                 req.baseStateAfter().thirdSlotId())
             : null;
+        var advances = req.runnerAdvances() == null
+            ? java.util.List.<SpielbogenScoringService.RunnerAdvanceEntry>of()
+            : req.runnerAdvances().stream()
+                .map(e -> new SpielbogenScoringService.RunnerAdvanceEntry(e.slotId(), e.fromBase(), e.toBase(), e.reason()))
+                .toList();
         var saved = scoringService.recordAtBat(id, req.side(), req.slotId(), req.inning(),
             req.result(), req.outType(), req.sacrificeType(), req.fielderChain(),
             req.isError(), req.errorPosition(),
-            req.runsScored(), req.rbi(), bs);
-        return SpielbogenAtBatResponse.from(saved);
+            req.runsScored(), req.rbi(), bs, advances);
+        var savedAdvances = scoringService.findRunnerAdvancesForAtBat(saved.getId());
+        return SpielbogenAtBatResponse.from(saved, savedAdvances);
     }
 
     @GetMapping("/{id}/at-bats")
@@ -247,15 +253,32 @@ public class SpielbogenController {
     @GetMapping("/{id}/sheet")
     public BogenSheetResponse getSheet(@PathVariable Long id) {
         var data = sheetService.getSheet(id);
+        List<SpielbogenAtBatResponse> homeAtBatsResponse = data.homeAtBats().stream()
+            .map(ab -> {
+                var perAbAdvances = data.runnerAdvances().stream()
+                    .filter(adv -> adv.getAtBat() != null && ab.getId().equals(adv.getAtBat().getId()))
+                    .toList();
+                return SpielbogenAtBatResponse.from(ab, perAbAdvances);
+            })
+            .toList();
+        List<SpielbogenAtBatResponse> awayAtBatsResponse = data.awayAtBats().stream()
+            .map(ab -> {
+                var perAbAdvances = data.runnerAdvances().stream()
+                    .filter(adv -> adv.getAtBat() != null && ab.getId().equals(adv.getAtBat().getId()))
+                    .toList();
+                return SpielbogenAtBatResponse.from(ab, perAbAdvances);
+            })
+            .toList();
         return new BogenSheetResponse(
             SpielbogenResponse.from(data.bogen()),
             data.homeLineup().stream().map(SpielbogenSlotResponse::from).toList(),
             data.awayLineup().stream().map(SpielbogenSlotResponse::from).toList(),
-            data.homeAtBats().stream().map(SpielbogenAtBatResponse::from).toList(),
-            data.awayAtBats().stream().map(SpielbogenAtBatResponse::from).toList(),
+            homeAtBatsResponse,
+            awayAtBatsResponse,
             data.stealings().stream().map(SpielbogenStealingResponse::from).toList(),
             data.subs().stream().map(SpielbogenSubstitutionResponse::from).toList(),
             data.positionChanges().stream().map(SpielbogenPositionChangeResponse::from).toList(),
+            data.runnerAdvances().stream().map(SpielbogenRunnerAdvanceResponse::from).toList(),
             data.inningRuns().entrySet().stream().collect(Collectors.toMap(
                 java.util.Map.Entry::getKey,
                 e -> new BogenSheetResponse.InningRuns(e.getValue().getHome(), e.getValue().getAway())

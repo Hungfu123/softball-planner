@@ -1,11 +1,13 @@
 import { jsPDF } from 'jspdf'
 import { renderCells, cellKey, computePositionHistoryPerSlot, positionDisplay } from './bogenSheetRenderer'
+import type { AdvanceLabel } from './bogenSheetRenderer'
 import type {
   BogenSheetResponse,
   SpielbogenSlotResponse,
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
   SpielbogenPositionChangeResponse,
+  SpielbogenRunnerAdvanceResponse,
   BogenSide,
 } from '@/types'
 
@@ -42,8 +44,8 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
     ...sheet.awayAtBats.map(a => a.inning),
   )
 
-  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges)
-  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges)
+  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances)
+  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances)
 
   doc.save(`spielbogen-${sheet.meta.date}-${sheet.meta.homeTeamName}-vs-${sheet.meta.awayTeamName}.pdf`)
 }
@@ -149,6 +151,7 @@ function drawSheet(
   inningRuns: Record<number, { home: number; away: number }>,
   numInnings: number,
   positionChanges: SpielbogenPositionChangeResponse[],
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[],
 ) {
   const tableW = 137
   const colNum = 8
@@ -177,7 +180,7 @@ function drawSheet(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
 
-  const cellMap = renderCells(atBats, stealings)
+  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [])
   const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
   const sideChanges = positionChanges.filter(pc => pc.side === side)
   const historyPerSlot = computePositionHistoryPerSlot(
@@ -306,6 +309,7 @@ interface CellRenderInput {
   stealingArrow: { fromBase: number; toBase: number; type: string } | null
   stealingArrows: { fromBase: number; toBase: number; type: string }[]
   inningEnd: boolean
+  advanceLabels?: AdvanceLabel[]
 }
 
 function drawDiamondCell(
@@ -450,6 +454,17 @@ function drawDiamondCell(
     }
   }
 
+  if (cell?.advanceLabels?.length) {
+    doc.setFontSize(2.5)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(0, 0, 0)
+    for (const adv of cell.advanceLabels) {
+      const cellMid = { x: cellX + cellW * 0.5, y: cellY + cellH * 0.5 }
+      const pos = pdfSidePosition(adv.side, cellMid, cellW, cellH)
+      doc.text(adv.label, pos.x, pos.y, { align: 'center' })
+    }
+  }
+
   // Stealing arrows (dashed lines between bases) — Multi-Stealing pro Cell unterstützt.
   // Farbe + Label per Type: SB rot, CS/OUT_ON_PLAY dunkelrot, WP/PB orange.
   const arrows = cell?.stealingArrows ?? (cell?.stealingArrow ? [cell.stealingArrow] : [])
@@ -507,4 +522,19 @@ function baseCenter(
   if (base === 2) return sec
   if (base === 3) return third
   return home
+}
+
+function pdfSidePosition(
+  side: 'home-1b' | '1b-2b' | '2b-3b' | '3b-home',
+  mid: { x: number; y: number },
+  cellW: number,
+  cellH: number,
+) {
+  const dx = cellW * 0.18
+  const dy = cellH * 0.14
+  if (side === 'home-1b') return { x: mid.x + dx, y: mid.y + dy * 0.5 }
+  if (side === '1b-2b') return { x: mid.x + dx, y: mid.y - dy * 1.4 }
+  if (side === '2b-3b') return { x: mid.x - dx, y: mid.y - dy * 1.4 }
+  if (side === '3b-home') return { x: mid.x - dx, y: mid.y + dy * 0.5 }
+  return { x: mid.x, y: mid.y }
 }

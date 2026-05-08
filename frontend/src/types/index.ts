@@ -474,6 +474,7 @@ export interface SpielbogenAtBatResponse {
   runsScored: number
   rbi: number
   baseStateAfter: BogenBaseStateDto | null
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   createdAt: string
 }
 
@@ -490,6 +491,7 @@ export interface SpielbogenRecordAtBatRequest {
   runsScored?: number
   rbi?: number
   baseStateAfter?: BogenBaseStateDto
+  runnerAdvances?: RunnerAdvanceEntry[]
 }
 
 export interface SpielbogenStealingResponse {
@@ -501,6 +503,36 @@ export interface SpielbogenStealingResponse {
   type: StealingEventType
   fromBase: number
   toBase: number
+  createdAt: string
+}
+
+export type RunnerAdvanceReason =
+  | 'HIT_PUSH'
+  | 'BB_FORCE'
+  | 'HBP_FORCE'
+  | 'FIELDERS_CHOICE'
+  | 'ERROR'
+  | 'SAC'
+  | 'WP'
+  | 'PB'
+
+export interface RunnerAdvanceEntry {
+  slotId: number
+  fromBase: number
+  toBase: number
+  reason: RunnerAdvanceReason
+}
+
+export interface SpielbogenRunnerAdvanceResponse {
+  id: number
+  bogenId: number
+  atBatId: number
+  slotId: number
+  side: BogenSide
+  inning: number
+  fromBase: number
+  toBase: number
+  reason: RunnerAdvanceReason
   createdAt: string
 }
 
@@ -565,5 +597,6 @@ export interface BogenSheetResponse {
   stealingEvents: SpielbogenStealingResponse[]
   substitutions: SpielbogenSubstitutionResponse[]
   positionChanges: SpielbogenPositionChangeResponse[]
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   inningRuns: Record<number, { home: number; away: number }>
 }

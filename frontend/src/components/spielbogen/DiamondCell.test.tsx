@@ -14,6 +14,7 @@ const empty: CellNotation = {
   stealingArrows: [],
   abCount: 0,
   inningEnd: false,
+  advanceLabels: [],
 }
 
 describe('DiamondCell', () => {

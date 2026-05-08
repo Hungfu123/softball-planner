@@ -1,9 +1,17 @@
 import type {
   SpielbogenAtBatResponse,
   SpielbogenStealingResponse,
+  SpielbogenRunnerAdvanceResponse,
+  RunnerAdvanceReason,
+  AtBatResult,
   BogenSide,
   BogenBaseStateDto,
 } from '@/types'
+
+export interface AdvanceLabel {
+  side: 'home-1b' | '1b-2b' | '2b-3b' | '3b-home'
+  label: string
+}
 
 export interface StealingArrow {
   fromBase: number
@@ -26,6 +34,8 @@ export interface CellNotation {
   /** RFL-Konvention: kleiner Slash am Cell-Border markiert wo das 3. Out fiel.
    *  Hilft Scorekeeper zu sehen wer im nächsten Inning die Lineup-Reihenfolge fortsetzt. */
   inningEnd: boolean
+  /** Advance-Labels pro Basepfad — zeigen Grund warum ein Runner vorgerückt ist. */
+  advanceLabels: AdvanceLabel[]
 }
 
 export type CellMap = Map<string, CellNotation>
@@ -36,7 +46,8 @@ export function cellKey(side: BogenSide, slotId: number, inning: number): string
 
 export function renderCells(
   atBats: SpielbogenAtBatResponse[],
-  stealings: SpielbogenStealingResponse[]
+  stealings: SpielbogenStealingResponse[],
+  runnerAdvances: SpielbogenRunnerAdvanceResponse[] = [],
 ): CellMap {
   const cells: CellMap = new Map()
   const sorted = [...atBats].sort((a, b) => a.sequence - b.sequence)
@@ -64,6 +75,7 @@ export function renderCells(
         stealingArrows: existing.stealingArrows,
         abCount: existing.abCount + 1,
         inningEnd: existing.inningEnd || cellEnds,
+        advanceLabels: existing.advanceLabels,
       })
     } else {
       cells.set(key, {
@@ -77,6 +89,7 @@ export function renderCells(
         stealingArrows: [],
         abCount: 1,
         inningEnd: cellEnds,
+        advanceLabels: [],
       })
     }
   }
@@ -102,6 +115,17 @@ export function renderCells(
     cells.set(key, existing)
   }
 
+  for (const adv of runnerAdvances) {
+    const ab = atBats.find(a => a.id === adv.atBatId)
+    if (!ab) continue
+    const side = fromToToSide(adv.fromBase, adv.toBase)
+    if (!side) continue
+    const label = reasonToLabel(adv.reason, ab.result)
+    const key = cellKey(adv.side, adv.slotId, adv.inning)
+    const cell = cells.get(key)
+    if (cell) cell.advanceLabels.push({ side, label })
+  }
+
   return cells
 }
 
@@ -117,7 +141,34 @@ function emptyCell(): CellNotation {
     stealingArrows: [],
     abCount: 0,
     inningEnd: false,
+    advanceLabels: [],
   }
+}
+
+function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): string {
+  switch (reason) {
+    case 'HIT_PUSH':
+      if (abResult === 'SINGLE') return '1B'
+      if (abResult === 'DOUBLE') return '2B'
+      if (abResult === 'TRIPLE') return '3B'
+      if (abResult === 'HOMERUN') return 'HR'
+      return 'H'
+    case 'BB_FORCE': return 'BB'
+    case 'HBP_FORCE': return 'HBP'
+    case 'FIELDERS_CHOICE': return 'FC'
+    case 'ERROR': return 'E'
+    case 'SAC': return 'SAC'
+    case 'WP': return 'WP'
+    case 'PB': return 'PB'
+  }
+}
+
+function fromToToSide(fromBase: number, toBase: number): AdvanceLabel['side'] | null {
+  if (fromBase === 0 && toBase === 1) return 'home-1b'
+  if (fromBase === 1 && toBase === 2) return '1b-2b'
+  if (fromBase === 2 && toBase === 3) return '2b-3b'
+  if (fromBase === 3 && toBase === 4) return '3b-home'
+  return null
 }
 
 function reachedBaseForAtBat(ab: SpielbogenAtBatResponse): number {

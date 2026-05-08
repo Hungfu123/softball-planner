@@ -18,6 +18,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +34,7 @@ class SpielbogenScoringServiceTest {
     @Mock private SpielbogenStealingRepository stealingRepo;
     @Mock private SpielbogenSubstitutionRepository subRepo;
     @Mock private SpielbogenPositionChangeRepository positionChangeRepo;
+    @Mock private SpielbogenRunnerAdvanceRepository runnerAdvanceRepo;
 
     @InjectMocks
     private SpielbogenScoringService service;
@@ -402,6 +407,45 @@ class SpielbogenScoringServiceTest {
 
         assertThrows(BusinessValidationException.class,
             () -> service.deleteLastStealingForSide(1L, BogenSide.HOME));
+    }
+
+    // --- helper ---
+    private SpielbogenSlot slotFor(final Spielbogen bogen, final Long id, final BogenSide side, final String position) {
+        SpielbogenSlot slot = new SpielbogenSlot();
+        slot.setId(id);
+        slot.setBogen(bogen);
+        slot.setSide(side);
+        slot.setPosition(position);
+        return slot;
+    }
+
+    @Test
+    void recordAtBat_withRunnerAdvances_persistsAll() {
+        SpielbogenSlot batter = slotFor(liveBogen, 100L, BogenSide.HOME, "P");
+        SpielbogenSlot runner = slotFor(liveBogen, 200L, BogenSide.HOME, "C");
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(slotRepo.findById(100L)).thenReturn(Optional.of(batter));
+        when(slotRepo.findById(200L)).thenReturn(Optional.of(runner));
+        SpielbogenAtBat persistedAB = new SpielbogenAtBat();
+        persistedAB.setId(99L);
+        persistedAB.setBogen(liveBogen);
+        when(atBatRepo.save(any())).thenReturn(persistedAB);
+        when(atBatRepo.countOutsInInning(anyLong(), any(), anyInt())).thenReturn(0L);
+        when(runnerAdvanceRepo.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        var advances = List.of(
+            new SpielbogenScoringService.RunnerAdvanceEntry(200L, 1, 2, RunnerAdvanceReason.BB_FORCE)
+        );
+
+        service.recordAtBat(
+            1L, BogenSide.HOME, 100L, 1, AtBatResult.WALK,
+            null, null, null, false, null, 0, 0, null, advances
+        );
+
+        verify(runnerAdvanceRepo).saveAll(argThat(list -> list.size() == 1
+            && list.get(0).getReason() == RunnerAdvanceReason.BB_FORCE
+            && list.get(0).getFromBase() == 1
+            && list.get(0).getToBase() == 2));
     }
 
     @Test
