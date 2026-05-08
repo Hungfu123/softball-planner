@@ -50,6 +50,7 @@ export function ScoringPage() {
   const [homerunRunner, setHomerunRunner] = useState<{ playerId: number; playerName: string; battingOrder: number | null } | null>(null)
   const [hbpFlash, setHbpFlash] = useState<string | null>(null)
   const [walkFlash, setWalkFlash] = useState<{ batter: string; runsScored: number } | null>(null)
+  const [errorFlash, setErrorFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [overthrowFlash, setOverthrowFlash] = useState<string | null>(null)
   const [stealFlash, setStealFlash] = useState<{ runner: string; type: 'BASE' | 'HOME' | 'CAUGHT'; toBase: number } | null>(null)
@@ -229,6 +230,11 @@ export function ScoringPage() {
           setWalkFlash({ batter: batterNameSnapshot, runsScored })
           setTimeout(() => setWalkFlash(null), 1700)
         }
+      } else if (result === 'REACHED_ON_ERROR') {
+        if (!reducedMotion) {
+          setErrorFlash({ batter: batterNameSnapshot, runsScored })
+          setTimeout(() => setErrorFlash(null), 1700)
+        }
       } else if (result === 'STRIKEOUT') {
         if (!reducedMotion) {
           setStrikeoutFlash(batterNameSnapshot)
@@ -247,7 +253,7 @@ export function ScoringPage() {
 
       // Einheitliche Score/Anpassen-Pille — eine Pille für alle Hit/Run-Cases
       // (HR, HBP, WALK haben eigene Vollbild-/Pill-Animationen)
-      if (result !== 'HOMERUN' && result !== 'HIT_BY_PITCH' && result !== 'WALK') {
+      if (result !== 'HOMERUN' && result !== 'HIT_BY_PITCH' && result !== 'WALK' && result !== 'REACHED_ON_ERROR') {
         const showRuns = scoredPlayers.length > 0
         const showHitPrompt = isHit && hadRunners
         if (showRuns || showHitPrompt) {
@@ -1537,6 +1543,49 @@ export function ScoringPage() {
         )}
       </AnimatePresence>
 
+      {/* Reached on Error — Scorecard "E" Notation, rose-Akzent */}
+      <AnimatePresence>
+        {errorFlash && (
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+          >
+            <div className="relative bg-rose-800 text-white pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border border-white/15 overflow-hidden">
+              <motion.span
+                className="font-display font-black text-3xl text-cream-50 leading-none relative"
+                style={{ WebkitTextStroke: '1px var(--color-softball-red-500)' }}
+                initial={{ scale: 0.8 }}
+                animate={{ scale: [0.8, 1.15, 1, 1.05, 1] }}
+                transition={{ duration: 0.9, times: [0, 0.2, 0.45, 0.7, 1], ease: 'easeOut' }}
+              >
+                E
+              </motion.span>
+
+              <div className="relative">
+                <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60">Reached on Error</div>
+                <div className="font-display text-base font-bold tracking-wider uppercase">
+                  {errorFlash.batter}
+                </div>
+              </div>
+
+              {errorFlash.runsScored > 0 && (
+                <motion.div
+                  initial={{ scale: 0, rotate: 30, opacity: 0 }}
+                  animate={{ scale: [0, 1.3, 1], rotate: 12, opacity: 1 }}
+                  transition={{ duration: 0.45, delay: 0.4, ease: 'backOut' }}
+                  className="bg-softball-red-600 text-white font-display font-black text-sm px-2 py-1 rounded-md tracking-wider shadow-lg border border-cream-50/30 relative"
+                >
+                  +{errorFlash.runsScored} {errorFlash.runsScored === 1 ? 'RUN' : 'RUNS'}
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Steal Pill — 1B/2B/3B oder Caught */}
       <AnimatePresence>
         {stealFlash && stealFlash.type !== 'HOME' && (
@@ -1920,8 +1969,10 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
       // Alle Runner laufen Home, Batter auf 3B
       return { first: null, second: null, third: batterId }
     case 'WALK':
-    case 'HIT_BY_PITCH': {
-      // Force-Advance: nur wenn bases vor Batter besetzt sind
+    case 'HIT_BY_PITCH':
+    case 'REACHED_ON_ERROR': {
+      // Force-Advance: nur wenn bases vor Batter besetzt sind.
+      // ROE verhält sich mechanisch wie Walk (Batter→1B, forced runners +1).
       const next: BaseStateDto = { first: batterId, second: state.second, third: state.third }
       if (state.first != null) {
         next.second = state.first
