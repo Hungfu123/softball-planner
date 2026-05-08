@@ -269,6 +269,7 @@ export type AtBatResult =
   | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN'
   | 'WALK' | 'HIT_BY_PITCH'
   | 'STRIKEOUT' | 'OUT'
+  | 'REACHED_ON_ERROR'
 
 export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY'
 
@@ -353,6 +354,7 @@ export interface PlayerBattingStatsResponse {
   hitByPitch: number
   strikeouts: number
   outs: number
+  reachedOnError: number
   stolenBases: number
   caughtStealing: number
   runsBattedIn: number
@@ -372,6 +374,7 @@ export const AT_BAT_RESULT_LABELS: Record<AtBatResult, string> = {
   HIT_BY_PITCH: 'Hit-by-Pitch',
   STRIKEOUT: 'Strikeout',
   OUT: 'Aus',
+  REACHED_ON_ERROR: 'Reached on Error',
 }
 
 // Spielbogen
