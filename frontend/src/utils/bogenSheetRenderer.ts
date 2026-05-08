@@ -52,8 +52,11 @@ export function renderCells(
   const cells: CellMap = new Map()
   const sorted = [...atBats].sort((a, b) => a.sequence - b.sequence)
   const scoredSet = computeScoredSet(sorted)
-  // Backfill: alte Bögen ohne RunnerAdvance-Records → synthesize aus baseStateAfter-Diffs.
-  const effectiveAdvances = runnerAdvances.length > 0 ? runnerAdvances : synthesizeAdvances(sorted)
+  // Backfill per AB: für ABs ohne Records → synthesize aus baseStateAfter-Diffs.
+  // Walk-Chain berücksichtigt ALL ABs für prevAfter, emit nur für AB-IDs ohne Records.
+  const abIdsWithRecords = new Set(runnerAdvances.map(r => r.atBatId))
+  const synthAdvances = synthesizeAdvances(sorted, abIdsWithRecords)
+  const effectiveAdvances = [...runnerAdvances, ...synthAdvances]
   const cellOutIdxMap = computeCellOutIndices(sorted, stealings)
   const inningEndKeys = computeInningEndKeys(sorted, stealings)
 
@@ -166,7 +169,7 @@ function emptyCell(): CellNotation {
 }
 
 /** Synthesize RunnerAdvance-Records aus AB-baseStateAfter-Diffs (für alte Bögen ohne Records). */
-function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[]): SpielbogenRunnerAdvanceResponse[] {
+function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[], skipAbIds: Set<number> = new Set()): SpielbogenRunnerAdvanceResponse[] {
   const result: SpielbogenRunnerAdvanceResponse[] = []
   const bySide: Record<BogenSide, SpielbogenAtBatResponse[]> = { HOME: [], AWAY: [] }
   for (const ab of sortedAtBats) bySide[ab.side].push(ab)
@@ -177,7 +180,8 @@ function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[]): Spielbogen
       const before: BogenBaseStateDto | null = ab.inning !== prevInning ? null : prevAfter
       const after = ab.baseStateAfter ?? null
       const reason = ab.isError ? 'ERROR' : mapResultToReason(ab.result)
-      if (reason && before && after) {
+      // Walk-Chain immer durchlaufen, aber nur emittieren wenn AB nicht in skipAbIds.
+      if (reason && before && after && !skipAbIds.has(ab.id)) {
         const beforeMap = baseStateToMap(before)
         const afterMap = baseStateToMap(after)
         for (const [slotId, fromBase] of beforeMap.entries()) {
