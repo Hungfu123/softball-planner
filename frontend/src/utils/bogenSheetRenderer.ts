@@ -103,9 +103,14 @@ export function renderCells(
     existing.stealingArrows = [...existing.stealingArrows, arrow]
     // First arrow stays als primaryLabel-equivalent für legacy single-arrow rendering
     if (existing.stealingArrow == null) existing.stealingArrow = arrow
-    // CS / OUT_ON_PLAY = Runner-Out, KEIN Run-Score, KEIN Reach-Update.
+    // CS / OUT_ON_PLAY = Runner-Out beim Versuch. Reach update auf fromBase
+    // (Runner war dort vor dem Out-Versuch), aber NICHT auf toBase (er hat's nicht geschafft).
     const isOutEvent = st.type === 'CAUGHT_STEALING' || st.type === 'OUT_ON_PLAY'
-    if (!isOutEvent) {
+    if (isOutEvent) {
+      if (st.fromBase > existing.reachedBase) {
+        existing.reachedBase = st.fromBase
+      }
+    } else {
       if (st.toBase === 4 && existing.reachedBase < 4) {
         existing.reachedBase = 4
         existing.runScored = true
