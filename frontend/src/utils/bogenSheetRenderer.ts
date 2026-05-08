@@ -141,10 +141,9 @@ export function renderCells(
     } else if (adv.toBase > cell.reachedBase) {
       cell.reachedBase = adv.toBase
     }
-    // Side-annotation: only direct single-base advances get a side label.
-    // 3b-home (Score) wird NICHT annotiert — gefüllter Diamond zeigt Score bereits.
+    // Side-annotation: alle Advances bekommen Side-Label (auch 3b-home für Score-Reason).
     const side = fromToToSide(adv.fromBase, adv.toBase)
-    if (side && side !== '3b-home') cell.advanceLabels.push({ side, label })
+    if (side) cell.advanceLabels.push({ side, label })
   }
 
   return cells
