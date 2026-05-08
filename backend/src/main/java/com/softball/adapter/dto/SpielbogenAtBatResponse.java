@@ -5,6 +5,7 @@ import com.softball.domain.model.BogenSide;
 import com.softball.domain.model.OutType;
 import com.softball.domain.model.SacrificeType;
 import com.softball.domain.model.SpielbogenAtBat;
+import com.softball.domain.model.SpielbogenRunnerAdvance;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,30 +26,36 @@ public record SpielbogenAtBatResponse(
     Integer runsScored,
     Integer rbi,
     BogenBaseStateDto baseStateAfter,
-    Instant createdAt
+    Instant createdAt,
+    List<SpielbogenRunnerAdvanceResponse> runnerAdvances
 ) {
-    public static SpielbogenAtBatResponse from(final SpielbogenAtBat a) {
+    public static SpielbogenAtBatResponse from(final SpielbogenAtBat ab) {
+        return from(ab, java.util.List.of());
+    }
+
+    public static SpielbogenAtBatResponse from(final SpielbogenAtBat ab, final List<SpielbogenRunnerAdvance> advances) {
         return new SpielbogenAtBatResponse(
-            a.getId(),
-            a.getBogen() != null ? a.getBogen().getId() : null,
-            a.getSlot() != null ? a.getSlot().getId() : null,
-            a.getSide(),
-            a.getSequence(),
-            a.getInning(),
-            a.getResult(),
-            a.getOutType(),
-            a.getSacrificeType(),
-            a.getFielderChain(),
-            a.getIsError(),
-            a.getErrorPosition(),
-            a.getRunsScored(),
-            a.getRbi(),
-            a.getBaseStateAfter() != null ? new BogenBaseStateDto(
-                a.getBaseStateAfter().getFirstSlotId(),
-                a.getBaseStateAfter().getSecondSlotId(),
-                a.getBaseStateAfter().getThirdSlotId()
+            ab.getId(),
+            ab.getBogen() != null ? ab.getBogen().getId() : null,
+            ab.getSlot() != null ? ab.getSlot().getId() : null,
+            ab.getSide(),
+            ab.getSequence(),
+            ab.getInning(),
+            ab.getResult(),
+            ab.getOutType(),
+            ab.getSacrificeType(),
+            ab.getFielderChain(),
+            ab.getIsError(),
+            ab.getErrorPosition(),
+            ab.getRunsScored(),
+            ab.getRbi(),
+            ab.getBaseStateAfter() != null ? new BogenBaseStateDto(
+                ab.getBaseStateAfter().getFirstSlotId(),
+                ab.getBaseStateAfter().getSecondSlotId(),
+                ab.getBaseStateAfter().getThirdSlotId()
             ) : null,
-            a.getCreatedAt()
+            ab.getCreatedAt(),
+            advances == null ? java.util.List.of() : advances.stream().map(SpielbogenRunnerAdvanceResponse::from).toList()
         );
     }
 }

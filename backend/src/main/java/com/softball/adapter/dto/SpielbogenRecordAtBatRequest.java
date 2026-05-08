@@ -3,6 +3,7 @@ package com.softball.adapter.dto;
 import com.softball.domain.model.AtBatResult;
 import com.softball.domain.model.BogenSide;
 import com.softball.domain.model.OutType;
+import com.softball.domain.model.RunnerAdvanceReason;
 import com.softball.domain.model.SacrificeType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -21,5 +22,13 @@ public record SpielbogenRecordAtBatRequest(
     Integer errorPosition,
     @Min(0) Integer runsScored,
     @Min(0) Integer rbi,
-    BogenBaseStateDto baseStateAfter
-) {}
+    BogenBaseStateDto baseStateAfter,
+    List<RunnerAdvanceEntry> runnerAdvances
+) {
+    public record RunnerAdvanceEntry(
+        @NotNull Long slotId,
+        @NotNull Integer fromBase,
+        @NotNull Integer toBase,
+        @NotNull RunnerAdvanceReason reason
+    ) {}
+}
