@@ -205,6 +205,35 @@ public class SpielbogenScoringService {
         log.info("Spielbogen {} Stealing: side={} inning={} type={} {}→{}",
                  bogenId, side, inning, type, fromBase, toBase);
 
+        // Score-Update: Runner erreicht Home via SB/WP/PB (toBase=4) → +1 Run für side.
+        boolean scoresRun = toBase == 4 && (
+            type == StealingEventType.STOLEN_BASE ||
+            type == StealingEventType.WILD_PITCH ||
+            type == StealingEventType.PASSED_BALL
+        );
+        if (scoresRun) {
+            if (side == BogenSide.HOME) {
+                bogen.setHomeRuns((bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0) + 1);
+            } else {
+                bogen.setAwayRuns((bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0) + 1);
+            }
+            bogenRepo.save(bogen);
+
+            // Walkoff: HOME erreicht Home in bottom-7+ und führt → DONE.
+            if (side == BogenSide.HOME && inning >= 7) {
+                int home = bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0;
+                int away = bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0;
+                if (home > away && bogen.getStatus() != BogenStatus.DONE) {
+                    bogen.setStatus(BogenStatus.DONE);
+                    bogen.setEndedAt(java.time.Instant.now());
+                    bogenRepo.save(bogen);
+                    log.info("Walkoff via Stealing nach Inning {}: bogen={} score={}:{}",
+                             inning, bogen.getId(), home, away);
+                    return saved;
+                }
+            }
+        }
+
         maybeAutoSwitchSide(bogen, side, inning);
         return saved;
     }

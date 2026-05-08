@@ -125,7 +125,7 @@ function computeDisplayBaseState(
       else if (b === 2) newState.secondSlotId = id
       else if (b === 3) newState.thirdSlotId = id
     }
-    if (st.type === 'STOLEN_BASE') {
+    if (st.type === 'STOLEN_BASE' || st.type === 'WILD_PITCH' || st.type === 'PASSED_BALL') {
       removeFromBase(st.fromBase)
       if (st.toBase < 4) setBase(st.toBase, st.slotId)
       // toBase===4 => runner home, no setBase
