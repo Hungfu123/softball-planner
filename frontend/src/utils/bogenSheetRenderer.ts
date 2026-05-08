@@ -239,25 +239,16 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): str
 }
 
 function fromToToSide(fromBase: number, toBase: number): AdvanceLabel['side'] | null {
-  // Letzte traversierte Seite. 3b-home wird elsewhere geskippt (filled Diamond zeigt Score).
-  // Für scoring-runner aus tieferen Bases (z.B. 1→4) → fallback auf vorige Seite.
   if (toBase <= fromBase) return null
-  if (fromBase === 0) {
-    if (toBase >= 4) return null // batter Homerun — eigenes Label
-    if (toBase === 3) return '2b-3b'
-    if (toBase === 2) return '1b-2b'
-    return 'home-1b'
+  // Score (toBase=4) immer an 3b-home-Seite — Konvention: Reason am Home-Eck.
+  if (toBase >= 4) {
+    if (fromBase === 0) return null // Batter HR → eigenes AB-Label
+    return '3b-home'
   }
-  if (fromBase === 1) {
-    if (toBase >= 4) return '2b-3b' // scoring von 1B → letzter sichtbarer Hop
-    if (toBase === 3) return '2b-3b'
-    return '1b-2b'
-  }
-  if (fromBase === 2) {
-    if (toBase >= 4) return '2b-3b' // scoring von 2B
-    return '2b-3b'
-  }
-  if (fromBase === 3) return '3b-home' // wird elsewhere geskippt
+  // Non-scoring: letzte traversierte Seite.
+  if (toBase === 3) return '2b-3b'
+  if (toBase === 2) return '1b-2b'
+  if (toBase === 1) return 'home-1b'
   return null
 }
 
