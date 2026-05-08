@@ -425,12 +425,12 @@ function drawDiamondCell(
     doc.setTextColor(0, 0, 0)
   }
 
-  // Out# top-left (Roman, schwarz + bold)
+  // Out# unten-links (Roman, navy + bold) — beeinflusst Diamond-Layout nicht
   if (cell?.outIndex) {
     doc.setFontSize(5.5)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(0, 0, 0)
-    doc.text(cell.outIndex, cellX + 1, cellY + 3)
+    doc.setTextColor(...COLOR_NAVY)
+    doc.text(cell.outIndex, cellX + 1, cellY + cellH - 1)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(0, 0, 0)
   }
