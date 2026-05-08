@@ -152,6 +152,34 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
   })()
   const hasCollision = collidingBases.length > 0
 
+  // Validation: Runner darf vorderen Runner nicht überholen.
+  // A.startBase < B.startBase ⇒ A.finalPosition ≤ B.finalPosition (numeric, home=4).
+  const positionAsNumber = (a: Assignment): number => {
+    if (a.position === 'out') return -1
+    if (a.position === 'home') return 4
+    if (a.position === 'home-after-hit') return 4
+    return typeof a.position === 'number' ? a.position : -1
+  }
+  const startAsNumber = (a: Assignment): number => {
+    if (a.startBase === 'home-after-hit') return 4
+    return typeof a.startBase === 'number' ? a.startBase : 0
+  }
+  const passingViolation = (() => {
+    const sorted = [...assignments].sort((a, b) => startAsNumber(a) - startAsNumber(b))
+    for (let i = 0; i < sorted.length; i++) {
+      const a = sorted[i]
+      const aPos = positionAsNumber(a)
+      if (aPos < 0) continue
+      for (let j = i + 1; j < sorted.length; j++) {
+        const b = sorted[j]
+        const bPos = positionAsNumber(b)
+        if (bPos < 0) continue
+        if (aPos > bPos) return { rear: a, front: b }
+      }
+    }
+    return null
+  })()
+
   const outsFromRunners = assignments
     .filter(a => a.position === 'out' && a.startBase !== 'home-after-hit')
     .map(a => ({
@@ -176,7 +204,7 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
   const finalRuns = showForceOutOption && forceOutRule ? 0 : baseRuns
 
   const handleConfirm = async () => {
-    if (hasCollision) return
+    if (hasCollision || passingViolation) return
     setSaving(true)
     try {
       const advances = computeDefaultAdvances({
@@ -204,7 +232,7 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
     <div className="flex gap-2">
       <button
         onClick={handleConfirm}
-        disabled={saving || hasCollision}
+        disabled={saving || hasCollision || !!passingViolation}
         className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-softball-red-600 hover:bg-softball-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         ✓ Passt
@@ -255,6 +283,11 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
         {hasCollision && (
           <div className="bg-softball-red-50 border border-softball-red-300 rounded-lg p-2.5 text-xs text-softball-red-900 font-body">
             ⚠ <strong>Konflikt:</strong> Zwei Runner auf gleicher Base ({collidingBases.map(b => `${b}B`).join(', ')}). Anpassen.
+          </div>
+        )}
+        {passingViolation && (
+          <div className="bg-softball-red-50 border border-softball-red-300 rounded-lg p-2.5 text-xs text-softball-red-900 font-body">
+            ⚠ <strong>Konflikt:</strong> {passingViolation.rear.name} kann {passingViolation.front.name} nicht überholen. Vorderer Runner muss zuerst weiter.
           </div>
         )}
         {showForceOutOption && (
