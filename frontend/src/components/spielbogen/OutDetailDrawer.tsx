@@ -656,11 +656,14 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       thirdSlotId: outsFromRunners.some(o => o.fromBase === 3) ? null : afterAdvances.thirdSlotId,
     }
     const runs = outs >= 2 ? 0 : rawRuns
+    // Bei DP: fielderChain extended mit covering-fielder per out-Runner-Base.
+    const coverFielder = (b: 1 | 2 | 3): number => b === 1 ? 3 : b === 2 ? 4 : 5
+    const dpChain: number[] = [pendingFlyOutRequest.fielder, ...outsFromRunners.map(o => coverFielder(o.fromBase))]
     onSubmit({
       result: 'OUT',
       outType: outsFromRunners.length > 0 ? 'DOUBLE_PLAY' : 'FLY',
       ...(isSacFly && outs < 2 && outsFromRunners.length === 0 ? { sacrificeType: 'FLY' as const } : {}),
-      fielderChain: [pendingFlyOutRequest.fielder],
+      fielderChain: outsFromRunners.length > 0 ? dpChain : [pendingFlyOutRequest.fielder],
       runsScored: runs,
       rbi: runs,
       baseStateAfter: after,
