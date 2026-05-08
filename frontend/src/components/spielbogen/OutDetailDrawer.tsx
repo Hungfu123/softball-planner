@@ -656,8 +656,13 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       thirdSlotId: outsFromRunners.some(o => o.fromBase === 3) ? null : afterAdvances.thirdSlotId,
     }
     const runs = outs >= 2 ? 0 : rawRuns
-    // Bei DP: fielderChain extended mit covering-fielder per out-Runner-Base.
-    const coverFielder = (b: 1 | 2 | 3): number => b === 1 ? 3 : b === 2 ? 4 : 5
+    // Bei DP: fielderChain extended mit Tag-Target-Fielder.
+    // Heuristik: Runner versucht ZUR NÄCHSTEN Base zu advancen (typischer Fly-Tag-Up).
+    // Tag-Target = Position der Base wo Runner gefangen wird.
+    //   fromBase 3 → versucht Home → Catcher (2)
+    //   fromBase 2 → versucht 3B → 5
+    //   fromBase 1 → versucht 2B → 4
+    const coverFielder = (b: 1 | 2 | 3): number => b === 1 ? 4 : b === 2 ? 5 : 2
     const dpChain: number[] = [pendingFlyOutRequest.fielder, ...outsFromRunners.map(o => coverFielder(o.fromBase))]
     onSubmit({
       result: 'OUT',
