@@ -193,12 +193,6 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
   const footer = (
     <div className="flex gap-2">
       <button
-        onClick={onClose}
-        className="flex-1 py-2 text-sm text-gray-600 rounded-lg border border-cream-300 hover:bg-cream-100 cursor-pointer"
-      >
-        Abbrechen
-      </button>
-      <button
         onClick={handleConfirm}
         disabled={saving || hasCollision}
         className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-softball-red-600 hover:bg-softball-red-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
