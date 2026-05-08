@@ -12,6 +12,9 @@ interface Props {
   /** SlotIds die als OUT (statt scored) verschwinden. Exit-Animation fadet
    *  in-place statt durch Bases zu Home zu laufen. */
   outSlotIds?: ReadonlySet<number>
+  /** Wenn true: Runner-Exit fadet in-place statt zu Home zu laufen. Für Undo,
+   *  damit kein Lauf durch alle Bases als ob der Runner gescort hätte. */
+  skipExitToHome?: boolean
 }
 
 // Positions im 220x220 viewBox (gleich wie DiamondView)
@@ -41,7 +44,7 @@ interface RunnerData {
   base: 1 | 2 | 3
 }
 
-function Runner({ r, onTap, isOut }: { r: RunnerData; onTap?: (r: RunnerData) => void; isOut?: boolean }) {
+function Runner({ r, onTap, isOut, skipExitToHome }: { r: RunnerData; onTap?: (r: RunnerData) => void; isOut?: boolean; skipExitToHome?: boolean }) {
   const [lastBase, setLastBase] = useState<number>(0)
 
   const waypoints = useMemo(() => {
@@ -87,8 +90,8 @@ function Runner({ r, onTap, isOut }: { r: RunnerData; onTap?: (r: RunnerData) =>
         x: hasKeyframes ? waypoints.xs : waypoints.xs[0],
         y: hasKeyframes ? waypoints.ys : waypoints.ys[0],
       }}
-      exit={isOut ? {
-        // OUT: in-place fade (Runner geht NICHT nach Home)
+      exit={(isOut || skipExitToHome) ? {
+        // OUT oder Undo: in-place fade (Runner geht NICHT nach Home)
         opacity: 0,
         scale: 0.4,
         x: currentPos.cx,
@@ -156,7 +159,7 @@ function StaticBase({ pos, label, occupied }: StaticBaseProps) {
   )
 }
 
-export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap, outSlotIds }: Props) {
+export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap, outSlotIds, skipExitToHome }: Props) {
   const runners: RunnerData[] = useMemo(() => {
     if (!baseState) return []
     const result: RunnerData[] = []
@@ -212,7 +215,7 @@ export function BogenDiamondView({ baseState, slots, homerunRunner, onRunnerTap,
         {/* Animated runners */}
         <AnimatePresence>
           {runners.map(r => (
-            <Runner key={r.slotId} r={r} onTap={onRunnerTap} isOut={outSlotIds?.has(r.slotId)} />
+            <Runner key={r.slotId} r={r} onTap={onRunnerTap} isOut={outSlotIds?.has(r.slotId)} skipExitToHome={skipExitToHome} />
           ))}
         </AnimatePresence>
 

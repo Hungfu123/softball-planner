@@ -165,6 +165,7 @@ export default function SpielbogenPage() {
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
   const [showMetaEdit, setShowMetaEdit] = useState(false)
+  const [undoAnimSkip, setUndoAnimSkip] = useState(false)
   const [showPositionSwapDrawer, setShowPositionSwapDrawer] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
@@ -562,10 +563,16 @@ export default function SpielbogenPage() {
 
   const handleUndo = async () => {
     if (!latestAction) return
-    if (latestAction.type === 'STEALING') {
-      await undoLastStealing(latestAction.side)
-    } else {
-      await undoLast(latestAction.side)
+    setUndoAnimSkip(true)
+    try {
+      if (latestAction.type === 'STEALING') {
+        await undoLastStealing(latestAction.side)
+      } else {
+        await undoLast(latestAction.side)
+      }
+    } finally {
+      // Reset after one frame so subsequent runner-changes animate normally.
+      setTimeout(() => setUndoAnimSkip(false), 500)
     }
   }
 
@@ -724,6 +731,7 @@ export default function SpielbogenPage() {
         homerunRunner={homerunRunner}
         onRunnerTap={isLive ? (r) => setQuickStealingRunner({ slotId: r.slotId, name: r.name, base: r.base }) : undefined}
         outSlotIds={outSlotIds}
+        skipExitToHome={undoAnimSkip}
       />
       {isLive && displayBaseState && (displayBaseState.firstSlotId != null || displayBaseState.secondSlotId != null || displayBaseState.thirdSlotId != null) && (
         <p className="text-[11px] text-gray-500 text-center -mt-1 mb-1">
