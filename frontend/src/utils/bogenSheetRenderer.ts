@@ -332,7 +332,7 @@ function renderOut(ab: SpielbogenAtBatResponse): string {
   switch (ab.outType) {
     case 'GROUNDER': return 'GO'
     case 'FLY': return 'FO'
-    case 'FOUL': return 'FOUL'
+    case 'FOUL': return 'f2' // Fallback default Catcher (alte Daten ohne fielderChain)
     case 'UNASSISTED': return 'U'
     case 'DOUBLE_PLAY': return 'DP'
     case 'TRIPLE_PLAY': return 'TP'
