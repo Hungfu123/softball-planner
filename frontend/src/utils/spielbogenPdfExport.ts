@@ -531,11 +531,12 @@ function pdfSidePosition(
   cellW: number,
   cellH: number,
 ) {
-  const dx = cellW * 0.18
-  const dy = cellH * 0.14
-  if (side === 'home-1b') return { x: mid.x + dx, y: mid.y + dy * 0.5 }
-  if (side === '1b-2b') return { x: mid.x + dx, y: mid.y - dy * 1.4 }
-  if (side === '2b-3b') return { x: mid.x - dx, y: mid.y - dy * 1.4 }
-  if (side === '3b-home') return { x: mid.x - dx, y: mid.y + dy * 0.5 }
+  // Offset OUTWARD vom Diamond-Mittelpunkt damit Label nicht auf Diamond-Stroke liegt.
+  const dx = cellW * 0.34
+  const dy = cellH * 0.22
+  if (side === 'home-1b') return { x: mid.x + dx, y: mid.y + dy }
+  if (side === '1b-2b') return { x: mid.x + dx, y: mid.y - dy }
+  if (side === '2b-3b') return { x: mid.x - dx, y: mid.y - dy }
+  if (side === '3b-home') return { x: mid.x - dx, y: mid.y + dy }
   return { x: mid.x, y: mid.y }
 }

@@ -18,10 +18,11 @@ function baseToCoord(base: number) {
 }
 
 function sidePosition(side: 'home-1b' | '1b-2b' | '2b-3b' | '3b-home') {
-  if (side === 'home-1b') return { x: 42, y: 41 }
-  if (side === '1b-2b') return { x: 42, y: 19 }
-  if (side === '2b-3b') return { x: 18, y: 19 }
-  if (side === '3b-home') return { x: 18, y: 41 }
+  // Offset OUTWARD vom Diamond-Mittelpunkt damit Label nicht auf Diamond-Stroke liegt.
+  if (side === 'home-1b') return { x: 50, y: 46 }   // unten-rechts außerhalb
+  if (side === '1b-2b') return { x: 50, y: 12 }     // oben-rechts außerhalb
+  if (side === '2b-3b') return { x: 10, y: 12 }     // oben-links außerhalb
+  if (side === '3b-home') return { x: 10, y: 46 }   // unten-links außerhalb
   return { x: 30, y: 30 }
 }
 
@@ -201,7 +202,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
             x={pos.x}
             y={pos.y}
             textAnchor="middle"
-            fontSize="4"
+            fontSize="5"
             fontWeight="700"
             fill="#1f2937"
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
