@@ -103,11 +103,15 @@ export function renderCells(
     existing.stealingArrows = [...existing.stealingArrows, arrow]
     // First arrow stays als primaryLabel-equivalent für legacy single-arrow rendering
     if (existing.stealingArrow == null) existing.stealingArrow = arrow
-    if (st.toBase === 4 && existing.reachedBase < 4) {
-      existing.reachedBase = 4
-      existing.runScored = true
-    } else if (st.toBase > existing.reachedBase) {
-      existing.reachedBase = st.toBase
+    // CS / OUT_ON_PLAY = Runner-Out, KEIN Run-Score, KEIN Reach-Update.
+    const isOutEvent = st.type === 'CAUGHT_STEALING' || st.type === 'OUT_ON_PLAY'
+    if (!isOutEvent) {
+      if (st.toBase === 4 && existing.reachedBase < 4) {
+        existing.reachedBase = 4
+        existing.runScored = true
+      } else if (st.toBase > existing.reachedBase) {
+        existing.reachedBase = st.toBase
+      }
     }
     // Inning-End-Marker auch bei Stealing-induzierten 3rd-Outs auf Stealing-Cell anwenden
     if (inningEndKeys.has(key)) existing.inningEnd = true
