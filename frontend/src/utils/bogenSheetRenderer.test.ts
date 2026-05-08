@@ -12,7 +12,8 @@ function ab(o: Partial<SpielbogenAtBatResponse>): SpielbogenAtBatResponse {
   return {
     id: 1, bogenId: 1, slotId: 1, side: 'HOME', sequence: 1, inning: 1,
     result: 'SINGLE', outType: null, fielderChain: null, isError: null,
-    errorPosition: null, runsScored: 0, rbi: 0, baseStateAfter: null, createdAt: '',
+    errorPosition: null, runsScored: 0, rbi: 0, baseStateAfter: null,
+    runnerAdvances: [], createdAt: '',
     ...o,
     sacrificeType: o.sacrificeType ?? null,
   }
