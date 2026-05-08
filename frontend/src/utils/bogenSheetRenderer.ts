@@ -132,7 +132,7 @@ export function renderCells(
   for (const adv of effectiveAdvances) {
     const ab = atBats.find(a => a.id === adv.atBatId)
     if (!ab) continue
-    const label = reasonToLabel(adv.reason, ab.result)
+    const label = reasonToLabel(adv.reason, ab.result, ab.fielderChain)
     const key = cellKey(adv.side, adv.slotId, adv.inning)
     const cell = cells.get(key)
     if (!cell) continue
@@ -213,6 +213,7 @@ function mapResultToReason(r: AtBatResult): RunnerAdvanceReason | null {
   if (r === 'SINGLE' || r === 'DOUBLE' || r === 'TRIPLE' || r === 'HOMERUN') return 'HIT_PUSH'
   if (r === 'WALK') return 'BB_FORCE'
   if (r === 'HIT_BY_PITCH') return 'HBP_FORCE'
+  if (r === 'OUT' || r === 'STRIKEOUT') return 'FIELDERS_CHOICE' // Productive Out (Runner advance)
   return null
 }
 
@@ -224,7 +225,7 @@ function baseStateToMap(s: BogenBaseStateDto): Map<number, number> {
   return m
 }
 
-function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): string {
+function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult, abFielderChain?: number[] | null): string {
   switch (reason) {
     case 'HIT_PUSH':
       if (abResult === 'SINGLE') return '1B'
@@ -234,8 +235,11 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult): str
       return 'H'
     case 'BB_FORCE': return 'BB'
     case 'HBP_FORCE': return 'HBP'
-    case 'FIELDERS_CHOICE': return 'FC'
-    case 'ERROR': return 'E'
+    case 'FIELDERS_CHOICE':
+      // Bei productive-out: zeige fielder-chain (z.B. "5-3") als Reason.
+      return abFielderChain && abFielderChain.length > 0 ? abFielderChain.join('-') : 'FC'
+    case 'ERROR':
+      return abFielderChain && abFielderChain.length > 0 ? `E${abFielderChain[0]}` : 'E'
     case 'SAC': return 'SAC'
     case 'WP': return 'WP'
     case 'PB': return 'PB'
