@@ -132,6 +132,19 @@ public class SpielbogenScoringService {
                 bogen.setAwayRuns(bogen.getAwayRuns() + saved.getRunsScored());
             }
             bogenRepo.save(bogen);
+
+            // Walkoff: HOME scores winning run in bottom of inning ≥ 7 → game ends instantly.
+            if (side == BogenSide.HOME && inning >= 7) {
+                int home = bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0;
+                int away = bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0;
+                if (home > away && bogen.getStatus() != BogenStatus.DONE) {
+                    bogen.setStatus(BogenStatus.DONE);
+                    bogen.setEndedAt(java.time.Instant.now());
+                    bogenRepo.save(bogen);
+                    log.info("Walkoff nach Inning {}: bogen={} score={}:{}", inning, bogen.getId(), home, away);
+                    return saved;
+                }
+            }
         }
 
         log.info("Spielbogen {} AtBat: side={} inning={} result={} seq={}",
@@ -417,19 +430,28 @@ public class SpielbogenScoringService {
         long outs = atBatRepo.countOutsInInning(bogen.getId(), side, inning);
         if (outs >= 3) {
             // Convention: AWAY = top (batting first), HOME = bottom (batting last).
-            // Game-End-Check: HOME 3rd-Out in Inning ≥ 7 = bottom-7 done = volles Inning durch.
-            // Wenn nicht tied → status DONE. Sonst Extra-Innings.
-            if (side == BogenSide.HOME && inning >= 7) {
-                int home = bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0;
-                int away = bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0;
-                if (home != away) {
+            // Game-End-Regeln (Reguläre 7 Innings):
+            //  - Nach AWAY top-7+ wenn HOME führt → DONE (HOME muss nicht batten)
+            //  - Nach HOME bottom-7+ wenn nicht tied → DONE
+            //  - Sonst → Extra-Innings (weiter switchen)
+            int home = bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0;
+            int away = bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0;
+            if (inning >= 7) {
+                if (side == BogenSide.AWAY && home > away) {
                     bogen.setStatus(BogenStatus.DONE);
                     bogen.setEndedAt(java.time.Instant.now());
                     bogenRepo.save(bogen);
-                    log.info("Game-End nach Inning {}: bogen={} score={}:{}", inning, bogen.getId(), home, away);
+                    log.info("Game-End nach top-{}: bogen={} score={}:{} (HOME führt, bottom übersprungen)",
+                             inning, bogen.getId(), home, away);
                     return;
                 }
-                // Tied → Extra-Innings, weiter switchen
+                if (side == BogenSide.HOME && home != away) {
+                    bogen.setStatus(BogenStatus.DONE);
+                    bogen.setEndedAt(java.time.Instant.now());
+                    bogenRepo.save(bogen);
+                    log.info("Game-End nach bottom-{}: bogen={} score={}:{}", inning, bogen.getId(), home, away);
+                    return;
+                }
             }
             BogenSide next = side == BogenSide.HOME ? BogenSide.AWAY : BogenSide.HOME;
             bogen.setCurrentSide(next);
