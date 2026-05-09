@@ -235,7 +235,7 @@ function drawSheet(
     // Sub-Namen auf den Linien rendern: "[Name] ab [Inning]."
     if (slot) {
       const subs = subsPerSlot.get(slot.id) ?? []
-      const subYs = [yy + rowH * 0.45 - 0.7, yy + rowH * 0.75 - 0.7]
+      const subYs = [yy + rowH * 0.45 + 3, yy + rowH * 0.75 + 3]
       doc.setFontSize(6.5)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(0, 0, 0)
