@@ -212,7 +212,11 @@ function drawSheet(
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(0, 0, 0)
       doc.text(String(slot.battingOrder), x + 2, yy + 4)
-      doc.text(slot.name.slice(0, 18), x + colNum + 2, yy + 4)
+      // Original-Spieler = playerOutName des 1. Subs (falls Subs vorhanden), sonst slot.name.
+      // slot.name ist der aktuelle Spieler nach allen Subs — nicht für Top-Zelle.
+      const subsForSlot = subsPerSlot.get(slot.id) ?? []
+      const originalName = subsForSlot.length > 0 ? subsForSlot[0].playerOutName : slot.name
+      doc.text(originalName.slice(0, 18), x + colNum + 2, yy + 4)
       const history = historyPerSlot.get(slot.id) ?? [slot.position ?? '']
       const yPositions = [yy + 4, yy + rowH * 0.45 + 3, yy + rowH * 0.75 + 3]
       for (let i = 0; i < Math.min(history.length, 3); i++) {
