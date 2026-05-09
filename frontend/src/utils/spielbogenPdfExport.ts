@@ -8,6 +8,7 @@ import type {
   SpielbogenStealingResponse,
   SpielbogenPositionChangeResponse,
   SpielbogenRunnerAdvanceResponse,
+  SpielbogenSubstitutionResponse,
   BogenSide,
 } from '@/types'
 
@@ -44,8 +45,8 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
     ...sheet.awayAtBats.map(a => a.inning),
   )
 
-  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances)
-  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances)
+  drawSheet(doc, 8, 42, 'AWAY', sheet.awayLineup, sheet.awayAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances, sheet.substitutions)
+  drawSheet(doc, 152, 42, 'HOME', sheet.homeLineup, sheet.homeAtBats, sheet.stealingEvents, sheet.inningRuns, maxInning, sheet.positionChanges, sheet.runnerAdvances, sheet.substitutions)
 
   doc.save(`spielbogen-${sheet.meta.date}-${sheet.meta.homeTeamName}-vs-${sheet.meta.awayTeamName}.pdf`)
 }
@@ -152,6 +153,7 @@ function drawSheet(
   numInnings: number,
   positionChanges: SpielbogenPositionChangeResponse[],
   runnerAdvances: SpielbogenRunnerAdvanceResponse[],
+  substitutions: SpielbogenSubstitutionResponse[],
 ) {
   const tableW = 137
   const colNum = 8
@@ -187,6 +189,14 @@ function drawSheet(
     sorted.map(s => ({ id: s.id, position: s.position })),
     sideChanges,
   )
+  const subsPerSlot = new Map<number, SpielbogenSubstitutionResponse[]>()
+  for (const sub of substitutions) {
+    if (sub.side !== side) continue
+    const arr = subsPerSlot.get(sub.slotId) ?? []
+    arr.push(sub)
+    subsPerSlot.set(sub.slotId, arr)
+  }
+  for (const arr of subsPerSlot.values()) arr.sort((a, b) => a.inning - b.inning)
 
   for (let row = 0; row < numRows; row++) {
     const slot = sorted[row] ?? null
@@ -217,6 +227,21 @@ function drawSheet(
     const subLineX2 = x + colNum + colName + colPos - 1.5
     doc.line(subLineX1, yy + rowH * 0.45, subLineX2, yy + rowH * 0.45)
     doc.line(subLineX1, yy + rowH * 0.75, subLineX2, yy + rowH * 0.75)
+
+    // Sub-Namen auf den Linien rendern: "[Name] ab [Inning]."
+    if (slot) {
+      const subs = subsPerSlot.get(slot.id) ?? []
+      const subYs = [yy + rowH * 0.45 - 0.7, yy + rowH * 0.75 - 0.7]
+      doc.setFontSize(6.5)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(0, 0, 0)
+      for (let i = 0; i < Math.min(subs.length, 2); i++) {
+        const s = subs[i]
+        const label = `${s.playerInName.slice(0, 14)} ab ${s.inning}.`
+        doc.text(label, x + colNum + 2, subYs[i])
+      }
+      doc.setFontSize(7)
+    }
 
     for (let inn = 1; inn <= numInnings; inn++) {
       const cellX = x + colNum + colName + colPos + (inn - 1) * colInning
