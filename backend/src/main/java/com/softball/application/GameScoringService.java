@@ -104,6 +104,7 @@ public class GameScoringService {
         final java.util.Optional<AtBat> lastABOpt = atBatRepository.findLastByGameId(gameId);
         final java.util.List<BaseRunningEvent> allStealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         final java.util.List<Substitution> allSubs = substitutionRepository.findByGameId(gameId);
+        final java.util.List<InningAdvanceEvent> allInningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
 
         final java.time.Instant newestAB = lastABOpt.map(AtBat::getCreatedAt).orElse(null);
         final java.time.Instant newestStealing = allStealings.stream()
@@ -116,14 +117,20 @@ public class GameScoringService {
             .filter(java.util.Objects::nonNull)
             .max(java.time.Instant::compareTo)
             .orElse(null);
+        final java.time.Instant newestEvent = allInningEvents.stream()
+            .map(InningAdvanceEvent::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(null);
 
-        if (newestAB == null && newestStealing == null && newestSub == null) {
+        if (newestAB == null && newestStealing == null && newestSub == null && newestEvent == null) {
             return com.softball.adapter.dto.UndoResultResponse.none();
         }
 
         final boolean abIsNewest = newestAB != null
             && (newestStealing == null || !newestStealing.isAfter(newestAB))
-            && (newestSub == null || !newestSub.isAfter(newestAB));
+            && (newestSub == null || !newestSub.isAfter(newestAB))
+            && (newestEvent == null || !newestEvent.isAfter(newestAB));
 
         if (abIsNewest) {
             final AtBat lastAB = lastABOpt.get();
@@ -144,7 +151,8 @@ public class GameScoringService {
         }
 
         final boolean stealingIsNewest = newestStealing != null
-            && (newestSub == null || !newestSub.isAfter(newestStealing));
+            && (newestSub == null || !newestSub.isAfter(newestStealing))
+            && (newestEvent == null || !newestEvent.isAfter(newestStealing));
 
         if (stealingIsNewest) {
             final BaseRunningEvent latest = allStealings.stream()
@@ -155,13 +163,32 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.stealing(latest.getId());
         }
 
-        if (newestSub != null) {
+        final boolean subIsNewest = newestSub != null
+            && (newestEvent == null || !newestEvent.isAfter(newestSub));
+
+        if (subIsNewest) {
             final Substitution latest = allSubs.stream()
                 .filter(s -> s.getCreatedAt() != null)
                 .max(java.util.Comparator.comparing(Substitution::getCreatedAt))
                 .orElseThrow();
             substitutionRepository.deleteById(latest.getId());
             return com.softball.adapter.dto.UndoResultResponse.substitution(latest.getId());
+        }
+
+        if (newestEvent != null) {
+            final InningAdvanceEvent latest = allInningEvents.stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(InningAdvanceEvent::getCreatedAt))
+                .orElseThrow();
+            final int runs = latest.getOpponentRuns() != null ? latest.getOpponentRuns() : 0;
+            if (runs > 0) {
+                final Game gameForRevert = findGame(gameId);
+                final int newScore = Math.max(0, (gameForRevert.getScoreThem() != null ? gameForRevert.getScoreThem() : 0) - runs);
+                gameForRevert.setScoreThem(newScore);
+                gameRepository.save(gameForRevert);
+            }
+            inningAdvanceEventRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.inningAdvance(latest.getId());
         }
 
         return com.softball.adapter.dto.UndoResultResponse.none();
