@@ -173,6 +173,8 @@ public class GameScoringService {
         game.setScoreThem(0);
         // Batting-Side zurücksetzen — User wählt nach Reset neu
         game.setBattingSide(null);
+        // Game-End-Marker zurücksetzen — Reset = "alles auf Anfang"
+        game.setEndedAt(null);
         // Game neu speichern — geht über GameService, aber direkt über Repo einfacher: wir nutzen JPA dirty-tracking nicht für Domain-Objekte, also setGameScore via GameRepository
         // Minimal-Invasiv: wir mapen auf Entity und speichern nichts, stattdessen setzen wir via Score-Endpoint-Helper
         // Simplest: nutze setGameScore wenn vorhanden. Wir nutzen gameRepository.save.
