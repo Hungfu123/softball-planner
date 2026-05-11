@@ -79,7 +79,7 @@ export function ScoringPage() {
   const currentGame = gameDay?.games[gameIndex] ?? null
   const opponentName = currentGame?.opponentTeam?.name ?? 'Gegner'
 
-  const { atBats, scoreboard, reload, recordAtBat, undo, recordStealingEvent } = useScoring(currentGame?.id ?? null)
+  const { atBats, stealingEvents, scoreboard, reload, recordAtBat, undo, recordStealingEvent } = useScoring(currentGame?.id ?? null)
 
   // Lineup laden für Batter-Preview (nächste 2-3 + Full-Lineup-Sheet)
   useEffect(() => {
@@ -346,11 +346,16 @@ export function ScoringPage() {
   }
 
   const handleUndo = async () => {
-    if (atBats.length === 0) return
+    if (atBats.length === 0 && stealingEvents.length === 0 && substitutions.length === 0) return
     setSubmitting(true)
     try {
-      await undo()
-      toast.show('Letzte Aktion rückgängig gemacht', 'success')
+      const result = await undo()
+      const message =
+        result.type === 'AT_BAT' ? 'Letzter At-Bat rückgängig gemacht' :
+        result.type === 'STEALING' ? 'Letztes Stealing-Event rückgängig gemacht' :
+        result.type === 'SUBSTITUTION' ? 'Letzte Substitution rückgängig gemacht' :
+        'Nichts zum Rückgängigmachen'
+      toast.show(message, result.type === 'NONE' ? 'error' : 'success')
     } catch (e) {
       toast.show((e as Error).message, 'error')
     } finally {
@@ -863,7 +868,7 @@ export function ScoringPage() {
         <div className={`grid gap-2 mt-2 ${displayRunners.length > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <button
             onClick={handleUndo}
-            disabled={atBats.length === 0 || submitting}
+            disabled={(atBats.length === 0 && stealingEvents.length === 0 && substitutions.length === 0) || submitting}
             className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
             <Undo2 size={14} /> Rückgängig
