@@ -864,14 +864,9 @@ export function ScoringPage() {
         runners={displayRunners}
         recentlyScored={recentlyScored}
         context={
-          atBats.length > 0 && (atBats[atBats.length - 1]?.result === 'OUT' || atBats[atBats.length - 1]?.result === 'REACHED_ON_ERROR')
+          atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'
             ? 'post-out'
             : 'manual'
-        }
-        extraBatter={
-          atBats.length > 0 && atBats[atBats.length - 1]?.result === 'REACHED_ON_ERROR'
-            ? { playerId: atBats[atBats.length - 1].batterId, playerName: atBats[atBats.length - 1].batterName, defaultBase: 1 }
-            : undefined
         }
         outsAfter={scoreboard?.outsInCurrentInning ?? 0}
         onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context }) => {
@@ -1955,14 +1950,17 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
       return next
     }
     case 'REACHED_ON_ERROR': {
-      // ROE mit Runnern: state UNCHANGED — Korrektur-Sheet fragt User wo alle landen.
-      // Sheet fügt Batter als extra-Assignment auf 1B hinzu (defaultBase).
-      // Ohne Runner: Batter direkt auf 1B (kein Sheet).
-      const hasRunners = state.first != null || state.second != null || state.third != null
-      if (!hasRunners) {
-        return { first: batterId, second: null, third: null }
+      // ROE = Force-Minimum wie WALK: Batter→1B, nur forced Runner advancen.
+      // Non-forced bleiben — Sheet fragt User für freie Anpassungen.
+      const next: BaseStateDto = { first: batterId, second: state.second, third: state.third }
+      if (state.first != null) {
+        next.second = state.first
+        if (state.second != null) {
+          next.third = state.second
+          // 3B-Runner scort bei Bases Loaded — countScored erkennt es
+        }
       }
-      return state
+      return next
     }
     case 'SINGLE': {
       // Konservativ: Batter auf 1B, Runner jeweils +1 Base
