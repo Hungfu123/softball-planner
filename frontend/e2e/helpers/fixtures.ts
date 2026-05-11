@@ -3,8 +3,8 @@ import { seedAuth } from './auth'
 import { ensureTestGame, teardownTestGameDay, resetScoring, setBattingSide } from './api'
 
 type Fixtures = {
-  testGame: { gameId: number; gameDayId: number; playerIds: number[] }
-  scoringPage: { gameId: number; playerIds: number[] }
+  testGame: { gameId: number; gameDayId: number; playerIds: number[]; benchPlayerId: number }
+  scoringPage: { gameId: number; gameDayId: number; playerIds: number[]; benchPlayerId: number }
 }
 
 export const test = base.extend<Fixtures, { workerGame: Awaited<ReturnType<typeof ensureTestGame>> }>({
@@ -26,7 +26,12 @@ export const test = base.extend<Fixtures, { workerGame: Awaited<ReturnType<typeo
     await resetScoring(workerGame.gameId)
     await setBattingSide(workerGame.gameId, 'top')
     await page.goto(`/gameday/${workerGame.gameDayId}/scoring/0`)
-    await use({ gameId: workerGame.gameId, playerIds: workerGame.playerIds })
+    await use({
+      gameId: workerGame.gameId,
+      gameDayId: workerGame.gameDayId,
+      playerIds: workerGame.playerIds,
+      benchPlayerId: workerGame.benchPlayerId,
+    })
   },
 })
 
@@ -88,6 +93,62 @@ async function dismissCorrectionSheetIfOpen(page: Page): Promise<void> {
     }
   }
   // No sheet open — nothing to dismiss
+}
+
+import { getPlayerName } from './api'
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Tap a runner on the diamond → opens Stealing-Sheet → click variant.
+ */
+export async function recordStealingViaUI(page: Page, runnerPlayerId: number, type: 'STOLEN_BASE' | 'CAUGHT_STEALING'): Promise<void> {
+  const name = await getPlayerName(runnerPlayerId)
+  const displayName = name.length > 7 ? name.slice(0, 6) + '…' : name
+  await page.locator('svg').getByText(displayName, { exact: true }).first().click()
+  await page.waitForTimeout(300)
+  const label = type === 'STOLEN_BASE' ? /Stolen Base/i : /Caught Stealing/i
+  await page.getByRole('button', { name: label }).click()
+  await page.waitForTimeout(300)
+}
+
+/**
+ * Open Lineup-Sheet → Wechseln → click playerOut + playerIn → Bestätigen.
+ */
+export async function recordSubstitutionViaUI(page: Page, playerOutId: number, playerInId: number): Promise<void> {
+  const outName = await getPlayerName(playerOutId)
+  const inName = await getPlayerName(playerInId)
+  await page.getByRole('button', { name: /Komplette Aufstellung anzeigen/i }).click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: /^Wechseln$/i }).click()
+  await page.waitForTimeout(300)
+  await page.getByRole('button', { name: new RegExp(`^${escapeRegex(outName)}$`) }).first().click()
+  await page.waitForTimeout(200)
+  await page.getByRole('button', { name: new RegExp(`^${escapeRegex(inName)}$`) }).first().click()
+  await page.waitForTimeout(200)
+  await page.getByRole('button', { name: /✓\s*Bestätigen/i }).click()
+  await page.waitForTimeout(500)
+}
+
+/**
+ * Click "Nächstes Inning starten" Pille mit opponentRuns.
+ * Requires halfInningOver=true (3 outs in current inning).
+ */
+export async function advanceInningViaUI(page: Page, opponentRuns: number): Promise<void> {
+  if (opponentRuns > 0) {
+    const input = page.locator('input[type="number"][placeholder="0"]').first()
+    await input.fill(String(opponentRuns))
+  }
+  await page.getByRole('button', { name: /Nächstes Inning starten/i }).click()
+  await page.waitForTimeout(500)
+}
+
+/** Click Rückgängig button. */
+export async function clickUndo(page: Page): Promise<void> {
+  await page.getByRole('button', { name: /^Rückgängig$/i }).click()
+  await page.waitForTimeout(500)
 }
 
 export { expect } from '@playwright/test'
