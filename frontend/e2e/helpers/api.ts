@@ -34,7 +34,7 @@ async function ensureSeason(c: APIRequestContext): Promise<number> {
  * Find-or-create the shared E2E test GameDay with a single Game and 9-player lineup.
  * Returns the gameId of the test Game.
  */
-export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: number; playerIds: number[] }> {
+export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: number; playerIds: number[]; benchPlayerId: number }> {
   const c = await client()
   try {
     const seasonId = await ensureSeason(c)
@@ -61,20 +61,22 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
     const ordered = [...players]
       .filter(p => p.defaultBattingOrder != null)
       .sort((a, b) => (a.defaultBattingOrder ?? 99) - (b.defaultBattingOrder ?? 99))
-      .slice(0, 9)
-    if (ordered.length < 9) {
-      throw new Error(`Brauche mindestens 9 Spieler mit battingOrder, habe ${ordered.length}`)
+      .slice(0, 10) // 9 in lineup + 1 bench
+    if (ordered.length < 10) {
+      throw new Error(`Brauche mindestens 10 Spieler mit defaultBattingOrder, habe ${ordered.length}`)
     }
-    const playerIds = ordered.map(p => p.id)
+    const playerIds = ordered.slice(0, 9).map(p => p.id)
+    const benchPlayerId = ordered[9].id
+    const allAvailableIds = [...playerIds, benchPlayerId]
 
     const gameId = gameDay.games[0].id
 
     if (createdNew) {
-      const availRes = await c.put(`/api/gamedays/${gameDay.id}/players`, { data: { playerIds } })
+      const availRes = await c.put(`/api/gamedays/${gameDay.id}/players`, { data: { playerIds: allAvailableIds } })
       if (!availRes.ok()) throw new Error(`Failed to set players: ${availRes.status()} ${await availRes.text()}`)
 
       const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
-      const lineup: LineupEntryReq[] = ordered.map((p, i) => ({
+      const lineup: LineupEntryReq[] = ordered.slice(0, 9).map((p, i) => ({
         playerId: p.id,
         position: positions[i] ?? null,
         battingOrder: i + 1,
@@ -84,7 +86,7 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
       if (!lineupRes.ok()) throw new Error(`Failed to set lineup: ${lineupRes.status()} ${await lineupRes.text()}`)
     }
 
-    return { gameId, gameDayId: gameDay.id, playerIds }
+    return { gameId, gameDayId: gameDay.id, playerIds, benchPlayerId }
   } finally {
     await c.dispose()
   }
@@ -167,4 +169,49 @@ export async function getScoreboard(gameId: number): Promise<ScoreboardResponse>
   } finally {
     await c.dispose()
   }
+}
+
+type StealingEvent = { id: number; runnerId: number; runnerName: string; type: 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'WILD_PITCH' | 'PASSED_BALL'; inning: number }
+
+export async function getStealingEvents(gameId: number): Promise<StealingEvent[]> {
+  const c = await client()
+  try {
+    const res = await c.get(`/api/games/${gameId}/stealing-events`)
+    if (!res.ok()) throw new Error(`getStealingEvents failed: ${res.status()}`)
+    return await res.json()
+  } finally { await c.dispose() }
+}
+
+type SubstitutionRaw = { id: number; playerOut: { id: number; name: string }; playerIn: { id: number; name: string }; inning: number }
+export type Substitution = { id: number; playerOutId: number; playerInId: number; inning: number }
+
+export async function getSubstitutions(gameId: number): Promise<Substitution[]> {
+  const c = await client()
+  try {
+    const res = await c.get(`/api/games/${gameId}/substitutions`)
+    if (!res.ok()) throw new Error(`getSubstitutions failed: ${res.status()}`)
+    const raw: SubstitutionRaw[] = await res.json()
+    return raw.map(s => ({ id: s.id, playerOutId: s.playerOut.id, playerInId: s.playerIn.id, inning: s.inning }))
+  } finally { await c.dispose() }
+}
+
+/** Clear all substitutions for a game (uses PUT with empty list). */
+export async function clearSubstitutions(gameId: number): Promise<void> {
+  const c = await client()
+  try {
+    const res = await c.put(`/api/games/${gameId}/substitutions`, { data: [] })
+    if (!res.ok()) throw new Error(`clearSubstitutions failed: ${res.status()}`)
+  } finally { await c.dispose() }
+}
+
+export async function getPlayerName(playerId: number): Promise<string> {
+  const c = await client()
+  try {
+    const res = await c.get('/api/players')
+    if (!res.ok()) throw new Error(`getPlayer failed: ${res.status()}`)
+    const all: Array<{ id: number; name: string }> = await res.json()
+    const p = all.find(x => x.id === playerId)
+    if (!p) throw new Error(`Player ${playerId} nicht gefunden`)
+    return p.name
+  } finally { await c.dispose() }
 }
