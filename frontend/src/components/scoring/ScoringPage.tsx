@@ -116,7 +116,14 @@ export function ScoringPage() {
   const regulationOver = halfInningOver && displayInning >= REGULATION_INNINGS
   const isTied = (scoreboard?.scoreUs ?? 0) === (scoreboard?.scoreThem ?? 0)
   const extraInningsNeeded = regulationOver && isTied
-  const gameOver = manualGameOver || (regulationOver && !isTied)
+  // Walkoff: Heimteam (battingSide=bottom) führt nach AB in Inning 7+ → Spiel vorbei
+  // ohne dass 3 Outs nötig wären.
+  const walkoff = !manualGameOver
+    && displayInning >= REGULATION_INNINGS
+    && battingSide === 'bottom'
+    && (scoreboard?.scoreUs ?? 0) > (scoreboard?.scoreThem ?? 0)
+    && (scoreboard?.totalAtBats ?? 0) > 0
+  const gameOver = manualGameOver || (regulationOver && !isTied) || walkoff
 
   // extraOuts zurücksetzen bei Inning-Wechsel — Server-Inning-Diff detection
   const prevInningRef = useRef(serverInning)
@@ -669,12 +676,14 @@ export function ScoringPage() {
           <div className="text-center">
             <div className="font-display text-2xl font-black uppercase tracking-wider inline-flex items-center gap-2">
               <TrophyIcon size={24} className="text-amber-400" />
-              Spiel beendet
+              {walkoff ? 'Walkoff-Sieg!' : 'Spiel beendet'}
             </div>
             <div className="font-display text-sm text-white/80 tracking-wide">
-              {(scoreUs ?? 0) > (scoreThem ?? 0) ? 'Wir haben gewonnen!' :
-               (scoreUs ?? 0) < (scoreThem ?? 0) ? 'Leider verloren' :
-               'Unentschieden'} · Endstand {scoreUs} : {scoreThem ?? 0}
+              {walkoff
+                ? `Endstand ${scoreUs} : ${scoreThem ?? 0} · Bottom-Inning ${displayInning} beendet das Spiel`
+                : `${(scoreUs ?? 0) > (scoreThem ?? 0) ? 'Wir haben gewonnen!' :
+                    (scoreUs ?? 0) < (scoreThem ?? 0) ? 'Leider verloren' :
+                    'Unentschieden'} · Endstand ${scoreUs} : ${scoreThem ?? 0}`}
             </div>
           </div>
           {currentGame && gameDay && (
