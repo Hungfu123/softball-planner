@@ -11,6 +11,9 @@ interface Props {
   /** Wenn true: Runner-Exit fadet in-place statt durch Bases zu Home zu laufen.
       Für Undo: Runner soll nicht so wirken als hätte er gescort. */
   skipExitToHome?: boolean
+  /** Player-IDs deren Exit als Out gilt (in-place fade statt Home-Animation).
+      Für CAUGHT_STEALING und OUT_ON_PLAY. */
+  outRunnerIds?: Set<number>
 }
 
 // Positions im 220x220 viewBox
@@ -26,7 +29,7 @@ function truncate(name: string, max = 7): string {
   return name.length > max ? name.slice(0, max - 1) + '…' : name
 }
 
-export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, skipExitToHome }: Props) {
+export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, skipExitToHome, outRunnerIds }: Props) {
   return (
     <svg viewBox="0 0 220 220" className="w-full max-w-[420px] mx-auto">
       {/* Base-Paths */}
@@ -70,7 +73,12 @@ export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, sk
           Danach: simple Position-Animation (z.B. Advance von 1B → 2B direkt). */}
       <AnimatePresence>
         {runners.map(r => (
-          <Runner key={r.playerId} r={r} onRunnerTap={onRunnerTap} skipExitToHome={skipExitToHome} />
+          <Runner
+            key={r.playerId}
+            r={r}
+            onRunnerTap={onRunnerTap}
+            skipExitToHome={skipExitToHome || outRunnerIds?.has(r.playerId)}
+          />
         ))}
       </AnimatePresence>
 

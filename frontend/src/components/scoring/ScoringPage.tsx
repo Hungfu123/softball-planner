@@ -41,6 +41,7 @@ export function ScoringPage() {
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
   const [undoAnimSkip, setUndoAnimSkip] = useState(false)
+  const [outRunnerIds, setOutRunnerIds] = useState<Set<number>>(new Set())
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -428,8 +429,15 @@ export function ScoringPage() {
     const runnerName = stealingRunner.playerName
     const fromBase = stealingRunner.base
     const toBase = type === 'STOLEN_BASE' ? fromBase + 1 : fromBase
+    const outPlayerId = type === 'CAUGHT_STEALING' ? stealingRunner.playerId : null
     // Sheet sofort schließen — optimistic UX
     setStealingRunner(null)
+    if (outPlayerId != null) {
+      setOutRunnerIds(prev => new Set(prev).add(outPlayerId))
+      setTimeout(() => setOutRunnerIds(prev => {
+        const next = new Set(prev); next.delete(outPlayerId); return next
+      }), 500)
+    }
     try {
       await recordStealingEvent({
         runnerId: stealingRunner.playerId,
@@ -747,6 +755,7 @@ export function ScoringPage() {
             onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
             homerunRunner={homerunRunner}
             skipExitToHome={undoAnimSkip}
+            outRunnerIds={outRunnerIds}
           />
           {displayRunners.length > 0 && !halfInningOver && (
             <p className="text-[11px] text-gray-500 text-center mt-1">
@@ -894,6 +903,18 @@ export function ScoringPage() {
             //   post-out → OUT_ON_PLAY (Grounder/Fly-Out-Follow-up, kein CS-Stat)
             //   manual   → CAUGHT_STEALING (manuelle Korrektur eines Steal-Versuchs)
             const outEventType = context === 'post-out' ? 'OUT_ON_PLAY' : 'CAUGHT_STEALING'
+            if (outsFromRunners.length > 0) {
+              setOutRunnerIds(prev => {
+                const next = new Set(prev)
+                outsFromRunners.forEach(id => next.add(id))
+                return next
+              })
+              setTimeout(() => setOutRunnerIds(prev => {
+                const next = new Set(prev)
+                outsFromRunners.forEach(id => next.delete(id))
+                return next
+              }), 500)
+            }
             for (const runnerId of outsFromRunners) {
               await api.recordStealingEvent(currentGame.id, {
                 runnerId,
