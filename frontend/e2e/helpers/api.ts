@@ -58,12 +58,18 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
     const playersRes = await c.get('/api/players')
     if (!playersRes.ok()) throw new Error(`Failed to fetch players: ${playersRes.status()}`)
     const players: Player[] = await playersRes.json()
+    // Erst nach defaultBattingOrder sortieren (User-Präferenz wenn gesetzt),
+    // sonst nach ID. Fresh DB (CI) hat oft kein defaultBattingOrder gesetzt → ID-Order ok.
     const ordered = [...players]
-      .filter(p => p.defaultBattingOrder != null)
-      .sort((a, b) => (a.defaultBattingOrder ?? 99) - (b.defaultBattingOrder ?? 99))
+      .sort((a, b) => {
+        const ao = a.defaultBattingOrder ?? 999
+        const bo = b.defaultBattingOrder ?? 999
+        if (ao !== bo) return ao - bo
+        return a.id - b.id
+      })
       .slice(0, 10) // 9 in lineup + 1 bench
     if (ordered.length < 10) {
-      throw new Error(`Brauche mindestens 10 Spieler mit defaultBattingOrder, habe ${ordered.length}`)
+      throw new Error(`Brauche mindestens 10 Spieler, habe ${ordered.length}`)
     }
     const playerIds = ordered.slice(0, 9).map(p => p.id)
     const benchPlayerId = ordered[9].id
