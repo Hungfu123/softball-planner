@@ -8,6 +8,8 @@ import com.softball.adapter.dto.StealingEventResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.port.out.*;
 import com.softball.shared.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class GameScoringService {
+
+    private static final Logger log = LoggerFactory.getLogger(GameScoringService.class);
 
     private final GameRepository gameRepository;
     private final PlayerRepository playerRepository;
@@ -204,6 +208,17 @@ public class GameScoringService {
         final Game game = findGame(gameId);
         final Player runner = playerRepository.findById(req.runnerId())
             .orElseThrow(() -> new ResourceNotFoundException("Player", req.runnerId()));
+
+        // Defense-in-Depth: prüfe ob Runner zu diesem Game gehört (Lineup oder eingewechselt).
+        // Keine BaseState-Validation (zu fragil) — nur Log-Warn als Diagnostik.
+        final List<LineupEntry> lineup = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId);
+        final List<Substitution> subs = substitutionRepository.findByGameId(gameId);
+        final boolean inLineup = lineup.stream().anyMatch(e -> e.getPlayer() != null && req.runnerId().equals(e.getPlayer().getId()));
+        final boolean inSubs = subs.stream().anyMatch(s -> s.getPlayerIn() != null && req.runnerId().equals(s.getPlayerIn().getId()));
+        if (!inLineup && !inSubs) {
+            log.warn("Stealing-Event mit Runner nicht im Game-Lineup: gameId={}, runnerId={}, type={}, inning={}",
+                gameId, req.runnerId(), req.type(), req.inning());
+        }
 
         final BaseRunningEvent event = new BaseRunningEvent(game, runner, req.inning(), req.type());
         final BaseRunningEvent saved = stealingRepository.save(event);
