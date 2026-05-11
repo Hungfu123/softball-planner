@@ -5,6 +5,7 @@ import com.softball.adapter.dto.RecordAtBatRequest;
 import com.softball.adapter.dto.RecordStealingEventRequest;
 import com.softball.adapter.dto.ScoreboardResponse;
 import com.softball.adapter.dto.StealingEventResponse;
+import com.softball.adapter.dto.UndoResultResponse;
 import com.softball.adapter.dto.UpdateBaseStateRequest;
 import com.softball.application.GameScoringService;
 import jakarta.validation.Valid;
@@ -45,6 +46,11 @@ public class ScoringController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetScoring(@PathVariable final Long gameId) {
         scoringService.resetScoring(gameId);
+    }
+
+    @PostMapping("/{gameId}/scoring/undo")
+    public UndoResultResponse undoLastAction(@PathVariable final Long gameId) {
+        return scoringService.undoLastAction(gameId);
     }
 
     @PutMapping("/{gameId}/atbats/last/base-state")
