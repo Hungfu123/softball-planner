@@ -622,6 +622,34 @@ class GameScoringServiceTest {
             org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never())
                 .deleteById(org.mockito.ArgumentMatchers.anyLong());
         }
+
+        @Test
+        void lastABIsNewest_deletesABAndOrphanStealings() {
+            mockGame();
+            // Stealing happened between ab1 and ab2 — it's an orphan tied to ab2.
+            // Undoing ab2 (the newest action) must also clean up that orphan stealing.
+            final Instant ab1Time = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant stealTime = Instant.parse("2026-05-11T10:00:30Z");
+            final Instant ab2Time = Instant.parse("2026-05-11T10:01:00Z");
+            final AtBat ab1 = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab1.setId(101L); ab1.setCreatedAt(ab1Time);
+            final AtBat ab2 = atBat(2, 1, anne, AtBatResult.OUT, new BaseState(hung.getId(), null, null));
+            ab2.setId(102L); ab2.setCreatedAt(ab2Time);
+            final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealTime);
+            steal.setId(201L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab2));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab1, ab2));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AT_BAT);
+            assertThat(result.removedId()).isEqualTo(102L);
+            org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
+        }
     }
 
     // --- helpers ---
