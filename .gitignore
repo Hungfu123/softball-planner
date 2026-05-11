@@ -30,3 +30,8 @@ CLAUDE.md
 
 # Git worktrees
 .worktrees/
+
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
