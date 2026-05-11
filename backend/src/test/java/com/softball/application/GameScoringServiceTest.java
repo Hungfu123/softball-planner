@@ -623,6 +623,18 @@ class GameScoringServiceTest {
         org.mockito.Mockito.verify(inningAdvanceEventRepository).deleteById(702L);
     }
 
+    @Test
+    void resetScoring_clearsSubstitutions() {
+        mockGame();
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+
+        service.resetScoring(1L);
+
+        org.mockito.Mockito.verify(substitutionRepository).deleteByGameId(1L);
+    }
+
     @org.junit.jupiter.api.Nested
     class UndoLastAction {
 
