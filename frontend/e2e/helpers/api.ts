@@ -195,15 +195,6 @@ export async function getSubstitutions(gameId: number): Promise<Substitution[]> 
   } finally { await c.dispose() }
 }
 
-/** Clear all substitutions for a game (uses PUT with empty list). */
-export async function clearSubstitutions(gameId: number): Promise<void> {
-  const c = await client()
-  try {
-    const res = await c.put(`/api/games/${gameId}/substitutions`, { data: [] })
-    if (!res.ok()) throw new Error(`clearSubstitutions failed: ${res.status()}`)
-  } finally { await c.dispose() }
-}
-
 export async function getPlayerName(playerId: number): Promise<string> {
   const c = await client()
   try {
