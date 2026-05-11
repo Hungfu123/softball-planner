@@ -10,7 +10,7 @@ async function client(): Promise<APIRequestContext> {
   })
 }
 
-type Player = { id: number; name: string; battingOrder: number | null }
+type Player = { id: number; name: string; defaultBattingOrder: number | null }
 type Season = { id: number; name: string; year: number }
 type GameDay = { id: number; date: string; label?: string | null; games: { id: number; gameNumber: number }[] }
 type LineupEntryReq = { playerId: number; position: string | null; battingOrder: number; dhBatterPlayerId: number | null }
@@ -59,8 +59,8 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
     if (!playersRes.ok()) throw new Error(`Failed to fetch players: ${playersRes.status()}`)
     const players: Player[] = await playersRes.json()
     const ordered = [...players]
-      .filter(p => p.battingOrder != null)
-      .sort((a, b) => (a.battingOrder ?? 99) - (b.battingOrder ?? 99))
+      .filter(p => p.defaultBattingOrder != null)
+      .sort((a, b) => (a.defaultBattingOrder ?? 99) - (b.defaultBattingOrder ?? 99))
       .slice(0, 9)
     if (ordered.length < 9) {
       throw new Error(`Brauche mindestens 9 Spieler mit battingOrder, habe ${ordered.length}`)
@@ -73,7 +73,7 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
       const availRes = await c.put(`/gamedays/${gameDay.id}/players`, { data: { playerIds } })
       if (!availRes.ok()) throw new Error(`Failed to set players: ${availRes.status()} ${await availRes.text()}`)
 
-      const positions = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+      const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
       const lineup: LineupEntryReq[] = ordered.map((p, i) => ({
         playerId: p.id,
         position: positions[i] ?? null,
