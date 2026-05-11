@@ -848,7 +848,7 @@ export function ScoringPage() {
             <Undo2 size={14} /> Rückgängig
           </button>
           <button
-            onClick={() => setShowCorrection(true)}
+            onClick={() => { setRecentlyScored([]); setShowCorrection(true) }}
             disabled={submitting}
             className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
           >
@@ -1831,7 +1831,7 @@ export function ScoringPage() {
             className="fixed top-32 left-1/2 -translate-x-1/2 z-[60]"
           >
             <button
-              onClick={() => setShowCorrection(true)}
+              onClick={() => { setRecentlyScored([]); setShowCorrection(true) }}
               className="bg-cream-50 border-2 border-softball-red-600 text-navy-900 px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 cursor-pointer hover:bg-white hover:shadow-2xl transition-all active:scale-95"
               title="Tippen um Runner anzupassen"
             >
