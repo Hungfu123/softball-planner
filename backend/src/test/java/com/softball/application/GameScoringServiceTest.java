@@ -605,6 +605,25 @@ class GameScoringServiceTest {
         org.mockito.Mockito.verify(gameRepository).save(game);
     }
 
+    @org.junit.jupiter.api.Nested
+    class UndoLastAction {
+
+        @Test
+        void emptyGame_returnsNone() {
+            mockGame();
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.empty());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.NONE);
+            assertThat(result.removedId()).isNull();
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never())
+                .deleteById(org.mockito.ArgumentMatchers.anyLong());
+        }
+    }
+
     // --- helpers ---
 
     private LineupEntry lineupEntry(final Player player, final int battingOrder) {

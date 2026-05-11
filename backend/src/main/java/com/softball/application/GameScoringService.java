@@ -90,6 +90,12 @@ public class GameScoringService {
             .ifPresent(last -> atBatRepository.deleteById(last.getId()));
     }
 
+    @Transactional
+    public com.softball.adapter.dto.UndoResultResponse undoLastAction(final Long gameId) {
+        findGame(gameId);
+        return com.softball.adapter.dto.UndoResultResponse.none();
+    }
+
     /** Löscht alle AtBats + Stealing-Events + Score für dieses Spiel — komplettes Reset. */
     @Transactional
     public void resetScoring(final Long gameId) {
