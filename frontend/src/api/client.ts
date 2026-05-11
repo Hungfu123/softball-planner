@@ -83,6 +83,7 @@ import type {
   BogenSheetResponse,
   RunnerAdvanceEntry,
   UndoResult,
+  InningAdvanceEventResponse,
 } from '@/types'
 
 // Players
@@ -313,6 +314,11 @@ export const undoLastAtBat = (gameId: number) =>
   request<void>(`/games/${gameId}/atbats/last`, { method: 'DELETE' })
 export const undoLastAction = (gameId: number) =>
   request<UndoResult>(`/games/${gameId}/scoring/undo`, { method: 'POST' })
+export const advanceInning = (gameId: number, opponentRuns: number) =>
+  request<InningAdvanceEventResponse>(`/games/${gameId}/scoring/next-inning`, {
+    method: 'POST',
+    body: JSON.stringify({ opponentRuns }),
+  })
 export const updateLastBaseState = (gameId: number, data: { first: number | null; second: number | null; third: number | null; runsScored?: number | null; rbi?: number | null }) =>
   request<AtBatResponse>(`/games/${gameId}/atbats/last/base-state`, { method: 'PUT', body: JSON.stringify(data) })
 export const resetScoring = (gameId: number) =>
