@@ -228,6 +228,8 @@ public class GameScoringService {
         for (final AtBat a : atBats) atBatRepository.deleteById(a.getId());
         final List<BaseRunningEvent> events = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         for (final BaseRunningEvent e : events) stealingRepository.deleteById(e.getId());
+        final java.util.List<InningAdvanceEvent> inningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+        for (final InningAdvanceEvent ev : inningEvents) inningAdvanceEventRepository.deleteById(ev.getId());
         // Score auch zurücksetzen (damit die im Scoreboard korrekt bei 0 startet)
         game.setScoreUs(0);
         game.setScoreThem(0);
