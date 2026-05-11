@@ -57,12 +57,15 @@ type DirectResult = 'STRIKEOUT' | 'WALK' | 'HIT_BY_PITCH' | 'OUT' | 'REACHED_ON_
  * UI-driven AB recording for non-hits (direct Tier-1/2 buttons).
  */
 export async function recordDirectViaUI(page: Page, result: DirectResult): Promise<void> {
+  // Accessible name includes optional subtitle span — match label as prefix/word.
+  // STRIKEOUT/WALK: exact. AUS: "AUS Grounder / Fly". HBP: "HBP Hit-by-Pitch".
+  // ERROR: "ERROR Reached on Error".
   const buttonLabels: Record<DirectResult, RegExp> = {
     STRIKEOUT: /^STRIKEOUT$/,
     WALK: /^WALK$/,
-    HIT_BY_PITCH: /^HBP$/,
-    OUT: /^AUS$/,
-    REACHED_ON_ERROR: /^ERROR$/,
+    HIT_BY_PITCH: /^HBP\b/,
+    OUT: /^AUS\b/,
+    REACHED_ON_ERROR: /^ERROR\b/,
   }
   await page.getByRole('button', { name: buttonLabels[result] }).click()
   await page.waitForTimeout(400)
