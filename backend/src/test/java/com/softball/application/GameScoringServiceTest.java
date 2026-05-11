@@ -29,6 +29,7 @@ class GameScoringServiceTest {
     @Mock private AtBatRepository atBatRepository;
     @Mock private BaseRunningEventRepository stealingRepository;
     @Mock private SubstitutionRepository substitutionRepository;
+    @Mock private com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
 
     @InjectMocks
     private GameScoringService service;
@@ -605,6 +606,23 @@ class GameScoringServiceTest {
         org.mockito.Mockito.verify(gameRepository).save(game);
     }
 
+    @Test
+    void resetScoring_clearsInningAdvanceEvents() {
+        mockGame();
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        final com.softball.domain.model.InningAdvanceEvent ev1 = new com.softball.domain.model.InningAdvanceEvent(game, 2, 3, "test");
+        ev1.setId(701L);
+        final com.softball.domain.model.InningAdvanceEvent ev2 = new com.softball.domain.model.InningAdvanceEvent(game, 3, 2, "test");
+        ev2.setId(702L);
+        when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(ev1, ev2));
+
+        service.resetScoring(1L);
+
+        org.mockito.Mockito.verify(inningAdvanceEventRepository).deleteById(701L);
+        org.mockito.Mockito.verify(inningAdvanceEventRepository).deleteById(702L);
+    }
+
     @org.junit.jupiter.api.Nested
     class UndoLastAction {
 
@@ -717,6 +735,79 @@ class GameScoringServiceTest {
         }
 
         @Test
+        void inningAdvanceIsNewest_revertsScoreAndDeletesEvent() {
+            mockGame();
+            game.setScoreThem(5);
+            final Instant abTime = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant eventTime = Instant.parse("2026-05-11T10:05:00Z");
+            final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setId(101L); ab.setCreatedAt(abTime);
+            final com.softball.domain.model.InningAdvanceEvent ev = new com.softball.domain.model.InningAdvanceEvent(game, 2, 3, "test");
+            ev.setId(601L);
+            ev.setCreatedAt(eventTime);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(ev));
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.INNING_ADVANCE);
+            assertThat(result.removedId()).isEqualTo(601L);
+            org.mockito.Mockito.verify(inningAdvanceEventRepository).deleteById(601L);
+            assertThat(game.getScoreThem()).isEqualTo(2);
+            org.mockito.Mockito.verify(gameRepository).save(game);
+        }
+
+        @Test
+        void abNewerThanInningAdvance_undosAB() {
+            mockGame();
+            game.setScoreThem(3);
+            final Instant eventTime = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant abTime = Instant.parse("2026-05-11T10:05:00Z");
+            final AtBat ab = atBat(1, 2, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setId(102L); ab.setCreatedAt(abTime);
+            final com.softball.domain.model.InningAdvanceEvent ev = new com.softball.domain.model.InningAdvanceEvent(game, 2, 3, "test");
+            ev.setId(602L);
+            ev.setCreatedAt(eventTime);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(ev));
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AT_BAT);
+            org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
+            org.mockito.Mockito.verify(inningAdvanceEventRepository, org.mockito.Mockito.never())
+                .deleteById(org.mockito.ArgumentMatchers.anyLong());
+            assertThat(game.getScoreThem()).isEqualTo(3);
+        }
+
+        @Test
+        void inningAdvanceUndo_clampsScoreThemAtZero() {
+            mockGame();
+            game.setScoreThem(1);
+            final Instant eventTime = Instant.parse("2026-05-11T10:00:00Z");
+            final com.softball.domain.model.InningAdvanceEvent ev = new com.softball.domain.model.InningAdvanceEvent(game, 2, 3, "test");
+            ev.setId(603L);
+            ev.setCreatedAt(eventTime);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.empty());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(ev));
+
+            service.undoLastAction(1L);
+
+            assertThat(game.getScoreThem()).isZero();
+        }
+
+        @Test
         void undoAB_deletesStealingsAfterCutoff_keepsStealingsBefore() {
             mockGame();
             final Instant stealEarlyTime = Instant.parse("2026-05-11T09:59:00Z");
@@ -744,6 +835,61 @@ class GameScoringServiceTest {
             org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
             org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
             org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(200L);
+        }
+    }
+
+    @org.junit.jupiter.api.Nested
+    class AdvanceInning {
+
+        @Test
+        void advanceInning_createsEventAndUpdatesScoreThem() {
+            mockGame();
+            game.setScoreThem(0);
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+            final com.softball.domain.model.InningAdvanceEvent saved = new com.softball.domain.model.InningAdvanceEvent(game, 2, 3, "test");
+            saved.setId(501L);
+            saved.setCreatedAt(Instant.parse("2026-05-11T10:00:00Z"));
+            when(inningAdvanceEventRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(saved);
+
+            final com.softball.adapter.dto.InningAdvanceEventResponse res = service.advanceInning(1L, 3);
+
+            assertThat(res.toInning()).isEqualTo(2);
+            assertThat(res.opponentRuns()).isEqualTo(3);
+            assertThat(game.getScoreThem()).isEqualTo(3);
+            org.mockito.Mockito.verify(gameRepository).save(game);
+        }
+
+        @Test
+        void advanceInning_zeroRuns_doesNotChangeScoreThem() {
+            mockGame();
+            game.setScoreThem(5);
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+            final com.softball.domain.model.InningAdvanceEvent saved = new com.softball.domain.model.InningAdvanceEvent(game, 2, 0, "test");
+            saved.setId(502L);
+            saved.setCreatedAt(Instant.parse("2026-05-11T10:00:00Z"));
+            when(inningAdvanceEventRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(saved);
+
+            service.advanceInning(1L, 0);
+
+            assertThat(game.getScoreThem()).isEqualTo(5);
+        }
+
+        @Test
+        void scoreboard_currentInning_reflectsLastEvent() {
+            mockGame();
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+            final com.softball.domain.model.InningAdvanceEvent ev = new com.softball.domain.model.InningAdvanceEvent(game, 3, 0, "test");
+            ev.setId(503L);
+            ev.setCreatedAt(Instant.parse("2026-05-11T10:00:00Z"));
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(ev));
+
+            final com.softball.adapter.dto.ScoreboardResponse sb = service.getScoreboard(1L);
+
+            assertThat(sb.currentInning()).isEqualTo(3);
         }
     }
 

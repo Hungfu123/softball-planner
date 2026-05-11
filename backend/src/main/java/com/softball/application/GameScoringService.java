@@ -33,19 +33,22 @@ public class GameScoringService {
     private final AtBatRepository atBatRepository;
     private final BaseRunningEventRepository stealingRepository;
     private final SubstitutionRepository substitutionRepository;
+    private final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
 
     public GameScoringService(final GameRepository gameRepository,
                                final PlayerRepository playerRepository,
                                final LineupEntryRepository lineupEntryRepository,
                                final AtBatRepository atBatRepository,
                                final BaseRunningEventRepository stealingRepository,
-                               final SubstitutionRepository substitutionRepository) {
+                               final SubstitutionRepository substitutionRepository,
+                               final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.atBatRepository = atBatRepository;
         this.stealingRepository = stealingRepository;
         this.substitutionRepository = substitutionRepository;
+        this.inningAdvanceEventRepository = inningAdvanceEventRepository;
     }
 
     @Transactional(readOnly = true)
@@ -101,6 +104,7 @@ public class GameScoringService {
         final java.util.Optional<AtBat> lastABOpt = atBatRepository.findLastByGameId(gameId);
         final java.util.List<BaseRunningEvent> allStealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         final java.util.List<Substitution> allSubs = substitutionRepository.findByGameId(gameId);
+        final java.util.List<InningAdvanceEvent> allInningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
 
         final java.time.Instant newestAB = lastABOpt.map(AtBat::getCreatedAt).orElse(null);
         final java.time.Instant newestStealing = allStealings.stream()
@@ -113,14 +117,20 @@ public class GameScoringService {
             .filter(java.util.Objects::nonNull)
             .max(java.time.Instant::compareTo)
             .orElse(null);
+        final java.time.Instant newestEvent = allInningEvents.stream()
+            .map(InningAdvanceEvent::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(null);
 
-        if (newestAB == null && newestStealing == null && newestSub == null) {
+        if (newestAB == null && newestStealing == null && newestSub == null && newestEvent == null) {
             return com.softball.adapter.dto.UndoResultResponse.none();
         }
 
         final boolean abIsNewest = newestAB != null
             && (newestStealing == null || !newestStealing.isAfter(newestAB))
-            && (newestSub == null || !newestSub.isAfter(newestAB));
+            && (newestSub == null || !newestSub.isAfter(newestAB))
+            && (newestEvent == null || !newestEvent.isAfter(newestAB));
 
         if (abIsNewest) {
             final AtBat lastAB = lastABOpt.get();
@@ -141,7 +151,8 @@ public class GameScoringService {
         }
 
         final boolean stealingIsNewest = newestStealing != null
-            && (newestSub == null || !newestSub.isAfter(newestStealing));
+            && (newestSub == null || !newestSub.isAfter(newestStealing))
+            && (newestEvent == null || !newestEvent.isAfter(newestStealing));
 
         if (stealingIsNewest) {
             final BaseRunningEvent latest = allStealings.stream()
@@ -152,7 +163,10 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.stealing(latest.getId());
         }
 
-        if (newestSub != null) {
+        final boolean subIsNewest = newestSub != null
+            && (newestEvent == null || !newestEvent.isAfter(newestSub));
+
+        if (subIsNewest) {
             final Substitution latest = allSubs.stream()
                 .filter(s -> s.getCreatedAt() != null)
                 .max(java.util.Comparator.comparing(Substitution::getCreatedAt))
@@ -161,7 +175,49 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.substitution(latest.getId());
         }
 
+        if (newestEvent != null) {
+            final InningAdvanceEvent latest = allInningEvents.stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(InningAdvanceEvent::getCreatedAt))
+                .orElseThrow();
+            final int runs = latest.getOpponentRuns() != null ? latest.getOpponentRuns() : 0;
+            if (runs > 0) {
+                final Game gameForRevert = findGame(gameId);
+                final int newScore = Math.max(0, (gameForRevert.getScoreThem() != null ? gameForRevert.getScoreThem() : 0) - runs);
+                gameForRevert.setScoreThem(newScore);
+                gameRepository.save(gameForRevert);
+            }
+            inningAdvanceEventRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.inningAdvance(latest.getId());
+        }
+
         return com.softball.adapter.dto.UndoResultResponse.none();
+    }
+
+    @Transactional
+    public com.softball.adapter.dto.InningAdvanceEventResponse advanceInning(final Long gameId, final int opponentRuns) {
+        if (opponentRuns < 0) {
+            throw new com.softball.shared.exception.BusinessValidationException("opponentRuns darf nicht negativ sein");
+        }
+        final Game game = findGame(gameId);
+
+        // Aktuelles Inning aus letztem AB + letztem Event (max).
+        final int lastABInning = atBatRepository.findByGameIdOrderBySequenceAsc(gameId).stream()
+            .mapToInt(a -> a.getInning() != null ? a.getInning() : 1)
+            .max().orElse(1);
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
+        final int toInning = currentInning + 1;
+
+        final InningAdvanceEvent event = new InningAdvanceEvent(game, toInning, opponentRuns, currentUser());
+        final InningAdvanceEvent saved = inningAdvanceEventRepository.save(event);
+
+        game.setScoreThem((game.getScoreThem() != null ? game.getScoreThem() : 0) + opponentRuns);
+        gameRepository.save(game);
+
+        return com.softball.adapter.dto.InningAdvanceEventResponse.from(saved);
     }
 
     /** Löscht alle AtBats + Stealing-Events + Score für dieses Spiel — komplettes Reset. */
@@ -172,6 +228,8 @@ public class GameScoringService {
         for (final AtBat a : atBats) atBatRepository.deleteById(a.getId());
         final List<BaseRunningEvent> events = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         for (final BaseRunningEvent e : events) stealingRepository.deleteById(e.getId());
+        final java.util.List<InningAdvanceEvent> inningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+        for (final InningAdvanceEvent ev : inningEvents) inningAdvanceEventRepository.deleteById(ev.getId());
         // Score auch zurücksetzen (damit die im Scoreboard korrekt bei 0 startet)
         game.setScoreUs(0);
         game.setScoreThem(0);
@@ -242,7 +300,11 @@ public class GameScoringService {
         final Integer scoreThem = game.getScoreThem();
 
         final AtBat last = atBats.isEmpty() ? null : atBats.get(atBats.size() - 1);
-        final int currentInning = last != null ? last.getInning() : 1;
+        final int lastABInning = last != null && last.getInning() != null ? last.getInning() : 1;
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
 
         final int atBatOuts = (int) atBats.stream()
             .filter(a -> a.getInning() != null && a.getInning() == currentInning)

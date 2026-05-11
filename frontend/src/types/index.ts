@@ -265,7 +265,14 @@ export interface GeneratePlanRequest {
 }
 
 // Live-Scoring
-export type UndoResultType = 'AT_BAT' | 'STEALING' | 'SUBSTITUTION' | 'NONE'
+export type UndoResultType = 'AT_BAT' | 'STEALING' | 'SUBSTITUTION' | 'INNING_ADVANCE' | 'NONE'
+
+export interface InningAdvanceEventResponse {
+  id: number
+  toInning: number
+  opponentRuns: number
+  createdAt: string
+}
 
 export interface UndoResult {
   type: UndoResultType

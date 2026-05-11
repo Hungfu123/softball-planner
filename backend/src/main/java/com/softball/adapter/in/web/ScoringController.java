@@ -1,6 +1,8 @@
 package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.AtBatResponse;
+import com.softball.adapter.dto.InningAdvanceEventResponse;
+import com.softball.adapter.dto.NextInningRequest;
 import com.softball.adapter.dto.RecordAtBatRequest;
 import com.softball.adapter.dto.RecordStealingEventRequest;
 import com.softball.adapter.dto.ScoreboardResponse;
@@ -51,6 +53,13 @@ public class ScoringController {
     @PostMapping("/{gameId}/scoring/undo")
     public UndoResultResponse undoLastAction(@PathVariable final Long gameId) {
         return scoringService.undoLastAction(gameId);
+    }
+
+    @PostMapping("/{gameId}/scoring/next-inning")
+    @ResponseStatus(HttpStatus.CREATED)
+    public InningAdvanceEventResponse advanceInning(@PathVariable final Long gameId,
+                                                     @Valid @RequestBody final NextInningRequest req) {
+        return scoringService.advanceInning(gameId, req.opponentRuns());
     }
 
     @PutMapping("/{gameId}/atbats/last/base-state")
