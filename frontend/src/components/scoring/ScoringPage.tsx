@@ -381,6 +381,7 @@ export function ScoringPage() {
   }
 
   const handleOverthrow = async () => {
+    if (submitting) return
     if (!currentGame || atBats.length === 0) return
     const lastAtBat = atBats[atBats.length - 1]
     // Runner +1 berechnen
