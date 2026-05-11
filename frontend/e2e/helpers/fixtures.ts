@@ -103,15 +103,23 @@ function escapeRegex(s: string): string {
 
 /**
  * Tap a runner on the diamond → opens Stealing-Sheet → click variant.
+ *
+ * The runner is a `<motion.g>` whose `<text>` child has `pointer-events-none`.
+ * We locate the runner's `<text>` then click its parent `<g>` with `force: true`
+ * because framer-motion keyframe animation keeps the element "unstable".
  */
 export async function recordStealingViaUI(page: Page, runnerPlayerId: number, type: 'STOLEN_BASE' | 'CAUGHT_STEALING'): Promise<void> {
   const name = await getPlayerName(runnerPlayerId)
   const displayName = name.length > 7 ? name.slice(0, 6) + '…' : name
-  await page.locator('svg').getByText(displayName, { exact: true }).first().click()
+  // Wait for any in-flight animation to roughly settle.
+  await page.waitForTimeout(800)
+  // The runner <text> sits inside a <motion.g>; the <g> is the click target.
+  const runnerGroup = page.locator('svg g').filter({ hasText: displayName }).first()
+  await runnerGroup.click({ force: true })
   await page.waitForTimeout(300)
   const label = type === 'STOLEN_BASE' ? /Stolen Base/i : /Caught Stealing/i
   await page.getByRole('button', { name: label }).click()
-  await page.waitForTimeout(300)
+  await page.waitForTimeout(500)
 }
 
 /**
