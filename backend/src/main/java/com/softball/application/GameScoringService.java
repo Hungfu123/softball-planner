@@ -136,6 +136,18 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.atBat(lastAB.getId());
         }
 
+        final boolean stealingIsNewest = newestStealing != null
+            && (newestSub == null || !newestSub.isAfter(newestStealing));
+
+        if (stealingIsNewest) {
+            final BaseRunningEvent latest = allStealings.stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(BaseRunningEvent::getCreatedAt))
+                .orElseThrow();
+            stealingRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.stealing(latest.getId());
+        }
+
         return com.softball.adapter.dto.UndoResultResponse.none();
     }
 

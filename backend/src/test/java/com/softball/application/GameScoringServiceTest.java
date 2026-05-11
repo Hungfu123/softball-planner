@@ -624,6 +624,48 @@ class GameScoringServiceTest {
         }
 
         @Test
+        void stealingIsNewest_deletesOnlyStealing() {
+            mockGame();
+            final Instant abTime = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant stealTime = Instant.parse("2026-05-11T10:05:00Z");
+            final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setId(101L); ab.setCreatedAt(abTime);
+            final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealTime);
+            steal.setId(201L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.STEALING);
+            assertThat(result.removedId()).isEqualTo(201L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never())
+                .deleteById(org.mockito.ArgumentMatchers.anyLong());
+        }
+
+        @Test
+        void singleStealingNoAB_deletesStealing() {
+            mockGame();
+            final Instant stealTime = Instant.parse("2026-05-11T10:00:00Z");
+            final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealTime);
+            steal.setId(202L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.empty());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.STEALING);
+            assertThat(result.removedId()).isEqualTo(202L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(202L);
+        }
+
+        @Test
         void lastABIsNewest_deletesABAndOrphanStealings() {
             mockGame();
             // Stealing happened between ab1 and ab2 — it's an orphan tied to ab2.
