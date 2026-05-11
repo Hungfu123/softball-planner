@@ -1,7 +1,7 @@
 import { request, type APIRequestContext } from '@playwright/test'
 import { basicAuthHeader } from './auth'
 
-const BASE = 'http://localhost:8080/api'
+const BASE = 'http://localhost:8080'
 
 async function client(): Promise<APIRequestContext> {
   return request.newContext({
@@ -19,12 +19,12 @@ const TEST_GAMEDAY_LABEL = 'E2E-Test-Scoring'
 const TEST_DATE = '2099-01-01'
 
 async function ensureSeason(c: APIRequestContext): Promise<number> {
-  const seasonsRes = await c.get('/seasons')
+  const seasonsRes = await c.get('/api/seasons')
   if (!seasonsRes.ok()) throw new Error(`Failed to fetch seasons: ${seasonsRes.status()}`)
   const seasons: Season[] = await seasonsRes.json()
   const existing = seasons.find(s => s.year === 2099)
   if (existing) return existing.id
-  const create = await c.post('/seasons', { data: { name: 'E2E Test Season', year: 2099 } })
+  const create = await c.post('/api/seasons', { data: { name: 'E2E Test Season', year: 2099 } })
   if (!create.ok()) throw new Error(`Failed to create season: ${create.status()}`)
   const created: Season = await create.json()
   return created.id
@@ -38,13 +38,13 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
   const c = await client()
   try {
     const seasonId = await ensureSeason(c)
-    const gdRes = await c.get(`/seasons/${seasonId}/gamedays`)
+    const gdRes = await c.get(`/api/seasons/${seasonId}/gamedays`)
     if (!gdRes.ok()) throw new Error(`Failed to fetch gamedays: ${gdRes.status()}`)
     const gameDays: GameDay[] = await gdRes.json()
     let gameDay = gameDays.find(gd => gd.label === TEST_GAMEDAY_LABEL)
     let createdNew = false
     if (!gameDay) {
-      const createGd = await c.post(`/seasons/${seasonId}/gamedays`, {
+      const createGd = await c.post(`/api/seasons/${seasonId}/gamedays`, {
         data: { date: TEST_DATE, label: TEST_GAMEDAY_LABEL, numberOfGames: 1 },
       })
       if (!createGd.ok()) throw new Error(`Failed to create gameday: ${createGd.status()} ${await createGd.text()}`)
@@ -55,7 +55,7 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
       throw new Error('Test GameDay missing games')
     }
 
-    const playersRes = await c.get('/players')
+    const playersRes = await c.get('/api/players')
     if (!playersRes.ok()) throw new Error(`Failed to fetch players: ${playersRes.status()}`)
     const players: Player[] = await playersRes.json()
     const ordered = [...players]
@@ -70,7 +70,7 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
     const gameId = gameDay.games[0].id
 
     if (createdNew) {
-      const availRes = await c.put(`/gamedays/${gameDay.id}/players`, { data: { playerIds } })
+      const availRes = await c.put(`/api/gamedays/${gameDay.id}/players`, { data: { playerIds } })
       if (!availRes.ok()) throw new Error(`Failed to set players: ${availRes.status()} ${await availRes.text()}`)
 
       const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
@@ -80,7 +80,7 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
         battingOrder: i + 1,
         dhBatterPlayerId: null,
       }))
-      const lineupRes = await c.put(`/games/${gameId}/lineup`, { data: lineup })
+      const lineupRes = await c.put(`/api/games/${gameId}/lineup`, { data: lineup })
       if (!lineupRes.ok()) throw new Error(`Failed to set lineup: ${lineupRes.status()} ${await lineupRes.text()}`)
     }
 
@@ -94,13 +94,13 @@ export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: num
 export async function teardownTestGameDay(gameDayId: number): Promise<void> {
   const c = await client()
   try {
-    const gd = await c.get(`/gamedays/${gameDayId}`)
+    const gd = await c.get(`/api/gamedays/${gameDayId}`)
     if (!gd.ok()) return
     const data: GameDay = await gd.json()
     if (data.label !== TEST_GAMEDAY_LABEL) {
       throw new Error(`Refuse to delete non-test gameday ${gameDayId} with label ${data.label}`)
     }
-    await c.delete(`/gamedays/${gameDayId}`)
+    await c.delete(`/api/gamedays/${gameDayId}`)
   } finally {
     await c.dispose()
   }
@@ -110,7 +110,7 @@ export async function teardownTestGameDay(gameDayId: number): Promise<void> {
 export async function resetScoring(gameId: number): Promise<void> {
   const c = await client()
   try {
-    const res = await c.delete(`/games/${gameId}/scoring`)
+    const res = await c.delete(`/api/games/${gameId}/scoring`)
     if (!res.ok()) throw new Error(`Failed to reset: ${res.status()}`)
   } finally {
     await c.dispose()
@@ -121,7 +121,7 @@ export async function resetScoring(gameId: number): Promise<void> {
 export async function setBattingSide(gameId: number, side: 'top' | 'bottom' | null): Promise<void> {
   const c = await client()
   try {
-    const res = await c.put(`/games/${gameId}/batting-side`, { data: { battingSide: side } })
+    const res = await c.put(`/api/games/${gameId}/batting-side`, { data: { battingSide: side } })
     if (!res.ok()) throw new Error(`Failed to set side: ${res.status()}`)
   } finally {
     await c.dispose()
@@ -135,7 +135,7 @@ type AtBatResult = 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN' | 'WALK' | 'HIT_BY
 export async function seedAtBat(gameId: number, batterId: number, result: AtBatResult, inning: number, baseStateAfter: BaseStateDto, runsScored = 0, rbi = 0): Promise<void> {
   const c = await client()
   try {
-    const res = await c.post(`/games/${gameId}/atbats`, {
+    const res = await c.post(`/api/games/${gameId}/atbats`, {
       data: { batterId, result, inning, baseStateAfter, runsScored, rbi },
     })
     if (!res.ok()) throw new Error(`Failed to seed AB: ${res.status()}`)
@@ -161,7 +161,7 @@ type ScoreboardResponse = {
 export async function getScoreboard(gameId: number): Promise<ScoreboardResponse> {
   const c = await client()
   try {
-    const res = await c.get(`/games/${gameId}/scoreboard`)
+    const res = await c.get(`/api/games/${gameId}/scoreboard`)
     if (!res.ok()) throw new Error(`Failed to get scoreboard: ${res.status()}`)
     return await res.json()
   } finally {
