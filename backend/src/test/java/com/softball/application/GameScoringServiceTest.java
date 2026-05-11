@@ -29,6 +29,7 @@ class GameScoringServiceTest {
     @Mock private AtBatRepository atBatRepository;
     @Mock private BaseRunningEventRepository stealingRepository;
     @Mock private SubstitutionRepository substitutionRepository;
+    @Mock private com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
 
     @InjectMocks
     private GameScoringService service;
@@ -744,6 +745,61 @@ class GameScoringServiceTest {
             org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
             org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
             org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(200L);
+        }
+    }
+
+    @org.junit.jupiter.api.Nested
+    class AdvanceInning {
+
+        @Test
+        void advanceInning_createsEventAndUpdatesScoreThem() {
+            mockGame();
+            game.setScoreThem(0);
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+            final com.softball.domain.model.InningAdvanceEvent saved = new com.softball.domain.model.InningAdvanceEvent(game, 2, 3, "test");
+            saved.setId(501L);
+            saved.setCreatedAt(Instant.parse("2026-05-11T10:00:00Z"));
+            when(inningAdvanceEventRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(saved);
+
+            final com.softball.adapter.dto.InningAdvanceEventResponse res = service.advanceInning(1L, 3);
+
+            assertThat(res.toInning()).isEqualTo(2);
+            assertThat(res.opponentRuns()).isEqualTo(3);
+            assertThat(game.getScoreThem()).isEqualTo(3);
+            org.mockito.Mockito.verify(gameRepository).save(game);
+        }
+
+        @Test
+        void advanceInning_zeroRuns_doesNotChangeScoreThem() {
+            mockGame();
+            game.setScoreThem(5);
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+            final com.softball.domain.model.InningAdvanceEvent saved = new com.softball.domain.model.InningAdvanceEvent(game, 2, 0, "test");
+            saved.setId(502L);
+            saved.setCreatedAt(Instant.parse("2026-05-11T10:00:00Z"));
+            when(inningAdvanceEventRepository.save(org.mockito.ArgumentMatchers.any())).thenReturn(saved);
+
+            service.advanceInning(1L, 0);
+
+            assertThat(game.getScoreThem()).isEqualTo(5);
+        }
+
+        @Test
+        void scoreboard_currentInning_reflectsLastEvent() {
+            mockGame();
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+            final com.softball.domain.model.InningAdvanceEvent ev = new com.softball.domain.model.InningAdvanceEvent(game, 3, 0, "test");
+            ev.setId(503L);
+            ev.setCreatedAt(Instant.parse("2026-05-11T10:00:00Z"));
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(ev));
+
+            final com.softball.adapter.dto.ScoreboardResponse sb = service.getScoreboard(1L);
+
+            assertThat(sb.currentInning()).isEqualTo(3);
         }
     }
 

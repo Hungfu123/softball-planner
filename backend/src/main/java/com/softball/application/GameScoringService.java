@@ -33,19 +33,22 @@ public class GameScoringService {
     private final AtBatRepository atBatRepository;
     private final BaseRunningEventRepository stealingRepository;
     private final SubstitutionRepository substitutionRepository;
+    private final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
 
     public GameScoringService(final GameRepository gameRepository,
                                final PlayerRepository playerRepository,
                                final LineupEntryRepository lineupEntryRepository,
                                final AtBatRepository atBatRepository,
                                final BaseRunningEventRepository stealingRepository,
-                               final SubstitutionRepository substitutionRepository) {
+                               final SubstitutionRepository substitutionRepository,
+                               final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.atBatRepository = atBatRepository;
         this.stealingRepository = stealingRepository;
         this.substitutionRepository = substitutionRepository;
+        this.inningAdvanceEventRepository = inningAdvanceEventRepository;
     }
 
     @Transactional(readOnly = true)
@@ -164,6 +167,32 @@ public class GameScoringService {
         return com.softball.adapter.dto.UndoResultResponse.none();
     }
 
+    @Transactional
+    public com.softball.adapter.dto.InningAdvanceEventResponse advanceInning(final Long gameId, final int opponentRuns) {
+        if (opponentRuns < 0) {
+            throw new com.softball.shared.exception.BusinessValidationException("opponentRuns darf nicht negativ sein");
+        }
+        final Game game = findGame(gameId);
+
+        // Aktuelles Inning aus letztem AB + letztem Event (max).
+        final int lastABInning = atBatRepository.findByGameIdOrderBySequenceAsc(gameId).stream()
+            .mapToInt(a -> a.getInning() != null ? a.getInning() : 1)
+            .max().orElse(1);
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
+        final int toInning = currentInning + 1;
+
+        final InningAdvanceEvent event = new InningAdvanceEvent(game, toInning, opponentRuns, currentUser());
+        final InningAdvanceEvent saved = inningAdvanceEventRepository.save(event);
+
+        game.setScoreThem((game.getScoreThem() != null ? game.getScoreThem() : 0) + opponentRuns);
+        gameRepository.save(game);
+
+        return com.softball.adapter.dto.InningAdvanceEventResponse.from(saved);
+    }
+
     /** Löscht alle AtBats + Stealing-Events + Score für dieses Spiel — komplettes Reset. */
     @Transactional
     public void resetScoring(final Long gameId) {
@@ -242,7 +271,11 @@ public class GameScoringService {
         final Integer scoreThem = game.getScoreThem();
 
         final AtBat last = atBats.isEmpty() ? null : atBats.get(atBats.size() - 1);
-        final int currentInning = last != null ? last.getInning() : 1;
+        final int lastABInning = last != null && last.getInning() != null ? last.getInning() : 1;
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
 
         final int atBatOuts = (int) atBats.stream()
             .filter(a -> a.getInning() != null && a.getInning() == currentInning)
