@@ -50,6 +50,12 @@ public class SubstitutionRepositoryAdapter implements SubstitutionRepository {
     }
 
     @Override
+    @Transactional
+    public void deleteById(final Long id) {
+        repo.deleteById(id);
+    }
+
+    @Override
     public Substitution save(final Substitution substitution) {
         final GameEntity gameEntity = gameRepo.getReferenceById(substitution.getGame().getId());
         final PlayerEntity playerOutEntity = playerRepo.getReferenceById(substitution.getPlayerOut().getId());
