@@ -666,6 +666,29 @@ class GameScoringServiceTest {
         }
 
         @Test
+        void subIsNewest_deletesOnlySub() {
+            mockGame();
+            final Instant abTime = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant subTime = Instant.parse("2026-05-11T10:05:00Z");
+            final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setId(101L); ab.setCreatedAt(abTime);
+            final Substitution sub = new Substitution(game, hung, anne, 1);
+            sub.setId(301L);
+            sub.setCreatedAt(subTime);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of(sub));
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.SUBSTITUTION);
+            assertThat(result.removedId()).isEqualTo(301L);
+            org.mockito.Mockito.verify(substitutionRepository).deleteById(301L);
+        }
+
+        @Test
         void lastABIsNewest_deletesABAndOrphanStealings() {
             mockGame();
             // Stealing happened between ab1 and ab2 — it's an orphan tied to ab2.

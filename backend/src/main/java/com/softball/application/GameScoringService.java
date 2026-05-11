@@ -148,6 +148,15 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.stealing(latest.getId());
         }
 
+        if (newestSub != null) {
+            final Substitution latest = allSubs.stream()
+                .filter(s -> s.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(Substitution::getCreatedAt))
+                .orElseThrow();
+            substitutionRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.substitution(latest.getId());
+        }
+
         return com.softball.adapter.dto.UndoResultResponse.none();
     }
 
