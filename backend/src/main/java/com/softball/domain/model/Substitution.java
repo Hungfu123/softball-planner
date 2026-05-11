@@ -1,11 +1,14 @@
 package com.softball.domain.model;
 
+import java.time.Instant;
+
 public class Substitution {
     private Long id;
     private Game game;
     private Player playerOut;
     private Player playerIn;
     private Integer inning;
+    private Instant createdAt;
 
     public Substitution() {}
 
@@ -26,4 +29,6 @@ public class Substitution {
     public void setPlayerIn(final Player playerIn) { this.playerIn = playerIn; }
     public Integer getInning() { return inning; }
     public void setInning(final Integer inning) { this.inning = inning; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(final Instant createdAt) { this.createdAt = createdAt; }
 }
