@@ -40,6 +40,7 @@ export function ScoringPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
+  const [undoAnimSkip, setUndoAnimSkip] = useState(false)
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -327,6 +328,7 @@ export function ScoringPage() {
   const handleUndo = async () => {
     if (atBats.length === 0 && stealingEvents.length === 0 && substitutions.length === 0) return
     setSubmitting(true)
+    setUndoAnimSkip(true)
     try {
       const result = await undo()
       const message =
@@ -339,6 +341,7 @@ export function ScoringPage() {
       toast.show((e as Error).message, 'error')
     } finally {
       setSubmitting(false)
+      setTimeout(() => setUndoAnimSkip(false), 500)
     }
   }
 
@@ -743,6 +746,7 @@ export function ScoringPage() {
             runners={displayRunners}
             onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
             homerunRunner={homerunRunner}
+            skipExitToHome={undoAnimSkip}
           />
           {displayRunners.length > 0 && !halfInningOver && (
             <p className="text-[11px] text-gray-500 text-center mt-1">

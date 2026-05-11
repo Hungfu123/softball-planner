@@ -8,6 +8,9 @@ interface Props {
   onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void
   /** Wenn gesetzt: HR-Runner läuft über alle Bases Home → 1B → 2B → 3B → Home und fadet aus. */
   homerunRunner?: { playerId: number; playerName: string; battingOrder: number | null } | null
+  /** Wenn true: Runner-Exit fadet in-place statt durch Bases zu Home zu laufen.
+      Für Undo: Runner soll nicht so wirken als hätte er gescort. */
+  skipExitToHome?: boolean
 }
 
 // Positions im 220x220 viewBox
@@ -23,7 +26,7 @@ function truncate(name: string, max = 7): string {
   return name.length > max ? name.slice(0, max - 1) + '…' : name
 }
 
-export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner }: Props) {
+export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, skipExitToHome }: Props) {
   return (
     <svg viewBox="0 0 220 220" className="w-full max-w-[420px] mx-auto">
       {/* Base-Paths */}
@@ -67,7 +70,7 @@ export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner }: 
           Danach: simple Position-Animation (z.B. Advance von 1B → 2B direkt). */}
       <AnimatePresence>
         {runners.map(r => (
-          <Runner key={r.playerId} r={r} onRunnerTap={onRunnerTap} />
+          <Runner key={r.playerId} r={r} onRunnerTap={onRunnerTap} skipExitToHome={skipExitToHome} />
         ))}
       </AnimatePresence>
 
@@ -123,7 +126,7 @@ function posForIndex(i: number) {
  * lastBase-State merkt wo wir waren. Nach onAnimationComplete wird
  * er auf die aktuelle Base aktualisiert.
  */
-function Runner({ r, onRunnerTap }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void }) {
+function Runner({ r, onRunnerTap, skipExitToHome }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void; skipExitToHome?: boolean }) {
   // lastBase = 0 auf Initial-Mount (Runner kommt von Home)
   const [lastBase, setLastBase] = useState<number>(0)
 
@@ -163,6 +166,7 @@ function Runner({ r, onRunnerTap }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 
 
   const distance = Math.abs(r.base - lastBase)
   const hasKeyframes = waypoints.xs.length > 1
+  const currentPos = posForIndex(r.base)
 
   return (
     <motion.g
@@ -173,7 +177,14 @@ function Runner({ r, onRunnerTap }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 
         x: hasKeyframes ? waypoints.xs : waypoints.xs[0],
         y: hasKeyframes ? waypoints.ys : waypoints.ys[0],
       }}
-      exit={{
+      exit={skipExitToHome ? {
+        // Undo: in-place fade (Runner geht NICHT nach Home)
+        opacity: 0,
+        scale: 0.4,
+        x: currentPos.cx,
+        y: currentPos.cy,
+        transition: { duration: 0.4, ease: 'easeOut' },
+      } : {
         opacity: [1, 1, 0],
         scale: [1, 1, 0.6],
         x: exitWaypoints.xs,
