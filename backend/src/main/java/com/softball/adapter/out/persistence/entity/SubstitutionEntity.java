@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "substitutions", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"game_id", "player_out_id", "inning"})
@@ -32,6 +34,9 @@ public class SubstitutionEntity {
     @Column(nullable = false)
     private Integer inning;
 
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
     public SubstitutionEntity() {}
 
     public SubstitutionEntity(final GameEntity game, final PlayerEntity playerOut, final PlayerEntity playerIn, final Integer inning) {
@@ -51,4 +56,11 @@ public class SubstitutionEntity {
     public void setPlayerIn(final PlayerEntity playerIn) { this.playerIn = playerIn; }
     public Integer getInning() { return inning; }
     public void setInning(final Integer inning) { this.inning = inning; }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(final Instant createdAt) { this.createdAt = createdAt; }
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) createdAt = Instant.now();
+    }
 }

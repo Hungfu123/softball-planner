@@ -605,6 +605,148 @@ class GameScoringServiceTest {
         org.mockito.Mockito.verify(gameRepository).save(game);
     }
 
+    @org.junit.jupiter.api.Nested
+    class UndoLastAction {
+
+        @Test
+        void emptyGame_returnsNone() {
+            mockGame();
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.empty());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.NONE);
+            assertThat(result.removedId()).isNull();
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never())
+                .deleteById(org.mockito.ArgumentMatchers.anyLong());
+        }
+
+        @Test
+        void stealingIsNewest_deletesOnlyStealing() {
+            mockGame();
+            final Instant abTime = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant stealTime = Instant.parse("2026-05-11T10:05:00Z");
+            final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setId(101L); ab.setCreatedAt(abTime);
+            final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealTime);
+            steal.setId(201L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.STEALING);
+            assertThat(result.removedId()).isEqualTo(201L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never())
+                .deleteById(org.mockito.ArgumentMatchers.anyLong());
+        }
+
+        @Test
+        void singleStealingNoAB_deletesStealing() {
+            mockGame();
+            final Instant stealTime = Instant.parse("2026-05-11T10:00:00Z");
+            final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealTime);
+            steal.setId(202L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.empty());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.STEALING);
+            assertThat(result.removedId()).isEqualTo(202L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(202L);
+        }
+
+        @Test
+        void subIsNewest_deletesOnlySub() {
+            mockGame();
+            final Instant abTime = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant subTime = Instant.parse("2026-05-11T10:05:00Z");
+            final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setId(101L); ab.setCreatedAt(abTime);
+            final Substitution sub = new Substitution(game, hung, anne, 1);
+            sub.setId(301L);
+            sub.setCreatedAt(subTime);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of(sub));
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.SUBSTITUTION);
+            assertThat(result.removedId()).isEqualTo(301L);
+            org.mockito.Mockito.verify(substitutionRepository).deleteById(301L);
+        }
+
+        @Test
+        void lastABIsNewest_deletesABAndOrphanStealings() {
+            mockGame();
+            // Stealing happened between ab1 and ab2 — it's an orphan tied to ab2.
+            // Undoing ab2 (the newest action) must also clean up that orphan stealing.
+            final Instant ab1Time = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant stealTime = Instant.parse("2026-05-11T10:00:30Z");
+            final Instant ab2Time = Instant.parse("2026-05-11T10:01:00Z");
+            final AtBat ab1 = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab1.setId(101L); ab1.setCreatedAt(ab1Time);
+            final AtBat ab2 = atBat(2, 1, anne, AtBatResult.OUT, new BaseState(hung.getId(), null, null));
+            ab2.setId(102L); ab2.setCreatedAt(ab2Time);
+            final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealTime);
+            steal.setId(201L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab2));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab1, ab2));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AT_BAT);
+            assertThat(result.removedId()).isEqualTo(102L);
+            org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
+        }
+
+        @Test
+        void undoAB_deletesStealingsAfterCutoff_keepsStealingsBefore() {
+            mockGame();
+            final Instant stealEarlyTime = Instant.parse("2026-05-11T09:59:00Z");
+            final Instant ab1Time = Instant.parse("2026-05-11T10:00:00Z");
+            final Instant stealMidTime = Instant.parse("2026-05-11T10:00:30Z");
+            final Instant ab2Time = Instant.parse("2026-05-11T10:01:00Z");
+            final AtBat ab1 = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab1.setId(101L); ab1.setCreatedAt(ab1Time);
+            final AtBat ab2 = atBat(2, 1, anne, AtBatResult.OUT, new BaseState(null, hung.getId(), null));
+            ab2.setId(102L); ab2.setCreatedAt(ab2Time);
+            final BaseRunningEvent stealEarly = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealEarlyTime);
+            stealEarly.setId(200L);
+            final BaseRunningEvent stealMid = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, stealMidTime);
+            stealMid.setId(201L);
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab2));
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab1, ab2));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(stealEarly, stealMid));
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AT_BAT);
+            assertThat(result.removedId()).isEqualTo(102L);
+            org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
+            org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(200L);
+        }
+    }
+
     // --- helpers ---
 
     private LineupEntry lineupEntry(final Player player, final int battingOrder) {

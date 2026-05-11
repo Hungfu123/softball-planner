@@ -7,5 +7,6 @@ public interface SubstitutionRepository {
     List<Substitution> findByGameId(Long gameId);
     List<Substitution> findByGameIdIn(List<Long> gameIds);
     void deleteByGameId(Long gameId);
+    void deleteById(Long id);
     Substitution save(Substitution substitution);
 }

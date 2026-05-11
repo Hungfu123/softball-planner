@@ -27,6 +27,7 @@ public class SubstitutionMapper {
             entity.getInning()
         );
         sub.setId(entity.getId());
+        sub.setCreatedAt(entity.getCreatedAt());
         return sub;
     }
 
@@ -34,6 +35,7 @@ public class SubstitutionMapper {
                                         final PlayerEntity playerOutEntity, final PlayerEntity playerInEntity) {
         final SubstitutionEntity entity = new SubstitutionEntity(gameEntity, playerOutEntity, playerInEntity, domain.getInning());
         entity.setId(domain.getId());
+        entity.setCreatedAt(domain.getCreatedAt());
         return entity;
     }
 }

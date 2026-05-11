@@ -90,6 +90,76 @@ public class GameScoringService {
             .ifPresent(last -> atBatRepository.deleteById(last.getId()));
     }
 
+    @Transactional
+    public com.softball.adapter.dto.UndoResultResponse undoLastAction(final Long gameId) {
+        findGame(gameId);
+
+        final java.util.Optional<AtBat> lastABOpt = atBatRepository.findLastByGameId(gameId);
+        final java.util.List<BaseRunningEvent> allStealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
+        final java.util.List<Substitution> allSubs = substitutionRepository.findByGameId(gameId);
+
+        final java.time.Instant newestAB = lastABOpt.map(AtBat::getCreatedAt).orElse(null);
+        final java.time.Instant newestStealing = allStealings.stream()
+            .map(BaseRunningEvent::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(null);
+        final java.time.Instant newestSub = allSubs.stream()
+            .map(Substitution::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(null);
+
+        if (newestAB == null && newestStealing == null && newestSub == null) {
+            return com.softball.adapter.dto.UndoResultResponse.none();
+        }
+
+        final boolean abIsNewest = newestAB != null
+            && (newestStealing == null || !newestStealing.isAfter(newestAB))
+            && (newestSub == null || !newestSub.isAfter(newestAB));
+
+        if (abIsNewest) {
+            final AtBat lastAB = lastABOpt.get();
+            final java.time.Instant cutoff = atBatRepository.findByGameIdOrderBySequenceAsc(gameId).stream()
+                .filter(ab -> !ab.getId().equals(lastAB.getId()))
+                .map(AtBat::getCreatedAt)
+                .filter(java.util.Objects::nonNull)
+                .max(java.time.Instant::compareTo)
+                .orElse(java.time.Instant.EPOCH);
+            final java.util.List<BaseRunningEvent> stale = allStealings.stream()
+                .filter(e -> e.getCreatedAt() != null && e.getCreatedAt().isAfter(cutoff))
+                .toList();
+            for (final BaseRunningEvent e : stale) {
+                stealingRepository.deleteById(e.getId());
+            }
+            atBatRepository.deleteById(lastAB.getId());
+            return com.softball.adapter.dto.UndoResultResponse.atBat(lastAB.getId());
+        }
+
+        final boolean stealingIsNewest = newestStealing != null
+            && (newestSub == null || !newestSub.isAfter(newestStealing));
+
+        if (stealingIsNewest) {
+            final BaseRunningEvent latest = allStealings.stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(BaseRunningEvent::getCreatedAt))
+                .orElseThrow();
+            stealingRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.stealing(latest.getId());
+        }
+
+        if (newestSub != null) {
+            final Substitution latest = allSubs.stream()
+                .filter(s -> s.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(Substitution::getCreatedAt))
+                .orElseThrow();
+            substitutionRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.substitution(latest.getId());
+        }
+
+        return com.softball.adapter.dto.UndoResultResponse.none();
+    }
+
     /** Löscht alle AtBats + Stealing-Events + Score für dieses Spiel — komplettes Reset. */
     @Transactional
     public void resetScoring(final Long gameId) {
