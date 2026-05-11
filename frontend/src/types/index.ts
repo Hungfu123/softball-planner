@@ -265,6 +265,13 @@ export interface GeneratePlanRequest {
 }
 
 // Live-Scoring
+export type UndoResultType = 'AT_BAT' | 'STEALING' | 'SUBSTITUTION' | 'NONE'
+
+export interface UndoResult {
+  type: UndoResultType
+  removedId: number | null
+}
+
 export type AtBatResult =
   | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN'
   | 'WALK' | 'HIT_BY_PITCH'
