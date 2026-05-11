@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { Drawer } from 'vaul'
@@ -31,9 +31,6 @@ export function ScoringPage() {
   const [showSubSheet, setShowSubSheet] = useState(false)
   const [subPlayerOut, setSubPlayerOut] = useState<Player | null>(null)
   const [subPlayerIn, setSubPlayerIn] = useState<Player | null>(null)
-  // Inning-Override: wenn 3 Outs erreicht + User wechselt Inning, zeigen wir
-  // frisches Inning mit leeren Bases bis der erste AtBat des neuen Innings passiert.
-  const [inningOverride, setInningOverride] = useState<number | null>(null)
   // Extra-Outs pro Inning (für Double-Play o.Ä.): lokaler Override
   const [extraOuts, setExtraOuts] = useState(0)
   const [showCorrection, setShowCorrection] = useState(false)
@@ -105,15 +102,13 @@ export function ScoringPage() {
     return current
   }
 
-  // Effektive Anzeige-Werte: Wenn User "Nächstes Inning" getappt hat, zeigen wir
-  // neues Inning + leere Bases bis der erste AtBat dieses Innings kommt.
+  // Anzeige-Werte: Backend ist Source of Truth — kein Local-Override mehr.
   const serverInning = scoreboard?.currentInning ?? 1
-  const displayInning = inningOverride ?? serverInning
-  const inningTransition = inningOverride != null && serverInning < inningOverride
-  const displayOuts = inningTransition ? 0 : (scoreboard?.outsInCurrentInning ?? 0)
-  const displayBaseState = inningTransition ? { first: null, second: null, third: null } : (scoreboard?.baseState ?? { first: null, second: null, third: null })
-  const displayRunners = inningTransition ? [] : (scoreboard?.runners ?? [])
-  const halfInningOver = !inningTransition && displayOuts >= 3
+  const displayInning = serverInning
+  const displayOuts = scoreboard?.outsInCurrentInning ?? 0
+  const displayBaseState = scoreboard?.baseState ?? { first: null, second: null, third: null }
+  const displayRunners = scoreboard?.runners ?? []
+  const halfInningOver = displayOuts >= 3
   const currentInning = displayInning
   const REGULATION_INNINGS = 7
   // Unentschieden → Extra-Innings erlaubt. Game-Over nur wenn manuell ODER
@@ -123,20 +118,16 @@ export function ScoringPage() {
   const extraInningsNeeded = regulationOver && isTied
   const gameOver = manualGameOver || (regulationOver && !isTied)
 
-  // inningOverride zurücksetzen sobald Server in das neue Inning nachgezogen hat
+  // extraOuts zurücksetzen bei Inning-Wechsel — Server-Inning-Diff detection
+  const prevInningRef = useRef(serverInning)
   useEffect(() => {
-    if (inningOverride != null && serverInning >= inningOverride) {
-      setInningOverride(null)
+    if (serverInning !== prevInningRef.current) {
+      setExtraOuts(0)
+      prevInningRef.current = serverInning
     }
-  }, [serverInning, inningOverride])
-
-  // extraOuts zurücksetzen bei Inning-Wechsel
-  useEffect(() => {
-    if (inningTransition) setExtraOuts(0)
-  }, [inningTransition])
+  }, [serverInning])
 
   // Batting-Side + Game-Over kommen ausschließlich vom Backend.
-  // Inning-Override ist transient (in-memory) — Reload landet sauber bei Server-Inning.
   useEffect(() => {
     if (currentGame == null) return
     if (currentGame.battingSide === 'top' || currentGame.battingSide === 'bottom') {
@@ -290,22 +281,22 @@ export function ScoringPage() {
   }
 
   const handleNextInning = async () => {
-    // Optional: Gegner-Runs in diesem Inning addieren
-    if (currentGame && opponentRunsThisInning.trim() !== '') {
-      const addRuns = Number(opponentRunsThisInning)
-      if (!Number.isNaN(addRuns) && addRuns >= 0) {
-        const newScoreThem = (scoreThem ?? 0) + addRuns
-        try {
-          await api.setGameScore(currentGame.id, scoreUs, newScoreThem)
-        } catch (e) {
-          toast.show((e as Error).message, 'error')
-        }
+    if (!currentGame) return
+    let opponentRuns = 0
+    if (opponentRunsThisInning.trim() !== '') {
+      const parsed = Number(opponentRunsThisInning)
+      if (!Number.isNaN(parsed) && parsed >= 0) {
+        opponentRuns = parsed
       }
     }
-    setOpponentRunsThisInning('')
-    setInningOverride(displayInning + 1)
-    toast.show(`Inning ${displayInning + 1} · Bases frei`, 'success')
-    await reload()
+    try {
+      await api.advanceInning(currentGame.id, opponentRuns)
+      setOpponentRunsThisInning('')
+      await reload()
+      toast.show(`Inning ${displayInning + 1} · Bases frei`, 'success')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
   }
 
   const saveScoreThem = async () => {
@@ -336,6 +327,7 @@ export function ScoringPage() {
         result.type === 'AT_BAT' ? 'Letzter At-Bat rückgängig gemacht' :
         result.type === 'STEALING' ? 'Letztes Stealing-Event rückgängig gemacht' :
         result.type === 'SUBSTITUTION' ? 'Letzte Substitution rückgängig gemacht' :
+        result.type === 'INNING_ADVANCE' ? 'Letzter Inning-Wechsel rückgängig gemacht' :
         'Nichts zum Rückgängigmachen'
       toast.show(message, result.type === 'NONE' ? 'error' : 'success')
     } catch (e) {
@@ -491,7 +483,6 @@ export function ScoringPage() {
       await api.resetScoring(currentGame.id)
       // Falls Backend `endedAt` gesetzt ist, auch reopen — sonst bleibt Game als FERTIG markiert
       try { await api.reopenGame(currentGame.id) } catch { /* ignore: vor Backend-Deploy */ }
-      setInningOverride(null)
       setExtraOuts(0)
       setManualGameOver(false)
       // Cleanup ALLER scoring-localStorage-Keys für dieses Game (auch Override-Geist).
