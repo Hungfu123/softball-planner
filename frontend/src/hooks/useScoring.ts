@@ -5,6 +5,7 @@ import type {
   ScoreboardResponse,
   RecordAtBatRequest,
   RecordStealingEventRequest,
+  UndoResult,
 } from '@/types'
 import * as api from '@/api/client'
 
@@ -48,10 +49,11 @@ export function useScoring(gameId: number | null) {
     return created
   }, [gameId, reload])
 
-  const undo = useCallback(async () => {
-    if (gameId == null) return
-    await api.undoLastAtBat(gameId)
+  const undo = useCallback(async (): Promise<UndoResult> => {
+    if (gameId == null) return { type: 'NONE', removedId: null }
+    const result = await api.undoLastAction(gameId)
     await reload()
+    return result
   }, [gameId, reload])
 
   const recordStealingEvent = useCallback(async (req: RecordStealingEventRequest) => {
