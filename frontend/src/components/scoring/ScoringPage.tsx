@@ -40,8 +40,6 @@ export function ScoringPage() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
-  const [editingScoreUs, setEditingScoreUs] = useState(false)
-  const [scoreUsInput, setScoreUsInput] = useState('')
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
@@ -248,8 +246,6 @@ export function ScoringPage() {
       const hadRunners = displayRunners.length > 0
       const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
       const hitLabel = result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : result === 'TRIPLE' ? 'Triple' : null
-      // Wenn dieser Out der 3. Out ist → Half-Inning ist vorbei
-      const willBe3rdOut = result === 'OUT' && (scoreboard.outsInCurrentInning ?? 0) >= 2
 
       // Einheitliche Score/Anpassen-Pille — eine Pille für alle Hit/Run-Cases
       // (HR, HBP, WALK haben eigene Vollbild-/Pill-Animationen)
@@ -275,8 +271,9 @@ export function ScoringPage() {
       //
       // Nicht bei HOMERUN: alle scoren per Definition (Ball über Zaun).
       // Nicht bei WALK/HBP: Force eindeutig.
-      // Nicht bei 3. Out: Side-Switch automatisch.
-      if (result === 'OUT' && hadRunners && !willBe3rdOut) {
+      // Auch bei 3. Out öffnen: Force-Out-3rd-Out-Regel (Run zählt nicht) muss
+      // user-bestätigt werden via CorrectionSheet-Banner (outsAfter===3).
+      if (result === 'OUT' && hadRunners) {
         setShowCorrection(true)
       } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
         setShowCorrection(true)
@@ -324,24 +321,6 @@ export function ScoringPage() {
       toast.show((e as Error).message, 'error')
     } finally {
       setEditingScoreThem(false)
-    }
-  }
-
-  const saveScoreUs = async () => {
-    if (!currentGame) return
-    const parsed = scoreUsInput.trim() === '' ? null : Number(scoreUsInput)
-    if (parsed !== null && (Number.isNaN(parsed) || parsed < 0)) {
-      toast.show('Ungültige Zahl', 'error')
-      setEditingScoreUs(false)
-      return
-    }
-    try {
-      await api.setGameScore(currentGame.id, parsed ?? 0, scoreThem)
-      await reload()
-    } catch (e) {
-      toast.show((e as Error).message, 'error')
-    } finally {
-      setEditingScoreUs(false)
     }
   }
 
@@ -604,30 +583,12 @@ export function ScoringPage() {
         <div className="flex items-center justify-center gap-3 sm:gap-4">
           <div className="flex items-baseline gap-2">
             <span className="font-display text-[11px] text-softball-red-700 uppercase font-bold tracking-widest truncate max-w-[80px] sm:max-w-[140px]" title="Dead Sox">Dead Sox</span>
-            {editingScoreUs ? (
-              <input
-                type="number"
-                inputMode="numeric"
-                value={scoreUsInput}
-                onChange={e => setScoreUsInput(e.target.value)}
-                onBlur={saveScoreUs}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') saveScoreUs()
-                  if (e.key === 'Escape') setEditingScoreUs(false)
-                }}
-                className="font-display w-16 text-4xl sm:text-5xl font-black text-softball-red-600 tabular-nums border-b-2 border-softball-red-500 outline-none bg-transparent text-center"
-                autoFocus
-              />
-            ) : (
-              <button
-                onClick={() => { setScoreUsInput(String(scoreUs ?? 0)); setEditingScoreUs(true) }}
-                className="font-display text-4xl sm:text-5xl font-black text-softball-red-600 tabular-nums cursor-pointer hover:text-softball-red-700 transition-colors leading-none"
-                title="Unseren Score tippen um zu editieren"
-                aria-label="Unseren Score editieren"
-              >
-                {scoreUs}
-              </button>
-            )}
+            <span
+              className="font-display text-4xl sm:text-5xl font-black text-softball-red-600 tabular-nums leading-none"
+              title="Eigene Score wird automatisch aus AtBats gezählt"
+            >
+              {scoreUs}
+            </span>
           </div>
           <span className="font-display text-2xl text-gray-300">—</span>
           <div className="flex items-baseline gap-2">
