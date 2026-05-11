@@ -1,6 +1,6 @@
 import { test as base } from '@playwright/test'
 import { seedAuth } from './auth'
-import { ensureTestGame, teardownTestGameDay, resetScoring, setBattingSide } from './api'
+import { ensureTestGame, teardownTestGameDay, resetScoring, setBattingSide, clearSubstitutions } from './api'
 
 type Fixtures = {
   testGame: { gameId: number; gameDayId: number; playerIds: number[]; benchPlayerId: number }
@@ -24,6 +24,8 @@ export const test = base.extend<Fixtures, { workerGame: Awaited<ReturnType<typeo
   scoringPage: async ({ page, context, workerGame }, use) => {
     await seedAuth(context)
     await resetScoring(workerGame.gameId)
+    // resetScoring lässt Substitutions stehen — explizit clearen, sonst Cross-Test-Pollution.
+    await clearSubstitutions(workerGame.gameId)
     await setBattingSide(workerGame.gameId, 'top')
     await page.goto(`/gameday/${workerGame.gameDayId}/scoring/0`)
     await use({

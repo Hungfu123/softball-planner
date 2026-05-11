@@ -182,14 +182,25 @@ export async function getStealingEvents(gameId: number): Promise<StealingEvent[]
   } finally { await c.dispose() }
 }
 
-type Substitution = { id: number; playerOutId: number; playerInId: number; inning: number }
+type SubstitutionRaw = { id: number; playerOut: { id: number; name: string }; playerIn: { id: number; name: string }; inning: number }
+export type Substitution = { id: number; playerOutId: number; playerInId: number; inning: number }
 
 export async function getSubstitutions(gameId: number): Promise<Substitution[]> {
   const c = await client()
   try {
     const res = await c.get(`/api/games/${gameId}/substitutions`)
     if (!res.ok()) throw new Error(`getSubstitutions failed: ${res.status()}`)
-    return await res.json()
+    const raw: SubstitutionRaw[] = await res.json()
+    return raw.map(s => ({ id: s.id, playerOutId: s.playerOut.id, playerInId: s.playerIn.id, inning: s.inning }))
+  } finally { await c.dispose() }
+}
+
+/** Clear all substitutions for a game (uses PUT with empty list). */
+export async function clearSubstitutions(gameId: number): Promise<void> {
+  const c = await client()
+  try {
+    const res = await c.put(`/api/games/${gameId}/substitutions`, { data: [] })
+    if (!res.ok()) throw new Error(`clearSubstitutions failed: ${res.status()}`)
   } finally { await c.dispose() }
 }
 
