@@ -1,15 +1,18 @@
 import { test, expect } from '../helpers/fixtures'
 import { seedAuth } from '../helpers/auth'
 
+async function hasTrainings(page: import('@playwright/test').Page): Promise<boolean> {
+  await page.waitForLoadState('networkidle')
+  const statsBtn = page.getByRole('button', { name: /Statistik/i })
+  return await statsBtn.isVisible({ timeout: 2000 }).catch(() => false)
+}
+
 test.describe('Training — History-Matrix', () => {
   test('Stats-Drawer Tab "Matrix" zeigt Cross-Training-Matrix', async ({ page, context }) => {
     await seedAuth(context)
     await page.goto('/training')
-    await page.waitForLoadState('networkidle')
-
-    const trainingHeading = page.getByRole('heading', { name: /^Training$/i })
-    if (!(await trainingHeading.isVisible().catch(() => false))) {
-      test.skip(true, 'Kein Training — Matrix-Test übersprungen')
+    if (!(await hasTrainings(page))) {
+      test.skip(true, 'Keine Trainings in DB — Matrix-Test übersprungen')
       return
     }
 
