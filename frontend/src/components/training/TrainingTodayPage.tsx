@@ -31,7 +31,7 @@ export function TrainingTodayPage() {
   const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
   const [planId, setPlanId] = useState<number | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
-  const [attendanceSort, setAttendanceSort] = useState<AttendanceSort>('alpha')
+  const [attendanceSort, setAttendanceSort] = useState<AttendanceSort>('frequency')
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null)
   const [drills, setDrills] = useState<DrillResponse[]>([])
 
