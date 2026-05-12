@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Drawer } from 'vaul'
 import { Calendar, Check } from 'lucide-react'
 
@@ -18,17 +18,18 @@ function formatDate(iso: string): string {
 }
 
 export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onSelect }: Props) {
+  const [mountedNowMs] = useState(() => Date.now())
   const grouped = useMemo(() => {
-    const now = Date.now()
+    const cutoff = mountedNowMs - 12 * 60 * 60 * 1000
     const sorted = [...trainings].sort((a, b) => b.date.localeCompare(a.date))
     const upcoming: Training[] = []
     const past: Training[] = []
     for (const t of sorted) {
-      if (new Date(t.date).getTime() >= now - 12 * 60 * 60 * 1000) upcoming.push(t)
+      if (new Date(t.date).getTime() >= cutoff) upcoming.push(t)
       else past.push(t)
     }
     return { upcoming: upcoming.reverse(), past }
-  }, [trainings])
+  }, [trainings, mountedNowMs])
 
   const handleSelect = (id: number) => {
     onSelect(id)
