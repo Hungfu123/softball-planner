@@ -11,6 +11,12 @@ type Props = {
   trainingDate: string | null
 }
 
+function shortDescription(drill: DrillResponse | null): string | null {
+  if (!drill?.description) return null
+  const first = drill.description.split('\n')[0].trim()
+  return first && first.length < 120 ? first : null
+}
+
 function buildShareText(
   planContent: TrainingPlanContentResponse | null,
   drills: DrillResponse[],
@@ -25,54 +31,60 @@ function buildShareText(
   lines.push(`⚾ *Trainingsplan${dateStr ? ` — ${dateStr}` : ''}*`)
   lines.push('')
 
-  // Build station-groups
   const sections = planContent.sections
   let i = 0
+  let warmupPrinted = false
+  let drillsPrinted = false
+
   while (i < sections.length) {
     const s = sections[i]
     if (s.sectionType === 'BREAK') { i++; continue }
 
     if (s.parallelGroup != null) {
-      // Station
       const group = s.parallelGroup
       const stationDrills: typeof sections = []
       while (i < sections.length && sections[i].parallelGroup === group) {
         stationDrills.push(sections[i])
         i++
       }
-      lines.push(`*🔀 Station (${stationDrills[0].durationMinutes ?? '?'} min, parallel):*`)
+      lines.push('*Drills in Gruppen:*')
       for (const sd of stationDrills) {
+        const drill = sd.drillId ? drills.find(d => d.id === sd.drillId) ?? null : null
         lines.push(`• ${sd.title ?? '—'}`)
-        const drill = sd.drillId ? drills.find(d => d.id === sd.drillId) : null
-        if (drill?.pdfPage) lines.push(`  Handbuch S.${drill.pdfPage}`)
-        if (sd.tips) lines.push(`  💡 ${sd.tips}`)
+        const desc = shortDescription(drill)
+        if (desc) lines.push(`  ${desc}`)
       }
       lines.push('')
       continue
     }
 
     if (s.sectionType === 'WARMUP') {
-      lines.push(`*🔥 Aufwärmen (${s.durationMinutes ?? '?'} min):*`)
+      if (!warmupPrinted) {
+        lines.push('*Aufwärmen*')
+        warmupPrinted = true
+      }
       lines.push(`• ${s.title ?? '—'}`)
-      if (s.tips) lines.push(`  💡 ${s.tips}`)
       lines.push('')
     } else if (s.sectionType === 'DRILL') {
-      lines.push(`*🎯 ${s.title ?? 'Drill'} (${s.durationMinutes ?? '?'} min):*`)
-      const drill = s.drillId ? drills.find(d => d.id === s.drillId) : null
-      if (drill?.pdfPage) lines.push(`  Handbuch S.${drill.pdfPage}`)
-      if (s.tips) lines.push(`  💡 ${s.tips}`)
-      lines.push('')
+      if (!drillsPrinted) {
+        lines.push('*Drills zusammen:*')
+        drillsPrinted = true
+      }
+      const drill = s.drillId ? drills.find(d => d.id === s.drillId) ?? null : null
+      lines.push(`• ${s.title ?? '—'}`)
+      const desc = shortDescription(drill)
+      if (desc) lines.push(`  ${desc}`)
     } else if (s.sectionType === 'GAME' || s.sectionType === 'SCRIMMAGE') {
-      lines.push(`*🥎 ${s.title ?? 'Spiel'} (${s.durationMinutes ?? '?'} min)*`)
+      lines.push(`*${s.title ?? 'Spiel'}*`)
       lines.push('')
     } else {
-      lines.push(`• ${s.title ?? '—'} (${s.durationMinutes ?? '?'} min)`)
-      lines.push('')
+      lines.push(`• ${s.title ?? '—'}`)
     }
     i++
   }
 
   if (planContent.overallNotes) {
+    lines.push('')
     lines.push('*Notizen:*')
     lines.push(planContent.overallNotes)
   }
