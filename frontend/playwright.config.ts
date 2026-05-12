@@ -9,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.PW_BASE_URL ?? 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     actionTimeout: 10_000,
