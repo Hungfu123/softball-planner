@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { ChevronLeft } from '@/icons'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
@@ -77,6 +78,7 @@ export function Layout() {
         </main>
 
         <Toast toasts={toast.toasts} onDismiss={toast.dismiss} />
+        <Toaster position="top-center" richColors closeButton />
       </div>
     </ToastCtx.Provider>
   )
