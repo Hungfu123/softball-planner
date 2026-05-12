@@ -177,6 +177,40 @@ export async function getScoreboard(gameId: number): Promise<ScoreboardResponse>
   }
 }
 
+export type PlayerBattingStats = {
+  playerId: number
+  playerName: string
+  plateAppearances: number
+  atBats: number
+  hits: number
+  singles: number
+  doubles: number
+  triples: number
+  homeRuns: number
+  walks: number
+  hitByPitch: number
+  strikeouts: number
+  outs: number
+  reachedOnError: number
+  stolenBases: number
+  caughtStealing: number
+  runsBattedIn: number
+  totalBases: number
+  battingAverage: string
+  onBasePct: string
+  sluggingPct: string
+  ops: string
+}
+
+export async function getBattingStats(gameId: number): Promise<PlayerBattingStats[]> {
+  const c = await client()
+  try {
+    const res = await c.get(`/api/games/${gameId}/batting-stats`)
+    if (!res.ok()) throw new Error(`getBattingStats failed: ${res.status()}`)
+    return await res.json()
+  } finally { await c.dispose() }
+}
+
 type StealingEvent = { id: number; runnerId: number; runnerName: string; type: 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'WILD_PITCH' | 'PASSED_BALL'; inning: number }
 
 export async function getStealingEvents(gameId: number): Promise<StealingEvent[]> {
