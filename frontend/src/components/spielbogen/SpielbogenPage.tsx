@@ -620,7 +620,7 @@ export default function SpielbogenPage() {
               <div className="font-display text-6xl sm:text-7xl font-extrabold tracking-widest mb-2">
                 3 OUTS
               </div>
-              <div className="font-display text-xl sm:text-2xl font-bold tracking-widest uppercase">
+              <div className="font-display text-xl sm:text-2xl font-extrabold tracking-widest uppercase">
                 {sideSwitchFlash.lastOutType === 'strikeout' ? 'Strikeout · Seitenwechsel'
                   : sideSwitchFlash.lastOutType === 'fly' ? 'Fly Out · Seitenwechsel'
                   : sideSwitchFlash.lastOutType === 'grounder' ? 'Grounder Out · Seitenwechsel'
@@ -1165,10 +1165,10 @@ export default function SpielbogenPage() {
                 >
                   {typeLabel}
                 </motion.div>
-                <div className="font-display mt-3 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
+                <div className="font-display mt-3 text-xl sm:text-3xl font-extrabold text-navy-900 uppercase tracking-widest">
                   {homerunFlash.batter}
                 </div>
-                <div className="font-display mt-1 text-sm sm:text-lg font-bold text-softball-red-700 uppercase tracking-widest">
+                <div className="font-display mt-1 text-sm sm:text-lg font-extrabold text-softball-red-700 uppercase tracking-widest">
                   {runs} {runs === 1 ? 'Run' : 'Runs'} · → HOME
                 </div>
               </motion.div>
@@ -1238,10 +1238,10 @@ export default function SpielbogenPage() {
               >
                 AUTSCH!
               </motion.div>
-              <div className="font-display mt-2 text-base sm:text-xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-2 text-base sm:text-xl font-extrabold text-navy-900 uppercase tracking-widest">
                 Hit by Pitch
               </div>
-              <div className="font-display mt-1 text-xl sm:text-2xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-1 text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {hbpFlash} <span className="text-softball-red-700">→ 1B</span>
               </div>
             </motion.div>
@@ -1324,7 +1324,7 @@ export default function SpielbogenPage() {
                   transition={{ duration: 0.4, delay: 0.25, ease: 'easeOut' }}
                 />
               </svg>
-              <div className="font-display mt-2 text-xl sm:text-2xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-2 text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {strikeoutFlash} · Strikeout
               </div>
             </motion.div>

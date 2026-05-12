@@ -1274,10 +1274,10 @@ export function ScoringPage() {
                 {typeLabel}
               </motion.div>
 
-              <div className="font-display mt-3 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-3 text-xl sm:text-3xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {homerunFlash.batter}
               </div>
-              <div className="font-display mt-1 text-sm sm:text-lg font-bold text-softball-red-700 uppercase tracking-widest">
+              <div className="font-display mt-1 text-sm sm:text-lg font-extrabold text-softball-red-700 uppercase tracking-widest">
                 {runs} {runs === 1 ? 'Run' : 'Runs'} · → HOME
               </div>
             </motion.div>
@@ -1424,10 +1424,10 @@ export function ScoringPage() {
               >
                 AUTSCH!
               </motion.div>
-              <div className="font-display mt-2 text-base sm:text-xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-2 text-base sm:text-xl font-extrabold text-navy-900 uppercase tracking-widest">
                 Hit by Pitch
               </div>
-              <div className="font-display mt-1 text-xl sm:text-2xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-1 text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {hbpFlash} <span className="text-softball-red-700">→ 1B</span>
               </div>
             </motion.div>
@@ -1732,10 +1732,10 @@ export function ScoringPage() {
               >
                 STOLEN HOME
               </motion.div>
-              <div className="font-display mt-3 text-xl sm:text-3xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-3 text-xl sm:text-3xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {stealFlash.runner}
               </div>
-              <div className="font-display mt-1 text-sm sm:text-lg font-bold text-softball-red-700 uppercase tracking-widest">
+              <div className="font-display mt-1 text-sm sm:text-lg font-extrabold text-softball-red-700 uppercase tracking-widest">
                 +1 RUN
               </div>
             </motion.div>
@@ -1813,7 +1813,7 @@ export function ScoringPage() {
                   transition={{ duration: 0.4, delay: 0.25, ease: 'easeOut' }}
                 />
               </svg>
-              <div className="font-display mt-2 text-xl sm:text-2xl font-bold text-navy-900 uppercase tracking-widest">
+              <div className="font-display mt-2 text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {strikeoutFlash} · Strikeout
               </div>
             </motion.div>
