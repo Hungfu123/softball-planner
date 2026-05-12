@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
-import { BarChart3, ChevronDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
@@ -131,6 +131,21 @@ export function TrainingTodayPage() {
     return sum / totalTrainings
   }, [attendance, trainings, totalTrainings])
 
+  const { avgRecent, recentCount } = useMemo(() => {
+    const past = trainings
+      .filter(t => !t.cancelled && (!currentTraining || t.id !== currentTraining.id))
+      .slice()
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5)
+    if (past.length === 0) return { avgRecent: null as number | null, recentCount: 0 }
+    let sum = 0
+    for (const t of past) {
+      const map = attendance.get(t.id) ?? new Map<number, boolean>()
+      sum += [...map.values()].filter(v => v === true).length
+    }
+    return { avgRecent: sum / past.length, recentCount: past.length }
+  }, [trainings, attendance, currentTraining])
+
   const handleToggle = (playerId: number) => {
     if (!currentTraining) return
     const wasPresent = presentIds.has(playerId)
@@ -206,19 +221,12 @@ export function TrainingTodayPage() {
           </button>
         </div>
 
-        <div className="flex items-start gap-3">
-          <div className="flex-1">
-            <AttendanceCounter present={presentIds.size} total={players.length} />
-          </div>
-          <button
-            onClick={() => setStatsOpen(true)}
-            className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-3 rounded-xl flex items-center gap-2 self-stretch cursor-pointer"
-            aria-label="Statistik anzeigen"
-          >
-            <BarChart3 size={18} />
-            <span className="hidden sm:inline">Statistik</span>
-          </button>
-        </div>
+        <AttendanceCounter
+          present={presentIds.size}
+          avgRecent={avgRecent}
+          recentCount={recentCount}
+          onStatsClick={() => setStatsOpen(true)}
+        />
 
         {/* Mobile-Tab-Bar (< lg) */}
         <div className="lg:hidden inline-flex bg-cream-200 rounded-lg p-0.5 w-full" role="tablist">
