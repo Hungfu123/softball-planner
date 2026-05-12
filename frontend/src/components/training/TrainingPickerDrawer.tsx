@@ -69,16 +69,20 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
                   </section>
                 )}
 
-                {grouped.past.length > 0 && (
-                  <section>
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-2">Vergangen</h3>
+                <section>
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-2">
+                    Vergangen {grouped.past.length > 0 && `(${grouped.past.length})`}
+                  </h3>
+                  {grouped.past.length > 0 ? (
                     <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                       {grouped.past.map(t => (
                         <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted />
                       ))}
                     </div>
-                  </section>
-                )}
+                  ) : (
+                    <p className="text-xs text-navy-400 italic">Noch keine vergangenen Trainings.</p>
+                  )}
+                </section>
               </div>
             )}
           </div>

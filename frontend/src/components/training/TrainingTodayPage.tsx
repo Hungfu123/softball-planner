@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Calendar } from 'lucide-react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
@@ -224,11 +224,13 @@ export function TrainingTodayPage() {
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="text-sm text-navy-700 hover:text-navy-900 flex items-center gap-1 cursor-pointer"
-            aria-label="Training wechseln"
+            className="text-sm font-semibold text-navy-800 bg-white border border-cream-300 hover:bg-cream-50 hover:border-navy-400 rounded-lg px-3 py-1.5 flex items-center gap-1.5 cursor-pointer shadow-sm"
+            aria-label="Training wechseln (vergangene + anstehende)"
+            title="Anderes Training wählen — vergangene anklicken zum Nachpflegen"
           >
+            <Calendar size={14} className="text-softball-red-600" />
             {new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
-            <ChevronDown size={14} />
+            <ChevronDown size={14} className="text-navy-400" />
           </button>
         </div>
 
