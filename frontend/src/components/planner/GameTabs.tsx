@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GameResponse, LeagueTeamResponse } from '@/types'
 import { TeamCombobox } from '@/components/shared'
 import * as api from '@/api/client'
@@ -52,10 +53,89 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
 
   const activeGame = games[activeIndex]
 
+  const prevDisabled = activeIndex <= 0
+  const nextDisabled = activeIndex >= games.length - 1
+  const activeCompletion = activeGame ? gameCompletions?.get(activeGame.id) : undefined
+  const activeNeedsAttention = activeCompletion && activeCompletion.total > 0 && activeCompletion.fieldCount < 9
+
   return (
     <div>
-      {/* Tab strip — horizontal scroll auf Mobile damit Page-Layout nicht verrutscht */}
-      <div className="flex border-b border-cream-300 items-stretch overflow-x-auto -mx-1 px-1 scrollbar-thin">
+      {/* Mobile: Pagination-Bar — Pfeile + Hero-Title + Dots (Swipe primär) */}
+      <div className="lg:hidden flex items-center gap-2 py-2 border-b border-cream-300">
+        <button
+          type="button"
+          onClick={() => !prevDisabled && onSelect(activeIndex - 1)}
+          disabled={prevDisabled}
+          aria-label="Vorheriges Spiel"
+          className="p-2 text-navy-700 disabled:opacity-30 cursor-pointer disabled:cursor-default rounded-md hover:bg-cream-100"
+        >
+          <ChevronLeft size={20} />
+        </button>
+        <div className="flex-1 min-w-0 text-center">
+          <div className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide truncate flex items-center justify-center gap-1.5">
+            Spiel {activeGame?.gameNumber ?? '?'}
+            {activeNeedsAttention && (
+              <span className="w-2 h-2 rounded-full bg-amber-400" title={`${activeCompletion!.fieldCount}/9 Feldpositionen`} />
+            )}
+          </div>
+          {games.length > 1 && (
+            <div className="flex items-center justify-center gap-1 mt-0.5">
+              {games.map((g, i) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => onSelect(i)}
+                  aria-label={`Spiel ${g.gameNumber}`}
+                  className={`h-1.5 rounded-full transition-all ${i === activeIndex ? 'w-4 bg-softball-red-600' : 'w-1.5 bg-cream-400 hover:bg-navy-300'}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => !nextDisabled && onSelect(activeIndex + 1)}
+          disabled={nextDisabled}
+          aria-label="Nächstes Spiel"
+          className="p-2 text-navy-700 disabled:opacity-30 cursor-pointer disabled:cursor-default rounded-md hover:bg-cream-100"
+        >
+          <ChevronRight size={20} />
+        </button>
+        {games.length > 1 && activeGame && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuGameId(menuGameId === activeGame.id ? null : activeGame.id)}
+              aria-label="Lineup-Aktionen"
+              className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer rounded-md"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+            {menuGameId === activeGame.id && (
+              <div ref={menuRef} className="absolute top-full right-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Lineup tauschen mit…</div>
+                {games.filter(g => g.id !== activeGame.id).map(target => (
+                  <button
+                    key={target.id}
+                    disabled={swapping}
+                    onClick={() => handleSwap(activeGame.id, target.id)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer"
+                  >
+                    {gameLabel(target)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: Tab strip */}
+      <div className="hidden lg:flex border-b border-cream-300 items-stretch overflow-x-auto -mx-1 px-1 scrollbar-thin">
         {games.map((game, i) => (
           <div key={game.id} className="relative group flex items-center">
             <button
