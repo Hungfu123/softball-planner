@@ -31,24 +31,27 @@ function emptyPlan(): TrainingPlanContentResponse {
 }
 
 function SortableSection({
-  section, idx, drill, expanded, onToggleExpanded, onUpdate, onRemove,
+  section, idx, drill, expanded, selected, onToggleSelect, onToggleExpanded, onUpdate, onRemove,
 }: {
   section: TrainingPlanSectionResponse
   idx: number
   drill: DrillResponse | undefined
   expanded: boolean
+  selected: boolean
+  onToggleSelect: () => void
   onToggleExpanded: () => void
   onUpdate: (patch: Partial<TrainingPlanSectionResponse>) => void
   onRemove: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `section-${idx}` })
   const { Icon, color } = iconFor(section.sectionType)
+  const inStation = section.parallelGroup != null
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
-      className="bg-white border border-cream-300 rounded-xl overflow-hidden"
+      className={`bg-white border ${selected ? 'border-navy-500 ring-2 ring-navy-200' : 'border-cream-300'} ${inStation ? 'border-l-4 border-l-navy-700' : ''} rounded-xl overflow-hidden`}
     >
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button
@@ -59,6 +62,13 @@ function SortableSection({
         >
           <GripVertical size={16} />
         </button>
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onToggleSelect}
+          aria-label="Auswählen"
+          className="w-4 h-4 rounded border-cream-300 text-navy-700 focus:ring-navy-500 cursor-pointer shrink-0"
+        />
         <Icon size={18} strokeWidth={2.2} className={`${color} shrink-0`} />
         <button
           type="button"
@@ -68,7 +78,10 @@ function SortableSection({
           aria-label={`${section.title ?? section.sectionType ?? 'Block'} ${expanded ? 'einklappen' : 'ausklappen'}`}
         >
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 leading-tight">{section.sectionType ?? 'Block'}</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 leading-tight flex items-center gap-1.5">
+              <span>{section.sectionType ?? 'Block'}</span>
+              {inStation && <span className="bg-navy-100 text-navy-800 px-1 rounded">🔀 Station {section.parallelGroup}</span>}
+            </div>
             <div className="text-sm font-medium text-navy-900 truncate leading-tight">{section.title || '—'}</div>
           </div>
           {section.durationMinutes != null && (
@@ -198,6 +211,7 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
   const [showPicker, setShowPicker] = useState(false)
   const [pickerType, setPickerType] = useState<'WARMUP' | 'DRILL' | 'BREAK'>('DRILL')
   const [expandedSet, setExpandedSet] = useState<Set<number>>(new Set())
+  const [selectedSet, setSelectedSet] = useState<Set<number>>(new Set())
   const dndId = useId()
 
   const toggleExpanded = (idx: number) => {
@@ -209,12 +223,42 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
     })
   }
 
+  const toggleSelected = (idx: number) => {
+    setSelectedSet(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) next.delete(idx)
+      else next.add(idx)
+      return next
+    })
+  }
+
+  const combineToStation = () => {
+    if (selectedSet.size < 2) return
+    const indices = [...selectedSet].sort((a, b) => a - b)
+    const maxGroup = Math.max(0, ...sections.map(s => s.parallelGroup ?? 0))
+    const newGroup = maxGroup + 1
+    const sharedDuration = sections[indices[0]]?.durationMinutes ?? 20
+    setSections(prev => prev.map((s, i) =>
+      selectedSet.has(i) ? { ...s, parallelGroup: newGroup, durationMinutes: sharedDuration } : s,
+    ))
+    setSelectedSet(new Set())
+  }
+
+  const dissolveStation = (group: number) => {
+    setSections(prev => prev.map(s => s.parallelGroup === group ? { ...s, parallelGroup: null, playersPerGroup: null } : s))
+  }
+
+  const selectedStationGroups = new Set(
+    [...selectedSet].map(i => sections[i]?.parallelGroup).filter((g): g is number => g != null),
+  )
+
   useEffect(() => {
     if (open) {
       const base = planContent ?? emptyPlan()
       setSections(base.sections.map(s => ({ ...s })))
       setOverallNotes(base.overallNotes ?? '')
       setExpandedSet(new Set())
+      setSelectedSet(new Set())
       if (drills.length === 0) {
         api.getDrills().then(setDrills).catch(() => setDrills([]))
       }
@@ -308,6 +352,42 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
           <Drawer.Title className="sr-only">Plan bearbeiten</Drawer.Title>
           <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
 
+          {selectedSet.size > 0 && (
+            <div className="px-4 py-2 max-w-2xl mx-auto w-full bg-navy-50 border-y border-navy-200 flex items-center gap-2 shrink-0">
+              <span className="text-xs font-bold text-navy-900 flex-1">{selectedSet.size} ausgewählt</span>
+              {selectedSet.size >= 2 && (
+                <button
+                  type="button"
+                  onClick={combineToStation}
+                  className="px-3 py-1.5 text-xs font-bold rounded-md bg-navy-700 text-white hover:bg-navy-800 cursor-pointer"
+                >
+                  🔀 Zur Station verbinden
+                </button>
+              )}
+              {selectedStationGroups.size > 0 && (
+                <>
+                  {[...selectedStationGroups].map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => dissolveStation(g)}
+                      className="px-3 py-1.5 text-xs font-bold rounded-md bg-white border border-navy-300 text-navy-700 hover:bg-cream-100 cursor-pointer"
+                    >
+                      Station {g} auflösen
+                    </button>
+                  ))}
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedSet(new Set())}
+                className="text-xs font-semibold text-navy-600 hover:underline cursor-pointer px-2 py-1"
+              >
+                Auswahl ×
+              </button>
+            </div>
+          )}
+
           <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full overflow-y-auto flex-1 min-h-0">
             <div className="flex items-baseline justify-between gap-3">
               <div>
@@ -342,6 +422,8 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
                           idx={idx}
                           drill={drill}
                           expanded={expandedSet.has(idx)}
+                          selected={selectedSet.has(idx)}
+                          onToggleSelect={() => toggleSelected(idx)}
                           onToggleExpanded={() => toggleExpanded(idx)}
                           onUpdate={(patch) => updateSection(idx, patch)}
                           onRemove={() => removeSection(idx)}

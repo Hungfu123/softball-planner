@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen } from 'lucide-react'
+import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2 } from 'lucide-react'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 
 type Props = {
@@ -9,6 +9,7 @@ type Props = {
   onEdit: () => void
   onRegenerate: () => void
   onDelete: () => void
+  onShare: () => void
 }
 
 type SectionStyle = {
@@ -70,13 +71,41 @@ function hasDetails(s: TrainingPlanSectionResponse, drill: DrillResponse | undef
   return !!(s.tips || s.userNotes || s.rounds || s.playersPerGroup || s.parallelGroup || drill?.description)
 }
 
-function SectionCard({ section, drill, expanded, onToggle }: { section: TrainingPlanSectionResponse; drill: DrillResponse | undefined; expanded: boolean; onToggle: () => void }) {
+type StationGroup = { type: 'single'; idx: number } | { type: 'station'; group: number; indices: number[]; durationMinutes: number | null }
+
+function groupSections(sections: TrainingPlanSectionResponse[]): StationGroup[] {
+  const result: StationGroup[] = []
+  let i = 0
+  while (i < sections.length) {
+    const s = sections[i]
+    if (s.parallelGroup != null) {
+      const group = s.parallelGroup
+      const indices: number[] = []
+      while (i < sections.length && sections[i].parallelGroup === group) {
+        indices.push(i)
+        i++
+      }
+      if (indices.length >= 2) {
+        result.push({ type: 'station', group, indices, durationMinutes: sections[indices[0]].durationMinutes })
+      } else {
+        result.push({ type: 'single', idx: indices[0] })
+      }
+    } else {
+      result.push({ type: 'single', idx: i })
+      i++
+    }
+  }
+  return result
+}
+
+function SectionCard({ section, drill, expanded, onToggle, stationPosition }: { section: TrainingPlanSectionResponse; drill: DrillResponse | undefined; expanded: boolean; onToggle: () => void; stationPosition: 'first' | 'middle' | 'last' | null }) {
   const style = styleFor(section.sectionType)
   const details = hasDetails(section, drill)
   const { Icon } = style
+  const inStation = stationPosition !== null
 
   return (
-    <div className={`${style.bg} border ${style.border} rounded-xl overflow-hidden`}>
+    <div className={`${style.bg} border ${style.border} ${inStation ? 'border-l-4 border-l-navy-700 ml-2' : 'rounded-xl'} ${inStation ? (stationPosition === 'first' ? 'rounded-tr-xl rounded-tl-md' : stationPosition === 'last' ? 'rounded-br-xl rounded-bl-md' : 'rounded-md') : ''} overflow-hidden`}>
       <button
         type="button"
         onClick={onToggle}
@@ -179,9 +208,13 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, onDelete }: Props) {
+export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, onDelete, onShare }: Props) {
   const sections = planContent?.sections ?? []
-  const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
+  const groups = groupSections(sections)
+  const totalMinutes = groups.reduce((sum, g) => {
+    if (g.type === 'station') return sum + (g.durationMinutes ?? 0)
+    return sum + (sections[g.idx].durationMinutes ?? 0)
+  }, 0)
   const initialExpanded = sections.length > 0 && sections.length <= 5
   const [expanded, setExpanded] = useState<Set<number>>(
     () => new Set(initialExpanded ? sections.map((_, i) => i) : []),
@@ -246,6 +279,7 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
           {menuOpen && hasPlan && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-cream-300 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
               <MenuItem Icon={Pencil} label="Bearbeiten" onClick={() => { setMenuOpen(false); onEdit() }} />
+              <MenuItem Icon={Share2} label="Teilen" onClick={() => { setMenuOpen(false); onShare() }} />
               <MenuItem Icon={Sparkles} label="Neu generieren" onClick={() => { setMenuOpen(false); onRegenerate() }} />
               <div className="border-t border-cream-200 my-1" />
               <MenuItem Icon={Trash2} label="Löschen" onClick={() => { setMenuOpen(false); onDelete() }} danger />
@@ -264,16 +298,49 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
           <div className="text-[11px] text-navy-600 font-semibold tabular-nums pb-1">
             {formatTotal(totalMinutes)} · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}
           </div>
-          {sections.map((s, idx) => {
-            const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+          {groups.map((g, gIdx) => {
+            if (g.type === 'single') {
+              const s = sections[g.idx]
+              const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+              return (
+                <SectionCard
+                  key={`s-${g.idx}`}
+                  section={s}
+                  drill={drill}
+                  expanded={expanded.has(g.idx)}
+                  onToggle={() => toggle(g.idx)}
+                  stationPosition={null}
+                />
+              )
+            }
             return (
-              <SectionCard
-                key={idx}
-                section={s}
-                drill={drill}
-                expanded={expanded.has(idx)}
-                onToggle={() => toggle(idx)}
-              />
+              <div key={`g-${gIdx}`} className="bg-navy-50 border border-navy-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 bg-navy-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-navy-800 flex items-center gap-1">
+                    🔀 Station &middot; parallel
+                  </span>
+                  {g.durationMinutes != null && (
+                    <span className="text-xs font-bold tabular-nums text-navy-900">{g.durationMinutes} min</span>
+                  )}
+                </div>
+                <div className="p-2 space-y-1.5">
+                  {g.indices.map((idx, i) => {
+                    const s = sections[idx]
+                    const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+                    const pos = i === 0 ? 'first' : i === g.indices.length - 1 ? 'last' : 'middle'
+                    return (
+                      <SectionCard
+                        key={`s-${idx}`}
+                        section={s}
+                        drill={drill}
+                        expanded={expanded.has(idx)}
+                        onToggle={() => toggle(idx)}
+                        stationPosition={pos}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
             )
           })}
           {planContent?.overallNotes && (

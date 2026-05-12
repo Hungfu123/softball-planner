@@ -14,6 +14,7 @@ import { PlanEditDrawer } from './PlanEditDrawer'
 import { TrainingPlanView } from './TrainingPlanView'
 import { TrainingPickerDrawer } from './TrainingPickerDrawer'
 import { GeneratePlanDrawer } from './GeneratePlanDrawer'
+import { SharePlanDrawer } from './SharePlanDrawer'
 
 type MobileTab = 'anwesenheit' | 'plan'
 
@@ -25,6 +26,7 @@ export function TrainingTodayPage() {
   const [generateOpen, setGenerateOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
   const [planId, setPlanId] = useState<number | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
@@ -256,6 +258,7 @@ export function TrainingTodayPage() {
               onEdit={() => setPlanEditOpen(true)}
               onRegenerate={() => setGenerateOpen(true)}
               onDelete={() => setDeleteConfirmOpen(true)}
+              onShare={() => setShareOpen(true)}
             />
           </section>
         </div>
@@ -288,6 +291,14 @@ export function TrainingTodayPage() {
           onClose={() => setGenerateOpen(false)}
           defaultPlayerCount={presentIds.size > 0 ? presentIds.size : Math.max(players.length, 10)}
           onGenerate={handleGenerate}
+        />
+
+        <SharePlanDrawer
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          planContent={planContent}
+          drills={drills}
+          trainingDate={currentTraining?.date ?? null}
         />
 
         <TrainingPickerDrawer

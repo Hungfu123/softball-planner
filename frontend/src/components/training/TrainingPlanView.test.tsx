@@ -20,7 +20,7 @@ const mkSection = (overrides: Partial<TrainingPlanContentResponse['sections'][0]
   ...overrides,
 })
 
-const noops = { onEdit: vi.fn(), onRegenerate: vi.fn(), onDelete: vi.fn(), drills: [] }
+const noops = { onEdit: vi.fn(), onRegenerate: vi.fn(), onDelete: vi.fn(), onShare: vi.fn(), drills: [] }
 
 describe('TrainingPlanView', () => {
   it('zeigt Empty-State wenn kein Plan', () => {
@@ -35,7 +35,7 @@ describe('TrainingPlanView', () => {
 
   it('zeigt Generieren-Button wenn kein Plan', () => {
     const onRegenerate = vi.fn()
-    render(<TrainingPlanView planContent={null} drills={[]} onEdit={vi.fn()} onRegenerate={onRegenerate} onDelete={vi.fn()} />)
+    render(<TrainingPlanView planContent={null} drills={[]} onEdit={vi.fn()} onRegenerate={onRegenerate} onDelete={vi.fn()} onShare={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /Plan generieren/i }))
     expect(onRegenerate).toHaveBeenCalled()
   })
@@ -93,7 +93,7 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: null,
     }
-    render(<TrainingPlanView planContent={plan} drills={[]} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} />)
+    render(<TrainingPlanView planContent={plan} drills={[]} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} onShare={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /Plan-Aktionen/i }))
     fireEvent.click(screen.getByText('Bearbeiten'))
     expect(onEdit).toHaveBeenCalled()
