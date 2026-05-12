@@ -305,7 +305,6 @@ export function TrainingTodayPage() {
           open={shareOpen}
           onClose={() => setShareOpen(false)}
           planContent={planContent}
-          drills={drills}
           trainingDate={currentTraining?.date ?? null}
         />
 

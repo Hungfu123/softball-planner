@@ -1,25 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Drawer } from 'vaul'
 import { Copy, Check, MessageCircle } from 'lucide-react'
-import type { TrainingPlanContentResponse, DrillResponse } from '@/types'
+import type { TrainingPlanContentResponse } from '@/types'
 
 type Props = {
   open: boolean
   onClose: () => void
   planContent: TrainingPlanContentResponse | null
-  drills: DrillResponse[]
   trainingDate: string | null
-}
-
-function shortDescription(drill: DrillResponse | null): string | null {
-  if (!drill?.description) return null
-  const first = drill.description.split('\n')[0].trim()
-  return first && first.length < 120 ? first : null
 }
 
 function buildShareText(
   planContent: TrainingPlanContentResponse | null,
-  drills: DrillResponse[],
   trainingDate: string | null,
 ): string {
   if (!planContent) return ''
@@ -49,10 +41,7 @@ function buildShareText(
       }
       lines.push('*Drills in Gruppen:*')
       for (const sd of stationDrills) {
-        const drill = sd.drillId ? drills.find(d => d.id === sd.drillId) ?? null : null
         lines.push(`• ${sd.title ?? '—'}`)
-        const desc = shortDescription(drill)
-        if (desc) lines.push(`  ${desc}`)
       }
       lines.push('')
       continue
@@ -64,19 +53,14 @@ function buildShareText(
         warmupPrinted = true
       }
       lines.push(`• ${s.title ?? '—'}`)
-      lines.push('')
     } else if (s.sectionType === 'DRILL') {
       if (!drillsPrinted) {
         lines.push('*Drills zusammen:*')
         drillsPrinted = true
       }
-      const drill = s.drillId ? drills.find(d => d.id === s.drillId) ?? null : null
       lines.push(`• ${s.title ?? '—'}`)
-      const desc = shortDescription(drill)
-      if (desc) lines.push(`  ${desc}`)
     } else if (s.sectionType === 'GAME' || s.sectionType === 'SCRIMMAGE') {
       lines.push(`*${s.title ?? 'Spiel'}*`)
-      lines.push('')
     } else {
       lines.push(`• ${s.title ?? '—'}`)
     }
@@ -92,8 +76,8 @@ function buildShareText(
   return lines.join('\n').trim()
 }
 
-export function SharePlanDrawer({ open, onClose, planContent, drills, trainingDate }: Props) {
-  const text = useMemo(() => buildShareText(planContent, drills, trainingDate), [planContent, drills, trainingDate])
+export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Props) {
+  const text = useMemo(() => buildShareText(planContent, trainingDate), [planContent, trainingDate])
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
