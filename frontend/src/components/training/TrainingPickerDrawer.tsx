@@ -22,8 +22,11 @@ function todayLocalISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+type Tab = 'upcoming' | 'past'
+
 export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onSelect }: Props) {
   const [todayStr] = useState(() => todayLocalISO())
+  const [tab, setTab] = useState<Tab>('upcoming')
   const activeRef = useRef<HTMLButtonElement>(null)
 
   const grouped = useMemo(() => {
@@ -71,23 +74,38 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
             {trainings.length === 0 ? (
               <p className="text-sm text-navy-500 italic">Keine Trainings vorhanden.</p>
             ) : (
-              <div className="space-y-4">
-                {grouped.upcoming.length > 0 && (
-                  <section>
-                    <h3 className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-2">Anstehend &amp; heute</h3>
+              <div className="space-y-3">
+                <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setTab('upcoming')}
+                    className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'upcoming' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                  >
+                    Anstehend ({grouped.upcoming.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTab('past')}
+                    className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'past' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                  >
+                    Vergangen ({grouped.past.length})
+                  </button>
+                </div>
+
+                {tab === 'upcoming' && (
+                  grouped.upcoming.length > 0 ? (
                     <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                       {grouped.upcoming.map(t => (
                         <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} ref={t.id === selectedId ? activeRef : undefined} />
                       ))}
                     </div>
-                  </section>
+                  ) : (
+                    <p className="text-xs text-navy-400 italic">Keine anstehenden Trainings.</p>
+                  )
                 )}
 
-                <section>
-                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-2">
-                    Vergangen {grouped.past.length > 0 && `(${grouped.past.length})`}
-                  </h3>
-                  {grouped.past.length > 0 ? (
+                {tab === 'past' && (
+                  grouped.past.length > 0 ? (
                     <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                       {grouped.past.map(t => (
                         <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted ref={t.id === selectedId ? activeRef : undefined} />
@@ -95,8 +113,8 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
                     </div>
                   ) : (
                     <p className="text-xs text-navy-400 italic">Noch keine vergangenen Trainings.</p>
-                  )}
-                </section>
+                  )
+                )}
               </div>
             )}
           </div>
