@@ -5,7 +5,7 @@ import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
 import * as api from '@/api/client'
-import type { TrainingPlanContentResponse, DrillResponse } from '@/types'
+import type { TrainingPlanContentResponse, DrillResponse, InfieldPosition } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
@@ -145,7 +145,7 @@ export function TrainingTodayPage() {
     }
   }
 
-  const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number }) => {
+  const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[] }) => {
     if (!currentTraining) return
     try {
       if (planId != null) {
@@ -157,7 +157,6 @@ export function TrainingTodayPage() {
       toast.success('Trainingsplan generiert')
     } catch (e) {
       toast.error((e as Error).message)
-      // Re-load to recover if delete succeeded but generate failed
       if (currentTraining) await loadPlanFor(currentTraining.id)
     }
   }
@@ -290,6 +289,7 @@ export function TrainingTodayPage() {
           open={generateOpen}
           onClose={() => setGenerateOpen(false)}
           defaultPlayerCount={presentIds.size > 0 ? presentIds.size : Math.max(players.length, 10)}
+          trainingDate={currentTraining?.date ?? null}
           onGenerate={handleGenerate}
         />
 

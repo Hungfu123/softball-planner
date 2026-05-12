@@ -159,7 +159,7 @@ function SectionCard({ section, drill, expanded, onToggle, stationPosition }: { 
             transition={{ duration: 0.22 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-3 pt-1 space-y-2 text-xs text-navy-800 border-t border-cream-200 bg-white/40">
+            <div className="px-4 pb-3 pt-2 space-y-2 text-sm text-navy-800 border-t border-cream-200 bg-white/40 leading-relaxed">
               {section.rounds != null && (
                 <DetailRow label="Runden" value={String(section.rounds)} />
               )}
@@ -188,9 +188,9 @@ function SectionCard({ section, drill, expanded, onToggle, stationPosition }: { 
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-2">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-navy-500 w-20 shrink-0 pt-0.5">{label}</span>
-      <span className="flex-1 leading-snug whitespace-pre-line">{value}</span>
+    <div>
+      <div className="text-[11px] font-bold uppercase tracking-wider text-navy-600 mb-0.5">{label}</div>
+      <div className="text-sm text-navy-800 whitespace-pre-line leading-relaxed">{value}</div>
     </div>
   )
 }

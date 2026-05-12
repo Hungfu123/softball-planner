@@ -135,40 +135,56 @@ function SortableSection({
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Dauer (min)</label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
             value={section.durationMinutes ?? ''}
-            onChange={e => onUpdate({ durationMinutes: e.target.value === '' ? null : Number(e.target.value) })}
+            placeholder="—"
+            onChange={e => {
+              const v = e.target.value.replace(/[^0-9]/g, '')
+              onUpdate({ durationMinutes: v === '' ? null : Number(v) })
+            }}
             className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none tabular-nums"
           />
         </div>
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Runden</label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
             value={section.rounds ?? ''}
-            onChange={e => onUpdate({ rounds: e.target.value === '' ? null : Number(e.target.value) })}
+            placeholder="—"
+            onChange={e => {
+              const v = e.target.value.replace(/[^0-9]/g, '')
+              onUpdate({ rounds: v === '' ? null : Number(v) })
+            }}
             className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none tabular-nums"
           />
         </div>
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Stationen</label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
             value={section.parallelGroup ?? ''}
-            onChange={e => onUpdate({ parallelGroup: e.target.value === '' ? null : Number(e.target.value) })}
+            placeholder="—"
+            onChange={e => {
+              const v = e.target.value.replace(/[^0-9]/g, '')
+              onUpdate({ parallelGroup: v === '' ? null : Number(v) })
+            }}
             className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none tabular-nums"
           />
         </div>
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Sp./Station</label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="numeric"
             value={section.playersPerGroup ?? ''}
-            onChange={e => onUpdate({ playersPerGroup: e.target.value === '' ? null : Number(e.target.value) })}
+            placeholder="—"
+            onChange={e => {
+              const v = e.target.value.replace(/[^0-9]/g, '')
+              onUpdate({ playersPerGroup: v === '' ? null : Number(v) })
+            }}
             className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none tabular-nums"
           />
         </div>
@@ -409,8 +425,10 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
               <SortableContext items={sections.map((_, i) => `section-${i}`)} strategy={verticalListSortingStrategy}>
                 <div className="space-y-3">
                   {sections.length === 0 ? (
-                    <div className="bg-white border border-cream-300 rounded-xl p-4 text-sm text-navy-500 italic">
-                      Noch keine Blöcke. Drill oder Pause hinzufügen.
+                    <div className="bg-white border-2 border-dashed border-cream-300 rounded-xl p-6 text-center space-y-2">
+                      <div className="text-4xl">📋</div>
+                      <p className="text-sm font-semibold text-navy-800">Noch keine Blöcke</p>
+                      <p className="text-xs text-navy-500">Drill aus Bibliothek wählen, Warmup oder Pause hinzufügen — siehe Buttons unten.</p>
                     </div>
                   ) : (
                     sections.map((s, idx) => {
