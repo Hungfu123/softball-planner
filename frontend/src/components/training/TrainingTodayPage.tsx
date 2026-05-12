@@ -148,13 +148,8 @@ export function TrainingTodayPage() {
 
   const handleToggle = (playerId: number) => {
     if (!currentTraining) return
-    const wasPresent = presentIds.has(playerId)
-    const player = players.find(p => p.id === playerId)
     try {
       toggleAttendance(currentTraining.id, playerId)
-      toast.success(`${player?.name ?? 'Spieler'} ${!wasPresent ? 'anwesend' : 'abwesend'}`, {
-        action: { label: 'Rückgängig', onClick: () => toggleAttendance(currentTraining.id, playerId) },
-      })
     } catch (e) {
       toast.error((e as Error).message)
     }
