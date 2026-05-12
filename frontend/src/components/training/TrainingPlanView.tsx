@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2 } from 'lucide-react'
-import type { TrainingPlanContentResponse, TrainingPlanSectionResponse } from '@/types'
+import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen } from 'lucide-react'
+import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 
 type Props = {
   planContent: TrainingPlanContentResponse | null
+  drills: DrillResponse[]
   onEdit: () => void
   onRegenerate: () => void
   onDelete: () => void
@@ -65,13 +66,13 @@ function formatTotal(minutes: number): string {
   return `${h} h ${m} min`
 }
 
-function hasDetails(s: TrainingPlanSectionResponse): boolean {
-  return !!(s.setupNotes || s.tips || s.rotationPlan || s.adaptationNotes || s.groupSetup || s.userNotes || s.rounds || s.playersPerGroup || s.parallelGroup)
+function hasDetails(s: TrainingPlanSectionResponse, drill: DrillResponse | undefined): boolean {
+  return !!(s.tips || s.userNotes || s.rounds || s.playersPerGroup || s.parallelGroup || drill?.description)
 }
 
-function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSectionResponse; expanded: boolean; onToggle: () => void }) {
+function SectionCard({ section, drill, expanded, onToggle }: { section: TrainingPlanSectionResponse; drill: DrillResponse | undefined; expanded: boolean; onToggle: () => void }) {
   const style = styleFor(section.sectionType)
-  const details = hasDetails(section)
+  const details = hasDetails(section, drill)
   const { Icon } = style
 
   return (
@@ -89,6 +90,16 @@ function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSec
           <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500">{style.label}</div>
           <div className="font-bold text-navy-900 text-sm truncate">{section.title ?? '—'}</div>
         </div>
+        {drill?.pdfPage && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); window.open(`/drills.pdf?t=${Date.now()}#page=${drill.pdfPage}`, 'drill-handbuch') }}
+            className="shrink-0 text-[10px] font-bold tabular-nums text-navy-700 hover:text-navy-900 hover:underline cursor-pointer"
+            title="Im Handbuch nachschlagen"
+          >
+            S.{drill.pdfPage} ↗
+          </button>
+        )}
         {section.parallelGroup != null && section.parallelGroup > 1 && (
           <span className="shrink-0 text-[10px] font-bold tabular-nums bg-navy-100 text-navy-800 px-1.5 py-0.5 rounded-md">
             {section.parallelGroup}× Stat.
@@ -129,23 +140,14 @@ function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSec
               {section.playersPerGroup != null && (
                 <DetailRow label="Sp. / Station" value={String(section.playersPerGroup)} />
               )}
-              {section.setupNotes && (
-                <DetailRow label="Setup" value={section.setupNotes} />
-              )}
-              {section.rotationPlan && (
-                <DetailRow label="Rotation" value={section.rotationPlan} />
-              )}
-              {section.adaptationNotes && (
-                <DetailRow label="Anpassung" value={section.adaptationNotes} />
-              )}
-              {section.groupSetup && (
-                <DetailRow label="Gruppen" value={section.groupSetup} />
-              )}
               {section.tips && (
                 <DetailRow label="Tipps" value={section.tips} />
               )}
               {section.userNotes && (
                 <DetailRow label="Notizen" value={section.userNotes} />
+              )}
+              {drill?.description && (
+                <DetailRow label="Beschreibung" value={drill.description} />
               )}
             </div>
           </motion.div>
@@ -177,7 +179,7 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ planContent, onEdit, onRegenerate, onDelete }: Props) {
+export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, onDelete }: Props) {
   const sections = planContent?.sections ?? []
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
   const initialExpanded = sections.length > 0 && sections.length <= 5
@@ -209,8 +211,17 @@ export function TrainingPlanView({ planContent, onEdit, onRegenerate, onDelete }
 
   return (
     <div data-training-plan-view>
-      <div className="flex items-baseline justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-2">
         <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide">Trainingsplan</h2>
+        <div className="flex items-center gap-2">
+          <a
+            href="/drills.pdf"
+            target="drill-handbuch"
+            className="text-xs font-semibold text-navy-700 hover:underline cursor-pointer flex items-center gap-1"
+            title="Drill-Handbuch öffnen"
+          >
+            <BookOpen size={12} /> Handbuch
+          </a>
         <div className="relative" ref={menuRef}>
           {hasPlan ? (
             <button
@@ -241,6 +252,7 @@ export function TrainingPlanView({ planContent, onEdit, onRegenerate, onDelete }
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {sections.length === 0 ? (
@@ -252,14 +264,18 @@ export function TrainingPlanView({ planContent, onEdit, onRegenerate, onDelete }
           <div className="text-[11px] text-navy-600 font-semibold tabular-nums pb-1">
             {formatTotal(totalMinutes)} · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}
           </div>
-          {sections.map((s, idx) => (
-            <SectionCard
-              key={idx}
-              section={s}
-              expanded={expanded.has(idx)}
-              onToggle={() => toggle(idx)}
-            />
-          ))}
+          {sections.map((s, idx) => {
+            const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+            return (
+              <SectionCard
+                key={idx}
+                section={s}
+                drill={drill}
+                expanded={expanded.has(idx)}
+                onToggle={() => toggle(idx)}
+              />
+            )
+          })}
           {planContent?.overallNotes && (
             <div className="mt-3 p-3 bg-cream-100 border border-cream-300 rounded-xl text-xs text-navy-800">
               <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-1">Notizen</div>

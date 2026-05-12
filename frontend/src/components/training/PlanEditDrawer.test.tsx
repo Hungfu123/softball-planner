@@ -17,10 +17,10 @@ describe('PlanEditDrawer', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('Speichern disabled wenn kein Plan', () => {
+  it('Speichern aktiv auch ohne Plan (User kann von Grund auf bauen)', () => {
     render(<PlanEditDrawer open={true} onClose={vi.fn()} planContent={null} onSave={vi.fn()} />)
     const saveBtn = screen.getByRole('button', { name: /Speichern/i })
-    expect(saveBtn).toBeDisabled()
+    expect(saveBtn).not.toBeDisabled()
   })
 
   it('rendert nicht wenn open=false', () => {

@@ -20,7 +20,7 @@ const mkSection = (overrides: Partial<TrainingPlanContentResponse['sections'][0]
   ...overrides,
 })
 
-const noops = { onEdit: vi.fn(), onRegenerate: vi.fn(), onDelete: vi.fn() }
+const noops = { onEdit: vi.fn(), onRegenerate: vi.fn(), onDelete: vi.fn(), drills: [] }
 
 describe('TrainingPlanView', () => {
   it('zeigt Empty-State wenn kein Plan', () => {
@@ -35,7 +35,7 @@ describe('TrainingPlanView', () => {
 
   it('zeigt Generieren-Button wenn kein Plan', () => {
     const onRegenerate = vi.fn()
-    render(<TrainingPlanView planContent={null} onEdit={vi.fn()} onRegenerate={onRegenerate} onDelete={vi.fn()} />)
+    render(<TrainingPlanView planContent={null} drills={[]} onEdit={vi.fn()} onRegenerate={onRegenerate} onDelete={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /Plan generieren/i }))
     expect(onRegenerate).toHaveBeenCalled()
   })
@@ -73,15 +73,15 @@ describe('TrainingPlanView', () => {
   it('expandiert Section bei Klick → zeigt Details', () => {
     const plan = {
       sections: Array.from({ length: 6 }, (_, i) =>
-        mkSection({ title: `Section ${i}`, durationMinutes: 10, setupNotes: i === 0 ? 'Bases stellen' : null }),
+        mkSection({ title: `Section ${i}`, durationMinutes: 10, tips: i === 0 ? 'Auf Footwork achten' : null }),
       ),
       groupDistributionHint: null,
       overallNotes: null,
     }
     render(<TrainingPlanView planContent={plan} {...noops} />)
-    expect(screen.queryByText('Bases stellen')).not.toBeInTheDocument()
+    expect(screen.queryByText('Auf Footwork achten')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Section 0/i }))
-    expect(screen.getByText('Bases stellen')).toBeInTheDocument()
+    expect(screen.getByText('Auf Footwork achten')).toBeInTheDocument()
   })
 
   it('3-Dot-Menu öffnet + zeigt Bearbeiten/Neu generieren/Löschen', () => {
@@ -93,7 +93,7 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: null,
     }
-    render(<TrainingPlanView planContent={plan} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} />)
+    render(<TrainingPlanView planContent={plan} drills={[]} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} />)
     fireEvent.click(screen.getByRole('button', { name: /Plan-Aktionen/i }))
     fireEvent.click(screen.getByText('Bearbeiten'))
     expect(onEdit).toHaveBeenCalled()

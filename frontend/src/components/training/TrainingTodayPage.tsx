@@ -5,7 +5,7 @@ import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
 import * as api from '@/api/client'
-import type { TrainingPlanContentResponse } from '@/types'
+import type { TrainingPlanContentResponse, DrillResponse } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
@@ -29,6 +29,15 @@ export function TrainingTodayPage() {
   const [planId, setPlanId] = useState<number | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null)
+  const [drills, setDrills] = useState<DrillResponse[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    api.getDrills()
+      .then(d => { if (!cancelled) setDrills(d) })
+      .catch(() => { if (!cancelled) setDrills([]) })
+    return () => { cancelled = true }
+  }, [])
 
   const sortedActiveTrainings = useMemo(
     () => trainings.filter(t => !t.cancelled).slice().sort((a, b) => a.date.localeCompare(b.date)),
@@ -243,6 +252,7 @@ export function TrainingTodayPage() {
           <section className={`${mobileTab === 'plan' ? '' : 'hidden lg:block'} mt-4 lg:mt-0`}>
             <TrainingPlanView
               planContent={planContent}
+              drills={drills}
               onEdit={() => setPlanEditOpen(true)}
               onRegenerate={() => setGenerateOpen(true)}
               onDelete={() => setDeleteConfirmOpen(true)}
