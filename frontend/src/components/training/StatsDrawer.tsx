@@ -17,22 +17,18 @@ type Props = {
   attendance: Map<number, Map<number, boolean>>
 }
 
-function barColor(percentage: number): string {
-  if (percentage >= 70) return 'bg-navy-700'
-  if (percentage < 30) return 'bg-softball-red-400'
-  return 'bg-navy-500'
-}
-
-type Tab = 'quoten' | 'matrix'
+type Tab = 'anzahl' | 'matrix'
 
 export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTrainings, trainings, attendance }: Props) {
-  const [tab, setTab] = useState<Tab>('quoten')
+  const [tab, setTab] = useState<Tab>('anzahl')
 
   const sorted = [...players].sort((a, b) => {
-    const qA = stats.get(a.id)?.last3Months.percentage ?? 0
-    const qB = stats.get(b.id)?.last3Months.percentage ?? 0
-    return qB - qA || a.name.localeCompare(b.name)
+    const cA = stats.get(a.id)?.last3Months.attended ?? 0
+    const cB = stats.get(b.id)?.last3Months.attended ?? 0
+    return cB - cA || a.name.localeCompare(b.name)
   })
+
+  const max3M = Math.max(1, ...sorted.map(p => stats.get(p.id)?.last3Months.attended ?? 0))
 
   return (
     <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
@@ -44,42 +40,49 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
           <div className="px-4 py-4 space-y-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
             <div>
               <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">Anwesenheits-Statistik</h2>
-              <p className="text-xs text-navy-600">Letzte 3 Monate · {totalTrainings} Trainings</p>
+              <p className="text-xs text-navy-600">Anzahl Teilnahmen · letzte 3 Monate &amp; Jahr</p>
             </div>
 
             {/* Tab Toggle */}
-            <div className="flex gap-1">
+            <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
               <button
-                onClick={() => setTab('quoten')}
-                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer ${tab === 'quoten' ? 'bg-navy-700 text-white' : 'bg-cream-200 text-navy-700'}`}
+                onClick={() => setTab('anzahl')}
+                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'anzahl' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
               >
-                Quoten
+                Anzahl
               </button>
               <button
                 onClick={() => setTab('matrix')}
-                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer ${tab === 'matrix' ? 'bg-navy-700 text-white' : 'bg-cream-200 text-navy-700'}`}
+                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'matrix' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
               >
                 Matrix
               </button>
             </div>
 
-            {tab === 'quoten' && (
+            {tab === 'anzahl' && (
               <>
-                <div className="bg-white border border-cream-300 rounded-xl p-3 space-y-2">
+                <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
+                  <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-navy-500 border-b border-cream-200">
+                    <span>Spieler</span>
+                    <span className="text-right w-16">3 Monate</span>
+                    <span className="text-right w-12">Jahr</span>
+                  </div>
                   {sorted.map(p => {
                     const s = stats.get(p.id) ?? { last3Months: { attended: 0, total: 0, percentage: 0 }, lastYear: { attended: 0, total: 0, percentage: 0 } }
+                    const ratio = s.last3Months.attended / max3M
                     return (
-                      <div key={p.id} className="flex items-center gap-3">
-                        <span data-stats-row-name className="w-24 text-sm font-medium text-navy-900 truncate">{p.name}</span>
-                        <div className="flex-1 h-2.5 bg-cream-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${barColor(s.last3Months.percentage)} transition-all duration-300`}
-                            style={{ width: `${s.last3Months.percentage}%` }}
-                          />
+                      <div key={p.id} className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-center px-3 py-2 border-b border-cream-100 last:border-b-0">
+                        <div className="min-w-0">
+                          <div data-stats-row-name className="text-sm font-medium text-navy-900 truncate">{p.name}</div>
+                          <div className="h-1.5 bg-cream-200 rounded-full overflow-hidden mt-1">
+                            <div
+                              className="h-full bg-navy-700 transition-all duration-300"
+                              style={{ width: `${ratio * 100}%` }}
+                            />
+                          </div>
                         </div>
-                        <span className="text-xs tabular-nums text-navy-700 w-20 text-right">
-                          {s.last3Months.attended}/{s.last3Months.total} · {s.last3Months.percentage}%
-                        </span>
+                        <span className="text-sm font-bold tabular-nums text-navy-900 w-16 text-right">{s.last3Months.attended}</span>
+                        <span className="text-xs tabular-nums text-navy-500 w-12 text-right">{s.lastYear.attended}</span>
                       </div>
                     )
                   })}

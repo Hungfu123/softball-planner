@@ -22,7 +22,7 @@ describe('StatsDrawer', () => {
     expect(screen.getByText(/8\.2/)).toBeInTheDocument()
   })
 
-  it('sortiert nach Quote DESC', () => {
+  it('sortiert nach 3-Monats-Anzahl DESC', () => {
     const players = [mockPlayer(1, 'Alice'), mockPlayer(2, 'Bob'), mockPlayer(3, 'Charlie')]
     const stats = new Map([
       [1, { last3Months: { attended: 3, total: 10, percentage: 30 }, lastYear: { attended: 0, total: 0, percentage: 0 } }],
@@ -32,6 +32,17 @@ describe('StatsDrawer', () => {
     render(<StatsDrawer open={true} onClose={() => {}} players={players} stats={stats} avgPresent={5} totalTrainings={10} trainings={[]} attendance={new Map()} />)
     const names = Array.from(document.querySelectorAll('[data-stats-row-name]')).map(el => el.textContent)
     expect(names).toEqual(['Bob', 'Charlie', 'Alice'])
+  })
+
+  it('zeigt Anzahl statt Prozent', () => {
+    const players = [mockPlayer(1, 'Khang')]
+    const stats = new Map([
+      [1, { last3Months: { attended: 12, total: 15, percentage: 80 }, lastYear: { attended: 36, total: 50, percentage: 72 } }],
+    ])
+    render(<StatsDrawer open={true} onClose={() => {}} players={players} stats={stats} avgPresent={5} totalTrainings={15} trainings={[]} attendance={new Map()} />)
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('36')).toBeInTheDocument()
+    expect(screen.queryByText(/80%/)).not.toBeInTheDocument()
   })
 
   it('rendert nicht wenn open=false', () => {

@@ -10,13 +10,11 @@ import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
 import { StatsDrawer } from './StatsDrawer'
 import { PlanEditDrawer } from './PlanEditDrawer'
-
-type SortBy = 'quote' | 'alpha'
+import { TrainingPlanView } from './TrainingPlanView'
 
 export function TrainingTodayPage() {
   const { trainings, attendance, toggleAttendance } = useTraining()
   const { players } = usePlayers()
-  const [sortBy, setSortBy] = useState<SortBy>('quote')
   const [statsOpen, setStatsOpen] = useState(false)
   const [planEditOpen, setPlanEditOpen] = useState(false)
   const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
@@ -141,49 +139,19 @@ export function TrainingTodayPage() {
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0">
           <section>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide">Anwesenheit</h2>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setSortBy('quote')}
-                  className={`px-2 py-1 text-xs rounded-md font-semibold cursor-pointer ${sortBy === 'quote' ? 'bg-navy-700 text-white' : 'bg-cream-200 text-navy-700'}`}
-                >
-                  Quote ↓
-                </button>
-                <button
-                  onClick={() => setSortBy('alpha')}
-                  className={`px-2 py-1 text-xs rounded-md font-semibold cursor-pointer ${sortBy === 'alpha' ? 'bg-navy-700 text-white' : 'bg-cream-200 text-navy-700'}`}
-                >
-                  A-Z
-                </button>
-              </div>
-            </div>
+            <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide mb-2">Anwesenheit</h2>
             <AttendanceList
               players={players}
-              stats={stats}
               presentIds={presentIds}
               onToggle={handleToggle}
-              sortBy={sortBy}
             />
           </section>
 
           <section>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide">Trainingsplan</h2>
-              <button
-                onClick={() => setPlanEditOpen(true)}
-                className="text-xs font-semibold text-softball-red-700 hover:underline cursor-pointer"
-              >
-                ✎ Bearbeiten
-              </button>
-            </div>
-            <div className="bg-white border border-cream-300 rounded-2xl p-4 text-sm text-navy-700">
-              {planContent ? (
-                <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{JSON.stringify(planContent, null, 2)}</pre>
-              ) : (
-                <p className="opacity-70 italic">Noch kein Plan für dieses Training.</p>
-              )}
-            </div>
+            <TrainingPlanView
+              planContent={planContent}
+              onEdit={() => setPlanEditOpen(true)}
+            />
           </section>
         </div>
 
