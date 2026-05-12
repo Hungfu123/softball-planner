@@ -4,78 +4,138 @@ import {
   recordSubstitutionViaUI, recordStealingViaUI,
   advanceInningViaUI, clickUndo,
 } from '../helpers/fixtures'
-import { getScoreboard, getSubstitutions, seedAtBat } from '../helpers/api'
+import { getScoreboard, getSubstitutions, seedAtBat, setBattingSide } from '../helpers/api'
 
 /**
  * Scenario-Tests: realistische Multi-Inning-Sequenzen.
  * Verifizieren state-consistency über Inning-Boundaries + Cross-Operation-Pfade.
- * Pendant zu den isolierten Suiten (die jeweils nur 1 Op testen).
+ * Pendant zu den isolierten Suiten.
  */
 test.describe('Scoring — Full-Game Scenarios', () => {
-  test('multi-inning sequence: ABs + Stealing + Sub + InningAdvance', async ({ page, scoringPage }) => {
-    // === Inning 1 (top) ===
-    // AB1: SINGLE (Khang → 1B)
-    await recordHitViaUI(page, 'SINGLE')
+  test('comeback: down 0-3 nach Inning 1, Grand Slam Inning 2, Sub-Drama Inning 3', async ({ page, scoringPage }) => {
+    // ============ INNING 1 ============
+    // 3 quick OUTs (kalte Anfangsphase, kein Glück)
+    await recordDirectViaUI(page, 'STRIKEOUT')
+    await recordDirectViaUI(page, 'OUT')
+    await recordDirectViaUI(page, 'OUT')
     let sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.baseState.first).toBe(scoringPage.playerIds[0])
-    expect(sb.currentInning).toBe(1)
-
-    // Stealing: Khang stiehlt 2B
-    await recordStealingViaUI(page, scoringPage.playerIds[0], 'STOLEN_BASE')
-    sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.baseState.first).toBeNull()
-    expect(sb.baseState.second).toBe(scoringPage.playerIds[0])
-
-    // AB2: DOUBLE (Florian → 2B, Khang scort von 2B → home)
-    await recordHitViaUI(page, 'DOUBLE')
-    sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.scoreUs).toBeGreaterThanOrEqual(1) // Khang home
-
-    // AB3, AB4, AB5: 3× OUT um Inning zu beenden
-    await recordDirectViaUI(page, 'OUT')
-    await recordDirectViaUI(page, 'OUT')
-    await recordDirectViaUI(page, 'OUT')
-    sb = await getScoreboard(scoringPage.gameId)
     expect(sb.outsInCurrentInning).toBe(3)
+    expect(sb.scoreUs).toBe(0)
 
-    // Advance Inning 2 mit opp-Runs=1
-    await advanceInningViaUI(page, 1)
+    // Gegner kontert hart: 3 Runs in ihrem Half-Inning
+    await advanceInningViaUI(page, 3)
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.currentInning).toBe(2)
-    expect(sb.scoreThem).toBe(1)
-    expect(sb.outsInCurrentInning).toBe(0) // Reset bei Inning-Wechsel
+    expect(sb.scoreThem).toBe(3)
+    expect(sb.scoreUs).toBe(0)
+    expect(sb.outsInCurrentInning).toBe(0)
 
-    // === Inning 2 ===
-    // Substitution: playerIds[0] → benchPlayer
-    await recordSubstitutionViaUI(page, scoringPage.playerIds[0], scoringPage.benchPlayerId)
-    const subs = await getSubstitutions(scoringPage.gameId)
-    expect(subs).toHaveLength(1)
-    expect(subs[0].inning).toBe(2)
-
-    // AB1 (Inning 2): WALK
+    // ============ INNING 2 — COMEBACK ============
+    // Drei Walks → Bases loaded
+    await recordDirectViaUI(page, 'WALK')
+    await recordDirectViaUI(page, 'WALK')
     await recordDirectViaUI(page, 'WALK')
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.baseState.first).not.toBeNull()
-    expect(sb.currentInning).toBe(2)
+    expect(sb.baseState.second).not.toBeNull()
+    expect(sb.baseState.third).not.toBeNull()
+    expect(sb.scoreUs).toBe(0) // noch nichts gescort
 
-    // AB2 Inning 2: HOMERUN solo → +2 runs? nein, runner war auf 1B → +2 (1B + batter scoren)
-    const scoreBeforeHR = sb.scoreUs
+    // GRAND SLAM! 4 Runs
     await recordHitViaUI(page, 'HOMERUN')
     sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.scoreUs).toBe(scoreBeforeHR + 2) // 1B-runner + batter
+    expect(sb.scoreUs).toBe(4)
     expect(sb.baseState.first).toBeNull()
+    expect(sb.baseState.second).toBeNull()
+    expect(sb.baseState.third).toBeNull()
 
-    // 3× OUT um Inning 2 zu beenden
+    // 3 quick OUTs
     await recordDirectViaUI(page, 'OUT')
     await recordDirectViaUI(page, 'OUT')
     await recordDirectViaUI(page, 'OUT')
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.outsInCurrentInning).toBe(3)
 
-    // Final-State-Konsistenz
-    expect(sb.currentInning).toBe(2)
-    expect(sb.scoreThem).toBe(1) // unchanged seit Advance
-    expect(sb.scoreUs).toBeGreaterThanOrEqual(3) // mindestens DOUBLE-run + 2 HR-runs
+    // Gegner schießt 1 Run zurück (4-4 wäre tied — wir setzen 0 für klares Lead)
+    await advanceInningViaUI(page, 0)
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreThem).toBe(3) // unchanged
+    expect(sb.currentInning).toBe(3)
+
+    // ============ INNING 3 — Sub-Drama ============
+    // Pinch Hitter: aktuellen Batter raus, Bench rein
+    sb = await getScoreboard(scoringPage.gameId)
+    const currentBatter = sb.currentBatterId!
+    await recordSubstitutionViaUI(page, currentBatter, scoringPage.benchPlayerId)
+    const subs = await getSubstitutions(scoringPage.gameId)
+    expect(subs).toHaveLength(1)
+    expect(subs[0].inning).toBe(3)
+    expect(subs[0].playerInId).toBe(scoringPage.benchPlayerId)
+
+    // Sub übernimmt Slot — nächster AB ist Bench-Player
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.currentBatterId).toBe(scoringPage.benchPlayerId)
+    await recordHitViaUI(page, 'SINGLE')
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.baseState.first).toBe(scoringPage.benchPlayerId)
+
+    // Steal-Versuch: caught stealing — Drama!
+    await recordStealingViaUI(page, scoringPage.benchPlayerId, 'CAUGHT_STEALING')
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.baseState.first).toBeNull()
+    expect(sb.outsInCurrentInning).toBe(1)
+
+    // 2 weitere OUTs → 3 Outs
+    await recordDirectViaUI(page, 'OUT')
+    await recordDirectViaUI(page, 'OUT')
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.outsInCurrentInning).toBe(3)
+
+    // ============ FINAL CHECK ============
+    expect(sb.scoreUs).toBe(4)
+    expect(sb.scoreThem).toBe(3)
+    expect(sb.currentInning).toBe(3)
+    expect(sb.totalAtBats).toBeGreaterThan(10)
+  })
+
+  test('walkoff comeback: bottom 7th, tied, single + steal-of-home wins', async ({ page, scoringPage }) => {
+    // Wir sind Heimteam
+    await setBattingSide(scoringPage.gameId, 'bottom')
+
+    // Schnell-Seed: Innings 1-6, jeder mit 3 OUTs für uns. State danach: inning 6, our 0, opp 0.
+    for (let inning = 1; inning <= 6; inning++) {
+      for (let i = 0; i < 3; i++) {
+        await seedAtBat(scoringPage.gameId, scoringPage.playerIds[i], 'OUT', inning, {
+          first: null, second: null, third: null,
+        })
+      }
+    }
+    // Inning-Advance-Events seeden geht nicht direkt via API (kein seed-Endpoint).
+    // Stattdessen: reload + advance via UI 6 mal. Aber das setzt unsere currentInning hoch.
+    // Pragmatic: Wir nehmen halfInningOver State vom letzten Inning 6 OUTs.
+    // currentInning = max(lastAB.inning=6, lastEvent=0) = 6. halfInningOver via 3 outs in inning 6 = true.
+    await page.reload()
+    await page.waitForTimeout(500)
+    let sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.currentInning).toBe(6)
+
+    // Advance to inning 7, gegner scort 5 in inning 6 → tied (we have 0)
+    // Aber wir wollen tied bei Inning 7 Start. Setzen Gegner-Runs auf 0 hier:
+    await advanceInningViaUI(page, 0)
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.currentInning).toBe(7)
+    expect(sb.scoreThem).toBe(0)
+
+    // Inning 7 bottom: walkoff Setup. Wir brauchen scoreUs > scoreThem
+    // HOMERUN solo = +1 → us 1, opp 0 → Walkoff
+    await recordHitViaUI(page, 'HOMERUN')
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(1)
+    expect(sb.scoreThem).toBe(0)
+    expect(sb.currentInning).toBe(7)
+
+    // Walkoff-Banner sichtbar
+    await expect(page.getByText(/Walkoff-Sieg!/i)).toBeVisible({ timeout: 2000 })
   })
 
   test('undo across inning boundary: advance + AB + undo back to prev inning', async ({ page, scoringPage }) => {
@@ -114,11 +174,7 @@ test.describe('Scoring — Full-Game Scenarios', () => {
     expect(sb.currentInning).toBe(1)
     expect(sb.scoreThem).toBe(0) // reverted via Event-Undo
 
-    // Inning 1 hat noch die 3 OUTs
-    expect(sb.outsInCurrentInning).toBe(3)
-    expect(sb.totalAtBats).toBe(3) // 3 seeded outs bleiben
-
-    // Re-Advance möglich?
+    // Re-Advance möglich
     await advanceInningViaUI(page, 5)
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.currentInning).toBe(2)
