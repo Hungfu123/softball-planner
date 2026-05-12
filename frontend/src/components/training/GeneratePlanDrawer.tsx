@@ -28,9 +28,11 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, onGenera
     if (open) {
       setPlayerCount(defaultPlayerCount || 10)
       setFocus('Allgemein')
-      setDurationMinutes(90)
+      setDurationMinutes(120)
     }
   }, [open, defaultPlayerCount])
+
+  const durationPresets = [90, 120, 180]
 
   const submit = async () => {
     setSubmitting(true)
@@ -75,30 +77,42 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, onGenera
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Dauer (min)</label>
-                  <input
-                    type="number"
-                    min={30}
-                    max={240}
-                    step={5}
-                    value={durationMinutes}
-                    onChange={e => setDurationMinutes(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-cream-300 rounded-md text-sm text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
-                  />
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Dauer</label>
+                <div className="flex gap-1.5 mb-1.5">
+                  {durationPresets.map(p => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setDurationMinutes(p)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-md cursor-pointer tabular-nums ${durationMinutes === p ? 'bg-navy-800 text-white' : 'bg-cream-200 text-navy-700 hover:bg-cream-300'}`}
+                    >
+                      {p} min
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Spieler</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={playerCount}
-                    onChange={e => setPlayerCount(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-cream-300 rounded-md text-sm text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
-                  />
-                </div>
+                <input
+                  type="number"
+                  min={30}
+                  max={240}
+                  step={5}
+                  value={durationMinutes}
+                  onChange={e => setDurationMinutes(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-cream-300 rounded-md text-sm text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Spieler</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={playerCount}
+                  onChange={e => setPlayerCount(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-cream-300 rounded-md text-sm text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
+                />
+                <p className="text-[10px] text-navy-500 mt-1">Vorbelegt mit Anwesenden für dieses Training</p>
               </div>
             </div>
 

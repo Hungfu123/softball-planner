@@ -276,7 +276,7 @@ export function TrainingTodayPage() {
         <GeneratePlanDrawer
           open={generateOpen}
           onClose={() => setGenerateOpen(false)}
-          defaultPlayerCount={Math.max(presentIds.size, players.length, 10)}
+          defaultPlayerCount={presentIds.size > 0 ? presentIds.size : Math.max(players.length, 10)}
           onGenerate={handleGenerate}
         />
 
