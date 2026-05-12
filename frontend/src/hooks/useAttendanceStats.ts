@@ -59,5 +59,9 @@ export function computeAttendanceStats({ trainings, attendance, playerId, now = 
 }
 
 export function useAttendanceStats(args: Args): PlayerAttendanceStats {
-  return useMemo(() => computeAttendanceStats(args), [args.trainings, args.attendance, args.playerId, args.now])
+  const { trainings, attendance, playerId, now } = args
+  return useMemo(
+    () => computeAttendanceStats({ trainings, attendance, playerId, now }),
+    [trainings, attendance, playerId, now],
+  )
 }
