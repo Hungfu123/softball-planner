@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { Link, useParams, useSearchParams, useBlocker, useNavigate } from 'react-router-dom'
 import { useGameDay } from '@/hooks/useGameDay'
 import { useLineup } from '@/hooks/useLineup'
@@ -47,6 +47,7 @@ export function GameDayPlanner() {
   const [showAutoSingleConfirm, setShowAutoSingleConfirm] = useState(false)
   const [autoAllLoading, setAutoAllLoading] = useState(false)
   const [autoSingleLoading, setAutoSingleLoading] = useState(false)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const [showExportConfirm, setShowExportConfirm] = useState(false)
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
@@ -114,6 +115,30 @@ export function GameDayPlanner() {
       api.getTrainingStats(undefined, d.toISOString().slice(0, 10), gameDay.date).then(setTrainingStats)
     }
   }, [gameDay?.date, selectedPeriodId])
+
+  const selectGame = useCallback((i: number) => {
+    setActiveTab(i)
+    const game = gameDay?.games[i]
+    if (game) {
+      lineup.load(game.id)
+      staff.load(game.id)
+    }
+  }, [gameDay, lineup, staff])
+
+  const onSwipeStart = (e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }
+  const onSwipeEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!start || !gameDay || gameDay.games.length <= 1) return
+    const dx = e.changedTouches[0].clientX - start.x
+    const dy = e.changedTouches[0].clientY - start.y
+    if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+    const nextIdx = dx < 0 ? activeTab + 1 : activeTab - 1
+    if (nextIdx < 0 || nextIdx >= gameDay.games.length) return
+    selectGame(nextIdx)
+  }
 
   const handleSave = async () => {
     if (!activeGame) return
@@ -543,7 +568,11 @@ export function GameDayPlanner() {
           {/* Main Layout — 3 columns on desktop */}
           <div className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-4 lg:gap-5">
             {/* Col 1: Lineup + Save */}
-            <div className="space-y-4 order-1">
+            <div
+              className="space-y-4 order-1"
+              onTouchStart={onSwipeStart}
+              onTouchEnd={onSwipeEnd}
+            >
               <LineupEditor
                 entries={lineup.entries}
                 poolPlayers={poolPlayers}
@@ -572,6 +601,7 @@ export function GameDayPlanner() {
                 hasChanges={lineup.hasChanges}
                 saving={lineup.saving}
                 onSave={handleSave}
+                onCancel={lineup.revert}
                 className="lg:block hidden"
               />
             </div>
@@ -670,6 +700,7 @@ export function GameDayPlanner() {
             hasChanges={lineup.hasChanges}
             saving={lineup.saving}
             onSave={handleSave}
+            onCancel={lineup.revert}
             className="lg:hidden sticky bottom-4"
           />
         </>

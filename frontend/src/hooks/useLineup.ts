@@ -210,6 +210,20 @@ export function useLineup() {
     setSubstitutions([])
   }, [])
 
+  const revert = useCallback(() => {
+    setEntries(savedEntries.map(e => ({
+      player: e.player,
+      position: e.position,
+      dhBatterId: e.dhBatterPlayer?.id ?? null,
+      dhBatterName: e.dhBatterPlayer?.name ?? null,
+    })))
+    setSubstitutions(savedSubstitutions.map(s => ({
+      playerOut: s.playerOut,
+      playerIn: s.playerIn,
+      inning: s.inning,
+    })))
+  }, [savedEntries, savedSubstitutions])
+
   const applySuggestion = useCallback((suggestions: LineupSuggestionEntry[], availablePlayers: Player[]) => {
     const playerMap = new Map(availablePlayers.map(p => [p.id, p]))
     // Build full lineup from suggestion, keeping DH info from existing entries
@@ -256,6 +270,6 @@ export function useLineup() {
     entries, substitutions, saving, hasChanges, activeGameId,
     load, addPlayer, removePlayer, setPosition, setDhBatter,
     moveUp, moveDown, reorder, save, importEntries, clearAll, removeUnavailable,
-    applySuggestion, invalidateCache, addSubstitution, removeSubstitution,
+    applySuggestion, invalidateCache, addSubstitution, removeSubstitution, revert,
   }
 }

@@ -54,8 +54,8 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
 
   return (
     <div>
-      {/* Tab strip — pure nav */}
-      <div className="flex border-b border-cream-300 items-stretch">
+      {/* Tab strip — horizontal scroll auf Mobile damit Page-Layout nicht verrutscht */}
+      <div className="flex border-b border-cream-300 items-stretch overflow-x-auto -mx-1 px-1 scrollbar-thin">
         {games.map((game, i) => (
           <div key={game.id} className="relative group flex items-center">
             <button
