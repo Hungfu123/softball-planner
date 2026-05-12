@@ -17,7 +17,7 @@ import { GeneratePlanDrawer } from './GeneratePlanDrawer'
 import { SharePlanDrawer } from './SharePlanDrawer'
 
 type MobileTab = 'anwesenheit' | 'plan'
-type AttendanceSort = 'alpha' | 'frequency'
+type AttendanceSort = 'alpha' | 'frequency' | 'decided'
 
 export function TrainingTodayPage() {
   const { trainings, attendance, toggleAttendance } = useTraining()
@@ -76,6 +76,12 @@ export function TrainingTodayPage() {
 
   const totalTrainings = useMemo(() => trainings.filter(t => !t.cancelled).length, [trainings])
 
+  const decidedIds = useMemo(() => {
+    if (!currentTraining) return new Set<number>()
+    const map = attendance.get(currentTraining.id) ?? new Map<number, boolean>()
+    return new Set(map.keys())
+  }, [attendance, currentTraining])
+
   const sortedPlayers = useMemo(() => {
     const base = [...players]
     if (attendanceSort === 'frequency') {
@@ -86,8 +92,16 @@ export function TrainingTodayPage() {
         return a.name.localeCompare(b.name)
       })
     }
+    if (attendanceSort === 'decided') {
+      return base.sort((a, b) => {
+        const aDec = decidedIds.has(a.id)
+        const bDec = decidedIds.has(b.id)
+        if (aDec !== bDec) return aDec ? -1 : 1
+        return a.name.localeCompare(b.name)
+      })
+    }
     return base.sort((a, b) => a.name.localeCompare(b.name))
-  }, [players, stats, attendanceSort])
+  }, [players, stats, attendanceSort, decidedIds])
 
   const loadPlanFor = async (trainingId: number) => {
     try {
@@ -268,10 +282,11 @@ export function TrainingTodayPage() {
               <div className="ml-auto inline-flex bg-cream-200 rounded-lg p-0.5">
                 <button
                   type="button"
-                  onClick={() => setAttendanceSort('alpha')}
-                  className={`px-2.5 py-1 text-xs rounded-md font-semibold cursor-pointer transition-colors ${attendanceSort === 'alpha' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                  onClick={() => setAttendanceSort('decided')}
+                  className={`px-2.5 py-1 text-xs rounded-md font-semibold cursor-pointer transition-colors ${attendanceSort === 'decided' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                  title="Bereits abgestimmte Spieler zuerst"
                 >
-                  A–Z
+                  ✓ Abgestimmt
                 </button>
                 <button
                   type="button"
@@ -280,6 +295,13 @@ export function TrainingTodayPage() {
                   title="Häufigkeit (letzte 3 Monate)"
                 >
                   Häufig ↓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttendanceSort('alpha')}
+                  className={`px-2.5 py-1 text-xs rounded-md font-semibold cursor-pointer transition-colors ${attendanceSort === 'alpha' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                >
+                  A–Z
                 </button>
               </div>
             </div>

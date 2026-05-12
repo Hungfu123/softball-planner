@@ -55,7 +55,7 @@ export function DrillPickerModal({ drills, onSelect, onClose }: Props) {
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
-          <h2 className="font-display text-lg font-bold text-navy-900 uppercase tracking-wide">Drill hinzufügen</h2>
+          <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">Drill hinzufügen</h2>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <X size={20} />
           </button>
