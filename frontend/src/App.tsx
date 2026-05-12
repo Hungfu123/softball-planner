@@ -12,6 +12,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 
 // Lazy-load heavy pages
+const TrainingTodayPage = lazy(() => import('@/components/training/TrainingTodayPage').then(m => ({ default: m.TrainingTodayPage })))
 const TrainingPlanPage = lazy(() => import('@/components/training-plan/TrainingPlanPage'))
 const ScoringPage = lazy(() => import('@/components/scoring/ScoringPage').then(m => ({ default: m.ScoringPage })))
 const StatsPage = lazy(() => import('@/components/stats/StatsPage').then(m => ({ default: m.StatsPage })))
@@ -59,7 +60,8 @@ const router = createBrowserRouter([
     errorElement: <ChunkErrorBoundary />,
     children: [
       { path: '/', element: <Dashboard />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/training', element: <TrainingPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/training', element: <Suspense fallback={<LoadingSkeleton />}><TrainingTodayPage /></Suspense>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/training-history', element: <TrainingPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/training-plan', element: <LazyTrainingPlan />, errorElement: <ChunkErrorBoundary /> },
       { path: '/players', element: <PlayerManager />, errorElement: <ChunkErrorBoundary /> },
       { path: '/gameday/:id', element: <GameDayPlanner />, errorElement: <ChunkErrorBoundary /> },
