@@ -30,11 +30,11 @@ export function AttendanceCounter({ present, avgRecent, recentCount, onStatsClic
           type="button"
           onClick={onStatsClick}
           aria-label="Statistik anzeigen"
-          className="flex items-center gap-1 px-4 border-l border-cream-300 text-navy-700 hover:bg-cream-50 active:bg-cream-100 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-4 bg-softball-red-600 hover:bg-softball-red-700 text-white transition-colors cursor-pointer"
         >
           <BarChart3 size={18} />
           <span className="hidden sm:inline text-xs font-bold uppercase tracking-wider">Statistik</span>
-          <ChevronRight size={16} className="text-navy-400" />
+          <ChevronRight size={16} className="text-white/80" />
         </button>
       </div>
     </div>

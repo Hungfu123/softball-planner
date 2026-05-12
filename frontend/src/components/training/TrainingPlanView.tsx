@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2 } from 'lucide-react'
+import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes } from 'lucide-react'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 
 type Props = {
@@ -247,6 +247,16 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
       <div className="flex items-center justify-between mb-2 gap-2">
         <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide">Trainingsplan</h2>
         <div className="flex items-center gap-2">
+          {hasPlan && (
+            <button
+              type="button"
+              onClick={onShare}
+              aria-label="Plan teilen"
+              className="text-xs font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-md cursor-pointer flex items-center gap-1"
+            >
+              <Share2 size={12} /> Teilen
+            </button>
+          )}
           <a
             href="/drills.pdf"
             target="drill-handbuch"
@@ -316,8 +326,9 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
             return (
               <div key={`g-${gIdx}`} className="bg-navy-50 border border-navy-200 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 bg-navy-100">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-navy-800 flex items-center gap-1">
-                    🔀 Station &middot; parallel
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-navy-800 flex items-center gap-1.5">
+                    <Boxes size={14} className="text-softball-red-600" />
+                    Station &middot; parallel
                   </span>
                   {g.durationMinutes != null && (
                     <span className="text-xs font-bold tabular-nums text-navy-900">{g.durationMinutes} min</span>

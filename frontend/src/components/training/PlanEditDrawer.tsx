@@ -5,7 +5,7 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown } from 'lucide-react'
+import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown, Boxes } from 'lucide-react'
 import * as api from '@/api/client'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 import { DrillPickerModal } from './DrillPickerModal'
@@ -80,7 +80,12 @@ function SortableSection({
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 leading-tight flex items-center gap-1.5">
               <span>{section.sectionType ?? 'Block'}</span>
-              {inStation && <span className="bg-navy-100 text-navy-800 px-1 rounded">🔀 Station {section.parallelGroup}</span>}
+              {inStation && (
+                <span className="bg-navy-100 text-navy-800 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                  <Boxes size={10} className="text-softball-red-600" />
+                  Station {section.parallelGroup}
+                </span>
+              )}
             </div>
             <div className="text-sm font-medium text-navy-900 truncate leading-tight">{section.title || '—'}</div>
           </div>
@@ -375,9 +380,9 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
                 <button
                   type="button"
                   onClick={combineToStation}
-                  className="px-3 py-1.5 text-xs font-bold rounded-md bg-navy-700 text-white hover:bg-navy-800 cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-bold rounded-md bg-navy-700 text-white hover:bg-navy-800 cursor-pointer flex items-center gap-1.5"
                 >
-                  🔀 Zur Station verbinden
+                  <Boxes size={14} /> Zur Station verbinden
                 </button>
               )}
               {selectedStationGroups.size > 0 && (
