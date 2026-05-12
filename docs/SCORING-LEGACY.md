@@ -42,3 +42,27 @@ Legacy Live-Scoring pro Game (nicht ein kompletter Bogen). Existiert parallel zu
 - **+2 RUNS Toast nach Inning-Switch**: stale `scoreboard.runners`. Fix: `displayRunners`.
 - **3-Game-Limit V10 H2-Constraint Bug** (historisch): V10 dropte H2-named Constraint statt Postgres-named. Fix in V25 mit `DROP CONSTRAINT IF EXISTS games_game_number_check; ADD CONSTRAINT games_number_check CHECK (game_number >= 1 AND game_number <= 10)`.
 - **`ScoringPage` ist riesig** (~1970 Zeilen). Refactoring überlegt aber bisher nicht angegangen — bei größeren Änderungen extracting Custom-Hooks/Sub-Components vorschlagen.
+
+## E2E Tests — IMMER bei Feature-Änderung laufen
+
+**Bei JEDER Änderung am Live-Scoring** (ScoringPage, GameScoringService, useScoring, CorrectionSheet, DiamondView, Inning-Advance, Undo, Stealing, Substitution, Reset, Walkoff):
+
+```bash
+docker compose up -d db
+cd frontend && npm run test:e2e
+```
+
+**43 Playwright-Tests** decken:
+- AB-Recording alle 9 Result-Typen × empty/loaded
+- Stealing (STOLEN_BASE / CAUGHT_STEALING / Out-Counter)
+- Substitution (Sub-Sheet + currentBatter-Rotation + Persistenz)
+- Inning-Advance (Event-Persist + Bug #3 Score-Drift-Regression)
+- Undo alle 4 Action-Typen + Toast + Orphan-Cleanup
+- Reset (alle State-Layer inkl. Substitutions)
+- Walkoff (Banner + Undo-Cleanup)
+- Multi-Inning-Scenario (Cross-Operation State-Konsistenz)
+- Undo across Inning-Boundary
+
+**Runtime ~2min.** CI läuft automatisch auf push zu master (`.github/workflows/ci.yml`), lokal vorher zur Round-Trip-Vermeidung.
+
+**Refactor-Risk:** Live-Scoring hat viele kreuz-koppelnde Concerns. Die E2E-Suite ist das Safety-Net. Wenn Tests rot werden — **investigate before deploy**.
