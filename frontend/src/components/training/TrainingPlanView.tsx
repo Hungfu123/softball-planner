@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil } from 'lucide-react'
+import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2 } from 'lucide-react'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse } from '@/types'
 
 type Props = {
   planContent: TrainingPlanContentResponse | null
   onEdit: () => void
+  onRegenerate: () => void
+  onDelete: () => void
 }
 
 type SectionStyle = {
@@ -154,13 +156,37 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function TrainingPlanView({ planContent, onEdit }: Props) {
+function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Pencil; label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-cream-100 cursor-pointer ${danger ? 'text-softball-red-700' : 'text-navy-800'}`}
+    >
+      <Icon size={14} />
+      {label}
+    </button>
+  )
+}
+
+export function TrainingPlanView({ planContent, onEdit, onRegenerate, onDelete }: Props) {
   const sections = planContent?.sections ?? []
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
   const initialExpanded = sections.length > 0 && sections.length <= 5
   const [expanded, setExpanded] = useState<Set<number>>(
     () => new Set(initialExpanded ? sections.map((_, i) => i) : []),
   )
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen])
 
   const toggle = (idx: number) => {
     setExpanded(prev => {
@@ -171,17 +197,42 @@ export function TrainingPlanView({ planContent, onEdit }: Props) {
     })
   }
 
+  const hasPlan = sections.length > 0
+
   return (
     <div data-training-plan-view>
       <div className="flex items-baseline justify-between mb-2">
         <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide">Trainingsplan</h2>
-        <button
-          onClick={onEdit}
-          className="text-xs font-semibold text-softball-red-700 hover:underline cursor-pointer flex items-center gap-1"
-          aria-label="Plan bearbeiten"
-        >
-          <Pencil size={12} /> Bearbeiten
-        </button>
+        <div className="relative" ref={menuRef}>
+          {hasPlan ? (
+            <button
+              type="button"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label="Plan-Aktionen"
+              aria-expanded={menuOpen}
+              className="p-1.5 rounded-md text-navy-600 hover:bg-cream-100 cursor-pointer"
+            >
+              <MoreVertical size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              aria-label="Plan generieren"
+              className="text-xs font-semibold text-softball-red-700 hover:underline cursor-pointer flex items-center gap-1"
+            >
+              <Sparkles size={12} /> Generieren
+            </button>
+          )}
+          {menuOpen && hasPlan && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-cream-300 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
+              <MenuItem Icon={Pencil} label="Bearbeiten" onClick={() => { setMenuOpen(false); onEdit() }} />
+              <MenuItem Icon={Sparkles} label="Neu generieren" onClick={() => { setMenuOpen(false); onRegenerate() }} />
+              <div className="border-t border-cream-200 my-1" />
+              <MenuItem Icon={Trash2} label="Löschen" onClick={() => { setMenuOpen(false); onDelete() }} danger />
+            </div>
+          )}
+        </div>
       </div>
 
       {sections.length === 0 ? (

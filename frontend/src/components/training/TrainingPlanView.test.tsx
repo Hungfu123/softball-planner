@@ -20,15 +20,24 @@ const mkSection = (overrides: Partial<TrainingPlanContentResponse['sections'][0]
   ...overrides,
 })
 
+const noops = { onEdit: vi.fn(), onRegenerate: vi.fn(), onDelete: vi.fn() }
+
 describe('TrainingPlanView', () => {
   it('zeigt Empty-State wenn kein Plan', () => {
-    render(<TrainingPlanView planContent={null} onEdit={vi.fn()} />)
+    render(<TrainingPlanView planContent={null} {...noops} />)
     expect(screen.getByText(/Noch kein Plan/i)).toBeInTheDocument()
   })
 
   it('zeigt Empty-State bei leeren Sections', () => {
-    render(<TrainingPlanView planContent={{ sections: [], groupDistributionHint: null, overallNotes: null }} onEdit={vi.fn()} />)
+    render(<TrainingPlanView planContent={{ sections: [], groupDistributionHint: null, overallNotes: null }} {...noops} />)
     expect(screen.getByText(/Noch kein Plan/i)).toBeInTheDocument()
+  })
+
+  it('zeigt Generieren-Button wenn kein Plan', () => {
+    const onRegenerate = vi.fn()
+    render(<TrainingPlanView planContent={null} onEdit={vi.fn()} onRegenerate={onRegenerate} onDelete={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Plan generieren/i }))
+    expect(onRegenerate).toHaveBeenCalled()
   })
 
   it('rendert Section-Titel + Dauer', () => {
@@ -40,7 +49,7 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: null,
     }
-    render(<TrainingPlanView planContent={plan} onEdit={vi.fn()} />)
+    render(<TrainingPlanView planContent={plan} {...noops} />)
     expect(screen.getByText('Aufwärmroutine Dead Sox')).toBeInTheDocument()
     expect(screen.getByText('Wurf-Drill')).toBeInTheDocument()
     expect(screen.getByText('30 min')).toBeInTheDocument()
@@ -57,7 +66,7 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: null,
     }
-    render(<TrainingPlanView planContent={plan} onEdit={vi.fn()} />)
+    render(<TrainingPlanView planContent={plan} {...noops} />)
     expect(screen.getByText(/1 h 45 min · 3 Blöcke/)).toBeInTheDocument()
   })
 
@@ -69,18 +78,33 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: null,
     }
-    render(<TrainingPlanView planContent={plan} onEdit={vi.fn()} />)
-    // >5 Sections → collapsed Default
+    render(<TrainingPlanView planContent={plan} {...noops} />)
     expect(screen.queryByText('Bases stellen')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Section 0/i }))
     expect(screen.getByText('Bases stellen')).toBeInTheDocument()
   })
 
-  it('Bearbeiten-Button ruft onEdit', () => {
+  it('3-Dot-Menu öffnet + zeigt Bearbeiten/Neu generieren/Löschen', () => {
     const onEdit = vi.fn()
-    render(<TrainingPlanView planContent={null} onEdit={onEdit} />)
-    fireEvent.click(screen.getByRole('button', { name: /Plan bearbeiten/i }))
+    const onRegenerate = vi.fn()
+    const onDelete = vi.fn()
+    const plan = {
+      sections: [mkSection({ title: 'Drill A', durationMinutes: 20 })],
+      groupDistributionHint: null,
+      overallNotes: null,
+    }
+    render(<TrainingPlanView planContent={plan} onEdit={onEdit} onRegenerate={onRegenerate} onDelete={onDelete} />)
+    fireEvent.click(screen.getByRole('button', { name: /Plan-Aktionen/i }))
+    fireEvent.click(screen.getByText('Bearbeiten'))
     expect(onEdit).toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Plan-Aktionen/i }))
+    fireEvent.click(screen.getByText('Neu generieren'))
+    expect(onRegenerate).toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Plan-Aktionen/i }))
+    fireEvent.click(screen.getByText('Löschen'))
+    expect(onDelete).toHaveBeenCalled()
   })
 
   it('zeigt overallNotes wenn vorhanden', () => {
@@ -89,7 +113,7 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: 'Heute Fokus auf Defense',
     }
-    render(<TrainingPlanView planContent={plan} onEdit={vi.fn()} />)
+    render(<TrainingPlanView planContent={plan} {...noops} />)
     expect(screen.getByText('Heute Fokus auf Defense')).toBeInTheDocument()
   })
 
@@ -99,7 +123,7 @@ describe('TrainingPlanView', () => {
       groupDistributionHint: null,
       overallNotes: null,
     }
-    const { container } = render(<TrainingPlanView planContent={plan} onEdit={vi.fn()} />)
+    const { container } = render(<TrainingPlanView planContent={plan} {...noops} />)
     expect(container.querySelector('pre')).not.toBeInTheDocument()
   })
 })
