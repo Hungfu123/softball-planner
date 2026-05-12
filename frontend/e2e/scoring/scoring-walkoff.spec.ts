@@ -16,7 +16,7 @@ test.describe('Scoring — Walkoff', () => {
     await seedAtBat(gameId, playerIds[0], 'OUT', 7, { first: null, second: null, third: null })
   }
 
-  test('walkoff: HOMERUN in bottom 7th with scoreThem=2 ends game', async ({ page, scoringPage }) => {
+  test('walkoff: HOMERUN in bottom 7th with scoreThem=2 ends game @smoke', async ({ page, scoringPage }) => {
     await seedBottomSeventhDown(scoringPage.gameId, scoringPage.playerIds)
     // Set scoreThem directly via API (existing /score endpoint via setGameScore not exported,
     // use POST AtBat with runsScored=0 + manual game.scoreThem won't work — need direct).

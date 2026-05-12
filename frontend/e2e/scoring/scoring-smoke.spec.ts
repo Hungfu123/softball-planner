@@ -2,7 +2,7 @@ import { test, expect } from '../helpers/fixtures'
 import { getScoreboard } from '../helpers/api'
 
 test.describe('Scoring Smoke', () => {
-  test('page loads with empty state and disabled undo', async ({ page, scoringPage }) => {
+  test('page loads with empty state and disabled undo @smoke', async ({ page, scoringPage }) => {
     await expect(page.getByRole('button', { name: 'TREFFER' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'STRIKEOUT' })).toBeVisible()
     await expect(page.getByRole('button', { name: /AUS/ })).toBeVisible()

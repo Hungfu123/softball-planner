@@ -2,7 +2,7 @@ import { test, expect, recordHitViaUI, recordDirectViaUI } from '../helpers/fixt
 import { getScoreboard, seedAtBat } from '../helpers/api'
 
 test.describe('Scoring — AB Recording (empty bases)', () => {
-  test('SINGLE places batter on 1B, no runs', async ({ page, scoringPage }) => {
+  test('SINGLE places batter on 1B, no runs @smoke', async ({ page, scoringPage }) => {
     await recordHitViaUI(page, 'SINGLE')
     const sb = await getScoreboard(scoringPage.gameId)
     expect(sb.scoreUs).toBe(0)
@@ -88,7 +88,7 @@ test.describe('Scoring — AB Recording (bases loaded)', () => {
     })
   }
 
-  test('HOMERUN bases loaded grand slam (4 runs)', async ({ page, scoringPage }) => {
+  test('HOMERUN bases loaded grand slam (4 runs) @smoke', async ({ page, scoringPage }) => {
     await seedBasesLoaded(scoringPage.gameId, scoringPage.playerIds)
     await page.reload()
     await page.waitForTimeout(500)

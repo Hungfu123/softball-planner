@@ -9,8 +9,8 @@ type Fixtures = {
 
 export const test = base.extend<Fixtures, { workerGame: Awaited<ReturnType<typeof ensureTestGame>> }>({
   workerGame: [
-    async ({}, use) => {
-      const game = await ensureTestGame()
+    async ({}, use, workerInfo) => {
+      const game = await ensureTestGame(workerInfo.parallelIndex)
       await use(game)
       await teardownTestGameDay(game.gameDayId)
     },

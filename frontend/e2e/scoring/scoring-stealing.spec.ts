@@ -2,7 +2,7 @@ import { test, expect, recordStealingViaUI } from '../helpers/fixtures'
 import { getScoreboard, getStealingEvents, seedAtBat } from '../helpers/api'
 
 test.describe('Scoring — Stealing', () => {
-  test('STOLEN_BASE 1B-Runner moves to 2B', async ({ page, scoringPage }) => {
+  test('STOLEN_BASE 1B-Runner moves to 2B @smoke', async ({ page, scoringPage }) => {
     await seedAtBat(scoringPage.gameId, scoringPage.playerIds[0], 'SINGLE', 1, {
       first: scoringPage.playerIds[0], second: null, third: null,
     })

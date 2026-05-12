@@ -2,8 +2,9 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false,
-  workers: 1,
+  // Parallel: per-worker isoliert via E2E-Test-Scoring-W{N} GameDay + Year 2099+N Season.
+  fullyParallel: true,
+  workers: process.env.CI ? 2 : 3,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'list',
@@ -12,6 +13,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     actionTimeout: 10_000,
+    // Animations off → schneller + reduziert flakiness durch transition timing
+    reducedMotion: 'reduce',
   },
   projects: [
     {

@@ -20,7 +20,7 @@ test.describe('Scoring — Inning-Advance', () => {
     expect(sb.scoreThem).toBe(0)
   })
 
-  test('advance with opponent runs adds to scoreThem', async ({ page, scoringPage }) => {
+  test('advance with opponent runs adds to scoreThem @smoke', async ({ page, scoringPage }) => {
     await seedThreeOuts(scoringPage.gameId, scoringPage.playerIds)
     await page.reload()
     await page.waitForTimeout(500)
@@ -45,7 +45,7 @@ test.describe('Scoring — Inning-Advance', () => {
     expect(sb.scoreThem).toBe(2)
   })
 
-  test('bug3 regression — undo after advance reverts scoreThem', async ({ page, scoringPage }) => {
+  test('bug3 regression — undo after advance reverts scoreThem @smoke', async ({ page, scoringPage }) => {
     await seedThreeOuts(scoringPage.gameId, scoringPage.playerIds)
     await page.reload()
     await page.waitForTimeout(500)

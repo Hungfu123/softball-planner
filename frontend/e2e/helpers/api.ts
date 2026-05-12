@@ -15,16 +15,25 @@ type Season = { id: number; name: string; year: number }
 type GameDay = { id: number; date: string; label?: string | null; games: { id: number; gameNumber: number }[] }
 type LineupEntryReq = { playerId: number; position: string | null; battingOrder: number; dhBatterPlayerId: number | null }
 
-const TEST_GAMEDAY_LABEL = 'E2E-Test-Scoring'
+const TEST_GAMEDAY_LABEL_PREFIX = 'E2E-Test-Scoring'
 const TEST_DATE = '2099-01-01'
 
-async function ensureSeason(c: APIRequestContext): Promise<number> {
+function testGameDayLabel(workerIndex: number): string {
+  return `${TEST_GAMEDAY_LABEL_PREFIX}-W${workerIndex}`
+}
+
+function testSeasonYear(workerIndex: number): number {
+  return 2099 + workerIndex
+}
+
+async function ensureSeason(c: APIRequestContext, workerIndex: number): Promise<number> {
+  const year = testSeasonYear(workerIndex)
   const seasonsRes = await c.get('/api/seasons')
   if (!seasonsRes.ok()) throw new Error(`Failed to fetch seasons: ${seasonsRes.status()}`)
   const seasons: Season[] = await seasonsRes.json()
-  const existing = seasons.find(s => s.year === 2099)
+  const existing = seasons.find(s => s.year === year)
   if (existing) return existing.id
-  const create = await c.post('/api/seasons', { data: { name: 'E2E Test Season', year: 2099 } })
+  const create = await c.post('/api/seasons', { data: { name: `E2E Test Season W${workerIndex}`, year } })
   if (!create.ok()) throw new Error(`Failed to create season: ${create.status()}`)
   const created: Season = await create.json()
   return created.id
@@ -34,18 +43,19 @@ async function ensureSeason(c: APIRequestContext): Promise<number> {
  * Find-or-create the shared E2E test GameDay with a single Game and 9-player lineup.
  * Returns the gameId of the test Game.
  */
-export async function ensureTestGame(): Promise<{ gameId: number; gameDayId: number; playerIds: number[]; benchPlayerId: number }> {
+export async function ensureTestGame(workerIndex: number = 0): Promise<{ gameId: number; gameDayId: number; playerIds: number[]; benchPlayerId: number }> {
   const c = await client()
+  const label = testGameDayLabel(workerIndex)
   try {
-    const seasonId = await ensureSeason(c)
+    const seasonId = await ensureSeason(c, workerIndex)
     const gdRes = await c.get(`/api/seasons/${seasonId}/gamedays`)
     if (!gdRes.ok()) throw new Error(`Failed to fetch gamedays: ${gdRes.status()}`)
     const gameDays: GameDay[] = await gdRes.json()
-    let gameDay = gameDays.find(gd => gd.label === TEST_GAMEDAY_LABEL)
+    let gameDay = gameDays.find(gd => gd.label === label)
     let createdNew = false
     if (!gameDay) {
       const createGd = await c.post(`/api/seasons/${seasonId}/gamedays`, {
-        data: { date: TEST_DATE, label: TEST_GAMEDAY_LABEL, numberOfGames: 1 },
+        data: { date: TEST_DATE, label, numberOfGames: 1 },
       })
       if (!createGd.ok()) throw new Error(`Failed to create gameday: ${createGd.status()} ${await createGd.text()}`)
       gameDay = await createGd.json()
@@ -105,7 +115,7 @@ export async function teardownTestGameDay(gameDayId: number): Promise<void> {
     const gd = await c.get(`/api/gamedays/${gameDayId}`)
     if (!gd.ok()) return
     const data: GameDay = await gd.json()
-    if (data.label !== TEST_GAMEDAY_LABEL) {
+    if (!data.label || !data.label.startsWith(TEST_GAMEDAY_LABEL_PREFIX)) {
       throw new Error(`Refuse to delete non-test gameday ${gameDayId} with label ${data.label}`)
     }
     await c.delete(`/api/gamedays/${gameDayId}`)

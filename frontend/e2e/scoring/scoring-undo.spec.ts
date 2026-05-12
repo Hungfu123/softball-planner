@@ -10,7 +10,7 @@ test.describe('Scoring — Undo', () => {
     await expect(page.getByRole('button', { name: /^Rückgängig$/i })).toBeDisabled()
   })
 
-  test('undo single AB clears state', async ({ page, scoringPage }) => {
+  test('undo single AB clears state @smoke', async ({ page, scoringPage }) => {
     await recordHitViaUI(page, 'SINGLE')
     let sb = await getScoreboard(scoringPage.gameId)
     expect(sb.totalAtBats).toBe(1)
@@ -66,7 +66,7 @@ test.describe('Scoring — Undo', () => {
     expect(subs).toHaveLength(0)
   })
 
-  test('undo inning-advance reverts score and event', async ({ page, scoringPage }) => {
+  test('undo inning-advance reverts score and event @smoke', async ({ page, scoringPage }) => {
     for (let i = 0; i < 3; i++) {
       await seedAtBat(scoringPage.gameId, scoringPage.playerIds[i], 'OUT', 1, { first: null, second: null, third: null })
     }

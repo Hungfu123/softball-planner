@@ -2,7 +2,7 @@ import { test, expect, recordSubstitutionViaUI } from '../helpers/fixtures'
 import { getScoreboard, getSubstitutions } from '../helpers/api'
 
 test.describe('Scoring — Substitution', () => {
-  test('Sub persists to backend with correct playerOut/In/inning', async ({ page, scoringPage }) => {
+  test('Sub persists to backend with correct playerOut/In/inning @smoke', async ({ page, scoringPage }) => {
     await recordSubstitutionViaUI(page, scoringPage.playerIds[0], scoringPage.benchPlayerId)
 
     const subs = await getSubstitutions(scoringPage.gameId)

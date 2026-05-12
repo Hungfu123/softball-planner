@@ -6,7 +6,7 @@ import { getBattingStats, seedAtBat } from '../helpers/api'
  * Per Player deterministisch via seedAtBat (überspringt Lineup-Rotation).
  */
 test.describe('Scoring — Batting Stats', () => {
-  test('mixed events: SINGLE + WALK + HOMERUN + OUT + STRIKEOUT für 1 Batter', async ({ scoringPage }) => {
+  test('mixed events: SINGLE + WALK + HOMERUN + OUT + STRIKEOUT für 1 Batter @smoke', async ({ scoringPage }) => {
     const playerId = scoringPage.playerIds[0]
 
     // 5 ABs für playerIds[0] mit unterschiedlichen Results
