@@ -194,6 +194,8 @@ export function TrainingTodayPage() {
           stats={stats}
           avgPresent={avgPresent}
           totalTrainings={totalTrainings}
+          trainings={trainings}
+          attendance={attendance}
         />
 
         <PlanEditDrawer

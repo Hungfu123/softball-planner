@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { Drawer } from 'vaul'
 import type { Player } from '@/types'
 import type { PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
+import { HistoryMatrix } from './HistoryMatrix'
+
+type Training = { id: number; date: string; cancelled?: boolean }
 
 type Props = {
   open: boolean
@@ -9,6 +13,8 @@ type Props = {
   stats: Map<number, PlayerAttendanceStats>
   avgPresent: number
   totalTrainings: number
+  trainings: Training[]
+  attendance: Map<number, Map<number, boolean>>
 }
 
 function barColor(percentage: number): string {
@@ -17,7 +23,11 @@ function barColor(percentage: number): string {
   return 'bg-navy-500'
 }
 
-export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTrainings }: Props) {
+type Tab = 'quoten' | 'matrix'
+
+export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTrainings, trainings, attendance }: Props) {
+  const [tab, setTab] = useState<Tab>('quoten')
+
   const sorted = [...players].sort((a, b) => {
     const qA = stats.get(a.id)?.last3Months.percentage ?? 0
     const qB = stats.get(b.id)?.last3Months.percentage ?? 0
@@ -37,36 +47,60 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
               <p className="text-xs text-navy-600">Letzte 3 Monate · {totalTrainings} Trainings</p>
             </div>
 
-            <div className="bg-white border border-cream-300 rounded-xl p-3 space-y-2">
-              {sorted.map(p => {
-                const s = stats.get(p.id) ?? { last3Months: { attended: 0, total: 0, percentage: 0 }, lastYear: { attended: 0, total: 0, percentage: 0 } }
-                return (
-                  <div key={p.id} className="flex items-center gap-3">
-                    <span data-stats-row-name className="w-24 text-sm font-medium text-navy-900 truncate">{p.name}</span>
-                    <div className="flex-1 h-2.5 bg-cream-200 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${barColor(s.last3Months.percentage)} transition-all duration-300`}
-                        style={{ width: `${s.last3Months.percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-xs tabular-nums text-navy-700 w-20 text-right">
-                      {s.last3Months.attended}/{s.last3Months.total} · {s.last3Months.percentage}%
-                    </span>
-                  </div>
-                )
-              })}
+            {/* Tab Toggle */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => setTab('quoten')}
+                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer ${tab === 'quoten' ? 'bg-navy-700 text-white' : 'bg-cream-200 text-navy-700'}`}
+              >
+                Quoten
+              </button>
+              <button
+                onClick={() => setTab('matrix')}
+                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer ${tab === 'matrix' ? 'bg-navy-700 text-white' : 'bg-cream-200 text-navy-700'}`}
+              >
+                Matrix
+              </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white border border-cream-300 rounded-xl p-3">
-                <div className="text-xs text-navy-500 uppercase tracking-wide">⌀ Spieler</div>
-                <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{avgPresent.toFixed(1)}</div>
-              </div>
-              <div className="bg-white border border-cream-300 rounded-xl p-3">
-                <div className="text-xs text-navy-500 uppercase tracking-wide">Trainings</div>
-                <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{totalTrainings}</div>
-              </div>
-            </div>
+            {tab === 'quoten' && (
+              <>
+                <div className="bg-white border border-cream-300 rounded-xl p-3 space-y-2">
+                  {sorted.map(p => {
+                    const s = stats.get(p.id) ?? { last3Months: { attended: 0, total: 0, percentage: 0 }, lastYear: { attended: 0, total: 0, percentage: 0 } }
+                    return (
+                      <div key={p.id} className="flex items-center gap-3">
+                        <span data-stats-row-name className="w-24 text-sm font-medium text-navy-900 truncate">{p.name}</span>
+                        <div className="flex-1 h-2.5 bg-cream-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${barColor(s.last3Months.percentage)} transition-all duration-300`}
+                            style={{ width: `${s.last3Months.percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-xs tabular-nums text-navy-700 w-20 text-right">
+                          {s.last3Months.attended}/{s.last3Months.total} · {s.last3Months.percentage}%
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white border border-cream-300 rounded-xl p-3">
+                    <div className="text-xs text-navy-500 uppercase tracking-wide">⌀ Spieler</div>
+                    <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{avgPresent.toFixed(1)}</div>
+                  </div>
+                  <div className="bg-white border border-cream-300 rounded-xl p-3">
+                    <div className="text-xs text-navy-500 uppercase tracking-wide">Trainings</div>
+                    <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{totalTrainings}</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {tab === 'matrix' && (
+              <HistoryMatrix players={players} trainings={trainings} attendance={attendance} />
+            )}
           </div>
         </Drawer.Content>
       </Drawer.Portal>
