@@ -1,4 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { ChevronLeft } from '@/icons'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
@@ -25,7 +26,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 const TABS = [
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele' },
   { path: '/training', label: 'Training', shortLabel: 'Training' },
-  { path: '/training-plan', label: 'Trainingsplan', shortLabel: 'Plan' },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler' },
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats' },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen' },
@@ -77,6 +77,7 @@ export function Layout() {
         </main>
 
         <Toast toasts={toast.toasts} onDismiss={toast.dismiss} />
+        <Toaster position="top-center" richColors closeButton />
       </div>
     </ToastCtx.Provider>
   )
