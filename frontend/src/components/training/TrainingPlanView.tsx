@@ -87,7 +87,7 @@ function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSec
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500">{style.label}</div>
-          <div className="font-display font-bold text-navy-900 text-sm truncate">{section.title ?? '—'}</div>
+          <div className="font-bold text-navy-900 text-sm truncate">{section.title ?? '—'}</div>
         </div>
         {section.parallelGroup != null && section.parallelGroup > 1 && (
           <span className="shrink-0 text-[10px] font-bold tabular-nums bg-navy-100 text-navy-800 px-1.5 py-0.5 rounded-md">

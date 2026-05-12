@@ -54,13 +54,10 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
     <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[92vh] h-fit overflow-y-auto focus:outline-none">
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[92vh] flex flex-col focus:outline-none">
           <Drawer.Title className="sr-only">Plan bearbeiten</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
-          <div
-            className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full"
-            style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
-          >
+          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
+          <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full overflow-y-auto flex-1 min-h-0">
             <div>
               <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">
                 Plan bearbeiten
@@ -176,7 +173,12 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
                 </div>
               </div>
             )}
+          </div>
 
+          <div
+            className="px-4 py-3 max-w-2xl mx-auto w-full border-t border-cream-300 bg-cream-50 shrink-0"
+            style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+          >
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={onClose}
