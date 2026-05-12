@@ -565,14 +565,14 @@ export function GameDayPlanner() {
         </div>
       ) : (
         <>
-          {/* Main Layout — 3 columns on desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-4 lg:gap-5">
+          {/* Main Layout — 3 columns on desktop, Swipe-Handler global */}
+          <div
+            className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-4 lg:gap-5"
+            onTouchStart={onSwipeStart}
+            onTouchEnd={onSwipeEnd}
+          >
             {/* Col 1: Lineup + Save */}
-            <div
-              className="space-y-4 order-1"
-              onTouchStart={onSwipeStart}
-              onTouchEnd={onSwipeEnd}
-            >
+            <div className="space-y-4 order-1">
               <LineupEditor
                 entries={lineup.entries}
                 poolPlayers={poolPlayers}
