@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
 import { BarChart3 } from 'lucide-react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
+import * as api from '@/api/client'
+import type { TrainingPlanContentResponse } from '@/types'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
 import { StatsDrawer } from './StatsDrawer'
+import { PlanEditDrawer } from './PlanEditDrawer'
 
 type SortBy = 'quote' | 'alpha'
 
@@ -15,6 +18,9 @@ export function TrainingTodayPage() {
   const { players } = usePlayers()
   const [sortBy, setSortBy] = useState<SortBy>('quote')
   const [statsOpen, setStatsOpen] = useState(false)
+  const [planEditOpen, setPlanEditOpen] = useState(false)
+  const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
+  const [planId, setPlanId] = useState<number | null>(null)
 
   const todayTraining = useMemo(() => {
     const now = new Date()
@@ -38,6 +44,35 @@ export function TrainingTodayPage() {
   }, [players, trainings, attendance])
 
   const totalTrainings = useMemo(() => trainings.filter(t => !t.cancelled).length, [trainings])
+
+  // Load existing plan for today's training (if any)
+  useEffect(() => {
+    if (!todayTraining) {
+      setPlanContent(null)
+      setPlanId(null)
+      return
+    }
+    let cancelled = false
+    api.getTrainingPlansByTrainingIds([todayTraining.id])
+      .then(result => {
+        if (cancelled) return
+        const plan = result[String(todayTraining.id)] ?? result[todayTraining.id as unknown as string]
+        if (plan) {
+          setPlanContent(plan.content)
+          setPlanId(plan.id)
+        } else {
+          setPlanContent(null)
+          setPlanId(null)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPlanContent(null)
+          setPlanId(null)
+        }
+      })
+    return () => { cancelled = true }
+  }, [todayTraining])
 
   const avgPresent = useMemo(() => {
     if (totalTrainings === 0) return 0
@@ -135,15 +170,19 @@ export function TrainingTodayPage() {
           <section>
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide">Trainingsplan</h2>
-              <a
-                href="/training-plan"
-                className="text-xs font-semibold text-softball-red-700 hover:underline"
+              <button
+                onClick={() => setPlanEditOpen(true)}
+                className="text-xs font-semibold text-softball-red-700 hover:underline cursor-pointer"
               >
                 ✎ Bearbeiten
-              </a>
+              </button>
             </div>
             <div className="bg-white border border-cream-300 rounded-2xl p-4 text-sm text-navy-700">
-              <p className="opacity-70 italic">Plan-Anzeige folgt in Phase 2.</p>
+              {planContent ? (
+                <pre className="text-xs overflow-x-auto whitespace-pre-wrap">{JSON.stringify(planContent, null, 2)}</pre>
+              ) : (
+                <p className="opacity-70 italic">Noch kein Plan für dieses Training.</p>
+              )}
             </div>
           </section>
         </div>
@@ -155,6 +194,17 @@ export function TrainingTodayPage() {
           stats={stats}
           avgPresent={avgPresent}
           totalTrainings={totalTrainings}
+        />
+
+        <PlanEditDrawer
+          open={planEditOpen}
+          onClose={() => setPlanEditOpen(false)}
+          planContent={planContent}
+          onSave={async (content) => {
+            if (planId == null) return
+            await api.updateTrainingPlan(planId, content)
+            setPlanContent(content)
+          }}
         />
       </div>
     </div>
