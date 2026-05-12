@@ -56,7 +56,8 @@ export function useTraining() {
     return allPeriods.find(p => p.startDate <= today && today <= p.endDate) ?? null
   }, [])
 
-  // Initial load: auto-select period containing today
+  // Initial load: alle Trainings (period-übergreifend), damit Picker auch
+  // vergangene Termine zeigt
   const didInitialLoad = useRef(false)
   useEffect(() => {
     if (didInitialLoad.current) return
@@ -64,12 +65,8 @@ export function useTraining() {
     ;(async () => {
       const allPeriods = await loadPeriods()
       const current = findCurrentPeriod(allPeriods)
-      if (current) {
-        setActivePeriodId(current.id)
-        await loadAll(current.id)
-      } else {
-        await loadAll()
-      }
+      if (current) setActivePeriodId(current.id)
+      await loadAll()
     })()
   }, [loadPeriods, loadAll, findCurrentPeriod])
 
