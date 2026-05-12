@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Drawer } from 'vaul'
 import { Calendar, Check } from 'lucide-react'
 
@@ -17,19 +17,33 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function todayLocalISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onSelect }: Props) {
-  const [mountedNowMs] = useState(() => Date.now())
+  const [todayStr] = useState(() => todayLocalISO())
+  const activeRef = useRef<HTMLButtonElement>(null)
+
   const grouped = useMemo(() => {
-    const cutoff = mountedNowMs - 12 * 60 * 60 * 1000
     const sorted = [...trainings].sort((a, b) => b.date.localeCompare(a.date))
     const upcoming: Training[] = []
     const past: Training[] = []
     for (const t of sorted) {
-      if (new Date(t.date).getTime() >= cutoff) upcoming.push(t)
+      if (t.date >= todayStr) upcoming.push(t)
       else past.push(t)
     }
     return { upcoming: upcoming.reverse(), past }
-  }, [trainings, mountedNowMs])
+  }, [trainings, todayStr])
+
+  useEffect(() => {
+    if (!open) return
+    const timer = setTimeout(() => {
+      activeRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' })
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [open, selectedId])
 
   const handleSelect = (id: number) => {
     onSelect(id)
@@ -63,7 +77,7 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
                     <h3 className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-2">Anstehend &amp; heute</h3>
                     <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                       {grouped.upcoming.map(t => (
-                        <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} />
+                        <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} ref={t.id === selectedId ? activeRef : undefined} />
                       ))}
                     </div>
                   </section>
@@ -76,7 +90,7 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
                   {grouped.past.length > 0 ? (
                     <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                       {grouped.past.map(t => (
-                        <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted />
+                        <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted ref={t.id === selectedId ? activeRef : undefined} />
                       ))}
                     </div>
                   ) : (
@@ -92,10 +106,11 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
   )
 }
 
-function TrainingRow({ training, selected, onSelect, muted = false }: { training: Training; selected: boolean; onSelect: (id: number) => void; muted?: boolean }) {
+function TrainingRow({ training, selected, onSelect, muted = false, ref }: { training: Training; selected: boolean; onSelect: (id: number) => void; muted?: boolean; ref?: React.Ref<HTMLButtonElement> }) {
   return (
     <button
       type="button"
+      ref={ref}
       onClick={() => onSelect(training.id)}
       className={`w-full flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 cursor-pointer hover:bg-cream-50 active:bg-cream-100 transition-colors text-left ${selected ? 'bg-navy-50' : ''}`}
     >
