@@ -252,7 +252,8 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
               type="button"
               onClick={onShare}
               aria-label="Plan teilen"
-              className="text-xs font-bold uppercase tracking-wide text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-md cursor-pointer flex items-center gap-1"
+              className="text-xs font-semibold text-navy-700 hover:underline cursor-pointer flex items-center gap-1"
+              title="Plan teilen"
             >
               <Share2 size={12} /> Teilen
             </button>

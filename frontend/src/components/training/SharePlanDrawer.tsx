@@ -23,6 +23,11 @@ function buildShareText(
   lines.push(`⚾ *Trainingsplan${dateStr ? ` — ${dateStr}` : ''}*`)
   lines.push('')
 
+  const pushHeadline = (h: string) => {
+    if (lines.length > 0 && lines[lines.length - 1] !== '') lines.push('')
+    lines.push(h)
+  }
+
   const sections = planContent.sections
   let i = 0
   let warmupPrinted = false
@@ -39,28 +44,27 @@ function buildShareText(
         stationDrills.push(sections[i])
         i++
       }
-      lines.push('*Drills in Gruppen:*')
+      pushHeadline('*Drills in Gruppen:*')
       for (const sd of stationDrills) {
         lines.push(`• ${sd.title ?? '—'}`)
       }
-      lines.push('')
       continue
     }
 
     if (s.sectionType === 'WARMUP') {
       if (!warmupPrinted) {
-        lines.push('*Aufwärmen*')
+        pushHeadline('*Aufwärmen*')
         warmupPrinted = true
       }
       lines.push(`• ${s.title ?? '—'}`)
     } else if (s.sectionType === 'DRILL') {
       if (!drillsPrinted) {
-        lines.push('*Drills zusammen:*')
+        pushHeadline('*Drills zusammen:*')
         drillsPrinted = true
       }
       lines.push(`• ${s.title ?? '—'}`)
     } else if (s.sectionType === 'GAME' || s.sectionType === 'SCRIMMAGE') {
-      lines.push(`*${s.title ?? 'Spiel'}*`)
+      pushHeadline(`*${s.title ?? 'Spiel'}*`)
     } else {
       lines.push(`• ${s.title ?? '—'}`)
     }
@@ -68,8 +72,7 @@ function buildShareText(
   }
 
   if (planContent.overallNotes) {
-    lines.push('')
-    lines.push('*Notizen:*')
+    pushHeadline('*Notizen:*')
     lines.push(planContent.overallNotes)
   }
 
