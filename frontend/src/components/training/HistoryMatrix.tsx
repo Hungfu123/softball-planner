@@ -45,7 +45,7 @@ export function HistoryMatrix({ players, trainings, attendance }: Props) {
                     data-attendance={present ? 'true' : 'false'}
                     className="px-2 py-2 text-center"
                   >
-                    {present ? <span className="text-navy-800 font-bold">✓</span> : <span className="text-cream-400">·</span>}
+                    {present ? <span className="text-navy-800 font-bold">✓</span> : <span className="text-navy-300">·</span>}
                   </td>
                 )
               })}

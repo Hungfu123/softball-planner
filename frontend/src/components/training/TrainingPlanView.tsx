@@ -66,7 +66,7 @@ function formatTotal(minutes: number): string {
 }
 
 function hasDetails(s: TrainingPlanSectionResponse): boolean {
-  return !!(s.setupNotes || s.tips || s.rotationPlan || s.adaptationNotes || s.groupSetup || s.userNotes || s.rounds || s.playersPerGroup)
+  return !!(s.setupNotes || s.tips || s.rotationPlan || s.adaptationNotes || s.groupSetup || s.userNotes || s.rounds || s.playersPerGroup || s.parallelGroup)
 }
 
 function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSectionResponse; expanded: boolean; onToggle: () => void }) {
@@ -89,6 +89,11 @@ function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSec
           <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500">{style.label}</div>
           <div className="font-display font-bold text-navy-900 text-sm truncate">{section.title ?? '—'}</div>
         </div>
+        {section.parallelGroup != null && section.parallelGroup > 1 && (
+          <span className="shrink-0 text-[10px] font-bold tabular-nums bg-navy-100 text-navy-800 px-1.5 py-0.5 rounded-md">
+            {section.parallelGroup}× Stat.
+          </span>
+        )}
         {section.durationMinutes != null && (
           <span className="shrink-0 text-xs font-bold tabular-nums bg-white/70 text-navy-800 px-2 py-1 rounded-md border border-navy-100">
             {section.durationMinutes} min
@@ -118,8 +123,11 @@ function SectionCard({ section, expanded, onToggle }: { section: TrainingPlanSec
               {section.rounds != null && (
                 <DetailRow label="Runden" value={String(section.rounds)} />
               )}
+              {section.parallelGroup != null && section.parallelGroup > 0 && (
+                <DetailRow label="Stationen" value={String(section.parallelGroup)} />
+              )}
               {section.playersPerGroup != null && (
-                <DetailRow label="Spieler / Gruppe" value={String(section.playersPerGroup)} />
+                <DetailRow label="Sp. / Station" value={String(section.playersPerGroup)} />
               )}
               {section.setupNotes && (
                 <DetailRow label="Setup" value={section.setupNotes} />

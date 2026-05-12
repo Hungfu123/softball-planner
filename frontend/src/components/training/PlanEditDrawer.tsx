@@ -54,11 +54,11 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
     <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[92vh] overflow-y-auto focus:outline-none">
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[92vh] h-fit overflow-y-auto focus:outline-none">
           <Drawer.Title className="sr-only">Plan bearbeiten</Drawer.Title>
           <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
           <div
-            className="px-4 py-4 space-y-4"
+            className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full"
             style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
           >
             <div>
@@ -93,7 +93,7 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
                         />
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div>
                           <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Dauer (min)</label>
                           <input
@@ -115,7 +115,17 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Sp./Gr.</label>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Stationen</label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={s.parallelGroup ?? ''}
+                            onChange={e => updateSection(idx, { parallelGroup: e.target.value === '' ? null : Number(e.target.value) })}
+                            className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none tabular-nums"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Sp./Station</label>
                           <input
                             type="number"
                             min={0}
