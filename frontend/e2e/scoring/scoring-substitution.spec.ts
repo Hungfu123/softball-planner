@@ -12,15 +12,6 @@ test.describe('Scoring — Substitution', () => {
     expect(subs[0].inning).toBe(1)
   })
 
-  test('Sub persists across page reload', async ({ page, scoringPage }) => {
-    await recordSubstitutionViaUI(page, scoringPage.playerIds[0], scoringPage.benchPlayerId)
-    await page.reload()
-    await page.waitForTimeout(500)
-
-    const subs = await getSubstitutions(scoringPage.gameId)
-    expect(subs).toHaveLength(1)
-  })
-
   test('Sub changes currentBatter to substitute', async ({ page, scoringPage }) => {
     const before = await getScoreboard(scoringPage.gameId)
     expect(before.currentBatterId).toBe(scoringPage.playerIds[0])

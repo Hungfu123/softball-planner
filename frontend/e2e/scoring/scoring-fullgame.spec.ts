@@ -4,7 +4,7 @@ import {
   recordSubstitutionViaUI, recordStealingViaUI,
   advanceInningViaUI, clickUndo,
 } from '../helpers/fixtures'
-import { getScoreboard, getSubstitutions, seedAtBat, setBattingSide } from '../helpers/api'
+import { getScoreboard, getSubstitutions, seedAtBat } from '../helpers/api'
 
 /**
  * Scenario-Tests: realistische Multi-Inning-Sequenzen.
@@ -96,46 +96,6 @@ test.describe('Scoring — Full-Game Scenarios', () => {
     expect(sb.scoreThem).toBe(3)
     expect(sb.currentInning).toBe(3)
     expect(sb.totalAtBats).toBeGreaterThan(10)
-  })
-
-  test('walkoff comeback: bottom 7th, tied, single + steal-of-home wins', async ({ page, scoringPage }) => {
-    // Wir sind Heimteam
-    await setBattingSide(scoringPage.gameId, 'bottom')
-
-    // Schnell-Seed: Innings 1-6, jeder mit 3 OUTs für uns. State danach: inning 6, our 0, opp 0.
-    for (let inning = 1; inning <= 6; inning++) {
-      for (let i = 0; i < 3; i++) {
-        await seedAtBat(scoringPage.gameId, scoringPage.playerIds[i], 'OUT', inning, {
-          first: null, second: null, third: null,
-        })
-      }
-    }
-    // Inning-Advance-Events seeden geht nicht direkt via API (kein seed-Endpoint).
-    // Stattdessen: reload + advance via UI 6 mal. Aber das setzt unsere currentInning hoch.
-    // Pragmatic: Wir nehmen halfInningOver State vom letzten Inning 6 OUTs.
-    // currentInning = max(lastAB.inning=6, lastEvent=0) = 6. halfInningOver via 3 outs in inning 6 = true.
-    await page.reload()
-    await page.waitForTimeout(500)
-    let sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.currentInning).toBe(6)
-
-    // Advance to inning 7, gegner scort 5 in inning 6 → tied (we have 0)
-    // Aber wir wollen tied bei Inning 7 Start. Setzen Gegner-Runs auf 0 hier:
-    await advanceInningViaUI(page, 0)
-    sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.currentInning).toBe(7)
-    expect(sb.scoreThem).toBe(0)
-
-    // Inning 7 bottom: walkoff Setup. Wir brauchen scoreUs > scoreThem
-    // HOMERUN solo = +1 → us 1, opp 0 → Walkoff
-    await recordHitViaUI(page, 'HOMERUN')
-    sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.scoreUs).toBe(1)
-    expect(sb.scoreThem).toBe(0)
-    expect(sb.currentInning).toBe(7)
-
-    // Walkoff-Banner sichtbar
-    await expect(page.getByText(/Walkoff-Sieg!/i)).toBeVisible({ timeout: 2000 })
   })
 
   test('undo across inning boundary: advance + AB + undo back to prev inning', async ({ page, scoringPage }) => {

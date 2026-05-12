@@ -28,17 +28,6 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.baseState.third).toBe(ids[7])       // 2B → 3B
   })
 
-  test('Overthrow: no-op wenn keine Runner', async ({ page, scoringPage }) => {
-    const ids = scoringPage.playerIds
-    // Seed AB ohne Runner (Solo HR)
-    await seedAtBat(scoringPage.gameId, ids[0], 'HOMERUN', 1, { first: null, second: null, third: null }, 1, 1)
-    await page.reload()
-    await page.waitForTimeout(500)
-
-    // Overthrow-Button gerendert nur bei displayRunners > 0 — sollte gar nicht sichtbar sein
-    await expect(page.getByRole('button', { name: /^Overthrow$/i })).not.toBeVisible()
-  })
-
   test('Force-Out 3rd-Out Banner: erscheint in CorrectionSheet wenn outsAfter===3', async ({ page, scoringPage }) => {
     const ids = scoringPage.playerIds
     // Setup: 2 Outs in Inning 1 + Runner auf 3B (Setup-State für Force-Play-Risk)

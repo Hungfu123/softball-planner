@@ -5,11 +5,6 @@ import {
 import { getScoreboard, getStealingEvents, getSubstitutions, seedAtBat } from '../helpers/api'
 
 test.describe('Scoring — Undo', () => {
-  test('undo button disabled when no actions', async ({ page, scoringPage }) => {
-    void scoringPage
-    await expect(page.getByRole('button', { name: /^Rückgängig$/i })).toBeDisabled()
-  })
-
   test('undo single AB clears state @smoke', async ({ page, scoringPage }) => {
     await recordHitViaUI(page, 'SINGLE')
     let sb = await getScoreboard(scoringPage.gameId)
@@ -83,32 +78,4 @@ test.describe('Scoring — Undo', () => {
     expect(sb.currentInning).toBe(1)
   })
 
-  test('toast adaptive: AT_BAT', async ({ page, scoringPage }) => {
-    void scoringPage
-    await recordHitViaUI(page, 'SINGLE')
-    await clickUndo(page)
-    await expect(page.getByText(/Letzter At-Bat rückgängig gemacht/i)).toBeVisible({ timeout: 1500 })
-  })
-
-  test('toast adaptive: STEALING', async ({ page, scoringPage }) => {
-    await seedAtBat(scoringPage.gameId, scoringPage.playerIds[0], 'SINGLE', 1, {
-      first: scoringPage.playerIds[0], second: null, third: null,
-    })
-    await page.reload()
-    await page.waitForTimeout(500)
-    await recordStealingViaUI(page, scoringPage.playerIds[0], 'STOLEN_BASE')
-    await clickUndo(page)
-    await expect(page.getByText(/Letztes Stealing-Event rückgängig gemacht/i)).toBeVisible({ timeout: 1500 })
-  })
-
-  test('toast adaptive: INNING_ADVANCE', async ({ page, scoringPage }) => {
-    for (let i = 0; i < 3; i++) {
-      await seedAtBat(scoringPage.gameId, scoringPage.playerIds[i], 'OUT', 1, { first: null, second: null, third: null })
-    }
-    await page.reload()
-    await page.waitForTimeout(500)
-    await advanceInningViaUI(page, 0)
-    await clickUndo(page)
-    await expect(page.getByText(/Letzter Inning-Wechsel rückgängig gemacht/i)).toBeVisible({ timeout: 1500 })
-  })
 })

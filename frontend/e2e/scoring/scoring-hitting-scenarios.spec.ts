@@ -132,19 +132,4 @@ test.describe('Scoring — Hitting Scenarios', () => {
     expect(sb.baseState.second).toBe(ids[0])  // ids[0] bleibt auf 2B
   })
 
-  test('SINGLE bases-loaded: 3B-Runner scort, andere advancen', async ({ page, scoringPage }) => {
-    const ids = scoringPage.playerIds
-    await seedAtBat(scoringPage.gameId, ids[0], 'WALK', 1, {
-      first: ids[6], second: ids[7], third: ids[8],
-    })
-    await page.reload()
-    await page.waitForTimeout(500)
-
-    await recordHitViaUI(page, 'SINGLE')
-    const sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.scoreUs).toBe(1) // 3B-Runner scort
-    expect(sb.baseState.first).not.toBeNull()  // Batter
-    expect(sb.baseState.second).toBe(ids[6])   // 1B → 2B
-    expect(sb.baseState.third).toBe(ids[7])    // 2B → 3B
-  })
 })

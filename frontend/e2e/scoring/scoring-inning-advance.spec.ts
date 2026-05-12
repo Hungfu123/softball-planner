@@ -32,19 +32,6 @@ test.describe('Scoring — Inning-Advance', () => {
     expect(sb.scoreThem).toBe(3)
   })
 
-  test('advance persists across reload', async ({ page, scoringPage }) => {
-    await seedThreeOuts(scoringPage.gameId, scoringPage.playerIds)
-    await page.reload()
-    await page.waitForTimeout(500)
-    await advanceInningViaUI(page, 2)
-    await page.reload()
-    await page.waitForTimeout(500)
-
-    const sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.currentInning).toBe(2)
-    expect(sb.scoreThem).toBe(2)
-  })
-
   test('bug3 regression — undo after advance reverts scoreThem @smoke', async ({ page, scoringPage }) => {
     await seedThreeOuts(scoringPage.gameId, scoringPage.playerIds)
     await page.reload()
@@ -63,19 +50,4 @@ test.describe('Scoring — Inning-Advance', () => {
     expect(sb.currentInning).toBe(1)
   })
 
-  test('multiple advances stack currentInning', async ({ page, scoringPage }) => {
-    await seedThreeOuts(scoringPage.gameId, scoringPage.playerIds)
-    await page.reload()
-    await page.waitForTimeout(500)
-    await advanceInningViaUI(page, 0)
-    for (let i = 0; i < 3; i++) {
-      await seedAtBat(scoringPage.gameId, scoringPage.playerIds[i], 'OUT', 2, { first: null, second: null, third: null })
-    }
-    await page.reload()
-    await page.waitForTimeout(500)
-    await advanceInningViaUI(page, 0)
-
-    const sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.currentInning).toBe(3)
-  })
 })

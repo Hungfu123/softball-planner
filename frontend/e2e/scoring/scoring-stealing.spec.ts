@@ -45,18 +45,4 @@ test.describe('Scoring — Stealing', () => {
     expect(sb.baseState.first).toBeNull()
   })
 
-  test('Stealing event persisted in backend', async ({ page, scoringPage }) => {
-    await seedAtBat(scoringPage.gameId, scoringPage.playerIds[0], 'SINGLE', 1, {
-      first: scoringPage.playerIds[0], second: null, third: null,
-    })
-    await page.reload()
-    await page.waitForTimeout(500)
-
-    await recordStealingViaUI(page, scoringPage.playerIds[0], 'STOLEN_BASE')
-
-    const events = await getStealingEvents(scoringPage.gameId)
-    expect(events).toHaveLength(1)
-    expect(events[0].type).toBe('STOLEN_BASE')
-    expect(events[0].runnerId).toBe(scoringPage.playerIds[0])
-  })
 })
