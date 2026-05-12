@@ -81,18 +81,23 @@ export async function recordDirectViaUI(page: Page, result: DirectResult): Promi
  * If a CorrectionSheet is open, click its primary Save button.
  * Real label from CorrectionSheet.tsx is "✓ Passt"; other candidates are fallbacks.
  */
-async function dismissCorrectionSheetIfOpen(page: Page): Promise<void> {
-  const candidates = ['✓ Passt', 'Passt', 'Speichern', 'Save', 'Übernehmen', 'OK', 'Bestätigen']
+async function dismissCorrectionSheetIfOpen(page: Page, waitMs: number = 100): Promise<void> {
+  const passt = page.getByRole('button', { name: '✓ Passt', exact: true })
+  if (await passt.first().isVisible({ timeout: waitMs }).catch(() => false)) {
+    await passt.first().click()
+    await page.waitForTimeout(300)
+    return
+  }
+  // Fallback-Labels falls Sheet-Copy abweicht.
+  const candidates = ['Passt', 'Speichern', 'Save', 'Übernehmen', 'OK', 'Bestätigen']
   for (const label of candidates) {
     const btn = page.getByRole('button', { name: label, exact: true })
-    const count = await btn.count().catch(() => 0)
-    if (count > 0 && await btn.first().isVisible().catch(() => false)) {
+    if (await btn.first().isVisible({ timeout: 50 }).catch(() => false)) {
       await btn.first().click()
       await page.waitForTimeout(300)
       return
     }
   }
-  // No sheet open — nothing to dismiss
 }
 
 import { getPlayerName } from './api'
@@ -153,8 +158,9 @@ export async function advanceInningViaUI(page: Page, opponentRuns: number): Prom
   await page.waitForTimeout(500)
 }
 
-/** Click Rückgängig button. */
+/** Click Rückgängig button. Dismisses lingering CorrectionSheet first (CI-Flake-Guard). */
 export async function clickUndo(page: Page): Promise<void> {
+  await dismissCorrectionSheetIfOpen(page, 800)
   await page.getByRole('button', { name: /^Rückgängig$/i }).click()
   await page.waitForTimeout(500)
 }
