@@ -17,6 +17,7 @@ import { GeneratePlanDrawer } from './GeneratePlanDrawer'
 import { SharePlanDrawer } from './SharePlanDrawer'
 
 type MobileTab = 'anwesenheit' | 'plan'
+type AttendanceSort = 'alpha' | 'frequency'
 
 export function TrainingTodayPage() {
   const { trainings, attendance, toggleAttendance } = useTraining()
@@ -30,6 +31,7 @@ export function TrainingTodayPage() {
   const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
   const [planId, setPlanId] = useState<number | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
+  const [attendanceSort, setAttendanceSort] = useState<AttendanceSort>('alpha')
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null)
   const [drills, setDrills] = useState<DrillResponse[]>([])
 
@@ -73,6 +75,19 @@ export function TrainingTodayPage() {
   }, [players, trainings, attendance])
 
   const totalTrainings = useMemo(() => trainings.filter(t => !t.cancelled).length, [trainings])
+
+  const sortedPlayers = useMemo(() => {
+    const base = [...players]
+    if (attendanceSort === 'frequency') {
+      return base.sort((a, b) => {
+        const cA = stats.get(a.id)?.last3Months.attended ?? 0
+        const cB = stats.get(b.id)?.last3Months.attended ?? 0
+        if (cA !== cB) return cB - cA
+        return a.name.localeCompare(b.name)
+      })
+    }
+    return base.sort((a, b) => a.name.localeCompare(b.name))
+  }, [players, stats, attendanceSort])
 
   const loadPlanFor = async (trainingId: number) => {
     try {
@@ -132,8 +147,9 @@ export function TrainingTodayPage() {
   }, [attendance, trainings, totalTrainings])
 
   const { avgRecent, recentCount } = useMemo(() => {
+    const refDate = currentTraining?.date ?? new Date().toISOString().slice(0, 10)
     const past = trainings
-      .filter(t => !t.cancelled && (!currentTraining || t.id !== currentTraining.id))
+      .filter(t => !t.cancelled && t.id !== currentTraining?.id && t.date < refDate)
       .slice()
       .sort((a, b) => b.date.localeCompare(a.date))
       .slice(0, 5)
@@ -245,9 +261,28 @@ export function TrainingTodayPage() {
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-4">
           <section className={mobileTab === 'anwesenheit' ? '' : 'hidden lg:block'}>
-            <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide mb-2 hidden lg:block">Anwesenheit</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-display text-sm font-bold text-navy-700 uppercase tracking-wide hidden lg:block">Anwesenheit</h2>
+              <div className="ml-auto inline-flex bg-cream-200 rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setAttendanceSort('alpha')}
+                  className={`px-2.5 py-1 text-xs rounded-md font-semibold cursor-pointer transition-colors ${attendanceSort === 'alpha' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                >
+                  A–Z
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttendanceSort('frequency')}
+                  className={`px-2.5 py-1 text-xs rounded-md font-semibold cursor-pointer transition-colors ${attendanceSort === 'frequency' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+                  title="Häufigkeit (letzte 3 Monate)"
+                >
+                  Häufig ↓
+                </button>
+              </div>
+            </div>
             <AttendanceList
-              players={players}
+              players={sortedPlayers}
               presentIds={presentIds}
               onToggle={handleToggle}
             />

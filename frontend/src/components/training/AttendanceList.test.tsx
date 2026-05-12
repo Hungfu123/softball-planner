@@ -13,11 +13,11 @@ describe('AttendanceList', () => {
     expect(screen.getByText('Hung')).toBeInTheDocument()
   })
 
-  it('sortiert alphabetisch', () => {
-    const players = [mockPlayer(2, 'Bob'), mockPlayer(1, 'Alice'), mockPlayer(3, 'Charlie')]
+  it('rendert Spieler in übergebener Reihenfolge (Sort in Parent)', () => {
+    const players = [mockPlayer(3, 'Charlie'), mockPlayer(1, 'Alice'), mockPlayer(2, 'Bob')]
     const { container } = render(<AttendanceList players={players} presentIds={new Set()} onToggle={vi.fn()} />)
     const names = Array.from(container.querySelectorAll('[data-player-name]')).map(el => el.textContent)
-    expect(names).toEqual(['Alice', 'Bob', 'Charlie'])
+    expect(names).toEqual(['Charlie', 'Alice', 'Bob'])
   })
 
   it('ruft onToggle bei Klick', () => {

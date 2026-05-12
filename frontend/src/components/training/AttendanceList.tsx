@@ -8,11 +8,9 @@ type Props = {
 }
 
 export function AttendanceList({ players, presentIds, onToggle }: Props) {
-  const sorted = [...players].sort((a, b) => a.name.localeCompare(b.name))
-
   return (
     <div className="bg-white border border-cream-300 rounded-2xl overflow-hidden">
-      {sorted.map(p => {
+      {players.map(p => {
         const present = presentIds.has(p.id)
         return (
           <button
