@@ -5,7 +5,6 @@ import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
 import { LineupSheet } from '@/components/export/LineupSheet'
-import { TrainingPage } from '@/components/training/TrainingPage'
 import { LoginPage } from '@/components/auth/LoginPage'
 import { setAuth, hasAuth, clearAuth } from '@/api/client'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
@@ -13,7 +12,6 @@ import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 
 // Lazy-load heavy pages
 const TrainingTodayPage = lazy(() => import('@/components/training/TrainingTodayPage').then(m => ({ default: m.TrainingTodayPage })))
-const TrainingPlanPage = lazy(() => import('@/components/training-plan/TrainingPlanPage'))
 const ScoringPage = lazy(() => import('@/components/scoring/ScoringPage').then(m => ({ default: m.ScoringPage })))
 const StatsPage = lazy(() => import('@/components/stats/StatsPage').then(m => ({ default: m.StatsPage })))
 const SpielbogenList = lazy(() => import('@/components/spielbogen/SpielbogenList'))
@@ -28,10 +26,6 @@ function LazyScoring() {
       <Suspense fallback={<LoadingSkeleton />}><ScoringPage /></Suspense>
     </ToastProvider>
   )
-}
-
-function LazyTrainingPlan() {
-  return <Suspense fallback={<LoadingSkeleton />}><TrainingPlanPage /></Suspense>
 }
 
 function LazyStats() {
@@ -61,8 +55,6 @@ const router = createBrowserRouter([
     children: [
       { path: '/', element: <Dashboard />, errorElement: <ChunkErrorBoundary /> },
       { path: '/training', element: <Suspense fallback={<LoadingSkeleton />}><TrainingTodayPage /></Suspense>, errorElement: <ChunkErrorBoundary /> },
-      { path: '/training-history', element: <TrainingPage />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/training-plan', element: <LazyTrainingPlan />, errorElement: <ChunkErrorBoundary /> },
       { path: '/players', element: <PlayerManager />, errorElement: <ChunkErrorBoundary /> },
       { path: '/gameday/:id', element: <GameDayPlanner />, errorElement: <ChunkErrorBoundary /> },
       { path: '/stats', element: <LazyStats />, errorElement: <ChunkErrorBoundary /> },

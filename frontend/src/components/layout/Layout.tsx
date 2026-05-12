@@ -26,7 +26,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 const TABS = [
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele' },
   { path: '/training', label: 'Training', shortLabel: 'Training' },
-  { path: '/training-plan', label: 'Trainingsplan', shortLabel: 'Plan' },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler' },
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats' },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen' },
