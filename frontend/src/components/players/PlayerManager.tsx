@@ -46,10 +46,10 @@ function SortablePlayerRow({ player, index }: { player: Player; index: number })
       >
         <GripHandle size={16} />
       </button>
-      <span className="font-display w-7 h-7 rounded-full bg-softball-red-600 text-white text-xs font-extrabold tabular-nums flex items-center justify-center shrink-0">
+      <span className="text-sm font-semibold text-navy-500 tabular-nums w-6 text-center shrink-0">
         {index + 1}
       </span>
-      <span className="flex-1 text-navy-900 font-semibold">{player.name}</span>
+      <span className="flex-1 text-navy-900 font-medium">{player.name}</span>
     </div>
   )
 }
