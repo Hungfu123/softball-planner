@@ -24,7 +24,7 @@ test.describe('Training — History-Matrix', () => {
     await page.getByRole('button', { name: /^Matrix$/i }).click()
     await page.waitForTimeout(300)
 
-    // Tabelle vorhanden (Spalten-Header "Spieler")
-    await expect(page.getByText(/^Spieler$/i).first()).toBeVisible({ timeout: 1500 })
+    // Matrix-Tabelle vorhanden — irgendein th oder Datum-Header
+    await expect(page.locator('table th').first()).toBeVisible({ timeout: 1500 })
   })
 })

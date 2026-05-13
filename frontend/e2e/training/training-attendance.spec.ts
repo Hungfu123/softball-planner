@@ -46,9 +46,11 @@ test.describe('Training — Attendance Page', () => {
       test.skip(true, 'Keine Trainings in DB')
       return
     }
-    await page.getByRole('button', { name: /^A-Z$/ }).click()
+    await page.getByRole('button', { name: /^A.{0,2}Z$/i }).click()
     await page.waitForTimeout(200)
-    await page.getByRole('button', { name: /^Quote/ }).click()
+    await page.getByRole('button', { name: /Häufig/i }).click()
+    await page.waitForTimeout(200)
+    await page.getByRole('button', { name: /Abgestimmt/i }).click()
     await page.waitForTimeout(200)
   })
 })
