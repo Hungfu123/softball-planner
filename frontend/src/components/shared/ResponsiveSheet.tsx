@@ -26,7 +26,9 @@ const MAX_WIDTH = {
  * Center-Modal auf Desktop. Beide teilen Title + Footer Slots.
  */
 export function ResponsiveSheet({ open, onClose, title, children, footer, maxWidth = 'sm', mobileBreakpoint = 640 }: Props) {
-  const isMobile = typeof window !== 'undefined' && window.matchMedia(`(max-width: ${mobileBreakpoint - 1}px)`).matches
+  const isMobile = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(`(max-width: ${mobileBreakpoint - 1}px)`).matches
 
   if (isMobile) {
     return (
