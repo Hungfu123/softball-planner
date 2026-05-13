@@ -122,7 +122,7 @@ export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Pr
   return (
     <ResponsiveSheet open={open} onClose={onClose} title="Plan teilen" maxWidth="md" footer={footer}>
       <div className="px-4 py-4 space-y-3">
-        <p className="text-xs text-navy-600 -mt-1">Übersicht für WhatsApp / Telegram</p>
+        <p className="text-xs text-navy-600">Übersicht für WhatsApp / Telegram</p>
 
         <div className="bg-white border border-cream-300 rounded-xl p-3 text-sm text-navy-800 whitespace-pre-line max-h-64 overflow-y-auto font-mono leading-relaxed">
           {text || <span className="italic text-navy-500">Kein Plan zum Teilen.</span>}

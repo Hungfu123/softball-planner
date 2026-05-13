@@ -57,17 +57,17 @@ export function PositionSwapDrawer({ open, onClose, side, slots, currentInning, 
   }
 
   const footer = (
-    <div className="flex gap-2">
+    <div className="grid grid-cols-2 gap-2">
       <button
         onClick={onClose}
-        className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
+        className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
       >
         Abbrechen
       </button>
       <button
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-navy-800 text-white hover:bg-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? 'Speichere…' : `Tauschen (${changes.length})`}
       </button>

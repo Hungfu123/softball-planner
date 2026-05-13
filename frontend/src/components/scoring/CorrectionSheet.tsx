@@ -163,7 +163,7 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
   return (
     <ResponsiveSheet open={open} onClose={onClose} title={title} maxWidth="md" footer={footer}>
       <div className="px-4 pt-3 pb-4 space-y-4">
-        <p className="text-[11px] text-gray-500 -mt-2">{subtitle}</p>
+        <p className="text-[11px] text-gray-500">{subtitle}</p>
 
         {/* 3rd-Out Force-Play Warnung — Softball-Regel:
                 Wenn 3. Out via Force-Out fällt, zählt KEIN Run der davor erzielt

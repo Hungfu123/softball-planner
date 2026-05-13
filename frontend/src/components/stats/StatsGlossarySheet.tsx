@@ -64,7 +64,7 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-sm font-bold text-gray-700 mb-2">{title}</h3>
+      <h3 className="font-display text-[11px] tracking-widest font-bold text-navy-500 uppercase mb-2">{title}</h3>
       <div className="space-y-2">{children}</div>
     </div>
   )

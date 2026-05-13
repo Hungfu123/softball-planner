@@ -43,7 +43,7 @@ export function StealingDrawer({ open, onClose, baseState, slots, side, inning, 
   const footer = (
     <button
       onClick={onClose}
-      className="w-full py-2 text-sm text-gray-600 rounded-lg border border-cream-300 hover:bg-cream-100 cursor-pointer"
+      className="w-full h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
     >
       Abbrechen
     </button>

@@ -38,17 +38,17 @@ export function ErrorPickerDrawer({ open, onClose, onPick }: Props) {
   }
 
   const footer = (
-    <div className="flex gap-2">
+    <div className="grid grid-cols-2 gap-2">
       <button
         onClick={onClose}
-        className="flex-1 py-2 text-sm rounded-lg border border-cream-300 text-gray-600 hover:bg-cream-100 cursor-pointer"
+        className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
       >
         Abbrechen
       </button>
       <button
         onClick={handleConfirm}
         disabled={selected == null}
-        className="flex-1 py-2 font-display text-sm font-bold tracking-widest uppercase text-white bg-softball-red-600 hover:bg-softball-red-700 rounded-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         Bestätigen
       </button>

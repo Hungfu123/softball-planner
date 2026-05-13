@@ -952,8 +952,18 @@ export function OutDetailDrawer({ open, onClose, onSubmit: rawOnSubmit, baseStat
     setSelectedFielder(null)
   }
 
+  const dynamicTitle =
+    foulFielderPickOpen ? 'Foul Out — wer hat gefangen?' :
+    pendingChainPicker != null ? (pendingChainPicker.isForceOut ? 'Force-Out — Chain' : 'Tag-Out — Chain') :
+    pendingRunnerOutRequest != null ? "Fielder's Choice" :
+    pendingFlyOutRequest != null ? (pendingFlyOutRequest.isFoul ? `Foul Out f${pendingFlyOutRequest.fielder}` : `Fly Out F${pendingFlyOutRequest.fielder}`) :
+    pendingDpRequest != null ? 'Double Play' :
+    pendingAdvancePicker != null ? pendingAdvancePicker.title :
+    selectedFielder != null ? `Feldposition ${POSITION_NAMES[selectedFielder]} (${selectedFielder})` :
+    'Aus — Detail wählen'
+
   return (
-    <ResponsiveSheet open={open} onClose={handleClose} title="Aus — Detail wählen" maxWidth="md">
+    <ResponsiveSheet open={open} onClose={handleClose} title={dynamicTitle} maxWidth="md">
       <div className="p-4">
             {foulFielderPickOpen ? (
               <FoulFielderPickView

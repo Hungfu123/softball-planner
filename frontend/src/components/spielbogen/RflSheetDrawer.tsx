@@ -175,7 +175,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
       {isLive && onEndGame && (
         <button
           onClick={() => { onClose(); onEndGame() }}
-          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-softball-red-600 text-white hover:bg-softball-red-700 cursor-pointer transition-colors"
+          className="flex-1 h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer"
         >
           Spiel beenden
         </button>
@@ -183,7 +183,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
       {isDone && onReopenGame && (
         <button
           onClick={() => { onClose(); onReopenGame() }}
-          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
+          className="flex-1 h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
         >
           Spiel wieder öffnen
         </button>
@@ -191,7 +191,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
       {isDone && (
         <button
           onClick={handlePdfExport}
-          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
+          className="flex-1 h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
         >
           Als PDF exportieren
         </button>
@@ -200,7 +200,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
         <button
           onClick={handleLigaSenden}
           disabled={ligaLoading}
-          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-navy-800 text-white hover:bg-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {ligaLoading ? 'Sende…' : 'An Liga senden'}
         </button>

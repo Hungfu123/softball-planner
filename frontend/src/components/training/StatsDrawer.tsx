@@ -33,7 +33,7 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
   return (
     <ResponsiveSheet open={open} onClose={onClose} title="Anwesenheits-Statistik" maxWidth="lg">
       <div className="px-4 py-4 space-y-4">
-        <p className="text-xs text-navy-600 -mt-1">Anzahl Teilnahmen · letzte 3 Monate &amp; Jahr</p>
+        <p className="text-xs text-navy-600">Anzahl Teilnahmen · letzte 3 Monate &amp; Jahr</p>
 
             {/* Tab Toggle */}
             <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
