@@ -54,6 +54,7 @@ export function GameDayPlanner() {
   const [yearBattingStats, setYearBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
   const [, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
   const [selectedPeriodId] = useState<number | null>(null)
+  const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -534,14 +535,34 @@ export function GameDayPlanner() {
         </div>
       ) : (
         <>
+          {/* Mobile only: Lineup ↔ Feld Tab-Toggle */}
+          <div className="lg:hidden flex bg-cream-100 border border-cream-300 rounded-lg p-0.5">
+            <button
+              onClick={() => setMobileView('lineup')}
+              className={`flex-1 h-9 text-xs font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors ${
+                mobileView === 'lineup' ? 'bg-navy-800 text-white' : 'text-navy-700'
+              }`}
+            >
+              Lineup
+            </button>
+            <button
+              onClick={() => setMobileView('field')}
+              className={`flex-1 h-9 text-xs font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors ${
+                mobileView === 'field' ? 'bg-navy-800 text-white' : 'text-navy-700'
+              }`}
+            >
+              Feld
+            </button>
+          </div>
+
           {/* Main Layout — 3 columns on desktop, Swipe-Handler global */}
           <div
             className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] gap-4 lg:gap-5"
             onTouchStart={onSwipeStart}
             onTouchEnd={onSwipeEnd}
           >
-            {/* Col 1: Lineup + Save */}
-            <div className="space-y-4 order-1">
+            {/* Col 1: Lineup + Save (desktop always; mobile: only when mobileView=lineup) */}
+            <div className={`space-y-4 order-1 ${mobileView === 'field' ? 'hidden lg:block' : ''}`}>
               <LineupEditor
                 entries={lineup.entries}
                 poolPlayers={poolPlayers}
@@ -659,7 +680,7 @@ export function GameDayPlanner() {
               />
               <BenchDisplay players={benchPlayers} />
             </div>
-            <div className="order-4 lg:hidden">
+            <div className={`lg:hidden ${mobileView === 'field' ? 'order-0' : 'hidden'}`}>
               <FieldView entries={lineup.entries} />
             </div>
           </div>

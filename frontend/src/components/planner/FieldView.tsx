@@ -23,9 +23,6 @@ export function FieldView({ entries }: Props) {
     if (e.position) posMap.set(e.position, e.player.name)
   }
 
-  const hasAny = entries.some(e => e.position && FIELD_POSITIONS.includes(e.position as typeof FIELD_POSITIONS[number]))
-  if (!hasAny) return null
-
   return (
     <div>
       <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 mb-2 pb-1.5 border-b border-cream-200 flex items-center gap-2">
