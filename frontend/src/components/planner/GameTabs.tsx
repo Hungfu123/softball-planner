@@ -140,9 +140,9 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           <div key={game.id} className="relative group flex items-center">
             <button
               onClick={() => onSelect(i)}
-              className={`group/tab relative px-3 sm:px-5 py-3 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
+              className={`group/tab relative px-3 sm:px-5 py-3 font-display text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors cursor-pointer ${
                 i === activeIndex
-                  ? 'text-navy-900 font-bold'
+                  ? 'text-navy-900'
                   : 'text-gray-400 hover:text-navy-800 hover:bg-navy-50/50 rounded-t-lg'
               }`}
             >
@@ -206,17 +206,17 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           <div className="relative">
             <button
               onClick={() => setPickerOpen(!pickerOpen)}
-              className={`inline-flex items-center gap-1.5 text-sm px-2.5 py-1.5 rounded-md cursor-pointer transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors font-display text-xs font-bold uppercase tracking-widest ${
                 activeGame.opponentTeam
-                  ? 'text-gray-700 bg-cream-100 hover:bg-navy-50 hover:text-navy-700'
-                  : 'text-gray-500 italic bg-cream-100 hover:bg-navy-50 hover:text-navy-600'
+                  ? 'text-navy-800 bg-cream-100 hover:bg-navy-50 hover:text-navy-900'
+                  : 'text-gray-500 bg-cream-100 hover:bg-navy-50 hover:text-navy-700'
               }`}
               title="Gegner wählen"
             >
               {activeGame.opponentTeam ? (
                 <>
-                  <span className="text-gray-400 text-xs">vs</span>
-                  <span className="font-semibold">{activeGame.opponentTeam.name}</span>
+                  <span className="text-gray-400">vs</span>
+                  <span>{activeGame.opponentTeam.name}</span>
                 </>
               ) : (
                 <span>+ Gegner wählen</span>
