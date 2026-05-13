@@ -6,15 +6,15 @@ interface Props {
 }
 
 const FIELD_COORDS: Record<string, { x: number; y: number }> = {
-  P:  { x: 50, y: 58 },
+  CF: { x: 50, y: 8 },
+  LF: { x: 14, y: 18 },
+  RF: { x: 86, y: 18 },
+  SS: { x: 33, y: 28 },
+  '2B': { x: 67, y: 28 },
+  '3B': { x: 16, y: 58 },
+  '1B': { x: 84, y: 58 },
+  P:  { x: 50, y: 52 },
   C:  { x: 50, y: 82 },
-  '1B': { x: 76, y: 55 },
-  '2B': { x: 62, y: 38 },
-  SS:  { x: 38, y: 38 },
-  '3B': { x: 24, y: 55 },
-  LF:  { x: 18, y: 22 },
-  CF:  { x: 50, y: 12 },
-  RF:  { x: 82, y: 22 },
 }
 
 export function FieldView({ entries }: Props) {
@@ -32,8 +32,8 @@ export function FieldView({ entries }: Props) {
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Feld
       </h2>
-      <div className="relative bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden" style={{ paddingBottom: '90%' }}>
-        <svg viewBox="0 0 100 95" className="absolute inset-0 w-full h-full">
+      <div className="relative bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden" style={{ paddingBottom: '85%', touchAction: 'pan-y' }}>
+        <svg viewBox="0 0 100 95" className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
           {/* Baselines */}
           <polygon
             points="50,70 72,50 50,30 28,50"
