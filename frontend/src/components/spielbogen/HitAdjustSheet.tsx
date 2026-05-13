@@ -43,7 +43,10 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [scoredCount, setScoredCount] = useState(initialRunsScored)
   const [saving, setSaving] = useState(false)
-  const [forceOutRule, setForceOutRule] = useState(false)
+  // Default: true — RFL-Force-Out-3rd-Out-Regel ist die Norm (Run zählt NICHT
+  // wenn das 3. Out ein Force-Out ist). Tag-Out ist die Ausnahme → User hakt
+  // die Checkbox aktiv ab wenn nicht-force.
+  const [forceOutRule, setForceOutRule] = useState(true)
 
   // Initial state aus baseStateAfter — alle aktuell auf base + recently scored.
   // Batter wird ausgeschlossen (war nicht in baseStateBefore) — sein Reach via Hit
@@ -70,7 +73,7 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
     }
     setAssignments(onBase)
     setScoredCount(initialRunsScored)
-    setForceOutRule(false) // bei jedem Open zurücksetzen — sonst stale Toggle
+    setForceOutRule(true) // bei jedem Open default true (RFL-Norm)
   }, [open, baseStateAfter.firstSlotId, baseStateAfter.secondSlotId, baseStateAfter.thirdSlotId, baseStateBefore?.firstSlotId, baseStateBefore?.secondSlotId, baseStateBefore?.thirdSlotId, initialRunsScored, slots])
 
   const cycle = (slotId: number) => {

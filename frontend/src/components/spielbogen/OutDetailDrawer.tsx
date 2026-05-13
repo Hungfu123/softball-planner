@@ -672,7 +672,15 @@ function FoulFielderPickView({ onPick, onBack }: { onPick: (pos: number) => void
 // aber Spielbogen-UI bietet aktuell nur Single-Out + Double-Play. Workaround:
 // User kann via correctLastAtBat (Korrektur-Sheet) outType nachträglich anpassen.
 // ---------------------------------------------------------------------------
-export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
+export function OutDetailDrawer({ open, onClose, onSubmit: rawOnSubmit, baseStateAfter, slots, batterSlotId, outs }: Props) {
+  const [saving, setSaving] = useState(false)
+  // Wrappt onSubmit mit saving-Guard — verhindert Double-Tap-Race.
+  const onSubmit = (req: Partial<SpielbogenRecordAtBatRequest>) => {
+    if (saving) return
+    setSaving(true)
+    rawOnSubmit(req)
+    // Reset saving via useEffect on !open (Drawer schließt nach Submit).
+  }
   const [selectedFielder, setSelectedFielder] = useState<number | null>(null)
   const [pendingDpRequest, setPendingDpRequest] = useState<{ fielder: number; defaultDpPartner: number } | null>(null)
   const [pendingFlyOutRequest, setPendingFlyOutRequest] = useState<{ fielder: number; isFoul?: boolean } | null>(null)
@@ -702,6 +710,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
       setPendingAdvancePicker(null)
       setPendingChainPicker(null)
       setFoulFielderPickOpen(false)
+      setSaving(false)
     }
   }, [open])
 

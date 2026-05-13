@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Drawer } from 'vaul'
 import type { BogenBaseStateDto, SpielbogenSlotResponse, SpielbogenRecordStealingRequest, BogenSide } from '@/types'
 
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function StealingDrawer({ open, onClose, baseState, slots, side, inning, onSubmit }: Props) {
+  const [saving, setSaving] = useState(false)
   const runners: Array<{ slotId: number; fromBase: number; name: string }> = []
   if (baseState?.firstSlotId != null) {
     const slot = slots.find(s => s.id === baseState.firstSlotId)
@@ -27,9 +29,15 @@ export function StealingDrawer({ open, onClose, baseState, slots, side, inning, 
   }
 
   const handle = async (slotId: number, fromBase: number, type: 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY') => {
+    if (saving) return
+    setSaving(true)
     const toBase = fromBase + 1  // 1→2, 2→3, 3→home(4)
-    await onSubmit({ side, slotId, inning, type, fromBase, toBase })
-    onClose()
+    try {
+      await onSubmit({ side, slotId, inning, type, fromBase, toBase })
+      onClose()
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -56,19 +64,22 @@ export function StealingDrawer({ open, onClose, baseState, slots, side, inning, 
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => handle(r.slotId, r.fromBase, 'STOLEN_BASE')}
-                    className="font-display py-2 text-xs font-bold tracking-widest uppercase rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                    disabled={saving}
+                    className="font-display py-2 text-xs font-bold tracking-widest uppercase rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     SB → {r.fromBase + 1 === 4 ? 'H' : (r.fromBase + 1) + 'B'}
                   </button>
                   <button
                     onClick={() => handle(r.slotId, r.fromBase, 'CAUGHT_STEALING')}
-                    className="font-display py-2 text-xs font-bold tracking-widest uppercase rounded-lg bg-softball-red-600 text-white hover:bg-softball-red-700 cursor-pointer"
+                    disabled={saving}
+                    className="font-display py-2 text-xs font-bold tracking-widest uppercase rounded-lg bg-softball-red-600 text-white hover:bg-softball-red-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     CS (Aus)
                   </button>
                   <button
                     onClick={() => handle(r.slotId, r.fromBase, 'OUT_ON_PLAY')}
-                    className="font-display py-2 text-xs font-bold tracking-widest uppercase rounded-lg bg-gray-500 text-white hover:bg-gray-600 cursor-pointer"
+                    disabled={saving}
+                    className="font-display py-2 text-xs font-bold tracking-widest uppercase rounded-lg bg-gray-500 text-white hover:bg-gray-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Out on Play
                   </button>
