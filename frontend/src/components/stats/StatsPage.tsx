@@ -13,7 +13,7 @@ type ViewKind = 'batting' | 'games'
 export function StatsPage() {
   const [params, setParams] = useSearchParams()
 
-  const scopeKind = (params.get('scope') as ScopeKind) || 'season'
+  const scopeKind = (params.get('scope') as ScopeKind) || 'year'
   const view = (params.get('view') as ViewKind) || 'batting'
   const seasonIdParam = params.get('seasonId')
   const yearParam = params.get('year')
