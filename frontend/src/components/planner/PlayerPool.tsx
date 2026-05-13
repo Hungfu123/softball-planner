@@ -188,7 +188,7 @@ export function PlayerPool({
                 } cursor-pointer`}
               >
                 {player.defaultBattingOrder != null && (
-                  <span className="text-[11px] font-mono font-semibold text-gray-400 shrink-0 lg:hidden">
+                  <span className="text-[11px] font-display tabular-nums font-bold text-gray-400 shrink-0 lg:hidden">
                     #{player.defaultBattingOrder}
                   </span>
                 )}
@@ -199,12 +199,12 @@ export function PlayerPool({
                 </span>
 
                 {posStr && (
-                  <span className="text-[11px] font-mono text-gray-400 shrink-0">
+                  <span className="text-[11px] font-display tabular-nums text-gray-400 shrink-0">
                     {posStr}
                   </span>
                 )}
 
-                <span className={`text-xs font-mono font-semibold w-7 text-center shrink-0 rounded-full py-0.5 ${gameCountBadge(gc)}`}>
+                <span className={`text-xs font-display tabular-nums font-bold w-7 text-center shrink-0 rounded-full py-0.5 ${gameCountBadge(gc)}`}>
                   {gc}
                 </span>
 
@@ -230,7 +230,7 @@ export function PlayerPool({
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-left border-b border-cream-200 last:border-0 bg-cream-100/50 cursor-not-allowed"
               >
                 {player.defaultBattingOrder != null && (
-                  <span className="text-[11px] font-mono font-semibold text-gray-300 shrink-0 lg:hidden">
+                  <span className="text-[11px] font-display tabular-nums font-bold text-gray-300 shrink-0 lg:hidden">
                     #{player.defaultBattingOrder}
                   </span>
                 )}
@@ -239,12 +239,12 @@ export function PlayerPool({
                 </span>
 
                 {posStr && (
-                  <span className="text-[11px] font-mono text-gray-300 shrink-0">
+                  <span className="text-[11px] font-display tabular-nums text-gray-300 shrink-0">
                     {posStr}
                   </span>
                 )}
 
-                <span className="text-xs font-mono w-7 text-center text-gray-400 shrink-0">
+                <span className="text-xs font-display tabular-nums w-7 text-center text-gray-400 shrink-0">
                   {gc}
                 </span>
               </div>
@@ -310,18 +310,18 @@ export function PlayerPool({
                   {player.name}
                 </span>
 
-                <span className={`text-left text-sm font-mono tabular-nums font-bold ${
+                <span className={`text-left text-sm font-display tabular-nums font-bold ${
                   isTop ? 'text-softball-red-600' : avgStr ? 'text-navy-900' : 'text-gray-300'
                 }`}
                       title={avgStr ? `${bs?.hits}/${bs?.atBats} Treffer${isTop ? ' · Top-AVG' : ''}` : 'Noch keine At-Bats'}>
                   {avgStr ?? '—'}
                 </span>
 
-                <span className="text-left text-[11px] font-mono text-gray-500 truncate">
+                <span className="text-left text-[11px] font-display tabular-nums text-gray-500 truncate">
                   {posStr || <span className="text-gray-300">—</span>}
                 </span>
 
-                <span className={`text-xs font-mono font-semibold text-center rounded-full py-0.5 ${gameCountBadge(gc)}`}>
+                <span className={`text-xs font-display tabular-nums font-bold text-center rounded-full py-0.5 ${gameCountBadge(gc)}`}>
                   {gc}
                 </span>
               </div>
@@ -394,7 +394,7 @@ export function PlayerPool({
                       style={{ width: `${barWidth}%` }}
                     />
                   </div>
-                  <span className="text-[11px] font-mono text-gray-500 tabular-nums w-6 text-right shrink-0">
+                  <span className="text-[11px] font-display tabular-nums text-gray-500 tabular-nums w-6 text-right shrink-0">
                     {s.attended}
                   </span>
                 </div>

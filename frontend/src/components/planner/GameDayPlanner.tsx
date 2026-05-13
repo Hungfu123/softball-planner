@@ -684,7 +684,7 @@ export function GameDayPlanner() {
                                 style={{ width: `${barWidth}%` }}
                               />
                             </div>
-                            <span className="text-[10px] font-mono text-gray-500 tabular-nums w-6 text-right shrink-0">
+                            <span className="text-[10px] font-display tabular-nums text-gray-500 tabular-nums w-6 text-right shrink-0">
                               {s.attended}
                             </span>
                           </div>

@@ -64,7 +64,7 @@ export function LineupRow({
       </button>
 
       {/* Number */}
-      <span className="w-6 text-center text-xs font-mono font-semibold text-gray-400">
+      <span className="w-6 text-center text-xs font-display tabular-nums font-bold text-gray-400">
         {index + 1}
       </span>
 
