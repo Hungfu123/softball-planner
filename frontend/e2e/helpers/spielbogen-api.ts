@@ -135,6 +135,76 @@ export async function endBogen(bogenId: number, homeRuns?: number, awayRuns?: nu
   return res.json()
 }
 
+export async function recordSubstitution(
+  bogenId: number,
+  opts: { side: Side; slotId: number; inning: number; playerInName: string; pinchHitter?: boolean },
+) {
+  const c = await client()
+  const res = await c.post(`/api/spielbogen/${bogenId}/substitutions`, { data: opts })
+  if (!res.ok()) throw new Error(`recordSubstitution failed: ${res.status()} ${await res.text()}`)
+  return res.json()
+}
+
+export async function correctLastAtBat(
+  bogenId: number,
+  side: Side,
+  opts: {
+    firstSlotId?: number | null
+    secondSlotId?: number | null
+    thirdSlotId?: number | null
+    runsScored?: number
+    runnerAdvances?: Array<{ slotId: number; fromBase: number; toBase: number; reason: string }>
+  },
+) {
+  const c = await client()
+  const res = await c.patch(`/api/spielbogen/${bogenId}/at-bats/last?side=${side}`, { data: opts })
+  if (!res.ok()) throw new Error(`correctLastAtBat failed: ${res.status()} ${await res.text()}`)
+  return res.json()
+}
+
+export async function undoLastAtBat(bogenId: number, side: Side) {
+  const c = await client()
+  const res = await c.delete(`/api/spielbogen/${bogenId}/at-bats/last?side=${side}`)
+  if (!res.ok()) throw new Error(`undoLastAtBat failed: ${res.status()} ${await res.text()}`)
+}
+
+export async function createSpielbogenWithDH(
+  date: string,
+  homeTeamName: string,
+  awayTeamName: string,
+  workerIndex: number = 0,
+): Promise<SpielbogenIds> {
+  const c = await client()
+  const createRes = await c.post('/api/spielbogen', {
+    data: { date, location: 'E2E-Field', homeTeamName, awayTeamName },
+  })
+  if (!createRes.ok()) throw new Error(`createSpielbogen failed: ${createRes.status()}`)
+  const bogen = await createRes.json()
+  const bogenId = bogen.id as number
+
+  // 9 field + 1 DH = 10 Slots
+  const positions10 = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH']
+  for (const side of ['HOME', 'AWAY'] as const) {
+    const slots = positions10.map((position, i) => ({
+      slot: i + 1,
+      name: `${side === 'HOME' ? homeTeamName : awayTeamName}-${i + 1}`,
+      position,
+      battingOrder: i + 1,
+    }))
+    const res = await c.put(`/api/spielbogen/${bogenId}/lineup`, { data: { side, slots } })
+    if (!res.ok()) throw new Error(`setLineup ${side} failed: ${res.status()} ${await res.text()}`)
+  }
+  const startRes = await c.post(`/api/spielbogen/${bogenId}/start`)
+  if (!startRes.ok()) throw new Error(`start failed: ${startRes.status()}`)
+  const sheetRes = await c.get(`/api/spielbogen/${bogenId}/sheet`)
+  const sheet = await sheetRes.json()
+  return {
+    bogenId,
+    homeSlotIds: sheet.homeLineup.map((s: { id: number }) => s.id),
+    awaySlotIds: sheet.awayLineup.map((s: { id: number }) => s.id),
+  }
+}
+
 export async function deleteSpielbogen(bogenId: number) {
   const c = await client()
   const res = await c.delete(`/api/spielbogen/${bogenId}`)
