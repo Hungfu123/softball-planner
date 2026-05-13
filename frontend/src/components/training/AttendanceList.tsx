@@ -39,9 +39,9 @@ export function AttendanceList({ players, presentIds, onToggle, stats }: Props) 
             {s && s.total > 0 && (
               <span
                 className="font-display tabular-nums text-xs text-gray-400 shrink-0"
-                title={`${s.attended} von ${s.total} Trainings · letzte 3 Monate`}
+                title={`${s.attended} Trainings · letzte 3 Monate`}
               >
-                {s.attended}<span className="text-gray-300">/{s.total}</span>
+                {s.attended}
               </span>
             )}
           </button>
