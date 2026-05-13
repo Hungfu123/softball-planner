@@ -182,7 +182,11 @@ public class SpielbogenController {
         com.softball.domain.model.BogenBaseState bs = new com.softball.domain.model.BogenBaseState(
             req.firstSlotId(), req.secondSlotId(), req.thirdSlotId()
         );
-        var saved = scoringService.updateLastAtBatBaseState(id, side, bs, req.runsScored());
+        var advances = req.runnerAdvances() == null ? null : req.runnerAdvances().stream()
+            .map(e -> new com.softball.application.SpielbogenScoringService.RunnerAdvanceEntry(
+                e.slotId(), e.fromBase(), e.toBase(), e.reason()))
+            .toList();
+        var saved = scoringService.updateLastAtBatBaseState(id, side, bs, req.runsScored(), advances);
         return SpielbogenAtBatResponse.from(saved);
     }
 

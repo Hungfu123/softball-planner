@@ -408,10 +408,17 @@ public class SpielbogenScoringService {
         return saved;
     }
 
-    @Transactional
     public SpielbogenAtBat updateLastAtBatBaseState(final Long bogenId, final BogenSide side,
                                                      final BogenBaseState newBaseStateAfter,
                                                      final Integer newRunsScored) {
+        return updateLastAtBatBaseState(bogenId, side, newBaseStateAfter, newRunsScored, null);
+    }
+
+    @Transactional
+    public SpielbogenAtBat updateLastAtBatBaseState(final Long bogenId, final BogenSide side,
+                                                     final BogenBaseState newBaseStateAfter,
+                                                     final Integer newRunsScored,
+                                                     final List<RunnerAdvanceEntry> newRunnerAdvances) {
         Spielbogen bogen = requireLive(bogenId);
         SpielbogenAtBat last = atBatRepo.findLatestForSide(bogenId, side)
             .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Bearbeiten für Side " + side));
@@ -425,6 +432,33 @@ public class SpielbogenScoringService {
             last.setRunsScored(newRunsScored);
         }
         atBatRepo.save(last);
+
+        // RunnerAdvances ersetzen — alte droppen, neue persisten falls geliefert.
+        // Wenn newRunnerAdvances null → alte unverändert (kein Touch).
+        if (newRunnerAdvances != null) {
+            runnerAdvanceRepo.deleteByAtBatId(last.getId());
+            if (!newRunnerAdvances.isEmpty()) {
+                var entities = newRunnerAdvances.stream().map(entry -> {
+                    if (entry.fromBase() == null || entry.toBase() == null || entry.fromBase() >= entry.toBase()) {
+                        throw new BusinessValidationException(
+                            "Ungültiger RunnerAdvance: fromBase=" + entry.fromBase() + ", toBase=" + entry.toBase()
+                        );
+                    }
+                    SpielbogenSlot runnerSlot = requireSlotForBogenAndSide(entry.slotId(), bogenId, side);
+                    SpielbogenRunnerAdvance ra = new SpielbogenRunnerAdvance();
+                    ra.setBogen(bogen);
+                    ra.setAtBat(last);
+                    ra.setSlot(runnerSlot);
+                    ra.setSide(side);
+                    ra.setInning(last.getInning());
+                    ra.setFromBase(entry.fromBase());
+                    ra.setToBase(entry.toBase());
+                    ra.setReason(entry.reason());
+                    return ra;
+                }).toList();
+                runnerAdvanceRepo.saveAll(entities);
+            }
+        }
 
         // Recompute total runs from all at-bats
         var allAtBats = atBatRepo.findByBogenId(bogenId);
