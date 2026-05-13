@@ -79,7 +79,17 @@ export function useLineup() {
       if (prev.some(e => e.player.id === player.id)) return prev
       const newEntry = { player, position: null, dhBatterId: null, dhBatterName: null }
       if (player.defaultBattingOrder) {
-        const insertAt = Math.min(player.defaultBattingOrder - 1, prev.length)
+        // Insert at the first position where existing entry has higher
+        // defaultBattingOrder (oder kein order). Stable relative-Order
+        // unabhängig in welcher Reihenfolge man Spieler hinzufügt.
+        let insertAt = prev.length
+        for (let i = 0; i < prev.length; i++) {
+          const order = prev[i].player.defaultBattingOrder
+          if (order == null || order > player.defaultBattingOrder) {
+            insertAt = i
+            break
+          }
+        }
         return [...prev.slice(0, insertAt), newEntry, ...prev.slice(insertAt)]
       }
       return [...prev, newEntry]
