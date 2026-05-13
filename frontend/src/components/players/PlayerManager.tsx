@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -17,7 +17,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
-import { Card, Button, EmptyState, ConfirmModal, LoadingSkeleton } from '@/components/shared'
+import { EmptyState, ConfirmModal, LoadingSkeleton } from '@/components/shared'
 import type { Player } from '@/types'
 
 function SortablePlayerRow({ player, index }: { player: Player; index: number }) {
@@ -37,18 +37,19 @@ function SortablePlayerRow({ player, index }: { player: Player; index: number })
   }
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3">
+    <div ref={setNodeRef} style={style} className="flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 bg-white">
       <button
         {...attributes}
         {...listeners}
-        className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 touch-none"
+        aria-label="Reihenfolge ziehen"
+        className="p-1 cursor-grab active:cursor-grabbing text-gray-400 hover:text-navy-700 touch-none shrink-0"
       >
         <GripHandle size={16} />
       </button>
-      <span className="text-xs font-mono font-semibold text-gray-400 w-5 text-center shrink-0">
+      <span className="font-display w-7 h-7 rounded-full bg-softball-red-600 text-white text-xs font-extrabold tabular-nums flex items-center justify-center shrink-0">
         {index + 1}
       </span>
-      <span className="flex-1 text-sm font-medium text-gray-900">{player.name}</span>
+      <span className="flex-1 text-navy-900 font-semibold">{player.name}</span>
     </div>
   )
 }
@@ -61,6 +62,11 @@ export function PlayerManager() {
   const [editName, setEditName] = useState('')
   const [deletePlayerId, setDeletePlayerId] = useState<number | null>(null)
   const [tab, setTab] = useState<'spieler' | 'batting'>('spieler')
+  const [search, setSearch] = useState('')
+
+  // Local batting-order state (für Save/Cancel-Pattern)
+  const [localBattingOrder, setLocalBattingOrder] = useState<number[]>([])
+  const [battingSaving, setBattingSaving] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -69,16 +75,40 @@ export function PlayerManager() {
 
   const orderMode = tab === 'batting'
 
-  const orderedPlayers = useMemo(() => {
-    if (!orderMode) return players
-    return [...players].sort((a, b) => {
-      if (a.defaultBattingOrder != null && b.defaultBattingOrder != null)
-        return a.defaultBattingOrder - b.defaultBattingOrder
-      if (a.defaultBattingOrder != null) return -1
-      if (b.defaultBattingOrder != null) return 1
-      return a.name.localeCompare(b.name)
-    })
-  }, [players, orderMode])
+  // Server-Order ableiten (defaultBattingOrder asc, dann alpha)
+  const serverBattingOrder = useMemo(() => {
+    return [...players]
+      .sort((a, b) => {
+        if (a.defaultBattingOrder != null && b.defaultBattingOrder != null)
+          return a.defaultBattingOrder - b.defaultBattingOrder
+        if (a.defaultBattingOrder != null) return -1
+        if (b.defaultBattingOrder != null) return 1
+        return a.name.localeCompare(b.name)
+      })
+      .map(p => p.id)
+  }, [players])
+
+  // Lokale Order initialisieren wenn Tab gewechselt oder Server-Daten neu
+  useEffect(() => {
+    setLocalBattingOrder(serverBattingOrder)
+  }, [serverBattingOrder, tab])
+
+  const orderedBattingPlayers = useMemo(() => {
+    const map = new Map(players.map(p => [p.id, p]))
+    return localBattingOrder.map(id => map.get(id)).filter((p): p is Player => !!p)
+  }, [players, localBattingOrder])
+
+  const battingDirty = useMemo(() => {
+    if (localBattingOrder.length !== serverBattingOrder.length) return true
+    return localBattingOrder.some((id, i) => id !== serverBattingOrder[i])
+  }, [localBattingOrder, serverBattingOrder])
+
+  const filteredPlayers = useMemo(() => {
+    const sorted = [...players].sort((a, b) => a.name.localeCompare(b.name))
+    if (!search.trim()) return sorted
+    const q = search.toLowerCase()
+    return sorted.filter(p => p.name.toLowerCase().includes(q))
+  }, [players, search])
 
   const handleCreate = async () => {
     const name = newName.trim()
@@ -119,24 +149,34 @@ export function PlayerManager() {
     }
   }
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
-
-    const oldIndex = orderedPlayers.findIndex(p => p.id === active.id)
-    const newIndex = orderedPlayers.findIndex(p => p.id === over.id)
+    const oldIndex = localBattingOrder.indexOf(active.id as number)
+    const newIndex = localBattingOrder.indexOf(over.id as number)
     if (oldIndex === -1 || newIndex === -1) return
+    setLocalBattingOrder(prev => {
+      const next = [...prev]
+      const [moved] = next.splice(oldIndex, 1)
+      next.splice(newIndex, 0, moved)
+      return next
+    })
+  }
 
-    const reordered = [...orderedPlayers]
-    const [moved] = reordered.splice(oldIndex, 1)
-    reordered.splice(newIndex, 0, moved)
-
+  const handleBattingSave = async () => {
+    setBattingSaving(true)
     try {
-      await reorderBattingOrder(reordered.map(p => p.id))
+      await reorderBattingOrder(localBattingOrder)
       toast.show('Schlagreihenfolge gespeichert')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
+    } finally {
+      setBattingSaving(false)
     }
+  }
+
+  const handleBattingCancel = () => {
+    setLocalBattingOrder(serverBattingOrder)
   }
 
   if (loading) {
@@ -144,107 +184,155 @@ export function PlayerManager() {
   }
 
   return (
-    <div className="max-w-lg mx-auto space-y-6">
-      <div className="flex gap-2 border-b border-cream-300">
-        {([
-          ['spieler', 'Spieler'],
-          ['batting', 'Batting Reihenfolge'],
-        ] as const).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => { setTab(key); setEditingId(null) }}
-            className={`font-display px-4 py-2 text-xs font-bold tracking-widest uppercase cursor-pointer border-b-2 -mb-[2px] transition-colors ${
-              tab === key
-                ? 'border-softball-red-600 text-softball-red-700'
-                : 'border-transparent text-gray-500 hover:text-navy-900'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {!orderMode && (
-        <div className="flex gap-2">
-          <input
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleCreate()}
-            placeholder="Name eingeben..."
-            className="flex-1 border border-cream-300 rounded-lg px-4 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
-            autoFocus
-          />
-          <Button onClick={handleCreate} disabled={!newName.trim()} icon={<PlusCircle size={16} />}>
-            Hinzufügen
-          </Button>
+    <div className="min-h-screen bg-cream-50">
+      <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
+        <div className="flex items-baseline justify-between">
+          <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
+            Spieler {players.length > 0 && <span className="text-navy-500 font-bold">({players.length})</span>}
+          </h1>
         </div>
-      )}
 
-      {players.length === 0 ? (
-        <EmptyState
-          title="Noch keine Spieler angelegt"
-          description="Leg los!"
-          icon={<CrossBones size={48} />}
-        />
-      ) : orderMode ? (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={orderedPlayers.map(p => p.id)} strategy={verticalListSortingStrategy}>
-            <Card className="divide-y divide-gray-100">
-              {orderedPlayers.map((p, i) => (
-                <SortablePlayerRow key={p.id} player={p} index={i} />
-              ))}
-            </Card>
-          </SortableContext>
-        </DndContext>
-      ) : (
-        <Card className="divide-y divide-gray-100">
-          {players.map(p => (
-            <div key={p.id} className="flex items-center gap-3 px-4 py-3 group">
-              {editingId === p.id ? (
-                <input
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleUpdate(p.id)
-                    if (e.key === 'Escape') setEditingId(null)
-                  }}
-                  onBlur={() => handleUpdate(p.id)}
-                  className="flex-1 border border-navy-600 rounded-lg px-3 py-1.5 text-sm ring-2 ring-navy-100 outline-none"
-                  autoFocus
-                />
-              ) : (
-                <>
-                  <span className="flex-1 text-sm font-medium text-gray-900">{p.name}</span>
-                </>
-              )}
-              <div className="actions-reveal flex gap-1">
-                <button
-                  onClick={() => { setEditingId(p.id); setEditName(p.name) }}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50"
-                  title="Bearbeiten"
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50"
-                  title="Löschen"
-                >
-                  <TrashBin size={16} />
-                </button>
-              </div>
+        {/* Tab Bar */}
+        <div className="inline-flex bg-cream-200 rounded-lg p-0.5 w-full" role="tablist">
+          <button
+            role="tab"
+            aria-selected={tab === 'spieler'}
+            onClick={() => { setTab('spieler'); setEditingId(null) }}
+            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors ${tab === 'spieler' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
+          >
+            Spieler
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'batting'}
+            onClick={() => { setTab('batting'); setEditingId(null) }}
+            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors ${tab === 'batting' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
+          >
+            Batting-Reihenfolge
+          </button>
+        </div>
+
+        {!orderMode && (
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+                placeholder="Neuer Spieler…"
+                className="flex-1 border border-cream-300 rounded-lg px-4 py-2.5 text-sm text-navy-900 bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleCreate}
+                disabled={!newName.trim()}
+                className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-2.5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <PlusCircle size={16} /> Hinzufügen
+              </button>
             </div>
-          ))}
-        </Card>
-      )}
-      {deletePlayerId && (
-        <ConfirmModal
-          title="Spieler löschen"
-          message={`${players.find(p => p.id === deletePlayerId)?.name ?? 'Spieler'} wirklich löschen?`}
-          onConfirm={confirmDeletePlayer}
-          onCancel={() => setDeletePlayerId(null)}
-        />
-      )}
+            {players.length > 6 && (
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Suchen…"
+                className="w-full border border-cream-300 rounded-lg px-4 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              />
+            )}
+          </div>
+        )}
+
+        {players.length === 0 ? (
+          <EmptyState
+            title="Noch keine Spieler angelegt"
+            description="Leg los!"
+            icon={<CrossBones size={48} />}
+          />
+        ) : orderMode ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={localBattingOrder} strategy={verticalListSortingStrategy}>
+              <div className="bg-white border border-cream-300 rounded-2xl overflow-hidden">
+                {orderedBattingPlayers.map((p, i) => (
+                  <SortablePlayerRow key={p.id} player={p} index={i} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="bg-white border border-cream-300 rounded-2xl overflow-hidden">
+            {filteredPlayers.length === 0 ? (
+              <p className="text-center text-sm text-navy-400 italic py-6">Keine Treffer.</p>
+            ) : (
+              filteredPlayers.map(p => (
+                <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 group">
+                  {editingId === p.id ? (
+                    <input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleUpdate(p.id)
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      onBlur={() => handleUpdate(p.id)}
+                      className="flex-1 border border-navy-600 rounded-lg px-3 py-1.5 text-sm ring-2 ring-navy-100 outline-none text-navy-900"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="flex-1 text-navy-900 font-medium">{p.name}</span>
+                  )}
+                  <div className="actions-reveal flex gap-1">
+                    <button
+                      onClick={() => { setEditingId(p.id); setEditName(p.name) }}
+                      aria-label={`${p.name} bearbeiten`}
+                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                      title="Bearbeiten"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      aria-label={`${p.name} löschen`}
+                      className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+                      title="Löschen"
+                    >
+                      <TrashBin size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Batting Save/Cancel — sticky bottom */}
+        {orderMode && battingDirty && (
+          <div className="sticky bottom-4 grid grid-cols-[auto_1fr] gap-2 z-20">
+            <button
+              onClick={handleBattingCancel}
+              disabled={battingSaving}
+              className="px-4 py-3 text-sm font-semibold text-navy-700 bg-white border border-cream-300 rounded-xl hover:bg-cream-100 disabled:opacity-50 cursor-pointer shadow-lg"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={handleBattingSave}
+              disabled={battingSaving}
+              className="py-3 text-sm font-semibold text-white bg-softball-red-600 rounded-xl hover:bg-softball-red-500 disabled:opacity-50 shadow-lg shadow-softball-red-600/20 cursor-pointer"
+            >
+              {battingSaving ? 'Speichern…' : 'Reihenfolge speichern'}
+            </button>
+          </div>
+        )}
+
+        {deletePlayerId && (
+          <ConfirmModal
+            title="Spieler löschen"
+            message={`${players.find(p => p.id === deletePlayerId)?.name ?? 'Spieler'} wirklich löschen?`}
+            onConfirm={confirmDeletePlayer}
+            onCancel={() => setDeletePlayerId(null)}
+          />
+        )}
+      </div>
     </div>
   )
 }
