@@ -12,7 +12,8 @@ async function client(): Promise<APIRequestContext> {
 
 export type Side = 'HOME' | 'AWAY'
 export type AbResult = 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN' | 'WALK' | 'HIT_BY_PITCH' | 'STRIKEOUT' | 'OUT' | 'REACHED_ON_ERROR'
-export type OutType = 'NORMAL' | 'DOUBLE_PLAY' | 'TRIPLE_PLAY' | 'SAC_FLY' | 'SAC_BUNT'
+export type OutType = 'GROUNDER' | 'FLY' | 'FOUL' | 'UNASSISTED' | 'DOUBLE_PLAY' | 'TRIPLE_PLAY' | 'FORCE_OUT' | 'TAG_OUT' | 'FIELDERS_CHOICE'
+export type SacrificeType = 'BUNT' | 'FLY'
 export type StealType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'WILD_PITCH' | 'PASSED_BALL'
 
 export type SpielbogenIds = {
@@ -78,7 +79,10 @@ export async function recordAtBat(
     inning: number
     result: AbResult
     outType?: OutType
+    sacrificeType?: SacrificeType
     fielderChain?: number[]
+    isError?: boolean
+    errorPosition?: number
     runsScored?: number
     rbi?: number
     baseStateAfter?: BaseStateAfter
@@ -94,7 +98,10 @@ export async function recordAtBat(
     rbi: opts.rbi ?? 0,
   }
   if (opts.outType) body.outType = opts.outType
+  if (opts.sacrificeType) body.sacrificeType = opts.sacrificeType
   if (opts.fielderChain) body.fielderChain = opts.fielderChain
+  if (opts.isError != null) body.isError = opts.isError
+  if (opts.errorPosition != null) body.errorPosition = opts.errorPosition
   if (opts.baseStateAfter) body.baseStateAfter = opts.baseStateAfter
   const res = await c.post(`/api/spielbogen/${bogenId}/at-bats`, { data: body })
   if (!res.ok()) throw new Error(`recordAtBat failed: ${res.status()} ${await res.text()}`)
