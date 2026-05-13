@@ -209,7 +209,7 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
   ) : undefined
 
   return (
-    <ResponsiveSheet open={open} onClose={onClose} title="Spielbogen" maxWidth="lg" footer={footer}>
+    <ResponsiveSheet open={open} onClose={onClose} title="Spielbogen" maxWidth="xl" footer={footer}>
       <div className="px-4 py-2 border-b border-cream-200 shrink-0">
         <p className="font-body text-xs text-gray-600">
           {meta.homeTeamName} <span className="font-bold">{meta.homeRuns}</span>

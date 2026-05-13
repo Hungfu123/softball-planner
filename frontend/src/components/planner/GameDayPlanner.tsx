@@ -9,6 +9,7 @@ import { GameTabs } from './GameTabs'
 import { LineupEditor } from './LineupEditor'
 import { PlayerPool } from './PlayerPool'
 import { FieldView } from './FieldView'
+import { FieldPositionAssignSheet } from './FieldPositionAssignSheet'
 import { CoachSlots } from './CoachSlots'
 import { BenchDisplay } from './BenchDisplay'
 import { SaveButton } from './SaveButton'
@@ -55,6 +56,7 @@ export function GameDayPlanner() {
   const [, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
   const [selectedPeriodId] = useState<number | null>(null)
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
+  const [assignPosition, setAssignPosition] = useState<string | null>(null)
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -170,6 +172,17 @@ export function GameDayPlanner() {
         .map(s => ({ playerId: s.player.id, role: s.role }))
       handleStaffSave(remaining)
     }
+  }
+
+  const handlePositionAssign = (player: Player, position: string) => {
+    const inLineup = lineup.entries.some(e => e.player.id === player.id)
+    if (!inLineup) handleAddPlayer(player)
+    lineup.setPosition(player.id, position)
+  }
+
+  const handlePositionClear = (position: string) => {
+    const entry = lineup.entries.find(e => e.position === position)
+    if (entry) lineup.setPosition(entry.player.id, '')
   }
 
   const loadGameData = async () => {
@@ -665,7 +678,7 @@ export function GameDayPlanner() {
 
             {/* Row 2: Field spans col 1+2, Bank in col 3 — desktop */}
             <div className="hidden lg:block lg:col-span-2 order-4">
-              <FieldView entries={lineup.entries} />
+              <FieldView entries={lineup.entries} onPositionClick={setAssignPosition} />
             </div>
             <div className="hidden lg:block order-5">
               <BenchDisplay players={benchPlayers} />
@@ -681,7 +694,7 @@ export function GameDayPlanner() {
               <BenchDisplay players={benchPlayers} />
             </div>
             <div className={`lg:hidden ${mobileView === 'field' ? 'order-0' : 'hidden'}`}>
-              <FieldView entries={lineup.entries} />
+              <FieldView entries={lineup.entries} onPositionClick={setAssignPosition} />
             </div>
           </div>
 
@@ -746,6 +759,16 @@ export function GameDayPlanner() {
           onClose={() => setShowCopyLineup(false)}
         />
       )}
+
+      <FieldPositionAssignSheet
+        open={assignPosition != null}
+        position={assignPosition}
+        entries={lineup.entries}
+        poolPlayers={poolPlayers}
+        onAssign={handlePositionAssign}
+        onClear={handlePositionClear}
+        onClose={() => setAssignPosition(null)}
+      />
 
       {showClearConfirm && (
         <ConfirmModal
