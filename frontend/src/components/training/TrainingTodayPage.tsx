@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
-import { ChevronDown, Calendar } from 'lucide-react'
+import { ChevronDown, Calendar, Ban } from 'lucide-react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
@@ -20,13 +20,14 @@ type MobileTab = 'anwesenheit' | 'plan'
 type AttendanceSort = 'alpha' | 'frequency' | 'decided'
 
 export function TrainingTodayPage() {
-  const { trainings, attendance, toggleAttendance } = useTraining()
+  const { trainings, attendance, toggleAttendance, cancelTraining } = useTraining()
   const { players } = usePlayers()
   const [statsOpen, setStatsOpen] = useState(false)
   const [planEditOpen, setPlanEditOpen] = useState(false)
   const [generateOpen, setGenerateOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
   const [planId, setPlanId] = useState<number | null>(null)
@@ -235,17 +236,35 @@ export function TrainingTodayPage() {
           <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
             Training
           </h1>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="text-sm font-semibold text-navy-800 bg-white border border-cream-300 hover:bg-cream-50 hover:border-navy-400 rounded-lg px-3 py-1.5 flex items-center gap-1.5 cursor-pointer shadow-sm"
-            aria-label="Training wechseln (vergangene + anstehende)"
-            title="Anderes Training wählen — vergangene anklicken zum Nachpflegen"
-          >
-            <Calendar size={14} className="text-softball-red-600" />
-            {new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
-            <ChevronDown size={14} className="text-navy-400" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="text-sm font-semibold text-navy-800 bg-white border border-cream-300 hover:bg-cream-50 hover:border-navy-400 rounded-lg px-3 py-1.5 flex items-center gap-1.5 cursor-pointer shadow-sm"
+              aria-label="Training wechseln (vergangene + anstehende)"
+              title="Anderes Training wählen — vergangene anklicken zum Nachpflegen"
+            >
+              <Calendar size={14} className="text-softball-red-600" />
+              {new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+              <ChevronDown size={14} className="text-navy-400" />
+            </button>
+            {!currentTraining.cancelled && (
+              <button
+                type="button"
+                onClick={() => setCancelConfirmOpen(true)}
+                aria-label="Training absagen"
+                title="Training absagen"
+                className="p-1.5 rounded-lg bg-white border border-cream-300 hover:border-softball-red-400 hover:bg-softball-red-50 text-navy-600 hover:text-softball-red-700 cursor-pointer"
+              >
+                <Ban size={14} />
+              </button>
+            )}
+            {currentTraining.cancelled && (
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-softball-red-100 text-softball-red-700">
+                Abgesagt
+              </span>
+            )}
+          </div>
         </div>
 
         <AttendanceCounter
@@ -378,6 +397,26 @@ export function TrainingTodayPage() {
             cancelLabel="Abbrechen"
             onConfirm={handleDelete}
             onCancel={() => setDeleteConfirmOpen(false)}
+          />
+        )}
+
+        {cancelConfirmOpen && currentTraining && (
+          <ConfirmModal
+            title="Training absagen?"
+            message={`Training am ${new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })} wird als abgesagt markiert.`}
+            confirmLabel="Absagen"
+            cancelLabel="Zurück"
+            onConfirm={async () => {
+              try {
+                await cancelTraining(currentTraining.id)
+                toast.success('Training abgesagt')
+              } catch (e) {
+                toast.error((e as Error).message)
+              } finally {
+                setCancelConfirmOpen(false)
+              }
+            }}
+            onCancel={() => setCancelConfirmOpen(false)}
           />
         )}
       </div>
