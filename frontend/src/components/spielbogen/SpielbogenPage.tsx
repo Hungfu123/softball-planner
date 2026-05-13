@@ -854,15 +854,17 @@ export default function SpielbogenPage() {
         )
       })()}
 
-      {/* Last at-bat + Undo + Korrektur */}
-      <LastAtBatPreview
-        lastAtBat={lastAtBat}
-        slots={[...homeLineup, ...awayLineup]}
-        onUndo={handleUndo}
-        onCorrect={isLive ? () => setShowCorrection(true) : undefined}
-        submitting={submitting}
-        disabled={!latestAction}
-      />
+      {/* Last at-bat + Undo + Korrektur — nur bei LIVE-Game */}
+      {isLive && (
+        <LastAtBatPreview
+          lastAtBat={lastAtBat}
+          slots={[...homeLineup, ...awayLineup]}
+          onUndo={handleUndo}
+          onCorrect={() => setShowCorrection(true)}
+          submitting={submitting}
+          disabled={!latestAction}
+        />
+      )}
 
       {/* Korrektur-Sheet */}
       {showCorrection && lastSideAtBat && (

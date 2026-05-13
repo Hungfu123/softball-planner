@@ -70,6 +70,7 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
     }
     setAssignments(onBase)
     setScoredCount(initialRunsScored)
+    setForceOutRule(false) // bei jedem Open zurücksetzen — sonst stale Toggle
   }, [open, baseStateAfter.firstSlotId, baseStateAfter.secondSlotId, baseStateAfter.thirdSlotId, baseStateBefore?.firstSlotId, baseStateBefore?.secondSlotId, baseStateBefore?.thirdSlotId, initialRunsScored, slots])
 
   const cycle = (slotId: number) => {

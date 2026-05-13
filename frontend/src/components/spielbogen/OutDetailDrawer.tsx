@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Drawer } from 'vaul'
 import type { SpielbogenRecordAtBatRequest, BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
 import { computeForceDefaults } from '@/utils/bogenBaseAdvance'
@@ -690,6 +690,20 @@ export function OutDetailDrawer({ open, onClose, onSubmit, baseStateAfter, slots
     isForceOut?: boolean
   }>(null)
   const [foulFielderPickOpen, setFoulFielderPickOpen] = useState(false)
+
+  // Internal sub-views zurücksetzen wenn Drawer schließt — sonst klebt
+  // alter State (z.B. DP-Picker offen) beim nächsten Öffnen.
+  useEffect(() => {
+    if (!open) {
+      setSelectedFielder(null)
+      setPendingDpRequest(null)
+      setPendingFlyOutRequest(null)
+      setPendingRunnerOutRequest(null)
+      setPendingAdvancePicker(null)
+      setPendingChainPicker(null)
+      setFoulFielderPickOpen(false)
+    }
+  }, [open])
 
   const baseState: BogenBaseStateDto = baseStateAfter ?? { firstSlotId: null, secondSlotId: null, thirdSlotId: null }
 
