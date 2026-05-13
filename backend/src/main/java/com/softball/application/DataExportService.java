@@ -23,19 +23,17 @@ public class DataExportService {
     private final GameDayRepository gameDayRepository;
     private final LineupEntryRepository lineupEntryRepository;
     private final GameStaffRepository gameStaffRepository;
-    private final CarRepository carRepository;
     private final LeagueResultRepository leagueResultRepository;
 
     public DataExportService(final PlayerRepository playerRepository, final SeasonRepository seasonRepository,
                              final GameDayRepository gameDayRepository,
                              final LineupEntryRepository lineupEntryRepository, final GameStaffRepository gameStaffRepository,
-                             final CarRepository carRepository, final LeagueResultRepository leagueResultRepository) {
+                             final LeagueResultRepository leagueResultRepository) {
         this.playerRepository = playerRepository;
         this.seasonRepository = seasonRepository;
         this.gameDayRepository = gameDayRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.gameStaffRepository = gameStaffRepository;
-        this.carRepository = carRepository;
         this.leagueResultRepository = leagueResultRepository;
     }
 
@@ -93,12 +91,8 @@ public class DataExportService {
                 staffByGame.getOrDefault(game.getId(), List.of())))
             .toList();
 
-        final List<CarExport> carExports = carRepository.findByGameDayId(gameDayId).stream()
-            .map(car -> new CarExport(car.getDriver().getId(), car.getTotalSeats(), car.getDirection()))
-            .toList();
-
         return new GameDayExport(withPlayers.getDate(), withPlayers.getLabel(), withPlayers.getLocation(),
-            availablePlayerIds, gameExports, carExports);
+            availablePlayerIds, gameExports);
     }
 
     private GameExport exportGame(final Game game, final List<LineupEntry> lineupEntries, final List<GameStaff> staffEntries) {

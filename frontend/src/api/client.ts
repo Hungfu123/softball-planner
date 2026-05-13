@@ -44,7 +44,6 @@ import type {
   SeasonPlayerStats,
   StandingEntry,
   LeagueResultResponse,
-  CarResponse,
   TrainingResponse,
   TrainingAttendanceResponse,
   TrainingStatsResponse,
@@ -220,14 +219,6 @@ export const setStaff = (
   method: 'PUT',
   body: JSON.stringify(staff),
 })
-
-// Cars
-export const getCars = (gameDayId: number) =>
-  request<CarResponse[]>(`/gamedays/${gameDayId}/cars`)
-export const createCar = (gameDayId: number, data: { driverPlayerId: number; totalSeats: number; direction: string }) =>
-  request<CarResponse>(`/gamedays/${gameDayId}/cars`, { method: 'POST', body: JSON.stringify(data) })
-export const deleteCar = (carId: number) =>
-  request<void>(`/cars/${carId}`, { method: 'DELETE' })
 
 // Training
 export const getTrainings = (periodId?: number) =>

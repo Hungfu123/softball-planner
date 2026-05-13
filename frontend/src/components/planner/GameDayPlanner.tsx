@@ -15,10 +15,9 @@ import { SaveButton } from './SaveButton'
 import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
-import { CarpoolPlanner } from './CarpoolPlanner'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, TrashBin, CarIcon, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
 import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
@@ -36,7 +35,6 @@ export function GameDayPlanner() {
   const [searchParams] = useSearchParams()
   const initialTab = Math.max(0, Number(searchParams.get('game') ?? 0))
   const [activeTab, setActiveTab] = useState(initialTab)
-  const [activeSection, setActiveSection] = useState<'lineup' | 'carpool'>('lineup')
   const [showPlayersModal, setShowPlayersModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -393,12 +391,6 @@ export function GameDayPlanner() {
                 />
               )}
               <ToolbarBtn
-                icon={<CarIcon size={16} />}
-                label="Fahrten"
-                active={activeSection === 'carpool'}
-                onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
-              />
-              <ToolbarBtn
                 icon={<ClipboardIcon size={16} />}
                 label="Scoring"
                 onClick={handleExportScoring}
@@ -455,18 +447,6 @@ export function GameDayPlanner() {
                 </button>
               )}
               <button
-                onClick={() => setActiveSection(activeSection === 'carpool' ? 'lineup' : 'carpool')}
-                title="Fahrten planen"
-                className={`font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5 ${
-                  activeSection === 'carpool'
-                    ? 'bg-navy-50 text-navy-700'
-                    : 'text-gray-600 hover:text-navy-900 hover:bg-cream-100'
-                }`}
-              >
-                <CarIcon size={14} />
-                <span>Fahrten</span>
-              </button>
-              <button
                 onClick={handleExportScoring}
                 className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
                 title="Scoring-Sheet drucken"
@@ -487,17 +467,6 @@ export function GameDayPlanner() {
         </div>
       </div>
 
-      {activeSection === 'carpool' ? (
-        <>
-        <button
-          onClick={() => setActiveSection('lineup')}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-navy-700 hover:bg-navy-50 rounded-lg cursor-pointer transition-colors"
-        >
-          <span className="text-base leading-none">&larr;</span> Zurück zum Lineup
-        </button>
-        <CarpoolPlanner gameDayId={gameDayId} availablePlayers={availablePlayers} />
-        </>
-      ) : (
       <>
       {/* Tabs */}
       <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-2 sm:px-4 pt-2">
@@ -706,7 +675,6 @@ export function GameDayPlanner() {
         </>
       )}
       </>
-      )}
 
       {showPlayersModal && (
         <AvailablePlayersModal

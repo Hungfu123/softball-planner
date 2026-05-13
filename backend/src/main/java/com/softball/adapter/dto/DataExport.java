@@ -13,10 +13,7 @@ public record DataExport(
                                List<LeagueResultExport> leagueResults) {}
 
     public record GameDayExport(LocalDate date, String label, String location,
-                                List<Long> availablePlayerIds, List<GameExport> games,
-                                List<CarExport> cars) {}
-
-    public record CarExport(Long driverPlayerId, int totalSeats, String direction) {}
+                                List<Long> availablePlayerIds, List<GameExport> games) {}
 
     public record GameExport(int gameNumber, String opponentTeamName, Integer scoreUs, Integer scoreThem,
                               List<LineupExport> lineup, List<StaffExport> staff) {}

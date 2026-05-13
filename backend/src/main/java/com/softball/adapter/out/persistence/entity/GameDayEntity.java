@@ -44,10 +44,6 @@ public class GameDayEntity {
     @OrderBy("gameNumber ASC")
     private List<GameEntity> games = new ArrayList<>();
 
-    @OneToMany(mappedBy = "gameDay", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<CarEntity> cars = new ArrayList<>();
-
     public GameDayEntity() {}
 
     public GameDayEntity(final LocalDate date, final String label, final String location, final SeasonEntity season) {

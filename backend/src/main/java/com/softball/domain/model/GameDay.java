@@ -14,7 +14,6 @@ public class GameDay {
     private Season season;
     private Set<Player> availablePlayers = new HashSet<>();
     private List<Game> games = new ArrayList<>();
-    private List<Car> cars = new ArrayList<>();
 
     public GameDay() {}
 
@@ -46,8 +45,6 @@ public class GameDay {
     public void setAvailablePlayers(final Set<Player> availablePlayers) { this.availablePlayers = availablePlayers; }
     public List<Game> getGames() { return games; }
     public void setGames(final List<Game> games) { this.games = games; }
-    public List<Car> getCars() { return cars; }
-    public void setCars(final List<Car> cars) { this.cars = cars; }
     public Long getSeasonId() { return season != null ? season.getId() : null; }
 
     public void setAvailablePlayersList(final List<Player> players) {

@@ -22,16 +22,14 @@ public class AvailabilityService {
     private final PlayerRepository playerRepository;
     private final LineupEntryRepository lineupEntryRepository;
     private final GameStaffRepository gameStaffRepository;
-    private final CarRepository carRepository;
 
     public AvailabilityService(final GameDayRepository gameDayRepository, final PlayerRepository playerRepository,
                                final LineupEntryRepository lineupEntryRepository,
-                               final GameStaffRepository gameStaffRepository, final CarRepository carRepository) {
+                               final GameStaffRepository gameStaffRepository) {
         this.gameDayRepository = gameDayRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.gameStaffRepository = gameStaffRepository;
-        this.carRepository = carRepository;
     }
 
     @Transactional
@@ -67,13 +65,12 @@ public class AvailabilityService {
     private void cascadeRemovePlayers(final Long gameDayId, final Set<Long> removedPlayerIds) {
         final GameDay gameDayWithGames = gameDayRepository.findByIdWithGames(gameDayId)
             .orElseThrow(() -> new ResourceNotFoundException("GameDay", gameDayId));
-        log.info("Spieler {} aus Spieltag {} entfernt, bereinige Lineups/Staff/Cars", removedPlayerIds, gameDayId);
+        log.info("Spieler {} aus Spieltag {} entfernt, bereinige Lineups/Staff", removedPlayerIds, gameDayId);
 
         for (final Game game : gameDayWithGames.getGames()) {
             cascadeRemoveFromLineup(game.getId(), removedPlayerIds);
             cascadeRemoveFromStaff(game.getId(), removedPlayerIds);
         }
-        cascadeRemoveFromCars(gameDayId, removedPlayerIds);
     }
 
     private void cascadeRemoveFromLineup(final Long gameId, final Set<Long> removedPlayerIds) {
@@ -123,14 +120,4 @@ public class AvailabilityService {
         }
     }
 
-    private void cascadeRemoveFromCars(final Long gameDayId, final Set<Long> removedPlayerIds) {
-        final List<Car> carsToRemove = carRepository.findByGameDayId(gameDayId).stream()
-            .filter(car -> removedPlayerIds.contains(car.getDriver().getId()))
-            .toList();
-        if (!carsToRemove.isEmpty()) {
-            carsToRemove.forEach(car -> log.info("Auto {} geloescht weil Fahrer {} entfernt wurde",
-                car.getId(), car.getDriver().getName()));
-            carRepository.deleteAll(carsToRemove);
-        }
-    }
 }

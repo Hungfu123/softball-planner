@@ -116,15 +116,6 @@ export interface SuggestAllLineupsResponse {
   newLineups: Record<string, LineupSuggestionEntry[]>
 }
 
-// Carpool
-export interface CarResponse {
-  id: number
-  driver: Player
-  totalSeats: number
-  direction: 'both' | 'there' | 'back'
-  gameDayId: number
-}
-
 export interface StandingEntry {
   team: LeagueTeamResponse
   games: number

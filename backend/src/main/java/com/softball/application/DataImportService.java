@@ -25,14 +25,13 @@ public class DataImportService {
     private final GameRepository gameRepository;
     private final LineupEntryRepository lineupEntryRepository;
     private final GameStaffRepository gameStaffRepository;
-    private final CarRepository carRepository;
     private final LeagueTeamRepository leagueTeamRepository;
     private final LeagueResultRepository leagueResultRepository;
 
     public DataImportService(final PlayerRepository playerRepository, final SeasonRepository seasonRepository,
                              final GameDayRepository gameDayRepository, final GameRepository gameRepository,
                              final LineupEntryRepository lineupEntryRepository, final GameStaffRepository gameStaffRepository,
-                             final CarRepository carRepository, final LeagueTeamRepository leagueTeamRepository,
+                             final LeagueTeamRepository leagueTeamRepository,
                              final LeagueResultRepository leagueResultRepository) {
         this.playerRepository = playerRepository;
         this.seasonRepository = seasonRepository;
@@ -40,7 +39,6 @@ public class DataImportService {
         this.gameRepository = gameRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.gameStaffRepository = gameStaffRepository;
-        this.carRepository = carRepository;
         this.leagueTeamRepository = leagueTeamRepository;
         this.leagueResultRepository = leagueResultRepository;
     }
@@ -113,21 +111,6 @@ public class DataImportService {
             importGameDetails(game, ge, season, playerIdMap, teamByName);
         }
 
-        if (gde.cars() != null && !gde.cars().isEmpty()) {
-            final List<Long> driverIds = gde.cars().stream()
-                .map(ce -> playerIdMap.get(ce.driverPlayerId()))
-                .filter(Objects::nonNull)
-                .toList();
-            final Map<Long, Player> driverMap = playerRepository.findAllById(driverIds).stream()
-                .collect(java.util.stream.Collectors.toMap(Player::getId, p -> p));
-            for (final CarExport ce : gde.cars()) {
-                final Long newDriverId = playerIdMap.get(ce.driverPlayerId());
-                if (newDriverId != null) {
-                    final Player driver = driverMap.get(newDriverId);
-                    carRepository.save(new Car(savedGameDay, driver, ce.totalSeats(), ce.direction()));
-                }
-            }
-        }
     }
 
     private void importGameDetails(final Game game, final GameExport ge, final Season season,

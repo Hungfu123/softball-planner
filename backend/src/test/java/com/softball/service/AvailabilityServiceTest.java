@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,8 +32,6 @@ class AvailabilityServiceTest {
     private LineupEntryRepository lineupEntryRepository;
     @Mock
     private GameStaffRepository gameStaffRepository;
-    @Mock
-    private CarRepository carRepository;
 
     @InjectMocks
     private AvailabilityService availabilityService;
@@ -107,7 +104,6 @@ class AvailabilityServiceTest {
             final LineupEntry entry = new LineupEntry(game1, player2, Position.P, 1);
             when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(100L)).thenReturn(new ArrayList<>(List.of(entry)));
             when(gameStaffRepository.findByGameId(100L)).thenReturn(List.of());
-            when(carRepository.findByGameDayId(10L)).thenReturn(List.of());
 
             // Remove player2 and player3 (keep only player1)
             availabilityService.setAvailablePlayers(10L, List.of(1L));
@@ -122,7 +118,6 @@ class AvailabilityServiceTest {
             when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(100L))
                 .thenReturn(new ArrayList<>(List.of(entryWithDh)));
             when(gameStaffRepository.findByGameId(100L)).thenReturn(List.of());
-            when(carRepository.findByGameDayId(10L)).thenReturn(List.of());
 
             availabilityService.setAvailablePlayers(10L, List.of(1L));
 
@@ -136,23 +131,10 @@ class AvailabilityServiceTest {
             when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(100L)).thenReturn(List.of());
             final GameStaff staff = new GameStaff(game1, player2, StaffRole.BASE_COACH_1ST);
             when(gameStaffRepository.findByGameId(100L)).thenReturn(List.of(staff));
-            when(carRepository.findByGameDayId(10L)).thenReturn(List.of());
 
             availabilityService.setAvailablePlayers(10L, List.of(1L));
 
             verify(gameStaffRepository).deleteAll(anyList());
-        }
-
-        @Test
-        void removedPlayer_carDeleted() {
-            when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(100L)).thenReturn(List.of());
-            when(gameStaffRepository.findByGameId(100L)).thenReturn(List.of());
-            final Car car = new Car(1L, gameDay, player2, 4, "hin");
-            when(carRepository.findByGameDayId(10L)).thenReturn(List.of(car));
-
-            availabilityService.setAvailablePlayers(10L, List.of(1L));
-
-            verify(carRepository).deleteAll(anyList());
         }
 
         @Test
@@ -167,7 +149,6 @@ class AvailabilityServiceTest {
                 .thenReturn(new ArrayList<>(List.of(entry1, entry2, entry3)))
                 .thenReturn(new ArrayList<>(List.of(entry2)));
             when(gameStaffRepository.findByGameId(100L)).thenReturn(List.of());
-            when(carRepository.findByGameDayId(10L)).thenReturn(List.of());
 
             // Remove player2 and player3
             availabilityService.setAvailablePlayers(10L, List.of(1L));

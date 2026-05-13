@@ -32,7 +32,6 @@ class DataImportServiceTest {
     @Mock private GameRepository gameRepository;
     @Mock private LineupEntryRepository lineupEntryRepository;
     @Mock private GameStaffRepository gameStaffRepository;
-    @Mock private CarRepository carRepository;
     @Mock private LeagueTeamRepository leagueTeamRepository;
     @Mock private LeagueResultRepository leagueResultRepository;
 
@@ -70,7 +69,6 @@ class DataImportServiceTest {
         lenient().when(gameRepository.save(any(Game.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(lineupEntryRepository.save(any(LineupEntry.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(gameStaffRepository.save(any(GameStaff.class))).thenAnswer(inv -> inv.getArgument(0));
-        lenient().when(carRepository.save(any(Car.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(leagueResultRepository.save(any(LeagueResult.class))).thenAnswer(inv -> inv.getArgument(0));
         lenient().when(playerRepository.findAllById(anyList())).thenAnswer(inv -> {
             final List<Long> ids = inv.getArgument(0);
@@ -117,7 +115,7 @@ class DataImportServiceTest {
             List.of(),
             List.of(new SeasonExport(1L, "2025", 2025,
                 List.of(new GameDayExport(LocalDate.of(2025, 6, 1), "Tag 1", "Feld A",
-                    List.of(), List.of(), List.of())),
+                    List.of(), List.of())),
                 null))
         );
 
@@ -137,8 +135,7 @@ class DataImportServiceTest {
                     List.of(),
                     List.of(new GameExport(1, null, null, null,
                         List.of(new LineupExport(1L, "P", 1, null)),
-                        List.of())),
-                    List.of())),
+                        List.of())))),
                 null))
         );
 
@@ -157,8 +154,7 @@ class DataImportServiceTest {
                     List.of(),
                     List.of(new GameExport(1, null, null, null,
                         List.of(new LineupExport(999L, "P", 1, null)),
-                        List.of())),
-                    List.of())),
+                        List.of())))),
                 null))
         );
 
@@ -174,8 +170,7 @@ class DataImportServiceTest {
             List.of(new SeasonExport(1L, "2025", 2025,
                 List.of(new GameDayExport(LocalDate.of(2025, 6, 1), "Tag 1", "Feld",
                     List.of(),
-                    List.of(new GameExport(1, "Tigers", 10, 5, List.of(), List.of())),
-                    List.of())),
+                    List.of(new GameExport(1, "Tigers", 10, 5, List.of(), List.of())))),
                 null))
         );
 
@@ -196,8 +191,7 @@ class DataImportServiceTest {
                     List.of(),
                     List.of(new GameExport(1, null, null, null,
                         List.of(),
-                        List.of(new StaffExport(1L, "BASE_COACH_1ST")))),
-                    List.of())),
+                        List.of(new StaffExport(1L, "BASE_COACH_1ST")))))),
                 null))
         );
 
@@ -233,8 +227,7 @@ class DataImportServiceTest {
                     List.of(),
                     List.of(
                         new GameExport(1, "Tigers", 10, 5, List.of(), List.of()),
-                        new GameExport(2, "Tigers", 8, 3, List.of(), List.of())),
-                    List.of())),
+                        new GameExport(2, "Tigers", 8, 3, List.of(), List.of())))),
                 null))
         );
 
