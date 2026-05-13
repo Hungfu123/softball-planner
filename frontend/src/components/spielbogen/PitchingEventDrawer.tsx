@@ -67,7 +67,7 @@ export function PitchingEventDrawer({ open, onClose, baseState, slots, onSubmit 
             <button
               onClick={() => setType('WILD_PITCH')}
               className={`flex-1 py-2 rounded-xl font-display text-xs font-bold tracking-widest uppercase cursor-pointer ${
-                type === 'WILD_PITCH' ? 'bg-orange-500 text-white' : 'border border-cream-300 bg-white text-navy-700'
+                type === 'WILD_PITCH' ? 'bg-navy-800 text-white' : 'border border-cream-300 bg-white text-navy-700'
               }`}
             >
               Wild Pitch
@@ -75,7 +75,7 @@ export function PitchingEventDrawer({ open, onClose, baseState, slots, onSubmit 
             <button
               onClick={() => setType('PASSED_BALL')}
               className={`flex-1 py-2 rounded-xl font-display text-xs font-bold tracking-widest uppercase cursor-pointer ${
-                type === 'PASSED_BALL' ? 'bg-orange-500 text-white' : 'border border-cream-300 bg-white text-navy-700'
+                type === 'PASSED_BALL' ? 'bg-navy-800 text-white' : 'border border-cream-300 bg-white text-navy-700'
               }`}
             >
               Passed Ball
@@ -98,7 +98,7 @@ export function PitchingEventDrawer({ open, onClose, baseState, slots, onSubmit 
                   key={r.from}
                   onClick={() => cycle(r.from)}
                   className={`w-full text-left px-4 py-3 rounded-xl border cursor-pointer ${
-                    t === r.from ? 'border-cream-300 bg-white' : 'border-orange-500 bg-orange-50'
+                    t === r.from ? 'border-cream-300 bg-white' : 'border-navy-500 bg-navy-50'
                   }`}
                 >
                   <div className="font-display font-bold text-sm flex items-center justify-between">

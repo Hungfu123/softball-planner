@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronLeft as ChevronLeftLucide, Flag, RotateCcw, HelpCircle } from 'lucide-react'
+import { ChevronLeft as ChevronLeftLucide, Flag, RotateCcw, HelpCircle, ClipboardList, FileText } from 'lucide-react'
 import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { useSpielbogenScoring } from '@/hooks/useSpielbogenScoring'
 import { useToastContext } from '@/components/layout/Layout'
@@ -832,15 +832,15 @@ export default function SpielbogenPage() {
             <div className="space-y-2">
               <button
                 onClick={() => setShowSheet(true)}
-                className="w-full font-display py-3 rounded-xl bg-navy-800 text-white font-extrabold tracking-widest uppercase hover:bg-navy-900 cursor-pointer"
+                className="w-full font-display py-3 rounded-xl bg-navy-800 text-white font-extrabold tracking-widest uppercase hover:bg-navy-900 cursor-pointer flex items-center justify-center gap-2"
               >
-                📋 Spielbogen anzeigen
+                <ClipboardList size={18} /> Spielbogen anzeigen
               </button>
               <button
                 onClick={() => generateSpielbogenPdf(sheet)}
-                className="w-full font-display py-3 rounded-xl bg-cream-100 border border-cream-300 text-navy-800 font-bold tracking-widest uppercase hover:bg-cream-200 cursor-pointer"
+                className="w-full font-display py-3 rounded-xl bg-cream-100 border border-cream-300 text-navy-800 font-bold tracking-widest uppercase hover:bg-cream-200 cursor-pointer flex items-center justify-center gap-2"
               >
-                📄 Als PDF exportieren
+                <FileText size={18} /> Als PDF exportieren
               </button>
               <button
                 onClick={handleReopenGame}
@@ -890,10 +890,10 @@ export default function SpielbogenPage() {
       <div className="fixed bottom-6 right-4 z-40">
         <button
           onClick={() => setShowSheet(true)}
-          className="w-14 h-14 rounded-full bg-navy-800 text-white shadow-lg flex items-center justify-center text-xl hover:bg-navy-900 transition-colors cursor-pointer"
+          className="w-14 h-14 rounded-full bg-navy-800 text-white shadow-lg flex items-center justify-center hover:bg-navy-900 transition-colors cursor-pointer"
           aria-label="Spielbogen anzeigen"
         >
-          📋
+          <ClipboardList size={22} />
         </button>
       </div>
 

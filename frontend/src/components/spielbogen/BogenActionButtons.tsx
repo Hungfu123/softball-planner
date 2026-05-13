@@ -385,7 +385,7 @@ function SmallPill({ label, onClick, disabled }: { label: string; onClick: () =>
     <button
       onClick={onClick}
       disabled={disabled}
-      className="font-display px-4 h-9 rounded-full border border-cream-300 bg-cream-50 text-navy-700 text-xs font-bold tracking-widest uppercase hover:bg-navy-50 hover:border-navy-300 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+      className="font-display px-4 h-11 rounded-full border border-cream-300 bg-cream-50 text-navy-700 text-xs font-bold tracking-widest uppercase hover:bg-navy-50 hover:border-navy-300 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
     >
       {label}
     </button>

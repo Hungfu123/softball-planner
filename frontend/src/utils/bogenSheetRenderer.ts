@@ -412,14 +412,27 @@ function computeCellOutIndices(
   for (const st of stealings) {
     if (st.type !== 'CAUGHT_STEALING' && st.type !== 'OUT_ON_PLAY') continue
     const stTime = st.createdAt ? new Date(st.createdAt).getTime() : 0
-    let priorSeq = 0
+    let priorSeq: number | null = null
+    let nextSeq: number | null = null
     for (const ab of abByCreated) {
       if (ab.side !== st.side || ab.inning !== st.inning) continue
       const abTime = ab.createdAt ? new Date(ab.createdAt).getTime() : 0
-      if (abTime <= stTime) priorSeq = ab.sequence
-      else break
+      if (abTime <= stTime) {
+        priorSeq = ab.sequence
+      } else if (nextSeq == null) {
+        nextSeq = ab.sequence
+      }
     }
-    events.push({ side: st.side, inning: st.inning, slotId: st.slotId, outsAdded: 1, sortKey: priorSeq + 0.5 })
+    // sortKey-Reihenfolge:
+    //   - Wenn priorSeq existiert: zwischen priorSeq und nächstem AB → priorSeq + 0.5
+    //   - Wenn kein prior aber nextSeq existiert: Stealing vor erstem AB → nextSeq - 0.5
+    //   - Wenn weder noch (Stealing als einziges Event im Inning): 0.5
+    const sortKey = priorSeq != null
+      ? priorSeq + 0.5
+      : nextSeq != null
+        ? nextSeq - 0.5
+        : 0.5
+    events.push({ side: st.side, inning: st.inning, slotId: st.slotId, outsAdded: 1, sortKey })
   }
 
   // Gruppiere nach side+inning, walke in sortKey-Reihenfolge, zähle Outs hoch
