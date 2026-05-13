@@ -328,6 +328,7 @@ export function TrainingTodayPage() {
               players={sortedPlayers}
               presentIds={presentIds}
               onToggle={handleToggle}
+              stats={stats}
             />
           </section>
 
