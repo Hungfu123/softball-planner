@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Drawer } from 'vaul'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import type { SpielbogenRecordAtBatRequest, BogenBaseStateDto, SpielbogenSlotResponse } from '@/types'
 import { computeForceDefaults } from '@/utils/bogenBaseAdvance'
 import { HelpPopover } from '@/components/shared/HelpPopover'
@@ -953,20 +953,8 @@ export function OutDetailDrawer({ open, onClose, onSubmit: rawOnSubmit, baseStat
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) { handleClose() } }}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[80vh] flex flex-col focus:outline-none">
-          <Drawer.Title className="sr-only">Out-Detail</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
-          <div className="px-5 py-3 border-b border-cream-200 flex items-center justify-between shrink-0">
-            <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">
-              Aus — Detail wählen
-            </h2>
-            <button onClick={handleClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">✕</button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-4">
+    <ResponsiveSheet open={open} onClose={handleClose} title="Aus — Detail wählen" maxWidth="md">
+      <div className="p-4">
             {foulFielderPickOpen ? (
               <FoulFielderPickView
                 onPick={handleFoulFielderPick}
@@ -1105,9 +1093,7 @@ export function OutDetailDrawer({ open, onClose, onSubmit: rawOnSubmit, baseStat
                 </button>
               </>
             )}
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+      </div>
+    </ResponsiveSheet>
   )
 }

@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Drawer } from 'vaul'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import type { BaseStateDto, RunnerOnBase } from '@/types'
 
 type Position = 1 | 2 | 3 | 'home' | 'out'
@@ -125,118 +125,93 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
     }
   }
 
-  return (
-    <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
-          <Drawer.Title className="sr-only">Runner korrigieren</Drawer.Title>
-          {/* Sticky top mit Drag-Handle + X-Close */}
-          <div className="sticky top-0 bg-cream-50 z-10 border-b border-cream-300">
-            <div className="w-12 h-1.5 bg-cream-300 rounded-full mx-auto mt-3" />
-            <div className="flex items-center justify-between px-4 py-3">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">
-                  {context === 'post-out' ? 'Runner weitergelaufen?' : 'Runner anpassen'}
-                </h2>
-                <p className="text-[11px] text-gray-500">
-                  {context === 'post-out'
-                    ? 'Bei Grounder/Fly: wohin sind die Runner gelaufen?'
-                    : 'Wo sind die Runner wirklich gelandet? Chips tippen.'}
-                </p>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 -mr-2 text-gray-400 hover:text-gray-700 cursor-pointer"
-                aria-label="Schließen"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-          <div className="px-4 pt-3 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+  const title = context === 'post-out' ? 'Runner weitergelaufen?' : 'Runner anpassen'
+  const subtitle = context === 'post-out'
+    ? 'Bei Grounder/Fly: wohin sind die Runner gelaufen?'
+    : 'Wo sind die Runner wirklich gelandet? Chips tippen.'
 
-            {/* 3rd-Out Force-Play Warnung — Softball-Regel:
+  const footer = (
+    <div className="space-y-2">
+      <p className="text-xs text-gray-500">
+        Vorschau: {baseStateSummary(
+          {
+            first: assignments.find(a => a.position === 1)?.playerId ?? null,
+            second: assignments.find(a => a.position === 2)?.playerId ?? null,
+            third: assignments.find(a => a.position === 3)?.playerId ?? null,
+          },
+          assignments
+        )}
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={onClose}
+          className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium cursor-pointer hover:bg-cream-100"
+        >
+          Abbrechen
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving || hasConflict}
+          className="h-11 rounded-lg bg-softball-red-600 text-white font-bold cursor-pointer hover:bg-softball-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? 'Speichern…' : '✓ Passt'}
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <ResponsiveSheet open={open} onClose={onClose} title={title} maxWidth="md" footer={footer}>
+      <div className="px-4 pt-3 pb-4 space-y-4">
+        <p className="text-[11px] text-gray-500 -mt-2">{subtitle}</p>
+
+        {/* 3rd-Out Force-Play Warnung — Softball-Regel:
                 Wenn 3. Out via Force-Out fällt, zählt KEIN Run der davor erzielt
                 wurde (Inning endet bevor Run gewertet wird). Bei manueller
                 Korrektur "3B → Home" muss User wissen ob Force-Play vorlag. */}
-            {outsAfter === 3 && (
-              <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
-                <span className="text-amber-700 text-base leading-none mt-0.5" aria-hidden>⚠</span>
-                <div className="flex-1">
-                  <div className="text-xs font-bold text-amber-900 uppercase tracking-wide">3. Out im Inning</div>
-                  <div className="text-[11px] text-amber-800 mt-0.5">
-                    Bei <strong>Force-Out</strong> als 3. Out zählt der Run NICHT (Softball-Regel) — auch wenn Runner Home gekreuzt hat.
-                    Nur Tag-Out / Fly-Out: Run zählt wenn Runner vor Out gescort hat.
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Quick-Actions raus: Auto-Default ist jetzt +1 Base bei post-out,
-                User fixt nur Ausnahmen (Runner blieb / wurde out). */}
-
-            {assignments.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">Kein Runner auf Base.</p>
-            )}
-
-            {assignments.length > 0 && (
-              <p className="text-[11px] text-gray-500 italic px-1 mb-2">
-                Tipp auf Pille = nächste Base · Tipp erneut für weitere
-              </p>
-            )}
-
-            <div className="space-y-1.5">
-              {assignments.map(a => (
-                <RunnerCard
-                  key={a.playerId}
-                  assignment={a}
-                  onCycle={() => setPosition(a.playerId, nextCyclePosition(a))}
-                  onToggleOut={() => setPosition(a.playerId, a.position === 'out' ? (a.wasOnBase ?? 'home') : 'out')}
-                  onToggleHome={() => setPosition(a.playerId, a.position === 'home' ? (a.wasOnBase ?? 'home') : 'home')}
-                  onRemove={() => removeAssignment(a.playerId)}
-                />
-              ))}
-            </div>
-
-
-            {hasConflict && (
-              <div className="text-xs text-softball-red-600 bg-softball-red-50 rounded-lg p-2 text-center">
-                Zwei Runner auf derselben Base — bitte prüfen.
-              </div>
-            )}
-
-            <div className="pt-2">
-              <p className="text-xs text-gray-500 mb-2">
-                Vorschau: {baseStateSummary(
-                  {
-                    first: assignments.find(a => a.position === 1)?.playerId ?? null,
-                    second: assignments.find(a => a.position === 2)?.playerId ?? null,
-                    third: assignments.find(a => a.position === 3)?.playerId ?? null,
-                  },
-                  assignments
-                )}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={onClose}
-                  className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium cursor-pointer hover:bg-cream-100"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving || hasConflict}
-                  className="h-11 rounded-lg bg-softball-red-600 text-white font-bold cursor-pointer hover:bg-softball-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? 'Speichern…' : '✓ Passt'}
-                </button>
+        {outsAfter === 3 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2.5 flex items-start gap-2">
+            <span className="text-amber-700 text-base leading-none mt-0.5" aria-hidden>⚠</span>
+            <div className="flex-1">
+              <div className="text-xs font-bold text-amber-900 uppercase tracking-wide">3. Out im Inning</div>
+              <div className="text-[11px] text-amber-800 mt-0.5">
+                Bei <strong>Force-Out</strong> als 3. Out zählt der Run NICHT (Softball-Regel) — auch wenn Runner Home gekreuzt hat.
+                Nur Tag-Out / Fly-Out: Run zählt wenn Runner vor Out gescort hat.
               </div>
             </div>
           </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+        )}
+
+        {assignments.length === 0 && (
+          <p className="text-sm text-gray-500 text-center py-4">Kein Runner auf Base.</p>
+        )}
+
+        {assignments.length > 0 && (
+          <p className="text-[11px] text-gray-500 italic px-1 mb-2">
+            Tipp auf Pille = nächste Base · Tipp erneut für weitere
+          </p>
+        )}
+
+        <div className="space-y-1.5">
+          {assignments.map(a => (
+            <RunnerCard
+              key={a.playerId}
+              assignment={a}
+              onCycle={() => setPosition(a.playerId, nextCyclePosition(a))}
+              onToggleOut={() => setPosition(a.playerId, a.position === 'out' ? (a.wasOnBase ?? 'home') : 'out')}
+              onToggleHome={() => setPosition(a.playerId, a.position === 'home' ? (a.wasOnBase ?? 'home') : 'home')}
+              onRemove={() => removeAssignment(a.playerId)}
+            />
+          ))}
+        </div>
+
+        {hasConflict && (
+          <div className="text-xs text-softball-red-600 bg-softball-red-50 rounded-lg p-2 text-center">
+            Zwei Runner auf derselben Base — bitte prüfen.
+          </div>
+        )}
+      </div>
+    </ResponsiveSheet>
   )
 }
 

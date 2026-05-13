@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Drawer } from 'vaul'
 import type { Player } from '@/types'
 import type { PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { HistoryMatrix } from './HistoryMatrix'
 
 type Training = { id: number; date: string; cancelled?: boolean }
@@ -31,17 +31,9 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
   const max3M = Math.max(1, ...sorted.map(p => stats.get(p.id)?.last3Months.attended ?? 0))
 
   return (
-    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[88vh] flex flex-col focus:outline-none">
-          <Drawer.Title className="sr-only">Anwesenheits-Statistik</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
-          <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full overflow-y-auto flex-1 min-h-0" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-            <div>
-              <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">Anwesenheits-Statistik</h2>
-              <p className="text-xs text-navy-600">Anzahl Teilnahmen · letzte 3 Monate &amp; Jahr</p>
-            </div>
+    <ResponsiveSheet open={open} onClose={onClose} title="Anwesenheits-Statistik" maxWidth="lg">
+      <div className="px-4 py-4 space-y-4">
+        <p className="text-xs text-navy-600 -mt-1">Anzahl Teilnahmen · letzte 3 Monate &amp; Jahr</p>
 
             {/* Tab Toggle */}
             <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
@@ -104,9 +96,7 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
             {tab === 'matrix' && (
               <HistoryMatrix players={players} trainings={trainings} attendance={attendance} />
             )}
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+      </div>
+    </ResponsiveSheet>
   )
 }

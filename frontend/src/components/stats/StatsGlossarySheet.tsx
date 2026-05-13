@@ -1,4 +1,4 @@
-import { Drawer } from 'vaul'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 
 interface Props {
   open: boolean
@@ -6,17 +6,19 @@ interface Props {
 }
 
 export function StatsGlossarySheet({ open, onClose }: Props) {
-  return (
-    <Drawer.Root open={open} onOpenChange={(o) => !o && onClose()}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
-          <Drawer.Title className="sr-only">Abkürzungen</Drawer.Title>
-          <div className="w-12 h-1.5 bg-cream-300 rounded-full mx-auto mt-3" />
-          <div className="px-4 pt-4 pb-6 space-y-4" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-            <h2 className="text-xl font-bold text-gray-900">Was bedeuten die Abkürzungen?</h2>
+  const footer = (
+    <button
+      onClick={onClose}
+      className="w-full h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold cursor-pointer"
+    >
+      Verstanden
+    </button>
+  )
 
-            <Section title="Schlag-Events">
+  return (
+    <ResponsiveSheet open={open} onClose={onClose} title="Abkürzungen" maxWidth="md" footer={footer}>
+      <div className="px-4 pt-4 pb-6 space-y-4">
+        <Section title="Schlag-Events">
               <Row abbr="1B / Single" def="Treffer bis zur 1. Base" />
               <Row abbr="2B / Double" def="Treffer bis zur 2. Base" />
               <Row abbr="3B / Triple" def="Treffer bis zur 3. Base" />
@@ -54,17 +56,8 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
                 def="Runs die du durch deinen Hit nach Hause gebracht hast."
               />
             </Section>
-
-            <button
-              onClick={onClose}
-              className="w-full h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold cursor-pointer"
-            >
-              Verstanden
-            </button>
-          </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+      </div>
+    </ResponsiveSheet>
   )
 }
 

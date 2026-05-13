@@ -1,5 +1,4 @@
 import { useEffect, useState, useId } from 'react'
-import { Drawer } from 'vaul'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
@@ -7,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown, Boxes } from 'lucide-react'
 import * as api from '@/api/client'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 import { DrillPickerModal } from './DrillPickerModal'
 
@@ -365,165 +365,151 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
     }
   }
 
+  const footer = (
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        onClick={onClose}
+        className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
+      >
+        Abbrechen
+      </button>
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+      >
+        {saving ? 'Speichere…' : 'Speichern'}
+      </button>
+    </div>
+  )
+
   return (
-    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[92vh] flex flex-col focus:outline-none">
-          <Drawer.Title className="sr-only">Plan bearbeiten</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
-
-          {selectedSet.size > 0 && (
-            <div className="px-4 py-2 max-w-2xl mx-auto w-full bg-navy-50 border-y border-navy-200 flex items-center gap-2 shrink-0">
-              <span className="text-xs font-bold text-navy-900 flex-1">{selectedSet.size} ausgewählt</span>
-              {selectedSet.size >= 2 && (
-                <button
-                  type="button"
-                  onClick={combineToStation}
-                  className="px-3 py-1.5 text-xs font-bold rounded-md bg-navy-700 text-white hover:bg-navy-800 cursor-pointer flex items-center gap-1.5"
-                >
-                  <Boxes size={14} /> Zur Station verbinden
-                </button>
-              )}
-              {selectedStationGroups.size > 0 && (
-                <>
-                  {[...selectedStationGroups].map(g => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => dissolveStation(g)}
-                      className="px-3 py-1.5 text-xs font-bold rounded-md bg-white border border-navy-300 text-navy-700 hover:bg-cream-100 cursor-pointer"
-                    >
-                      Station {g} auflösen
-                    </button>
-                  ))}
-                </>
-              )}
+    <>
+      <ResponsiveSheet open={open} onClose={onClose} title="Plan bearbeiten" maxWidth="lg" footer={footer}>
+        {selectedSet.size > 0 && (
+          <div className="px-4 py-2 bg-navy-50 border-b border-navy-200 flex items-center gap-2 shrink-0">
+            <span className="text-xs font-bold text-navy-900 flex-1">{selectedSet.size} ausgewählt</span>
+            {selectedSet.size >= 2 && (
               <button
                 type="button"
-                onClick={() => setSelectedSet(new Set())}
-                className="text-xs font-semibold text-navy-600 hover:underline cursor-pointer px-2 py-1"
+                onClick={combineToStation}
+                className="px-3 py-1.5 text-xs font-bold rounded-md bg-navy-700 text-white hover:bg-navy-800 cursor-pointer flex items-center gap-1.5"
               >
-                Auswahl ×
+                <Boxes size={14} /> Zur Station verbinden
               </button>
-            </div>
-          )}
+            )}
+            {selectedStationGroups.size > 0 && (
+              <>
+                {[...selectedStationGroups].map(g => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => dissolveStation(g)}
+                    className="px-3 py-1.5 text-xs font-bold rounded-md bg-white border border-navy-300 text-navy-700 hover:bg-cream-100 cursor-pointer"
+                  >
+                    Station {g} auflösen
+                  </button>
+                ))}
+              </>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelectedSet(new Set())}
+              className="text-xs font-semibold text-navy-600 hover:underline cursor-pointer px-2 py-1"
+            >
+              Auswahl ×
+            </button>
+          </div>
+        )}
 
-          <div className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full overflow-y-auto flex-1 min-h-0">
-            <div className="flex items-baseline justify-between gap-3">
-              <div>
-                <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">
-                  Plan bearbeiten
-                </h2>
-                <p className="text-xs text-navy-600 tabular-nums">{totalMinutes} min · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}</p>
+        <div className="px-4 py-4 space-y-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-xs text-navy-600 tabular-nums">{totalMinutes} min · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}</p>
+            <a
+              href="/drills.pdf"
+              target="drill-handbuch"
+              className="text-xs font-semibold text-navy-700 hover:underline cursor-pointer shrink-0"
+            >
+              📖 Handbuch
+            </a>
+          </div>
+
+          <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sections.map((_, i) => `section-${i}`)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {sections.length === 0 ? (
+                  <div className="bg-white border-2 border-dashed border-cream-300 rounded-xl p-6 text-center space-y-2">
+                    <div className="text-4xl">📋</div>
+                    <p className="text-sm font-semibold text-navy-800">Noch keine Blöcke</p>
+                    <p className="text-xs text-navy-500">Drill aus Bibliothek wählen, Warmup oder Pause hinzufügen — siehe Buttons unten.</p>
+                  </div>
+                ) : (
+                  sections.map((s, idx) => {
+                    const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+                    return (
+                      <SortableSection
+                        key={`section-${idx}`}
+                        section={s}
+                        idx={idx}
+                        drill={drill}
+                        expanded={expandedSet.has(idx)}
+                        selected={selectedSet.has(idx)}
+                        onToggleSelect={() => toggleSelected(idx)}
+                        onToggleExpanded={() => toggleExpanded(idx)}
+                        onUpdate={(patch) => updateSection(idx, patch)}
+                        onRemove={() => removeSection(idx)}
+                      />
+                    )
+                  })
+                )}
               </div>
-              <a
-                href="/drills.pdf"
-                target="drill-handbuch"
-                className="text-xs font-semibold text-navy-700 hover:underline cursor-pointer shrink-0"
-              >
-                📖 Handbuch
-              </a>
-            </div>
+            </SortableContext>
+          </DndContext>
 
-            <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={sections.map((_, i) => `section-${i}`)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-3">
-                  {sections.length === 0 ? (
-                    <div className="bg-white border-2 border-dashed border-cream-300 rounded-xl p-6 text-center space-y-2">
-                      <div className="text-4xl">📋</div>
-                      <p className="text-sm font-semibold text-navy-800">Noch keine Blöcke</p>
-                      <p className="text-xs text-navy-500">Drill aus Bibliothek wählen, Warmup oder Pause hinzufügen — siehe Buttons unten.</p>
-                    </div>
-                  ) : (
-                    sections.map((s, idx) => {
-                      const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
-                      return (
-                        <SortableSection
-                          key={`section-${idx}`}
-                          section={s}
-                          idx={idx}
-                          drill={drill}
-                          expanded={expandedSet.has(idx)}
-                          selected={selectedSet.has(idx)}
-                          onToggleSelect={() => toggleSelected(idx)}
-                          onToggleExpanded={() => toggleExpanded(idx)}
-                          onUpdate={(patch) => updateSection(idx, patch)}
-                          onRemove={() => removeSection(idx)}
-                        />
-                      )
-                    })
-                  )}
-                </div>
-              </SortableContext>
-            </DndContext>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => openPicker('WARMUP')}
-                className="h-10 rounded-lg bg-white border border-softball-red-300 text-softball-red-700 text-xs font-bold uppercase tracking-wide hover:bg-softball-red-50 cursor-pointer flex items-center justify-center gap-1"
-              >
-                <Plus size={14} /> Warmup
-              </button>
-              <button
-                type="button"
-                onClick={() => openPicker('DRILL')}
-                className="h-10 rounded-lg bg-white border border-navy-300 text-navy-700 text-xs font-bold uppercase tracking-wide hover:bg-navy-50 cursor-pointer flex items-center justify-center gap-1"
-              >
-                <Plus size={14} /> Drill
-              </button>
-              <button
-                type="button"
-                onClick={addBreak}
-                className="h-10 rounded-lg bg-white border border-cream-400 text-navy-600 text-xs font-bold uppercase tracking-wide hover:bg-cream-100 cursor-pointer flex items-center justify-center gap-1"
-              >
-                <Plus size={14} /> Pause
-              </button>
-            </div>
-
-            <div className="bg-white border border-cream-300 rounded-xl p-3">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Allgemeine Notizen</label>
-              <textarea
-                value={overallNotes}
-                onChange={e => setOverallNotes(e.target.value)}
-                rows={2}
-                placeholder="Optional"
-                className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none resize-none"
-              />
-            </div>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => openPicker('WARMUP')}
+              className="h-10 rounded-lg bg-white border border-softball-red-300 text-softball-red-700 text-xs font-bold uppercase tracking-wide hover:bg-softball-red-50 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Plus size={14} /> Warmup
+            </button>
+            <button
+              type="button"
+              onClick={() => openPicker('DRILL')}
+              className="h-10 rounded-lg bg-white border border-navy-300 text-navy-700 text-xs font-bold uppercase tracking-wide hover:bg-navy-50 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Plus size={14} /> Drill
+            </button>
+            <button
+              type="button"
+              onClick={addBreak}
+              className="h-10 rounded-lg bg-white border border-cream-400 text-navy-600 text-xs font-bold uppercase tracking-wide hover:bg-cream-100 cursor-pointer flex items-center justify-center gap-1"
+            >
+              <Plus size={14} /> Pause
+            </button>
           </div>
 
-          <div
-            className="px-4 py-3 max-w-2xl mx-auto w-full border-t border-cream-300 bg-cream-50 shrink-0"
-            style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={onClose}
-                className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                {saving ? 'Speichere…' : 'Speichern'}
-              </button>
-            </div>
-          </div>
-
-          {showPicker && (
-            <DrillPickerModal
-              drills={drills}
-              onSelect={addDrill}
-              onClose={() => setShowPicker(false)}
+          <div className="bg-white border border-cream-300 rounded-xl p-3">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Allgemeine Notizen</label>
+            <textarea
+              value={overallNotes}
+              onChange={e => setOverallNotes(e.target.value)}
+              rows={2}
+              placeholder="Optional"
+              className="w-full px-2 py-1.5 border border-cream-300 rounded-md text-sm text-navy-900 bg-cream-50 focus:bg-white focus:border-navy-400 focus:outline-none resize-none"
             />
-          )}
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+          </div>
+        </div>
+      </ResponsiveSheet>
+
+      {showPicker && (
+        <DrillPickerModal
+          drills={drills}
+          onSelect={addDrill}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+    </>
   )
 }

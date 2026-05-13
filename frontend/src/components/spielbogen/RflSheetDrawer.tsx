@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Drawer } from 'vaul'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import type {
   BogenSheetResponse,
   BogenSide,
@@ -170,112 +170,87 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
     generateSpielbogenPdf(sheet)
   }
 
-  return (
-    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content
-          className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl flex flex-col focus:outline-none"
-          style={{ maxHeight: '95vh' }}
+  const footer = (isLive || isDone) ? (
+    <div className="flex flex-wrap gap-2">
+      {isLive && onEndGame && (
+        <button
+          onClick={() => { onClose(); onEndGame() }}
+          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-softball-red-600 text-white hover:bg-softball-red-700 cursor-pointer transition-colors"
         >
-          <Drawer.Title className="sr-only">Spielbogen</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
+          Spiel beenden
+        </button>
+      )}
+      {isDone && onReopenGame && (
+        <button
+          onClick={() => { onClose(); onReopenGame() }}
+          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
+        >
+          Spiel wieder öffnen
+        </button>
+      )}
+      {isDone && (
+        <button
+          onClick={handlePdfExport}
+          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
+        >
+          Als PDF exportieren
+        </button>
+      )}
+      {canSendToLiga && (
+        <button
+          onClick={handleLigaSenden}
+          disabled={ligaLoading}
+          className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-navy-800 text-white hover:bg-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {ligaLoading ? 'Sende…' : 'An Liga senden'}
+        </button>
+      )}
+    </div>
+  ) : undefined
 
-          {/* Header */}
-          <div className="px-4 py-2 border-b border-cream-200 shrink-0">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="font-display text-base font-extrabold text-navy-900 uppercase tracking-wide">
-                Spielbogen
-              </h2>
-              <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Schließen">
-                ✕
-              </button>
-            </div>
-            <p className="font-body text-xs text-gray-600">
-              {meta.homeTeamName} <span className="font-bold">{meta.homeRuns}</span>
-              {' : '}
-              <span className="font-bold">{meta.awayRuns}</span> {meta.awayTeamName}
-            </p>
+  return (
+    <ResponsiveSheet open={open} onClose={onClose} title="Spielbogen" maxWidth="lg" footer={footer}>
+      <div className="px-4 py-2 border-b border-cream-200 shrink-0">
+        <p className="font-body text-xs text-gray-600">
+          {meta.homeTeamName} <span className="font-bold">{meta.homeRuns}</span>
+          {' : '}
+          <span className="font-bold">{meta.awayRuns}</span> {meta.awayTeamName}
+        </p>
 
-            {/* Side toggle */}
-            <div className="mt-2 flex gap-1">
-              {(['HOME', 'AWAY'] as BogenSide[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setActiveSide(s)}
-                  className={`font-display px-4 py-1 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
-                    ${activeSide === s
-                      ? 'bg-navy-800 text-white'
-                      : 'bg-white border border-cream-300 text-navy-600 hover:bg-cream-100'
-                    }`}
-                >
-                  {s === 'HOME' ? 'Heim' : 'Gast'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Sheet content */}
-          <div className="flex-1 overflow-y-auto">
-            {slots.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm font-body">
-                Kein Lineup für diese Seite vorhanden.
-              </div>
-            ) : (
-              <SideSheet
-                side={activeSide}
-                slots={slots}
-                atBats={atBats}
-                stealings={stealingEvents}
-                runnerAdvances={runnerAdvances ?? []}
-                inningRuns={inningRuns}
-                onSlotUpdate={onSlotUpdate}
-              />
-            )}
-          </div>
-
-          {/* Footer actions */}
-          {(isLive || isDone) && (
-            <div className="px-4 py-3 border-t border-cream-200 shrink-0 flex flex-wrap gap-2"
-              style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+        <div className="mt-2 flex gap-1">
+          {(['HOME', 'AWAY'] as BogenSide[]).map(s => (
+            <button
+              key={s}
+              onClick={() => setActiveSide(s)}
+              className={`font-display px-4 py-1 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
+                ${activeSide === s
+                  ? 'bg-navy-800 text-white'
+                  : 'bg-white border border-cream-300 text-navy-600 hover:bg-cream-100'
+                }`}
             >
-              {isLive && onEndGame && (
-                <button
-                  onClick={() => { onClose(); onEndGame() }}
-                  className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-softball-red-600 text-white hover:bg-softball-red-700 cursor-pointer transition-colors"
-                >
-                  Spiel beenden
-                </button>
-              )}
-              {isDone && onReopenGame && (
-                <button
-                  onClick={() => { onClose(); onReopenGame() }}
-                  className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
-                >
-                  Spiel wieder öffnen
-                </button>
-              )}
-              {isDone && (
-                <button
-                  onClick={handlePdfExport}
-                  className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl border border-navy-700 text-navy-700 hover:bg-navy-50 cursor-pointer transition-colors"
-                >
-                  Als PDF exportieren
-                </button>
-              )}
-              {canSendToLiga && (
-                <button
-                  onClick={handleLigaSenden}
-                  disabled={ligaLoading}
-                  className="flex-1 py-2.5 font-display text-xs font-bold tracking-widest uppercase rounded-xl bg-navy-800 text-white hover:bg-navy-900 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {ligaLoading ? 'Sende…' : 'An Liga senden'}
-                </button>
-              )}
-            </div>
-          )}
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+              {s === 'HOME' ? 'Heim' : 'Gast'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        {slots.length === 0 ? (
+          <div className="p-8 text-center text-gray-500 text-sm font-body">
+            Kein Lineup für diese Seite vorhanden.
+          </div>
+        ) : (
+          <SideSheet
+            side={activeSide}
+            slots={slots}
+            atBats={atBats}
+            stealings={stealingEvents}
+            runnerAdvances={runnerAdvances ?? []}
+            inningRuns={inningRuns}
+            onSlotUpdate={onSlotUpdate}
+          />
+        )}
+      </div>
+    </ResponsiveSheet>
   )
 }

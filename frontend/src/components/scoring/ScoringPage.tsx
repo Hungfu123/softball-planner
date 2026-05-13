@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Drawer } from 'vaul'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
 import { ChevronLeft, ClipboardListIcon, SubstitutionIcon, BoltIcon, TrophyIcon } from '@/icons'
@@ -10,6 +9,7 @@ import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import * as api from '@/api/client'
 import type { AtBatResult, BaseStateDto, GameDayResponse, LineupEntryResponse, Player, RunnerOnBase, SubstitutionResponse } from '@/types'
 
@@ -934,18 +934,34 @@ export function ScoringPage() {
       />
 
       {/* Lineup-Sheet: komplette Batting-Order mit Current + Next-Markern */}
-      <Drawer.Root open={showLineupSheet} onOpenChange={(open) => !open && setShowLineupSheet(false)}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[80vh] overflow-y-auto focus:outline-none">
-            <Drawer.Title className="sr-only">Batting-Order</Drawer.Title>
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
-            <div className="px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Batting-Order</h2>
-              <p className="text-[11px] text-gray-500 mb-3">
-                Reihenfolge der Schlagspieler. Aktueller Batter markiert.
-              </p>
-              {(() => {
+      <ResponsiveSheet
+        open={showLineupSheet}
+        onClose={() => setShowLineupSheet(false)}
+        title="Batting-Order"
+        maxWidth="md"
+        footer={
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => { setShowLineupSheet(false); setShowSubSheet(true) }}
+              className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold text-sm cursor-pointer inline-flex items-center justify-center gap-2"
+            >
+              <SubstitutionIcon size={16} />
+              Wechseln
+            </button>
+            <button
+              onClick={() => setShowLineupSheet(false)}
+              className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium hover:bg-cream-100 cursor-pointer"
+            >
+              Schließen
+            </button>
+          </div>
+        }
+      >
+        <div className="px-4 py-4">
+          <p className="text-[11px] text-gray-500 mb-3">
+            Reihenfolge der Schlagspieler. Aktueller Batter markiert.
+          </p>
+          {(() => {
                 const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
                 if (sorted.length === 0) return (
                   <p className="text-sm text-gray-500 text-center py-4">Kein Lineup verfügbar.</p>
@@ -1002,38 +1018,37 @@ export function ScoringPage() {
                   </div>
                 )
               })()}
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <button
-                  onClick={() => { setShowLineupSheet(false); setShowSubSheet(true) }}
-                  className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold text-sm cursor-pointer inline-flex items-center justify-center gap-2"
-                >
-                  <SubstitutionIcon size={16} />
-                  Wechseln
-                </button>
-                <button
-                  onClick={() => setShowLineupSheet(false)}
-                  className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium hover:bg-cream-100 cursor-pointer"
-                >
-                  Schließen
-                </button>
-              </div>
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+        </div>
+      </ResponsiveSheet>
 
       {/* Sub-Sheet: Mid-Game-Wechsel */}
-      <Drawer.Root open={showSubSheet} onOpenChange={(open) => { if (!open) { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) } }}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] overflow-y-auto focus:outline-none">
-            <Drawer.Title className="sr-only">Spieler wechseln</Drawer.Title>
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
-            <div className="px-4 py-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-              <h2 className="text-lg font-bold text-gray-900 mb-1">Spieler wechseln</h2>
-              <p className="text-[11px] text-gray-500 mb-4">
-                Aktives Inning: {currentInning}. Wechsel wird ab diesem Inning wirksam.
-              </p>
+      <ResponsiveSheet
+        open={showSubSheet}
+        onClose={() => { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) }}
+        title="Spieler wechseln"
+        maxWidth="md"
+        footer={
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) }}
+              className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium hover:bg-cream-100 cursor-pointer"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={handleConfirmSub}
+              disabled={!subPlayerOut || !subPlayerIn || submitting}
+              className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Wechseln…' : '✓ Bestätigen'}
+            </button>
+          </div>
+        }
+      >
+        <div className="px-4 py-4">
+          <p className="text-[11px] text-gray-500 mb-4">
+            Aktives Inning: {currentInning}. Wechsel wird ab diesem Inning wirksam.
+          </p>
               {(() => {
                 // Aktive Spieler = effective players aus Lineup
                 const activePlayers = [...lineup]
@@ -1104,72 +1119,50 @@ export function ScoringPage() {
                 )
               })()}
 
-              <div className="grid grid-cols-2 gap-2 mt-5">
-                <button
-                  onClick={() => { setShowSubSheet(false); setSubPlayerOut(null); setSubPlayerIn(null) }}
-                  className="h-11 rounded-lg border border-cream-300 text-gray-700 font-medium hover:bg-cream-100 cursor-pointer"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  onClick={handleConfirmSub}
-                  disabled={!subPlayerOut || !subPlayerIn || submitting}
-                  className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Wechseln…' : '✓ Bestätigen'}
-                </button>
-              </div>
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+        </div>
+      </ResponsiveSheet>
 
       {/* Stealing Sheet */}
-      <Drawer.Root open={stealingRunner !== null} onOpenChange={(open) => !open && setStealingRunner(null)}>
-        <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[70vh] focus:outline-none">
-            <Drawer.Title className="sr-only">Base Running</Drawer.Title>
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3" />
-            <div className="px-4 pt-4 pb-6 space-y-3" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-              {stealingRunner && (
-                <>
-                  <h2 className="text-lg font-bold text-gray-900 text-center">
-                    {stealingRunner.playerName} auf {stealingRunner.base}B
-                  </h2>
-                  <p className="text-xs text-gray-500 text-center">
-                    Was ist zwischen den Pitches passiert?
-                  </p>
-                  <button
-                    onClick={() => handleStealing('STOLEN_BASE')}
-                    className="font-display w-full h-20 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
-                  >
-                    <span className="inline-flex items-center gap-2"><Zap size={18} /> Stolen Base</span>
-                    <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
-                      Läuft zur nächsten Base · Runner bewegt sich
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => handleStealing('CAUGHT_STEALING')}
-                    className="font-display w-full h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
-                  >
-                    <span className="inline-flex items-center gap-2"><XIcon size={18} /> Caught Stealing</span>
-                    <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
-                      Beim Klauen gefangen · Runner ist AUS (+1 Out)
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setStealingRunner(null)}
-                    className="w-full h-11 rounded-xl border border-cream-300 text-gray-600 font-medium cursor-pointer"
-                  >
-                    Abbrechen
-                  </button>
-                </>
-              )}
-            </div>
-          </Drawer.Content>
-        </Drawer.Portal>
-      </Drawer.Root>
+      <ResponsiveSheet
+        open={stealingRunner !== null}
+        onClose={() => setStealingRunner(null)}
+        title={stealingRunner ? `${stealingRunner.playerName} auf ${stealingRunner.base}B` : 'Base Running'}
+        maxWidth="md"
+      >
+        <div className="px-4 pt-4 pb-4 space-y-3">
+          {stealingRunner && (
+            <>
+              <p className="text-xs text-gray-500 text-center">
+                Was ist zwischen den Pitches passiert?
+              </p>
+              <button
+                onClick={() => handleStealing('STOLEN_BASE')}
+                className="font-display w-full h-20 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
+              >
+                <span className="inline-flex items-center gap-2"><Zap size={18} /> Stolen Base</span>
+                <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
+                  Läuft zur nächsten Base · Runner bewegt sich
+                </span>
+              </button>
+              <button
+                onClick={() => handleStealing('CAUGHT_STEALING')}
+                className="font-display w-full h-20 rounded-xl bg-softball-red-600 hover:bg-softball-red-700 active:bg-softball-red-800 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
+              >
+                <span className="inline-flex items-center gap-2"><XIcon size={18} /> Caught Stealing</span>
+                <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
+                  Beim Klauen gefangen · Runner ist AUS (+1 Out)
+                </span>
+              </button>
+              <button
+                onClick={() => setStealingRunner(null)}
+                className="w-full h-11 rounded-xl border border-cream-300 text-gray-600 font-medium cursor-pointer"
+              >
+                Abbrechen
+              </button>
+            </>
+          )}
+        </div>
+      </ResponsiveSheet>
 
       {/* Homerun — Power-Smash mit Type-Label nach Runs */}
       <AnimatePresence>

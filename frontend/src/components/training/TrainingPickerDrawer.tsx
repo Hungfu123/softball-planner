@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Drawer } from 'vaul'
-import { Calendar, Check } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 
 type Training = { id: number; date: string; cancelled?: boolean }
 
@@ -54,73 +54,56 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
   }
 
   return (
-    <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[88vh] flex flex-col focus:outline-none">
-          <Drawer.Title className="sr-only">Training auswählen</Drawer.Title>
-          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 shrink-0" />
-          <div
-            className="px-4 py-4 space-y-4 max-w-2xl mx-auto w-full overflow-y-auto flex-1 min-h-0"
-            style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
-          >
-            <div className="flex items-center gap-2">
-              <Calendar className="text-navy-700" size={20} />
-              <h2 className="font-display text-lg font-extrabold text-navy-900 uppercase tracking-wide">
-                Trainings
-              </h2>
+    <ResponsiveSheet open={open} onClose={onClose} title="Trainings" maxWidth="md">
+      <div className="px-4 py-4 space-y-4">
+        {trainings.length === 0 ? (
+          <p className="text-sm text-navy-500 italic">Keine Trainings vorhanden.</p>
+        ) : (
+          <div className="space-y-3">
+            <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
+              <button
+                type="button"
+                onClick={() => setTab('upcoming')}
+                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'upcoming' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+              >
+                Anstehend ({grouped.upcoming.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('past')}
+                className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'past' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
+              >
+                Vergangen ({grouped.past.length})
+              </button>
             </div>
 
-            {trainings.length === 0 ? (
-              <p className="text-sm text-navy-500 italic">Keine Trainings vorhanden.</p>
-            ) : (
-              <div className="space-y-3">
-                <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setTab('upcoming')}
-                    className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'upcoming' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
-                  >
-                    Anstehend ({grouped.upcoming.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTab('past')}
-                    className={`px-3 py-1.5 text-xs rounded-md font-semibold cursor-pointer transition-colors ${tab === 'past' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
-                  >
-                    Vergangen ({grouped.past.length})
-                  </button>
+            {tab === 'upcoming' && (
+              grouped.upcoming.length > 0 ? (
+                <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
+                  {grouped.upcoming.map(t => (
+                    <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} ref={t.id === selectedId ? activeRef : undefined} />
+                  ))}
                 </div>
+              ) : (
+                <p className="text-xs text-navy-400 italic">Keine anstehenden Trainings.</p>
+              )
+            )}
 
-                {tab === 'upcoming' && (
-                  grouped.upcoming.length > 0 ? (
-                    <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
-                      {grouped.upcoming.map(t => (
-                        <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} ref={t.id === selectedId ? activeRef : undefined} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-navy-400 italic">Keine anstehenden Trainings.</p>
-                  )
-                )}
-
-                {tab === 'past' && (
-                  grouped.past.length > 0 ? (
-                    <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
-                      {grouped.past.map(t => (
-                        <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted ref={t.id === selectedId ? activeRef : undefined} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-navy-400 italic">Noch keine vergangenen Trainings.</p>
-                  )
-                )}
-              </div>
+            {tab === 'past' && (
+              grouped.past.length > 0 ? (
+                <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
+                  {grouped.past.map(t => (
+                    <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted ref={t.id === selectedId ? activeRef : undefined} />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-navy-400 italic">Noch keine vergangenen Trainings.</p>
+              )
             )}
           </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+        )}
+      </div>
+    </ResponsiveSheet>
   )
 }
 
