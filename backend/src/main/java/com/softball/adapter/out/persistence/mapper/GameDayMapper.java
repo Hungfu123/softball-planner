@@ -1,10 +1,13 @@
 package com.softball.adapter.out.persistence.mapper;
 
 import com.softball.adapter.out.persistence.entity.GameDayEntity;
+import com.softball.adapter.out.persistence.entity.GameEntity;
 import com.softball.adapter.out.persistence.entity.SeasonEntity;
 import com.softball.domain.model.GameDay;
 import com.softball.domain.model.Season;
 import org.springframework.stereotype.Component;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -69,5 +72,29 @@ public class GameDayMapper {
         entity.setDate(domain.getDate());
         entity.setLabel(domain.getLabel());
         entity.setLocation(domain.getLocation());
+        syncGames(entity, domain);
+    }
+
+    private void syncGames(final GameDayEntity entity, final GameDay domain) {
+        if (domain.getGames() == null) return;
+
+        // GameNumbers im Domain — Quelle der Wahrheit nach update()
+        final Set<Integer> domainGameNumbers = domain.getGames().stream()
+            .map(g -> g.getGameNumber())
+            .collect(Collectors.toSet());
+
+        // Entity-Games entfernen die nicht mehr im Domain sind (orphanRemoval triggert DB-Delete)
+        entity.getGames().removeIf(ge -> !domainGameNumbers.contains(ge.getGameNumber()));
+
+        // Neue Games hinzufügen (Domain hat sie, Entity noch nicht)
+        final Set<Integer> entityGameNumbers = entity.getGames().stream()
+            .map(GameEntity::getGameNumber)
+            .collect(Collectors.toCollection(HashSet::new));
+        for (final var domainGame : domain.getGames()) {
+            if (!entityGameNumbers.contains(domainGame.getGameNumber())) {
+                final GameEntity newGame = new GameEntity(domainGame.getGameNumber(), entity);
+                entity.getGames().add(newGame);
+            }
+        }
     }
 }
