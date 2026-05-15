@@ -120,7 +120,7 @@ export const createGameDay = (seasonId: number, date: string, label?: string, lo
   })
 export const getGameDay = (id: number) =>
   request<GameDayResponse>(`/gamedays/${id}`)
-export const updateGameDay = (id: number, data: { date?: string; label?: string | null; location?: string | null }) =>
+export const updateGameDay = (id: number, data: { date?: string; label?: string | null; location?: string | null; numberOfGames?: number }) =>
   request<GameDayResponse>(`/gamedays/${id}`, { method: 'PUT', body: JSON.stringify(data) })
 export const setAvailablePlayers = (gameDayId: number, playerIds: number[]) =>
   request<GameDayResponse>(`/gamedays/${gameDayId}/players`, {

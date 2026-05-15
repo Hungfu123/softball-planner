@@ -105,7 +105,8 @@ public class GameDayService {
     }
 
     @Transactional
-    public GameDayResponse update(final Long id, final LocalDate date, final String label, final String location) {
+    public GameDayResponse update(final Long id, final LocalDate date, final String label, final String location,
+                                   final Integer numberOfGames) {
         final GameDay gameDay = findById(id);
         if (date != null && !date.equals(gameDay.getDate())) {
             if (gameDayRepository.existsBySeasonAndDate(gameDay.getSeason().getId(), date)) {
@@ -115,9 +116,48 @@ public class GameDayService {
         }
         gameDay.setLabel(label);
         gameDay.setLocation(location);
+
+        if (numberOfGames != null) {
+            adjustGameCount(gameDay, numberOfGames);
+        }
+
         final GameDay saved = gameDayRepository.save(gameDay);
         saved.getGames().size();
         return toResponseWithLive(saved);
+    }
+
+    private void adjustGameCount(final GameDay gameDay, final int newCount) {
+        final List<Game> games = gameDay.getGames();
+        games.sort(Comparator.comparing(Game::getGameNumber));
+        final int currentCount = games.size();
+        if (newCount == currentCount) return;
+
+        if (newCount > currentCount) {
+            for (int i = currentCount + 1; i <= newCount; i++) {
+                final Game game = new Game();
+                game.setGameNumber(i);
+                game.setGameDay(gameDay);
+                games.add(game);
+            }
+            log.info("Spieltag {}: {} Spiele hinzugefuegt (jetzt {})", gameDay.getId(), newCount - currentCount, newCount);
+            return;
+        }
+
+        // newCount < currentCount → shrink: prüfe Scoring-Daten
+        final List<Game> toRemove = new ArrayList<>(games.subList(newCount, currentCount));
+        final List<Long> removeIds = toRemove.stream().map(Game::getId).filter(Objects::nonNull).toList();
+        if (!removeIds.isEmpty()) {
+            final Map<Long, Long> atBatCounts = atBatRepository.countByGameIds(removeIds);
+            final long withScoring = atBatCounts.values().stream().filter(c -> c > 0).count();
+            if (withScoring > 0) {
+                throw new BusinessValidationException(
+                    "Kann Spiele nicht entfernen: " + withScoring + " Spiel(e) haben Scoring-Daten. "
+                    + "Erst Scoring zurücksetzen oder weniger Spiele behalten."
+                );
+            }
+        }
+        games.removeAll(toRemove);
+        log.info("Spieltag {}: {} Spiele entfernt (jetzt {})", gameDay.getId(), currentCount - newCount, newCount);
     }
 
     @Transactional

@@ -58,8 +58,8 @@ public class GameDayController {
 
     @PutMapping("/gamedays/{id}")
     public GameDayResponse update(@PathVariable final Long id,
-                                  @RequestBody final UpdateGameDayRequest request) {
-        return gameDayService.update(id, request.date(), request.label(), request.location());
+                                  @Valid @RequestBody final UpdateGameDayRequest request) {
+        return gameDayService.update(id, request.date(), request.label(), request.location(), request.numberOfGames());
     }
 
     @PutMapping("/gamedays/{id}/players")
