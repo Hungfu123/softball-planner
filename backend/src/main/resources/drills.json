@@ -56,7 +56,11 @@
     "name": "Backhand-Toss",
     "categories": [
       "THROWING",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "FIRST_BASE",
+      "SECOND_BASE",
+      "SS",
+      "THIRD_BASE"
     ],
     "minPlayers": 2,
     "equipment": [
@@ -74,7 +78,11 @@
     "name": "Aufnehmen mit Sidewurf",
     "categories": [
       "THROWING",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "FIRST_BASE",
+      "SECOND_BASE",
+      "SS",
+      "THIRD_BASE"
     ],
     "minPlayers": 2,
     "equipment": [
@@ -92,7 +100,11 @@
     "name": "Hocke-Wurf zum Partner",
     "categories": [
       "THROWING",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "FIRST_BASE",
+      "SECOND_BASE",
+      "SS",
+      "THIRD_BASE"
     ],
     "minPlayers": 2,
     "equipment": [
@@ -965,7 +977,8 @@
     "categories": [
       "THROWING",
       "SECOND_BASE",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "SS"
     ],
     "minPlayers": 2,
     "equipment": [
@@ -985,7 +998,8 @@
       "THROWING",
       "OUTFIELD",
       "FIELDING",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "RELAY"
     ],
     "minPlayers": 2,
     "equipment": [
@@ -1005,7 +1019,8 @@
       "THROWING",
       "FIELDING",
       "OUTFIELD",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "RELAY"
     ],
     "minPlayers": 2,
     "equipment": [
@@ -1025,7 +1040,8 @@
       "THROWING",
       "OUTFIELD",
       "FIELDING",
-      "PARTNER_ROUTINE"
+      "PARTNER_ROUTINE",
+      "RELAY"
     ],
     "minPlayers": 2,
     "equipment": [
