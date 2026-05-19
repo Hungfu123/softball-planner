@@ -10,7 +10,7 @@ interface Props {
   seasonId: number
   onSelect: (index: number) => void
   onOpponentChanged: (gameId: number, opponentTeam: LeagueTeamResponse | null) => void
-  onSwapped?: () => void | Promise<void>
+  onSwapped?: (updatedGames: GameResponse[]) => void | Promise<void>
   gameCompletions?: Map<number, { total: number; fieldCount: number }>
 }
 
@@ -29,8 +29,8 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
     setSwapping(true)
     setSwapError(null)
     try {
-      await api.swapGames(gameId1, gameId2)
-      if (onSwapped) await onSwapped()
+      const updatedGames = await api.swapGames(gameId1, gameId2)
+      if (onSwapped) await onSwapped(updatedGames)
       setMenuGameId(null)
     } catch (e) {
       setSwapError((e as Error).message)

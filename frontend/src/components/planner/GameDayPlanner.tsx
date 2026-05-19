@@ -29,7 +29,7 @@ import * as api from '@/api/client'
 export function GameDayPlanner() {
   const { id } = useParams<{ id: string }>()
   const gameDayId = Number(id)
-  const { gameDay, setGameDay, stats, loading, refreshStats, setAvailablePlayers, reload } = useGameDay(gameDayId)
+  const { gameDay, setGameDay, stats, loading, refreshStats, setAvailablePlayers } = useGameDay(gameDayId)
   const lineup = useLineup()
   const staff = useStaff()
   const { players } = usePlayers()
@@ -530,9 +530,12 @@ export function GameDayPlanner() {
             games: gd.games.map(g => g.id === gameId ? { ...g, opponentTeam } : g),
           } : gd)
         }}
-        onSwapped={async () => {
+        onSwapped={async (updatedGames) => {
           lineup.invalidateCache()
-          await reload()
+          setGameDay(gd => gd ? {
+            ...gd,
+            games: gd.games.map(g => updatedGames.find(u => u.id === g.id) ?? g),
+          } : gd)
           if (activeGame) {
             lineup.load(activeGame.id)
             staff.load(activeGame.id)
