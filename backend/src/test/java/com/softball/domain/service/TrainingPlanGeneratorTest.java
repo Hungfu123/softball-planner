@@ -261,30 +261,29 @@ class TrainingPlanGeneratorTest {
         void batting_60_min_bei_180_min_training() {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "WERFEN", 180);
 
-            final TrainingPlanSection batting = sectionsByType(result, "BATTING").get(0);
-            assertThat(batting.getDurationMinutes()).isEqualTo(60);
-            assertThat(batting.getDrillId()).isEqualTo("hitting-stationen");
+            // Batting jetzt als Stations-Block (mehrere parallele Drills mit gleicher Block-Dauer)
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(60);
         }
 
         @Test
-        void batting_40_min_bei_120_min_unter_12_spieler() {
+        void batting_60_min_bei_120_min_unter_12_spieler() {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "WERFEN", 120);
 
-            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(40);
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(60);
         }
 
         @Test
-        void batting_50_min_bei_120_min_ab_12_spieler() {
+        void batting_60_min_bei_120_min_ab_12_spieler() {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 12, "WERFEN", 120);
 
-            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(50);
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(60);
         }
 
         @Test
-        void batting_40_min_bei_90_min_training() {
+        void batting_45_min_bei_90_min_training() {
             final TrainingPlanContent result = generator.generate(fullCatalog(), 10, "WERFEN", 90);
 
-            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(40);
+            assertThat(sectionsByType(result, "BATTING").get(0).getDurationMinutes()).isEqualTo(45);
         }
 
         @Test

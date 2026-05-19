@@ -37,7 +37,8 @@ public class TrainingPlanGenerator {
     private static final int MAX_BASICS_DRILLS = 2;
     private static final int MIN_DRILL_MINUTES = 10;
     private static final int BREAK_MINUTES = 5;
-    private static final int OVERTIME_BUFFER = 5;
+    private static final int OVERTIME_BUFFER_LONG = 5;   // ab 180min — Plan soll knapp passen
+    private static final int OVERTIME_BUFFER_DEFAULT = 30; // unter 180min — Überzug bis 30min OK
     private static final int PARTNER_ROUTINE_DRILL_MINUTES = 5;
     private static final int MAX_PARTNER_ROUTINE_DRILLS = 2;
     private static final int HITTING_PRE_DRILL_MINUTES = 10;
@@ -80,7 +81,8 @@ public class TrainingPlanGenerator {
                                          final String focus, final int totalMinutes,
                                          final List<InfieldPosition> infieldPositions) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
-        int remainingMinutes = totalMinutes + OVERTIME_BUFFER;
+        final int overtimeBuffer = totalMinutes >= 180 ? OVERTIME_BUFFER_LONG : OVERTIME_BUFFER_DEFAULT;
+        int remainingMinutes = totalMinutes + overtimeBuffer;
         final Set<String> usedDrillIds = new HashSet<>();
 
         // --- SCHRITT 1: Aufwärmen + Trinkpause ---
@@ -326,30 +328,34 @@ public class TrainingPlanGenerator {
 
         // Keine Pause nach Warmup — Basics sind Partnerübungen, man geht direkt rein
 
-        // --- SCHRITT 5: Pause + Batting ---
-        final Drill hittingDrill = findById(allDrills, HITTING_DRILL_ID);
-        if (hittingDrill != null && battingMinutes > 0) {
-            sections.add(buildBreakSection("Trinken. Batting-Stationen aufbauen: Tees, Netz, Bälle bereitlegen. Wer die Station kennt, hilft beim Aufbau."));
+        // --- SCHRITT 5: Pause + Batting-Stationen ---
+        // Hitting-Drills (knie-drill, rear-toss, loading-tee, etc.) als rotierender Stations-Block.
+        if (battingMinutes > 0) {
+            final List<Drill> hittingDrills = new ArrayList<>(allDrills.stream()
+                    .filter(d -> d.getCategories().contains(DrillCategory.HITTING))
+                    .filter(d -> !d.getId().equals(HITTING_DRILL_ID)) // Meta-"Hitting Stationen"-Drill raus
+                    .filter(d -> d.getMinPlayers() <= playerCount)
+                    .toList());
 
-            // Optional: Hitting Pre-Drill (Aktivierung vor den Stationen)
-            int actualBattingMinutes = battingMinutes;
-            if (battingMinutes >= HITTING_PRE_DRILL_MINUTES + MIN_DRILL_MINUTES) {
-                final List<Drill> hittingPreDrills = new ArrayList<>(allDrills.stream()
-                        .filter(d -> d.getCategories().contains(DrillCategory.HITTING))
-                        .filter(d -> !d.getId().equals(HITTING_DRILL_ID))
-                        .filter(d -> !usedDrillIds.contains(d.getId()))
-                        .filter(d -> d.getMinPlayers() <= playerCount)
-                        .toList());
-                if (!hittingPreDrills.isEmpty()) {
-                    Collections.shuffle(hittingPreDrills);
-                    final Drill preDrill = hittingPreDrills.get(0);
-                    sections.add(buildDrillSection(preDrill, "BATTING", HITTING_PRE_DRILL_MINUTES, playerCount));
-                    usedDrillIds.add(preDrill.getId());
-                    actualBattingMinutes -= HITTING_PRE_DRILL_MINUTES;
+            if (!hittingDrills.isEmpty()) {
+                sections.add(buildBreakSection("Trinken. Batting-Stationen aufbauen: Tees, Netz, Bälle bereitlegen. Wer die Station kennt, hilft beim Aufbau."));
+                Collections.shuffle(hittingDrills);
+                // Build-Up: BASIC zuerst (z.B. Knie-Drill), ADVANCED später (Loading vom Tee)
+                hittingDrills.sort((a, b) -> {
+                    final int ar = a.getComplexity() == DrillComplexity.BASIC ? 0 : 1;
+                    final int br = b.getComplexity() == DrillComplexity.BASIC ? 0 : 1;
+                    return Integer.compare(ar, br);
+                });
+                sections.addAll(buildStationBlock(hittingDrills, playerCount, battingMinutes, parallelGroupCounter, "BATTING"));
+                parallelGroupCounter++;
+            } else {
+                // Fallback: kein einzelner Hitting-Drill verfügbar — Meta-Drill nutzen
+                final Drill hittingDrill = findById(allDrills, HITTING_DRILL_ID);
+                if (hittingDrill != null) {
+                    sections.add(buildBreakSection("Trinken. Batting-Stationen aufbauen: Tees, Netz, Bälle bereitlegen."));
+                    sections.add(buildDrillSection(hittingDrill, "BATTING", battingMinutes, playerCount));
                 }
             }
-
-            sections.add(buildDrillSection(hittingDrill, "BATTING", actualBattingMinutes, playerCount));
         }
 
         // --- SCHRITT 6: Spiel (keine Pause nach Batting — direkt ins Spiel) ---
@@ -373,6 +379,12 @@ public class TrainingPlanGenerator {
 
     private List<TrainingPlanSection> buildStationBlock(final List<Drill> drills, final int playerCount,
                                                          final int totalMinutes, final int parallelGroup) {
+        return buildStationBlock(drills, playerCount, totalMinutes, parallelGroup, "DRILL");
+    }
+
+    private List<TrainingPlanSection> buildStationBlock(final List<Drill> drills, final int playerCount,
+                                                         final int totalMinutes, final int parallelGroup,
+                                                         final String sectionType) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
         final int maxStations = playerCount >= 15 ? 3 : 2;
         final int numStations = Math.min(drills.size(), Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)));
@@ -385,7 +397,7 @@ public class TrainingPlanGenerator {
 
         for (int i = 0; i < numStations; i++) {
             final Drill drill = drills.get(i);
-            final TrainingPlanSection section = buildDrillSection(drill, "DRILL", totalMinutes, playerCount);
+            final TrainingPlanSection section = buildDrillSection(drill, sectionType, totalMinutes, playerCount);
             section.setParallelGroup(parallelGroup);
             section.setPlayersPerGroup(maxPerGroup);
             section.setRotationPlan(String.format(
@@ -487,12 +499,8 @@ public class TrainingPlanGenerator {
 
     private int calculateBattingMinutes(final int totalMinutes, final int remainingAfterWarmup,
                                             final int playerCount) {
-        if (totalMinutes >= 180) return 60;
-        if (totalMinutes >= 120) {
-            // Ab 12 Spielern: 50 min (mehr Rotationen nötig), unter 12: 40 min
-            return playerCount >= 12 ? 50 : 40;
-        }
-        if (totalMinutes >= 90) return 40;
+        if (totalMinutes >= 120) return 60;
+        if (totalMinutes >= 90) return 45;
         // Kurze Trainings: mindestens 15 min, aber nicht mehr als die Hälfte der verbleibenden Zeit
         return Math.max(15, Math.min(40, remainingAfterWarmup / 2));
     }
