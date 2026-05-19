@@ -178,7 +178,7 @@ public class TrainingPlanGenerator {
                 }
             }
 
-            final int stationsCap = 2;
+            final int stationsCap = playerCount >= 15 ? 3 : 2;
             if (shuffledPositions.size() == 1) {
                 // Single-Position: bis zu 2 Stationen mit verschiedenen Drills derselben Position
                 // (BASIC + ADVANCED). User-Wunsch: Build-Up als Stationen, nicht 1 Drill.
@@ -371,7 +371,7 @@ public class TrainingPlanGenerator {
     private List<TrainingPlanSection> buildStationBlock(final List<Drill> drills, final int playerCount,
                                                          final int totalMinutes, final int parallelGroup) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
-        final int maxStations = 2;
+        final int maxStations = playerCount >= 15 ? 3 : 2;
         final int numStations = Math.min(drills.size(), Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)));
         final int minPerGroup = playerCount / numStations;
         final int maxPerGroup = (int) Math.ceil((double) playerCount / numStations);
