@@ -176,9 +176,17 @@ export function GameDayPlanner() {
   }
 
   const handlePositionAssign = (player: Player, position: string) => {
-    const inLineup = lineup.entries.some(e => e.player.id === player.id)
-    if (!inLineup) handleAddPlayer(player)
+    const currentEntry = lineup.entries.find(e => e.position === position)
+    const newPlayerEntry = lineup.entries.find(e => e.player.id === player.id)
+    const newPlayerOldPosition = newPlayerEntry?.position ?? null
+
+    if (!newPlayerEntry) handleAddPlayer(player)
     lineup.setPosition(player.id, position)
+
+    // Bisheriger Belegt-Spieler verschieben: bei Tausch auf alte Pos, sonst Batting-only
+    if (currentEntry && currentEntry.player.id !== player.id) {
+      lineup.setPosition(currentEntry.player.id, newPlayerOldPosition ?? '')
+    }
   }
 
   const handlePositionClear = (position: string) => {

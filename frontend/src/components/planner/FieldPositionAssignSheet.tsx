@@ -17,6 +17,10 @@ export function FieldPositionAssignSheet({ open, position, entries, poolPlayers,
   const currentOnPosition = entries.find(e => e.position === position)?.player ?? null
   // Lineup-Player ohne Position (für Re-Assign)
   const lineupNoPosition = entries.filter(e => !e.position).map(e => e.player)
+  // Lineup-Player mit Position (für direkten Positions-Tausch)
+  const lineupOnField = entries
+    .filter(e => e.position && e.position !== position && e.position !== 'EH')
+    .map(e => ({ player: e.player, fromPosition: e.position! }))
 
   const handlePick = (player: Player) => {
     onAssign(player, position)
@@ -74,6 +78,26 @@ export function FieldPositionAssignSheet({ open, position, entries, poolPlayers,
                   className="h-11 rounded-lg border border-cream-300 bg-white text-navy-800 text-sm font-semibold hover:border-navy-400 hover:bg-cream-100 cursor-pointer text-left px-3 truncate"
                 >
                   {p.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {lineupOnField.length > 0 && (
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 mb-2">
+              Aus Feld {currentOnPosition ? '(tauschen)' : '(verschieben)'}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {lineupOnField.map(({ player, fromPosition }) => (
+                <button
+                  key={player.id}
+                  onClick={() => handlePick(player)}
+                  className="h-11 rounded-lg border border-cream-300 bg-white text-navy-800 text-sm font-semibold hover:border-navy-400 hover:bg-cream-100 cursor-pointer text-left px-3 truncate flex items-center justify-between gap-2"
+                >
+                  <span className="truncate">{player.name}</span>
+                  <span className="text-[10px] font-bold text-softball-red-600 shrink-0">{fromPosition}</span>
                 </button>
               ))}
             </div>

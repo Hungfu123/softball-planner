@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GameResponse, LeagueTeamResponse } from '@/types'
 import { TeamCombobox } from '@/components/shared'
@@ -19,7 +19,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
   const [swapping, setSwapping] = useState(false)
   const [leagueTeams, setLeagueTeams] = useState<LeagueTeamResponse[]>([])
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [swapError, setSwapError] = useState<string | null>(null)
 
   useEffect(() => {
     api.getLeagueTeams(seasonId).then(setLeagueTeams)
@@ -27,22 +27,26 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
 
   const handleSwap = async (gameId1: number, gameId2: number) => {
     setSwapping(true)
+    setSwapError(null)
     try {
       await api.swapGames(gameId1, gameId2)
       if (onSwapped) await onSwapped()
+      setMenuGameId(null)
+    } catch (e) {
+      setSwapError((e as Error).message)
     } finally {
       setSwapping(false)
-      setMenuGameId(null)
     }
   }
 
-  // Close menu on click outside
+  // Close menu on outside click — use data-attribute so both mobile + desktop
+  // menu divs are recognized (both mount under their CSS-hidden parents).
   useEffect(() => {
     if (!menuGameId) return
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuGameId(null)
-      }
+      const target = e.target as Element | null
+      if (target?.closest('[data-swap-menu]')) return
+      setMenuGameId(null)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -116,7 +120,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
               </svg>
             </button>
             {menuGameId === activeGame.id && (
-              <div ref={menuRef} className="absolute top-full right-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
+              <div data-swap-menu className="absolute top-full right-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
                 <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Lineup tauschen mit…</div>
                 {games.filter(g => g.id !== activeGame.id).map(target => (
                   <button
@@ -176,7 +180,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                 </button>
                 {menuGameId === game.id && (
                   <div
-                    ref={menuRef}
+                    data-swap-menu
                     className="absolute top-full left-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]"
                   >
                     <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
@@ -241,6 +245,18 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
               }}
             />
           </div>
+        </div>
+      )}
+
+      {swapError && (
+        <div className="mx-1 sm:mx-2 mb-2 px-3 py-2 bg-softball-red-50 border border-softball-red-300 text-softball-red-700 text-sm rounded-md flex items-start justify-between gap-2">
+          <span>Tausch fehlgeschlagen: {swapError}</span>
+          <button
+            type="button"
+            onClick={() => setSwapError(null)}
+            aria-label="Fehler schließen"
+            className="text-softball-red-700 hover:text-softball-red-900 cursor-pointer"
+          >×</button>
         </div>
       )}
     </div>

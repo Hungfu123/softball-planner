@@ -12,6 +12,8 @@ interface Props {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl'
   /** Mobile breakpoint in px below which we switch to bottom-sheet. Default 640 (sm). */
   mobileBreakpoint?: number
+  /** Set true when opened from inside another ResponsiveSheet — uses Drawer.NestedRoot on mobile. */
+  nested?: boolean
 }
 
 const MAX_WIDTH = {
@@ -25,14 +27,15 @@ const MAX_WIDTH = {
  * Responsive container: bottom-sheet auf Mobile (vaul Drawer),
  * Center-Modal auf Desktop. Beide teilen Title + Footer Slots.
  */
-export function ResponsiveSheet({ open, onClose, title, children, footer, maxWidth = 'sm', mobileBreakpoint = 640 }: Props) {
+export function ResponsiveSheet({ open, onClose, title, children, footer, maxWidth = 'sm', mobileBreakpoint = 640, nested = false }: Props) {
   const isMobile = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia(`(max-width: ${mobileBreakpoint - 1}px)`).matches
 
   if (isMobile) {
+    const Root = nested ? Drawer.NestedRoot : Drawer.Root
     return (
-      <Drawer.Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
           <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] flex flex-col focus:outline-none">
@@ -60,7 +63,7 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
             )}
           </Drawer.Content>
         </Drawer.Portal>
-      </Drawer.Root>
+      </Root>
     )
   }
 
