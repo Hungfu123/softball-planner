@@ -58,6 +58,19 @@ public class TrainingPlanGenerator {
             Map.entry("ALLROUND", List.of(DrillCategory.values()))
     );
 
+    // Cats that fit als Partner-Routine-Build-Up zum Focus.
+    // Erlaubt Outfield/Throwing-Partner-Drills für RELAY/OUTFIELD, etc.
+    private static final Map<String, List<DrillCategory>> PARTNER_PREFERENCE_MAP = Map.ofEntries(
+            Map.entry("WERFEN", List.of(DrillCategory.THROWING)),
+            Map.entry("INFIELD_DEFENSE", List.of(DrillCategory.FIELDING, DrillCategory.THROWING)),
+            Map.entry("OUTFIELD", List.of(DrillCategory.OUTFIELD, DrillCategory.FIELDING, DrillCategory.THROWING)),
+            Map.entry("BASERUNNING", List.of(DrillCategory.BASERUNNING)),
+            Map.entry("SITUATIONAL", List.of(DrillCategory.FIELDING, DrillCategory.THROWING)),
+            Map.entry("CATCHER", List.of(DrillCategory.CATCHER, DrillCategory.THROWING)),
+            Map.entry("RELAY", List.of(DrillCategory.OUTFIELD, DrillCategory.FIELDING, DrillCategory.THROWING)),
+            Map.entry("ALLROUND", List.of(DrillCategory.THROWING, DrillCategory.FIELDING))
+    );
+
     public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
                                          final String focus, final int totalMinutes) {
         return generate(allDrills, playerCount, focus, totalMinutes, List.of());
@@ -79,12 +92,30 @@ public class TrainingPlanGenerator {
         }
 
         // --- SCHRITT 1b: Partner-Routine (Wurf/Fielding-Aktivierung zu zweit) ---
+        // Fokus-aware: Partner-Drills deren Cats zum Focus passen werden bevorzugt.
+        // Beispiel: RELAY → Outfield-Partner-Drills (Fly Balls, Grounder im Laufen) zuerst.
+        final List<String> focusesForPartner = parseFocuses(focus);
+        final Set<DrillCategory> partnerPreferred = new HashSet<>();
+        for (final String f : focusesForPartner) {
+            partnerPreferred.addAll(PARTNER_PREFERENCE_MAP.getOrDefault(f, List.of()));
+        }
+        if (infieldPositions != null) {
+            for (final InfieldPosition pos : infieldPositions) {
+                partnerPreferred.add(pos.toDrillCategory());
+            }
+        }
         final List<Drill> partnerRoutineDrills = new ArrayList<>(allDrills.stream()
                 .filter(d -> d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
                 .filter(d -> d.getMinPlayers() <= playerCount)
                 .filter(d -> !d.getId().equals(WARMUP_DRILL_ID))
                 .toList());
         Collections.shuffle(partnerRoutineDrills);
+        // Stable-Sort nach Match-Count (höhere zuerst). Shuffle innerhalb Tier durch initialen shuffle erhalten.
+        partnerRoutineDrills.sort((a, b) -> {
+            final long matchA = a.getCategories().stream().filter(partnerPreferred::contains).count();
+            final long matchB = b.getCategories().stream().filter(partnerPreferred::contains).count();
+            return Long.compare(matchB, matchA);
+        });
         final int numPartnerRoutine = Math.min(MAX_PARTNER_ROUTINE_DRILLS, partnerRoutineDrills.size());
         for (int i = 0; i < numPartnerRoutine; i++) {
             sections.add(buildDrillSection(partnerRoutineDrills.get(i), "DRILL",
@@ -147,13 +178,36 @@ public class TrainingPlanGenerator {
                 }
             }
 
-            final int stationsCap = playerCount >= 12 ? 3 : 2;
+            final int stationsCap = 2;
             if (shuffledPositions.size() == 1) {
+                // Single-Position: bis zu 2 Stationen mit verschiedenen Drills derselben Position
+                // (BASIC + ADVANCED). User-Wunsch: Build-Up als Stationen, nicht 1 Drill.
                 final InfieldPosition pos = shuffledPositions.get(0);
-                final Drill chosen = pickAdvancedWithFallback(allDrills, pos, shuffledPositions, usedDrillIds, playerCount);
-                if (chosen != null && subFocusMinutes >= MIN_DRILL_MINUTES) {
-                    sections.add(buildDrillSection(chosen, "DRILL", subFocusMinutes, playerCount));
-                    usedDrillIds.add(chosen.getId());
+                final List<Drill> positionDrills = new ArrayList<>();
+                final List<Drill> advanced = new ArrayList<>(findAdvancedForPosition(allDrills, pos, usedDrillIds, playerCount));
+                Collections.shuffle(advanced);
+                final List<Drill> basics = new ArrayList<>(findBasicsForPosition(allDrills, pos, usedDrillIds, playerCount));
+                Collections.shuffle(basics);
+                if (!advanced.isEmpty()) positionDrills.add(advanced.get(0));
+                if (!basics.isEmpty() && positionDrills.size() < stationsCap) positionDrills.add(basics.get(0));
+                if (positionDrills.size() < stationsCap && advanced.size() > 1) positionDrills.add(advanced.get(1));
+                if (positionDrills.isEmpty()) {
+                    final Drill fallback = pickAdvancedWithFallback(allDrills, pos, shuffledPositions, usedDrillIds, playerCount);
+                    if (fallback != null) positionDrills.add(fallback);
+                }
+                if (positionDrills.size() >= 2 && subFocusMinutes >= MIN_DRILL_MINUTES) {
+                    if (basicsAdded > 0 && subFocusMinutes >= BREAK_MINUTES + 2 * MIN_DRILL_MINUTES) {
+                        sections.add(buildBreakSection("Trinken, nächste Übungen kurz erklären. Wer die Übung kennt, hilft beim Stationen aufbauen.", BREAK_MINUTES));
+                        subFocusMinutes -= BREAK_MINUTES;
+                    }
+                    sections.addAll(buildStationBlock(positionDrills, playerCount, subFocusMinutes, parallelGroupCounter));
+                    positionDrills.forEach(d -> usedDrillIds.add(d.getId()));
+                    parallelGroupCounter++;
+                    subFocusMinutes = 0;
+                } else if (!positionDrills.isEmpty() && subFocusMinutes >= MIN_DRILL_MINUTES) {
+                    final Drill only = positionDrills.get(0);
+                    sections.add(buildDrillSection(only, "DRILL", subFocusMinutes, playerCount));
+                    usedDrillIds.add(only.getId());
                     subFocusMinutes = 0;
                 }
             } else {
@@ -317,7 +371,7 @@ public class TrainingPlanGenerator {
     private List<TrainingPlanSection> buildStationBlock(final List<Drill> drills, final int playerCount,
                                                          final int totalMinutes, final int parallelGroup) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
-        final int maxStations = playerCount >= 12 ? 3 : 2;
+        final int maxStations = 2;
         final int numStations = Math.min(drills.size(), Math.min(maxStations, Math.max(2, playerCount / IDEAL_GROUP_SIZE)));
         final int minPerGroup = playerCount / numStations;
         final int maxPerGroup = (int) Math.ceil((double) playerCount / numStations);
