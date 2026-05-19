@@ -183,9 +183,18 @@ export function GameDayPlanner() {
     if (!newPlayerEntry) handleAddPlayer(player)
     lineup.setPosition(player.id, position)
 
-    // Bisheriger Belegt-Spieler verschieben: bei Tausch auf alte Pos, sonst Batting-only
+    // Bisheriger Belegt-Spieler verschieben:
+    // - aus Feld (newPlayerOldPosition gesetzt): Positions-Tausch
+    // - aus Lineup batting-only: bisheriger wird batting-only
+    // - aus Pool/Bank: bisheriger geht auf Bank (raus aus Lineup)
     if (currentEntry && currentEntry.player.id !== player.id) {
-      lineup.setPosition(currentEntry.player.id, newPlayerOldPosition ?? '')
+      if (newPlayerOldPosition) {
+        lineup.setPosition(currentEntry.player.id, newPlayerOldPosition)
+      } else if (newPlayerEntry) {
+        lineup.setPosition(currentEntry.player.id, '')
+      } else {
+        lineup.removePlayer(currentEntry.player.id)
+      }
     }
   }
 
