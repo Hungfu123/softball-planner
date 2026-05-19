@@ -179,23 +179,22 @@ export function GameDayPlanner() {
     const currentEntry = lineup.entries.find(e => e.position === position)
     const newPlayerEntry = lineup.entries.find(e => e.player.id === player.id)
     const newPlayerOldPosition = newPlayerEntry?.position ?? null
+    const replacingDifferentPlayer = !!currentEntry && currentEntry.player.id !== player.id
+
+    // Bisherigen Belegt-Spieler ZUERST verschieben/entfernen,
+    // damit bei vollem Lineup (10/10) ein Pool-Pick noch Platz findet.
+    if (replacingDifferentPlayer) {
+      if (newPlayerOldPosition) {
+        lineup.setPosition(currentEntry!.player.id, newPlayerOldPosition)
+      } else if (newPlayerEntry) {
+        lineup.setPosition(currentEntry!.player.id, '')
+      } else {
+        lineup.removePlayer(currentEntry!.player.id)
+      }
+    }
 
     if (!newPlayerEntry) handleAddPlayer(player)
     lineup.setPosition(player.id, position)
-
-    // Bisheriger Belegt-Spieler verschieben:
-    // - aus Feld (newPlayerOldPosition gesetzt): Positions-Tausch
-    // - aus Lineup batting-only: bisheriger wird batting-only
-    // - aus Pool/Bank: bisheriger geht auf Bank (raus aus Lineup)
-    if (currentEntry && currentEntry.player.id !== player.id) {
-      if (newPlayerOldPosition) {
-        lineup.setPosition(currentEntry.player.id, newPlayerOldPosition)
-      } else if (newPlayerEntry) {
-        lineup.setPosition(currentEntry.player.id, '')
-      } else {
-        lineup.removePlayer(currentEntry.player.id)
-      }
-    }
   }
 
   const handlePositionClear = (position: string) => {
