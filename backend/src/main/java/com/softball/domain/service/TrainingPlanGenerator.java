@@ -136,9 +136,8 @@ public class TrainingPlanGenerator {
             remainingMinutes -= gameMinutes;
         }
 
-        // --- Pausen reservieren: vor Batting + optional vor Spiel ---
-        // Pause nach Warmup wird aus Drill-Zeit genommen (nur wenn genug Drill-Zeit vorhanden)
-        final int reservedBreaks = 1 + (gameMinutes > 0 ? 1 : 0);
+        // --- Pausen reservieren: nur eine vor Batting (keine Pause vor Spiel) ---
+        final int reservedBreaks = 1;
         remainingMinutes -= reservedBreaks * BREAK_MINUTES;
 
         // --- SCHRITT 3: Batting reservieren ---
@@ -353,9 +352,8 @@ public class TrainingPlanGenerator {
             sections.add(buildDrillSection(hittingDrill, "BATTING", actualBattingMinutes, playerCount));
         }
 
-        // --- SCHRITT 6: Pause + Spiel ---
+        // --- SCHRITT 6: Spiel (keine Pause nach Batting — direkt ins Spiel) ---
         if (gameMinutes > 0) {
-            sections.add(buildBreakSection("Trinken. Bases aufstellen, Teams einteilen."));
             sections.add(buildGameSection(playerCount, gameMinutes));
         }
 
