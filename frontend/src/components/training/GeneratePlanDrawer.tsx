@@ -13,7 +13,6 @@ type Props = {
 }
 
 const FOCUS_OPTIONS: { value: TrainingFocus; label: string }[] = [
-  { value: 'ALLROUND', label: 'Allround' },
   { value: 'WERFEN', label: 'Werfen' },
   { value: 'INFIELD_DEFENSE', label: 'Infield Defense' },
   { value: 'OUTFIELD', label: 'Outfield' },
@@ -36,7 +35,7 @@ function defaultDurationFor(dateStr?: string | null): number {
 export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, trainingDate, onGenerate }: Props) {
   const initialDuration = useMemo(() => defaultDurationFor(trainingDate), [trainingDate])
   const [playerCount, setPlayerCount] = useState(defaultPlayerCount || 10)
-  const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set(['ALLROUND']))
+  const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set())
   const [infieldPositions, setInfieldPositions] = useState<Set<InfieldPosition>>(new Set())
   const [durationMinutes, setDurationMinutes] = useState(initialDuration)
   const [submitting, setSubmitting] = useState(false)
@@ -44,7 +43,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   useEffect(() => {
     if (open) {
       setPlayerCount(defaultPlayerCount || 10)
-      setFocuses(new Set(['ALLROUND']))
+      setFocuses(new Set())
       setInfieldPositions(new Set())
       setDurationMinutes(initialDuration)
     }
@@ -52,12 +51,10 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
 
   const toggleFocus = (f: TrainingFocus) => {
     setFocuses(prev => {
-      if (f === 'ALLROUND') return new Set<TrainingFocus>(['ALLROUND'])
       const next = new Set(prev)
-      next.delete('ALLROUND')
       if (next.has(f)) next.delete(f)
       else next.add(f)
-      return next.size === 0 ? new Set<TrainingFocus>(['ALLROUND']) : next
+      return next
     })
   }
 
@@ -131,7 +128,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
 
         <div>
           <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Schwerpunkte</label>
-          <p className="text-[10px] text-navy-500 mb-2">Mehrere wählbar. Allround = alles.</p>
+          <p className="text-[10px] text-navy-500 mb-2">Mehrere wählbar. Leer = alle Schwerpunkte.</p>
           <div className="flex flex-wrap gap-1.5">
             {FOCUS_OPTIONS.map(opt => (
               <button

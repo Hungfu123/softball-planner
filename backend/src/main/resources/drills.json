@@ -15,7 +15,8 @@
     "hasImage": false,
     "pdfPage": 5,
     "rotation": "Alle machen gleichzeitig mit. Einer ruft die Kommandos.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "sprintubung-fielding-position",
@@ -29,7 +30,8 @@
     "hasImage": false,
     "pdfPage": 6,
     "rotation": "Alle machen gleichzeitig mit. Einer ruft \"Go\". Mehrere Runden pro Variante.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "viereck-drill-toss-wurf",
@@ -46,7 +48,8 @@
     "hasImage": true,
     "pdfPage": 7,
     "rotation": "Nach jeder Aktion rennt man zur nächsten Position. Alle durchlaufen alle Ecken. Optional bei mehr Spielern: mehrere Spieler pro Hütchen, jeder macht 2-3 Runden.",
-    "variants": "Beide Toss-Seiten mit Backhand-Toss ausführen. Oder Toss und Backhand tauschen."
+    "variants": "Beide Toss-Seiten mit Backhand-Toss ausführen. Oder Toss und Backhand tauschen.",
+    "complexity": "BASIC"
   },
   {
     "id": "backhand-toss",
@@ -63,7 +66,8 @@
     "hasImage": true,
     "pdfPage": 7,
     "rotation": "Abwechselnd tossen. Optional bei mehr Spielern: in einer Reihe aufstellen und rotieren.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "aufnehmen-sidewurf",
@@ -80,7 +84,8 @@
     "hasImage": true,
     "pdfPage": 8,
     "rotation": "Abwechselnd werfen. Optional bei mehr Spielern: in einer Reihe aufstellen und rotieren.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "hocke-wurf-partner",
@@ -97,7 +102,8 @@
     "hasImage": true,
     "pdfPage": 8,
     "rotation": "Abwechselnd werfen. Optional bei mehr Spielern: Paare bilden.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "grounder-fielding-basics",
@@ -115,7 +121,8 @@
     "hasImage": true,
     "pdfPage": 9,
     "rotation": "Fielder und Werfer tauschen nach jedem Durchgang (z.B. 5 Grounder pro Variante).",
-    "variants": "Werfer variiert Geschwindigkeit und Platzierung. Oder: Fielder weiß nicht welche Variante kommt."
+    "variants": "Werfer variiert Geschwindigkeit und Platzierung. Oder: Fielder weiß nicht welche Variante kommt.",
+    "complexity": "BASIC"
   },
   {
     "id": "lead-nehmen",
@@ -131,7 +138,8 @@
     "hasImage": true,
     "pdfPage": 12,
     "rotation": "Alle machen gleichzeitig mit. Der Rufer macht selbst mit.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "base-coach-signale",
@@ -147,7 +155,8 @@
     "hasImage": true,
     "pdfPage": 13,
     "rotation": "Runner und Base-Coach tauschen. Optional bei mehr Spielern: mehrere Runner nacheinander.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "baserunning-diamond",
@@ -164,7 +173,8 @@
     "hasImage": false,
     "pdfPage": null,
     "rotation": "Nächster Runner startet sobald der vorherige die 2nd Base erreicht hat. Base-Coaches tauschen nach einer Runde.",
-    "variants": "Mit Zeitdruck: Stopuhr laufen lassen, wer schafft den schnellsten Diamond? Oder: Coach entscheidet spontan — Runner weiß vorher nicht ob Single, Double oder Triple."
+    "variants": "Mit Zeitdruck: Stopuhr laufen lassen, wer schafft den schnellsten Diamond? Oder: Coach entscheidet spontan — Runner weiß vorher nicht ob Single, Double oder Triple.",
+    "complexity": "ADVANCED"
   },
   {
     "id": "steal-1st-2nd",
@@ -184,7 +194,8 @@
     "hasImage": true,
     "pdfPage": 13,
     "rotation": "Mehrere Runner stellen sich an 1st Base an. Nach jedem Steal ans Ende der Reihe.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "agility-ladder-beinubungen",
@@ -200,7 +211,8 @@
     "hasImage": true,
     "pdfPage": 14,
     "rotation": "Jeder Spieler macht alle 5 Übungen nacheinander durch die Leiter.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "catcher-relay-home-1b",
@@ -218,7 +230,8 @@
     "hasImage": true,
     "pdfPage": 15,
     "rotation": "Infielder-Position rotiert. Catcher und 1B tauschen nach einer Runde.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "catcher-quick-throw-1b",
@@ -236,7 +249,8 @@
     "hasImage": true,
     "pdfPage": 16,
     "rotation": "Catcher und 1B tauschen nach jedem Durchgang.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "catcher-coming-2nd",
@@ -255,7 +269,8 @@
     "hasImage": true,
     "pdfPage": 16,
     "rotation": "Catcher, Pitcher und Infielder rotieren.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "catcher-coming-3rd",
@@ -274,7 +289,8 @@
     "hasImage": true,
     "pdfPage": 17,
     "rotation": "Catcher, Pitcher und 3B rotieren.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "1b-footwork-stretch",
@@ -651,7 +667,8 @@
     "hasImage": true,
     "pdfPage": 30,
     "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
-    "variants": "Advanced: Werfer zeigt erst rechts, dann schnell links (Richtungswechsel). Oder: Werfer wirft ohne vorher zu zeigen (Reaktion auf Flugbahn)."
+    "variants": "Advanced: Werfer zeigt erst rechts, dann schnell links (Richtungswechsel). Oder: Werfer wirft ohne vorher zu zeigen (Reaktion auf Flugbahn).",
+    "complexity": "BASIC"
   },
   {
     "id": "outfield-drop-step",
@@ -668,7 +685,8 @@
     "hasImage": true,
     "pdfPage": 30,
     "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "outfield-kommunikation-backup",
@@ -687,7 +705,8 @@
     "hasImage": true,
     "pdfPage": 31,
     "rotation": "OF1 und OF2 tauschen. Cutoff und Schlagmann rotieren.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "outfield-viereck-flyout",
@@ -705,7 +724,8 @@
     "hasImage": true,
     "pdfPage": 32,
     "rotation": "OF und Werfer tauschen nach jedem Durchgang.",
-    "variants": "10 Bälle hintereinander für mehr Kondition."
+    "variants": "10 Bälle hintereinander für mehr Kondition.",
+    "complexity": "BASIC"
   },
   {
     "id": "outfield-viereck-kommunikation",
@@ -724,7 +744,8 @@
     "hasImage": true,
     "pdfPage": 32,
     "rotation": "Beide Outfielder und Werfer rotieren. CF-Rolle wechselt.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "relay-einfach",
@@ -741,7 +762,8 @@
     "hasImage": true,
     "pdfPage": 33,
     "rotation": "Alle rotieren eine Position weiter nach jedem Durchgang.",
-    "variants": "Zu viert: einen vierten Spieler ans Ende stellen. Distanz vergrößern für stärkere Würfe."
+    "variants": "Zu viert: einen vierten Spieler ans Ende stellen. Distanz vergrößern für stärkere Würfe.",
+    "complexity": "BASIC"
   },
   {
     "id": "infield-wurf-home-runner-3rd",
@@ -828,7 +850,8 @@
     "hasImage": true,
     "pdfPage": 36,
     "rotation": "Outfielder, Cutoff und Infielder rotieren nach jeder Runde. Bei >12 Spielern: 2 Gruppen parallel, jede mit eigenem Outfield-Sektor.",
-    "variants": "Bei großem Kader (>12 Spieler) in 2 Gruppen aufteilen — z.B. LF-Seite und RF-Seite parallel. Jede Gruppe braucht mindestens Outfielder + Cutoff + Ziel-Spieler. Halbiert Wartezeit und verdoppelt die Wiederholungen pro Spieler."
+    "variants": "Bei großem Kader (>12 Spieler) in 2 Gruppen aufteilen — z.B. LF-Seite und RF-Seite parallel. Jede Gruppe braucht mindestens Outfielder + Cutoff + Ziel-Spieler. Halbiert Wartezeit und verdoppelt die Wiederholungen pro Spieler.",
+    "complexity": "ADVANCED"
   },
   {
     "id": "rundown",
@@ -874,7 +897,8 @@
     "hasImage": false,
     "pdfPage": 38,
     "rotation": "Nach festgelegter Zeit rotieren alle zur nächsten Station.",
-    "variants": null
+    "variants": null,
+    "complexity": "BASIC"
   },
   {
     "id": "loading-tee-fortgeschritten",
@@ -893,7 +917,8 @@
     "hasImage": true,
     "pdfPage": 39,
     "rotation": "Batter und Pitcher tauschen nach festgelegter Anzahl Schläge.",
-    "variants": null
+    "variants": null,
+    "complexity": "ADVANCED"
   },
   {
     "id": "knie-drill-huetchen-gasse",
@@ -912,7 +937,8 @@
     "hasImage": false,
     "rotation": "Batter macht 8–10 Schläge, dann tauschen Batter und Tosser/Helfer.",
     "variants": "Gasse enger setzen für mehr Präzision. Statt Tee live tossen lassen (Front-Toss aus geringer Distanz). Auch im Stand machbar — aber Knie-Variante isoliert die Rotation am stärksten.",
-    "pdfPage": 40
+    "pdfPage": 40,
+    "complexity": "BASIC"
   },
   {
     "id": "rear-toss-strikezone",
@@ -930,7 +956,8 @@
     "hasImage": false,
     "rotation": "Batter macht 15–20 Schläge, dann tauschen Batter und Tosser.",
     "variants": "Statt Bälle auch Whiffleballs verwenden (sicherer, langsamer, gut für Anfänger). Tosser kann auch leicht seitlich vor dem Batter werfen, wenn das hintere Werfen unsicher ist — Hauptsache, die Tempo-Anpassung bleibt das Kernprinzip.",
-    "pdfPage": 41
+    "pdfPage": 41,
+    "complexity": "BASIC"
   },
   {
     "id": "partner-wurf-footwork",
@@ -948,7 +975,8 @@
     "hasImage": false,
     "rotation": "Pro Phase je 5–8 Würfe, dann zur nächsten Phase. Partner werfen sich abwechselnd zu.",
     "variants": "Distanz variieren: kurz starten (5–7 m), später ausweiten. Tempo erst langsam, dann schneller. Phase 3 später direkt aus Empfangs-Bewegung üben (Partner wirft den Ball, Werfer fängt mit Handschuh unten und macht sofort den 2-Step-Pivot).",
-    "pdfPage": 9
+    "pdfPage": 9,
+    "complexity": "BASIC"
   },
   {
     "id": "partner-fly-balls",
@@ -967,7 +995,8 @@
     "hasImage": false,
     "rotation": "Beide werfen sich abwechselnd Flys zu. Dauer: 3–5 Minuten oder bis 15–20 Bälle gefangen.",
     "variants": "Distanz erhöhen für längere Bälle. Bewusst schwierig werfen: leicht versetzt, sodass der Fänger immer ein paar Schritte laufen muss. Für Outfielder: auch Bälle nach hinten werfen (Drop-Step üben).",
-    "pdfPage": 10
+    "pdfPage": 10,
+    "complexity": "BASIC"
   },
   {
     "id": "partner-grounder-im-laufen",
@@ -986,7 +1015,8 @@
     "hasImage": false,
     "rotation": "Beide üben abwechselnd. Nach 5–8 Bällen pro Spieler tauschen — Werfer wird Fielder, Fielder wird Werfer.",
     "variants": "Härter rollen, sodass weniger Zeit zum Aufnehmen bleibt. Längere Distanz für Outfielder (Bälle als Linedrives oder One-Hopper). Wurf-Ziel variieren — manchmal hoch werfen lassen, sodass der Partner Flyball annimmt.",
-    "pdfPage": 11
+    "pdfPage": 11,
+    "complexity": "BASIC"
   },
   {
     "id": "partner-short-hop-outfield",
@@ -1005,7 +1035,8 @@
     "hasImage": false,
     "rotation": "Beide werfen sich abwechselnd Short-Hops zu. Dauer: 3–5 Minuten oder bis 15–20 Bälle pro Spieler.",
     "variants": "Punkt variieren — mal direkt vor den Füßen, mal 2 m vor dem Fielder, mal seitlich versetzt (Forehand/Backhand-Short-Hop). Tempo steigern. Distanz erhöhen für längere Aufprall-Wege. Auch absichtlich tricky werfen (uneven Hops simulieren).",
-    "pdfPage": 12
+    "pdfPage": 12,
+    "complexity": "BASIC"
   },
   {
     "id": "2b-hocke-wurf-1b",
