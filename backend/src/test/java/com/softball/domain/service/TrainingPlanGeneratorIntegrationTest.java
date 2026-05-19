@@ -194,6 +194,15 @@ class TrainingPlanGeneratorIntegrationTest {
         assertThat(agilityFound).as("Agility Ladder reachable").isTrue();
     }
 
+    @Test
+    void realistisches_120min_relay_12_spieler() {
+        final TrainingPlanContent result = generator.generate(realCatalog, 12, "RELAY", 120);
+        final List<TrainingPlanSection> sections = result.getSections();
+        System.out.println("\n=== 120 min | RELAY | 12 Spieler ===");
+        printPlan(sections);
+        assertThat(sections.get(0).getSectionType()).isEqualTo("WARMUP");
+    }
+
     private void printPlan(final List<TrainingPlanSection> sections) {
         int startMin = 0;
         for (final TrainingPlanSection s : sections) {
