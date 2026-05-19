@@ -141,7 +141,7 @@ class TrainingPlanGeneratorIntegrationTest {
     }
 
     @Test
-    void subFocus_eine_position_deep_dive() {
+    void subFocus_eine_position_baut_stationen() {
         final TrainingPlanContent result = generator.generate(
             realCatalog, 10, "INFIELD_DEFENSE", 120,
             java.util.List.of(com.softball.domain.model.InfieldPosition.SS)
@@ -152,8 +152,9 @@ class TrainingPlanGeneratorIntegrationTest {
         final List<TrainingPlanSection> drills = sections.stream()
             .filter(s -> "DRILL".equals(s.getSectionType())).toList();
         assertThat(drills).isNotEmpty();
-        // Stations-Block bei 1 Position = sequenziell, kein parallelGroup
-        assertThat(drills.stream().noneMatch(s -> s.getParallelGroup() != null)).isTrue();
+        // Build-Up: BASICS sequentiell + Station-Block für 2-3 SS-Drills
+        final long stations = drills.stream().filter(s -> s.getParallelGroup() != null).count();
+        assertThat(stations).isGreaterThanOrEqualTo(2);
     }
 
     @Test

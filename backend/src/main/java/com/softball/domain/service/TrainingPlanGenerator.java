@@ -99,9 +99,10 @@ public class TrainingPlanGenerator {
         for (final String f : focusesForPartner) {
             partnerPreferred.addAll(PARTNER_PREFERENCE_MAP.getOrDefault(f, List.of()));
         }
+        final Set<DrillCategory> partnerPositionCats = new HashSet<>();
         if (infieldPositions != null) {
             for (final InfieldPosition pos : infieldPositions) {
-                partnerPreferred.add(pos.toDrillCategory());
+                partnerPositionCats.add(pos.toDrillCategory());
             }
         }
         final List<Drill> partnerRoutineDrills = new ArrayList<>(allDrills.stream()
@@ -110,11 +111,15 @@ public class TrainingPlanGenerator {
                 .filter(d -> !d.getId().equals(WARMUP_DRILL_ID))
                 .toList());
         Collections.shuffle(partnerRoutineDrills);
-        // Stable-Sort nach Match-Count (höhere zuerst). Shuffle innerhalb Tier durch initialen shuffle erhalten.
+        // Stable-Sort: Position-Cat-Match dreifach gewichtet, Focus-Cat-Match einfach.
+        // Damit bei z.B. SS-Sub-Focus Partner-Drills mit SS-Cat (backhand-toss, hocke-wurf-partner)
+        // vor generischen FIELDING/THROWING-Partnern (partner-fly-balls) landen.
         partnerRoutineDrills.sort((a, b) -> {
-            final long matchA = a.getCategories().stream().filter(partnerPreferred::contains).count();
-            final long matchB = b.getCategories().stream().filter(partnerPreferred::contains).count();
-            return Long.compare(matchB, matchA);
+            final long sa = a.getCategories().stream()
+                    .mapToLong(c -> partnerPositionCats.contains(c) ? 3 : (partnerPreferred.contains(c) ? 1 : 0)).sum();
+            final long sb = b.getCategories().stream()
+                    .mapToLong(c -> partnerPositionCats.contains(c) ? 3 : (partnerPreferred.contains(c) ? 1 : 0)).sum();
+            return Long.compare(sb, sa);
         });
         final int numPartnerRoutine = Math.min(MAX_PARTNER_ROUTINE_DRILLS, partnerRoutineDrills.size());
         for (int i = 0; i < numPartnerRoutine; i++) {
