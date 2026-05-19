@@ -402,6 +402,11 @@ public class TrainingPlanGenerator {
 
     // ─── Sequentielle Drills ───
 
+    // Drills die bei Allokation eine Mindest-Dauer brauchen (komplexe Multi-Position-Drills).
+    private static final Map<String, Integer> DRILL_MIN_MINUTES = Map.of(
+            "relay-cutoff", 40
+    );
+
     private List<TrainingPlanSection> buildSequentialDrills(final List<Drill> drills, final int playerCount,
                                                              final int totalMinutes) {
         final List<TrainingPlanSection> sections = new ArrayList<>();
@@ -410,8 +415,11 @@ public class TrainingPlanGenerator {
         int usedMinutes = 0;
 
         for (int i = 0; i < numDrills; i++) {
-            final int minutes = (i == numDrills - 1) ? totalMinutes - usedMinutes : minutesPerDrill;
-            sections.add(buildDrillSection(drills.get(i), "DRILL", minutes, playerCount));
+            final Drill drill = drills.get(i);
+            final int defaultMinutes = (i == numDrills - 1) ? totalMinutes - usedMinutes : minutesPerDrill;
+            final Integer hardMin = DRILL_MIN_MINUTES.get(drill.getId());
+            final int minutes = hardMin != null ? Math.max(defaultMinutes, hardMin) : defaultMinutes;
+            sections.add(buildDrillSection(drill, "DRILL", minutes, playerCount));
             usedMinutes += minutes;
         }
 
