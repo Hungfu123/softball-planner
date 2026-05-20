@@ -5,6 +5,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown, Boxes } from 'lucide-react'
+import { BatIcon } from '@/icons'
 import * as api from '@/api/client'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
@@ -23,6 +24,7 @@ function iconFor(sectionType: string | null) {
   if (t === 'DRILL') return { Icon: Target, color: 'text-navy-700' }
   if (t === 'BREAK') return { Icon: Coffee, color: 'text-navy-500' }
   if (t === 'GAME' || t === 'SCRIMMAGE') return { Icon: Trophy, color: 'text-emerald-700' }
+  if (t === 'BATTING') return { Icon: BatIcon as typeof Flame, color: 'text-softball-red-700' }
   return { Icon: Circle, color: 'text-navy-500' }
 }
 

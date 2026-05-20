@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes } from 'lucide-react'
+import { BatIcon } from '@/icons'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 
 type Props = {
@@ -42,6 +43,13 @@ function styleFor(sectionType: string | null): SectionStyle {
     iconColor: 'text-navy-500',
     border: 'border-cream-300',
     label: 'Pause',
+  }
+  if (t === 'BATTING') return {
+    Icon: BatIcon as typeof Flame,
+    bg: 'bg-softball-red-50',
+    iconColor: 'text-softball-red-700',
+    border: 'border-softball-red-200',
+    label: 'Batting',
   }
   if (t === 'GAME' || t === 'SCRIMMAGE') return {
     Icon: Trophy,
