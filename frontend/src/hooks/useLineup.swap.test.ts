@@ -6,8 +6,8 @@ import type { Player } from '@/types'
 const mkPlayer = (id: number, name: string): Player => ({
   id,
   name,
+  regular: false,
   defaultBattingOrder: null,
-  defaultPosition: null,
 })
 
 describe('useLineup — swap operations', () => {
