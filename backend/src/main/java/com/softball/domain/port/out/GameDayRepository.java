@@ -10,6 +10,7 @@ public interface GameDayRepository {
     Optional<GameDay> findById(Long id);
     Optional<GameDay> findByIdWithPlayers(Long id);
     Optional<GameDay> findByIdWithGames(Long id);
+    Optional<GameDay> findByIdWithGamesAndPlayers(Long id);
     GameDay save(GameDay gameDay);
     void deleteById(Long id);
     boolean existsBySeasonAndDate(Long seasonId, LocalDate date);

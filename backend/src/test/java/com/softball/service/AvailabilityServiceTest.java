@@ -57,7 +57,7 @@ class AvailabilityServiceTest {
 
     @Test
     void setAvailablePlayers_gameDayNotFound_throws() {
-        when(gameDayRepository.findByIdWithPlayers(99L)).thenReturn(Optional.empty());
+        when(gameDayRepository.findByIdWithGamesAndPlayers(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> availabilityService.setAvailablePlayers(99L, List.of(1L)))
             .isInstanceOf(ResourceNotFoundException.class);
@@ -65,7 +65,7 @@ class AvailabilityServiceTest {
 
     @Test
     void setAvailablePlayers_playerNotFound_throws() {
-        when(gameDayRepository.findByIdWithPlayers(10L)).thenReturn(Optional.of(gameDay));
+        when(gameDayRepository.findByIdWithGamesAndPlayers(10L)).thenReturn(Optional.of(gameDay));
         when(playerRepository.findAllById(List.of(1L, 99L))).thenReturn(List.of(player1));
 
         assertThatThrownBy(() -> availabilityService.setAvailablePlayers(10L, List.of(1L, 99L)))
@@ -75,7 +75,7 @@ class AvailabilityServiceTest {
 
     @Test
     void setAvailablePlayers_noRemovals_noCascade() {
-        when(gameDayRepository.findByIdWithPlayers(10L)).thenReturn(Optional.of(gameDay));
+        when(gameDayRepository.findByIdWithGamesAndPlayers(10L)).thenReturn(Optional.of(gameDay));
         when(playerRepository.findAllById(List.of(1L, 2L, 3L))).thenReturn(List.of(player1, player2, player3));
         when(gameDayRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -93,7 +93,7 @@ class AvailabilityServiceTest {
             final GameDay gameDayWithGames = new GameDay(10L, LocalDate.now(), "Spieltag 1", "Feld A");
             gameDayWithGames.setGames(List.of(game1));
 
-            when(gameDayRepository.findByIdWithPlayers(10L)).thenReturn(Optional.of(gameDay));
+            when(gameDayRepository.findByIdWithGamesAndPlayers(10L)).thenReturn(Optional.of(gameDay));
             when(gameDayRepository.findByIdWithGames(10L)).thenReturn(Optional.of(gameDayWithGames));
             when(playerRepository.findAllById(anyList())).thenReturn(List.of(player1));
             when(gameDayRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));

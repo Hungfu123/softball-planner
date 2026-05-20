@@ -60,6 +60,11 @@ public class GameDayRepositoryAdapter implements GameDayRepository {
     }
 
     @Override
+    public Optional<GameDay> findByIdWithGamesAndPlayers(final Long id) {
+        return repo.findByIdWithGamesAndPlayers(id).map(mapper::toDomainWithGamesAndPlayers);
+    }
+
+    @Override
     public GameDay save(final GameDay gameDay) {
         GameDayEntity savedEntity;
 

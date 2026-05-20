@@ -35,7 +35,10 @@ public class AvailabilityService {
     @Transactional
     public GameDay setAvailablePlayers(final Long gameDayId, final List<Long> playerIds) {
         log.info("Verfuegbare Spieler setzen fuer Spieltag {}: {} Spieler", gameDayId, playerIds.size());
-        final GameDay gameDay = gameDayRepository.findByIdWithPlayers(gameDayId)
+        // Load games AND players: syncGames in the persistence mapper would treat an
+        // empty domain games list as "delete all entity games" via orphanRemoval, so we
+        // must keep the games loaded when saving.
+        final GameDay gameDay = gameDayRepository.findByIdWithGamesAndPlayers(gameDayId)
             .orElseThrow(() -> new ResourceNotFoundException("GameDay", gameDayId));
         final List<Player> players = playerRepository.findAllById(playerIds);
         if (players.size() != playerIds.size()) {

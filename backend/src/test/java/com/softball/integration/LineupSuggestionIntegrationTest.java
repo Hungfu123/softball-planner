@@ -87,10 +87,10 @@ class LineupSuggestionIntegrationTest {
     }
 
     @Test
-    void suggest_returnsAutoPositionsOnly() throws Exception {
+    void suggest_returnsAllNineAutoPositions() throws Exception {
         final MvcResult result = mockMvc.perform(get("/api/games/" + gameId1 + "/lineup/suggest"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(7))
+            .andExpect(jsonPath("$.length()").value(9))
             .andReturn();
 
         final var json = objectMapper.readTree(result.getResponse().getContentAsString());
@@ -98,18 +98,18 @@ class LineupSuggestionIntegrationTest {
         for (final var entry : json) {
             positions.add(entry.get("position").asText());
         }
-        // Should only contain the 7 auto-fill positions
+        // Should contain all 9 auto-fill positions (P + C + 7 field positions)
         org.assertj.core.api.Assertions.assertThat(positions)
-            .containsExactlyInAnyOrder("1B", "2B", "3B", "SS", "LF", "CF", "RF");
+            .containsExactlyInAnyOrder("P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
     }
 
     @Test
-    void suggest_respectsManualPositions() throws Exception {
-        // Set player1 as P (manual position — not re-shuffled)
+    void suggest_respectsManualEhPosition() throws Exception {
+        // EH is the only manual position — set player1 as EH
         mockMvc.perform(put("/api/games/" + gameId1 + "/lineup")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(List.of(
-                Map.of("playerId", players.get(0).getId(), "position", "P", "battingOrder", 1)
+                Map.of("playerId", players.get(0).getId(), "position", "EH", "battingOrder", 1)
             ))));
 
         final MvcResult result = mockMvc.perform(get("/api/games/" + gameId1 + "/lineup/suggest"))
@@ -118,7 +118,7 @@ class LineupSuggestionIntegrationTest {
 
         final var json = objectMapper.readTree(result.getResponse().getContentAsString());
 
-        // Should contain P player + 7 auto positions = 8 total
+        // Should contain EH player (manual) + 9 auto positions = 10 total
         final Set<String> positions = new HashSet<>();
         boolean hasManualPlayer = false;
         for (final var entry : json) {
@@ -127,11 +127,11 @@ class LineupSuggestionIntegrationTest {
             }
             if (entry.get("playerId").asLong() == players.get(0).getId()) {
                 hasManualPlayer = true;
-                org.assertj.core.api.Assertions.assertThat(entry.get("position").asText()).isEqualTo("P");
+                org.assertj.core.api.Assertions.assertThat(entry.get("position").asText()).isEqualTo("EH");
             }
         }
         org.assertj.core.api.Assertions.assertThat(hasManualPlayer).isTrue();
-        org.assertj.core.api.Assertions.assertThat(positions).contains("P", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
+        org.assertj.core.api.Assertions.assertThat(positions).contains("EH", "P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
     }
 
     @Test
@@ -216,10 +216,10 @@ class LineupSuggestionIntegrationTest {
         mockMvc.perform(post("/api/gamedays/" + gameDayId + "/lineup/suggest-all"))
             .andExpect(status().isOk());
 
-        // Game 1 should be re-shuffled — still 7 entries with all auto positions
+        // Game 1 should be re-shuffled — 9 entries with all auto positions (P + C + 7 field)
         final MvcResult g1 = mockMvc.perform(get("/api/games/" + gameId1 + "/lineup"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(7))
+            .andExpect(jsonPath("$.length()").value(9))
             .andReturn();
 
         final var g1Json = objectMapper.readTree(g1.getResponse().getContentAsString());
@@ -228,7 +228,7 @@ class LineupSuggestionIntegrationTest {
             g1Positions.add(entry.get("position").asText());
         }
         org.assertj.core.api.Assertions.assertThat(g1Positions)
-            .containsExactlyInAnyOrder("1B", "2B", "3B", "SS", "LF", "CF", "RF");
+            .containsExactlyInAnyOrder("P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
 
         // Game 2 should also be filled
         mockMvc.perform(get("/api/games/" + gameId2 + "/lineup"))
@@ -300,24 +300,26 @@ class LineupSuggestionIntegrationTest {
 
     @Test
     void suggest_allAutoPositionsFilled_reShuffles() throws Exception {
-        // Fill all 7 auto positions
+        // Fill all 9 auto positions (P + C + 7 field)
         final List<Map<String, Object>> lineup = List.of(
-            Map.of("playerId", players.get(0).getId(), "position", "1B", "battingOrder", 1),
-            Map.of("playerId", players.get(1).getId(), "position", "2B", "battingOrder", 2),
-            Map.of("playerId", players.get(2).getId(), "position", "3B", "battingOrder", 3),
-            Map.of("playerId", players.get(3).getId(), "position", "SS", "battingOrder", 4),
-            Map.of("playerId", players.get(4).getId(), "position", "LF", "battingOrder", 5),
-            Map.of("playerId", players.get(5).getId(), "position", "CF", "battingOrder", 6),
-            Map.of("playerId", players.get(6).getId(), "position", "RF", "battingOrder", 7)
+            Map.of("playerId", players.get(0).getId(), "position", "P", "battingOrder", 1),
+            Map.of("playerId", players.get(1).getId(), "position", "C", "battingOrder", 2),
+            Map.of("playerId", players.get(2).getId(), "position", "1B", "battingOrder", 3),
+            Map.of("playerId", players.get(3).getId(), "position", "2B", "battingOrder", 4),
+            Map.of("playerId", players.get(4).getId(), "position", "3B", "battingOrder", 5),
+            Map.of("playerId", players.get(5).getId(), "position", "SS", "battingOrder", 6),
+            Map.of("playerId", players.get(6).getId(), "position", "LF", "battingOrder", 7),
+            Map.of("playerId", players.get(7).getId(), "position", "CF", "battingOrder", 8),
+            Map.of("playerId", players.get(8).getId(), "position", "RF", "battingOrder", 9)
         );
         mockMvc.perform(put("/api/games/" + gameId1 + "/lineup")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(lineup)));
 
-        // Suggest should re-shuffle — still 7 entries with all 7 auto positions
+        // Suggest should re-shuffle — 9 entries with all 9 auto positions
         final MvcResult result = mockMvc.perform(get("/api/games/" + gameId1 + "/lineup/suggest"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(7))
+            .andExpect(jsonPath("$.length()").value(9))
             .andReturn();
 
         final var json = objectMapper.readTree(result.getResponse().getContentAsString());
@@ -326,12 +328,12 @@ class LineupSuggestionIntegrationTest {
             positions.add(entry.get("position").asText());
         }
         org.assertj.core.api.Assertions.assertThat(positions)
-            .containsExactlyInAnyOrder("1B", "2B", "3B", "SS", "LF", "CF", "RF");
+            .containsExactlyInAnyOrder("P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
     }
 
     @Test
     void suggest_tooFewPlayers_fillsAsManyAsPossible() throws Exception {
-        // Only make 3 players available (not enough for 7 positions)
+        // Only make 3 players available (not enough for 9 positions)
         mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(Map.of("playerIds",
