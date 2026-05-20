@@ -286,16 +286,11 @@ export function PlayerPool({
             </button>
           </div>
           {/* Ein einziger Header mit Spalten-Labels — navy-900 für 30%-Palette */}
-          <div className="grid grid-cols-[6rem_3rem_3.5rem_1.75rem] gap-3 px-3 py-2 bg-navy-900 text-white text-[10px] font-bold uppercase tracking-wider">
-            <span>Spieler</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_3.5rem] gap-3 px-3 py-2 bg-navy-900 text-white text-[10px] font-bold uppercase tracking-wider">
+            <span className="truncate">Spieler</span>
             <span className="text-left" title={battingScope === 'year' ? 'Batting Average dieses Jahres (alle Saisons)' : 'Batting Average dieser Saison'}>AVG</span>
-            <span className="text-left" title="Position(en) in diesem Spieltag">Pos.</span>
-            <span className="text-center" title="Einsätze dieser Saison">Sp.</span>
           </div>
           {allSorted.map(player => {
-            const st = statsMap.get(player.id)
-            const gc = st?.gameCount ?? 0
-            const posStr = formatPositions(st?.positions?.map(p => p.position) ?? [])
             const bs = battingMap.get(player.id)
             const avgNum = bs && bs.atBats > 0 ? Number(bs.battingAverage) : null
             const avgStr = avgNum != null ? formatAvg(avgNum) : null
@@ -304,7 +299,7 @@ export function PlayerPool({
             return (
               <div
                 key={player.id}
-                className="grid grid-cols-[6rem_3rem_3.5rem_1.75rem] gap-3 items-center px-3 py-2 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
+                className="grid grid-cols-[minmax(0,1fr)_3.5rem] gap-3 items-center px-3 py-2 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
               >
                 <span className="text-sm text-gray-800 truncate">
                   {player.name}
@@ -315,14 +310,6 @@ export function PlayerPool({
                 }`}
                       title={avgStr ? `${bs?.hits}/${bs?.atBats} Treffer${isTop ? ' · Top-AVG' : ''}` : 'Noch keine At-Bats'}>
                   {avgStr ?? '—'}
-                </span>
-
-                <span className="text-left text-[11px] font-display tabular-nums text-gray-500 truncate">
-                  {posStr || <span className="text-gray-300">—</span>}
-                </span>
-
-                <span className={`text-xs font-display tabular-nums font-bold text-center rounded-full py-0.5 ${gameCountBadge(gc)}`}>
-                  {gc}
                 </span>
               </div>
             )
