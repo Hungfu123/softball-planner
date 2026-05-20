@@ -615,6 +615,8 @@ export function GameDayPlanner() {
                       onMoveUp={lineup.moveUp}
                       onMoveDown={lineup.moveDown}
                       onReorder={lineup.reorder}
+                      onSwapWithPool={(rowPlayerId, newPlayer) => lineup.replacePlayer(rowPlayerId, newPlayer)}
+                      onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
                       onClear={() => setShowClearConfirm(true)}
                       onAutoGenerate={triggerAutoGenerate}
                       autoGenerateLoading={autoSingleLoading}

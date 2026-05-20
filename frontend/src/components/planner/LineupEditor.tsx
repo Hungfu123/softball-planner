@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -12,6 +13,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { LineupRow } from './LineupRow'
+import { LineupRowSwapSheet } from './LineupRowSwapSheet'
 import type { LocalLineupEntry, Player } from '@/types'
 import { POSITIONS, FIELD_POSITIONS } from '@/types'
 import { CrossBones, TrashBin, DiceIcon } from '@/icons'
@@ -25,6 +27,8 @@ interface Props {
   onMoveUp: (index: number) => void
   onMoveDown: (index: number) => void
   onReorder: (oldIndex: number, newIndex: number) => void
+  onSwapWithPool: (rowPlayerId: number, poolPlayer: Player) => void
+  onSwapWithLineup: (rowPlayerId: number, otherRowPlayerId: number) => void
   onClear?: () => void
   onCopyOtherGame?: () => void
   onAutoGenerate?: () => void
@@ -37,12 +41,16 @@ const SELECTABLE_POSITIONS = (POSITIONS as readonly string[]).filter(p => p !== 
 
 export function LineupEditor({
   entries, poolPlayers, onRemove, onSetPosition, onSetDhBatter,
-  onMoveUp, onMoveDown, onReorder, onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
+  onMoveUp, onMoveDown, onReorder, onSwapWithPool, onSwapWithLineup,
+  onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   )
+
+  const [swapRow, setSwapRow] = useState<LocalLineupEntry | null>(null)
+  const swapRowIndex = swapRow ? entries.findIndex(e => e.player.id === swapRow.player.id) : null
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -152,6 +160,7 @@ export function LineupEditor({
                     onSetDhBatter={onSetDhBatter}
                     onMoveUp={onMoveUp}
                     onMoveDown={onMoveDown}
+                    onOpenSwap={setSwapRow}
                   />
                 )
               })}
@@ -159,6 +168,16 @@ export function LineupEditor({
           </SortableContext>
         </DndContext>
       )}
+      <LineupRowSwapSheet
+        open={swapRow !== null}
+        row={swapRow}
+        rowIndex={swapRowIndex !== null && swapRowIndex >= 0 ? swapRowIndex : null}
+        entries={entries}
+        poolPlayers={poolPlayers}
+        onSwapWithPool={onSwapWithPool}
+        onSwapWithLineup={onSwapWithLineup}
+        onClose={() => setSwapRow(null)}
+      />
     </div>
   )
 }

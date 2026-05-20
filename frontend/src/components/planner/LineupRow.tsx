@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { LocalLineupEntry, Player } from '@/types'
-import { GripHandle, ChevronUp, ChevronDown, XMark } from '@/icons'
+import { GripHandle, ChevronUp, ChevronDown, XMark, ArrowsSwap } from '@/icons'
 
 interface Props {
   entry: LocalLineupEntry
@@ -18,12 +18,13 @@ interface Props {
   onSetDhBatter: (fieldPlayerId: number, batter: Player | null) => void
   onMoveUp: (index: number) => void
   onMoveDown: (index: number) => void
+  onOpenSwap: (entry: LocalLineupEntry) => void
 }
 
 export function LineupRow({
   entry, index, isFirst, isLast, availablePositions,
   isFieldPosition, canCheckDh, poolPlayers,
-  onRemove, onSetPosition, onSetDhBatter, onMoveUp, onMoveDown,
+  onRemove, onSetPosition, onSetDhBatter, onMoveUp, onMoveDown, onOpenSwap,
 }: Props) {
   const {
     attributes,
@@ -68,10 +69,19 @@ export function LineupRow({
         {index + 1}
       </span>
 
-      {/* Name */}
-      <span className="flex-1 text-sm font-medium text-gray-900 truncate min-w-0">
-        {entry.player.name}
-      </span>
+      {/* Name — Tap/Click öffnet Swap-Sheet */}
+      <button
+        type="button"
+        onClick={() => onOpenSwap(entry)}
+        className="flex-1 min-w-0 flex items-center gap-1.5 text-left text-sm font-medium text-gray-900 px-1.5 py-1 -mx-1.5 -my-1 rounded hover:bg-cream-100 cursor-pointer group/swap"
+        title="Spieler tauschen"
+      >
+        <span className="truncate">{entry.player.name}</span>
+        <ArrowsSwap
+          size={12}
+          className="shrink-0 text-gray-300 sm:opacity-0 sm:group-hover/swap:opacity-100 sm:group-hover/swap:text-navy-600 transition-opacity"
+        />
+      </button>
 
       {/* Position Dropdown */}
       <div className="relative w-16 sm:w-20">
