@@ -148,6 +148,30 @@ export function useLineup() {
     })
   }, [])
 
+  const replacePlayer = useCallback((rowPlayerId: number, newPlayer: Player) => {
+    setEntries(prev => {
+      const idx = prev.findIndex(e => e.player.id === rowPlayerId)
+      if (idx < 0) return prev
+      const cleared = prev.map(e =>
+        e.dhBatterId === newPlayer.id ? { ...e, dhBatterId: null, dhBatterName: null } : e
+      )
+      const updated = [...cleared]
+      updated[idx] = { ...updated[idx], player: newPlayer }
+      return updated
+    })
+  }, [])
+
+  const swapEntries = useCallback((idA: number, idB: number) => {
+    setEntries(prev => {
+      const ia = prev.findIndex(e => e.player.id === idA)
+      const ib = prev.findIndex(e => e.player.id === idB)
+      if (ia < 0 || ib < 0 || ia === ib) return prev
+      const next = [...prev]
+      ;[next[ia], next[ib]] = [next[ib], next[ia]]
+      return next
+    })
+  }, [])
+
   const addSubstitution = useCallback((playerOut: Player, playerIn: Player, inning: number) => {
     setSubstitutions(prev => [...prev, { playerOut, playerIn, inning }])
   }, [])
@@ -279,7 +303,7 @@ export function useLineup() {
   return {
     entries, substitutions, saving, hasChanges, activeGameId,
     load, addPlayer, removePlayer, setPosition, setDhBatter,
-    moveUp, moveDown, reorder, save, importEntries, clearAll, removeUnavailable,
+    moveUp, moveDown, reorder, replacePlayer, swapEntries, save, importEntries, clearAll, removeUnavailable,
     applySuggestion, invalidateCache, addSubstitution, removeSubstitution, revert,
   }
 }
