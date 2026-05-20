@@ -7,16 +7,17 @@ Automatisches Befüllen der Lineup-Positionen für ein oder alle Spiele eines Sp
 
 | Auto-befüllt | Manuell |
 |--------------|---------|
-| 1B, 2B, 3B, SS, LF, CF, RF (7) | P, C, EH, DH |
+| P, C, 1B, 2B, 3B, SS, LF, CF, RF (9) | EH, DH |
 
 ## Spieler-Auswahl (Priorität)
 
 | Priorität | Kriterium |
 |-----------|-----------|
 | 1 | Wenigste Einsätze am Spieltag (über alle Spiele hinweg) |
-| 2 | Höchste Trainingsbeteiligung |
+| 2 | Höchste Trainingsbeteiligung (letzte 3 Monate) |
 
-- **Kein Training** = 0 Beteiligung = niedrigste Priorität
+- **Trainingsbeteiligung** = Anwesenheiten in nicht-abgesagten Trainings der letzten 3 Monate
+- **Kein Training in 3 Monaten** = 0 Beteiligung = niedrigste Priorität
 - **DH-Batter** zählt nicht als Einsatz
 - **Staff** (z.B. Base Coach) wird nur pro Spiel ausgeschlossen, nicht spieltagübergreifend
 - Staff wird **nicht** vom Auto-Generate befüllt oder verändert

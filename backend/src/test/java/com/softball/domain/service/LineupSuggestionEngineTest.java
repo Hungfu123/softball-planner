@@ -20,20 +20,20 @@ class LineupSuggestionEngineTest {
     // --- suggest tests ---
 
     @Test
-    void emptyLineup_assigns7AutoPositions() {
-        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L);
+    void emptyLineup_assigns9AutoPositions() {
+        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L);
 
         final List<SuggestionResult> result = engine.suggest(
             List.of(), players, Set.of(), Map.of(), Map.of(), new Random(42));
 
-        assertThat(result).hasSize(7);
+        assertThat(result).hasSize(9);
         final Set<String> positions = new HashSet<>();
         result.forEach(r -> positions.add(r.position()));
-        assertThat(positions).containsExactlyInAnyOrder("1B", "2B", "3B", "SS", "LF", "CF", "RF");
+        assertThat(positions).containsExactlyInAnyOrder("P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
     }
 
     @Test
-    void manualPositions_arePreserved() {
+    void pAndCAreAutoPositions_reShuffled() {
         final Player pitcher = new Player(1L, "Pitcher", true);
         final Player catcher = new Player(2L, "Catcher", true);
         final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L);
@@ -45,25 +45,17 @@ class LineupSuggestionEngineTest {
         final List<SuggestionResult> result = engine.suggest(
             List.of(pEntry, cEntry), players, Set.of(), Map.of(), Map.of(), new Random(42));
 
-        // P and C should be first (manual), then 7 auto positions
+        // P and C are auto-positions now — all 9 are re-shuffled
         assertThat(result).hasSize(9);
-        assertThat(result.get(0).position()).isEqualTo("P");
-        assertThat(result.get(0).playerId()).isEqualTo(1L);
-        assertThat(result.get(1).position()).isEqualTo("C");
-        assertThat(result.get(1).playerId()).isEqualTo(2L);
-
-        // Remaining 7 should be auto-positions
-        final Set<String> autoPositions = new HashSet<>();
-        for (int i = 2; i < result.size(); i++) {
-            autoPositions.add(result.get(i).position());
-        }
-        assertThat(autoPositions).containsExactlyInAnyOrder("1B", "2B", "3B", "SS", "LF", "CF", "RF");
+        final Set<String> positions = new HashSet<>();
+        result.forEach(r -> positions.add(r.position()));
+        assertThat(positions).containsExactlyInAnyOrder("P", "C", "1B", "2B", "3B", "SS", "LF", "CF", "RF");
     }
 
     @Test
     void ehPosition_isManual() {
         final Player ehPlayer = new Player(1L, "EH Player", true);
-        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
+        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
 
         final Game game = new Game(100L, 1);
         final LineupEntry ehEntry = new LineupEntry(game, ehPlayer, Position.EH, 1);
@@ -71,21 +63,21 @@ class LineupSuggestionEngineTest {
         final List<SuggestionResult> result = engine.suggest(
             List.of(ehEntry), players, Set.of(), Map.of(), Map.of(), new Random(42));
 
-        // EH IS manual — kept in place, plus 7 auto positions
-        assertThat(result).hasSize(8);
+        // EH is manual — kept in place, plus 9 auto positions
+        assertThat(result).hasSize(10);
         assertThat(result.get(0).position()).isEqualTo("EH");
         assertThat(result.get(0).playerId()).isEqualTo(1L);
     }
 
     @Test
     void staffPlayers_areExcluded() {
-        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L);
+        final Map<Long, Player> players = createPlayers(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
 
         final List<SuggestionResult> result = engine.suggest(
             List.of(), players, Set.of(1L), Map.of(), Map.of(), new Random(42));
 
-        // Player 1 is staff, should not be assigned
-        assertThat(result).hasSize(7);
+        // Player 1 is staff, 9 candidates remain for 9 auto positions
+        assertThat(result).hasSize(9);
         assertThat(result.stream().noneMatch(r -> r.playerId().equals(1L))).isTrue();
     }
 
@@ -138,9 +130,8 @@ class LineupSuggestionEngineTest {
         final List<SuggestionResult> result = engine.suggest(
             List.of(entryWithDh), players, Set.of(), Map.of(), Map.of(), new Random(42));
 
-        // DH batter (player 2) should not be in auto assignments
-        final List<SuggestionResult> autoResults = result.subList(1, result.size());
-        assertThat(autoResults.stream().noneMatch(r -> r.playerId().equals(2L))).isTrue();
+        // DH batter (player 2) should not appear anywhere in the result
+        assertThat(result.stream().noneMatch(r -> r.playerId().equals(2L))).isTrue();
     }
 
     // --- countGamesPlayed tests ---

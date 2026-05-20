@@ -8,11 +8,12 @@ import java.util.stream.Collectors;
 public class LineupSuggestionEngine {
 
     static final List<Position> AUTO_POSITIONS = List.of(
+        Position.P, Position.C,
         Position.FIRST_BASE, Position.SECOND_BASE, Position.THIRD_BASE,
         Position.SS, Position.LF, Position.CF, Position.RF
     );
 
-    private static final Set<String> MANUAL_POSITIONS = Set.of("P", "C", "EH");
+    private static final Set<String> MANUAL_POSITIONS = Set.of("EH");
 
     public List<SuggestionResult> suggest(final List<LineupEntry> currentEntries,
                                            final Map<Long, Player> playerMap,

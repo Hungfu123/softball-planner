@@ -15,6 +15,7 @@ import com.softball.domain.port.out.LineupEntryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -162,7 +163,8 @@ public class LineupSuggestionService {
         final Map<Long, List<GameStaff>> staffByGame = allStaff.stream()
             .collect(Collectors.groupingBy(s -> s.getGame().getId()));
 
-        final List<TrainingStatsResponse> trainingStats = trainingStatsService.getStats(null, null, null);
+        final LocalDate trainingSince = LocalDate.now().minusMonths(3);
+        final List<TrainingStatsResponse> trainingStats = trainingStatsService.getStats(null, trainingSince, null);
         final Map<Long, Long> attendanceByPlayer = trainingStats.stream()
             .collect(Collectors.toMap(TrainingStatsResponse::playerId, TrainingStatsResponse::attended));
 
