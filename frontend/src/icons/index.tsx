@@ -5,6 +5,7 @@
 export { SkullLogo } from './SkullLogo'
 
 import {
+  ArrowLeftRight as LucideArrowLeftRight,
   CirclePlus,
   Pencil as LucidePencil,
   Trash2,
@@ -64,6 +65,7 @@ export const BoltIcon = (p: IconProps) => <Zap size={p.size ?? 20} className={p.
 export const SadFaceIcon = (p: IconProps) => <Frown size={p.size ?? 20} className={p.className} />
 export const SendIcon = (p: IconProps) => <Send size={p.size ?? 16} className={p.className} />
 export const ChevronRight = (p: IconProps) => <LucideChevronRight size={p.size ?? 16} className={p.className} />
+export const ArrowsSwap = (p: IconProps) => <LucideArrowLeftRight size={p.size ?? 16} className={p.className} />
 
 // Custom SVGs — keine Lucide-Equivalente passen (Brand/Baseball-spezifisch)
 export function CrossBones({ size = 24, className }: IconProps) {
