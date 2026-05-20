@@ -1127,5 +1127,99 @@
     "variants": null,
     "complexity": "BASIC",
     "pdfPage": 29
+  },
+  {
+    "id": "live-batting-toss",
+    "name": "Live Batting mit Toss",
+    "categories": [
+      "HITTING"
+    ],
+    "complexity": "BASIC",
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Schläger"
+    ],
+    "description": "Ein Spieler tosst, einer schlägt nach draußen ins Feld. Weitere Spieler fangen die geschlagenen Bälle und werfen sie zurück. Jeder Batter bekommt eine festgelegte Anzahl Schläge (z.B. 10), dann wird gewechselt.\n\nAblauf: Tosser steht seitlich/vorne und tosst den Ball gleichmäßig in die Strikezone. Batter schlägt mit voller Mechanik ins Feld. Fielder positionieren sich verteilt und sammeln ein.\n\nFokus auf Timing, vollständigen Schwung und Ball-Kontakt mit Live-Rhythmus.",
+    "rotation": "Nach festgelegter Anzahl Schläge rotieren: Batter → Fielder → Tosser → neuer Batter."
+  },
+  {
+    "id": "bunt-station",
+    "name": "Bunt-Station",
+    "categories": [
+      "HITTING"
+    ],
+    "complexity": "BASIC",
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "Schläger"
+    ],
+    "description": "Ein Spieler tosst, einer buntet. Fokus auf Bunttechnik: Schläger waagerecht, Hände entspannt, Ball mit dem Schläger 'einfangen' statt schlagen. Ball weich nach unten platzieren.\n\nVarianten: Sacrifice-Bunt (Ball zu 1B oder 3B), Drag-Bunt (im Laufen vom Linkshänder), Push-Bunt (am Pitcher vorbei).\n\nBatter übt Ballplatzierung — gezielt nach 1B oder 3B legen.",
+    "rotation": "Nach 8-10 Bunts wechseln Tosser/Batter."
+  },
+  {
+    "id": "tee-station",
+    "name": "Tee Station",
+    "categories": [
+      "HITTING"
+    ],
+    "complexity": "BASIC",
+    "minPlayers": 1,
+    "equipment": [
+      "Tee",
+      "Bälle",
+      "Schläger",
+      "Netz (optional)"
+    ],
+    "description": "Vom Tee schlagen. Mit Netz: ins Netz schlagen (kein Feldspiel nötig). Ohne Netz: Richtung Fielder schlagen.\n\nFokus auf saubere Mechanik ohne Timing-Druck: Stance, Loading, Hüftrotation, Hände, Follow-Through. Ideal für isolierte Technik-Korrekturen.",
+    "rotation": "Nach 10-15 Schlägen wechseln oder Tee-Höhe / Position variieren."
+  },
+  {
+    "id": "whiffleball-zonen",
+    "name": "Whiffleballs / Korken — Zonen-Targeting",
+    "categories": [
+      "HITTING"
+    ],
+    "complexity": "BASIC",
+    "minPlayers": 2,
+    "equipment": [
+      "Whiffleballs oder Korken",
+      "Schläger"
+    ],
+    "description": "Ein Spieler hält oder wirft Whiffleballs oder Korken zum Batter, der drauf schlägt. Trainiert Hand-Augen-Koordination und präzises Treffen kleiner Objekte.\n\nWhiffleballs eignen sich besonders gut zum Zielen auf bestimmte Zonen — Tosser ruft 'inside' oder 'outside', Batter versucht in entsprechende Richtung zu schlagen.",
+    "rotation": "Nach 10-15 Schlägen wechseln."
+  },
+  {
+    "id": "tee-45-grad",
+    "name": "Tee 45 Grad (Rotation isoliert)",
+    "categories": [
+      "HITTING"
+    ],
+    "complexity": "BASIC",
+    "minPlayers": 1,
+    "equipment": [
+      "Tee",
+      "Bälle",
+      "Schläger"
+    ],
+    "description": "Ca. 45 Grad zur Base stehen und vom Tee schlagen.\n\nZiel: hinteres Bein spüren, Hüft-Rotation üben. Durch die geöffnete Stance wird die Drehbewegung isoliert und der Batter merkt, ob er sauber dreht oder mit den Schultern zu früh aufmacht.",
+    "rotation": "Nach 10 Schlägen wechseln."
+  },
+  {
+    "id": "besenstange-hueftrotation",
+    "name": "Besenstange Hüftrotation",
+    "categories": [
+      "HITTING"
+    ],
+    "complexity": "BASIC",
+    "minPlayers": 1,
+    "equipment": [
+      "Besenstange",
+      "Tee",
+      "Bälle"
+    ],
+    "description": "Besenstange hinter dem Rücken halten (in den Ellbogen eingehakt). Mit der Hüfte drehen und versuchen, den Ball am Tee mit der Stange zu berühren.\n\nTrainiert die Hüftrotation OHNE Arme — isoliert die Beine/Hüfte vom Schwung. Spieler merkt, ob er mit den Armen aushilft oder sauber aus der Hüfte arbeitet.",
+    "rotation": "Nach 10 Wiederholungen wechseln."
   }
 ]
