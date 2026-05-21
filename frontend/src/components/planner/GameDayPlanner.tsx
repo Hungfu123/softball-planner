@@ -175,6 +175,17 @@ export function GameDayPlanner() {
     }
   }
 
+  const handleSwapWithPool = (rowPlayerId: number, newPlayer: Player) => {
+    lineup.replacePlayer(rowPlayerId, newPlayer)
+    // Auto-remove from coach slot if swapped-in player was a base coach
+    if (staffPlayerIds.has(newPlayer.id)) {
+      const remaining = staff.staff
+        .filter(s => s.player.id !== newPlayer.id)
+        .map(s => ({ playerId: s.player.id, role: s.role }))
+      handleStaffSave(remaining)
+    }
+  }
+
   const handlePositionAssign = (player: Player, position: string) => {
     const currentEntry = lineup.entries.find(e => e.position === position)
     const newPlayerEntry = lineup.entries.find(e => e.player.id === player.id)
@@ -640,7 +651,7 @@ export function GameDayPlanner() {
                         onMoveUp={lineup.moveUp}
                         onMoveDown={lineup.moveDown}
                         onReorder={lineup.reorder}
-                        onSwapWithPool={(rowPlayerId, newPlayer) => lineup.replacePlayer(rowPlayerId, newPlayer)}
+                        onSwapWithPool={handleSwapWithPool}
                         onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
                         onClear={() => setShowClearConfirm(true)}
                         onAutoGenerate={triggerAutoGenerate}
@@ -681,7 +692,7 @@ export function GameDayPlanner() {
                   onMoveUp={lineup.moveUp}
                   onMoveDown={lineup.moveDown}
                   onReorder={lineup.reorder}
-                  onSwapWithPool={(rowPlayerId, newPlayer) => lineup.replacePlayer(rowPlayerId, newPlayer)}
+                  onSwapWithPool={handleSwapWithPool}
                   onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
                   onClear={() => setShowClearConfirm(true)}
                   onAutoGenerate={triggerAutoGenerate}
