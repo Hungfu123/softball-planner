@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season } from '@/types'
+import { FIELD_POSITIONS } from '@/types'
 
 /**
  * Returns a short display name suitable for the field diagram.
@@ -44,8 +45,6 @@ const FIELD_COORDS: Record<string, { x: number; y: number }> = {
   C:  { x: 50, y: 82 },
 }
 
-const FIELD_POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
-
 function drawFieldDiagram(
   doc: jsPDF,
   x: number,
@@ -56,13 +55,14 @@ function drawFieldDiagram(
   substitutions: SubstitutionResponse[],
 ): void {
   // Diamond in quadratische Sub-Box zeichnen, damit nicht verzerrt.
-  // viewBox-Aspect = 100/95. Sub-Box ist quadratisch s × s.
-  const s = Math.min(width, height * (100 / 95))
+  // viewBox wird als 100×100 behandelt (FieldView's 100×95 viewBox enthält den
+  // Diamond komfortabel auch in 100×100 — keine Verzerrung sichtbar).
+  const s = Math.min(width, height)
   const subX = x + (width - s) / 2
   const subY = y
 
   const px = (vbX: number) => subX + (vbX / 100) * s
-  const py = (vbY: number) => subY + (vbY / 95) * s * (95 / 100) // = subY + (vbY/100)*s, gleicher Scale
+  const py = (vbY: number) => subY + (vbY / 100) * s
 
   // --- Baselines (Polygon Home → 1B → 2B → 3B → Home) ---
   doc.setDrawColor(200, 46, 46) // softball-red-500
@@ -107,7 +107,7 @@ function drawFieldDiagram(
   // Build maps from lineup
   const fielderByPos = new Map<string, LineupEntryResponse>()
   for (const e of lineup) {
-    if (e.position && FIELD_POSITIONS.includes(e.position)) {
+    if (e.position && (FIELD_POSITIONS as readonly string[]).includes(e.position)) {
       fielderByPos.set(e.position, e)
     }
   }
