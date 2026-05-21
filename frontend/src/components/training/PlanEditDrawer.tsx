@@ -261,9 +261,12 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
     const maxGroup = Math.max(0, ...sections.map(s => s.parallelGroup ?? 0))
     const newGroup = maxGroup + 1
     const sharedDuration = sections[indices[0]]?.durationMinutes ?? 20
-    setSections(prev => prev.map((s, i) =>
-      selectedSet.has(i) ? { ...s, parallelGroup: newGroup, durationMinutes: sharedDuration } : s,
-    ))
+    const insertAt = indices[0]
+    setSections(prev => {
+      const grouped = indices.map(i => ({ ...prev[i], parallelGroup: newGroup, durationMinutes: sharedDuration }))
+      const remaining = prev.filter((_, i) => !selectedSet.has(i))
+      return [...remaining.slice(0, insertAt), ...grouped, ...remaining.slice(insertAt)]
+    })
     setSelectedSet(new Set())
   }
 
@@ -425,49 +428,6 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
         )}
 
         <div className="px-4 py-4 space-y-4">
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-xs text-navy-600 tabular-nums">{totalMinutes} min · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}</p>
-            <a
-              href="/drills.pdf"
-              target="drill-handbuch"
-              className="text-xs font-semibold text-navy-700 hover:underline cursor-pointer shrink-0"
-            >
-              📖 Handbuch
-            </a>
-          </div>
-
-          <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={sections.map((_, i) => `section-${i}`)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-3">
-                {sections.length === 0 ? (
-                  <div className="bg-white border-2 border-dashed border-cream-300 rounded-xl p-6 text-center space-y-2">
-                    <div className="text-4xl">📋</div>
-                    <p className="text-sm font-semibold text-navy-800">Noch keine Blöcke</p>
-                    <p className="text-xs text-navy-500">Drill aus Bibliothek wählen, Warmup oder Pause hinzufügen — siehe Buttons unten.</p>
-                  </div>
-                ) : (
-                  sections.map((s, idx) => {
-                    const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
-                    return (
-                      <SortableSection
-                        key={`section-${idx}`}
-                        section={s}
-                        idx={idx}
-                        drill={drill}
-                        expanded={expandedSet.has(idx)}
-                        selected={selectedSet.has(idx)}
-                        onToggleSelect={() => toggleSelected(idx)}
-                        onToggleExpanded={() => toggleExpanded(idx)}
-                        onUpdate={(patch) => updateSection(idx, patch)}
-                        onRemove={() => removeSection(idx)}
-                      />
-                    )
-                  })
-                )}
-              </div>
-            </SortableContext>
-          </DndContext>
-
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
@@ -491,6 +451,49 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
               <Plus size={14} /> Pause
             </button>
           </div>
+
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-xs text-navy-600 tabular-nums">{totalMinutes} min · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}</p>
+            <a
+              href="/drills.pdf"
+              target="drill-handbuch"
+              className="text-xs font-semibold text-navy-700 hover:underline cursor-pointer shrink-0"
+            >
+              📖 Handbuch
+            </a>
+          </div>
+
+          <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sections.map((_, i) => `section-${i}`)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {sections.length === 0 ? (
+                  <div className="bg-white border-2 border-dashed border-cream-300 rounded-xl p-6 text-center space-y-2">
+                    <div className="text-4xl">📋</div>
+                    <p className="text-sm font-semibold text-navy-800">Noch keine Blöcke</p>
+                    <p className="text-xs text-navy-500">Drill aus Bibliothek wählen, Warmup oder Pause hinzufügen — siehe Buttons oben.</p>
+                  </div>
+                ) : (
+                  sections.map((s, idx) => {
+                    const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+                    return (
+                      <SortableSection
+                        key={`section-${idx}`}
+                        section={s}
+                        idx={idx}
+                        drill={drill}
+                        expanded={expandedSet.has(idx)}
+                        selected={selectedSet.has(idx)}
+                        onToggleSelect={() => toggleSelected(idx)}
+                        onToggleExpanded={() => toggleExpanded(idx)}
+                        onUpdate={(patch) => updateSection(idx, patch)}
+                        onRemove={() => removeSection(idx)}
+                      />
+                    )
+                  })
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
 
           <div className="bg-white border border-cream-300 rounded-xl p-3">
             <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Allgemeine Notizen</label>

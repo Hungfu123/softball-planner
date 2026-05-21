@@ -32,6 +32,7 @@ function buildShareText(
   let i = 0
   let warmupPrinted = false
   let drillsPrinted = false
+  let battingPrinted = false
 
   while (i < sections.length) {
     const s = sections[i]
@@ -44,7 +45,15 @@ function buildShareText(
         stationDrills.push(sections[i])
         i++
       }
-      pushHeadline('*Drills in Gruppen:*')
+      const isBattingGroup = stationDrills.some(d => d.sectionType === 'BATTING')
+      if (isBattingGroup) {
+        if (!battingPrinted) {
+          pushHeadline('*Batting Stationen:*')
+          battingPrinted = true
+        }
+      } else {
+        pushHeadline('*Drills in Gruppen:*')
+      }
       for (const sd of stationDrills) {
         lines.push(`• ${sd.title ?? '—'}`)
       }
@@ -55,6 +64,12 @@ function buildShareText(
       if (!warmupPrinted) {
         pushHeadline('*Aufwärmen*')
         warmupPrinted = true
+      }
+      lines.push(`• ${s.title ?? '—'}`)
+    } else if (s.sectionType === 'BATTING') {
+      if (!battingPrinted) {
+        pushHeadline('*Batting Stationen:*')
+        battingPrinted = true
       }
       lines.push(`• ${s.title ?? '—'}`)
     } else if (s.sectionType === 'DRILL') {
