@@ -2,6 +2,35 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season } from '@/types'
 
+/**
+ * Returns a short display name suitable for the field diagram.
+ * - Single-word name: returned as-is (truncated at 14 chars)
+ * - Multi-word name: last name (truncated at 14 chars)
+ * - Last name > 12 chars: `Initial. LastName` with last name truncated to keep total ≤ 14 chars
+ */
+export function getDisplayName(fullName: string): string {
+  const MAX = 14
+  const trimmed = fullName.trim()
+  if (trimmed === '') return ''
+  const parts = trimmed.split(/\s+/)
+  const last = parts[parts.length - 1]
+
+  // single word
+  if (parts.length === 1) {
+    return last.length > MAX ? last.slice(0, MAX) + '…' : last
+  }
+
+  // multi-word with short last name
+  if (last.length <= 12) {
+    return last.length > MAX ? last.slice(0, MAX) + '…' : last
+  }
+
+  // long last name — use initial + last, truncate last
+  const prefix = parts[0][0] + '. '
+  const remaining = MAX - prefix.length // = 11
+  return prefix + last.slice(0, remaining) + '…'
+}
+
 export interface GameData {
   game: { id: number; gameNumber: number; opponentTeam: { id: number; name: string } | null; scoreUs: number | null; scoreThem: number | null }
   lineup: LineupEntryResponse[]
