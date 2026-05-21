@@ -151,7 +151,7 @@ function drawFieldDiagram(
         doc.setFontSize(4.5)
         doc.setTextColor(100, 116, 139) // navy-500-ish
         doc.text(
-          `→ ${getDisplayName(sub.playerIn.name)} (${sub.inning + 1}.)`,
+          `> ${getDisplayName(sub.playerIn.name)} (${sub.inning + 1}.)`,
           cx,
           cy + (s * 0.045),
           { align: 'center' },
