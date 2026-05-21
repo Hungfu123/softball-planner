@@ -586,12 +586,12 @@ export function generateLineupWithFieldPdf(
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 10
-  const lineupWidth = 105
-  const gap = 7
+  const lineupWidth = 70
   const fieldWidth = 78
   const fieldHeight = 78
   const contentRowHeight = 78
-  const fieldX = margin + lineupWidth + gap
+  // Field flush right; lineup-table compact left (kein zu großer Gap zwischen Name und Position)
+  const fieldX = pageWidth - margin - fieldWidth
 
   const formatDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('de-DE', {
