@@ -19,7 +19,9 @@ frontend/dist/
 Thumbs.db
 
 # Claude
-.claude/
+.claude/projects/
+.claude/worktrees/
+.claude/settings.local.json
 CLAUDE.md
 
 # Env
