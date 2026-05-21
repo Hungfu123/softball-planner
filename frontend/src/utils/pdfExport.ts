@@ -31,6 +31,143 @@ export function getDisplayName(fullName: string): string {
   return prefix + last.slice(0, remaining) + '…'
 }
 
+/** Position-Koordinaten in viewBox 100×95 (übernommen aus FieldView.tsx). */
+const FIELD_COORDS: Record<string, { x: number; y: number }> = {
+  CF: { x: 50, y: 8 },
+  LF: { x: 14, y: 18 },
+  RF: { x: 86, y: 18 },
+  SS: { x: 33, y: 28 },
+  '2B': { x: 67, y: 28 },
+  '3B': { x: 16, y: 58 },
+  '1B': { x: 84, y: 58 },
+  P:  { x: 50, y: 52 },
+  C:  { x: 50, y: 82 },
+}
+
+const FIELD_POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
+
+function drawFieldDiagram(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  lineup: LineupEntryResponse[],
+  substitutions: SubstitutionResponse[],
+): void {
+  // Diamond in quadratische Sub-Box zeichnen, damit nicht verzerrt.
+  // viewBox-Aspect = 100/95. Sub-Box ist quadratisch s × s.
+  const s = Math.min(width, height * (100 / 95))
+  const subX = x + (width - s) / 2
+  const subY = y
+
+  const px = (vbX: number) => subX + (vbX / 100) * s
+  const py = (vbY: number) => subY + (vbY / 95) * s * (95 / 100) // = subY + (vbY/100)*s, gleicher Scale
+
+  // --- Baselines (Polygon Home → 1B → 2B → 3B → Home) ---
+  doc.setDrawColor(200, 46, 46) // softball-red-500
+  doc.setLineWidth(0.5)
+  const home = [px(50), py(70)]
+  const first = [px(72), py(50)]
+  const second = [px(50), py(30)]
+  const third = [px(28), py(50)]
+  doc.line(home[0], home[1], first[0], first[1])
+  doc.line(first[0], first[1], second[0], second[1])
+  doc.line(second[0], second[1], third[0], third[1])
+  doc.line(third[0], third[1], home[0], home[1])
+
+  // --- Bases (4 kleine Diamonds, mittels doc.lines) ---
+  doc.setFillColor(200, 46, 46)
+  doc.setDrawColor(160, 30, 30) // softball-red-700
+  doc.setLineWidth(0.2)
+  const baseSize = (3 / 100) * s
+  const drawRotatedBase = (cx: number, cy: number) => {
+    const half = baseSize / 2
+    // 4-Punkt Diamond via doc.lines (relative Deltas, geschlossen, fill+stroke).
+    // Start: west (cx-half, cy). Pfad: west → north → east → south → close.
+    doc.lines(
+      [
+        [half, -half],  // west → north
+        [half,  half],  // north → east
+        [-half, half],  // east → south
+        [-half, -half], // south → west (close)
+      ],
+      cx - half, cy,
+      [1, 1],
+      'FD',
+      true,
+    )
+  }
+  drawRotatedBase(home[0], home[1])
+  drawRotatedBase(first[0], first[1])
+  drawRotatedBase(second[0], second[1])
+  drawRotatedBase(third[0], third[1])
+
+  // --- Player-Slots ---
+  // Build maps from lineup
+  const fielderByPos = new Map<string, LineupEntryResponse>()
+  for (const e of lineup) {
+    if (e.position && FIELD_POSITIONS.includes(e.position)) {
+      fielderByPos.set(e.position, e)
+    }
+  }
+  // Subs grouped by playerOut.id, sorted by inning ascending
+  const subsByPlayerOut = new Map<number, SubstitutionResponse[]>()
+  for (const sub of substitutions) {
+    const arr = subsByPlayerOut.get(sub.playerOut.id) ?? []
+    arr.push(sub)
+    subsByPlayerOut.set(sub.playerOut.id, arr)
+  }
+  for (const arr of subsByPlayerOut.values()) arr.sort((a, b) => a.inning - b.inning)
+
+  // Font-Sizes: skaliert auf s (78 mm Standard → 100% Skala)
+  // pos-label 5pt, player 6.5pt, sub 4.5pt
+  for (const pos of FIELD_POSITIONS) {
+    const coord = FIELD_COORDS[pos]
+    const cx = px(coord.x)
+    const cy = py(coord.y)
+    const entry = fielderByPos.get(pos)
+
+    // Position-Label (rot, klein, oberhalb des Players)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(5)
+    doc.setTextColor(200, 46, 46)
+    const posLabelY = entry ? cy - (s * 0.035) : cy - (s * 0.01)
+    doc.text(pos, cx, posLabelY, { align: 'center' })
+
+    if (entry) {
+      // Player-Name (navy bold, unter Position)
+      const displayName = getDisplayName(entry.player.name)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(6.5)
+      doc.setTextColor(30, 41, 59)
+      doc.text(displayName, cx, cy + (s * 0.014), { align: 'center' })
+
+      // Sub-Annotation (erste Sub für diesen Player), italic mini
+      const subs = subsByPlayerOut.get(entry.player.id)
+      if (subs && subs.length > 0) {
+        const sub = subs[0]
+        doc.setFont('helvetica', 'italic')
+        doc.setFontSize(4.5)
+        doc.setTextColor(100, 116, 139) // navy-500-ish
+        doc.text(
+          `→ ${getDisplayName(sub.playerIn.name)} (${sub.inning + 1}.)`,
+          cx,
+          cy + (s * 0.045),
+          { align: 'center' },
+        )
+      }
+    } else {
+      // Leerer Slot — grauer Punkt
+      doc.setFillColor(209, 213, 219) // gray-300
+      doc.circle(cx, cy + (s * 0.02), s * 0.012, 'F')
+    }
+  }
+
+  // Reset text color für nachfolgende Renders
+  doc.setTextColor(0, 0, 0)
+}
+
 export interface GameData {
   game: { id: number; gameNumber: number; opponentTeam: { id: number; name: string } | null; scoreUs: number | null; scoreThem: number | null }
   lineup: LineupEntryResponse[]
@@ -435,6 +572,170 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
   doc.setTextColor(0, 0, 0)
 
   const parts = ['Scoring']
+  if (gameDay.location) parts.push(gameDay.location)
+  if (season) parts.push(`${season.name}_${season.year}`)
+  doc.setProperties({ title: parts.join('_') })
+  doc.save(parts.join('_') + '.pdf')
+}
+
+export function generateLineupWithFieldPdf(
+  gameDay: GameDayResponse,
+  games: GameData[],
+  season: Season | null,
+) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const margin = 10
+  const lineupWidth = 105
+  const gap = 7
+  const fieldWidth = 78
+  const fieldHeight = 78
+  const contentRowHeight = 78
+  const fieldX = margin + lineupWidth + gap
+
+  const formatDate = (d: string) =>
+    new Date(d + 'T00:00:00').toLocaleDateString('de-DE', {
+      weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+    })
+
+  const headerTitle =
+    `${gameDay.label || 'Spieltag'} - ${formatDate(gameDay.date)}` +
+    (gameDay.location ? ` @ ${gameDay.location}` : '')
+
+  const drawPageHeader = (y: number) => {
+    doc.setFontSize(13)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text(headerTitle, pageWidth / 2, y, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+  }
+
+  let y = 12
+  drawPageHeader(y)
+  y += 8
+
+  for (let gi = 0; gi < games.length; gi++) {
+    const { game, lineup, staff, substitutions } = games[gi]
+
+    // Page-Break nach jeweils 3 Games
+    if (gi > 0 && gi % 3 === 0) {
+      doc.addPage()
+      y = 12
+      drawPageHeader(y)
+      y += 8
+    }
+
+    // --- Game-Header ---
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    let gameTitle = `Spiel ${game.gameNumber}`
+    if (game.opponentTeam) gameTitle += ` vs ${game.opponentTeam.name}`
+    doc.text(gameTitle, margin, y)
+    doc.setDrawColor(30, 41, 59)
+    doc.setLineWidth(0.4)
+    doc.line(margin, y + 1, pageWidth - margin, y + 1)
+    doc.setTextColor(0, 0, 0)
+    y += 4
+
+    // --- Staff-Line ---
+    if (staff.length > 0) {
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(120, 120, 120)
+      const subInIds = new Map(substitutions.map(s => [s.playerIn.id, s]))
+      const staffText = staff.map(s => {
+        const roleLabel = s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'
+        const sub = subInIds.get(s.player.id)
+        if (sub) return `${roleLabel}: ${s.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
+        return `${roleLabel}: ${s.player.name}`
+      }).join('  ·  ')
+      doc.text(staffText, margin, y)
+      doc.setTextColor(0, 0, 0)
+      y += 3
+    }
+
+    const contentTopY = y
+
+    // --- Lineup-Tabelle links ---
+    if (lineup.length === 0) {
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'italic')
+      doc.setTextColor(150, 150, 150)
+      doc.text('Kein Lineup', margin, y + 4)
+      doc.setTextColor(0, 0, 0)
+    } else {
+      const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
+      const subsByPlayerOut = new Map<number, SubstitutionResponse[]>()
+      for (const sub of substitutions) {
+        const arr = subsByPlayerOut.get(sub.playerOut.id) ?? []
+        arr.push(sub)
+        subsByPlayerOut.set(sub.playerOut.id, arr)
+      }
+
+      const rows = sorted.map(entry => {
+        let name = entry.player.name
+        if (entry.dhBatterPlayer) name += ` (DH: ${entry.dhBatterPlayer.name})`
+        const subs = subsByPlayerOut.get(entry.player.id)
+        if (subs) {
+          for (const sub of subs.sort((a, b) => a.inning - b.inning)) {
+            name += `  (${sub.playerIn.name} ab ${sub.inning + 1}. Inning)`
+          }
+        }
+        return [String(entry.battingOrder), name, entry.position ?? '']
+      })
+
+      autoTable(doc, {
+        startY: y,
+        margin: { left: margin, right: pageWidth - (margin + lineupWidth) },
+        head: [],
+        body: rows,
+        theme: 'plain',
+        styles: { fontSize: 9, cellPadding: 1.2 },
+        columnStyles: {
+          0: { cellWidth: 8, halign: 'right', textColor: [150, 150, 150], font: 'courier' },
+          1: { cellWidth: 'auto', fontStyle: 'bold' },
+          2: { cellWidth: 14, halign: 'right', font: 'courier', fontStyle: 'bold' },
+        },
+      })
+    }
+
+    // --- Feld-Diagram rechts ---
+    drawFieldDiagram(doc, fieldX, contentTopY, fieldWidth, fieldHeight, lineup, substitutions)
+
+    // y nach Content-Row weitersetzen
+    y = contentTopY + contentRowHeight
+
+    // --- Bench-Line ---
+    const gameUsedIds = new Set<number>()
+    for (const e of lineup) {
+      gameUsedIds.add(e.player.id)
+      if (e.dhBatterPlayer) gameUsedIds.add(e.dhBatterPlayer.id)
+    }
+    for (const s of staff) gameUsedIds.add(s.player.id)
+    for (const sub of substitutions) gameUsedIds.add(sub.playerIn.id)
+    const bench = gameDay.availablePlayers.filter(p => !gameUsedIds.has(p.id))
+    if (bench.length > 0) {
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(150, 150, 150)
+      doc.text(`Bank: ${bench.map(p => p.name).join(', ')}`, margin, y)
+      doc.setTextColor(0, 0, 0)
+    }
+    y += 3
+
+    // --- Inter-Block-Separator (außer nach letztem Spiel auf Seite / letztem Spiel) ---
+    const isLastOnPage = (gi + 1) % 3 === 0 || gi === games.length - 1
+    if (!isLastOnPage) {
+      doc.setDrawColor(229, 224, 207) // cream-300
+      doc.setLineWidth(0.2)
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 3
+    }
+  }
+
+  // --- Filename + PDF-Properties ---
+  const parts = ['Lineup-Feld']
   if (gameDay.location) parts.push(gameDay.location)
   if (season) parts.push(`${season.name}_${season.year}`)
   doc.setProperties({ title: parts.join('_') })
