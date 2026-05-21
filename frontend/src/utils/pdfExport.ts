@@ -590,8 +590,11 @@ export function generateLineupWithFieldPdf(
   const fieldWidth = 78
   const fieldHeight = 78
   const contentRowHeight = 78
-  // Field flush right; lineup-table compact left (kein zu großer Gap zwischen Name und Position)
-  const fieldX = pageWidth - margin - fieldWidth
+  const gap = 12
+  // Block (Lineup + Gap + Feld) horizontal zentrieren
+  const blockWidth = lineupWidth + gap + fieldWidth
+  const lineupX = (pageWidth - blockWidth) / 2
+  const fieldX = lineupX + lineupWidth + gap
 
   const formatDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('de-DE', {
@@ -631,7 +634,7 @@ export function generateLineupWithFieldPdf(
     doc.setTextColor(30, 41, 59)
     let gameTitle = `Spiel ${game.gameNumber}`
     if (game.opponentTeam) gameTitle += ` vs ${game.opponentTeam.name}`
-    doc.text(gameTitle, margin, y)
+    doc.text(gameTitle, lineupX, y)
     doc.setDrawColor(30, 41, 59)
     doc.setLineWidth(0.4)
     doc.line(margin, y + 1, pageWidth - margin, y + 1)
@@ -650,7 +653,7 @@ export function generateLineupWithFieldPdf(
         if (sub) return `${roleLabel}: ${s.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
         return `${roleLabel}: ${s.player.name}`
       }).join('  ·  ')
-      doc.text(staffText, margin, y)
+      doc.text(staffText, lineupX, y)
       doc.setTextColor(0, 0, 0)
       y += 3
     }
@@ -662,7 +665,7 @@ export function generateLineupWithFieldPdf(
       doc.setFontSize(8)
       doc.setFont('helvetica', 'italic')
       doc.setTextColor(150, 150, 150)
-      doc.text('Kein Lineup', margin, y + 4)
+      doc.text('Kein Lineup', lineupX, y + 4)
       doc.setTextColor(0, 0, 0)
     } else {
       const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
@@ -687,7 +690,7 @@ export function generateLineupWithFieldPdf(
 
       autoTable(doc, {
         startY: y,
-        margin: { left: margin, right: pageWidth - (margin + lineupWidth) },
+        margin: { left: lineupX, right: pageWidth - (lineupX + lineupWidth) },
         head: [],
         body: rows,
         theme: 'plain',
@@ -719,7 +722,7 @@ export function generateLineupWithFieldPdf(
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(150, 150, 150)
-      doc.text(`Bank: ${bench.map(p => p.name).join(', ')}`, margin, y)
+      doc.text(`Bank: ${bench.map(p => p.name).join(', ')}`, lineupX, y)
       doc.setTextColor(0, 0, 0)
     }
     y += 3
