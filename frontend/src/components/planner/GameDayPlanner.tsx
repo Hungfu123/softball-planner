@@ -438,7 +438,7 @@ export function GameDayPlanner() {
               />
               <ToolbarBtn
                 icon={<ExportDoc size={16} />}
-                label="Lineup + Feld"
+                label="Aufstellung"
                 onClick={handleExportLineupField}
               />
               <ToolbarBtn
@@ -503,10 +503,10 @@ export function GameDayPlanner() {
               <button
                 onClick={handleExportLineupField}
                 className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
-                title="Lineup + Feld als PDF exportieren"
+                title="Aufstellung als PDF exportieren"
               >
                 <ExportDoc size={14} />
-                <span>Lineup + Feld</span>
+                <span>Aufstellung</span>
               </button>
               <button
                 onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}

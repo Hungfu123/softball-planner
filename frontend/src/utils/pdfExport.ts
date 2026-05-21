@@ -65,7 +65,7 @@ function drawFieldDiagram(
   const py = (vbY: number) => subY + (vbY / 100) * s
 
   // --- Baselines (Polygon Home → 1B → 2B → 3B → Home) ---
-  doc.setDrawColor(200, 46, 46) // softball-red-500
+  doc.setDrawColor(30, 41, 59) // navy-900
   doc.setLineWidth(0.5)
   const home = [px(50), py(70)]
   const first = [px(72), py(50)]
@@ -735,7 +735,7 @@ export function generateLineupWithFieldPdf(
   }
 
   // --- Filename + PDF-Properties ---
-  const parts = ['Lineup-Feld']
+  const parts = ['Aufstellung']
   if (gameDay.location) parts.push(gameDay.location)
   if (season) parts.push(`${season.name}_${season.year}`)
   doc.setProperties({ title: parts.join('_') })
