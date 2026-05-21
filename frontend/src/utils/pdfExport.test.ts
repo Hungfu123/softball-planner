@@ -18,8 +18,16 @@ describe('getDisplayName', () => {
     expect(getDisplayName('Max Mustermannlanger')).toBe('M. Mustermannl…')
   })
 
-  it('returns last name unchanged when exactly 12 chars', () => {
+  it('returns last name unchanged when 11 chars (within ≤12 threshold)', () => {
     expect(getDisplayName('Max Zwölfzeichn')).toBe('Zwölfzeichn')
+  })
+
+  it('returns last name unchanged when exactly 12 chars (inclusive threshold)', () => {
+    expect(getDisplayName('Max Zwölfzeichen')).toBe('Zwölfzeichen')
+  })
+
+  it('switches to Initial + LastName at 13 chars (above threshold)', () => {
+    expect(getDisplayName('Max Dreizehnzeich')).toBe('M. Dreizehnzei…')
   })
 
   it('truncates very long single name with ellipsis', () => {

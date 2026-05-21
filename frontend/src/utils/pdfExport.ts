@@ -4,9 +4,9 @@ import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, Substitut
 
 /**
  * Returns a short display name suitable for the field diagram.
- * - Single-word name: returned as-is (truncated at 14 chars)
- * - Multi-word name: last name (truncated at 14 chars)
- * - Last name > 12 chars: `Initial. LastName` with last name truncated to keep total ≤ 14 chars
+ * - Single-word name: returned as-is, truncated with `…` if longer than 14 chars
+ * - Multi-word, last name ≤ 12 chars: last name only
+ * - Multi-word, last name > 12 chars: `Initial. LastName`, truncated with `…` to fit
  */
 export function getDisplayName(fullName: string): string {
   const MAX = 14
@@ -20,9 +20,9 @@ export function getDisplayName(fullName: string): string {
     return last.length > MAX ? last.slice(0, MAX) + '…' : last
   }
 
-  // multi-word with short last name
+  // multi-word with short last name — last name fits, return as-is
   if (last.length <= 12) {
-    return last.length > MAX ? last.slice(0, MAX) + '…' : last
+    return last
   }
 
   // long last name — use initial + last, truncate last
