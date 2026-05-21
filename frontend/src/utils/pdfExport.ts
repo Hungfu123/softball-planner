@@ -589,7 +589,6 @@ export function generateLineupWithFieldPdf(
   const lineupWidth = 70
   const fieldWidth = 78
   const fieldHeight = 78
-  const contentRowHeight = 78
   const gap = 12
   // Block (Lineup + Gap + Feld) horizontal zentrieren
   const blockWidth = lineupWidth + gap + fieldWidth
@@ -659,6 +658,7 @@ export function generateLineupWithFieldPdf(
     }
 
     const contentTopY = y
+    let lineupBottomY = contentTopY
 
     // --- Lineup-Tabelle links ---
     if (lineup.length === 0) {
@@ -667,6 +667,7 @@ export function generateLineupWithFieldPdf(
       doc.setTextColor(150, 150, 150)
       doc.text('Kein Lineup', lineupX, y + 4)
       doc.setTextColor(0, 0, 0)
+      lineupBottomY = contentTopY + 6
     } else {
       const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
       const subsByPlayerOut = new Map<number, SubstitutionResponse[]>()
@@ -701,15 +702,13 @@ export function generateLineupWithFieldPdf(
           2: { cellWidth: 14, halign: 'right', font: 'courier', fontStyle: 'bold' },
         },
       })
+      lineupBottomY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
     }
 
     // --- Feld-Diagram rechts ---
     drawFieldDiagram(doc, fieldX, contentTopY, fieldWidth, fieldHeight, lineup, substitutions)
 
-    // y nach Content-Row weitersetzen
-    y = contentTopY + contentRowHeight
-
-    // --- Bench-Line ---
+    // --- Bench-Line (direkt unter Lineup-Tabelle, nicht erst unter Feld) ---
     const gameUsedIds = new Set<number>()
     for (const e of lineup) {
       gameUsedIds.add(e.player.id)
@@ -718,23 +717,18 @@ export function generateLineupWithFieldPdf(
     for (const s of staff) gameUsedIds.add(s.player.id)
     for (const sub of substitutions) gameUsedIds.add(sub.playerIn.id)
     const bench = gameDay.availablePlayers.filter(p => !gameUsedIds.has(p.id))
+    let benchBottomY = lineupBottomY
     if (bench.length > 0) {
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(150, 150, 150)
-      doc.text(`Bank: ${bench.map(p => p.name).join(', ')}`, lineupX, y)
+      doc.text(`Bank: ${bench.map(p => p.name).join(', ')}`, lineupX, lineupBottomY + 3)
       doc.setTextColor(0, 0, 0)
+      benchBottomY = lineupBottomY + 6
     }
-    y += 3
 
-    // --- Inter-Block-Separator (außer nach letztem Spiel auf Seite / letztem Spiel) ---
-    const isLastOnPage = (gi + 1) % 3 === 0 || gi === games.length - 1
-    if (!isLastOnPage) {
-      doc.setDrawColor(229, 224, 207) // cream-300
-      doc.setLineWidth(0.2)
-      doc.line(margin, y, pageWidth - margin, y)
-      y += 3
-    }
+    // Nächster Block startet unter dem größeren Element (Feld vs Lineup+Bank) + Abstand
+    y = Math.max(benchBottomY, contentTopY + fieldHeight) + 4
   }
 
   // --- Filename + PDF-Properties ---
