@@ -22,7 +22,7 @@ import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, ClipboardIcon, Users
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
-import { generatePdf, generateScoringPdf } from '@/utils/pdfExport'
+import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import * as api from '@/api/client'
 
@@ -233,6 +233,16 @@ export function GameDayPlanner() {
     }
   }
 
+  const handleExportLineupField = async () => {
+    if (!gameDay) return
+    try {
+      const gameData = await loadGameData()
+      if (gameData) generateLineupWithFieldPdf(gameDay, gameData, season)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const triggerAutoGenerate = () => {
     if (!activeGame) return
     if (lineup.entries.length > 0) {
@@ -428,6 +438,11 @@ export function GameDayPlanner() {
               />
               <ToolbarBtn
                 icon={<ExportDoc size={16} />}
+                label="Lineup + Feld"
+                onClick={handleExportLineupField}
+              />
+              <ToolbarBtn
+                icon={<ExportDoc size={16} />}
                 label="PDF"
                 onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
               />
@@ -484,6 +499,14 @@ export function GameDayPlanner() {
               >
                 <ClipboardIcon size={14} />
                 <span>Scoring</span>
+              </button>
+              <button
+                onClick={handleExportLineupField}
+                className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                title="Lineup + Feld als PDF exportieren"
+              >
+                <ExportDoc size={14} />
+                <span>Lineup + Feld</span>
               </button>
               <button
                 onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
