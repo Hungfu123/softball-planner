@@ -332,12 +332,15 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
                 />
               )
             }
+            const isBattingGroup = g.indices.some(i => sections[i].sectionType === 'BATTING')
+            const GroupIcon = isBattingGroup ? BatIcon : Boxes
+            const groupLabel = isBattingGroup ? 'Batting Stationen' : 'Station · parallel'
             return (
               <div key={`g-${gIdx}`} className="bg-navy-50 border border-navy-200 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-3 py-2 bg-navy-100">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-navy-800 flex items-center gap-1.5">
-                    <Boxes size={14} className="text-softball-red-600" />
-                    Station &middot; parallel
+                    <GroupIcon size={14} className="text-softball-red-600" />
+                    {groupLabel}
                   </span>
                   {g.durationMinutes != null && (
                     <span className="text-xs font-bold tabular-nums text-navy-900">{g.durationMinutes} min</span>

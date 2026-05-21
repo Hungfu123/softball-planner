@@ -84,11 +84,14 @@ export function CrossBones({ size = 24, className }: IconProps) {
 
 export function BatIcon({ size = 20, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M14 4l6 6-7 7-4-4 5-5z" />
-      <path d="M9 13l-5 5" />
-      <path d="M5 19l-1 1" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor"
+      strokeWidth="0.4" strokeLinejoin="round" className={className}>
+      {/* Tapered barrel (fat at top-right, narrows toward handle), rounded tip */}
+      <path d="M22 2 A 2.12 2.12 0 0 0 19 5 L 9.29 14.71 L 10.71 13.29 Z" />
+      {/* Handle (thinner) */}
+      <path d="M 10.71 13.29 L 4.35 19.65 L 3.65 20.35 L 9.29 14.71 Z" />
+      {/* Knob */}
+      <circle cx="3" cy="21" r="1.3" />
     </svg>
   )
 }
