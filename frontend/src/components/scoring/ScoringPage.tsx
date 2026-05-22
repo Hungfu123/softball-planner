@@ -330,6 +330,10 @@ export function ScoringPage() {
     setUndoAnimSkip(true)
     try {
       const result = await undo()
+      if (result.type === 'SUBSTITUTION' && currentGame) {
+        const newSubs = await api.getSubstitutions(currentGame.id)
+        setSubstitutions(newSubs)
+      }
       const message =
         result.type === 'AT_BAT' ? 'Letzter At-Bat rückgängig gemacht' :
         result.type === 'STEALING' ? 'Letztes Stealing-Event rückgängig gemacht' :
