@@ -624,7 +624,7 @@ export function GameDayPlanner() {
 
           {/* Main Layout — 3 cols on lg, 4 cols on xl (Lineup | Field+Coaches | Pool+Bench | Training) */}
           <div
-            className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] xl:grid-cols-[360px_320px_minmax(0,1fr)_320px] gap-4 lg:gap-5"
+            className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] xl:grid-cols-[360px_320px_minmax(0,1fr)_260px] gap-4 lg:gap-5"
             onTouchStart={onSwipeStart}
             onTouchEnd={onSwipeEnd}
           >

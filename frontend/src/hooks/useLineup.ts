@@ -167,7 +167,10 @@ export function useLineup() {
       const ib = prev.findIndex(e => e.player.id === idB)
       if (ia < 0 || ib < 0 || ia === ib) return prev
       const next = [...prev]
-      ;[next[ia], next[ib]] = [next[ib], next[ia]]
+      const posA = next[ia].position
+      const posB = next[ib].position
+      next[ia] = { ...next[ia], position: posB, dhBatterId: null, dhBatterName: null }
+      next[ib] = { ...next[ib], position: posA, dhBatterId: null, dhBatterName: null }
       return next
     })
   }, [])
