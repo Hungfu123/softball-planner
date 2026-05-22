@@ -271,14 +271,17 @@ export function ScoringPage() {
       //
       // Nicht bei HOMERUN: alle scoren per Definition (Ball über Zaun).
       // Nicht bei WALK/HBP: Force eindeutig.
-      // Auch bei 3. Out öffnen: Force-Out-3rd-Out-Regel (Run zählt nicht) muss
-      // user-bestätigt werden via CorrectionSheet-Banner (outsAfter===3).
-      if (result === 'OUT' && hadRunners) {
-        setShowCorrection(true)
-      } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
-        setShowCorrection(true)
-      } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
-        setShowCorrection(true)
+      // Nicht beim 3. Out: Inning vorbei, Runner-Advance irrelevant.
+      const outsAfter = (scoreboard.outsInCurrentInning ?? 0) + (result === 'OUT' ? 1 : 0)
+      const inningOver = outsAfter >= 3
+      if (!inningOver) {
+        if (result === 'OUT' && hadRunners) {
+          setShowCorrection(true)
+        } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
+          setShowCorrection(true)
+        } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
+          setShowCorrection(true)
+        }
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
