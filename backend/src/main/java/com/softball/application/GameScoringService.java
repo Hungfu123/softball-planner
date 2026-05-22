@@ -376,6 +376,13 @@ public class GameScoringService {
             }
         }
 
+        // Inning-Wechsel: Runner aus vorherigem Inning duerfen nicht weiter auf den Bases
+        // angezeigt werden. ScoreUs-Cascade-Runs aus vorherigem Inning bleiben oben im Fold
+        // erhalten — nur die Base-State-Darstellung wird zurueckgesetzt.
+        if (last != null && last.getInning() != null && last.getInning() < currentInning) {
+            state = BaseState.empty();
+        }
+
         final Map<Long, Player> playerMap = buildPlayerMap(state, lineup);
 
         final List<ScoreboardResponse.RunnerOnBase> runners = new ArrayList<>();
