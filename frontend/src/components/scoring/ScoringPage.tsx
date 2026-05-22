@@ -339,6 +339,17 @@ export function ScoringPage() {
     setSubmitting(true)
     setUndoAnimSkip(true)
     try {
+      // Bei manuellem Game-Over (endedAt gesetzt) erst Game reopen, sonst
+      // bleibt UI im "Spiel beendet"-Banner haengen obwohl Undo Backend-State
+      // zurueckdreht.
+      if (manualGameOver && currentGame) {
+        await api.reopenGame(currentGame.id)
+        setManualGameOver(false)
+        setGameDay(prev => prev ? {
+          ...prev,
+          games: prev.games.map(g => g.id === currentGame.id ? { ...g, endedAt: null } : g),
+        } : prev)
+      }
       const result = await undo()
       if (result.type === 'SUBSTITUTION' && currentGame) {
         const newSubs = await api.getSubstitutions(currentGame.id)
