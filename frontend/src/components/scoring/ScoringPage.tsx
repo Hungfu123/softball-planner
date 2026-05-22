@@ -112,8 +112,15 @@ export function ScoringPage() {
   const currentInning = displayInning
   const REGULATION_INNINGS = 7
   // Unentschieden → Extra-Innings erlaubt. Game-Over nur wenn manuell ODER
-  // (Regulation-Inning Ende UND nicht unentschieden)
-  const regulationOver = halfInningOver && displayInning >= REGULATION_INNINGS
+  // (Regulation-Inning Ende UND nicht unentschieden).
+  // Auswaerts (top): unsere Top-Haelfte fertig heisst Gegner muss noch Bottom
+  // schlagen → Game-Over erst wenn displayInning > 7 (also nach Inning-Advance
+  // wurde Bottom mit Opp-Runs erfasst).
+  // Heim (bottom): unsere Bottom-Haelfte = letzte Haelfte des Innings → Game-Over
+  // sobald halfInningOver in Inning 7+.
+  const regulationOver = battingSide === 'bottom'
+    ? (halfInningOver && displayInning >= REGULATION_INNINGS)
+    : (displayInning > REGULATION_INNINGS)
   const isTied = (scoreboard?.scoreUs ?? 0) === (scoreboard?.scoreThem ?? 0)
   const extraInningsNeeded = regulationOver && isTied
   // Walkoff: Heimteam (battingSide=bottom) führt nach AB in Inning 7+ → Spiel vorbei
