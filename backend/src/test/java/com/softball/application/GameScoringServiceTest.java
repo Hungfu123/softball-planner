@@ -719,10 +719,10 @@ class GameScoringServiceTest {
         }
 
         @Test
-        void lastABIsNewest_deletesABAndOrphanStealings() {
+        void lastABIsNewest_deletesOnlyAB_keepsStealingsIntact() {
             mockGame();
-            // Stealing happened between ab1 and ab2 — it's an orphan tied to ab2.
-            // Undoing ab2 (the newest action) must also clean up that orphan stealing.
+            // Stealing zwischen ab1 und ab2 ist ein eigenstaendiges Event und bleibt beim
+            // AB-Undo erhalten. User muss Steal separat per Undo entfernen wenn gewuenscht.
             final Instant ab1Time = Instant.parse("2026-05-11T10:00:00Z");
             final Instant stealTime = Instant.parse("2026-05-11T10:00:30Z");
             final Instant ab2Time = Instant.parse("2026-05-11T10:01:00Z");
@@ -743,7 +743,7 @@ class GameScoringServiceTest {
             assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AT_BAT);
             assertThat(result.removedId()).isEqualTo(102L);
             org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
-            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
+            org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(201L);
         }
 
         @Test
@@ -820,7 +820,7 @@ class GameScoringServiceTest {
         }
 
         @Test
-        void undoAB_deletesStealingsAfterCutoff_keepsStealingsBefore() {
+        void undoAB_keepsAllStealings_independentOfTimestamp() {
             mockGame();
             final Instant stealEarlyTime = Instant.parse("2026-05-11T09:59:00Z");
             final Instant ab1Time = Instant.parse("2026-05-11T10:00:00Z");
@@ -845,8 +845,8 @@ class GameScoringServiceTest {
             assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AT_BAT);
             assertThat(result.removedId()).isEqualTo(102L);
             org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
-            org.mockito.Mockito.verify(stealingRepository).deleteById(201L);
             org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(200L);
+            org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(201L);
         }
     }
 
