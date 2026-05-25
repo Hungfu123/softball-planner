@@ -71,9 +71,10 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], jus
       const preBase = preBaseMap.get(r.playerId)
       const currentBase = r.base as 1 | 2 | 3
       const isJustBatted = justBattedId != null && r.playerId === justBattedId
-      const wasOnBase = isJustBatted
-        ? null  // Batter kam vom Home, hat keine vorige Base
-        : (preBase != null && preBase <= currentBase ? preBase : currentBase)
+      // wasOnBase = currentBase (Cycle ab dort vorwaerts inkl. Home — auch fuer
+      // Batter, damit Park-in-the-Home moeglich ist). preRank merkt sich dass
+      // Batter pre-AB vom Home kam (Overtake-Validierung).
+      const wasOnBase = preBase != null && preBase <= currentBase ? preBase : currentBase
       const preRank = isJustBatted ? 0 : (preBase ?? currentBase)
       return {
         playerId: r.playerId,
