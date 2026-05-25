@@ -40,6 +40,7 @@ export function ScoringPage() {
   const [undoAnimSkip, setUndoAnimSkip] = useState(false)
   const [outRunnerIds, setOutRunnerIds] = useState<Set<number>>(new Set())
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
+  const [manualAdvancePrompt, setManualAdvancePrompt] = useState(false)
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
   const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   // HR-Runner läuft über alle Bases. State hält name + battingOrder damit
@@ -309,6 +310,7 @@ export function ScoringPage() {
     try {
       await api.advanceInning(currentGame.id, opponentRuns)
       setOpponentRunsThisInning('')
+      setManualAdvancePrompt(false)
       await reload()
       toast.show(`Inning ${displayInning + 1} · Bases frei`, 'success')
     } catch (e) {
@@ -657,17 +659,33 @@ export function ScoringPage() {
       </div>
 
       {/* Inning-Wechsel Banner / Spiel-Ende */}
-      {halfInningOver && !gameOver && (
+      {(halfInningOver || manualAdvancePrompt) && !gameOver && (
         <div className="bg-softball-red-50 border-b-2 border-softball-red-200 px-4 py-3 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="font-bold text-softball-red-900">
-                {extraInningsNeeded ? `Unentschieden nach ${displayInning} — Extra Inning!` : '3. Out erreicht!'}
+                {extraInningsNeeded
+                  ? `Unentschieden nach ${displayInning} — Extra Inning!`
+                  : halfInningOver
+                    ? '3. Out erreicht!'
+                    : 'Inning manuell wechseln'}
               </div>
               <div className="text-xs text-softball-red-700">
-                {extraInningsNeeded ? 'Softball-Tiebreaker: weiter bis zur Entscheidung' : 'Halb-Inning beendet'}
+                {extraInningsNeeded
+                  ? 'Softball-Tiebreaker: weiter bis zur Entscheidung'
+                  : halfInningOver
+                    ? 'Halb-Inning beendet'
+                    : 'Wechsel ohne 3. Out — unabhaengig vom Out-Counter'}
               </div>
             </div>
+            {manualAdvancePrompt && !halfInningOver && (
+              <button
+                onClick={() => { setManualAdvancePrompt(false); setOpponentRunsThisInning('') }}
+                className="text-xs text-softball-red-700 hover:text-softball-red-900 underline cursor-pointer"
+              >
+                Abbrechen
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <label className="flex-1 text-xs text-softball-red-900 font-medium">
@@ -892,6 +910,14 @@ export function ScoringPage() {
             </button>
           )}
         </div>
+        {!halfInningOver && !gameOver && !manualAdvancePrompt && atBats.length > 0 && (
+          <button
+            onClick={() => setManualAdvancePrompt(true)}
+            className="mt-2 w-full text-[11px] text-gray-500 hover:text-navy-800 underline cursor-pointer"
+          >
+            Inning manuell wechseln
+          </button>
+        )}
       </div>
       )}
 
@@ -2007,14 +2033,21 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
       return next
     }
     case 'SINGLE': {
-      // Konservativ: Batter auf 1B, Runner jeweils +1 Base
-      // 3B → Home (scort), 2B → 3B, 1B → 2B
-      return {
-        first: batterId,
-        second: state.first,
-        third: state.second,
-        // 3B-Runner scort (wird weggelassen aus state → countScored erkennt)
+      // Konservativ: Batter auf 1B, Runner advancen NUR wenn forced.
+      // 1B-Runner forced → 2B (Batter belegt 1B).
+      // 2B-Runner: nur forced wenn 1B vorher besetzt war.
+      // 3B-Runner: nur forced wenn 2B+1B vorher beide besetzt.
+      // Non-forced bleiben — User passt via CorrectionSheet an wenn er
+      // weiter laeuft (z.B. 2B-Runner scort bei Single ins Outfield).
+      const next: BaseStateDto = { first: batterId, second: state.second, third: state.third }
+      if (state.first != null) {
+        next.second = state.first
+        if (state.second != null) {
+          next.third = state.second
+          // Bases loaded → 3B forced home (wird in countScored erfasst)
+        }
       }
+      return next
     }
     case 'DOUBLE': {
       // Konservativ: Batter auf 2B, Runner jeweils +2 Bases
