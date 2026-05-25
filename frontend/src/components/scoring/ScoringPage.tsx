@@ -948,6 +948,7 @@ export function ScoringPage() {
         baseState={displayBaseState}
         runners={displayRunners}
         preAbRunners={preAbRunners}
+        justBattedId={atBats.length > 0 ? atBats[atBats.length - 1]?.batterId ?? null : null}
         recentlyScored={recentlyScored}
         context={
           atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'

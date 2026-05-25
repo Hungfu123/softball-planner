@@ -9,6 +9,10 @@ interface RunnerAssignment {
   playerName: string
   position: Position
   wasOnBase: 1 | 2 | 3 | null  // wo war er VORHER
+  /** Pre-AB Reihenfolge-Rang. 0 = kam vom Home (Batter), 1/2/3 = war auf Base,
+   *  4 = war bereits gescort. Fuer Overtake-Validierung: kein Runner darf vor
+   *  einem laufen der pre-AB weiter vorne war. */
+  preRank: number
 }
 
 /**
@@ -27,6 +31,10 @@ interface Props {
    *  weitergerückt wurde (z.B. 2B→3B bei Single), enthält dies seine
    *  Original-Base. Cycle-Range startet ab dort → User kann zurück tappen. */
   preAbRunners?: RunnerOnBase[]
+  /** Batter ID des AB der dieses Sheet ausgeloest hat. Markiert ihn als
+   *  "kam vom Home" fuer Overtake-Validierung — er darf nicht hoeher landen
+   *  als Pre-Runner die vor ihm waren. */
+  justBattedId?: number | null
   recentlyScored?: { playerId: number; playerName: string }[]
   context?: CorrectionContext
   /** Outs im aktuellen Inning NACH dem Abschluss dieses AtBats (0/1/2/3). Bei 3 → Force-Out-Regel-Hinweis. */
@@ -43,7 +51,7 @@ interface Props {
   }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], recentlyScored = [], context = 'manual', outsAfter, extraBatter, onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], justBattedId = null, recentlyScored = [], context = 'manual', outsAfter, extraBatter, onSave }: Props) {
   const [assignments, setAssignments] = useState<RunnerAssignment[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -62,12 +70,17 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], rec
       // Erlaubt Cycle bis zurueck zur Ausgangs-Base.
       const preBase = preBaseMap.get(r.playerId)
       const currentBase = r.base as 1 | 2 | 3
-      const wasOnBase = preBase != null && preBase <= currentBase ? preBase : currentBase
+      const isJustBatted = justBattedId != null && r.playerId === justBattedId
+      const wasOnBase = isJustBatted
+        ? null  // Batter kam vom Home, hat keine vorige Base
+        : (preBase != null && preBase <= currentBase ? preBase : currentBase)
+      const preRank = isJustBatted ? 0 : (preBase ?? currentBase)
       return {
         playerId: r.playerId,
         playerName: r.playerName,
         position: context === 'post-out' ? advanceByOne(currentBase) : currentBase,
         wasOnBase,
+        preRank,
       } as RunnerAssignment
     })
     // Scored Runner: wasOnBase = Pre-AB Base (falls bekannt) statt null.
@@ -75,11 +88,13 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], rec
     // doch auf Base zurueckschicken, z.B. nach Double-Default).
     const scored = recentlyScored.map(s => {
       const preBase = preBaseMap.get(s.playerId) ?? null
+      const isJustBatted = justBattedId != null && s.playerId === justBattedId
       return {
         playerId: s.playerId,
         playerName: s.playerName,
         position: 'home' as Position,
         wasOnBase: preBase,
+        preRank: isJustBatted ? 0 : (preBase ?? 4),
       } as RunnerAssignment
     })
     // Batter (z.B. ROE): Default auf defaultBase, wasOnBase=defaultBase damit Cycle ab dort
@@ -88,6 +103,7 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], rec
       playerName: extraBatter.playerName,
       position: extraBatter.defaultBase as Position,
       wasOnBase: extraBatter.defaultBase,
+      preRank: 0,  // Batter kommt vom Home
     }] : []
     setAssignments([...onBase, ...scored, ...batter])
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,14 +119,31 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], rec
 
 
   // Build new base state
-  // Conflict-Resolution: last assignment wins. User sollte nicht zwei Runner auf gleiche Base packen.
+  // Conflict-Resolution: (1) keine zwei Runner auf gleicher Base, (2) kein
+  // Overtaking — Runner darf nicht hoeher landen als ein Pre-Runner der vor
+  // ihm war (z.B. Batter pre-rank 0 darf nicht auf 3B wenn Pre-2B-Runner auf
+  // 2B bleibt). Out wird ignoriert (Out darf jeden ueberholen / ueberholt werden).
+  const postRank = (p: Position): number =>
+    p === 'home' ? 4 : (typeof p === 'number' ? p : -1)
+  const overtakeViolation = useMemo(() => {
+    const active = assignments.filter(a => a.position !== 'out')
+    for (const A of active) {
+      for (const B of active) {
+        if (A.playerId === B.playerId) continue
+        if (A.preRank < B.preRank && postRank(A.position) > postRank(B.position)) {
+          return true
+        }
+      }
+    }
+    return false
+  }, [assignments])
   const hasConflict = useMemo(() => {
     const bases = assignments.filter(a => a.position === 1 || a.position === 2 || a.position === 3)
     const first = bases.filter(a => a.position === 1).length
     const second = bases.filter(a => a.position === 2).length
     const third = bases.filter(a => a.position === 3).length
-    return first > 1 || second > 1 || third > 1
-  }, [assignments])
+    return first > 1 || second > 1 || third > 1 || overtakeViolation
+  }, [assignments, overtakeViolation])
 
   const handleSave = async () => {
     if (hasConflict) return
@@ -225,7 +258,9 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], rec
 
         {hasConflict && (
           <div className="text-xs text-softball-red-600 bg-softball-red-50 rounded-lg p-2 text-center">
-            Zwei Runner auf derselben Base — bitte prüfen.
+            {overtakeViolation
+              ? 'Runner darf nicht ueberholen — Reihenfolge der Bases beachten.'
+              : 'Zwei Runner auf derselben Base — bitte pruefen.'}
           </div>
         )}
       </div>
