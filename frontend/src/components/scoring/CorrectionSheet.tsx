@@ -70,12 +70,18 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], rec
         wasOnBase,
       } as RunnerAssignment
     })
-    const scored = recentlyScored.map(s => ({
-      playerId: s.playerId,
-      playerName: s.playerName,
-      position: 'home' as Position,
-      wasOnBase: null,
-    }))
+    // Scored Runner: wasOnBase = Pre-AB Base (falls bekannt) statt null.
+    // Erlaubt Cycle home → preBase → ... → home (User kann gescortn Runner
+    // doch auf Base zurueckschicken, z.B. nach Double-Default).
+    const scored = recentlyScored.map(s => {
+      const preBase = preBaseMap.get(s.playerId) ?? null
+      return {
+        playerId: s.playerId,
+        playerName: s.playerName,
+        position: 'home' as Position,
+        wasOnBase: preBase,
+      } as RunnerAssignment
+    })
     // Batter (z.B. ROE): Default auf defaultBase, wasOnBase=defaultBase damit Cycle ab dort
     const batter: RunnerAssignment[] = extraBatter ? [{
       playerId: extraBatter.playerId,
