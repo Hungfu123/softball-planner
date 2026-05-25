@@ -125,24 +125,25 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], jus
   // 2B bleibt). Out wird ignoriert (Out darf jeden ueberholen / ueberholt werden).
   const postRank = (p: Position): number =>
     p === 'home' ? 4 : (typeof p === 'number' ? p : -1)
-  const overtakeViolation = useMemo(() => {
+  const overtakeViolation = useMemo<{ ahead: string; behind: string } | null>(() => {
     const active = assignments.filter(a => a.position !== 'out')
     for (const A of active) {
       for (const B of active) {
         if (A.playerId === B.playerId) continue
         if (A.preRank < B.preRank && postRank(A.position) > postRank(B.position)) {
-          return true
+          // A war hinten, ueberholt B
+          return { ahead: B.playerName, behind: A.playerName }
         }
       }
     }
-    return false
+    return null
   }, [assignments])
   const hasConflict = useMemo(() => {
     const bases = assignments.filter(a => a.position === 1 || a.position === 2 || a.position === 3)
     const first = bases.filter(a => a.position === 1).length
     const second = bases.filter(a => a.position === 2).length
     const third = bases.filter(a => a.position === 3).length
-    return first > 1 || second > 1 || third > 1 || overtakeViolation
+    return first > 1 || second > 1 || third > 1 || overtakeViolation != null
   }, [assignments, overtakeViolation])
 
   const handleSave = async () => {
@@ -257,10 +258,22 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], jus
         </div>
 
         {hasConflict && (
-          <div className="text-xs text-softball-red-600 bg-softball-red-50 rounded-lg p-2 text-center">
-            {overtakeViolation
-              ? 'Runner darf nicht ueberholen — Reihenfolge der Bases beachten.'
-              : 'Zwei Runner auf derselben Base — bitte pruefen.'}
+          <div className="text-xs text-softball-red-700 bg-softball-red-50 border border-softball-red-200 rounded-lg p-2 space-y-0.5">
+            {overtakeViolation ? (
+              <>
+                <div className="font-bold">
+                  {overtakeViolation.behind} ueberholt {overtakeViolation.ahead}.
+                </div>
+                <div className="text-softball-red-600">
+                  Runner kann nicht hoeher landen als ein vor ihm laufender. Entweder {overtakeViolation.ahead} mit advancen oder {overtakeViolation.behind} auf gleiche/niedrigere Base.
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-bold">Zwei Runner auf derselben Base.</div>
+                <div className="text-softball-red-600">Jede Base kann nur einen Runner halten — einen weiter advancen.</div>
+              </>
+            )}
           </div>
         )}
       </div>
