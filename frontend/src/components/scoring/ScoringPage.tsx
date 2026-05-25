@@ -34,6 +34,10 @@ export function ScoringPage() {
   // Extra-Outs pro Inning (für Double-Play o.Ä.): lokaler Override
   const [extraOuts, setExtraOuts] = useState(0)
   const [showCorrection, setShowCorrection] = useState(false)
+  // Snapshot der Runner-Positionen VOR dem letzten AB — fuer CorrectionSheet,
+  // damit Cycle bis zur urspruenglichen Base zurueck kann (User korrigiert
+  // +1-Default zurueck wenn Runner doch stehen bleibt).
+  const [preAbRunners, setPreAbRunners] = useState<RunnerOnBase[]>([])
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
@@ -177,6 +181,9 @@ export function ScoringPage() {
     setSubmitting(true)
     // Name des aktuellen Batters merken BEVOR reload passiert
     const batterNameSnapshot = scoreboard.currentBatterName ?? 'Batter'
+    // Pre-AB Runner-Snapshot fuer CorrectionSheet — ermoeglicht Cycle zurueck
+    // zur urspruenglichen Base falls Runner doch stehen blieb.
+    setPreAbRunners(displayRunners)
     try {
       const nextState = advanceBases(displayBaseState, result, scoreboard.currentBatterId)
       const runsScored = countScored(displayBaseState, nextState, result, scoreboard.currentBatterId)
@@ -927,6 +934,7 @@ export function ScoringPage() {
         onClose={() => setShowCorrection(false)}
         baseState={displayBaseState}
         runners={displayRunners}
+        preAbRunners={preAbRunners}
         recentlyScored={recentlyScored}
         context={
           atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'
@@ -2033,21 +2041,15 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
       return next
     }
     case 'SINGLE': {
-      // Konservativ: Batter auf 1B, Runner advancen NUR wenn forced.
-      // 1B-Runner forced → 2B (Batter belegt 1B).
-      // 2B-Runner: nur forced wenn 1B vorher besetzt war.
-      // 3B-Runner: nur forced wenn 2B+1B vorher beide besetzt.
-      // Non-forced bleiben — User passt via CorrectionSheet an wenn er
-      // weiter laeuft (z.B. 2B-Runner scort bei Single ins Outfield).
-      const next: BaseStateDto = { first: batterId, second: state.second, third: state.third }
-      if (state.first != null) {
-        next.second = state.first
-        if (state.second != null) {
-          next.third = state.second
-          // Bases loaded → 3B forced home (wird in countScored erfasst)
-        }
+      // Default: Batter auf 1B, Runner jeweils +1 Base (haeufigster Fall).
+      // 3B → Home (scort), 2B → 3B, 1B → 2B. Wenn Runner doch stehen bleibt,
+      // korrigiert User via CorrectionSheet zurueck auf vorige Base.
+      return {
+        first: batterId,
+        second: state.first,
+        third: state.second,
+        // 3B-Runner scort (wird weggelassen aus state → countScored erkennt)
       }
-      return next
     }
     case 'DOUBLE': {
       // Konservativ: Batter auf 2B, Runner jeweils +2 Bases

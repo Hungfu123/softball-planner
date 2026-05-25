@@ -23,6 +23,10 @@ interface Props {
   onClose: () => void
   baseState?: BaseStateDto  // optional, reserviert für künftige Nutzung
   runners: RunnerOnBase[]
+  /** Runner-Positionen VOR dem letzten AB. Wenn Runner durch Auto-Advance
+   *  weitergerückt wurde (z.B. 2B→3B bei Single), enthält dies seine
+   *  Original-Base. Cycle-Range startet ab dort → User kann zurück tappen. */
+  preAbRunners?: RunnerOnBase[]
   recentlyScored?: { playerId: number; playerName: string }[]
   context?: CorrectionContext
   /** Outs im aktuellen Inning NACH dem Abschluss dieses AtBats (0/1/2/3). Bei 3 → Force-Out-Regel-Hinweis. */
@@ -39,7 +43,7 @@ interface Props {
   }) => void | Promise<void>
 }
 
-export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], context = 'manual', outsAfter, extraBatter, onSave }: Props) {
+export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], recentlyScored = [], context = 'manual', outsAfter, extraBatter, onSave }: Props) {
   const [assignments, setAssignments] = useState<RunnerAssignment[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -52,12 +56,20 @@ export function CorrectionSheet({ open, onClose, runners, recentlyScored = [], c
     //   1B → 2B, 2B → 3B, 3B → Home. User fixt wenn Runner doch out oder bleibt.
     // Bei manual: Default = bleibt (User passt nur an was geändert hat).
     const advanceByOne = (b: 1 | 2 | 3): Position => (b === 3 ? 'home' : ((b + 1) as Position))
-    const onBase = runners.map(r => ({
-      playerId: r.playerId,
-      playerName: r.playerName,
-      position: context === 'post-out' ? advanceByOne(r.base as 1 | 2 | 3) : (r.base as 1 | 2 | 3),
-      wasOnBase: r.base as 1 | 2 | 3,
-    } as RunnerAssignment))
+    const preBaseMap = new Map(preAbRunners.map(r => [r.playerId, r.base as 1 | 2 | 3]))
+    const onBase = runners.map(r => {
+      // wasOnBase = Pre-AB Base wenn bekannt (= Original-Position vor Auto-Advance).
+      // Erlaubt Cycle bis zurueck zur Ausgangs-Base.
+      const preBase = preBaseMap.get(r.playerId)
+      const currentBase = r.base as 1 | 2 | 3
+      const wasOnBase = preBase != null && preBase <= currentBase ? preBase : currentBase
+      return {
+        playerId: r.playerId,
+        playerName: r.playerName,
+        position: context === 'post-out' ? advanceByOne(currentBase) : currentBase,
+        wasOnBase,
+      } as RunnerAssignment
+    })
     const scored = recentlyScored.map(s => ({
       playerId: s.playerId,
       playerName: s.playerName,
