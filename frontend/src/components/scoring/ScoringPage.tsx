@@ -305,7 +305,19 @@ export function ScoringPage() {
     }
   }
 
+  const [pendingAdvanceConfirm, setPendingAdvanceConfirm] = useState(false)
+
   const handleNextInning = async () => {
+    if (!currentGame) return
+    // Manueller Advance mit Runner auf Base → Warnung (Runner werden gestrandet).
+    if (manualAdvancePrompt && !halfInningOver && displayRunners.length > 0) {
+      setPendingAdvanceConfirm(true)
+      return
+    }
+    await performInningAdvance()
+  }
+
+  const performInningAdvance = async () => {
     if (!currentGame) return
     let opponentRuns = 0
     if (opponentRunsThisInning.trim() !== '') {
@@ -318,6 +330,7 @@ export function ScoringPage() {
       await api.advanceInning(currentGame.id, opponentRuns)
       setOpponentRunsThisInning('')
       setManualAdvancePrompt(false)
+      setPendingAdvanceConfirm(false)
       await reload()
       toast.show(`Inning ${displayInning + 1} · Bases frei`, 'success')
     } catch (e) {
@@ -1922,6 +1935,17 @@ export function ScoringPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Manueller Advance: Runner-Stranding Warnung */}
+      {pendingAdvanceConfirm && (
+        <ConfirmModal
+          title="Inning wechseln?"
+          message={`${displayRunners.length} Runner auf Base werden gestrandet (scoren nicht). Trotzdem advancen?`}
+          confirmLabel="Ja, wechseln"
+          onConfirm={performInningAdvance}
+          onCancel={() => setPendingAdvanceConfirm(false)}
+        />
+      )}
 
       {/* Reset Confirmation */}
       {showResetConfirm && (
