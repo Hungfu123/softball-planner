@@ -69,6 +69,7 @@ public class BattingStatsCalculator {
                 case DOUBLE -> doubles++;
                 case TRIPLE -> triples++;
                 case HOMERUN -> homeRuns++;
+                case INSIDE_PARK_HR -> homeRuns++;
                 case WALK -> walks++;
                 case HIT_BY_PITCH -> hbp++;
                 case STRIKEOUT -> strikeouts++;

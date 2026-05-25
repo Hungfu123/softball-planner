@@ -271,7 +271,7 @@ export interface UndoResult {
 }
 
 export type AtBatResult =
-  | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN'
+  | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN' | 'INSIDE_PARK_HR'
   | 'WALK' | 'HIT_BY_PITCH'
   | 'STRIKEOUT' | 'OUT'
   | 'REACHED_ON_ERROR'
@@ -375,6 +375,7 @@ export const AT_BAT_RESULT_LABELS: Record<AtBatResult, string> = {
   DOUBLE: 'Double',
   TRIPLE: 'Triple',
   HOMERUN: 'Homerun',
+  INSIDE_PARK_HR: 'Park-HR',
   WALK: 'Walk',
   HIT_BY_PITCH: 'Hit-by-Pitch',
   STRIKEOUT: 'Strikeout',

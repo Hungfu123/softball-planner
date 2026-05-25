@@ -195,8 +195,9 @@ export function ScoringPage() {
       const scoredPlayers = displayRunners
         .filter(r => !newRunnerIds.has(r.playerId))
         .map(r => ({ playerId: r.playerId, playerName: r.playerName }))
-      // Homerun-Batter auch als "gescort" markieren (falls HR) damit er in Korrektur auftaucht
-      if (result === 'HOMERUN' && scoreboard.currentBatterName) {
+      // Homerun-Batter auch als "gescort" markieren (HR + Park-HR) damit er in Korrektur auftaucht
+      const isAnyHomerun = result === 'HOMERUN' || result === 'INSIDE_PARK_HR'
+      if (isAnyHomerun && scoreboard.currentBatterName) {
         scoredPlayers.push({
           playerId: scoreboard.currentBatterId,
           playerName: scoreboard.currentBatterName,
@@ -216,7 +217,7 @@ export function ScoringPage() {
       // Reduced-Motion: User-Setting respektieren — keine Vollbild-Flashes
       const reducedMotion = typeof window !== 'undefined'
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (result === 'HOMERUN') {
+      if (isAnyHomerun) {
         if (!reducedMotion) {
           setHomerunFlash({ batter: batterNameSnapshot, runsScored })
           setTimeout(() => setHomerunFlash(null), 2200)
@@ -264,7 +265,7 @@ export function ScoringPage() {
 
       // Einheitliche Score/Anpassen-Pille — eine Pille für alle Hit/Run-Cases
       // (HR, HBP, WALK haben eigene Vollbild-/Pill-Animationen)
-      if (result !== 'HOMERUN' && result !== 'HIT_BY_PITCH' && result !== 'WALK' && result !== 'REACHED_ON_ERROR') {
+      if (!isAnyHomerun && result !== 'HIT_BY_PITCH' && result !== 'WALK' && result !== 'REACHED_ON_ERROR') {
         const showRuns = scoredPlayers.length > 0
         const showHitPrompt = isHit && hadRunners
         if (showRuns || showHitPrompt) {
@@ -2035,6 +2036,7 @@ function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number
     case 'OUT':
       return state
     case 'HOMERUN':
+    case 'INSIDE_PARK_HR':
       return { first: null, second: null, third: null }
     case 'TRIPLE':
       // Alle Runner laufen Home, Batter auf 3B
@@ -2093,8 +2095,8 @@ function countScored(before: BaseStateDto, after: BaseStateDto, result: AtBatRes
   const stillOnBase = [after.first, after.second, after.third].filter(id => id != null) as number[]
   // Wer vorher auf Base war aber nicht mehr drauf (und nicht der Batter) ist Home
   const scored = wasOnBase.filter(id => !stillOnBase.includes(id)).length
-  // Batter kommt Home bei HR
-  if (result === 'HOMERUN' && !stillOnBase.includes(batterId)) {
+  // Batter kommt Home bei HR (Over-Fence + Inside-Park)
+  if ((result === 'HOMERUN' || result === 'INSIDE_PARK_HR') && !stillOnBase.includes(batterId)) {
     return scored + 1
   }
   return scored
