@@ -1,10 +1,10 @@
 package com.softball.domain.model;
 
 public enum AtBatResult {
-    SINGLE, DOUBLE, TRIPLE, HOMERUN, WALK, HIT_BY_PITCH, STRIKEOUT, OUT, REACHED_ON_ERROR;
+    SINGLE, DOUBLE, TRIPLE, HOMERUN, INSIDE_PARK_HR, WALK, HIT_BY_PITCH, STRIKEOUT, OUT, REACHED_ON_ERROR;
 
     public boolean isHit() {
-        return this == SINGLE || this == DOUBLE || this == TRIPLE || this == HOMERUN;
+        return this == SINGLE || this == DOUBLE || this == TRIPLE || this == HOMERUN || this == INSIDE_PARK_HR;
     }
 
     /** At-Bat zählt für die Trefferquote. Walks und HBP zählen nicht. ROE zählt als AB (BA-Penalty). */
@@ -21,7 +21,7 @@ public enum AtBatResult {
             case SINGLE -> 1;
             case DOUBLE -> 2;
             case TRIPLE -> 3;
-            case HOMERUN -> 4;
+            case HOMERUN, INSIDE_PARK_HR -> 4;
             default -> 0;
         };
     }
@@ -36,6 +36,7 @@ public enum AtBatResult {
             case DOUBLE -> "Double";
             case TRIPLE -> "Triple";
             case HOMERUN -> "Homerun";
+            case INSIDE_PARK_HR -> "Park-HR";
             case WALK -> "Walk";
             case HIT_BY_PITCH -> "Hit-by-Pitch";
             case STRIKEOUT -> "Strikeout";

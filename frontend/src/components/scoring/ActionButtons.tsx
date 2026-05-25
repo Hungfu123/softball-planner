@@ -60,6 +60,11 @@ export function ActionButtons({ onRecord, disabled }: Props) {
               <HitSubButton label="Triple" onClick={() => handleRecord('TRIPLE')} />
               <HitSubButton label="Homerun" onClick={() => handleRecord('HOMERUN')} accent />
             </div>
+            <HitSubButton
+              label="Park-HR · Inside-the-Park"
+              onClick={() => handleRecord('INSIDE_PARK_HR')}
+              accent
+            />
             <button
               onClick={handleCancel}
               className="w-full h-11 rounded-lg border border-cream-300 text-gray-600 text-sm font-medium hover:bg-cream-200 cursor-pointer"

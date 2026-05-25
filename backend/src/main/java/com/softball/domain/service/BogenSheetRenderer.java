@@ -40,6 +40,7 @@ public class BogenSheetRenderer {
             case DOUBLE -> new CellNotation("2B", runScored, null);
             case TRIPLE -> new CellNotation("3B", runScored, null);
             case HOMERUN -> new CellNotation("HR", true, null);
+            case INSIDE_PARK_HR -> new CellNotation("ITP-HR", true, null);
             case WALK -> new CellNotation("BB", runScored, null);
             case HIT_BY_PITCH -> new CellNotation("HP", runScored, null);
             case STRIKEOUT -> new CellNotation("K", false, null);

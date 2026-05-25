@@ -62,7 +62,8 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
         runsScored,
       }
     }
-    case 'HOMERUN': {
+    case 'HOMERUN':
+    case 'INSIDE_PARK_HR': {
       // all + batter home
       const runsScored = 1 + (b1 != null ? 1 : 0) + (b2 != null ? 1 : 0) + (b3 != null ? 1 : 0)
       return {
