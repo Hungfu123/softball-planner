@@ -899,7 +899,7 @@ export function ScoringPage() {
 
       {/* Action Buttons — sticky Thumb-Zone */}
       {(atBats.length > 0 || lineup.length > 0 || gameOver || halfInningOver) && (
-      <div className="px-3 pt-3 pb-2 bg-cream-100 border-t border-cream-300 sticky bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
+      <div className="px-3 pt-3 pb-2 bg-cream-100 border-t border-cream-300 sticky lg:static bottom-0 shadow-[0_-4px_12px_rgba(0,0,0,0.04)] lg:shadow-none" style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}>
         <ActionButtons onRecord={handleRecord} disabled={submitting || !scoreboard?.currentBatterId || halfInningOver} />
 
         {/* Undo + Korrektur + Overthrow (bei Runnern). Overthrow nur sichtbar
