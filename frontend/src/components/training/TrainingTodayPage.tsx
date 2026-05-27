@@ -359,6 +359,7 @@ export function TrainingTodayPage() {
           open={planEditOpen}
           onClose={() => setPlanEditOpen(false)}
           planContent={planContent}
+          planId={planId}
           onSave={async (content) => {
             if (planId == null) return
             await api.updateTrainingPlan(planId, content)

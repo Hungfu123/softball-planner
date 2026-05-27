@@ -4,7 +4,8 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown, Boxes } from 'lucide-react'
+import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown, Boxes, SquarePen } from 'lucide-react'
+import { toast } from 'sonner'
 import { BatIcon } from '@/icons'
 import * as api from '@/api/client'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
@@ -15,6 +16,7 @@ type Props = {
   open: boolean
   onClose: () => void
   planContent: TrainingPlanContentResponse | null
+  planId?: number | null
   onSave: (content: TrainingPlanContentResponse) => Promise<void>
 }
 
@@ -33,7 +35,7 @@ function emptyPlan(): TrainingPlanContentResponse {
 }
 
 function SortableSection({
-  section, idx, drill, expanded, selected, onToggleSelect, onToggleExpanded, onUpdate, onRemove,
+  section, idx, drill, expanded, selected, onToggleSelect, onToggleExpanded, onUpdate, onRemove, onSwap,
 }: {
   section: TrainingPlanSectionResponse
   idx: number
@@ -44,6 +46,7 @@ function SortableSection({
   onToggleExpanded: () => void
   onUpdate: (patch: Partial<TrainingPlanSectionResponse>) => void
   onRemove: () => void
+  onSwap?: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: `section-${idx}` })
   const { Icon, color } = iconFor(section.sectionType)
@@ -82,6 +85,13 @@ function SortableSection({
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-bold uppercase tracking-wider text-navy-500 leading-tight flex items-center gap-1.5">
               <span>{section.sectionType ?? 'Block'}</span>
+              {section.group && section.group !== 'ALL' && (
+                <span className={`text-[9px] font-display font-bold tracking-widest uppercase px-1.5 py-0.5 rounded ${
+                  section.group === 'MAIN' ? 'bg-navy-50 text-navy-800' : 'bg-amber-50 text-amber-800'
+                }`}>
+                  {section.group === 'MAIN' ? 'Hauptgruppe' : 'Anfänger'}
+                </span>
+              )}
               {inStation && (
                 <span className="bg-navy-100 text-navy-800 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
                   <Boxes size={10} className="text-softball-red-600" />
@@ -106,6 +116,17 @@ function SortableSection({
             title="Im Handbuch nachschlagen"
           >
             S.{drill.pdfPage} ↗
+          </button>
+        )}
+        {onSwap && section.drillId && (
+          <button
+            type="button"
+            onClick={onSwap}
+            title="Drill tauschen"
+            aria-label="Drill tauschen"
+            className="p-1 text-gray-500 hover:text-navy-800 cursor-pointer shrink-0"
+          >
+            <SquarePen size={14} />
           </button>
         )}
         <button
@@ -226,7 +247,7 @@ function SortableSection({
   )
 }
 
-export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
+export function PlanEditDrawer({ open, onClose, planContent, planId, onSave }: Props) {
   const [sections, setSections] = useState<TrainingPlanSectionResponse[]>([])
   const [overallNotes, setOverallNotes] = useState<string>('')
   const [saving, setSaving] = useState(false)
@@ -235,7 +256,32 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
   const [pickerType, setPickerType] = useState<'WARMUP' | 'DRILL' | 'BREAK'>('DRILL')
   const [expandedSet, setExpandedSet] = useState<Set<number>>(new Set())
   const [selectedSet, setSelectedSet] = useState<Set<number>>(new Set())
+  const [swapTargetIndex, setSwapTargetIndex] = useState<number | null>(null)
   const dndId = useId()
+
+  const openSwapPicker = (index: number) => setSwapTargetIndex(index)
+  const closeSwapPicker = () => setSwapTargetIndex(null)
+
+  const handleSwapDrill = async (drill: DrillResponse) => {
+    if (swapTargetIndex === null || planId == null) {
+      setSwapTargetIndex(null)
+      return
+    }
+    try {
+      const updated = await api.patchPlanSection(planId, swapTargetIndex, drill.id)
+      if (updated.content?.sections) {
+        setSections(updated.content.sections)
+      }
+      setSwapTargetIndex(null)
+    } catch (e) {
+      console.error(e)
+      toast.error((e as Error).message)
+    }
+  }
+
+  const swapComplexityFilter = swapTargetIndex !== null && sections[swapTargetIndex]?.group === 'BEGINNER'
+    ? 'BASIC' as const
+    : null
 
   const toggleExpanded = (idx: number) => {
     setExpandedSet(prev => {
@@ -487,6 +533,7 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
                         onToggleExpanded={() => toggleExpanded(idx)}
                         onUpdate={(patch) => updateSection(idx, patch)}
                         onRemove={() => removeSection(idx)}
+                        onSwap={planId != null ? () => openSwapPicker(idx) : undefined}
                       />
                     )
                   })
@@ -513,6 +560,15 @@ export function PlanEditDrawer({ open, onClose, planContent, onSave }: Props) {
           drills={drills}
           onSelect={addDrill}
           onClose={() => setShowPicker(false)}
+        />
+      )}
+
+      {swapTargetIndex !== null && (
+        <DrillPickerModal
+          drills={drills}
+          onSelect={handleSwapDrill}
+          onClose={closeSwapPicker}
+          complexityFilter={swapComplexityFilter}
         />
       )}
     </>
