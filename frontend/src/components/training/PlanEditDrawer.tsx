@@ -366,16 +366,16 @@ export function PlanEditDrawer({ open, onClose, planContent, planId, onSave }: P
   }
 
   const addBreak = () => {
-    setSections(prev => {
-      const next = [...prev, {
-        drillId: null, sectionType: 'BREAK', title: 'Pause',
-        durationMinutes: 5, rounds: null, adaptationNotes: null,
-        rotationPlan: null, setupNotes: null, tips: null,
-        groupSetup: null, userNotes: null, parallelGroup: null, playersPerGroup: null,
-      } as TrainingPlanSectionResponse]
-      setExpandedSet(prev => new Set(prev).add(next.length - 1))
-      return next
-    })
+    // Index BEFORE setSections — keeps setExpandedSet out of setSections updater
+    // (Anti-Pattern: nested setState inside updater bricht StrictMode-Double-Invoke)
+    const newIndex = sections.length
+    setSections(prev => [...prev, {
+      drillId: null, sectionType: 'BREAK', title: 'Pause',
+      durationMinutes: 5, rounds: null, adaptationNotes: null,
+      rotationPlan: null, setupNotes: null, tips: null,
+      groupSetup: null, userNotes: null, parallelGroup: null, playersPerGroup: null,
+    } as TrainingPlanSectionResponse])
+    setExpandedSet(prev => new Set(prev).add(newIndex))
   }
 
   const openPicker = (type: 'WARMUP' | 'DRILL') => {
@@ -384,19 +384,19 @@ export function PlanEditDrawer({ open, onClose, planContent, planId, onSave }: P
   }
 
   const addDrill = (drill: DrillResponse) => {
-    setSections(prev => {
-      const next = [...prev, {
-        drillId: drill.id,
-        sectionType: pickerType,
-        title: drill.name,
-        durationMinutes: pickerType === 'WARMUP' ? 15 : 20,
-        rounds: null, adaptationNotes: null,
-        rotationPlan: drill.rotation, setupNotes: null, tips: null,
-        groupSetup: null, userNotes: null, parallelGroup: null, playersPerGroup: null,
-      } as TrainingPlanSectionResponse]
-      setExpandedSet(prev => new Set(prev).add(next.length - 1))
-      return next
-    })
+    // Index BEFORE setSections — keeps setExpandedSet out of setSections updater
+    // (Anti-Pattern: nested setState inside updater bricht StrictMode-Double-Invoke)
+    const newIndex = sections.length
+    setSections(prev => [...prev, {
+      drillId: drill.id,
+      sectionType: pickerType,
+      title: drill.name,
+      durationMinutes: pickerType === 'WARMUP' ? 15 : 20,
+      rounds: null, adaptationNotes: null,
+      rotationPlan: drill.rotation, setupNotes: null, tips: null,
+      groupSetup: null, userNotes: null, parallelGroup: null, playersPerGroup: null,
+    } as TrainingPlanSectionResponse])
+    setExpandedSet(prev => new Set(prev).add(newIndex))
     setShowPicker(false)
   }
 
