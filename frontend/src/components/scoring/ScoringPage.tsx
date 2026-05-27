@@ -1116,12 +1116,39 @@ export function ScoringPage() {
                   {(() => {
                     // Merge ABs + Stealing-Events chronologisch fuer dieses Inning.
                     const activeStealings = stealingEvents.filter(s => s.inning === activeInning)
+                    // Compute fromBase pro Stealing-Event via Replay des Base-States.
+                    // Pre-State = baseStateAfter des letzten AB vor diesem Steal,
+                    // plus alle vorherigen Steals zwischenanwenden.
+                    const fromBaseOf = (ev: typeof activeStealings[number]): 1 | 2 | 3 | null => {
+                      const priorAB = [...atBats]
+                        .filter(a => a.createdAt < ev.createdAt)
+                        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+                      let state: BaseStateDto = priorAB?.baseStateAfter ?? { first: null, second: null, third: null }
+                      const priorSteals = stealingEvents
+                        .filter(s => s.createdAt < ev.createdAt && (!priorAB || s.createdAt > priorAB.createdAt))
+                        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+                      for (const s of priorSteals) {
+                        if (state.first === s.runnerId) {
+                          if (s.type === 'STOLEN_BASE') state = { first: null, second: s.runnerId, third: state.third }
+                          else state = { first: null, second: state.second, third: state.third }
+                        } else if (state.second === s.runnerId) {
+                          if (s.type === 'STOLEN_BASE') state = { first: state.first, second: null, third: s.runnerId }
+                          else state = { first: state.first, second: null, third: state.third }
+                        } else if (state.third === s.runnerId) {
+                          state = { first: state.first, second: state.second, third: null }
+                        }
+                      }
+                      if (state.first === ev.runnerId) return 1
+                      if (state.second === ev.runnerId) return 2
+                      if (state.third === ev.runnerId) return 3
+                      return null
+                    }
                     type FeedItem =
                       | { kind: 'ab'; t: string; ab: typeof activeAbs[number] }
-                      | { kind: 'steal'; t: string; ev: typeof activeStealings[number] }
+                      | { kind: 'steal'; t: string; ev: typeof activeStealings[number]; from: 1 | 2 | 3 | null }
                     const feed: FeedItem[] = [
                       ...activeAbs.map(ab => ({ kind: 'ab' as const, t: ab.createdAt, ab })),
-                      ...activeStealings.map(ev => ({ kind: 'steal' as const, t: ev.createdAt, ev })),
+                      ...activeStealings.map(ev => ({ kind: 'steal' as const, t: ev.createdAt, ev, from: fromBaseOf(ev) })),
                     ].sort((a, b) => a.t.localeCompare(b.t))
                     if (feed.length === 0) {
                       return (
@@ -1158,20 +1185,31 @@ export function ScoringPage() {
                               </div>
                             )
                           }
-                          // Stealing-Event Row — visuell als Sub-Play indented + dezenter Hintergrund
+                          // Stealing-Event Row — kompakt, gleiche Spalten wie AB-Row.
+                          // Icon in BatOrder-Spalte, Name + Base-Bewegung inline, Pille rechts.
                           const ev = item.ev
+                          const from = item.from
                           const isSb = ev.type === 'STOLEN_BASE'
                           const isOut = ev.type === 'CAUGHT_STEALING' || ev.type === 'OUT_ON_PLAY'
                           const label = isSb ? 'SB' : ev.type === 'CAUGHT_STEALING' ? 'CS' : 'OOP'
-                          const labelLong = isSb ? 'Stolen Base' : ev.type === 'CAUGHT_STEALING' ? 'Caught Stealing' : 'Out on Play'
+                          const toBase = isSb && from != null
+                            ? (from === 3 ? 'Home' : `${from + 1}B`)
+                            : null
+                          const fromLabel = from != null ? `${from}B` : null
                           return (
-                            <div key={`st-${ev.id}`} className="flex items-center gap-2 pl-6 pr-3 py-1 bg-cream-50/80">
-                              <span className={`shrink-0 font-display text-[10px] font-bold leading-none ${isSb ? 'text-emerald-600' : 'text-softball-red-600'}`}>
+                            <div key={`st-${ev.id}`} className="flex items-center gap-2 px-3 py-1 bg-cream-50/80">
+                              <span className={`font-display text-[11px] font-bold leading-none w-4 text-right shrink-0 ${isSb ? 'text-emerald-600' : 'text-softball-red-600'}`} title={isSb ? 'Stolen Base' : ev.type === 'CAUGHT_STEALING' ? 'Caught Stealing' : 'Out on Play'}>
                                 {isSb ? '↗' : '✕'}
                               </span>
-                              <span className={`text-[11px] truncate flex-1 italic ${isOut ? 'text-gray-500' : 'text-gray-700'}`}>
-                                {ev.runnerName} · <span className="not-italic text-gray-500">{labelLong}</span>
+                              <span className={`text-[12px] truncate flex-1 min-w-0 italic ${isOut ? 'text-gray-500' : 'text-gray-700'}`}>
+                                {ev.runnerName}
                               </span>
+                              {/* Base-Bewegung Mini-Pille */}
+                              {fromLabel && (
+                                <span className="font-display text-[9px] tabular-nums font-bold text-gray-500 shrink-0">
+                                  {isSb && toBase ? `${fromLabel}→${toBase}` : `@${fromLabel}`}
+                                </span>
+                              )}
                               <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${
                                 isSb ? 'bg-emerald-100 text-emerald-800' : 'bg-softball-red-100 text-softball-red-800'
                               }`}>
