@@ -1057,7 +1057,10 @@ export function ScoringPage() {
             const allInnings = Array.from({ length: maxInning }, (_, i) => i + 1)
             const activeInning = selectedHistoryInning ?? currentInning
             const activeAbs = atBats.filter(a => a.inning === activeInning)
-            const activeOuts = activeAbs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
+            const activeStealings = stealingEvents.filter(s => s.inning === activeInning)
+            const activeAbOuts = activeAbs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
+            const activeStealOuts = activeStealings.filter(s => s.type === 'CAUGHT_STEALING' || s.type === 'OUT_ON_PLAY').length
+            const activeOuts = activeAbOuts + activeStealOuts
             const activeRuns = activeAbs.reduce((s, a) => s + (a.runsScored ?? 0), 0)
             const isActiveLive = activeInning === currentInning
             return (
@@ -1115,7 +1118,6 @@ export function ScoringPage() {
                   </div>
                   {(() => {
                     // Merge ABs + Stealing-Events chronologisch fuer dieses Inning.
-                    const activeStealings = stealingEvents.filter(s => s.inning === activeInning)
                     // Compute fromBase pro Stealing-Event via Replay des Base-States.
                     // Pre-State = baseStateAfter des letzten AB vor diesem Steal,
                     // plus alle vorherigen Steals zwischenanwenden.
@@ -1185,8 +1187,9 @@ export function ScoringPage() {
                               </div>
                             )
                           }
-                          // Stealing-Event Row — kompakt, gleiche Spalten wie AB-Row.
-                          // Icon in BatOrder-Spalte, Name + Base-Bewegung inline, Pille rechts.
+                          // Stealing-Event Row — Variante C: Border-L farb-codiert + dezenter BG-Tint.
+                          // Indent ueber w-4 Spacer (matched BatOrder-Spalte). Pille rechts behalten
+                          // fuer Konsistenz zu AB-Row. Strikethrough wenn Out.
                           const ev = item.ev
                           const from = item.from
                           const isSb = ev.type === 'STOLEN_BASE'
@@ -1196,25 +1199,44 @@ export function ScoringPage() {
                             ? (from === 3 ? 'Home' : `${from + 1}B`)
                             : null
                           const fromLabel = from != null ? `${from}B` : null
+                          const movement = isSb && toBase
+                            ? `${fromLabel} → ${toBase}`
+                            : fromLabel
+                          const title = isSb ? 'Stolen Base' : ev.type === 'CAUGHT_STEALING' ? 'Caught Stealing' : 'Out on Play'
                           return (
-                            <div key={`st-${ev.id}`} className="flex items-center gap-2 px-3 py-1 bg-cream-50/80">
-                              <span className={`font-display text-[11px] font-bold leading-none w-4 text-right shrink-0 ${isSb ? 'text-emerald-600' : 'text-softball-red-600'}`} title={isSb ? 'Stolen Base' : ev.type === 'CAUGHT_STEALING' ? 'Caught Stealing' : 'Out on Play'}>
-                                {isSb ? '↗' : '✕'}
-                              </span>
-                              <span className={`text-[12px] truncate flex-1 min-w-0 italic ${isOut ? 'text-gray-500' : 'text-gray-700'}`}>
-                                {ev.runnerName}
-                              </span>
-                              {/* Base-Bewegung Mini-Pille */}
-                              {fromLabel && (
-                                <span className="font-display text-[9px] tabular-nums font-bold text-gray-500 shrink-0">
-                                  {isSb && toBase ? `${fromLabel}→${toBase}` : `@${fromLabel}`}
+                            <div
+                              key={`st-${ev.id}`}
+                              className={`flex border-l-2 ${
+                                isSb
+                                  ? 'border-emerald-500 bg-emerald-50/40'
+                                  : 'border-softball-red-500 bg-softball-red-50/40'
+                              }`}
+                            >
+                              <div className="w-4 shrink-0" aria-hidden />
+                              <div className="flex-1 flex items-center gap-2 pl-2 pr-3 py-1 min-w-0">
+                                <span
+                                  className={`font-display text-[11px] font-bold leading-none shrink-0 ${
+                                    isSb ? 'text-emerald-700' : 'text-softball-red-700'
+                                  }`}
+                                  title={title}
+                                >
+                                  {isSb ? '↗' : '✕'}
                                 </span>
-                              )}
-                              <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${
-                                isSb ? 'bg-emerald-100 text-emerald-800' : 'bg-softball-red-100 text-softball-red-800'
-                              }`}>
-                                {label}
-                              </span>
+                                <span
+                                  className={`text-[11px] italic truncate flex-1 min-w-0 ${
+                                    isOut ? 'line-through text-softball-red-800' : 'text-emerald-800'
+                                  }`}
+                                >
+                                  {ev.runnerName}{movement ? ` — ${movement}` : ''}
+                                </span>
+                                <span
+                                  className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${
+                                    isSb ? 'bg-emerald-100 text-emerald-800' : 'bg-softball-red-100 text-softball-red-800'
+                                  }`}
+                                >
+                                  {label}
+                                </span>
+                              </div>
                             </div>
                           )
                         })}
