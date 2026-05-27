@@ -28,7 +28,7 @@ export function ScoringPage() {
   const [lineup, setLineup] = useState<LineupEntryResponse[]>([])
   const [substitutions, setSubstitutions] = useState<SubstitutionResponse[]>([])
   const [showLineupSheet, setShowLineupSheet] = useState(false)
-  const [expandedInnings, setExpandedInnings] = useState<Set<number>>(new Set())
+  const [selectedHistoryInning, setSelectedHistoryInning] = useState<number | null>(null)
   const [showSubSheet, setShowSubSheet] = useState(false)
   const [subPlayerOut, setSubPlayerOut] = useState<Player | null>(null)
   const [subPlayerIn, setSubPlayerIn] = useState<Player | null>(null)
@@ -1033,11 +1033,10 @@ export function ScoringPage() {
         }
       >
         <div className="px-4 py-4 space-y-4">
-          {/* Inning-Verlauf: ALLE Innings als vertikale Timeline.
-              Aktuelles auto-expanded mit Namen, andere collapsed mit Result-Pills.
-              Tap auf Header toggled expand. */}
+          {/* Inning-Verlauf: Tab-Strip pro Inning + Detail-Card des aktiven Innings.
+              Tabs zeigen ALLE Innings von 1 bis aktuell (auch leere ohne ABs).
+              Aktiv = aktuelles Inning (Default) oder das per Tap ausgewaehlte. */}
           {(() => {
-            if (atBats.length === 0) return null
             const lineupSorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
             const playerToOrder = new Map<number, number>()
             const playerNameById = new Map<number, string>()
@@ -1052,120 +1051,100 @@ export function ScoringPage() {
               playerToOrder.set(e.player.id, e.battingOrder ?? 0)
               playerNameById.set(e.player.id, e.player.name)
             }
-            const allInnings = [...new Set(atBats.map(a => a.inning))].sort((a, b) => b - a)
-            if (allInnings.length === 0) return null
+            // Alle Innings von 1 bis currentInning (oder bis max(currentInning, hoechstes inning mit AB))
+            const maxInning = Math.max(currentInning, ...atBats.map(a => a.inning))
+            if (maxInning < 1) return null
+            const allInnings = Array.from({ length: maxInning }, (_, i) => i + 1)
+            const activeInning = selectedHistoryInning ?? currentInning
+            const activeAbs = atBats.filter(a => a.inning === activeInning)
+            const activeOuts = activeAbs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
+            const activeRuns = activeAbs.reduce((s, a) => s + (a.runsScored ?? 0), 0)
+            const isActiveLive = activeInning === currentInning
             return (
               <div>
-                <div className="flex items-baseline justify-between mb-2">
-                  <span className="font-display text-[10px] tracking-[0.18em] uppercase text-navy-900 font-extrabold">
-                    Inning-Verlauf
-                  </span>
-                  <span className="font-display text-[9px] tracking-wider uppercase text-gray-400">
-                    Tap = aufklappen
-                  </span>
+                <div className="font-display text-[10px] tracking-[0.18em] uppercase text-navy-900 font-extrabold mb-2">
+                  Inning-Verlauf
                 </div>
-                <div className="space-y-1.5">
+                {/* Tab-Strip */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 mb-2 -mx-1 px-1 scrollbar-thin">
                   {allInnings.map(inn => {
-                    const abs = atBats.filter(a => a.inning === inn)
+                    const tabAbs = atBats.filter(a => a.inning === inn)
+                    const tabRuns = tabAbs.reduce((s, a) => s + (a.runsScored ?? 0), 0)
                     const isLive = inn === currentInning
-                    const isExpanded = isLive || expandedInnings.has(inn)
-                    const innOuts = abs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
-                    const innRuns = abs.reduce((s, a) => s + (a.runsScored ?? 0), 0)
+                    const isActive = inn === activeInning
                     return (
-                      <div
+                      <button
                         key={inn}
-                        className={`rounded-lg border overflow-hidden transition-colors ${
-                          isLive
-                            ? 'border-softball-red-300 bg-white shadow-sm'
-                            : 'border-cream-300 bg-cream-50/60'
+                        onClick={() => setSelectedHistoryInning(inn === currentInning ? null : inn)}
+                        className={`shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-md border font-display text-[10px] font-extrabold tracking-wider uppercase tabular-nums cursor-pointer transition-colors ${
+                          isActive
+                            ? (isLive ? 'bg-softball-red-600 border-softball-red-700 text-white' : 'bg-navy-900 border-navy-900 text-white')
+                            : isLive
+                              ? 'bg-softball-red-50 border-softball-red-300 text-softball-red-700 hover:bg-softball-red-100'
+                              : 'bg-cream-50 border-cream-300 text-gray-600 hover:bg-cream-100 hover:border-cream-400'
                         }`}
+                        aria-pressed={isActive}
                       >
-                        <button
-                          onClick={() => {
-                            if (isLive) return
-                            setExpandedInnings(prev => {
-                              const next = new Set(prev)
-                              if (next.has(inn)) next.delete(inn)
-                              else next.add(inn)
-                              return next
-                            })
-                          }}
-                          className={`w-full flex items-center gap-2 px-3 py-2 text-left ${isLive ? 'cursor-default' : 'cursor-pointer hover:bg-cream-100/70'}`}
-                          aria-expanded={isExpanded}
-                          disabled={isLive}
-                        >
-                          {/* Inning-Nummer Badge */}
-                          <span className={`font-display text-[11px] font-extrabold tabular-nums w-7 h-7 rounded flex items-center justify-center shrink-0 ${
-                            isLive ? 'bg-softball-red-600 text-white' : 'bg-navy-900 text-white'
+                        <span>I{inn}</span>
+                        {tabRuns > 0 && (
+                          <span className={`text-[9px] font-bold tabular-nums opacity-90 ${
+                            isActive ? 'opacity-100' : ''
                           }`}>
-                            {inn}
+                            {tabRuns}R
                           </span>
-                          {/* Status-Pill */}
-                          <span className={`font-display text-[9px] tracking-wider uppercase font-bold shrink-0 ${
-                            isLive ? 'text-softball-red-700' : 'text-gray-400'
-                          }`}>
-                            {isLive ? 'Laufend' : `${innOuts}/3 Out`}
-                          </span>
-                          {/* Compact Pill-Strip (nur wenn collapsed) */}
-                          {!isExpanded && (
-                            <span className="flex items-center gap-0.5 flex-wrap flex-1 min-w-0">
-                              {abs.map((ab, idx) => (
-                                <span
-                                  key={ab.id ?? idx}
-                                  className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none ${resultPillClass(ab.result)}`}
-                                  title={playerNameById.get(ab.batterId) ?? ''}
-                                >
-                                  {resultPillLabel(ab.result)}
-                                </span>
-                              ))}
-                            </span>
-                          )}
-                          {isExpanded && <span className="flex-1" />}
-                          {/* Runs-Badge */}
-                          {innRuns > 0 && (
-                            <span className="font-display text-[10px] font-extrabold tabular-nums text-navy-900 bg-cream-200 px-1.5 py-0.5 rounded shrink-0">
-                              {innRuns} R
-                            </span>
-                          )}
-                          {/* Expand Indicator */}
-                          {!isLive && (
-                            <span className={`font-display text-[10px] text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`}>
-                              ▸
-                            </span>
-                          )}
-                        </button>
-                        {/* Expanded Detail-View */}
-                        {isExpanded && (
-                          <div className="divide-y divide-cream-200/60 border-t border-cream-200/80">
-                            {abs.map((ab, idx) => {
-                              const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
-                              const order = playerToOrder.get(ab.batterId)
-                              const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
-                              const abRuns = ab.runsScored ?? 0
-                              return (
-                                <div key={ab.id ?? idx} className="flex items-center gap-2 px-3 py-1.5">
-                                  <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-4 text-right shrink-0">
-                                    {order ?? ''}
-                                  </span>
-                                  <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
-                                    {name}
-                                  </span>
-                                  {abRuns > 0 && (
-                                    <span className="font-display text-[9px] font-extrabold tabular-nums text-navy-900 shrink-0">
-                                      +{abRuns}
-                                    </span>
-                                  )}
-                                  <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${resultPillClass(ab.result)}`}>
-                                    {resultPillLabel(ab.result)}
-                                  </span>
-                                </div>
-                              )
-                            })}
-                          </div>
                         )}
-                      </div>
+                      </button>
                     )
                   })}
+                </div>
+                {/* Detail-Card */}
+                <div className={`rounded-lg border overflow-hidden ${
+                  isActiveLive ? 'border-softball-red-300 bg-white shadow-sm' : 'border-cream-300 bg-cream-50/60'
+                }`}>
+                  <div className={`px-3 py-1.5 flex items-baseline justify-between border-b ${
+                    isActiveLive ? 'border-softball-red-200 bg-softball-red-50' : 'border-cream-200'
+                  }`}>
+                    <span className="font-display text-[11px] tracking-widest uppercase font-extrabold text-navy-900">
+                      Inning {activeInning}
+                    </span>
+                    <span className={`font-display text-[9px] tracking-wider uppercase font-bold ${
+                      isActiveLive ? 'text-softball-red-700' : 'text-gray-500'
+                    }`}>
+                      {isActiveLive ? 'Laufend · ' : ''}{activeOuts}/3 Out{activeRuns > 0 ? ` · ${activeRuns} R` : ''}
+                    </span>
+                  </div>
+                  {activeAbs.length === 0 ? (
+                    <div className="px-3 py-3 text-center text-[11px] text-gray-400 italic">
+                      Keine At-Bats in diesem Inning.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-cream-200/60">
+                      {activeAbs.map((ab, idx) => {
+                        const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
+                        const order = playerToOrder.get(ab.batterId)
+                        const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
+                        const abRuns = ab.runsScored ?? 0
+                        return (
+                          <div key={ab.id ?? idx} className="flex items-center gap-2 px-3 py-1.5">
+                            <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-4 text-right shrink-0">
+                              {order ?? ''}
+                            </span>
+                            <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
+                              {name}
+                            </span>
+                            {abRuns > 0 && (
+                              <span className="font-display text-[9px] font-extrabold tabular-nums text-navy-900 shrink-0">
+                                +{abRuns}
+                              </span>
+                            )}
+                            <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${resultPillClass(ab.result)}`}>
+                              {resultPillLabel(ab.result)}
+                            </span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             )
