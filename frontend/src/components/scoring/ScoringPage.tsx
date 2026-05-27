@@ -201,12 +201,16 @@ export function ScoringPage() {
     setPreAbRunners(displayRunners)
     // Diamond-Freeze MUSS vor recordAtBat (= reload) gesetzt werden, sonst flackert
     // Animation: 1. zum Auto-Advance-State, 2. zurück zu preAB beim Freeze-Enable.
-    // Skip wenn 3rd Out (Inning vorbei → keine Korrektur).
+    // OUT+hadRunners: IMMER Sheet öffnen (auch 3rd Out — wegen Force-Out-Banner).
+    // Andere Hits nur wenn Inning danach noch läuft.
     const outsBeforeAB = scoreboard.outsInCurrentInning ?? 0
+    const inningOverAfterAB = outsBeforeAB + (result === 'OUT' ? 1 : 0) >= 3
     const willOpenCorrection = displayRunners.length > 0
-      && outsBeforeAB + (result === 'OUT' ? 1 : 0) < 3
-      && (result === 'OUT' || result === 'SINGLE' || result === 'DOUBLE'
-          || result === 'TRIPLE' || result === 'REACHED_ON_ERROR')
+      && (
+        result === 'OUT'
+        || (!inningOverAfterAB && (result === 'SINGLE' || result === 'DOUBLE'
+            || result === 'TRIPLE' || result === 'REACHED_ON_ERROR'))
+      )
     if (willOpenCorrection) {
       setFreezeDiamondUntilCorrection(true)
     }
@@ -316,10 +320,12 @@ export function ScoringPage() {
       // Nicht beim 3. Out: Inning vorbei, Runner-Advance irrelevant.
       const outsAfter = (scoreboard.outsInCurrentInning ?? 0) + (result === 'OUT' ? 1 : 0)
       const inningOver = outsAfter >= 3
-      if (!inningOver) {
-        if (result === 'OUT' && hadRunners) {
-          setShowCorrection(true)
-        } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
+      // OUT+hadRunners: IMMER Sheet öffnen (auch 3rd Out) wegen Force-Out-Banner.
+      // CorrectionSheet zeigt bei outsAfter===3 Warnung: "Bei Force-Out als 3. Out zählt der Run NICHT".
+      if (result === 'OUT' && hadRunners) {
+        setShowCorrection(true)
+      } else if (!inningOver) {
+        if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
           setShowCorrection(true)
         } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
           setShowCorrection(true)

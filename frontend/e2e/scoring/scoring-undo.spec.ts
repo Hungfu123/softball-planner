@@ -17,7 +17,10 @@ test.describe('Scoring — Undo', () => {
     expect(sb.baseState.first).toBeNull()
   })
 
-  test('undo AB also deletes orphan stealings (cutoff cleanup)', async ({ page, scoringPage }) => {
+  test('undo AB lässt Stealings unangetastet (eigenständige Events)', async ({ page, scoringPage }) => {
+    // Design-Entscheidung: Undo wirkt nur auf das newest Event. Steals zwischen
+    // zwei ABs sind eigenständige Events. User muss Steal separat per Undo entfernen
+    // wenn er den ganzen Play-Cycle rückgängig machen will.
     await seedAtBat(scoringPage.gameId, scoringPage.playerIds[0], 'SINGLE', 1, {
       first: scoringPage.playerIds[0], second: null, third: null,
     })
@@ -31,9 +34,9 @@ test.describe('Scoring — Undo', () => {
 
     await clickUndo(page)
     stealings = await getStealingEvents(scoringPage.gameId)
-    expect(stealings).toHaveLength(0)
+    expect(stealings).toHaveLength(1)  // Steal bleibt
     const sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.totalAtBats).toBe(1)
+    expect(sb.totalAtBats).toBe(1)  // nur 2. AB undone
   })
 
   test('undo stealing-only deletes only stealing', async ({ page, scoringPage }) => {
