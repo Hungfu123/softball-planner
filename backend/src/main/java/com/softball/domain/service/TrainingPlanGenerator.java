@@ -102,7 +102,7 @@ public class TrainingPlanGenerator {
         return generate(allDrills, playerCount, focus, totalMinutes, infieldPositions, false, 0);
     }
 
-    private TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
+    public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
                                          final String focus, final int totalMinutes,
                                          final List<InfieldPosition> infieldPositions,
                                          final boolean withBeginnerGroupFlag, final int beginnerCount) {
