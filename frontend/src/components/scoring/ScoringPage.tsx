@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useScoring } from '@/hooks/useScoring'
@@ -39,6 +39,10 @@ export function ScoringPage() {
   // damit Cycle bis zur urspruenglichen Base zurueck kann (User korrigiert
   // +1-Default zurueck wenn Runner doch stehen bleibt).
   const [preAbRunners, setPreAbRunners] = useState<RunnerOnBase[]>([])
+  // Wenn true: Diamond bleibt auf preAB-State bis CorrectionSheet geschlossen wird.
+  // Verhindert "Runner läuft erst Home→1→2 weg, dann via Korrektur zurück"-Effekt
+  // bei DOUBLE/TRIPLE etc. Nur bei AB-Auto-Trigger gesetzt, nicht bei manuellem Korrigieren-Button.
+  const [freezeDiamondUntilCorrection, setFreezeDiamondUntilCorrection] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showDeleteInningConfirm, setShowDeleteInningConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
@@ -115,6 +119,15 @@ export function ScoringPage() {
   const displayOuts = scoreboard?.outsInCurrentInning ?? 0
   const displayBaseState = scoreboard?.baseState ?? { first: null, second: null, third: null }
   const displayRunners = scoreboard?.runners ?? []
+  // Diamond-Freeze: während CorrectionSheet (hit-auto-getriggert) offen ist, zeigt
+  // Diamond preAB-State — Animation erst nach Close (einmalig vom alten zum korrigierten State).
+  const preAbBaseState = useMemo(() => ({
+    first: preAbRunners.find(r => r.base === 1)?.playerId ?? null,
+    second: preAbRunners.find(r => r.base === 2)?.playerId ?? null,
+    third: preAbRunners.find(r => r.base === 3)?.playerId ?? null,
+  }), [preAbRunners])
+  const diamondBaseState = freezeDiamondUntilCorrection ? preAbBaseState : displayBaseState
+  const diamondRunners = freezeDiamondUntilCorrection ? preAbRunners : displayRunners
   const halfInningOver = displayOuts >= 3
   const currentInning = displayInning
   const REGULATION_INNINGS = 7
@@ -294,10 +307,13 @@ export function ScoringPage() {
       const inningOver = outsAfter >= 3
       if (!inningOver) {
         if (result === 'OUT' && hadRunners) {
+          setFreezeDiamondUntilCorrection(true)
           setShowCorrection(true)
         } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
+          setFreezeDiamondUntilCorrection(true)
           setShowCorrection(true)
         } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
+          setFreezeDiamondUntilCorrection(true)
           setShowCorrection(true)
         }
       }
@@ -840,8 +856,8 @@ export function ScoringPage() {
       <div className="flex-1 flex flex-col items-center justify-center py-2 px-4 min-h-0">
         <div className="w-full max-w-[360px] sm:max-w-[420px]">
           <DiamondView
-            baseState={displayBaseState}
-            runners={displayRunners}
+            baseState={diamondBaseState}
+            runners={diamondRunners}
             onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
             homerunRunner={homerunRunner}
             skipExitToHome={undoAnimSkip}
@@ -970,7 +986,7 @@ export function ScoringPage() {
       {/* Korrektur-Sheet */}
       <CorrectionSheet
         open={showCorrection}
-        onClose={() => setShowCorrection(false)}
+        onClose={() => { setShowCorrection(false); setFreezeDiamondUntilCorrection(false) }}
         baseState={displayBaseState}
         runners={displayRunners}
         preAbRunners={preAbRunners}
