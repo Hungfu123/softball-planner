@@ -6,7 +6,10 @@ import com.softball.domain.model.Drill;
 import com.softball.domain.model.DrillCategory;
 import com.softball.domain.model.DrillComplexity;
 import com.softball.domain.model.InfieldPosition;
+import com.softball.domain.model.SectionGroup;
+import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
+import com.softball.domain.model.TrainingPlanRequest;
 import com.softball.domain.model.TrainingPlanSection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -890,6 +893,144 @@ class TrainingPlanGeneratorTest {
             );
             assertThat(withEmpty.getSections().size()).isEqualTo(withoutParam.getSections().size());
         }
+    }
+
+    // ─── DualGroup (Anfänger-Gruppe-Split) ───
+
+    @Nested
+    @DisplayName("DualGroup — Anfänger-Gruppen-Split")
+    class DualGroup {
+
+        @Test
+        void singleGroup_allSectionsHaveGroupAll() {
+            final TrainingPlanRequest req = new TrainingPlanRequest(14, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(false);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            assertThat(plan.getContent().getSections())
+                .allSatisfy(s -> assertThat(s.getGroup()).isEqualTo(SectionGroup.ALL));
+        }
+
+        @Test
+        void dualGroup_skillSectionsHaveGroupMainAndBeginner() {
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(4);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+            final List<TrainingPlanSection> ssections = plan.getContent().getSections();
+
+            assertThat(ssections.stream().filter(s -> "WARMUP".equals(s.getSectionType())))
+                .allSatisfy(s -> assertThat(s.getGroup()).isEqualTo(SectionGroup.ALL));
+            assertThat(ssections.stream().filter(s -> "BATTING".equals(s.getSectionType())))
+                .allSatisfy(s -> assertThat(s.getGroup()).isEqualTo(SectionGroup.ALL));
+            assertThat(ssections).anyMatch(s -> s.getGroup() == SectionGroup.MAIN);
+            assertThat(ssections).anyMatch(s -> s.getGroup() == SectionGroup.BEGINNER);
+        }
+
+        @Test
+        void dualGroup_beginnerSectionsLonger() {
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(4);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            final int mainTotal = plan.getContent().getSections().stream()
+                .filter(s -> s.getGroup() == SectionGroup.MAIN)
+                .mapToInt(s -> s.getDurationMinutes() != null ? s.getDurationMinutes() : 0)
+                .sum();
+            final int beginnerTotal = plan.getContent().getSections().stream()
+                .filter(s -> s.getGroup() == SectionGroup.BEGINNER)
+                .mapToInt(s -> s.getDurationMinutes() != null ? s.getDurationMinutes() : 0)
+                .sum();
+
+            assertThat(beginnerTotal).isGreaterThan(mainTotal);
+        }
+
+        @Test
+        void dualGroup_beginnerOnlyBasicDrills() {
+            final List<Drill> drills = new ArrayList<>();
+            drills.add(warmupDrill());
+            drills.add(hittingDrill());
+            for (int i = 0; i < 3; i++) drills.add(testDrill("basic-" + i, DrillComplexity.BASIC, DrillCategory.FIRST_BASE));
+            for (int i = 0; i < 3; i++) drills.add(testDrill("adv-" + i, DrillComplexity.ADVANCED, DrillCategory.FIRST_BASE));
+
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "INFIELD_DEFENSE", 120, drills);
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(4);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            for (final TrainingPlanSection s : plan.getContent().getSections()) {
+                if (s.getGroup() == SectionGroup.BEGINNER && s.getDrillId() != null) {
+                    final String id = s.getDrillId();
+                    final Drill used = drills.stream().filter(d -> d.getId().equals(id)).findFirst().orElseThrow();
+                    assertThat(used.getComplexity()).isEqualTo(DrillComplexity.BASIC);
+                }
+            }
+        }
+
+        @Test
+        void dualGroup_tooFewBeginners_noSplit() {
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(1);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            assertThat(plan.getContent().getSections())
+                .noneMatch(s -> s.getGroup() == SectionGroup.BEGINNER);
+            assertThat(plan.getContent().getSections())
+                .noneMatch(s -> s.getGroup() == SectionGroup.MAIN);
+            assertThat(plan.getContent().getGroupDistributionHint())
+                .containsIgnoringCase("zu wenig");
+        }
+
+        @Test
+        void dualGroup_noBasicDrills_fallback() {
+            final List<Drill> drills = new ArrayList<>();
+            drills.add(warmupDrill());
+            drills.add(hittingDrill());
+            for (int i = 0; i < 5; i++) drills.add(testDrill("adv-" + i, DrillComplexity.ADVANCED, DrillCategory.FIRST_BASE));
+
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "INFIELD_DEFENSE", 120, drills);
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(4);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            assertThat(plan.getContent().getSections())
+                .anyMatch(s -> s.getGroup() == SectionGroup.BEGINNER && s.getDrillId() != null);
+            assertThat(plan.getContent().getGroupDistributionHint())
+                .containsIgnoringCase("keine basic");
+        }
+    }
+
+    // ─── DualGroup-Helper ───
+
+    /** Liefert einen Katalog mit Mischung BASIC/ADVANCED über mehrere Kategorien (für DualGroup-Tests). */
+    private static List<Drill> allTestDrills() {
+        final List<Drill> drills = new ArrayList<>();
+        drills.add(warmupDrill());
+        drills.add(hittingDrill());
+        // Throwing-Drills (Grundlagen — BASIC)
+        for (int i = 0; i < 3; i++) drills.add(testDrill("throw-b" + i, DrillComplexity.BASIC, DrillCategory.THROWING));
+        // Infield-Drills mit BASIC und ADVANCED
+        for (int i = 0; i < 2; i++) drills.add(testDrill("if-b" + i, DrillComplexity.BASIC, DrillCategory.FIRST_BASE));
+        for (int i = 0; i < 3; i++) drills.add(testDrill("if-a" + i, DrillComplexity.ADVANCED, DrillCategory.FIRST_BASE));
+        // Hitting-Extras (BASIC) — für Batting-Stations
+        for (int i = 0; i < 2; i++) drills.add(testDrill("hit-b" + i, DrillComplexity.BASIC, DrillCategory.HITTING));
+        return drills;
+    }
+
+    /** Hilfsmethode für DualGroup-Tests: erstellt einen Drill mit gegebener ID, Complexity und Kategorie. */
+    private static Drill testDrill(final String id, final DrillComplexity complexity, final DrillCategory category) {
+        final Drill d = new Drill(id, "Drill " + id, List.of(category),
+                2, List.of(), "Test drill " + id, false, null, null, null);
+        d.setComplexity(complexity);
+        return d;
     }
 
     // ─── Helper ───
