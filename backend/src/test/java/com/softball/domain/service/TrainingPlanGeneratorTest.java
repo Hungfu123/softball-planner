@@ -963,13 +963,16 @@ class TrainingPlanGeneratorTest {
 
             final TrainingPlan plan = generator.generate(1L, req);
 
-            for (final TrainingPlanSection s : plan.getContent().getSections()) {
-                if (s.getGroup() == SectionGroup.BEGINNER && s.getDrillId() != null) {
-                    final String id = s.getDrillId();
-                    final Drill used = drills.stream().filter(d -> d.getId().equals(id)).findFirst().orElseThrow();
+            // Precondition: it MUST produce beginner-drill-sections, otherwise
+            // the BASIC-only assertion would be vacuously true.
+            assertThat(plan.getContent().getSections())
+                .filteredOn(s -> s.getGroup() == SectionGroup.BEGINNER && s.getDrillId() != null)
+                .isNotEmpty()
+                .allSatisfy(s -> {
+                    final Drill used = drills.stream().filter(d -> d.getId().equals(s.getDrillId()))
+                            .findFirst().orElseThrow();
                     assertThat(used.getComplexity()).isEqualTo(DrillComplexity.BASIC);
-                }
-            }
+                });
         }
 
         @Test
@@ -1006,6 +1009,35 @@ class TrainingPlanGeneratorTest {
             assertThat(plan.getContent().getGroupDistributionHint())
                 .containsIgnoringCase("keine basic");
         }
+
+        @Test
+        void dualGroup_tooFewMainPlayers_noSplit() {
+            final TrainingPlanRequest req = new TrainingPlanRequest(3, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(2);  // 3-2=1 Hauptgruppe → invalid
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            assertThat(plan.getContent().getSections())
+                .noneMatch(s -> s.getGroup() == SectionGroup.BEGINNER);
+            assertThat(plan.getContent().getSections())
+                .noneMatch(s -> s.getGroup() == SectionGroup.MAIN);
+            assertThat(plan.getContent().getGroupDistributionHint())
+                .containsIgnoringCase("hauptgruppe");
+        }
+
+        @Test
+        void dualGroup_beginnerCount2_splits() {
+            // playerCount=12, beginnerCount=2 → exact threshold, soll splitten
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(2);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            assertThat(plan.getContent().getSections()).anyMatch(s -> s.getGroup() == SectionGroup.BEGINNER);
+            assertThat(plan.getContent().getSections()).anyMatch(s -> s.getGroup() == SectionGroup.MAIN);
+        }
     }
 
     // ─── DualGroup-Helper ───
@@ -1015,10 +1047,11 @@ class TrainingPlanGeneratorTest {
         final List<Drill> drills = new ArrayList<>();
         drills.add(warmupDrill());
         drills.add(hittingDrill());
-        // Throwing-Drills (Grundlagen — BASIC)
+        // Throwing-Drills (Grundlagen — BASIC, level 1)
         for (int i = 0; i < 3; i++) drills.add(testDrill("throw-b" + i, DrillComplexity.BASIC, DrillCategory.THROWING));
-        // Infield-Drills mit BASIC und ADVANCED
-        for (int i = 0; i < 2; i++) drills.add(testDrill("if-b" + i, DrillComplexity.BASIC, DrillCategory.FIRST_BASE));
+        // Infield-Drills mit BASIC und ADVANCED (level 2 — Position-Drills)
+        // Mind. 4 BASICs sind nötig, damit nach Main-Auswahl (max 2) noch ≥2 für Beginner-Block bleiben.
+        for (int i = 0; i < 4; i++) drills.add(testDrill("if-b" + i, DrillComplexity.BASIC, DrillCategory.FIRST_BASE));
         for (int i = 0; i < 3; i++) drills.add(testDrill("if-a" + i, DrillComplexity.ADVANCED, DrillCategory.FIRST_BASE));
         // Hitting-Extras (BASIC) — für Batting-Stations
         for (int i = 0; i < 2; i++) drills.add(testDrill("hit-b" + i, DrillComplexity.BASIC, DrillCategory.HITTING));
