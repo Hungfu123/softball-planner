@@ -1107,93 +1107,64 @@ export function ScoringPage() {
           })()}
 
           <div>
-          <p className="text-[11px] text-gray-500 mb-2">
-            Reihenfolge der Schlagspieler. AB-Historie pro Spieler rechts.
-          </p>
-          {(() => {
-                const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
-                if (sorted.length === 0) return (
-                  <p className="text-sm text-gray-500 text-center py-4">Kein Lineup verfügbar.</p>
-                )
-                const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard?.currentBatterId)
-                // AB-Historie pro Spieler: ordered Liste der Results
-                const abByBatter = new Map<number, AtBatResult[]>()
-                for (const ab of atBats) {
-                  const arr = abByBatter.get(ab.batterId) ?? []
-                  arr.push(ab.result)
-                  abByBatter.set(ab.batterId, arr)
-                }
-                const totalOuts = atBats.filter(ab => ab.result === 'STRIKEOUT' || ab.result === 'OUT').length
-                return (
-                  <>
-                    {totalOuts > 0 && (
-                      <p className="text-[11px] text-gray-500 mb-2">
-                        Outs im Spiel gesamt: <span className="font-bold text-softball-red-700">{totalOuts}</span>
-                      </p>
-                    )}
-                    <div className="divide-y divide-gray-100 border border-cream-300 rounded-xl overflow-hidden">
-                      {sorted.map((e, i) => {
-                      const p = effectivePlayerForEntry(e)
-                      const wasSubbedIn = p.id !== (e.dhBatterPlayer?.id ?? e.player.id)
-                      const isCurrent = i === currentIdx
-                      const isNext = currentIdx !== -1 && i === (currentIdx + 1) % sorted.length
-                      const results = abByBatter.get(p.id) ?? []
-                      return (
-                        <div
-                          key={e.id}
-                          className={`flex items-center gap-2 px-3 py-2 ${
-                            isCurrent ? 'bg-navy-50' : ''
-                          }`}
-                        >
-                          <span className={`text-xs font-bold w-7 text-center rounded tabular-nums shrink-0 ${
-                            isCurrent ? 'bg-navy-900 text-white px-1.5 py-0.5' : 'text-gray-400'
-                          }`}>
-                            {e.battingOrder}
-                          </span>
-                          <span className={`text-sm truncate min-w-0 ${
-                            isCurrent ? 'font-bold text-gray-900' : 'text-gray-700'
-                          }`}>
-                            {p.name}
-                          </span>
-                          {/* AB-Historie Pillen */}
-                          {results.length > 0 && (
-                            <span className="inline-flex items-center gap-0.5 flex-wrap">
-                              {results.map((r, idx) => (
-                                <span key={idx} className={`text-[9px] font-display font-bold px-1 py-0.5 rounded tabular-nums leading-none ${resultPillClass(r)}`}>
-                                  {resultPillLabel(r)}
-                                </span>
-                              ))}
+            <div className="font-display text-[10px] tracking-[0.18em] uppercase text-navy-900 font-extrabold mb-2">
+              Batting-Order
+            </div>
+            {(() => {
+              const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
+              if (sorted.length === 0) return (
+                <p className="text-sm text-gray-500 text-center py-4">Kein Lineup verfügbar.</p>
+              )
+              const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard?.currentBatterId)
+              return (
+                <div className="divide-y divide-gray-100 border border-cream-300 rounded-xl overflow-hidden">
+                  {sorted.map((e, i) => {
+                    const p = effectivePlayerForEntry(e)
+                    const wasSubbedIn = p.id !== (e.dhBatterPlayer?.id ?? e.player.id)
+                    const isCurrent = i === currentIdx
+                    const isNext = currentIdx !== -1 && i === (currentIdx + 1) % sorted.length
+                    return (
+                      <div
+                        key={e.id}
+                        className={`flex items-center gap-2 px-3 py-2 ${isCurrent ? 'bg-navy-50' : ''}`}
+                      >
+                        <span className={`text-xs font-bold w-7 text-center rounded tabular-nums shrink-0 ${
+                          isCurrent ? 'bg-navy-900 text-white px-1.5 py-0.5' : 'text-gray-400'
+                        }`}>
+                          {e.battingOrder}
+                        </span>
+                        <span className={`flex-1 text-sm truncate min-w-0 ${
+                          isCurrent ? 'font-bold text-gray-900' : 'text-gray-700'
+                        }`}>
+                          {p.name}
+                        </span>
+                        {wasSubbedIn && (
+                          <span className="text-[9px] uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold shrink-0">eingewechselt</span>
+                        )}
+                        {e.dhBatterPlayer && !wasSubbedIn && (
+                          <span className="text-[9px] uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold shrink-0">DH</span>
+                        )}
+                        {e.position && (
+                          <span className="text-[11px] font-mono text-gray-500 shrink-0">{e.position}</span>
+                        )}
+                        {isCurrent && (
+                          <span className="font-display text-[10px] font-bold text-softball-red-700 uppercase tracking-widest inline-flex items-center gap-1 shrink-0">
+                            <span className="relative flex w-1.5 h-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-softball-red-500 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-softball-red-500" />
                             </span>
-                          )}
-                          <span className="flex-1" />
-                          {wasSubbedIn && (
-                            <span className="text-[9px] uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold shrink-0">eingewechselt</span>
-                          )}
-                          {e.dhBatterPlayer && !wasSubbedIn && (
-                            <span className="text-[9px] uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold shrink-0">DH</span>
-                          )}
-                          {e.position && (
-                            <span className="text-[11px] font-mono text-gray-500 shrink-0">{e.position}</span>
-                          )}
-                          {isCurrent && (
-                            <span className="font-display text-[10px] font-bold text-softball-red-700 uppercase tracking-widest inline-flex items-center gap-1 shrink-0">
-                              <span className="relative flex w-1.5 h-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-softball-red-500 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-softball-red-500" />
-                              </span>
-                              am Schlag
-                            </span>
-                          )}
-                          {isNext && !isCurrent && (
-                            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide shrink-0">nächster</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                  </>
-                )
-              })()}
+                            am Schlag
+                          </span>
+                        )}
+                        {isNext && !isCurrent && (
+                          <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide shrink-0">nächster</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
         </div>
       </ResponsiveSheet>
