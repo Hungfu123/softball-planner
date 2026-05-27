@@ -14,6 +14,10 @@ interface Props {
   /** Player-IDs deren Exit als Out gilt (in-place fade statt Home-Animation).
       Für CAUGHT_STEALING und OUT_ON_PLAY. */
   outRunnerIds?: Set<number>
+  /** Wenn true: Runner-Entry fadet in-place an Ziel-Base statt von Home über
+      Zwischenbases zu laufen. Für Undo eines Outs: Runner soll wieder erscheinen
+      als wäre er nie weg gewesen. */
+  skipEntryFromHome?: boolean
 }
 
 // Positions im 220x220 viewBox
@@ -29,7 +33,7 @@ function truncate(name: string, max = 7): string {
   return name.length > max ? name.slice(0, max - 1) + '…' : name
 }
 
-export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, skipExitToHome, outRunnerIds }: Props) {
+export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, skipExitToHome, outRunnerIds, skipEntryFromHome }: Props) {
   return (
     <svg viewBox="0 0 220 220" className="w-full max-w-[420px] mx-auto">
       {/* Base-Paths */}
@@ -78,6 +82,7 @@ export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, sk
             r={r}
             onRunnerTap={onRunnerTap}
             skipExitToHome={skipExitToHome || outRunnerIds?.has(r.playerId)}
+            skipEntryFromHome={skipEntryFromHome}
           />
         ))}
       </AnimatePresence>
@@ -134,9 +139,10 @@ function posForIndex(i: number) {
  * lastBase-State merkt wo wir waren. Nach onAnimationComplete wird
  * er auf die aktuelle Base aktualisiert.
  */
-function Runner({ r, onRunnerTap, skipExitToHome }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void; skipExitToHome?: boolean }) {
-  // lastBase = 0 auf Initial-Mount (Runner kommt von Home)
-  const [lastBase, setLastBase] = useState<number>(0)
+function Runner({ r, onRunnerTap, skipExitToHome, skipEntryFromHome }: { r: RunnerOnBase; onRunnerTap?: (base: 1 | 2 | 3, runner: RunnerOnBase) => void; skipExitToHome?: boolean; skipEntryFromHome?: boolean }) {
+  // lastBase = 0 auf Initial-Mount (Runner kommt von Home).
+  // Bei skipEntryFromHome (Undo-Restore): lastBase=r.base → keine Waypoint-Animation.
+  const [lastBase, setLastBase] = useState<number>(skipEntryFromHome ? r.base : 0)
 
   // Waypoints: jede Base zwischen lastBase und r.base
   const waypoints = useMemo(() => {
@@ -178,7 +184,9 @@ function Runner({ r, onRunnerTap, skipExitToHome }: { r: RunnerOnBase; onRunnerT
 
   return (
     <motion.g
-      initial={{ opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
+      initial={skipEntryFromHome
+        ? { opacity: 0, scale: 0.6, x: currentPos.cx, y: currentPos.cy }
+        : { opacity: 0, scale: 0.6, x: POS.home.cx, y: POS.home.cy }}
       animate={{
         opacity: 1,
         scale: 1,
