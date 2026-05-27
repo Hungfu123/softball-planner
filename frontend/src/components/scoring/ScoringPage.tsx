@@ -1597,7 +1597,7 @@ export function ScoringPage() {
               >
                 <span className="inline-flex items-center gap-2"><Zap size={18} /> Stolen Base</span>
                 <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
-                  Erfolgreich gestohlen · Runner +1 Base
+                  Erfolgreich gestealed · Runner +1 Base
                 </span>
               </button>
               <button
