@@ -1611,11 +1611,11 @@ export function ScoringPage() {
               </button>
               <button
                 onClick={() => handleStealing('PICKOFF')}
-                className="font-display w-full h-20 rounded-xl bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
+                className="font-display w-full h-20 rounded-xl bg-softball-red-700 hover:bg-softball-red-800 active:bg-softball-red-900 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
               >
                 <span className="inline-flex items-center gap-2"><XIcon size={18} /> Pickoff</span>
                 <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
-                  Zu weit abgegangen · Pitcher tagt · OUT, eigener Stat
+                  Zu weit abgegangen · Pitcher tagt · OUT (eigener Stat, ≠ CS)
                 </span>
               </button>
 
@@ -2192,7 +2192,7 @@ export function ScoringPage() {
               stealFlash.type === 'CAUGHT'
                 ? 'bg-softball-red-700 text-white border-softball-red-800'
                 : stealFlash.type === 'PICKOFF'
-                  ? 'bg-amber-700 text-white border-amber-800'
+                  ? 'bg-softball-red-800 text-white border-softball-red-900'
                   : 'bg-softball-red-600 text-white border-softball-red-700'
             }`}>
               {stealFlash.type === 'BASE' && (
