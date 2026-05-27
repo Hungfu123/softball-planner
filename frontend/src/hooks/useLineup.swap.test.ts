@@ -60,7 +60,7 @@ describe('useLineup — swap operations', () => {
     expect(result.current.entries[0].dhBatterId).toBeNull()
   })
 
-  it('swapEntries swaps two entries in place (true swap, not move)', () => {
+  it('swapEntries tauscht nur Positionen, BattingOrder bleibt (Commit 94321c6)', () => {
     const { result } = renderHook(() => useLineup())
     const a = mkPlayer(1, 'A')
     const b = mkPlayer(2, 'B')
@@ -84,10 +84,16 @@ describe('useLineup — swap operations', () => {
       result.current.swapEntries(1, 4)
     })
 
+    // BattingOrder/Player-Reihenfolge bleibt (1,2,3,4) — nur Positionen werden getauscht
     const ids = result.current.entries.map(e => e.player.id)
-    expect(ids).toEqual([4, 2, 3, 1])
+    expect(ids).toEqual([1, 2, 3, 4])
+    // Player 1 (vorher SS) hat jetzt Position von Player 4 (CF)
     expect(result.current.entries[0].position).toBe('CF')
+    // Player 4 (vorher CF) hat jetzt Position von Player 1 (SS)
     expect(result.current.entries[3].position).toBe('SS')
+    // Mittlere unverändert
+    expect(result.current.entries[1].position).toBe('2B')
+    expect(result.current.entries[2].position).toBe('1B')
   })
 
   it('swapEntries with unknown id is a no-op', () => {
