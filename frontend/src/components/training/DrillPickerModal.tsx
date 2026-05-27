@@ -26,13 +26,16 @@ interface Props {
   drills: DrillResponse[]
   onSelect: (drill: DrillResponse) => void
   onClose: () => void
+  /** Wenn 'BASIC': zeige nur BASIC-Drills (für BEGINNER-Sections). Default: alle. */
+  complexityFilter?: 'BASIC' | null
 }
 
-export function DrillPickerModal({ drills, onSelect, onClose }: Props) {
+export function DrillPickerModal({ drills, onSelect, onClose, complexityFilter }: Props) {
   const [filter, setFilter] = useState<DrillCategory | null>(null)
   const [search, setSearch] = useState('')
 
   const filtered = drills.filter(d => {
+    if (complexityFilter === 'BASIC' && d.complexity !== 'BASIC') return false
     if (filter && !d.categories.includes(filter)) return false
     if (search && !d.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
