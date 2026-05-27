@@ -72,8 +72,9 @@ test.describe('Spielbogen — Plays jeder Position', () => {
       // Default Sheet-Side = currentSide (AWAY=Attackers). Spielernamen sichtbar.
       await expect(page.getByText('Attackers-1').first()).toBeVisible({ timeout: 4000 })
       await expect(page.getByText('Attackers-5').first()).toBeVisible()
-      // Auf HOME-Side switchen ("Heim"-Pill im RFL-Sheet)
-      await page.getByRole('button', { name: /^Heim$/i }).click()
+      // Auf HOME-Side switchen ("Heim"-Pill im RFL-Sheet) — scope dialog, sonst kollidiert
+      // mit der Page-Header-Heim-Tab.
+      await page.getByRole('dialog').getByRole('button', { name: /^Heim$/i }).click()
       await page.waitForTimeout(300)
       await expect(page.getByText('Defenders-1').first()).toBeVisible({ timeout: 3000 })
       await expect(page.getByText('Defenders-5').first()).toBeVisible()
