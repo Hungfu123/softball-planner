@@ -168,8 +168,8 @@ export function CorrectionSheet({ open, onClose, runners, preAbRunners = [], jus
     const outsFromRunners = assignments
       .filter(a => a.position === 'out')
       .map(a => a.playerId)
-    // Sheet sofort schließen (optimistic). Toast kommt vom Parent-Handler.
-    onClose()
+    // Sheet NICHT optimistic schließen — Parent muss erst onSave verarbeiten
+    // (z.B. pendingHit auflösen). Parent ruft selbst setShowCorrection(false).
     setSaving(true)
     try {
       await onSave({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context })

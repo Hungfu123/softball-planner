@@ -43,6 +43,20 @@ export function ScoringPage() {
   // Verhindert "Runner läuft erst Home→1→2 weg, dann via Korrektur zurück"-Effekt
   // bei DOUBLE/TRIPLE etc. Nur bei AB-Auto-Trigger gesetzt, nicht bei manuellem Korrigieren-Button.
   const [freezeDiamondUntilCorrection, setFreezeDiamondUntilCorrection] = useState(false)
+  // Deferred AB-Recording: bei Hit-mit-Runner wird der AB NICHT sofort an Backend gesendet.
+  // Stattdessen wird hier der proposed-State gehalten + Sheet zeigt Vorschau. Erst bei "Passt"
+  // wird recordAtBat aufgerufen. Bei "Abbrechen" wird pendingHit verworfen (kein Backend-Call).
+  type PendingHit = {
+    result: AtBatResult
+    proposedState: BaseStateDto
+    proposedRunners: RunnerOnBase[]
+    runsScored: number
+    scoredPlayers: { playerId: number; playerName: string }[]
+    batterId: number
+    batterName: string
+    batterOrder: number | null
+  }
+  const [pendingHit, setPendingHit] = useState<PendingHit | null>(null)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showDeleteInningConfirm, setShowDeleteInningConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
@@ -188,6 +202,95 @@ export function ScoringPage() {
     }
   }
 
+  // Side-Effects (Flash, Vibrate, Toast) — wird entweder direkt nach recordAtBat
+  // ausgeführt (Immediate-Path) oder erst nach Sheet-Bestätigung (Deferred-Path).
+  const fireHitSideEffects = (
+    result: AtBatResult,
+    batterName: string,
+    batterId: number,
+    batterOrder: number | null,
+    runsScored: number,
+    scoredPlayers: { playerId: number; playerName: string }[],
+    hadRunners: boolean,
+  ) => {
+    setRecentlyScored(scoredPlayers)
+    const reducedMotion = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isAnyHomerun = result === 'HOMERUN' || result === 'INSIDE_PARK_HR'
+    if (isAnyHomerun) {
+      if (!reducedMotion) {
+        setHomerunFlash({ batter: batterName, runsScored, type: result as 'HOMERUN' | 'INSIDE_PARK_HR' })
+        setTimeout(() => setHomerunFlash(null), 2200)
+        setHomerunRunner({ playerId: batterId, playerName: batterName, battingOrder: batterOrder })
+        setTimeout(() => setHomerunRunner(null), 1600)
+      }
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
+        try { navigator.vibrate([80, 60, 80, 60, 200]) } catch { /* vibrate not supported */ }
+      }
+    } else if (result === 'HIT_BY_PITCH') {
+      if (!reducedMotion) {
+        setHbpFlash(batterName)
+        setTimeout(() => setHbpFlash(null), 1500)
+      }
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
+        try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
+      }
+    } else if (result === 'WALK') {
+      if (!reducedMotion) {
+        setWalkFlash({ batter: batterName, runsScored })
+        setTimeout(() => setWalkFlash(null), 1700)
+      }
+    } else if (result === 'REACHED_ON_ERROR') {
+      if (!reducedMotion) {
+        setErrorFlash({ batter: batterName, runsScored })
+        setTimeout(() => setErrorFlash(null), 1700)
+      }
+    } else if (result === 'STRIKEOUT') {
+      if (!reducedMotion) {
+        setStrikeoutFlash(batterName)
+        setTimeout(() => setStrikeoutFlash(null), 1600)
+      }
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
+        try { navigator.vibrate([40, 40, 80]) } catch { /* vibrate not supported */ }
+      }
+    }
+    const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
+    const hitLabel = result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : result === 'TRIPLE' ? 'Triple' : null
+    if (!isAnyHomerun && result !== 'HIT_BY_PITCH' && result !== 'WALK' && result !== 'REACHED_ON_ERROR') {
+      const showRuns = scoredPlayers.length > 0
+      const showHitPrompt = isHit && hadRunners
+      if (showRuns || showHitPrompt) {
+        setScoredFlash({
+          runners: scoredPlayers.map(p => p.playerName),
+          hitLabel: showHitPrompt ? hitLabel : null,
+        })
+        setTimeout(() => setScoredFlash(null), 2200)
+      }
+    }
+  }
+
+  // Baut RunnerOnBase[] aus nextState — kombiniert preAbRunners (Namen) + Batter falls auf Base.
+  const buildProposedRunners = (
+    nextState: BaseStateDto,
+    batterId: number,
+    batterName: string,
+    batterOrder: number | null,
+    preAbRunners: RunnerOnBase[],
+  ): RunnerOnBase[] => {
+    const out: RunnerOnBase[] = []
+    const baseMap: Array<[1 | 2 | 3, number | null]> = [[1, nextState.first], [2, nextState.second], [3, nextState.third]]
+    for (const [base, pid] of baseMap) {
+      if (!pid) continue
+      if (pid === batterId) {
+        out.push({ playerId: batterId, playerName: batterName, battingOrder: batterOrder, base })
+      } else {
+        const pre = preAbRunners.find(r => r.playerId === pid)
+        if (pre) out.push({ ...pre, base })
+      }
+    }
+    return out
+  }
+
   const handleRecord = async (result: AtBatResult) => {
     if (!scoreboard || !scoreboard.currentBatterId) {
       toast.show('Kein Schlagmann gesetzt — bitte Lineup erstellen', 'error')
@@ -196,141 +299,69 @@ export function ScoringPage() {
     setSubmitting(true)
     // Name des aktuellen Batters merken BEVOR reload passiert
     const batterNameSnapshot = scoreboard.currentBatterName ?? 'Batter'
+    const batterIdSnapshot = scoreboard.currentBatterId
+    const batterOrderSnapshot = scoreboard.currentBatterOrder ?? null
     // Pre-AB Runner-Snapshot fuer CorrectionSheet — ermoeglicht Cycle zurueck
     // zur urspruenglichen Base falls Runner doch stehen blieb.
     setPreAbRunners(displayRunners)
-    // Diamond-Freeze MUSS vor recordAtBat (= reload) gesetzt werden, sonst flackert
-    // Animation: 1. zum Auto-Advance-State, 2. zurück zu preAB beim Freeze-Enable.
     // OUT+hadRunners: IMMER Sheet öffnen (auch 3rd Out — wegen Force-Out-Banner).
     // Andere Hits nur wenn Inning danach noch läuft.
     const outsBeforeAB = scoreboard.outsInCurrentInning ?? 0
     const inningOverAfterAB = outsBeforeAB + (result === 'OUT' ? 1 : 0) >= 3
-    const willOpenCorrection = displayRunners.length > 0
+    const hadRunners = displayRunners.length > 0
+    const willOpenCorrection = hadRunners
       && (
         result === 'OUT'
         || (!inningOverAfterAB && (result === 'SINGLE' || result === 'DOUBLE'
             || result === 'TRIPLE' || result === 'REACHED_ON_ERROR'))
       )
-    if (willOpenCorrection) {
-      setFreezeDiamondUntilCorrection(true)
-    }
     try {
-      const nextState = advanceBases(displayBaseState, result, scoreboard.currentBatterId)
-      const runsScored = countScored(displayBaseState, nextState, result, scoreboard.currentBatterId)
+      const nextState = advanceBases(displayBaseState, result, batterIdSnapshot)
+      const runsScored = countScored(displayBaseState, nextState, result, batterIdSnapshot)
       // Ermittle Runner die durch diesen AtBat gescort haben (für Korrigieren-Sheet).
-      // displayRunners statt scoreboard.runners: scoreboard hat stale state aus
-      // vorherigem Inning bis erster AtBat im neuen Inning kommt — würde sonst
-      // beim ersten Out im neuen Inning fälschlich +N Runs anzeigen.
       const newRunnerIds = new Set([nextState.first, nextState.second, nextState.third].filter(Boolean) as number[])
       const scoredPlayers = displayRunners
         .filter(r => !newRunnerIds.has(r.playerId))
         .map(r => ({ playerId: r.playerId, playerName: r.playerName }))
-      // Homerun-Batter auch als "gescort" markieren (HR + Park-HR) damit er in Korrektur auftaucht
       const isAnyHomerun = result === 'HOMERUN' || result === 'INSIDE_PARK_HR'
       if (isAnyHomerun && scoreboard.currentBatterName) {
         scoredPlayers.push({
-          playerId: scoreboard.currentBatterId,
+          playerId: batterIdSnapshot,
           playerName: scoreboard.currentBatterName,
         })
       }
-      // Erst Server-Call, danach lokalen State setzen — so bleibt bei Fehler
-      // nichts inkonsistent.
+
+      if (willOpenCorrection) {
+        // Deferred-Path: KEIN recordAtBat jetzt. Sheet zeigt Vorschau, User entscheidet.
+        // Erst bei "Passt" wird AB ans Backend gesendet (siehe onSave-Callback).
+        // Bei "Abbrechen" wird pendingHit verworfen — gar nichts passiert im Backend.
+        const proposedRunners = buildProposedRunners(nextState, batterIdSnapshot, batterNameSnapshot, batterOrderSnapshot, displayRunners)
+        setPendingHit({
+          result,
+          proposedState: nextState,
+          proposedRunners,
+          runsScored,
+          scoredPlayers,
+          batterId: batterIdSnapshot,
+          batterName: batterNameSnapshot,
+          batterOrder: batterOrderSnapshot,
+        })
+        setFreezeDiamondUntilCorrection(true)
+        setShowCorrection(true)
+        setSubmitting(false)
+        return
+      }
+
+      // Immediate-Path (kein Sheet) — sofort an Backend senden
       await recordAtBat({
-        batterId: scoreboard.currentBatterId,
+        batterId: batterIdSnapshot,
         result,
         inning: currentInning,
         baseStateAfter: nextState,
         runsScored,
-        rbi: runsScored, // V1: RBI = Runs Scored (Vereinfachung)
+        rbi: runsScored,
       })
-      setRecentlyScored(scoredPlayers)
-      // Reduced-Motion: User-Setting respektieren — keine Vollbild-Flashes
-      const reducedMotion = typeof window !== 'undefined'
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (isAnyHomerun) {
-        if (!reducedMotion) {
-          setHomerunFlash({ batter: batterNameSnapshot, runsScored, type: result as 'HOMERUN' | 'INSIDE_PARK_HR' })
-          setTimeout(() => setHomerunFlash(null), 2200)
-          setHomerunRunner({
-            playerId: scoreboard.currentBatterId,
-            playerName: batterNameSnapshot,
-            battingOrder: scoreboard.currentBatterOrder ?? null,
-          })
-          setTimeout(() => setHomerunRunner(null), 1600)
-        }
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
-          try { navigator.vibrate([80, 60, 80, 60, 200]) } catch { /* vibrate not supported */ }
-        }
-      } else if (result === 'HIT_BY_PITCH') {
-        if (!reducedMotion) {
-          setHbpFlash(batterNameSnapshot)
-          setTimeout(() => setHbpFlash(null), 1500)
-        }
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
-          try { navigator.vibrate([30, 30, 30]) } catch { /* vibrate not supported */ }
-        }
-      } else if (result === 'WALK') {
-        if (!reducedMotion) {
-          setWalkFlash({ batter: batterNameSnapshot, runsScored })
-          setTimeout(() => setWalkFlash(null), 1700)
-        }
-      } else if (result === 'REACHED_ON_ERROR') {
-        if (!reducedMotion) {
-          setErrorFlash({ batter: batterNameSnapshot, runsScored })
-          setTimeout(() => setErrorFlash(null), 1700)
-        }
-      } else if (result === 'STRIKEOUT') {
-        if (!reducedMotion) {
-          setStrikeoutFlash(batterNameSnapshot)
-          setTimeout(() => setStrikeoutFlash(null), 1600)
-        }
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator && !reducedMotion) {
-          try { navigator.vibrate([40, 40, 80]) } catch { /* vibrate not supported */ }
-        }
-      }
-
-      const hadRunners = displayRunners.length > 0
-      const isHit = result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE'
-      const hitLabel = result === 'SINGLE' ? 'Single' : result === 'DOUBLE' ? 'Double' : result === 'TRIPLE' ? 'Triple' : null
-
-      // Einheitliche Score/Anpassen-Pille — eine Pille für alle Hit/Run-Cases
-      // (HR, HBP, WALK haben eigene Vollbild-/Pill-Animationen)
-      if (!isAnyHomerun && result !== 'HIT_BY_PITCH' && result !== 'WALK' && result !== 'REACHED_ON_ERROR') {
-        const showRuns = scoredPlayers.length > 0
-        const showHitPrompt = isHit && hadRunners
-        if (showRuns || showHitPrompt) {
-          setScoredFlash({
-            runners: scoredPlayers.map(p => p.playerName),
-            hitLabel: showHitPrompt ? hitLabel : null,
-          })
-          setTimeout(() => setScoredFlash(null), 2200)
-        }
-      }
-
-      // Auto-Open Korrektur-Sheet:
-      //   - OUT + Runner → Force-Play/Tag-up Entscheidung (advanceBases lässt
-      //     State unchanged, User muss aktiv cyclen).
-      //   - SINGLE/DOUBLE/TRIPLE + Runner → Bestätigung der Advance.
-      //     SINGLE: 1B könnte 2B/3B, 2B könnte 3B/Home.
-      //     DOUBLE: 1B könnte 3B/Home.
-      //     TRIPLE: alle scoren default — Sheet als Sicherheit (Runner an Home thrown-out).
-      //
-      // Nicht bei HOMERUN: alle scoren per Definition (Ball über Zaun).
-      // Nicht bei WALK/HBP: Force eindeutig.
-      // Nicht beim 3. Out: Inning vorbei, Runner-Advance irrelevant.
-      const outsAfter = (scoreboard.outsInCurrentInning ?? 0) + (result === 'OUT' ? 1 : 0)
-      const inningOver = outsAfter >= 3
-      // OUT+hadRunners: IMMER Sheet öffnen (auch 3rd Out) wegen Force-Out-Banner.
-      // CorrectionSheet zeigt bei outsAfter===3 Warnung: "Bei Force-Out als 3. Out zählt der Run NICHT".
-      if (result === 'OUT' && hadRunners) {
-        setShowCorrection(true)
-      } else if (!inningOver) {
-        if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
-          setShowCorrection(true)
-        } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
-          setShowCorrection(true)
-        }
-      }
+      fireHitSideEffects(result, batterNameSnapshot, batterIdSnapshot, batterOrderSnapshot, runsScored, scoredPlayers, hadRunners)
     } catch (e) {
       // API-Fehler: Freeze wieder lösen, sonst bleibt Diamond auf preAB hängen
       setFreezeDiamondUntilCorrection(false)
@@ -1002,26 +1033,102 @@ export function ScoringPage() {
       {/* Korrektur-Sheet */}
       <CorrectionSheet
         open={showCorrection}
-        onClose={() => { setShowCorrection(false); setFreezeDiamondUntilCorrection(false) }}
-        baseState={displayBaseState}
-        runners={displayRunners}
+        onClose={() => {
+          // Cancel/Schließen: bei pendingHit nichts im Backend committen — einfach verwerfen.
+          setShowCorrection(false)
+          setFreezeDiamondUntilCorrection(false)
+          setPendingHit(null)
+        }}
+        baseState={pendingHit ? pendingHit.proposedState : displayBaseState}
+        runners={pendingHit ? pendingHit.proposedRunners : displayRunners}
         preAbRunners={preAbRunners}
-        justBattedId={atBats.length > 0 ? atBats[atBats.length - 1]?.batterId ?? null : null}
-        recentlyScored={recentlyScored}
+        justBattedId={pendingHit ? pendingHit.batterId : (atBats.length > 0 ? atBats[atBats.length - 1]?.batterId ?? null : null)}
+        recentlyScored={pendingHit ? pendingHit.scoredPlayers : recentlyScored}
         context={
-          atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT'
-            ? 'post-out'
-            : 'manual'
+          pendingHit
+            ? (pendingHit.result === 'OUT' ? 'post-out' : 'manual')
+            : (atBats.length > 0 && atBats[atBats.length - 1]?.result === 'OUT' ? 'post-out' : 'manual')
         }
-        outsAfter={scoreboard?.outsInCurrentInning ?? 0}
+        outsAfter={
+          pendingHit
+            ? (scoreboard?.outsInCurrentInning ?? 0) + (pendingHit.result === 'OUT' ? 1 : 0)
+            : scoreboard?.outsInCurrentInning ?? 0
+        }
         onSave={async ({ newState, extraRuns, outsFromRunners, unscoredPlayerIds, context }) => {
+          // Branch: Deferred (pendingHit) vs Manual (existing AB)
+          if (pendingHit) {
+            // === Deferred-Path: Jetzt erst AB ans Backend senden ===
+            try {
+              // finalRuns: pendingHit.runsScored - unscored + extraRuns
+              // (Korrektur kann Runner zurück halten = -unscored, oder zusätzlich scoren lassen = +extraRuns)
+              const finalRuns = Math.max(0, pendingHit.runsScored - unscoredPlayerIds.length + extraRuns)
+              await recordAtBat({
+                batterId: pendingHit.batterId,
+                result: pendingHit.result,
+                inning: currentInning,
+                baseStateAfter: newState,
+                runsScored: finalRuns,
+                rbi: finalRuns,
+              })
+              // Final scoredPlayers list für Flash: alle preAbRunners die nicht mehr auf Base sind und nicht out.
+              const newStateIds = new Set([newState.first, newState.second, newState.third].filter(Boolean) as number[])
+              const outsSet = new Set(outsFromRunners)
+              const finalScored = preAbRunners
+                .filter(r => !newStateIds.has(r.playerId) && !outsSet.has(r.playerId))
+                .map(r => ({ playerId: r.playerId, playerName: r.playerName }))
+              // HR-Batter: scort per Definition (außer Korrektur setzt ihn an Base/out)
+              const isAnyHomerun = pendingHit.result === 'HOMERUN' || pendingHit.result === 'INSIDE_PARK_HR'
+              if (isAnyHomerun && !newStateIds.has(pendingHit.batterId) && !outsSet.has(pendingHit.batterId)) {
+                finalScored.push({ playerId: pendingHit.batterId, playerName: pendingHit.batterName })
+              }
+              // Runner-Outs: post-out → OUT_ON_PLAY, manual → CAUGHT_STEALING
+              const outEventType = context === 'post-out' ? 'OUT_ON_PLAY' : 'CAUGHT_STEALING'
+              if (outsFromRunners.length > 0) {
+                setOutRunnerIds(prev => {
+                  const next = new Set(prev)
+                  outsFromRunners.forEach(id => next.add(id))
+                  return next
+                })
+                setTimeout(() => setOutRunnerIds(prev => {
+                  const next = new Set(prev)
+                  outsFromRunners.forEach(id => next.delete(id))
+                  return next
+                }), 500)
+              }
+              for (const runnerId of outsFromRunners) {
+                await api.recordStealingEvent(currentGame.id, {
+                  runnerId,
+                  type: outEventType,
+                  inning: currentInning,
+                })
+              }
+              // Jetzt erst Flashes feuern (User hat bestätigt)
+              const hadRunnersAtAB = preAbRunners.length > 0
+              fireHitSideEffects(
+                pendingHit.result,
+                pendingHit.batterName,
+                pendingHit.batterId,
+                pendingHit.batterOrder,
+                finalRuns,
+                finalScored,
+                hadRunnersAtAB,
+              )
+              setPendingHit(null)
+              setShowCorrection(false)
+              setFreezeDiamondUntilCorrection(false)
+            } catch (e) {
+              toast.show((e as Error).message, 'error')
+            }
+            return
+          }
+
+          // === Manual-Path: existierender AB wird per updateLastBaseState korrigiert ===
           if (atBats.length === 0) {
             toast.show('Noch kein AtBat — kann nicht korrigieren', 'error')
             return
           }
           try {
             const lastAtBat = atBats[atBats.length - 1]
-            // neuHome adds, unscored subtracts
             const delta = extraRuns - unscoredPlayerIds.length
             const newRuns = Math.max(0, (lastAtBat.runsScored ?? 0) + delta)
             await api.updateLastBaseState(currentGame.id, {
@@ -1031,9 +1138,6 @@ export function ScoringPage() {
               runsScored: newRuns,
               rbi: newRuns,
             })
-            // Runner-Outs speichern:
-            //   post-out → OUT_ON_PLAY (Grounder/Fly-Out-Follow-up, kein CS-Stat)
-            //   manual   → CAUGHT_STEALING (manuelle Korrektur eines Steal-Versuchs)
             const outEventType = context === 'post-out' ? 'OUT_ON_PLAY' : 'CAUGHT_STEALING'
             if (outsFromRunners.length > 0) {
               setOutRunnerIds(prev => {
@@ -1054,10 +1158,11 @@ export function ScoringPage() {
                 inning: currentInning,
               })
             }
-            // Korrektur wurde angewendet, recentlyScored leeren damit nächster Edit nicht doppelt zählt
             setRecentlyScored([])
             await reload()
             toast.show('Korrigiert ✓', 'success')
+            setShowCorrection(false)
+            setFreezeDiamondUntilCorrection(false)
           } catch (e) {
             toast.show((e as Error).message, 'error')
           }
