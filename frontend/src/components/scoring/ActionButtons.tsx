@@ -54,17 +54,13 @@ export function ActionButtons({ onRecord, disabled }: Props) {
             transition={{ duration: 0.12 }}
             className="space-y-2"
           >
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-1.5">
               <HitSubButton label="Single" onClick={() => handleRecord('SINGLE')} />
               <HitSubButton label="Double" onClick={() => handleRecord('DOUBLE')} />
               <HitSubButton label="Triple" onClick={() => handleRecord('TRIPLE')} />
               <HitSubButton label="Homerun" onClick={() => handleRecord('HOMERUN')} accent />
+              <HitSubButton label="Park-HR" onClick={() => handleRecord('INSIDE_PARK_HR')} accent title="Inside-the-Park Homerun" />
             </div>
-            <HitSubButton
-              label="Park-HR · Inside-the-Park"
-              onClick={() => handleRecord('INSIDE_PARK_HR')}
-              accent
-            />
             <button
               onClick={handleCancel}
               className="w-full h-11 rounded-lg border border-cream-300 text-gray-600 text-sm font-medium hover:bg-cream-200 cursor-pointer"
@@ -123,14 +119,15 @@ function SecondaryButton({ color, label, subtitle, onClick, disabled }: { color:
   )
 }
 
-function HitSubButton({ label, onClick, accent }: { label: string; onClick: () => void; accent?: boolean }) {
+function HitSubButton({ label, onClick, accent, title }: { label: string; onClick: () => void; accent?: boolean; title?: string }) {
   const cls = accent
     ? 'bg-gradient-to-br from-navy-700 to-softball-red-600 text-white'
     : 'bg-navy-800 hover:bg-navy-900 active:bg-navy-950 text-white'
   return (
     <button
       onClick={onClick}
-      className={`font-display h-16 sm:h-[72px] rounded-xl font-extrabold text-base sm:text-lg tracking-widest uppercase cursor-pointer transition-colors ${cls}`}
+      title={title}
+      className={`font-display h-14 sm:h-16 rounded-lg font-extrabold text-[10px] sm:text-xs tracking-wider uppercase cursor-pointer transition-colors ${cls}`}
     >
       {label}
     </button>
