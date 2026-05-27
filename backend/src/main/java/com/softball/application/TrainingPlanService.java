@@ -6,10 +6,14 @@ import com.softball.domain.model.Drill;
 import com.softball.domain.model.InfieldPosition;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
+import com.softball.domain.model.TrainingPlanSection;
 import com.softball.domain.port.out.TrainingPlanRepository;
 import com.softball.domain.port.out.TrainingRepository;
 import com.softball.domain.service.TrainingPlanGenerator;
+import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +25,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class TrainingPlanService {
+
+    private static final Logger log = LoggerFactory.getLogger(TrainingPlanService.class);
 
     private final TrainingPlanRepository trainingPlanRepository;
     private final TrainingRepository trainingRepository;
@@ -103,5 +109,30 @@ public class TrainingPlanService {
             throw new ResourceNotFoundException("TrainingPlan", planId);
         }
         trainingPlanRepository.deleteById(planId);
+    }
+
+    @Transactional
+    public TrainingPlanResponse updateSectionDrill(final Long planId, final int sectionIndex, final String drillId) {
+        final TrainingPlan plan = trainingPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("TrainingPlan", planId));
+
+        final List<TrainingPlanSection> sections = plan.getContent().getSections();
+        if (sectionIndex < 0 || sectionIndex >= sections.size()) {
+            throw new BusinessValidationException("Section-Index " + sectionIndex
+                    + " außerhalb des Range (0.." + (sections.size() - 1) + ")");
+        }
+
+        final Drill newDrill = drillService.findById(drillId)
+                .orElseThrow(() -> new ResourceNotFoundException("Drill not found: " + drillId));
+
+        final TrainingPlanSection target = sections.get(sectionIndex);
+        target.setDrillId(newDrill.getId());
+        target.setTitle(newDrill.getName());
+        target.setRotationPlan(newDrill.getRotation());
+        target.setSetupNotes(null);
+        target.setTips(null);
+
+        log.info("Section {} in Plan {} drillId getauscht: → {}", sectionIndex, planId, drillId);
+        return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
     }
 }

@@ -48,6 +48,13 @@ public class TrainingPlanController {
         return trainingPlanService.update(id, request.content());
     }
 
+    @PatchMapping("/{id}/sections/{index}")
+    public TrainingPlanResponse updateSectionDrill(@PathVariable final Long id,
+                                                    @PathVariable final int index,
+                                                    @Valid @RequestBody final PatchSectionDrillRequest request) {
+        return trainingPlanService.updateSectionDrill(id, index, request.drillId());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable final Long id) {
