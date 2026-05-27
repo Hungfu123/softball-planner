@@ -547,10 +547,13 @@ export function ScoringPage() {
     // Sheet sofort schließen — optimistic UX
     setStealingRunner(null)
     if (outPlayerId != null) {
+      // outRunnerIds markiert Runner für skipExitToHome (fadet in-place statt zu Home zu laufen).
+      // Timeout muss länger sein als API + Reload + Rerender + Exit-Anim (~300ms),
+      // sonst läuft Runner durch alle Bases bevor sein "out"-Flag wieder weg ist.
       setOutRunnerIds(prev => new Set(prev).add(outPlayerId))
       setTimeout(() => setOutRunnerIds(prev => {
         const next = new Set(prev); next.delete(outPlayerId); return next
-      }), 500)
+      }), 2000)
     }
     try {
       await recordStealingEvent({
@@ -1095,7 +1098,7 @@ export function ScoringPage() {
                   const next = new Set(prev)
                   outsFromRunners.forEach(id => next.delete(id))
                   return next
-                }), 500)
+                }), 2000)
               }
               for (const runnerId of outsFromRunners) {
                 await api.recordStealingEvent(currentGame.id, {
