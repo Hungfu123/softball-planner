@@ -11,7 +11,7 @@ Aktuell wird pro Training genau ein Plan generiert. Use-Case: parallel zur Haupt
 
 **Gewählt: 1 Plan mit `group`-Feld pro Section** (Approach B aus Brainstorm).
 
-Plan bleibt 1 Eintrag pro Training. Sections bekommen ein Group-Discriminator (`ALL` / `MAIN` / `BEGINNER`). Shared Phasen (Warmup, Batting, Game, Cooldown) bleiben `ALL`. Skill-Phase wird bei aktivierter Anfänger-Toggle in zwei parallele Section-Blocks gesplittet: `MAIN` (alle complexities) + `BEGINNER` (nur `complexity=BASIC`, ca. 1.5x länger).
+Plan bleibt 1 Eintrag pro Training. Sections bekommen ein Group-Discriminator (`ALL` / `MAIN` / `BEGINNER`). Shared Phasen (Warmup, Partner-Routine, Batting, Game) bleiben `ALL`. Skill-Phase wird bei aktivierter Anfänger-Toggle in zwei parallele Section-Blocks gesplittet: `MAIN` (alle complexities) + `BEGINNER` (nur `complexity=BASIC`, ca. 1.5x länger).
 
 **Verworfene Alternativen:**
 - **A. Zwei vollständige separate Pläne:** Duplikation von Warmup/Batting-Texten. Änderungen müssen doppelt gepflegt werden.
@@ -133,7 +133,9 @@ Body: {
 PATCH /api/training-plans/{id}/sections/{index}
 Body: { drillId: "PUSHUP_GROUNDER" }
 
-Effect: Replaces section's drillId + title + rotation + setupNotes/tips from the new Drill. Keeps duration, group, userNotes, parallelGroup, playersPerGroup.
+Effect:
+- **Überschrieben aus neuem Drill:** `drillId`, `title`, `rotationPlan`, `setupNotes`, `tips` (Drill-Meta)
+- **Bleiben unverändert:** `sectionType`, `durationMinutes`, `rounds`, `group`, `adaptationNotes`, `groupSetup`, `userNotes`, `parallelGroup`, `playersPerGroup` (User-Edits + Layout-Kontext)
 ```
 
 Manual Swap respektiert nicht das `group`-Constraint — User darf jeden Drill auf jede Section legen. UI filtert die Vorschläge basierend auf group, aber Backend akzeptiert beliebige drillId.
@@ -233,11 +235,10 @@ backend/src/test/java/com/softball/domain/service/
 frontend/src/types/index.ts
 frontend/src/api/client.ts  (patchSection)
 frontend/src/components/training/
-  TrainingForm.tsx  (or PlanGeneratorForm)
-  PlanDisplay.tsx
-  PlanSection.tsx
-  PlanEditDrawer.tsx
-  DrillPickerModal.tsx  (group-filter prop)
+  GeneratePlanDrawer.tsx       (Checkbox + Anfänger-Count)
+  TrainingPlanView.tsx         (PlanDisplay Group-aware Layout)
+  PlanEditDrawer.tsx           (Group-Badges, Drill-Swap-Pencil)
+  DrillPickerModal.tsx         (group-filter prop)
 frontend/e2e/training/
   plan-generate-dual-group.spec.ts  (new)
   plan-edit-swap-drill.spec.ts  (new)
