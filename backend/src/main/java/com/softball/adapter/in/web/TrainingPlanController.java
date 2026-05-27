@@ -26,7 +26,9 @@ public class TrainingPlanController {
         return trainingPlanService.generate(
                 request.trainingId(), request.playerCount(),
                 request.focus(), request.durationMinutes(),
-                request.infieldPositionsOrEmpty());
+                request.infieldPositionsOrEmpty(),
+                request.withBeginnerGroupOrFalse(),
+                request.beginnerCountOrZero());
     }
 
     @GetMapping("/training/{trainingId}")

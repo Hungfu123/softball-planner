@@ -12,9 +12,19 @@ public record GeneratePlanRequest(
         @NotNull @Min(1) Integer playerCount,
         @NotBlank String focus,
         @NotNull @Min(30) Integer durationMinutes,
-        List<InfieldPosition> infieldPositions
+        List<InfieldPosition> infieldPositions,
+        Boolean withBeginnerGroup,
+        Integer beginnerCount
 ) {
     public List<InfieldPosition> infieldPositionsOrEmpty() {
         return infieldPositions != null ? infieldPositions : List.of();
+    }
+
+    public boolean withBeginnerGroupOrFalse() {
+        return Boolean.TRUE.equals(withBeginnerGroup);
+    }
+
+    public int beginnerCountOrZero() {
+        return beginnerCount != null ? beginnerCount : 0;
     }
 }

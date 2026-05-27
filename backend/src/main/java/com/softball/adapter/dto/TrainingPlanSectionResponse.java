@@ -1,12 +1,14 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.SectionGroup;
 import com.softball.domain.model.TrainingPlanSection;
 
 public record TrainingPlanSectionResponse(
         String drillId, String sectionType, String title, Integer durationMinutes,
         Integer rounds, String adaptationNotes, String rotationPlan, String setupNotes,
         String tips, String groupSetup, String userNotes,
-        Integer parallelGroup, Integer playersPerGroup) {
+        Integer parallelGroup, Integer playersPerGroup,
+        SectionGroup group) {
 
     public static TrainingPlanSectionResponse from(final TrainingPlanSection section) {
         return new TrainingPlanSectionResponse(
@@ -14,7 +16,8 @@ public record TrainingPlanSectionResponse(
                 section.getDurationMinutes(), section.getRounds(), section.getAdaptationNotes(),
                 section.getRotationPlan(), section.getSetupNotes(), section.getTips(),
                 section.getGroupSetup(), section.getUserNotes(),
-                section.getParallelGroup(), section.getPlayersPerGroup()
+                section.getParallelGroup(), section.getPlayersPerGroup(),
+                section.getGroup()
         );
     }
 
@@ -33,6 +36,7 @@ public record TrainingPlanSectionResponse(
         section.setUserNotes(userNotes);
         section.setParallelGroup(parallelGroup);
         section.setPlayersPerGroup(playersPerGroup);
+        section.setGroup(group != null ? group : SectionGroup.ALL);
         return section;
     }
 }
