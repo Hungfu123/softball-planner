@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void
   defaultPlayerCount: number
   trainingDate?: string | null
-  onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[] }) => Promise<void>
+  onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number }) => Promise<void>
 }
 
 const FOCUS_OPTIONS: { value: TrainingFocus; label: string }[] = [
@@ -38,6 +38,8 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set())
   const [infieldPositions, setInfieldPositions] = useState<Set<InfieldPosition>>(new Set())
   const [durationMinutes, setDurationMinutes] = useState(initialDuration)
+  const [withBeginnerGroup, setWithBeginnerGroup] = useState(false)
+  const [beginnerCount, setBeginnerCount] = useState(2)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -46,6 +48,8 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       setFocuses(new Set())
       setInfieldPositions(new Set())
       setDurationMinutes(initialDuration)
+      setWithBeginnerGroup(false)
+      setBeginnerCount(2)
     }
   }, [open, defaultPlayerCount, initialDuration])
 
@@ -70,10 +74,12 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   const submit = async () => {
     setSubmitting(true)
     try {
-      const data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[] } = {
+      const data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number } = {
         playerCount,
         focus: [...focuses].join(','),
         durationMinutes,
+        withBeginnerGroup,
+        beginnerCount: withBeginnerGroup ? beginnerCount : 0,
       }
       if (focuses.has('INFIELD_DEFENSE') && infieldPositions.size > 0) {
         data.infieldPositions = [...infieldPositions]
@@ -124,6 +130,42 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
               className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
             >+</button>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={withBeginnerGroup}
+              onChange={(e) => setWithBeginnerGroup(e.target.checked)}
+              className="w-4 h-4 cursor-pointer accent-navy-800"
+            />
+            <span className="text-xs font-bold uppercase tracking-wider text-navy-500">Mit Anfängergruppe?</span>
+          </label>
+          {withBeginnerGroup && (
+            <div className="pl-6">
+              <label className="text-[10px] text-navy-500 block mb-1">Anfänger-Anzahl (min 2)</label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBeginnerCount(c => Math.max(2, c - 1))}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
+                >−</button>
+                <input
+                  type="number"
+                  min={2}
+                  value={beginnerCount}
+                  onChange={(e) => setBeginnerCount(Math.max(2, parseInt(e.target.value) || 2))}
+                  className="w-16 text-center px-2 py-2 border border-cream-300 rounded-md text-sm font-bold text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
+                />
+                <button
+                  type="button"
+                  onClick={() => setBeginnerCount(c => Math.min(playerCount, c + 1))}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
+                >+</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
