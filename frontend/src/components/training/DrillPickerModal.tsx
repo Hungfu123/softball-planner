@@ -86,7 +86,8 @@ export function DrillPickerModal({ drills, onSelect, onClose, complexityFilter }
           filtered.map(drill => (
             <div key={drill.id} className="flex items-center border-b border-cream-200">
               <button
-                onClick={() => onSelect(drill)}
+                onClick={(e) => { e.stopPropagation(); onSelect(drill) }}
+                data-drill-id={drill.id}
                 className="flex-1 text-left px-4 py-3 hover:bg-navy-50 transition-colors cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-2">
