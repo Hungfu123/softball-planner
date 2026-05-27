@@ -47,7 +47,7 @@ export function ScoringPage() {
   const [opponentRunsThisInning, setOpponentRunsThisInning] = useState('')
   const [manualAdvancePrompt, setManualAdvancePrompt] = useState(false)
   // Animations halten jetzt den Spielernamen — sonst zeigt der Reload schon den nächsten Batter
-  const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number } | null>(null)
+  const [homerunFlash, setHomerunFlash] = useState<{ batter: string; runsScored: number; type: 'HOMERUN' | 'INSIDE_PARK_HR' } | null>(null)
   // HR-Runner läuft über alle Bases. State hält name + battingOrder damit
   // der Runner auf dem Diamond animiert werden kann.
   const [homerunRunner, setHomerunRunner] = useState<{ playerId: number; playerName: string; battingOrder: number | null } | null>(null)
@@ -220,7 +220,7 @@ export function ScoringPage() {
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches
       if (isAnyHomerun) {
         if (!reducedMotion) {
-          setHomerunFlash({ batter: batterNameSnapshot, runsScored })
+          setHomerunFlash({ batter: batterNameSnapshot, runsScored, type: result as 'HOMERUN' | 'INSIDE_PARK_HR' })
           setTimeout(() => setHomerunFlash(null), 2200)
           setHomerunRunner({
             playerId: scoreboard.currentBatterId,
@@ -1456,7 +1456,131 @@ export function ScoringPage() {
 
       {/* Homerun — Power-Smash mit Type-Label nach Runs */}
       <AnimatePresence>
-        {homerunFlash && (() => {
+        {homerunFlash && homerunFlash.type === 'INSIDE_PARK_HR' && (
+          <motion.div
+            key="park-hr"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center bg-cream-50/95 overflow-hidden"
+          >
+            {/* Horizontale Speed-Streaks — schnell L→R */}
+            {[...Array(14)].map((_, i) => {
+              const isRed = i % 3 === 0
+              const top = 8 + (i * 6.5) % 84
+              const height = i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1
+              const duration = 0.35 + Math.random() * 0.3
+              const delay = Math.random() * 0.8
+              return (
+                <motion.div
+                  key={`streak-${i}`}
+                  className={`absolute ${isRed ? 'bg-softball-red-600' : 'bg-navy-900'}`}
+                  style={{
+                    top: `${top}%`,
+                    height: `${height}px`,
+                    width: '60%',
+                    left: '-60%',
+                    opacity: 0.55,
+                  }}
+                  initial={{ x: 0 }}
+                  animate={{ x: ['0vw', '180vw'] }}
+                  transition={{ duration, delay, ease: 'easeOut', repeat: 2, repeatDelay: 0.05 }}
+                />
+              )
+            })}
+
+            {/* 4 Ghost-Runner Silhouetten — staffeln 1B→2B→3B→Home */}
+            {[
+              { x: 8, opacity: 0.12, delay: 0, scale: 0.95 },
+              { x: 30, opacity: 0.25, delay: 0.12, scale: 1.0 },
+              { x: 55, opacity: 0.5, delay: 0.24, scale: 1.05 },
+              { x: 78, opacity: 0.95, delay: 0.36, scale: 1.15 },
+            ].map((ghost, i) => (
+              <motion.div
+                key={`ghost-${i}`}
+                className="absolute text-navy-900"
+                style={{ left: `${ghost.x}%`, top: '38%' }}
+                initial={{ opacity: 0, x: -40, scale: ghost.scale * 0.8 }}
+                animate={{ opacity: [0, ghost.opacity, ghost.opacity * 0.7], x: 0, scale: ghost.scale }}
+                transition={{ duration: 0.55, delay: ghost.delay, ease: 'easeOut' }}
+              >
+                <svg width="68" height="92" viewBox="0 0 60 80" aria-hidden>
+                  <circle cx="38" cy="9" r="6" fill="currentColor" />
+                  <path d="M38 15 L28 38" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" />
+                  <path d="M33 22 L48 17 M33 22 L20 30" stroke="currentColor" strokeWidth="5" strokeLinecap="round" fill="none" />
+                  <path d="M28 38 L46 52 M28 38 L14 60" stroke="currentColor" strokeWidth="6" strokeLinecap="round" fill="none" />
+                </svg>
+              </motion.div>
+            ))}
+
+            {/* Dust-Puffs am Boden (folgen Ghost-Bewegung) */}
+            {[15, 38, 62, 85].map((leftPct, i) => (
+              <motion.div
+                key={`dust-${i}`}
+                className="absolute rounded-full bg-cream-300/70"
+                style={{ left: `${leftPct}%`, bottom: '22%', width: 24, height: 12 }}
+                initial={{ opacity: 0, scale: 0.4 }}
+                animate={{ opacity: [0, 0.6, 0], scale: [0.4, 1.6, 2.2] }}
+                transition={{ duration: 0.5, delay: 0.1 + i * 0.12, ease: 'easeOut' }}
+              />
+            ))}
+
+            {/* Center-Text: "PARK HR!" mit Chromatic-Aberration */}
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0, x: -60 }}
+              animate={{
+                scale: [0.6, 1.18, 0.95, 1.05, 1],
+                opacity: 1,
+                x: [-60, 12, -6, 3, 0],
+              }}
+              exit={{ scale: 0.7, opacity: 0, x: 80 }}
+              transition={{ duration: 0.55, ease: [0.16, 1.2, 0.3, 1], delay: 0.2 }}
+              className="text-center relative z-10"
+            >
+              <div
+                className="font-display font-black text-navy-900 leading-none tracking-tight"
+                style={{
+                  fontSize: 'clamp(80px, 22vw, 220px)',
+                  textShadow: '-4px 0 0 #DC2626, 4px 0 0 #06B6D4, 0 0 1px rgba(0,0,0,0.4)',
+                  letterSpacing: '-0.04em',
+                }}
+              >
+                PARK<span className="text-softball-red-600"> HR</span>
+                <span className="text-softball-red-600">!</span>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55, duration: 0.35 }}
+                className="font-display mt-2 text-sm sm:text-xl font-extrabold text-softball-red-700 uppercase tracking-[0.3em]"
+                style={{ textShadow: '-2px 0 0 #06B6D4' }}
+              >
+                Too fast to tag
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.65, duration: 0.3 }}
+                className="font-display mt-3 text-lg sm:text-2xl font-extrabold text-navy-900 uppercase tracking-widest"
+              >
+                {homerunFlash.batter}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.75, duration: 0.3 }}
+                className="font-display mt-1 text-xs sm:text-base font-bold text-gray-700 uppercase tracking-wider"
+              >
+                {homerunFlash.runsScored} {homerunFlash.runsScored === 1 ? 'Run' : 'Runs'} · Inside-the-Park
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+        {homerunFlash && homerunFlash.type === 'HOMERUN' && (() => {
           const runs = homerunFlash.runsScored
           const isGrandSlam = runs >= 4
           const typeLabel = runs === 1 ? 'SOLO HR' : runs === 2 ? '2-RUN HR' : runs === 3 ? '3-RUN HR' : 'GRAND SLAM'
