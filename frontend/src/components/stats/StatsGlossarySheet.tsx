@@ -26,7 +26,7 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
               <Row abbr="BB / Walk" def="4 Bälle — Batter darf auf die 1B" />
               <Row abbr="HBP" def="Hit-by-Pitch — Batter wurde vom Wurf getroffen" />
               <Row abbr="K / Strikeout" def="3× gestrikt, Batter aus" />
-              <Row abbr="SB / Stolen Base" def="Base zwischen Pitches gestohlen (Steal)" />
+              <Row abbr="SB / Stolen Base" def="Base zwischen Pitches gestealed" />
               <Row abbr="CS / Caught Stealing" def="Beim Steal-Versuch gefangen (Out). Wirkt sich auf Steal-Quote aus." />
               <Row abbr="PO / Pickoff" def="Vom Pitcher/Catcher getagt — ohne Steal-Versuch. Eigener Stat, zählt NICHT als CS." />
             </Section>
