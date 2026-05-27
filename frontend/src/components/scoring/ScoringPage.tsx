@@ -454,7 +454,9 @@ export function ScoringPage() {
       toast.show((e as Error).message, 'error')
     } finally {
       setSubmitting(false)
-      setTimeout(() => setUndoAnimSkip(false), 500)
+      // 2000ms damit Skip-Flag noch aktiv ist während Runner mounten
+      // (API + Reload + Rerender + Mount kann >500ms dauern)
+      setTimeout(() => setUndoAnimSkip(false), 2000)
     }
   }
 
@@ -913,6 +915,7 @@ export function ScoringPage() {
             onRunnerTap={halfInningOver ? undefined : handleRunnerTap}
             homerunRunner={homerunRunner}
             skipExitToHome={undoAnimSkip}
+            skipEntryFromHome={undoAnimSkip}
             outRunnerIds={outRunnerIds}
           />
           {displayRunners.length > 0 && !halfInningOver && (
