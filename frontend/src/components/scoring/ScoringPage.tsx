@@ -199,6 +199,17 @@ export function ScoringPage() {
     // Pre-AB Runner-Snapshot fuer CorrectionSheet — ermoeglicht Cycle zurueck
     // zur urspruenglichen Base falls Runner doch stehen blieb.
     setPreAbRunners(displayRunners)
+    // Diamond-Freeze MUSS vor recordAtBat (= reload) gesetzt werden, sonst flackert
+    // Animation: 1. zum Auto-Advance-State, 2. zurück zu preAB beim Freeze-Enable.
+    // Skip wenn 3rd Out (Inning vorbei → keine Korrektur).
+    const outsBeforeAB = scoreboard.outsInCurrentInning ?? 0
+    const willOpenCorrection = displayRunners.length > 0
+      && outsBeforeAB + (result === 'OUT' ? 1 : 0) < 3
+      && (result === 'OUT' || result === 'SINGLE' || result === 'DOUBLE'
+          || result === 'TRIPLE' || result === 'REACHED_ON_ERROR')
+    if (willOpenCorrection) {
+      setFreezeDiamondUntilCorrection(true)
+    }
     try {
       const nextState = advanceBases(displayBaseState, result, scoreboard.currentBatterId)
       const runsScored = countScored(displayBaseState, nextState, result, scoreboard.currentBatterId)
@@ -307,17 +318,16 @@ export function ScoringPage() {
       const inningOver = outsAfter >= 3
       if (!inningOver) {
         if (result === 'OUT' && hadRunners) {
-          setFreezeDiamondUntilCorrection(true)
           setShowCorrection(true)
         } else if ((result === 'SINGLE' || result === 'DOUBLE' || result === 'TRIPLE') && hadRunners) {
-          setFreezeDiamondUntilCorrection(true)
           setShowCorrection(true)
         } else if (result === 'REACHED_ON_ERROR' && hadRunners) {
-          setFreezeDiamondUntilCorrection(true)
           setShowCorrection(true)
         }
       }
     } catch (e) {
+      // API-Fehler: Freeze wieder lösen, sonst bleibt Diamond auf preAB hängen
+      setFreezeDiamondUntilCorrection(false)
       toast.show((e as Error).message, 'error')
     } finally {
       setSubmitting(false)
