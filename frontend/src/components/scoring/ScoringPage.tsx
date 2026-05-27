@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useScoring } from '@/hooks/useScoring'
 import { useToastContext } from '@/components/layout/Layout'
 import { ChevronLeft, ClipboardListIcon, SubstitutionIcon, BoltIcon, TrophyIcon } from '@/icons'
-import { Flag, RotateCcw, Undo2, SquarePen, Zap, X as XIcon, Footprints, BarChart3 } from 'lucide-react'
+import { Flag, RotateCcw, Undo2, SquarePen, Zap, X as XIcon, Footprints, BarChart3, Eraser } from 'lucide-react'
 import { DiamondView } from './DiamondView'
 import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
@@ -40,6 +40,7 @@ export function ScoringPage() {
   // +1-Default zurueck wenn Runner doch stehen bleibt).
   const [preAbRunners, setPreAbRunners] = useState<RunnerOnBase[]>([])
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [showDeleteInningConfirm, setShowDeleteInningConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
   const [undoAnimSkip, setUndoAnimSkip] = useState(false)
@@ -532,6 +533,19 @@ export function ScoringPage() {
   const scoreThem = scoreboard?.scoreThem ?? 0
   const totalOuts = Math.min(3, displayOuts + extraOuts)
 
+  const handleDeleteCurrentInning = async () => {
+    if (!currentGame) return
+    setShowDeleteInningConfirm(false)
+    try {
+      await api.deleteCurrentInning(currentGame.id)
+      setExtraOuts(0)
+      await reload()
+      toast.show(`Inning ${currentInning} gelöscht · Bases frei`, 'success')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const handleReset = async () => {
     if (!currentGame) return
     setShowResetConfirm(false)
@@ -587,6 +601,16 @@ export function ScoringPage() {
               aria-label="Spiel beenden"
             >
               <Flag size={14} /> Beenden
+            </button>
+            <button
+              onClick={() => setShowDeleteInningConfirm(true)}
+              disabled={atBats.filter(a => a.inning === currentInning).length === 0
+                && stealingEvents.filter(s => s.inning === currentInning).length === 0}
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              title={`Inning ${currentInning} löschen`}
+              aria-label={`Inning ${currentInning} löschen`}
+            >
+              <Eraser size={14} /> Inning
             </button>
             <button
               onClick={() => setShowResetConfirm(true)}
@@ -2299,6 +2323,21 @@ export function ScoringPage() {
           onCancel={() => setShowResetConfirm(false)}
         />
       )}
+
+      {/* Delete-Current-Inning Confirmation */}
+      {showDeleteInningConfirm && (() => {
+        const inningAbs = atBats.filter(a => a.inning === currentInning).length
+        const inningSteals = stealingEvents.filter(s => s.inning === currentInning).length
+        return (
+          <ConfirmModal
+            title={`Inning ${currentInning} löschen?`}
+            message={`Alle ${inningAbs} At-Bat${inningAbs === 1 ? '' : 's'} und ${inningSteals} Steal-Event${inningSteals === 1 ? '' : 's'} aus Inning ${currentInning} werden entfernt. Vorherige Innings bleiben unangetastet. Score wird angepasst.`}
+            confirmLabel={`Ja, Inning ${currentInning} löschen`}
+            onConfirm={handleDeleteCurrentInning}
+            onCancel={() => setShowDeleteInningConfirm(false)}
+          />
+        )
+      })()}
 
       {/* End-Game Confirmation */}
       {showEndGameConfirm && (

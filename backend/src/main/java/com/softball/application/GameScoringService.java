@@ -208,6 +208,57 @@ public class GameScoringService {
         return com.softball.adapter.dto.InningAdvanceEventResponse.from(saved);
     }
 
+    /**
+     * Löscht alle AtBats + Stealing-Events vom AKTUELLEN Inning. Vorherige Innings bleiben
+     * unangetastet. scoreUs wird aus den verbleibenden AtBats neu berechnet. scoreThem
+     * (Gegner-Runs aus InningAdvance-Events) bleibt unangetastet.
+     *
+     * "Aktuelles Inning" = max(letztes AB-Inning, letztes InningAdvance.toInning).
+     * Wenn User per Undo zurück auf ein früheres Inning gegangen ist, ist das das "aktuelle".
+     */
+    @Transactional
+    public void deleteCurrentInning(final Long gameId) {
+        final Game game = findGame(gameId);
+        final List<AtBat> allAtBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
+        final List<BaseRunningEvent> allStealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
+
+        final int lastABInning = allAtBats.isEmpty()
+            ? 1
+            : allAtBats.get(allAtBats.size() - 1).getInning() != null
+                ? allAtBats.get(allAtBats.size() - 1).getInning()
+                : 1;
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
+
+        int deletedAbs = 0;
+        for (final AtBat a : allAtBats) {
+            if (a.getInning() != null && a.getInning() == currentInning) {
+                atBatRepository.deleteById(a.getId());
+                deletedAbs++;
+            }
+        }
+        int deletedSteals = 0;
+        for (final BaseRunningEvent e : allStealings) {
+            if (e.getInning() != null && e.getInning() == currentInning) {
+                stealingRepository.deleteById(e.getId());
+                deletedSteals++;
+            }
+        }
+
+        // scoreUs aus verbleibenden ABs neu berechnen
+        final int newScoreUs = allAtBats.stream()
+            .filter(a -> a.getInning() == null || a.getInning() != currentInning)
+            .mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0)
+            .sum();
+        game.setScoreUs(newScoreUs);
+        gameRepository.save(game);
+
+        log.info("Inning {} gelöscht für Game {} ({} ABs + {} Steals entfernt, scoreUs={})",
+            currentInning, gameId, deletedAbs, deletedSteals, newScoreUs);
+    }
+
     /** Löscht alle AtBats + Stealing-Events + Score für dieses Spiel — komplettes Reset. */
     @Transactional
     public void resetScoring(final Long gameId) {

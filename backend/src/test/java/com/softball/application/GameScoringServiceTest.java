@@ -905,6 +905,78 @@ class GameScoringServiceTest {
         }
     }
 
+    @org.junit.jupiter.api.Nested
+    class DeleteCurrentInning {
+
+        @Test
+        void deletesOnlyCurrentInningABsAndStealings() {
+            mockGame();
+            final AtBat ab1 = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab1.setRunsScored(0);
+            final AtBat ab2 = atBat(2, 1, anne, AtBatResult.HOMERUN, BaseState.empty());
+            ab2.setRunsScored(2);
+            // Inning 2 (current)
+            final AtBat ab3 = atBat(3, 2, khang, AtBatResult.SINGLE, new BaseState(khang.getId(), null, null));
+            ab3.setRunsScored(0);
+            final AtBat ab4 = atBat(4, 2, hung, AtBatResult.OUT, new BaseState(khang.getId(), null, null));
+            ab4.setRunsScored(0);
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(new ArrayList<>(List.of(ab1, ab2, ab3, ab4)));
+            final BaseRunningEvent st = stealingEvent(khang, 2, BaseRunningEventType.STOLEN_BASE, Instant.parse("2026-05-11T10:00:00Z"));
+            st.setId(101L);
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(new ArrayList<>(List.of(st)));
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+            game.setScoreUs(2);
+            game.setScoreThem(3);
+
+            service.deleteCurrentInning(1L);
+
+            // Inning 2: ab3, ab4, st deleted; ab1, ab2 bleiben
+            org.mockito.Mockito.verify(atBatRepository).deleteById(3L);
+            org.mockito.Mockito.verify(atBatRepository).deleteById(4L);
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never()).deleteById(1L);
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never()).deleteById(2L);
+            org.mockito.Mockito.verify(stealingRepository).deleteById(101L);
+            // scoreUs recomputed (ab1=0 + ab2=2 = 2), scoreThem untouched (3)
+            assertThat(game.getScoreUs()).isEqualTo(2);
+            assertThat(game.getScoreThem()).isEqualTo(3);
+            org.mockito.Mockito.verify(gameRepository).save(game);
+        }
+
+        @Test
+        void afterUndidAdvance_deletesEarlierInningAsCurrent() {
+            // User war in Inning 3, hat per Undo zurück nach Inning 2.
+            // CurrentInning = max(lastAB-inning=2, lastEvent-inning=0) = 2 → wipe Inning 2.
+            mockGame();
+            final AtBat ab1 = atBat(1, 1, hung, AtBatResult.SINGLE, BaseState.empty());
+            ab1.setRunsScored(1);
+            final AtBat ab2 = atBat(2, 2, anne, AtBatResult.DOUBLE, BaseState.empty());
+            ab2.setRunsScored(2);
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(new ArrayList<>(List.of(ab1, ab2)));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(new ArrayList<>(List.of()));
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+
+            service.deleteCurrentInning(1L);
+
+            org.mockito.Mockito.verify(atBatRepository).deleteById(2L);
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never()).deleteById(1L);
+            assertThat(game.getScoreUs()).isEqualTo(1);  // nur ab1 verbleibt
+        }
+
+        @Test
+        void emptyGame_noOp() {
+            mockGame();
+            when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(new ArrayList<>());
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(new ArrayList<>());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+
+            service.deleteCurrentInning(1L);
+
+            org.mockito.Mockito.verify(atBatRepository, org.mockito.Mockito.never()).deleteById(org.mockito.ArgumentMatchers.anyLong());
+            assertThat(game.getScoreUs()).isZero();
+            org.mockito.Mockito.verify(gameRepository).save(game);
+        }
+    }
+
     // --- helpers ---
 
     private LineupEntry lineupEntry(final Player player, final int battingOrder) {
