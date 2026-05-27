@@ -14,6 +14,7 @@ public class TrainingPlanSection {
     private String userNotes;
     private Integer parallelGroup;
     private Integer playersPerGroup;
+    private SectionGroup group = SectionGroup.ALL;
 
     public TrainingPlanSection() {}
 
@@ -43,4 +44,6 @@ public class TrainingPlanSection {
     public void setParallelGroup(final Integer parallelGroup) { this.parallelGroup = parallelGroup; }
     public Integer getPlayersPerGroup() { return playersPerGroup; }
     public void setPlayersPerGroup(final Integer playersPerGroup) { this.playersPerGroup = playersPerGroup; }
+    public SectionGroup getGroup() { return group != null ? group : SectionGroup.ALL; }
+    public void setGroup(final SectionGroup group) { this.group = group; }
 }
