@@ -28,6 +28,7 @@ export function ScoringPage() {
   const [lineup, setLineup] = useState<LineupEntryResponse[]>([])
   const [substitutions, setSubstitutions] = useState<SubstitutionResponse[]>([])
   const [showLineupSheet, setShowLineupSheet] = useState(false)
+  const [expandedInnings, setExpandedInnings] = useState<Set<number>>(new Set())
   const [showSubSheet, setShowSubSheet] = useState(false)
   const [subPlayerOut, setSubPlayerOut] = useState<Player | null>(null)
   const [subPlayerIn, setSubPlayerIn] = useState<Player | null>(null)
@@ -1032,72 +1033,136 @@ export function ScoringPage() {
         }
       >
         <div className="px-4 py-4 space-y-4">
-          {/* Inning-History: aktuelles + vorheriges Inning als Scorecard-Block */}
+          {/* Inning-Verlauf: ALLE Innings als vertikale Timeline.
+              Aktuelles auto-expanded mit Namen, andere collapsed mit Result-Pills.
+              Tap auf Header toggled expand. */}
           {(() => {
             if (atBats.length === 0) return null
             const lineupSorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
             const playerToOrder = new Map<number, number>()
-            for (const e of lineupSorted) {
-              const p = effectivePlayerForEntry(e)
-              playerToOrder.set(p.id, e.battingOrder ?? 0)
-              if (e.dhBatterPlayer) playerToOrder.set(e.dhBatterPlayer.id, e.battingOrder ?? 0)
-              playerToOrder.set(e.player.id, e.battingOrder ?? 0)
-            }
             const playerNameById = new Map<number, string>()
             for (const e of lineupSorted) {
               const p = effectivePlayerForEntry(e)
+              playerToOrder.set(p.id, e.battingOrder ?? 0)
               playerNameById.set(p.id, p.name)
-              if (e.dhBatterPlayer) playerNameById.set(e.dhBatterPlayer.id, e.dhBatterPlayer.name)
+              if (e.dhBatterPlayer) {
+                playerToOrder.set(e.dhBatterPlayer.id, e.battingOrder ?? 0)
+                playerNameById.set(e.dhBatterPlayer.id, e.dhBatterPlayer.name)
+              }
+              playerToOrder.set(e.player.id, e.battingOrder ?? 0)
               playerNameById.set(e.player.id, e.player.name)
             }
-            const targetInnings = [currentInning, currentInning - 1].filter(n => n >= 1)
-            const groups = targetInnings.map(inn => ({
-              inning: inn,
-              abs: atBats.filter(ab => ab.inning === inn),
-            })).filter(g => g.abs.length > 0)
-            if (groups.length === 0) return null
+            const allInnings = [...new Set(atBats.map(a => a.inning))].sort((a, b) => b - a)
+            if (allInnings.length === 0) return null
             return (
               <div>
-                <div className="font-display text-[10px] tracking-[0.18em] uppercase text-navy-900 font-extrabold mb-2">
-                  Inning-Verlauf
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="font-display text-[10px] tracking-[0.18em] uppercase text-navy-900 font-extrabold">
+                    Inning-Verlauf
+                  </span>
+                  <span className="font-display text-[9px] tracking-wider uppercase text-gray-400">
+                    Tap = aufklappen
+                  </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {groups.map(g => {
-                    const isLive = g.inning === currentInning
-                    const innOuts = g.abs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
+                <div className="space-y-1.5">
+                  {allInnings.map(inn => {
+                    const abs = atBats.filter(a => a.inning === inn)
+                    const isLive = inn === currentInning
+                    const isExpanded = isLive || expandedInnings.has(inn)
+                    const innOuts = abs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
+                    const innRuns = abs.reduce((s, a) => s + (a.runsScored ?? 0), 0)
                     return (
                       <div
-                        key={g.inning}
-                        className={`rounded-lg border overflow-hidden ${isLive ? 'border-softball-red-300 bg-white shadow-sm' : 'border-cream-300 bg-cream-50'}`}
+                        key={inn}
+                        className={`rounded-lg border overflow-hidden transition-colors ${
+                          isLive
+                            ? 'border-softball-red-300 bg-white shadow-sm'
+                            : 'border-cream-300 bg-cream-50/60'
+                        }`}
                       >
-                        <div className={`px-2.5 py-1.5 flex items-baseline justify-between border-b ${isLive ? 'border-softball-red-200 bg-softball-red-50' : 'border-cream-200'}`}>
-                          <span className="font-display text-[10px] tracking-widest uppercase font-extrabold text-navy-900">
-                            Inning {g.inning}
+                        <button
+                          onClick={() => {
+                            if (isLive) return
+                            setExpandedInnings(prev => {
+                              const next = new Set(prev)
+                              if (next.has(inn)) next.delete(inn)
+                              else next.add(inn)
+                              return next
+                            })
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-2 text-left ${isLive ? 'cursor-default' : 'cursor-pointer hover:bg-cream-100/70'}`}
+                          aria-expanded={isExpanded}
+                          disabled={isLive}
+                        >
+                          {/* Inning-Nummer Badge */}
+                          <span className={`font-display text-[11px] font-extrabold tabular-nums w-7 h-7 rounded flex items-center justify-center shrink-0 ${
+                            isLive ? 'bg-softball-red-600 text-white' : 'bg-navy-900 text-white'
+                          }`}>
+                            {inn}
                           </span>
-                          <span className={`font-display text-[9px] tracking-wider uppercase font-bold ${isLive ? 'text-softball-red-700' : 'text-gray-400'}`}>
-                            {isLive ? 'Laufend' : 'Vorher'} · {innOuts}/3 Out
+                          {/* Status-Pill */}
+                          <span className={`font-display text-[9px] tracking-wider uppercase font-bold shrink-0 ${
+                            isLive ? 'text-softball-red-700' : 'text-gray-400'
+                          }`}>
+                            {isLive ? 'Laufend' : `${innOuts}/3 Out`}
                           </span>
-                        </div>
-                        <div className="divide-y divide-cream-200/60">
-                          {g.abs.map((ab, idx) => {
-                            const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
-                            const order = playerToOrder.get(ab.batterId)
-                            const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
-                            return (
-                              <div key={ab.id ?? idx} className="flex items-center gap-2 px-2.5 py-1">
-                                <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-3 text-right">
-                                  {order ?? ''}
-                                </span>
-                                <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
-                                  {name}
-                                </span>
-                                <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none ${resultPillClass(ab.result)}`}>
+                          {/* Compact Pill-Strip (nur wenn collapsed) */}
+                          {!isExpanded && (
+                            <span className="flex items-center gap-0.5 flex-wrap flex-1 min-w-0">
+                              {abs.map((ab, idx) => (
+                                <span
+                                  key={ab.id ?? idx}
+                                  className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none ${resultPillClass(ab.result)}`}
+                                  title={playerNameById.get(ab.batterId) ?? ''}
+                                >
                                   {resultPillLabel(ab.result)}
                                 </span>
-                              </div>
-                            )
-                          })}
-                        </div>
+                              ))}
+                            </span>
+                          )}
+                          {isExpanded && <span className="flex-1" />}
+                          {/* Runs-Badge */}
+                          {innRuns > 0 && (
+                            <span className="font-display text-[10px] font-extrabold tabular-nums text-navy-900 bg-cream-200 px-1.5 py-0.5 rounded shrink-0">
+                              {innRuns} R
+                            </span>
+                          )}
+                          {/* Expand Indicator */}
+                          {!isLive && (
+                            <span className={`font-display text-[10px] text-gray-400 transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`}>
+                              ▸
+                            </span>
+                          )}
+                        </button>
+                        {/* Expanded Detail-View */}
+                        {isExpanded && (
+                          <div className="divide-y divide-cream-200/60 border-t border-cream-200/80">
+                            {abs.map((ab, idx) => {
+                              const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
+                              const order = playerToOrder.get(ab.batterId)
+                              const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
+                              const abRuns = ab.runsScored ?? 0
+                              return (
+                                <div key={ab.id ?? idx} className="flex items-center gap-2 px-3 py-1.5">
+                                  <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-4 text-right shrink-0">
+                                    {order ?? ''}
+                                  </span>
+                                  <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
+                                    {name}
+                                  </span>
+                                  {abRuns > 0 && (
+                                    <span className="font-display text-[9px] font-extrabold tabular-nums text-navy-900 shrink-0">
+                                      +{abRuns}
+                                    </span>
+                                  )}
+                                  <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${resultPillClass(ab.result)}`}>
+                                    {resultPillLabel(ab.result)}
+                                  </span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     )
                   })}
