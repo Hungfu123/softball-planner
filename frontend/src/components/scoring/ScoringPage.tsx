@@ -75,7 +75,7 @@ export function ScoringPage() {
   const [errorFlash, setErrorFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [overthrowFlash, setOverthrowFlash] = useState<string | null>(null)
-  const [stealFlash, setStealFlash] = useState<{ runner: string; type: 'BASE' | 'HOME' | 'CAUGHT'; toBase: number } | null>(null)
+  const [stealFlash, setStealFlash] = useState<{ runner: string; type: 'BASE' | 'HOME' | 'CAUGHT' | 'PICKOFF'; toBase: number } | null>(null)
   // Runner die gerade Home erreicht haben (Array von Namen) — feiert Run-Scoring
   const [scoredFlash, setScoredFlash] = useState<{ runners: string[]; hitLabel: string | null } | null>(null)
   const [manualGameOver, setManualGameOver] = useState(false)
@@ -537,12 +537,13 @@ export function ScoringPage() {
     setStealingRunner(runner)
   }
 
-  const handleStealing = async (type: 'STOLEN_BASE' | 'CAUGHT_STEALING') => {
+  const handleStealing = async (type: 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'PICKOFF') => {
     if (!stealingRunner) return
     const runnerName = stealingRunner.playerName
     const fromBase = stealingRunner.base
     const toBase = type === 'STOLEN_BASE' ? fromBase + 1 : fromBase
-    const outPlayerId = type === 'CAUGHT_STEALING' ? stealingRunner.playerId : null
+    const isOut = type === 'CAUGHT_STEALING' || type === 'PICKOFF'
+    const outPlayerId = isOut ? stealingRunner.playerId : null
     // Sheet sofort schließen — optimistic UX
     setStealingRunner(null)
     if (outPlayerId != null) {
@@ -557,8 +558,9 @@ export function ScoringPage() {
         type,
         inning: currentInning,
       })
-      const flashType: 'BASE' | 'HOME' | 'CAUGHT' =
+      const flashType: 'BASE' | 'HOME' | 'CAUGHT' | 'PICKOFF' =
         type === 'CAUGHT_STEALING' ? 'CAUGHT'
+          : type === 'PICKOFF' ? 'PICKOFF'
           : fromBase === 3 ? 'HOME'
             : 'BASE'
       setStealFlash({ runner: runnerName, type: flashType, toBase })
@@ -1592,7 +1594,7 @@ export function ScoringPage() {
               >
                 <span className="inline-flex items-center gap-2"><Zap size={18} /> Stolen Base</span>
                 <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
-                  Läuft zur nächsten Base · Runner bewegt sich
+                  Erfolgreich gestohlen · Runner +1 Base
                 </span>
               </button>
               <button
@@ -1601,9 +1603,34 @@ export function ScoringPage() {
               >
                 <span className="inline-flex items-center gap-2"><XIcon size={18} /> Caught Stealing</span>
                 <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
-                  Beim Klauen gefangen · Runner ist AUS (+1 Out)
+                  Beim Steal-Versuch erwischt · Runner OUT · zählt als CS
                 </span>
               </button>
+              <button
+                onClick={() => handleStealing('PICKOFF')}
+                className="font-display w-full h-20 rounded-xl bg-amber-700 hover:bg-amber-800 active:bg-amber-900 text-white font-extrabold text-base tracking-widest uppercase cursor-pointer shadow-sm flex flex-col items-center justify-center gap-1"
+              >
+                <span className="inline-flex items-center gap-2"><XIcon size={18} /> Pickoff</span>
+                <span className="font-body text-xs font-normal opacity-90 tracking-normal normal-case">
+                  Zu weit abgegangen · Pitcher tagt · OUT, eigener Stat
+                </span>
+              </button>
+
+              {/* Info-Box: Unterschied PO vs CS für Stats-Klarheit */}
+              <div className="rounded-lg border border-amber-300 bg-amber-50/70 px-3 py-2.5 flex items-start gap-2">
+                <span className="text-amber-700 text-base leading-none mt-0.5" aria-hidden>💡</span>
+                <div className="flex-1">
+                  <div className="font-display text-[10px] font-bold tracking-widest uppercase text-amber-900">
+                    Pickoff vs Caught Stealing
+                  </div>
+                  <div className="text-[11px] text-amber-900/85 mt-0.5 leading-snug">
+                    <strong>Pickoff</strong>: Runner stand zu weit ab, Pitcher/Catcher wirft direkt zur Base — <em>kein Steal-Versuch</em>. Eigene Stat-Spalte (PO), zählt NICHT als CS.
+                    <br />
+                    <strong>Caught Stealing</strong>: Runner ist beim Steal-Versuch losgelaufen und wurde erwischt. Zählt als CS-Stat (wirkt sich auf Steal-Quote aus).
+                  </div>
+                </div>
+              </div>
+
               <button
                 onClick={() => setStealingRunner(null)}
                 className="w-full h-11 rounded-xl border border-cream-300 text-gray-600 font-medium cursor-pointer"
@@ -2161,9 +2188,11 @@ export function ScoringPage() {
             <div className={`relative pl-3 pr-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 border overflow-hidden ${
               stealFlash.type === 'CAUGHT'
                 ? 'bg-softball-red-700 text-white border-softball-red-800'
-                : 'bg-softball-red-600 text-white border-softball-red-700'
+                : stealFlash.type === 'PICKOFF'
+                  ? 'bg-amber-700 text-white border-amber-800'
+                  : 'bg-softball-red-600 text-white border-softball-red-700'
             }`}>
-              {stealFlash.type !== 'CAUGHT' && (
+              {stealFlash.type === 'BASE' && (
                 <motion.div
                   className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
                   initial={{ left: '-12%', opacity: 0 }}
@@ -2174,16 +2203,22 @@ export function ScoringPage() {
                 </motion.div>
               )}
               <motion.div
-                initial={{ scale: 0.6, rotate: stealFlash.type === 'CAUGHT' ? 30 : -10 }}
+                initial={{ scale: 0.6, rotate: stealFlash.type === 'CAUGHT' || stealFlash.type === 'PICKOFF' ? 30 : -10 }}
                 animate={{ scale: [0.6, 1.25, 1], rotate: 0 }}
                 transition={{ duration: 0.5, ease: 'backOut' }}
                 className="relative"
               >
-                {stealFlash.type === 'CAUGHT' ? <XIcon size={28} /> : <Zap size={28} fill="currentColor" />}
+                {stealFlash.type === 'CAUGHT' || stealFlash.type === 'PICKOFF'
+                  ? <XIcon size={28} />
+                  : <Zap size={28} fill="currentColor" />}
               </motion.div>
               <div className="relative">
                 <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/75">
-                  {stealFlash.type === 'CAUGHT' ? 'Caught Stealing · +1 Aus' : 'Stolen Base'}
+                  {stealFlash.type === 'CAUGHT'
+                    ? 'Caught Stealing · +1 Aus'
+                    : stealFlash.type === 'PICKOFF'
+                      ? 'Pickoff · +1 Aus'
+                      : 'Stolen Base'}
                 </div>
                 <div className="font-display text-base font-bold tracking-wider uppercase">
                   {stealFlash.runner}

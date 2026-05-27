@@ -82,9 +82,11 @@ public class BattingStatsCalculator {
 
         int stolenBases = 0;
         int caughtStealing = 0;
+        int pickoffs = 0;
         for (final BaseRunningEvent e : playerStealingEvents) {
             if (e.getType() == BaseRunningEventType.STOLEN_BASE) stolenBases++;
             else if (e.getType() == BaseRunningEventType.CAUGHT_STEALING) caughtStealing++;
+            else if (e.getType() == BaseRunningEventType.PICKOFF) pickoffs++;
             // OUT_ON_PLAY zählt NICHT für Batter-Stats — ist nur ein Inning-Out-Event
         }
 
@@ -98,7 +100,7 @@ public class BattingStatsCalculator {
             singles, doubles, triples, homeRuns,
             walks, hbp, strikeouts, outs,
             reachedOnError,
-            stolenBases, caughtStealing, rbi, totalBases,
+            stolenBases, caughtStealing, pickoffs, rbi, totalBases,
             ba, obp, slg
         );
     }

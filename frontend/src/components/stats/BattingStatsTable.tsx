@@ -71,6 +71,8 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                 <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">SB</th>
                 {showDetails && (
                   <>
+                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Caught Stealing — beim Steal-Versuch erwischt">CS</th>
+                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Pickoff — ohne Steal-Versuch getagt (≠ CS)">PO</th>
                     <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Hits 1/2/3/HR</th>
                     <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Auf-Base-Quote (OBP)">OBP</th>
                     <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Schlagstärke (SLG)">SLG</th>
@@ -128,6 +130,8 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                     <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.stolenBases)}`}>{s.stolenBases}</td>
                     {showDetails && (
                       <>
+                        <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.caughtStealing)}`}>{s.caughtStealing}</td>
+                        <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.pickoffs ?? 0)}`}>{s.pickoffs ?? 0}</td>
                         <td className="px-3 py-2 text-right tabular-nums text-gray-600 text-xs" title="Single / Double / Triple / HR">
                           {s.singles}/{s.doubles}/{s.triples}/{s.homeRuns}
                         </td>
