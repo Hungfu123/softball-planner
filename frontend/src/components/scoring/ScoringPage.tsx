@@ -1113,38 +1113,76 @@ export function ScoringPage() {
                       {isActiveLive ? 'Laufend · ' : ''}{activeOuts}/3 Out{activeRuns > 0 ? ` · ${activeRuns} R` : ''}
                     </span>
                   </div>
-                  {activeAbs.length === 0 ? (
-                    <div className="px-3 py-3 text-center text-[11px] text-gray-400 italic">
-                      Keine At-Bats in diesem Inning.
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-cream-200/60">
-                      {activeAbs.map((ab, idx) => {
-                        const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
-                        const order = playerToOrder.get(ab.batterId)
-                        const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
-                        const abRuns = ab.runsScored ?? 0
-                        return (
-                          <div key={ab.id ?? idx} className="flex items-center gap-2 px-3 py-1.5">
-                            <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-4 text-right shrink-0">
-                              {order ?? ''}
-                            </span>
-                            <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
-                              {name}
-                            </span>
-                            {abRuns > 0 && (
-                              <span className="font-display text-[9px] font-extrabold tabular-nums text-navy-900 shrink-0">
-                                +{abRuns}
+                  {(() => {
+                    // Merge ABs + Stealing-Events chronologisch fuer dieses Inning.
+                    const activeStealings = stealingEvents.filter(s => s.inning === activeInning)
+                    type FeedItem =
+                      | { kind: 'ab'; t: string; ab: typeof activeAbs[number] }
+                      | { kind: 'steal'; t: string; ev: typeof activeStealings[number] }
+                    const feed: FeedItem[] = [
+                      ...activeAbs.map(ab => ({ kind: 'ab' as const, t: ab.createdAt, ab })),
+                      ...activeStealings.map(ev => ({ kind: 'steal' as const, t: ev.createdAt, ev })),
+                    ].sort((a, b) => a.t.localeCompare(b.t))
+                    if (feed.length === 0) {
+                      return (
+                        <div className="px-3 py-3 text-center text-[11px] text-gray-400 italic">
+                          Keine At-Bats in diesem Inning.
+                        </div>
+                      )
+                    }
+                    return (
+                      <div className="divide-y divide-cream-200/60">
+                        {feed.map((item, idx) => {
+                          if (item.kind === 'ab') {
+                            const ab = item.ab
+                            const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
+                            const order = playerToOrder.get(ab.batterId)
+                            const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
+                            const abRuns = ab.runsScored ?? 0
+                            return (
+                              <div key={`ab-${ab.id ?? idx}`} className="flex items-center gap-2 px-3 py-1.5">
+                                <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-4 text-right shrink-0">
+                                  {order ?? ''}
+                                </span>
+                                <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
+                                  {name}
+                                </span>
+                                {abRuns > 0 && (
+                                  <span className="font-display text-[9px] font-extrabold tabular-nums text-navy-900 shrink-0">
+                                    +{abRuns}
+                                  </span>
+                                )}
+                                <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${resultPillClass(ab.result)}`}>
+                                  {resultPillLabel(ab.result)}
+                                </span>
+                              </div>
+                            )
+                          }
+                          // Stealing-Event Row — visuell als Sub-Play indented + dezenter Hintergrund
+                          const ev = item.ev
+                          const isSb = ev.type === 'STOLEN_BASE'
+                          const isOut = ev.type === 'CAUGHT_STEALING' || ev.type === 'OUT_ON_PLAY'
+                          const label = isSb ? 'SB' : ev.type === 'CAUGHT_STEALING' ? 'CS' : 'OOP'
+                          const labelLong = isSb ? 'Stolen Base' : ev.type === 'CAUGHT_STEALING' ? 'Caught Stealing' : 'Out on Play'
+                          return (
+                            <div key={`st-${ev.id}`} className="flex items-center gap-2 pl-6 pr-3 py-1 bg-cream-50/80">
+                              <span className={`shrink-0 font-display text-[10px] font-bold leading-none ${isSb ? 'text-emerald-600' : 'text-softball-red-600'}`}>
+                                {isSb ? '↗' : '✕'}
                               </span>
-                            )}
-                            <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${resultPillClass(ab.result)}`}>
-                              {resultPillLabel(ab.result)}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
+                              <span className={`text-[11px] truncate flex-1 italic ${isOut ? 'text-gray-500' : 'text-gray-700'}`}>
+                                {ev.runnerName} · <span className="not-italic text-gray-500">{labelLong}</span>
+                              </span>
+                              <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none shrink-0 ${
+                                isSb ? 'bg-emerald-100 text-emerald-800' : 'bg-softball-red-100 text-softball-red-800'
+                              }`}>
+                                {label}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )
