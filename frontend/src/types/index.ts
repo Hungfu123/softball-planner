@@ -213,6 +213,8 @@ export interface DrillResponse {
   complexity?: DrillComplexity
 }
 
+export type SectionGroup = 'ALL' | 'MAIN' | 'BEGINNER'
+
 export interface TrainingPlanSectionResponse {
   drillId: string | null
   sectionType: string | null
@@ -227,6 +229,7 @@ export interface TrainingPlanSectionResponse {
   userNotes: string | null
   parallelGroup: number | null
   playersPerGroup: number | null
+  group?: SectionGroup
 }
 
 export interface TrainingPlanContentResponse {
@@ -253,6 +256,8 @@ export interface GeneratePlanRequest {
   focus: string
   durationMinutes: number
   infieldPositions?: InfieldPosition[]
+  withBeginnerGroup?: boolean
+  beginnerCount?: number
 }
 
 // Live-Scoring

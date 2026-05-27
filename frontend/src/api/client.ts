@@ -293,6 +293,12 @@ export const updateTrainingPlan = (id: number, content: TrainingPlanContentRespo
     body: JSON.stringify({ content }),
   })
 
+export const patchPlanSection = (planId: number, sectionIndex: number, drillId: string) =>
+  request<TrainingPlanResponse>(`/training-plans/${planId}/sections/${sectionIndex}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ drillId }),
+  })
+
 export const deleteTrainingPlan = (id: number) =>
   request<void>(`/training-plans/${id}`, { method: 'DELETE' })
 
