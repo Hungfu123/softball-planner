@@ -50,6 +50,12 @@ public class ScoringController {
         scoringService.resetScoring(gameId);
     }
 
+    @DeleteMapping("/{gameId}/scoring/current-inning")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteCurrentInning(@PathVariable final Long gameId) {
+        scoringService.deleteCurrentInning(gameId);
+    }
+
     @PostMapping("/{gameId}/scoring/undo")
     public UndoResultResponse undoLastAction(@PathVariable final Long gameId) {
         return scoringService.undoLastAction(gameId);
