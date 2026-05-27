@@ -21,6 +21,7 @@ public record PlayerBattingStatsResponse(
     int reachedOnError,
     int stolenBases,
     int caughtStealing,
+    int pickoffs,
     int runsBattedIn,
     int totalBases,
     BigDecimal battingAverage,
@@ -35,7 +36,7 @@ public record PlayerBattingStatsResponse(
             s.singles(), s.doubles(), s.triples(), s.homeRuns(),
             s.walks(), s.hitByPitch(), s.strikeouts(), s.outs(),
             s.reachedOnError(),
-            s.stolenBases(), s.caughtStealing(), s.runsBattedIn(), s.totalBases(),
+            s.stolenBases(), s.caughtStealing(), s.pickoffs(), s.runsBattedIn(), s.totalBases(),
             s.battingAverage(), s.onBasePct(), s.sluggingPct(), s.ops()
         );
     }

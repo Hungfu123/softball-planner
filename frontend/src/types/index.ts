@@ -276,7 +276,7 @@ export type AtBatResult =
   | 'STRIKEOUT' | 'OUT'
   | 'REACHED_ON_ERROR'
 
-export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY'
+export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'PICKOFF'
 
 export interface BaseStateDto {
   first: number | null
@@ -362,6 +362,7 @@ export interface PlayerBattingStatsResponse {
   reachedOnError: number
   stolenBases: number
   caughtStealing: number
+  pickoffs: number
   runsBattedIn: number
   totalBases: number
   battingAverage: number

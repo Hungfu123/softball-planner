@@ -24,6 +24,7 @@ public record BattingStats(
     int reachedOnError,
     int stolenBases,
     int caughtStealing,
+    int pickoffs,
     int runsBattedIn,
     int totalBases,
     BigDecimal battingAverage,
