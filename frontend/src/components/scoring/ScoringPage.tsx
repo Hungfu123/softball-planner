@@ -1007,7 +1007,7 @@ export function ScoringPage() {
         }}
       />
 
-      {/* Lineup-Sheet: komplette Batting-Order mit Current + Next-Markern */}
+      {/* Lineup-Sheet: komplette Batting-Order mit Current + Next-Markern + AB-Historie */}
       <ResponsiveSheet
         open={showLineupSheet}
         onClose={() => setShowLineupSheet(false)}
@@ -1031,9 +1031,84 @@ export function ScoringPage() {
           </div>
         }
       >
-        <div className="px-4 py-4">
-          <p className="text-[11px] text-gray-500 mb-3">
-            Reihenfolge der Schlagspieler. Aktueller Batter markiert.
+        <div className="px-4 py-4 space-y-4">
+          {/* Inning-History: aktuelles + vorheriges Inning als Scorecard-Block */}
+          {(() => {
+            if (atBats.length === 0) return null
+            const lineupSorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
+            const playerToOrder = new Map<number, number>()
+            for (const e of lineupSorted) {
+              const p = effectivePlayerForEntry(e)
+              playerToOrder.set(p.id, e.battingOrder ?? 0)
+              if (e.dhBatterPlayer) playerToOrder.set(e.dhBatterPlayer.id, e.battingOrder ?? 0)
+              playerToOrder.set(e.player.id, e.battingOrder ?? 0)
+            }
+            const playerNameById = new Map<number, string>()
+            for (const e of lineupSorted) {
+              const p = effectivePlayerForEntry(e)
+              playerNameById.set(p.id, p.name)
+              if (e.dhBatterPlayer) playerNameById.set(e.dhBatterPlayer.id, e.dhBatterPlayer.name)
+              playerNameById.set(e.player.id, e.player.name)
+            }
+            const targetInnings = [currentInning, currentInning - 1].filter(n => n >= 1)
+            const groups = targetInnings.map(inn => ({
+              inning: inn,
+              abs: atBats.filter(ab => ab.inning === inn),
+            })).filter(g => g.abs.length > 0)
+            if (groups.length === 0) return null
+            return (
+              <div>
+                <div className="font-display text-[10px] tracking-[0.18em] uppercase text-navy-900 font-extrabold mb-2">
+                  Inning-Verlauf
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {groups.map(g => {
+                    const isLive = g.inning === currentInning
+                    const innOuts = g.abs.filter(a => a.result === 'STRIKEOUT' || a.result === 'OUT').length
+                    return (
+                      <div
+                        key={g.inning}
+                        className={`rounded-lg border overflow-hidden ${isLive ? 'border-softball-red-300 bg-white shadow-sm' : 'border-cream-300 bg-cream-50'}`}
+                      >
+                        <div className={`px-2.5 py-1.5 flex items-baseline justify-between border-b ${isLive ? 'border-softball-red-200 bg-softball-red-50' : 'border-cream-200'}`}>
+                          <span className="font-display text-[10px] tracking-widest uppercase font-extrabold text-navy-900">
+                            Inning {g.inning}
+                          </span>
+                          <span className={`font-display text-[9px] tracking-wider uppercase font-bold ${isLive ? 'text-softball-red-700' : 'text-gray-400'}`}>
+                            {isLive ? 'Laufend' : 'Vorher'} · {innOuts}/3 Out
+                          </span>
+                        </div>
+                        <div className="divide-y divide-cream-200/60">
+                          {g.abs.map((ab, idx) => {
+                            const name = playerNameById.get(ab.batterId) ?? `#${ab.batterId}`
+                            const order = playerToOrder.get(ab.batterId)
+                            const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
+                            return (
+                              <div key={ab.id ?? idx} className="flex items-center gap-2 px-2.5 py-1">
+                                <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-3 text-right">
+                                  {order ?? ''}
+                                </span>
+                                <span className={`text-[12px] truncate flex-1 ${isOut ? 'text-gray-500' : 'text-gray-900 font-medium'}`}>
+                                  {name}
+                                </span>
+                                <span className={`text-[9px] font-display font-bold px-1.5 py-0.5 rounded tabular-nums leading-none ${resultPillClass(ab.result)}`}>
+                                  {resultPillLabel(ab.result)}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+
+          <div>
+          <p className="text-[11px] text-gray-500 mb-2">
+            Reihenfolge der Schlagspieler. AB-Historie pro Spieler rechts.
           </p>
           {(() => {
                 const sorted = [...lineup].filter(e => e.battingOrder != null).sort((a, b) => a.battingOrder - b.battingOrder)
@@ -1041,41 +1116,67 @@ export function ScoringPage() {
                   <p className="text-sm text-gray-500 text-center py-4">Kein Lineup verfügbar.</p>
                 )
                 const currentIdx = sorted.findIndex(e => effectivePlayerForEntry(e).id === scoreboard?.currentBatterId)
+                // AB-Historie pro Spieler: ordered Liste der Results
+                const abByBatter = new Map<number, AtBatResult[]>()
+                for (const ab of atBats) {
+                  const arr = abByBatter.get(ab.batterId) ?? []
+                  arr.push(ab.result)
+                  abByBatter.set(ab.batterId, arr)
+                }
+                const totalOuts = atBats.filter(ab => ab.result === 'STRIKEOUT' || ab.result === 'OUT').length
                 return (
-                  <div className="divide-y divide-gray-100 border border-cream-300 rounded-xl overflow-hidden">
-                    {sorted.map((e, i) => {
+                  <>
+                    {totalOuts > 0 && (
+                      <p className="text-[11px] text-gray-500 mb-2">
+                        Outs im Spiel gesamt: <span className="font-bold text-softball-red-700">{totalOuts}</span>
+                      </p>
+                    )}
+                    <div className="divide-y divide-gray-100 border border-cream-300 rounded-xl overflow-hidden">
+                      {sorted.map((e, i) => {
                       const p = effectivePlayerForEntry(e)
                       const wasSubbedIn = p.id !== (e.dhBatterPlayer?.id ?? e.player.id)
                       const isCurrent = i === currentIdx
                       const isNext = currentIdx !== -1 && i === (currentIdx + 1) % sorted.length
+                      const results = abByBatter.get(p.id) ?? []
                       return (
                         <div
                           key={e.id}
-                          className={`flex items-center gap-3 px-4 py-2.5 ${
+                          className={`flex items-center gap-2 px-3 py-2 ${
                             isCurrent ? 'bg-navy-50' : ''
                           }`}
                         >
-                          <span className={`text-xs font-bold w-7 text-center rounded tabular-nums ${
+                          <span className={`text-xs font-bold w-7 text-center rounded tabular-nums shrink-0 ${
                             isCurrent ? 'bg-navy-900 text-white px-1.5 py-0.5' : 'text-gray-400'
                           }`}>
                             {e.battingOrder}
                           </span>
-                          <span className={`flex-1 text-sm truncate ${
+                          <span className={`text-sm truncate min-w-0 ${
                             isCurrent ? 'font-bold text-gray-900' : 'text-gray-700'
                           }`}>
                             {p.name}
                           </span>
+                          {/* AB-Historie Pillen */}
+                          {results.length > 0 && (
+                            <span className="inline-flex items-center gap-0.5 flex-wrap">
+                              {results.map((r, idx) => (
+                                <span key={idx} className={`text-[9px] font-display font-bold px-1 py-0.5 rounded tabular-nums leading-none ${resultPillClass(r)}`}>
+                                  {resultPillLabel(r)}
+                                </span>
+                              ))}
+                            </span>
+                          )}
+                          <span className="flex-1" />
                           {wasSubbedIn && (
-                            <span className="text-[9px] uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold">eingewechselt</span>
+                            <span className="text-[9px] uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-semibold shrink-0">eingewechselt</span>
                           )}
                           {e.dhBatterPlayer && !wasSubbedIn && (
-                            <span className="text-[9px] uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">DH</span>
+                            <span className="text-[9px] uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold shrink-0">DH</span>
                           )}
                           {e.position && (
-                            <span className="text-[11px] font-mono text-gray-500">{e.position}</span>
+                            <span className="text-[11px] font-mono text-gray-500 shrink-0">{e.position}</span>
                           )}
                           {isCurrent && (
-                            <span className="font-display text-[10px] font-bold text-softball-red-700 uppercase tracking-widest inline-flex items-center gap-1">
+                            <span className="font-display text-[10px] font-bold text-softball-red-700 uppercase tracking-widest inline-flex items-center gap-1 shrink-0">
                               <span className="relative flex w-1.5 h-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-softball-red-500 opacity-75" />
                                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-softball-red-500" />
@@ -1084,14 +1185,16 @@ export function ScoringPage() {
                             </span>
                           )}
                           {isNext && !isCurrent && (
-                            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">nächster</span>
+                            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide shrink-0">nächster</span>
                           )}
                         </div>
                       )
                     })}
                   </div>
+                  </>
                 )
               })()}
+          </div>
         </div>
       </ResponsiveSheet>
 
@@ -2100,4 +2203,38 @@ function countScored(before: BaseStateDto, after: BaseStateDto, result: AtBatRes
     return scored + 1
   }
   return scored
+}
+
+function resultPillLabel(r: AtBatResult): string {
+  switch (r) {
+    case 'SINGLE': return '1B'
+    case 'DOUBLE': return '2B'
+    case 'TRIPLE': return '3B'
+    case 'HOMERUN': return 'HR'
+    case 'INSIDE_PARK_HR': return 'ITP'
+    case 'WALK': return 'BB'
+    case 'HIT_BY_PITCH': return 'HBP'
+    case 'STRIKEOUT': return 'K'
+    case 'OUT': return 'OUT'
+    case 'REACHED_ON_ERROR': return 'E'
+  }
+}
+
+function resultPillClass(r: AtBatResult): string {
+  switch (r) {
+    case 'SINGLE':
+    case 'DOUBLE':
+    case 'TRIPLE':
+    case 'HOMERUN':
+    case 'INSIDE_PARK_HR':
+      return 'bg-emerald-100 text-emerald-800'
+    case 'WALK':
+    case 'HIT_BY_PITCH':
+      return 'bg-sky-100 text-sky-800'
+    case 'REACHED_ON_ERROR':
+      return 'bg-amber-100 text-amber-800'
+    case 'STRIKEOUT':
+    case 'OUT':
+      return 'bg-softball-red-100 text-softball-red-800'
+  }
 }
