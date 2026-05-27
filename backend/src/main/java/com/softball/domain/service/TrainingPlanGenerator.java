@@ -106,15 +106,20 @@ public class TrainingPlanGenerator {
                                          final String focus, final int totalMinutes,
                                          final List<InfieldPosition> infieldPositions,
                                          final boolean withBeginnerGroupFlag, final int beginnerCount) {
-        final boolean withBeginner = withBeginnerGroupFlag && beginnerCount >= 2;
+        // Validate dualGroup-Konfiguration:
+        // - withBeginner aktiv nur wenn beginnerCount >= 2 UND mainPlayers (playerCount - beginnerCount) >= 2
+        // - Misconfigurations produzieren Warning-Hint statt silent clamp
+        final boolean hasEnoughBeginners = beginnerCount >= 2;
+        final boolean hasEnoughMain = (playerCount - beginnerCount) >= 2;
+        final boolean withBeginner = withBeginnerGroupFlag && hasEnoughBeginners && hasEnoughMain;
         String beginnerHint = null;
-        if (withBeginnerGroupFlag && beginnerCount < 2) {
+        if (withBeginnerGroupFlag && !hasEnoughBeginners) {
             beginnerHint = "Zu wenig Anfänger (< 2) für eigenen Block — alle trainieren mit Hauptgruppe";
+        } else if (withBeginnerGroupFlag && hasEnoughBeginners && !hasEnoughMain) {
+            beginnerHint = "Hauptgruppe < 2 Spieler nach Anfänger-Abzug — alle trainieren zusammen";
         }
-        final int mainPlayers = withBeginner ? Math.max(2, playerCount - beginnerCount) : playerCount;
+        final int mainPlayers = withBeginner ? playerCount - beginnerCount : playerCount;
         final int beginnerPlayers = withBeginner ? beginnerCount : 0;
-        // Tracker for fallback warnings (mutable via array for inner-scope writes).
-        final String[] beginnerHintRef = new String[]{beginnerHint};
         final List<TrainingPlanSection> sections = new ArrayList<>();
         final int overtimeBuffer = totalMinutes >= 180 ? OVERTIME_BUFFER_LONG : OVERTIME_BUFFER_DEFAULT;
         int remainingMinutes = totalMinutes + overtimeBuffer;
@@ -251,10 +256,11 @@ public class TrainingPlanGenerator {
                             .collect(Collectors.toCollection(ArrayList::new));
                     final StationsResult sr = buildSkillStationsWithOptionalBeginnerSplit(
                             positionDrills, beginnerPool, mainPlayers, beginnerPlayers, playerCount,
-                            subFocusMinutes, parallelGroupCounter, withBeginner, usedDrillIds, beginnerHintRef);
-                    sections.addAll(sr.sections);
+                            subFocusMinutes, parallelGroupCounter, withBeginner, usedDrillIds);
+                    sections.addAll(sr.sections());
+                    beginnerHint = appendWarning(beginnerHint, sr.warning());
                     positionDrills.forEach(d -> usedDrillIds.add(d.getId()));
-                    parallelGroupCounter = sr.nextParallelGroup;
+                    parallelGroupCounter = sr.nextParallelGroup();
                     subFocusMinutes = 0;
                 } else if (!positionDrills.isEmpty() && subFocusMinutes >= MIN_DRILL_MINUTES) {
                     final Drill only = positionDrills.get(0);
@@ -291,9 +297,10 @@ public class TrainingPlanGenerator {
                             .collect(Collectors.toCollection(ArrayList::new));
                     final StationsResult sr = buildSkillStationsWithOptionalBeginnerSplit(
                             stationDrills, beginnerPool, mainPlayers, beginnerPlayers, playerCount,
-                            subFocusMinutes, parallelGroupCounter, withBeginner, usedDrillIds, beginnerHintRef);
-                    sections.addAll(sr.sections);
-                    parallelGroupCounter = sr.nextParallelGroup;
+                            subFocusMinutes, parallelGroupCounter, withBeginner, usedDrillIds);
+                    sections.addAll(sr.sections());
+                    beginnerHint = appendWarning(beginnerHint, sr.warning());
+                    parallelGroupCounter = sr.nextParallelGroup();
                     subFocusMinutes = 0;
                 }
             }
@@ -373,10 +380,11 @@ public class TrainingPlanGenerator {
                     // Beginner-Pool: alle Focus-Drills (BASIC-Filter im Helper)
                     final StationsResult sr = buildSkillStationsWithOptionalBeginnerSplit(
                             blockDrills, focusDrills, mainPlayers, beginnerPlayers, playerCount,
-                            blockMinutes, parallelGroupCounter, withBeginner, usedDrillIds, beginnerHintRef);
-                    sections.addAll(sr.sections);
+                            blockMinutes, parallelGroupCounter, withBeginner, usedDrillIds);
+                    sections.addAll(sr.sections());
+                    beginnerHint = appendWarning(beginnerHint, sr.warning());
                     blockDrills.forEach(d -> usedDrillIds.add(d.getId()));
-                    parallelGroupCounter = sr.nextParallelGroup;
+                    parallelGroupCounter = sr.nextParallelGroup();
                     focusUsed += blockMinutes;
                 } else if (!advanced.isEmpty() && remainingFocusMinutes >= MIN_DRILL_MINUTES) {
                     final List<TrainingPlanSection> seqDrills = buildSequentialDrills(
@@ -444,8 +452,8 @@ public class TrainingPlanGenerator {
                 : String.format("Erfahrene Spieler gleichmäßig auf die Gruppen verteilen. Bei %d Spielern: %d Gruppen à %d-%d.",
                         playerCount, groupCount, minGroup, maxGroup);
 
-        final String finalHint = beginnerHintRef[0] != null
-                ? beginnerHintRef[0] + " · " + groupHint
+        final String finalHint = beginnerHint != null
+                ? beginnerHint + " · " + groupHint
                 : groupHint;
         return new TrainingPlanContent(sections, finalHint, null);
     }
@@ -453,17 +461,10 @@ public class TrainingPlanGenerator {
     // ─── DualGroup Skill-Phase-Split ───
 
     /**
-     * Helper-Resultat für DualGroup-Branch: liefert die hinzugefügten Sections
-     * + den (potenziell aktualisierten) parallelGroupCounter zurück.
+     * Helper-Resultat für DualGroup-Branch: hinzugefügte Sections, neuer parallelGroupCounter
+     * und optional eine Warning-Message (z.B. "Keine BASIC-Drills im Pool…").
      */
-    private static final class StationsResult {
-        final List<TrainingPlanSection> sections;
-        final int nextParallelGroup;
-        StationsResult(final List<TrainingPlanSection> sections, final int nextParallelGroup) {
-            this.sections = sections;
-            this.nextParallelGroup = nextParallelGroup;
-        }
-    }
+    private record StationsResult(List<TrainingPlanSection> sections, int nextParallelGroup, String warning) {}
 
     /**
      * Baut Skill-Stations für entweder single-group (group=ALL) oder dual-group
@@ -477,12 +478,11 @@ public class TrainingPlanGenerator {
             final List<Drill> beginnerCandidates,
             final int mainPlayers, final int beginnerPlayers, final int totalPlayers,
             final int mainMinutes, final int parallelGroup,
-            final boolean withBeginner, final Set<String> usedDrillIds,
-            final String[] beginnerHintRef) {
+            final boolean withBeginner, final Set<String> usedDrillIds) {
         final List<TrainingPlanSection> out = new ArrayList<>();
         if (!withBeginner) {
             out.addAll(buildStationBlock(mainStationDrills, totalPlayers, mainMinutes, parallelGroup));
-            return new StationsResult(out, parallelGroup + 1);
+            return new StationsResult(out, parallelGroup + 1, null);
         }
 
         // Main-Group
@@ -493,7 +493,7 @@ public class TrainingPlanGenerator {
         }
         out.addAll(mainSections);
 
-        // Beginner-Group: BASIC-only-Pool zusammenstellen
+        // Beginner-Group: BASIC-only-Pool zusammenstellen.
         // Drill-IDs der Hauptgruppe ausschließen, um Doppelungen zu vermeiden.
         final Set<String> mainDrillIds = mainStationDrills.stream()
                 .map(Drill::getId).collect(Collectors.toSet());
@@ -504,6 +504,7 @@ public class TrainingPlanGenerator {
                 .filter(d -> !usedDrillIds.contains(d.getId()))
                 .filter(d -> !mainDrillIds.contains(d.getId()))
                 .collect(Collectors.toCollection(ArrayList::new));
+        String warning = null;
         if (beginnerDrills.isEmpty() && !pool.isEmpty()) {
             // Fallback: alle (auch advanced) Drills aus dem Pool, Warning-Hint setzen
             beginnerDrills = pool.stream()
@@ -512,10 +513,7 @@ public class TrainingPlanGenerator {
                     .filter(d -> !mainDrillIds.contains(d.getId()))
                     .collect(Collectors.toCollection(ArrayList::new));
             if (!beginnerDrills.isEmpty()) {
-                final String warn = "Keine BASIC-Drills im Pool — Anfänger-Block nutzt fortgeschrittene Drills";
-                beginnerHintRef[0] = beginnerHintRef[0] != null
-                        ? beginnerHintRef[0] + " · " + warn
-                        : warn;
+                warning = "Keine BASIC-Drills im Pool — Anfänger-Block nutzt fortgeschrittene Drills";
             }
         }
         // Beginner dauert ~1.5x länger
@@ -541,7 +539,13 @@ public class TrainingPlanGenerator {
                 usedDrillIds.add(only.getId());
             }
         }
-        return new StationsResult(out, parallelGroup + 2);
+        return new StationsResult(out, parallelGroup + 2, warning);
+    }
+
+    /** Concatenates a new warning into an existing hint (using "·" separator). */
+    private static String appendWarning(final String existingHint, final String warning) {
+        if (warning == null) return existingHint;
+        return existingHint != null ? existingHint + " · " + warning : warning;
     }
 
     // ─── Stationsblock ───
