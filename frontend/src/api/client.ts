@@ -302,6 +302,12 @@ export const patchPlanSection = (planId: number, sectionIndex: number, drillId: 
 export const deleteTrainingPlan = (id: number) =>
   request<void>(`/training-plans/${id}`, { method: 'DELETE' })
 
+export const addBeginnerGroup = (planId: number, beginnerCount: number, beginnerFocus?: string) =>
+  request<TrainingPlanResponse>(`/training-plans/${planId}/beginner-group`, {
+    method: 'POST',
+    body: JSON.stringify({ beginnerCount, beginnerFocus: beginnerFocus || null }),
+  })
+
 // Live-Scoring
 export const getAtBats = (gameId: number) =>
   request<AtBatResponse[]>(`/games/${gameId}/atbats`)

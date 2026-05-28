@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes } from 'lucide-react'
+import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes, UserPlus } from 'lucide-react'
 import { BatIcon } from '@/icons'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 
@@ -11,6 +11,7 @@ type Props = {
   onRegenerate: () => void
   onDelete: () => void
   onShare: () => void
+  onAddBeginnerGroup?: () => void
 }
 
 type SectionStyle = {
@@ -251,10 +252,11 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, onDelete, onShare }: Props) {
+export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup }: Props) {
   const sections = planContent?.sections ?? []
   const renderItems = groupSectionsForRender(sections)
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
+  const hasBeginnerGroup = sections.some(s => s.group === 'BEGINNER')
   const initialExpanded = sections.length > 0 && sections.length <= 5
   const [expanded, setExpanded] = useState<Set<number>>(
     () => new Set(initialExpanded ? sections.map((_, i) => i) : []),
@@ -405,6 +407,16 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
           <div className="text-[11px] text-navy-600 font-semibold tabular-nums pb-1">
             {formatTotal(totalMinutes)} · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}
           </div>
+          {!hasBeginnerGroup && onAddBeginnerGroup && (
+            <button
+              type="button"
+              onClick={onAddBeginnerGroup}
+              aria-label="Anfänger-Gruppe hinzufügen"
+              className="w-full mb-2 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-amber-400 bg-amber-50 text-amber-800 text-xs font-bold uppercase tracking-wider hover:bg-amber-100 hover:border-amber-500 cursor-pointer transition-colors"
+            >
+              <UserPlus size={14} /> Anfänger-Gruppe hinzufügen
+            </button>
+          )}
           {renderItems.map((item, idx) => {
             if (item.kind === 'all') {
               return (

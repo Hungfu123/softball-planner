@@ -15,6 +15,7 @@ import { TrainingPlanView } from './TrainingPlanView'
 import { TrainingPickerDrawer } from './TrainingPickerDrawer'
 import { GeneratePlanDrawer } from './GeneratePlanDrawer'
 import { SharePlanDrawer } from './SharePlanDrawer'
+import { AddBeginnerGroupDrawer } from './AddBeginnerGroupDrawer'
 
 type MobileTab = 'anwesenheit' | 'plan'
 type AttendanceSort = 'alpha' | 'frequency' | 'decided'
@@ -29,6 +30,7 @@ export function TrainingTodayPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [addBeginnerOpen, setAddBeginnerOpen] = useState(false)
   const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
   const [planId, setPlanId] = useState<number | null>(null)
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
@@ -202,6 +204,18 @@ export function TrainingTodayPage() {
     }
   }
 
+  const handleAddBeginnerGroup = async (data: { beginnerCount: number; beginnerFocus?: string }) => {
+    if (planId == null) return
+    try {
+      const plan = await api.addBeginnerGroup(planId, data.beginnerCount, data.beginnerFocus)
+      setPlanContent(plan.content)
+      setPlanId(plan.id)
+      toast.success('Anfänger-Gruppe hinzugefügt')
+    } catch (e) {
+      toast.error((e as Error).message)
+    }
+  }
+
   const handleDelete = async () => {
     if (planId == null) return
     try {
@@ -340,6 +354,7 @@ export function TrainingTodayPage() {
               onRegenerate={() => setGenerateOpen(true)}
               onDelete={() => setDeleteConfirmOpen(true)}
               onShare={() => setShareOpen(true)}
+              onAddBeginnerGroup={planId != null ? () => setAddBeginnerOpen(true) : undefined}
             />
           </section>
         </div>
@@ -381,6 +396,12 @@ export function TrainingTodayPage() {
           onClose={() => setShareOpen(false)}
           planContent={planContent}
           trainingDate={currentTraining?.date ?? null}
+        />
+
+        <AddBeginnerGroupDrawer
+          open={addBeginnerOpen}
+          onClose={() => setAddBeginnerOpen(false)}
+          onSubmit={handleAddBeginnerGroup}
         />
 
         <TrainingPickerDrawer

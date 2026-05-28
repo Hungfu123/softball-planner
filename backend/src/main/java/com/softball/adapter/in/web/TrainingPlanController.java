@@ -56,6 +56,12 @@ public class TrainingPlanController {
         return trainingPlanService.updateSectionDrill(id, index, request.drillId());
     }
 
+    @PostMapping("/{id}/beginner-group")
+    public TrainingPlanResponse addBeginnerGroup(@PathVariable final Long id,
+                                                  @Valid @RequestBody final AddBeginnerGroupRequest request) {
+        return trainingPlanService.addBeginnerGroup(id, request.beginnerCount(), request.beginnerFocus());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable final Long id) {

@@ -4,6 +4,7 @@ import com.softball.adapter.dto.TrainingPlanContentResponse;
 import com.softball.adapter.dto.TrainingPlanResponse;
 import com.softball.domain.model.Drill;
 import com.softball.domain.model.InfieldPosition;
+import com.softball.domain.model.SectionGroup;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
 import com.softball.domain.model.TrainingPlanSection;
@@ -19,8 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -125,6 +130,140 @@ public class TrainingPlanService {
             throw new ResourceNotFoundException("TrainingPlan", planId);
         }
         trainingPlanRepository.deleteById(planId);
+    }
+
+    /**
+     * Fügt einen Anfänger-Block zu einem bereits existierenden Plan hinzu.
+     *
+     * Workflow:
+     *  1. Plan laden (404 wenn nicht vorhanden)
+     *  2. 400 wenn beginnerCount < 2
+     *  3. 400 wenn Plan bereits BEGINNER-Sections enthält (Idempotency)
+     *  4. Skill-Station-Sections finden (sectionType=DRILL mit parallelGroup gesetzt, group=ALL)
+     *  5. Pro identifizierter Station-Gruppe: MAIN-Tag setzen + BEGINNER-Block parallel anfügen
+     *  6. groupDistributionHint mit Info anreichern
+     *  7. Plan speichern
+     */
+    @Transactional
+    public TrainingPlanResponse addBeginnerGroup(final Long planId, final int beginnerCount,
+                                                  final String beginnerFocus) {
+        if (beginnerCount < 2) {
+            throw new BusinessValidationException("Anfänger-Anzahl muss mindestens 2 sein");
+        }
+
+        final TrainingPlan plan = trainingPlanRepository.findById(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("TrainingPlan", planId));
+
+        final TrainingPlanContent content = plan.getContent();
+        if (content == null || content.getSections() == null || content.getSections().isEmpty()) {
+            throw new BusinessValidationException("Plan hat keinen Inhalt — Anfänger-Gruppe kann nicht angehängt werden");
+        }
+
+        final List<TrainingPlanSection> sections = content.getSections();
+        final boolean alreadyHasBeginner = sections.stream()
+                .anyMatch(s -> s.getGroup() == SectionGroup.BEGINNER);
+        if (alreadyHasBeginner) {
+            throw new BusinessValidationException("Plan hat bereits eine Anfänger-Gruppe");
+        }
+
+        // Skill-Station-Sections identifizieren: Stations-Blöcke (parallelGroup gesetzt)
+        // die NICHT WARMUP/BATTING/GAME/BREAK/PAUSE sind.
+        // Reihenfolge der parallelGroups bewahren (LinkedHashMap), damit Insert-Order stabil ist.
+        final Map<Integer, List<Integer>> stationBlocksByGroup = new LinkedHashMap<>();
+        for (int i = 0; i < sections.size(); i++) {
+            final TrainingPlanSection s = sections.get(i);
+            if (s.getParallelGroup() == null) continue;
+            final String type = s.getSectionType() == null ? "" : s.getSectionType().toUpperCase();
+            // Nur skill-Stations re-taggen, nicht Batting/Game/Warmup/Break
+            if (!"DRILL".equals(type) && !"STATION".equals(type)) continue;
+            stationBlocksByGroup.computeIfAbsent(s.getParallelGroup(), k -> new ArrayList<>()).add(i);
+        }
+
+        if (stationBlocksByGroup.isEmpty()) {
+            throw new BusinessValidationException(
+                    "Plan hat keine Skill-Stations — Anfänger-Gruppe braucht parallelen Block zum Anhängen");
+        }
+
+        // Drill-IDs die bereits im Plan stecken — nicht erneut für Beginner wählen
+        final Set<String> usedDrillIds = sections.stream()
+                .map(TrainingPlanSection::getDrillId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+
+        // Beginner-Pool zusammenstellen: focus-gefiltert (separater beginnerFocus oder Main-Focus)
+        final String mainFocus = plan.getFocus();
+        final String effectiveFocus = (beginnerFocus != null && !beginnerFocus.isBlank())
+                ? beginnerFocus : mainFocus;
+        final List<Drill> beginnerPool = effectiveFocus != null && !effectiveFocus.isBlank()
+                ? drillService.filterByFocus(effectiveFocus, beginnerCount)
+                : drillService.findAll();
+
+        // Pro existierendem Station-Block: MAIN-Tag + Beginner-Block dahinter einfügen
+        // Reverse-Iteration über Indizes damit Inserts vorherige Indizes nicht verschieben.
+        final List<Map.Entry<Integer, List<Integer>>> blockEntries = new ArrayList<>(
+                stationBlocksByGroup.entrySet());
+        // Sortiere nach max(index) absteigend damit spätere Inserts frühere Indizes nicht kaputtmachen
+        blockEntries.sort((a, b) -> {
+            final int maxA = a.getValue().stream().mapToInt(Integer::intValue).max().orElse(-1);
+            final int maxB = b.getValue().stream().mapToInt(Integer::intValue).max().orElse(-1);
+            return Integer.compare(maxB, maxA);
+        });
+
+        final List<String> warnings = new ArrayList<>();
+        int addedBlocks = 0;
+        for (final Map.Entry<Integer, List<Integer>> entry : blockEntries) {
+            final int mainParallelGroup = entry.getKey();
+            final List<Integer> indices = entry.getValue();
+
+            // Re-Tag MAIN auf alle Sections dieses Blocks
+            for (final int idx : indices) {
+                sections.get(idx).setGroup(SectionGroup.MAIN);
+            }
+
+            // Beginner-Block bauen
+            final int insertAfter = indices.stream().mapToInt(Integer::intValue).max().orElse(-1);
+            final Integer mainDuration = sections.get(indices.get(0)).getDurationMinutes();
+            final int mainMinutes = mainDuration != null ? mainDuration : 20;
+            final int beginnerParallelGroup = mainParallelGroup + 1;
+
+            final TrainingPlanGenerator.BeginnerBlockResult result =
+                    generator.buildBeginnerBlockForExistingMain(
+                            beginnerPool, beginnerCount, mainMinutes,
+                            beginnerParallelGroup, usedDrillIds);
+
+            if (!result.sections().isEmpty()) {
+                // Drill-IDs registrieren, damit der nächste Block nicht denselben Drill nimmt
+                for (final TrainingPlanSection s : result.sections()) {
+                    if (s.getDrillId() != null) usedDrillIds.add(s.getDrillId());
+                }
+                sections.addAll(insertAfter + 1, result.sections());
+                addedBlocks++;
+            }
+            if (result.warning() != null && !warnings.contains(result.warning())) {
+                warnings.add(result.warning());
+            }
+        }
+
+        if (addedBlocks == 0) {
+            throw new BusinessValidationException(
+                    "Konnte keinen Anfänger-Block bauen — keine geeigneten Drills im Pool");
+        }
+
+        // Hint aktualisieren
+        final String beginnerNote = String.format(
+                "Anfänger-Gruppe (%d Spieler) nachträglich hinzugefügt — Hauptgruppe und Anfänger trainieren parallel.",
+                beginnerCount);
+        final String existingHint = content.getGroupDistributionHint();
+        final String warningsJoined = warnings.isEmpty() ? "" : " · " + String.join(" · ", warnings);
+        final String newHint = (existingHint != null && !existingHint.isBlank())
+                ? existingHint + " · " + beginnerNote + warningsJoined
+                : beginnerNote + warningsJoined;
+        content.setGroupDistributionHint(newHint);
+
+        log.info("Anfänger-Gruppe zu Plan {} hinzugefügt: {} Spieler, {} Blocks erweitert, focus={}",
+                planId, beginnerCount, addedBlocks, effectiveFocus);
+
+        return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
     }
 
     @Transactional
