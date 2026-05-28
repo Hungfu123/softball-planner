@@ -238,10 +238,17 @@ export function TrainingTodayPage() {
     setGenerateOpen(true)
   }
 
+  const handleGenerateMain = () => {
+    setGenerateKind('MAIN')
+    setGenerateOpen(true)
+  }
+
   const handleOpenRegenerate = () => {
     setGenerateKind(activePlan?.kind ?? 'MAIN')
     setGenerateOpen(true)
   }
+
+  const hasExistingPlanForGenerateKind = plans.some(p => p.kind === generateKind)
 
   if (!currentTraining) {
     return (
@@ -371,6 +378,7 @@ export function TrainingTodayPage() {
               onShare={() => setShareOpen(true)}
               onAddBeginnerGroup={activePlan != null ? () => setAddBeginnerOpen(true) : undefined}
               onGenerateBeginnerPlan={handleGenerateBeginner}
+              onGenerateMain={handleGenerateMain}
             />
           </section>
         </div>
@@ -405,6 +413,7 @@ export function TrainingTodayPage() {
           defaultPlayerCount={presentIds.size > 0 ? presentIds.size : Math.max(players.length, 10)}
           trainingDate={currentTraining?.date ?? null}
           initialKind={generateKind}
+          hasExistingPlan={hasExistingPlanForGenerateKind}
           onGenerate={handleGenerate}
         />
 
@@ -413,6 +422,7 @@ export function TrainingTodayPage() {
           onClose={() => setShareOpen(false)}
           planContent={activePlan?.content ?? null}
           trainingDate={currentTraining?.date ?? null}
+          planKind={activePlan?.kind ?? 'MAIN'}
         />
 
         <AddBeginnerGroupDrawer

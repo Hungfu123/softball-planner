@@ -172,6 +172,11 @@ public class TrainingPlanService {
         final TrainingPlan plan = trainingPlanRepository.findById(planId)
                 .orElseThrow(() -> new ResourceNotFoundException("TrainingPlan", planId));
 
+        if (plan.getKind() == PlanKind.BEGINNER) {
+            throw new BusinessValidationException(
+                    "Anfänger-Gruppe kann nicht zu einem Anfänger-Plan hinzugefügt werden — dieser Plan ist bereits für Anfänger.");
+        }
+
         final TrainingPlanContent content = plan.getContent();
         if (content == null || content.getSections() == null || content.getSections().isEmpty()) {
             throw new BusinessValidationException("Plan hat keinen Inhalt — Anfänger-Gruppe kann nicht angehängt werden");
