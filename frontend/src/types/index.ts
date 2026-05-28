@@ -258,6 +258,7 @@ export interface GeneratePlanRequest {
   infieldPositions?: InfieldPosition[]
   withBeginnerGroup?: boolean
   beginnerCount?: number
+  beginnerFocus?: string
 }
 
 // Live-Scoring
