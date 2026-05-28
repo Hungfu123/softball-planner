@@ -7,7 +7,7 @@ export function useTrainingPlan() {
   const [trainings, setTrainings] = useState<TrainingResponse[]>([])
   const [periods, setPeriods] = useState<TrainingPeriodResponse[]>([])
   const [activePeriodId, setActivePeriodId] = useState<number | null>(null)
-  const [plans, setPlans] = useState<Map<number, TrainingPlanResponse>>(new Map())
+  const [plans, setPlans] = useState<Map<number, TrainingPlanResponse[]>>(new Map())
   const [drills, setDrills] = useState<DrillResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -32,9 +32,9 @@ export function useTrainingPlan() {
     try {
       const ids = trainingList.map(t => t.id)
       const result = await api.getTrainingPlansByTrainingIds(ids)
-      const planMap = new Map<number, TrainingPlanResponse>()
-      for (const [key, plan] of Object.entries(result)) {
-        planMap.set(Number(key), plan)
+      const planMap = new Map<number, TrainingPlanResponse[]>()
+      for (const [key, plansForTraining] of Object.entries(result)) {
+        planMap.set(Number(key), plansForTraining)
       }
       setPlans(planMap)
     } catch {
@@ -83,7 +83,9 @@ export function useTrainingPlan() {
       const plan = await api.generateTrainingPlan(data)
       setPlans(prev => {
         const next = new Map(prev)
-        next.set(data.trainingId, plan)
+        const existing = next.get(data.trainingId) ?? []
+        const filtered = existing.filter(p => p.kind !== plan.kind)
+        next.set(data.trainingId, [...filtered, plan])
         return next
       })
       toast.show('Trainingsplan erstellt')
@@ -102,7 +104,9 @@ export function useTrainingPlan() {
       const updated = await api.updateTrainingPlan(planId, content)
       setPlans(prev => {
         const next = new Map(prev)
-        next.set(trainingId, updated)
+        const existing = next.get(trainingId) ?? []
+        const replaced = existing.map(p => p.id === planId ? updated : p)
+        next.set(trainingId, replaced)
         return next
       })
       toast.show('Plan gespeichert')
@@ -119,7 +123,10 @@ export function useTrainingPlan() {
       await api.deleteTrainingPlan(planId)
       setPlans(prev => {
         const next = new Map(prev)
-        next.delete(trainingId)
+        const existing = next.get(trainingId) ?? []
+        const filtered = existing.filter(p => p.id !== planId)
+        if (filtered.length === 0) next.delete(trainingId)
+        else next.set(trainingId, filtered)
         return next
       })
       toast.show('Plan gelöscht')

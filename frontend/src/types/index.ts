@@ -238,9 +238,12 @@ export interface TrainingPlanContentResponse {
   overallNotes: string | null
 }
 
+export type PlanKind = 'MAIN' | 'BEGINNER'
+
 export interface TrainingPlanResponse {
   id: number
   trainingId: number
+  kind: PlanKind
   playerCount: number
   focus: string
   durationMinutes: number
@@ -252,6 +255,7 @@ export interface TrainingPlanResponse {
 
 export interface GeneratePlanRequest {
   trainingId: number
+  kind?: PlanKind
   playerCount: number
   focus: string
   durationMinutes: number

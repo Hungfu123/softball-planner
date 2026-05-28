@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Sparkles } from 'lucide-react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
-import type { TrainingFocus, InfieldPosition } from '@/types'
+import type { TrainingFocus, InfieldPosition, PlanKind } from '@/types'
 import { INFIELD_POSITION_LABELS } from '@/types'
 
 type Props = {
@@ -9,7 +9,8 @@ type Props = {
   onClose: () => void
   defaultPlayerCount: number
   trainingDate?: string | null
-  onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string }) => Promise<void>
+  initialKind?: PlanKind
+  onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string; kind?: PlanKind }) => Promise<void>
 }
 
 const FOCUS_OPTIONS: { value: TrainingFocus; label: string }[] = [
@@ -32,9 +33,11 @@ function defaultDurationFor(dateStr?: string | null): number {
   return 90
 }
 
-export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, trainingDate, onGenerate }: Props) {
+export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, trainingDate, initialKind = 'MAIN', onGenerate }: Props) {
   const initialDuration = useMemo(() => defaultDurationFor(trainingDate), [trainingDate])
-  const [playerCount, setPlayerCount] = useState(defaultPlayerCount || 10)
+  const isBeginner = initialKind === 'BEGINNER'
+  const beginnerDefaultPlayerCount = 3
+  const [playerCount, setPlayerCount] = useState(isBeginner ? beginnerDefaultPlayerCount : (defaultPlayerCount || 10))
   const [focuses, setFocuses] = useState<Set<TrainingFocus>>(new Set())
   const [infieldPositions, setInfieldPositions] = useState<Set<InfieldPosition>>(new Set())
   const [durationMinutes, setDurationMinutes] = useState(initialDuration)
@@ -45,7 +48,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
 
   useEffect(() => {
     if (open) {
-      setPlayerCount(defaultPlayerCount || 10)
+      setPlayerCount(isBeginner ? beginnerDefaultPlayerCount : (defaultPlayerCount || 10))
       setFocuses(new Set())
       setInfieldPositions(new Set())
       setDurationMinutes(initialDuration)
@@ -53,7 +56,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       setBeginnerCount(2)
       setBeginnerFocus('')
     }
-  }, [open, defaultPlayerCount, initialDuration])
+  }, [open, defaultPlayerCount, initialDuration, isBeginner])
 
   const toggleFocus = (f: TrainingFocus) => {
     setFocuses(prev => {
@@ -76,17 +79,19 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   const submit = async () => {
     setSubmitting(true)
     try {
-      const data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string } = {
+      const data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string; kind?: PlanKind } = {
         playerCount,
         focus: [...focuses].join(','),
         durationMinutes,
-        withBeginnerGroup,
-        beginnerCount: withBeginnerGroup ? beginnerCount : 0,
+        // Beginner plans don't ride along a beginner-group inside the main plan
+        withBeginnerGroup: isBeginner ? false : withBeginnerGroup,
+        beginnerCount: !isBeginner && withBeginnerGroup ? beginnerCount : 0,
+        kind: initialKind,
       }
       if (focuses.has('INFIELD_DEFENSE') && infieldPositions.size > 0) {
         data.infieldPositions = [...infieldPositions]
       }
-      if (withBeginnerGroup && beginnerFocus) {
+      if (!isBeginner && withBeginnerGroup && beginnerFocus) {
         data.beginnerFocus = beginnerFocus
       }
       await onGenerate(data)
@@ -95,6 +100,12 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       setSubmitting(false)
     }
   }
+
+  const title = isBeginner ? 'Anfänger-Plan generieren' : 'Plan neu generieren'
+  const submitColor = isBeginner ? 'bg-amber-700 hover:bg-amber-800' : 'bg-softball-red-600 hover:bg-softball-red-700'
+  const focusButtonActive = isBeginner
+    ? 'bg-amber-700 text-white border-amber-700'
+    : 'bg-navy-800 text-white border-navy-800'
 
   const footer = (
     <div className="grid grid-cols-2 gap-2">
@@ -108,7 +119,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       <button
         onClick={submit}
         disabled={submitting || playerCount < 1 || durationMinutes < 30}
-        className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+        className={`h-11 rounded-lg ${submitColor} text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2`}
       >
         {submitting ? 'Generiere…' : (<><Sparkles size={16} /> Generieren</>)}
       </button>
@@ -116,12 +127,18 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   )
 
   return (
-    <ResponsiveSheet open={open} onClose={onClose} title="Plan neu generieren" maxWidth="md" footer={footer}>
+    <ResponsiveSheet open={open} onClose={onClose} title={title} maxWidth="md" footer={footer}>
       <div className="px-4 py-4 space-y-4">
-        <p className="text-xs text-navy-600">Bestehender Plan wird ersetzt.</p>
+        <p className="text-xs text-navy-600">
+          {isBeginner
+            ? 'Eigener Plan für die Anfänger — läuft parallel zum Hauptgruppen-Plan.'
+            : 'Bestehender Plan wird ersetzt.'}
+        </p>
 
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Spieler</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">
+            {isBeginner ? 'Anfänger' : 'Spieler'}
+          </label>
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -137,6 +154,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
           </div>
         </div>
 
+        {!isBeginner && (
         <div className="space-y-2">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -145,7 +163,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
               onChange={(e) => setWithBeginnerGroup(e.target.checked)}
               className="w-4 h-4 cursor-pointer accent-navy-800"
             />
-            <span className="text-xs font-bold uppercase tracking-wider text-navy-500">Mit Anfängergruppe?</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-navy-500">Mit Anfängergruppe? (im selben Plan)</span>
           </label>
           {withBeginnerGroup && (
             <div className="ml-2 pl-3 border-l-2 border-amber-300 space-y-3">
@@ -195,10 +213,17 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
             </div>
           )}
         </div>
+        )}
 
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">Schwerpunkte</label>
-          <p className="text-[10px] text-navy-500 mb-2">Mehrere wählbar. Leer = alle Schwerpunkte.</p>
+          <label className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">
+            {isBeginner ? 'Focus Anfänger' : 'Schwerpunkte'}
+          </label>
+          <p className="text-[10px] text-navy-500 mb-2">
+            {isBeginner
+              ? 'Leer = nur BASIC-Drills, breit gefasst.'
+              : 'Mehrere wählbar. Leer = alle Schwerpunkte.'}
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {FOCUS_OPTIONS.map(opt => (
               <button
@@ -207,7 +232,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
                 onClick={() => toggleFocus(opt.value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
                   focuses.has(opt.value)
-                    ? 'bg-navy-800 text-white border-navy-800'
+                    ? focusButtonActive
                     : 'bg-white text-navy-700 border-cream-300 hover:border-navy-300'
                 }`}
               >
