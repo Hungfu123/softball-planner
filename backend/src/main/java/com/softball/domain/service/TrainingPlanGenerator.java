@@ -89,7 +89,8 @@ public class TrainingPlanGenerator {
     public TrainingPlan generate(final Long trainingId, final TrainingPlanRequest req) {
         final List<Drill> drills = req.getAvailableDrills() != null ? req.getAvailableDrills() : List.of();
         final TrainingPlanContent content = generate(drills, req.getPlayerCount(), req.getFocus(),
-                req.getDurationMinutes(), List.of(), req.isWithBeginnerGroup(), req.getBeginnerCount());
+                req.getDurationMinutes(), List.of(), req.isWithBeginnerGroup(), req.getBeginnerCount(),
+                req.getBeginnerFocus());
         final TrainingPlan plan = new TrainingPlan(trainingId, req.getPlayerCount(), req.getFocus(),
                 req.getDurationMinutes());
         plan.setContent(content);
@@ -99,19 +100,38 @@ public class TrainingPlanGenerator {
     public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
                                          final String focus, final int totalMinutes,
                                          final List<InfieldPosition> infieldPositions) {
-        return generate(allDrills, playerCount, focus, totalMinutes, infieldPositions, false, 0);
+        return generate(allDrills, playerCount, focus, totalMinutes, infieldPositions, false, 0, null);
     }
 
     public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
                                          final String focus, final int totalMinutes,
                                          final List<InfieldPosition> infieldPositions,
                                          final boolean withBeginnerGroupFlag, final int beginnerCount) {
+        return generate(allDrills, playerCount, focus, totalMinutes, infieldPositions,
+                withBeginnerGroupFlag, beginnerCount, null);
+    }
+
+    public TrainingPlanContent generate(final List<Drill> allDrills, final int playerCount,
+                                         final String focus, final int totalMinutes,
+                                         final List<InfieldPosition> infieldPositions,
+                                         final boolean withBeginnerGroupFlag, final int beginnerCount,
+                                         final String beginnerFocus) {
         // Validate dualGroup-Konfiguration:
         // - withBeginner aktiv nur wenn beginnerCount >= 2 UND mainPlayers (playerCount - beginnerCount) >= 2
         // - Misconfigurations produzieren Warning-Hint statt silent clamp
         final boolean hasEnoughBeginners = beginnerCount >= 2;
         final boolean hasEnoughMain = (playerCount - beginnerCount) >= 2;
         final boolean withBeginner = withBeginnerGroupFlag && hasEnoughBeginners && hasEnoughMain;
+        // Separater Beginner-Focus: nur wenn nicht-blank UND unterschiedlich zum Main-Focus.
+        // Beginner-Pool wird dann aus FOCUS_CATEGORY_MAP[beginnerFocus] gefiltert statt aus
+        // den main-station-Pool.
+        final String normalizedMainFocus = focus != null ? focus.trim().toUpperCase() : "";
+        final String normalizedBeginnerFocus = beginnerFocus != null ? beginnerFocus.trim().toUpperCase() : "";
+        final boolean hasSeparateBeginnerFocus = !normalizedBeginnerFocus.isEmpty()
+                && !normalizedBeginnerFocus.equals(normalizedMainFocus);
+        final List<Drill> separateBeginnerPool = hasSeparateBeginnerFocus
+                ? filterDrillsForFocus(allDrills, normalizedBeginnerFocus, playerCount)
+                : null;
         String beginnerHint = null;
         if (withBeginnerGroupFlag && !hasEnoughBeginners) {
             beginnerHint = "Zu wenig Anfänger (< 2) für eigenen Block — alle trainieren mit Hauptgruppe";
@@ -247,13 +267,15 @@ public class TrainingPlanGenerator {
                         subFocusMinutes -= BREAK_MINUTES;
                     }
                     // Beginner-Pool: alle Drills derselben Position (BASIC-Filter im Helper)
-                    final List<Drill> beginnerPool = allDrills.stream()
+                    final List<Drill> defaultBeginnerPool = allDrills.stream()
                             .filter(d -> !d.getCategories().isEmpty()
                                     && d.getCategories().get(0) == pos.toDrillCategory())
                             .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
                             .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
                             .filter(d -> !d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
                             .collect(Collectors.toCollection(ArrayList::new));
+                    final List<Drill> beginnerPool = separateBeginnerPool != null
+                            ? separateBeginnerPool : defaultBeginnerPool;
                     final StationsResult sr = buildSkillStationsWithOptionalBeginnerSplit(
                             positionDrills, beginnerPool, mainPlayers, beginnerPlayers, playerCount,
                             subFocusMinutes, parallelGroupCounter, withBeginner, usedDrillIds);
@@ -288,13 +310,15 @@ public class TrainingPlanGenerator {
                     final Set<DrillCategory> stationCats = stationPositions.stream()
                             .map(InfieldPosition::toDrillCategory)
                             .collect(Collectors.toSet());
-                    final List<Drill> beginnerPool = allDrills.stream()
+                    final List<Drill> defaultBeginnerPool = allDrills.stream()
                             .filter(d -> !d.getCategories().isEmpty()
                                     && stationCats.contains(d.getCategories().get(0)))
                             .filter(d -> !d.getCategories().contains(DrillCategory.WARMUP))
                             .filter(d -> !d.getCategories().contains(DrillCategory.HITTING))
                             .filter(d -> !d.getCategories().contains(DrillCategory.PARTNER_ROUTINE))
                             .collect(Collectors.toCollection(ArrayList::new));
+                    final List<Drill> beginnerPool = separateBeginnerPool != null
+                            ? separateBeginnerPool : defaultBeginnerPool;
                     final StationsResult sr = buildSkillStationsWithOptionalBeginnerSplit(
                             stationDrills, beginnerPool, mainPlayers, beginnerPlayers, playerCount,
                             subFocusMinutes, parallelGroupCounter, withBeginner, usedDrillIds);
@@ -377,9 +401,12 @@ public class TrainingPlanGenerator {
                     final int stationDrills = Math.min(advanced.size(), 2);
                     final int blockMinutes = remainingFocusMinutes;
                     final List<Drill> blockDrills = advanced.subList(0, stationDrills);
-                    // Beginner-Pool: alle Focus-Drills (BASIC-Filter im Helper)
+                    // Beginner-Pool: separateBeginnerPool wenn beginnerFocus gesetzt,
+                    // sonst alle Focus-Drills der Hauptgruppe (BASIC-Filter im Helper)
+                    final List<Drill> beginnerPool = separateBeginnerPool != null
+                            ? separateBeginnerPool : focusDrills;
                     final StationsResult sr = buildSkillStationsWithOptionalBeginnerSplit(
-                            blockDrills, focusDrills, mainPlayers, beginnerPlayers, playerCount,
+                            blockDrills, beginnerPool, mainPlayers, beginnerPlayers, playerCount,
                             blockMinutes, parallelGroupCounter, withBeginner, usedDrillIds);
                     sections.addAll(sr.sections());
                     beginnerHint = appendWarning(beginnerHint, sr.warning());

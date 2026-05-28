@@ -14,7 +14,8 @@ public record GeneratePlanRequest(
         @NotNull @Min(30) Integer durationMinutes,
         List<InfieldPosition> infieldPositions,
         Boolean withBeginnerGroup,
-        Integer beginnerCount
+        Integer beginnerCount,
+        String beginnerFocus
 ) {
     public List<InfieldPosition> infieldPositionsOrEmpty() {
         return infieldPositions != null ? infieldPositions : List.of();
