@@ -1,5 +1,6 @@
 package com.softball.adapter.out.persistence.entity;
 
+import com.softball.domain.model.PlanKind;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -8,7 +9,10 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "training_plans")
+@Table(name = "training_plans",
+        uniqueConstraints = @UniqueConstraint(
+                name = "training_plans_training_id_kind_key",
+                columnNames = {"training_id", "kind"}))
 public class TrainingPlanEntity {
 
     @Id
@@ -16,8 +20,13 @@ public class TrainingPlanEntity {
     private Long id;
 
     @NotNull
-    @Column(name = "training_id", nullable = false, unique = true)
+    @Column(name = "training_id", nullable = false)
     private Long trainingId;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kind", nullable = false, length = 20)
+    private PlanKind kind = PlanKind.MAIN;
 
     @NotNull
     @Column(name = "player_count", nullable = false)
@@ -64,6 +73,8 @@ public class TrainingPlanEntity {
     public void setId(final Long id) { this.id = id; }
     public Long getTrainingId() { return trainingId; }
     public void setTrainingId(final Long trainingId) { this.trainingId = trainingId; }
+    public PlanKind getKind() { return kind; }
+    public void setKind(final PlanKind kind) { this.kind = kind == null ? PlanKind.MAIN : kind; }
     public int getPlayerCount() { return playerCount; }
     public void setPlayerCount(final int playerCount) { this.playerCount = playerCount; }
     public String getFocus() { return focus; }

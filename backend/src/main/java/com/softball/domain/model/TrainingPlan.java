@@ -7,6 +7,7 @@ import java.util.ArrayList;
 public class TrainingPlan {
     private Long id;
     private Long trainingId;
+    private PlanKind kind = PlanKind.MAIN;
     private int playerCount;
     private String focus;
     private int durationMinutes;
@@ -29,6 +30,8 @@ public class TrainingPlan {
     public void setId(final Long id) { this.id = id; }
     public Long getTrainingId() { return trainingId; }
     public void setTrainingId(final Long trainingId) { this.trainingId = trainingId; }
+    public PlanKind getKind() { return kind; }
+    public void setKind(final PlanKind kind) { this.kind = kind == null ? PlanKind.MAIN : kind; }
     public int getPlayerCount() { return playerCount; }
     public void setPlayerCount(final int playerCount) { this.playerCount = playerCount; }
     public String getFocus() { return focus; }

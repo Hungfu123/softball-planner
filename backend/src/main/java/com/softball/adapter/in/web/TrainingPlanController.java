@@ -4,7 +4,6 @@ import com.softball.adapter.dto.*;
 import com.softball.application.TrainingPlanService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,7 +23,9 @@ public class TrainingPlanController {
     @ResponseStatus(HttpStatus.CREATED)
     public TrainingPlanResponse generate(@Valid @RequestBody final GeneratePlanRequest request) {
         return trainingPlanService.generate(
-                request.trainingId(), request.playerCount(),
+                request.trainingId(),
+                request.kindOrMain(),
+                request.playerCount(),
                 request.focus(), request.durationMinutes(),
                 request.infieldPositionsOrEmpty(),
                 request.withBeginnerGroupOrFalse(),
@@ -33,13 +34,12 @@ public class TrainingPlanController {
     }
 
     @GetMapping("/training/{trainingId}")
-    public ResponseEntity<TrainingPlanResponse> getByTrainingId(@PathVariable final Long trainingId) {
-        final TrainingPlanResponse plan = trainingPlanService.getByTrainingId(trainingId);
-        return plan != null ? ResponseEntity.ok(plan) : ResponseEntity.noContent().build();
+    public List<TrainingPlanResponse> getByTrainingId(@PathVariable final Long trainingId) {
+        return trainingPlanService.getByTrainingId(trainingId);
     }
 
     @GetMapping("/by-training-ids")
-    public Map<Long, TrainingPlanResponse> getByTrainingIds(@RequestParam final List<Long> ids) {
+    public Map<Long, List<TrainingPlanResponse>> getByTrainingIds(@RequestParam final List<Long> ids) {
         return trainingPlanService.getByTrainingIds(ids);
     }
 
