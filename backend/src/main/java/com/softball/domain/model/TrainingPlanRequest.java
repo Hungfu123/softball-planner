@@ -9,6 +9,7 @@ public class TrainingPlanRequest {
     private List<Drill> availableDrills;
     private boolean withBeginnerGroup;
     private int beginnerCount;
+    private String beginnerFocus;
 
     public TrainingPlanRequest() {}
 
@@ -32,4 +33,6 @@ public class TrainingPlanRequest {
     public void setWithBeginnerGroup(final boolean withBeginnerGroup) { this.withBeginnerGroup = withBeginnerGroup; }
     public int getBeginnerCount() { return beginnerCount; }
     public void setBeginnerCount(final int beginnerCount) { this.beginnerCount = beginnerCount; }
+    public String getBeginnerFocus() { return beginnerFocus; }
+    public void setBeginnerFocus(final String beginnerFocus) { this.beginnerFocus = beginnerFocus; }
 }

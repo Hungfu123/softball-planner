@@ -43,13 +43,13 @@ public class TrainingPlanService {
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
                                          final String focus, final int durationMinutes) {
-        return generate(trainingId, playerCount, focus, durationMinutes, List.of(), false, 0);
+        return generate(trainingId, playerCount, focus, durationMinutes, List.of(), false, 0, null);
     }
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
                                          final String focus, final int durationMinutes,
                                          final List<InfieldPosition> infieldPositions) {
-        return generate(trainingId, playerCount, focus, durationMinutes, infieldPositions, false, 0);
+        return generate(trainingId, playerCount, focus, durationMinutes, infieldPositions, false, 0, null);
     }
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
@@ -57,6 +57,16 @@ public class TrainingPlanService {
                                          final List<InfieldPosition> infieldPositions,
                                          final boolean withBeginnerGroup,
                                          final int beginnerCount) {
+        return generate(trainingId, playerCount, focus, durationMinutes, infieldPositions,
+                withBeginnerGroup, beginnerCount, null);
+    }
+
+    public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
+                                         final String focus, final int durationMinutes,
+                                         final List<InfieldPosition> infieldPositions,
+                                         final boolean withBeginnerGroup,
+                                         final int beginnerCount,
+                                         final String beginnerFocus) {
         if (!trainingRepository.existsById(trainingId)) {
             throw new ResourceNotFoundException("Training", trainingId);
         }
@@ -67,10 +77,16 @@ public class TrainingPlanService {
 
         final List<InfieldPosition> safePositions = infieldPositions != null ? infieldPositions : List.of();
 
-        // Deterministischer Generator — kein KI-Call nötig
-        final List<Drill> drills = drillService.filterByFocus(focus, playerCount);
+        // Deterministischer Generator — kein KI-Call nötig.
+        // Bei separatem beginnerFocus: Drill-Pool muss BEIDE Focus-Bereiche abdecken,
+        // damit der Generator für Anfänger-Block aus dem zweiten Pool filtern kann.
+        final boolean hasSeparateBeginnerFocus = beginnerFocus != null && !beginnerFocus.isBlank()
+                && !beginnerFocus.trim().equalsIgnoreCase(focus == null ? "" : focus.trim());
+        final List<Drill> drills = hasSeparateBeginnerFocus
+                ? drillService.filterByFocus(focus + "," + beginnerFocus, playerCount)
+                : drillService.filterByFocus(focus, playerCount);
         final TrainingPlanContent content = generator.generate(drills, playerCount, focus, durationMinutes,
-                safePositions, withBeginnerGroup, beginnerCount);
+                safePositions, withBeginnerGroup, beginnerCount, beginnerFocus);
 
         final TrainingPlan plan = new TrainingPlan(trainingId, playerCount, focus, durationMinutes);
         plan.setContent(content);

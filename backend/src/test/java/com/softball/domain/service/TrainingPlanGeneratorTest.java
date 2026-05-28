@@ -1027,6 +1027,55 @@ class TrainingPlanGeneratorTest {
         }
 
         @Test
+        void dualGroup_separateBeginnerFocus_usesDifferentDrillPool() {
+            // Main: HITTING-Stations, Beginner: separater FIELDING-Focus (BASIC).
+            // Pool deckt beide Bereiche ab — Generator soll für Beginner aus FIELDING-Cats wählen.
+            final List<Drill> drills = new ArrayList<>();
+            drills.add(warmupDrill());
+            drills.add(hittingDrill());
+            // Main-Focus INFIELD_DEFENSE: ADVANCED-Drills auf FIRST_BASE
+            for (int i = 0; i < 4; i++) {
+                drills.add(testDrill("if-adv-" + i, DrillComplexity.ADVANCED, DrillCategory.FIRST_BASE));
+            }
+            // Beginner-Focus OUTFIELD: BASIC-Drills auf OUTFIELD
+            for (int i = 0; i < 4; i++) {
+                drills.add(testDrill("of-basic-" + i, DrillComplexity.BASIC, DrillCategory.OUTFIELD));
+            }
+
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "INFIELD_DEFENSE", 120, drills);
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(4);
+            req.setBeginnerFocus("OUTFIELD");
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            // BEGINNER-Sections nutzen OUTFIELD-Drills, nicht INFIELD_DEFENSE
+            final List<TrainingPlanSection> beginnerSections = plan.getContent().getSections().stream()
+                .filter(s -> s.getGroup() == SectionGroup.BEGINNER && s.getDrillId() != null)
+                .toList();
+            assertThat(beginnerSections).isNotEmpty();
+            for (final TrainingPlanSection s : beginnerSections) {
+                final Drill used = drills.stream().filter(d -> d.getId().equals(s.getDrillId()))
+                        .findFirst().orElseThrow();
+                assertThat(used.getCategories()).contains(DrillCategory.OUTFIELD);
+            }
+        }
+
+        @Test
+        void dualGroup_emptyBeginnerFocus_fallsBackToMainFocus() {
+            // Verify: empty/null beginnerFocus → existing fallback behavior (uses main focus + BASIC filter)
+            final TrainingPlanRequest req = new TrainingPlanRequest(12, "BATTING_PITCHING", 120, allTestDrills());
+            req.setWithBeginnerGroup(true);
+            req.setBeginnerCount(4);
+            req.setBeginnerFocus(null);
+
+            final TrainingPlan plan = generator.generate(1L, req);
+
+            assertThat(plan.getContent().getSections())
+                .anyMatch(s -> s.getGroup() == SectionGroup.BEGINNER && s.getDrillId() != null);
+        }
+
+        @Test
         void dualGroup_beginnerCount2_splits() {
             // playerCount=12, beginnerCount=2 → exact threshold, soll splitten
             final TrainingPlanRequest req = new TrainingPlanRequest(12, "BATTING_PITCHING", 120, allTestDrills());

@@ -28,7 +28,8 @@ public class TrainingPlanController {
                 request.focus(), request.durationMinutes(),
                 request.infieldPositionsOrEmpty(),
                 request.withBeginnerGroupOrFalse(),
-                request.beginnerCountOrZero());
+                request.beginnerCountOrZero(),
+                request.beginnerFocus());
     }
 
     @GetMapping("/training/{trainingId}")
