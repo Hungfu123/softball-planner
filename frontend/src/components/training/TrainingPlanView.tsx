@@ -2,16 +2,19 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes, UserPlus } from 'lucide-react'
 import { BatIcon } from '@/icons'
-import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
+import type { TrainingPlanSectionResponse, DrillResponse, TrainingPlanResponse, PlanKind } from '@/types'
 
 type Props = {
-  planContent: TrainingPlanContentResponse | null
+  plans: TrainingPlanResponse[]
+  activePlanKind: PlanKind
+  onSwitchKind: (kind: PlanKind) => void
   drills: DrillResponse[]
   onEdit: () => void
   onRegenerate: () => void
   onDelete: () => void
   onShare: () => void
   onAddBeginnerGroup?: () => void
+  onGenerateBeginnerPlan?: () => void
 }
 
 type SectionStyle = {
@@ -252,17 +255,30 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup }: Props) {
+export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan }: Props) {
+  const activePlan = plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null
+  const planContent = activePlan?.content ?? null
   const sections = planContent?.sections ?? []
   const renderItems = groupSectionsForRender(sections)
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
   const hasBeginnerGroup = sections.some(s => s.group === 'BEGINNER')
+  const hasBeginnerPlan = plans.some(p => p.kind === 'BEGINNER')
+  const hasMainPlan = plans.some(p => p.kind === 'MAIN')
+  const showKindTabs = plans.length >= 2
+  const canGenerateSeparateBeginnerPlan = !hasBeginnerPlan && hasMainPlan && onGenerateBeginnerPlan != null
   const initialExpanded = sections.length > 0 && sections.length <= 5
   const [expanded, setExpanded] = useState<Set<number>>(
     () => new Set(initialExpanded ? sections.map((_, i) => i) : []),
   )
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Reset expansion when active plan changes
+  useEffect(() => {
+    const fresh = sections.length > 0 && sections.length <= 5
+    setExpanded(new Set(fresh ? sections.map((_, i) => i) : []))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePlan?.id])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -386,17 +402,51 @@ export function TrainingPlanView({ planContent, drills, onEdit, onRegenerate, on
             </button>
           )}
           {menuOpen && hasPlan && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-cream-300 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-cream-300 rounded-xl shadow-lg z-20 py-1 overflow-hidden">
               <MenuItem Icon={Pencil} label="Bearbeiten" onClick={() => { setMenuOpen(false); onEdit() }} />
               <MenuItem Icon={Share2} label="Teilen" onClick={() => { setMenuOpen(false); onShare() }} />
-              <MenuItem Icon={Sparkles} label="Neu generieren" onClick={() => { setMenuOpen(false); onRegenerate() }} />
+              <MenuItem Icon={Sparkles} label={activePlan?.kind === 'BEGINNER' ? 'Anfänger-Plan neu generieren' : 'Neu generieren'} onClick={() => { setMenuOpen(false); onRegenerate() }} />
+              {canGenerateSeparateBeginnerPlan && (
+                <MenuItem Icon={UserPlus} label="Separater Anfänger-Plan" onClick={() => { setMenuOpen(false); onGenerateBeginnerPlan!() }} />
+              )}
               <div className="border-t border-cream-200 my-1" />
-              <MenuItem Icon={Trash2} label="Löschen" onClick={() => { setMenuOpen(false); onDelete() }} danger />
+              <MenuItem Icon={Trash2} label={activePlan?.kind === 'BEGINNER' ? 'Anfänger-Plan löschen' : 'Löschen'} onClick={() => { setMenuOpen(false); onDelete() }} danger />
             </div>
           )}
         </div>
         </div>
       </div>
+
+      {showKindTabs && (
+        <div className="mb-3 inline-flex bg-cream-200 rounded-lg p-0.5" role="tablist" aria-label="Plan-Typ">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={activePlanKind === 'MAIN'}
+            onClick={() => onSwitchKind('MAIN')}
+            className={`px-3 py-1.5 rounded font-display text-xs font-bold tracking-widest uppercase cursor-pointer transition-colors ${
+              activePlanKind === 'MAIN'
+                ? 'bg-navy-900 text-white'
+                : 'text-navy-700 hover:bg-navy-100'
+            }`}
+          >
+            Hauptgruppe
+          </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={activePlanKind === 'BEGINNER'}
+            onClick={() => onSwitchKind('BEGINNER')}
+            className={`px-3 py-1.5 rounded font-display text-xs font-bold tracking-widest uppercase cursor-pointer transition-colors ${
+              activePlanKind === 'BEGINNER'
+                ? 'bg-amber-700 text-white'
+                : 'text-amber-700 hover:bg-amber-100'
+            }`}
+          >
+            Anfänger
+          </button>
+        </div>
+      )}
 
       {sections.length === 0 ? (
         <div className="bg-white border border-cream-300 rounded-2xl p-4 text-sm text-navy-700">

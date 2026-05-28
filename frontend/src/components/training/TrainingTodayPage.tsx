@@ -5,7 +5,7 @@ import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
 import * as api from '@/api/client'
-import type { TrainingPlanContentResponse, DrillResponse, InfieldPosition } from '@/types'
+import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
@@ -31,8 +31,9 @@ export function TrainingTodayPage() {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [addBeginnerOpen, setAddBeginnerOpen] = useState(false)
-  const [planContent, setPlanContent] = useState<TrainingPlanContentResponse | null>(null)
-  const [planId, setPlanId] = useState<number | null>(null)
+  const [plans, setPlans] = useState<TrainingPlanResponse[]>([])
+  const [activePlanKind, setActivePlanKind] = useState<PlanKind>('MAIN')
+  const [generateKind, setGenerateKind] = useState<PlanKind>('MAIN')
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
   const [attendanceSort, setAttendanceSort] = useState<AttendanceSort>('frequency')
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null)
@@ -106,50 +107,47 @@ export function TrainingTodayPage() {
     return base.sort((a, b) => a.name.localeCompare(b.name))
   }, [players, stats, attendanceSort, decidedIds])
 
+  const activePlan = useMemo(
+    () => plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null,
+    [plans, activePlanKind],
+  )
+
   const loadPlanFor = async (trainingId: number) => {
     try {
-      const result = await api.getTrainingPlansByTrainingIds([trainingId])
-      const plan = result[String(trainingId)] ?? result[trainingId as unknown as string]
-      if (plan) {
-        setPlanContent(plan.content)
-        setPlanId(plan.id)
-      } else {
-        setPlanContent(null)
-        setPlanId(null)
-      }
+      const result = await api.getTrainingPlansByTrainingId(trainingId)
+      setPlans(result)
     } catch {
-      setPlanContent(null)
-      setPlanId(null)
+      setPlans([])
     }
   }
 
   useEffect(() => {
     if (!currentTraining) {
-      setPlanContent(null)
-      setPlanId(null)
+      setPlans([])
       return
     }
     let cancelled = false
-    api.getTrainingPlansByTrainingIds([currentTraining.id])
+    api.getTrainingPlansByTrainingId(currentTraining.id)
       .then(result => {
         if (cancelled) return
-        const plan = result[String(currentTraining.id)] ?? result[currentTraining.id as unknown as string]
-        if (plan) {
-          setPlanContent(plan.content)
-          setPlanId(plan.id)
-        } else {
-          setPlanContent(null)
-          setPlanId(null)
-        }
+        setPlans(result)
       })
       .catch(() => {
-        if (!cancelled) {
-          setPlanContent(null)
-          setPlanId(null)
-        }
+        if (!cancelled) setPlans([])
       })
     return () => { cancelled = true }
   }, [currentTraining])
+
+  // Keep activePlanKind in sync — if MAIN doesn't exist but BEGINNER does, switch to BEGINNER
+  useEffect(() => {
+    if (plans.length === 0) {
+      setActivePlanKind('MAIN')
+      return
+    }
+    if (!plans.some(p => p.kind === activePlanKind)) {
+      setActivePlanKind(plans[0].kind)
+    }
+  }, [plans, activePlanKind])
 
   const avgPresent = useMemo(() => {
     if (totalTrainings === 0) return 0
@@ -188,16 +186,22 @@ export function TrainingTodayPage() {
     }
   }
 
-  const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string }) => {
+  const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string; kind?: PlanKind }) => {
     if (!currentTraining) return
+    const kind: PlanKind = data.kind ?? 'MAIN'
     try {
-      if (planId != null) {
-        await api.deleteTrainingPlan(planId)
+      // If a plan of this kind already exists, replace it (delete first)
+      const existing = plans.find(p => p.kind === kind)
+      if (existing) {
+        await api.deleteTrainingPlan(existing.id)
       }
-      const plan = await api.generateTrainingPlan({ ...data, trainingId: currentTraining.id })
-      setPlanContent(plan.content)
-      setPlanId(plan.id)
-      toast.success('Trainingsplan generiert')
+      const plan = await api.generateTrainingPlan({ ...data, kind, trainingId: currentTraining.id })
+      setPlans(prev => {
+        const filtered = prev.filter(p => p.kind !== plan.kind)
+        return [...filtered, plan]
+      })
+      setActivePlanKind(plan.kind)
+      toast.success(plan.kind === 'BEGINNER' ? 'Anfänger-Plan generiert' : 'Trainingsplan generiert')
     } catch (e) {
       toast.error((e as Error).message)
       if (currentTraining) await loadPlanFor(currentTraining.id)
@@ -205,11 +209,10 @@ export function TrainingTodayPage() {
   }
 
   const handleAddBeginnerGroup = async (data: { beginnerCount: number; beginnerFocus?: string }) => {
-    if (planId == null) return
+    if (!activePlan) return
     try {
-      const plan = await api.addBeginnerGroup(planId, data.beginnerCount, data.beginnerFocus)
-      setPlanContent(plan.content)
-      setPlanId(plan.id)
+      const plan = await api.addBeginnerGroup(activePlan.id, data.beginnerCount, data.beginnerFocus)
+      setPlans(prev => prev.map(p => p.id === plan.id ? plan : p))
       toast.success('Anfänger-Gruppe hinzugefügt')
     } catch (e) {
       toast.error((e as Error).message)
@@ -217,17 +220,27 @@ export function TrainingTodayPage() {
   }
 
   const handleDelete = async () => {
-    if (planId == null) return
+    if (!activePlan) return
+    const deletedKind = activePlan.kind
     try {
-      await api.deleteTrainingPlan(planId)
-      setPlanContent(null)
-      setPlanId(null)
-      toast.success('Trainingsplan gelöscht')
+      await api.deleteTrainingPlan(activePlan.id)
+      setPlans(prev => prev.filter(p => p.id !== activePlan.id))
+      toast.success(deletedKind === 'BEGINNER' ? 'Anfänger-Plan gelöscht' : 'Trainingsplan gelöscht')
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
       setDeleteConfirmOpen(false)
     }
+  }
+
+  const handleGenerateBeginner = () => {
+    setGenerateKind('BEGINNER')
+    setGenerateOpen(true)
+  }
+
+  const handleOpenRegenerate = () => {
+    setGenerateKind(activePlan?.kind ?? 'MAIN')
+    setGenerateOpen(true)
   }
 
   if (!currentTraining) {
@@ -348,13 +361,16 @@ export function TrainingTodayPage() {
 
           <section className={`${mobileTab === 'plan' ? '' : 'hidden lg:block'} mt-4 lg:mt-0`}>
             <TrainingPlanView
-              planContent={planContent}
+              plans={plans}
+              activePlanKind={activePlanKind}
+              onSwitchKind={setActivePlanKind}
               drills={drills}
               onEdit={() => setPlanEditOpen(true)}
-              onRegenerate={() => setGenerateOpen(true)}
+              onRegenerate={handleOpenRegenerate}
               onDelete={() => setDeleteConfirmOpen(true)}
               onShare={() => setShareOpen(true)}
-              onAddBeginnerGroup={planId != null ? () => setAddBeginnerOpen(true) : undefined}
+              onAddBeginnerGroup={activePlan != null ? () => setAddBeginnerOpen(true) : undefined}
+              onGenerateBeginnerPlan={handleGenerateBeginner}
             />
           </section>
         </div>
@@ -373,12 +389,12 @@ export function TrainingTodayPage() {
         <PlanEditDrawer
           open={planEditOpen}
           onClose={() => setPlanEditOpen(false)}
-          planContent={planContent}
-          planId={planId}
+          planContent={activePlan?.content ?? null}
+          planId={activePlan?.id ?? null}
           onSave={async (content) => {
-            if (planId == null) return
-            await api.updateTrainingPlan(planId, content)
-            setPlanContent(content)
+            if (!activePlan) return
+            const updated = await api.updateTrainingPlan(activePlan.id, content)
+            setPlans(prev => prev.map(p => p.id === activePlan.id ? updated : p))
             toast.success('Plan gespeichert')
           }}
         />
@@ -388,13 +404,14 @@ export function TrainingTodayPage() {
           onClose={() => setGenerateOpen(false)}
           defaultPlayerCount={presentIds.size > 0 ? presentIds.size : Math.max(players.length, 10)}
           trainingDate={currentTraining?.date ?? null}
+          initialKind={generateKind}
           onGenerate={handleGenerate}
         />
 
         <SharePlanDrawer
           open={shareOpen}
           onClose={() => setShareOpen(false)}
-          planContent={planContent}
+          planContent={activePlan?.content ?? null}
           trainingDate={currentTraining?.date ?? null}
         />
 
@@ -414,7 +431,7 @@ export function TrainingTodayPage() {
 
         {deleteConfirmOpen && (
           <ConfirmModal
-            title="Trainingsplan löschen?"
+            title={activePlan?.kind === 'BEGINNER' ? 'Anfänger-Plan löschen?' : 'Trainingsplan löschen?'}
             message="Der aktuelle Plan wird unwiderruflich entfernt."
             confirmLabel="Löschen"
             cancelLabel="Abbrechen"

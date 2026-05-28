@@ -269,8 +269,11 @@ export const getDrills = (focus?: string, maxPlayers?: number) => {
 }
 
 // Training Plans
+export const getTrainingPlansByTrainingId = (trainingId: number) =>
+  request<TrainingPlanResponse[]>(`/training-plans/training/${trainingId}`)
+
 export const getTrainingPlansByTrainingIds = (ids: number[]) =>
-  request<Record<string, TrainingPlanResponse>>(`/training-plans/by-training-ids?ids=${ids.join(',')}`)
+  request<Record<string, TrainingPlanResponse[]>>(`/training-plans/by-training-ids?ids=${ids.join(',')}`)
 
 export const generateTrainingPlan = async (data: GeneratePlanRequest): Promise<TrainingPlanResponse> => {
   const res = await fetch(`${API}/training-plans/generate`, {
