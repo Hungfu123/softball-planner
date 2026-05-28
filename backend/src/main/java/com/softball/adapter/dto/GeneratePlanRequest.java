@@ -1,6 +1,7 @@
 package com.softball.adapter.dto;
 
 import com.softball.domain.model.InfieldPosition;
+import com.softball.domain.model.PlanKind;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,7 +16,8 @@ public record GeneratePlanRequest(
         List<InfieldPosition> infieldPositions,
         Boolean withBeginnerGroup,
         Integer beginnerCount,
-        String beginnerFocus
+        String beginnerFocus,
+        PlanKind kind
 ) {
     public List<InfieldPosition> infieldPositionsOrEmpty() {
         return infieldPositions != null ? infieldPositions : List.of();
@@ -27,5 +29,10 @@ public record GeneratePlanRequest(
 
     public int beginnerCountOrZero() {
         return beginnerCount != null ? beginnerCount : 0;
+    }
+
+    /** Default MAIN if request body omits kind (backward-compat). */
+    public PlanKind kindOrMain() {
+        return kind != null ? kind : PlanKind.MAIN;
     }
 }

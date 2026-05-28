@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.adapter.out.persistence.entity.TrainingPlanEntity;
 import com.softball.domain.model.InfieldPosition;
+import com.softball.domain.model.PlanKind;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ public class TrainingPlanMapper {
         final TrainingPlan plan = new TrainingPlan();
         plan.setId(entity.getId());
         plan.setTrainingId(entity.getTrainingId());
+        plan.setKind(entity.getKind() != null ? entity.getKind() : PlanKind.MAIN);
         plan.setPlayerCount(entity.getPlayerCount());
         plan.setFocus(entity.getFocus());
         plan.setDurationMinutes(entity.getDurationMinutes());
@@ -52,6 +54,7 @@ public class TrainingPlanMapper {
         final TrainingPlanEntity entity = new TrainingPlanEntity();
         entity.setId(domain.getId());
         entity.setTrainingId(domain.getTrainingId());
+        entity.setKind(domain.getKind() != null ? domain.getKind() : PlanKind.MAIN);
         entity.setPlayerCount(domain.getPlayerCount());
         entity.setFocus(domain.getFocus());
         entity.setDurationMinutes(domain.getDurationMinutes());

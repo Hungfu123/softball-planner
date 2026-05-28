@@ -4,6 +4,7 @@ import com.softball.adapter.dto.TrainingPlanContentResponse;
 import com.softball.adapter.dto.TrainingPlanResponse;
 import com.softball.domain.model.Drill;
 import com.softball.domain.model.InfieldPosition;
+import com.softball.domain.model.PlanKind;
 import com.softball.domain.model.SectionGroup;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
@@ -15,10 +16,8 @@ import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -48,13 +47,13 @@ public class TrainingPlanService {
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
                                          final String focus, final int durationMinutes) {
-        return generate(trainingId, playerCount, focus, durationMinutes, List.of(), false, 0, null);
+        return generate(trainingId, PlanKind.MAIN, playerCount, focus, durationMinutes, List.of(), false, 0, null);
     }
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
                                          final String focus, final int durationMinutes,
                                          final List<InfieldPosition> infieldPositions) {
-        return generate(trainingId, playerCount, focus, durationMinutes, infieldPositions, false, 0, null);
+        return generate(trainingId, PlanKind.MAIN, playerCount, focus, durationMinutes, infieldPositions, false, 0, null);
     }
 
     public TrainingPlanResponse generate(final Long trainingId, final int playerCount,
@@ -62,7 +61,7 @@ public class TrainingPlanService {
                                          final List<InfieldPosition> infieldPositions,
                                          final boolean withBeginnerGroup,
                                          final int beginnerCount) {
-        return generate(trainingId, playerCount, focus, durationMinutes, infieldPositions,
+        return generate(trainingId, PlanKind.MAIN, playerCount, focus, durationMinutes, infieldPositions,
                 withBeginnerGroup, beginnerCount, null);
     }
 
@@ -72,12 +71,26 @@ public class TrainingPlanService {
                                          final boolean withBeginnerGroup,
                                          final int beginnerCount,
                                          final String beginnerFocus) {
+        return generate(trainingId, PlanKind.MAIN, playerCount, focus, durationMinutes, infieldPositions,
+                withBeginnerGroup, beginnerCount, beginnerFocus);
+    }
+
+    public TrainingPlanResponse generate(final Long trainingId, final PlanKind kind,
+                                         final int playerCount,
+                                         final String focus, final int durationMinutes,
+                                         final List<InfieldPosition> infieldPositions,
+                                         final boolean withBeginnerGroup,
+                                         final int beginnerCount,
+                                         final String beginnerFocus) {
         if (!trainingRepository.existsById(trainingId)) {
             throw new ResourceNotFoundException("Training", trainingId);
         }
 
-        if (trainingPlanRepository.existsByTrainingId(trainingId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainingsplan existiert bereits für dieses Training");
+        final PlanKind effectiveKind = kind != null ? kind : PlanKind.MAIN;
+
+        if (trainingPlanRepository.findByTrainingIdAndKind(trainingId, effectiveKind).isPresent()) {
+            throw new BusinessValidationException(
+                    "Plan dieses Typs existiert bereits (kind=" + effectiveKind + ")");
         }
 
         final List<InfieldPosition> safePositions = infieldPositions != null ? infieldPositions : List.of();
@@ -94,26 +107,31 @@ public class TrainingPlanService {
                 safePositions, withBeginnerGroup, beginnerCount, beginnerFocus);
 
         final TrainingPlan plan = new TrainingPlan(trainingId, playerCount, focus, durationMinutes);
+        plan.setKind(effectiveKind);
         plan.setContent(content);
         plan.setInfieldPositions(safePositions);
         return TrainingPlanResponse.from(trainingPlanRepository.save(plan));
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, TrainingPlanResponse> getByTrainingIds(final List<Long> trainingIds) {
+    public Map<Long, List<TrainingPlanResponse>> getByTrainingIds(final List<Long> trainingIds) {
         if (trainingIds == null || trainingIds.isEmpty()) return Map.of();
         return trainingPlanRepository.findByTrainingIdIn(trainingIds).stream()
-                .collect(Collectors.toMap(
-                        p -> p.getTrainingId(),
-                        TrainingPlanResponse::from
+                .collect(Collectors.groupingBy(
+                        TrainingPlan::getTrainingId,
+                        Collectors.mapping(TrainingPlanResponse::from, Collectors.toList())
                 ));
     }
 
+    /**
+     * Liefert alle Pläne (MAIN + optional BEGINNER) für ein Training.
+     * Liste ist 0-2 Einträge gross.
+     */
     @Transactional(readOnly = true)
-    public TrainingPlanResponse getByTrainingId(final Long trainingId) {
-        return trainingPlanRepository.findByTrainingId(trainingId)
+    public List<TrainingPlanResponse> getByTrainingId(final Long trainingId) {
+        return trainingPlanRepository.findAllByTrainingId(trainingId).stream()
                 .map(TrainingPlanResponse::from)
-                .orElse(null);
+                .toList();
     }
 
     @Transactional

@@ -2,6 +2,7 @@ package com.softball.adapter.out.persistence.adapter;
 
 import com.softball.adapter.out.persistence.mapper.TrainingPlanMapper;
 import com.softball.adapter.out.persistence.repository.SpringTrainingPlanRepository;
+import com.softball.domain.model.PlanKind;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.port.out.TrainingPlanRepository;
 import org.springframework.stereotype.Component;
@@ -41,19 +42,19 @@ public class TrainingPlanRepositoryAdapter implements TrainingPlanRepository {
     }
 
     @Override
-    public Optional<TrainingPlan> findByTrainingId(final Long trainingId) {
-        return repo.findByTrainingId(trainingId).map(mapper::toDomain);
+    public List<TrainingPlan> findAllByTrainingId(final Long trainingId) {
+        return repo.findAllByTrainingId(trainingId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public Optional<TrainingPlan> findByTrainingIdAndKind(final Long trainingId, final PlanKind kind) {
+        return repo.findByTrainingIdAndKind(trainingId, kind).map(mapper::toDomain);
     }
 
     @Override
     public List<TrainingPlan> findByTrainingIdIn(final List<Long> trainingIds) {
         if (trainingIds == null || trainingIds.isEmpty()) return List.of();
         return repo.findByTrainingIdIn(trainingIds).stream().map(mapper::toDomain).toList();
-    }
-
-    @Override
-    public boolean existsByTrainingId(final Long trainingId) {
-        return repo.existsByTrainingId(trainingId);
     }
 
     @Override
