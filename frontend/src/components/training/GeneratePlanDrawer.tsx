@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void
   defaultPlayerCount: number
   trainingDate?: string | null
-  onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number }) => Promise<void>
+  onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string }) => Promise<void>
 }
 
 const FOCUS_OPTIONS: { value: TrainingFocus; label: string }[] = [
@@ -40,6 +40,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   const [durationMinutes, setDurationMinutes] = useState(initialDuration)
   const [withBeginnerGroup, setWithBeginnerGroup] = useState(false)
   const [beginnerCount, setBeginnerCount] = useState(2)
+  const [beginnerFocus, setBeginnerFocus] = useState<TrainingFocus | ''>('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -50,6 +51,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       setDurationMinutes(initialDuration)
       setWithBeginnerGroup(false)
       setBeginnerCount(2)
+      setBeginnerFocus('')
     }
   }, [open, defaultPlayerCount, initialDuration])
 
@@ -74,7 +76,7 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
   const submit = async () => {
     setSubmitting(true)
     try {
-      const data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number } = {
+      const data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string } = {
         playerCount,
         focus: [...focuses].join(','),
         durationMinutes,
@@ -83,6 +85,9 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       }
       if (focuses.has('INFIELD_DEFENSE') && infieldPositions.size > 0) {
         data.infieldPositions = [...infieldPositions]
+      }
+      if (withBeginnerGroup && beginnerFocus) {
+        data.beginnerFocus = beginnerFocus
       }
       await onGenerate(data)
       onClose()
@@ -143,26 +148,49 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
             <span className="text-xs font-bold uppercase tracking-wider text-navy-500">Mit Anfängergruppe?</span>
           </label>
           {withBeginnerGroup && (
-            <div className="pl-6">
-              <label className="text-[10px] text-navy-500 block mb-1">Anfänger-Anzahl (min 2)</label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setBeginnerCount(c => Math.max(2, c - 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
-                >−</button>
-                <input
-                  type="number"
-                  min={2}
-                  value={beginnerCount}
-                  onChange={(e) => setBeginnerCount(Math.max(2, parseInt(e.target.value) || 2))}
-                  className="w-16 text-center px-2 py-2 border border-cream-300 rounded-md text-sm font-bold text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
-                />
-                <button
-                  type="button"
-                  onClick={() => setBeginnerCount(c => Math.min(playerCount, c + 1))}
-                  className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
-                >+</button>
+            <div className="ml-2 pl-3 border-l-2 border-amber-300 space-y-3">
+              <div>
+                <label className="text-[10px] text-amber-800 font-bold uppercase tracking-wider block mb-1">Anfänger-Anzahl (min 2)</label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBeginnerCount(c => Math.max(2, c - 1))}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
+                  >−</button>
+                  <input
+                    type="number"
+                    min={2}
+                    value={beginnerCount}
+                    onChange={(e) => setBeginnerCount(Math.max(2, parseInt(e.target.value) || 2))}
+                    className="w-16 text-center px-2 py-2 border border-cream-300 rounded-md text-sm font-bold text-navy-900 bg-white focus:border-navy-400 focus:outline-none tabular-nums"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setBeginnerCount(c => Math.min(playerCount, c + 1))}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg border border-cream-300 text-navy-700 font-bold text-lg hover:bg-cream-100 cursor-pointer"
+                  >+</button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-amber-800 font-bold uppercase tracking-wider block mb-1">Focus Anfänger (optional)</label>
+                <p className="text-[10px] text-navy-500 mb-2">Leer = gleicher Focus wie Hauptgruppe + nur BASIC-Drills.</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FOCUS_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setBeginnerFocus(beginnerFocus === opt.value ? '' : opt.value)}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold border cursor-pointer ${
+                        beginnerFocus === opt.value
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-white text-navy-700 border-cream-300 hover:border-amber-400'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

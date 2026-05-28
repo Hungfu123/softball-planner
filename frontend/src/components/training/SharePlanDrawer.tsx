@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Copy, Check, MessageCircle } from 'lucide-react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
-import type { TrainingPlanContentResponse } from '@/types'
+import type { TrainingPlanContentResponse, SectionGroup } from '@/types'
 
 type Props = {
   open: boolean
@@ -10,9 +10,18 @@ type Props = {
   trainingDate: string | null
 }
 
+type ShareGroup = 'ALL' | 'MAIN' | 'BEGINNER'
+
+const GROUP_LABEL: Record<ShareGroup, string> = {
+  ALL: '',
+  MAIN: 'Hauptgruppe',
+  BEGINNER: 'Anfänger',
+}
+
 function buildShareText(
   planContent: TrainingPlanContentResponse | null,
   trainingDate: string | null,
+  group: ShareGroup = 'ALL',
 ): string {
   if (!planContent) return ''
   const lines: string[] = []
@@ -20,7 +29,8 @@ function buildShareText(
   const dateStr = trainingDate
     ? new Date(trainingDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })
     : ''
-  lines.push(`⚾ *Trainingsplan${dateStr ? ` — ${dateStr}` : ''}*`)
+  const groupSuffix = group !== 'ALL' ? ` — ${GROUP_LABEL[group]}` : ''
+  lines.push(`⚾ *Trainingsplan${dateStr ? ` — ${dateStr}` : ''}${groupSuffix}*`)
   lines.push('')
 
   const pushHeadline = (h: string) => {
@@ -28,21 +38,28 @@ function buildShareText(
     lines.push(h)
   }
 
-  const sections = planContent.sections
+  // Filter sections by group: ALL = pass-through; MAIN/BEGINNER = include shared (ALL) + own group
+  const filteredSections = group === 'ALL'
+    ? planContent.sections
+    : planContent.sections.filter(s => {
+        const g: SectionGroup = s.group ?? 'ALL'
+        return g === 'ALL' || g === group
+      })
+
   let i = 0
   let warmupPrinted = false
   let drillsPrinted = false
   let battingPrinted = false
 
-  while (i < sections.length) {
-    const s = sections[i]
+  while (i < filteredSections.length) {
+    const s = filteredSections[i]
     if (s.sectionType === 'BREAK') { i++; continue }
 
     if (s.parallelGroup != null) {
-      const group = s.parallelGroup
-      const stationDrills: typeof sections = []
-      while (i < sections.length && sections[i].parallelGroup === group) {
-        stationDrills.push(sections[i])
+      const pGroup = s.parallelGroup
+      const stationDrills: typeof filteredSections = []
+      while (i < filteredSections.length && filteredSections[i].parallelGroup === pGroup) {
+        stationDrills.push(filteredSections[i])
         i++
       }
       const isBattingGroup = stationDrills.some(d => d.sectionType === 'BATTING')
@@ -95,11 +112,25 @@ function buildShareText(
 }
 
 export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Props) {
-  const text = useMemo(() => buildShareText(planContent, trainingDate), [planContent, trainingDate])
+  const hasDualGroup = useMemo(
+    () => planContent?.sections.some(s => s.group === 'BEGINNER') ?? false,
+    [planContent],
+  )
+
+  const [activeTab, setActiveTab] = useState<'MAIN' | 'BEGINNER'>('MAIN')
+
+  const text = useMemo(
+    () => buildShareText(planContent, trainingDate, hasDualGroup ? activeTab : 'ALL'),
+    [planContent, trainingDate, hasDualGroup, activeTab],
+  )
+
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    if (!open) setCopied(false)
+    if (!open) {
+      setCopied(false)
+      setActiveTab('MAIN')
+    }
   }, [open])
 
   const copy = async () => {
@@ -114,6 +145,11 @@ export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Pr
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(text)}`
 
+  // Style copy/whatsapp buttons match the active group color
+  const activeAccent = hasDualGroup && activeTab === 'BEGINNER'
+    ? { whatsapp: 'bg-amber-600 hover:bg-amber-700' }
+    : { whatsapp: 'bg-emerald-600 hover:bg-emerald-700' }
+
   const footer = (
     <div className="grid grid-cols-2 gap-2">
       <button
@@ -127,7 +163,7 @@ export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Pr
         href={whatsappHref}
         target="_blank"
         rel="noopener"
-        className={`h-11 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer flex items-center justify-center gap-1.5 ${!text ? 'opacity-50 pointer-events-none' : ''}`}
+        className={`h-11 rounded-lg ${activeAccent.whatsapp} text-white font-bold cursor-pointer flex items-center justify-center gap-1.5 ${!text ? 'opacity-50 pointer-events-none' : ''}`}
       >
         <MessageCircle size={16} /> WhatsApp
       </a>
@@ -139,7 +175,32 @@ export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Pr
       <div className="px-4 py-4 space-y-3">
         <p className="text-xs text-navy-600">Übersicht für WhatsApp / Telegram</p>
 
-        <div className="bg-white border border-cream-300 rounded-xl p-3 text-sm text-navy-800 whitespace-pre-line max-h-64 overflow-y-auto font-mono leading-relaxed">
+        {hasDualGroup && (
+          <div className="flex gap-1 p-1 bg-cream-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setActiveTab('MAIN')}
+              className={`flex-1 px-3 py-1.5 rounded font-display text-xs font-bold tracking-widest uppercase transition-colors cursor-pointer ${
+                activeTab === 'MAIN' ? 'bg-navy-900 text-white' : 'text-navy-700 hover:bg-navy-100'
+              }`}
+            >
+              Hauptgruppe
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('BEGINNER')}
+              className={`flex-1 px-3 py-1.5 rounded font-display text-xs font-bold tracking-widest uppercase transition-colors cursor-pointer ${
+                activeTab === 'BEGINNER' ? 'bg-amber-600 text-white' : 'text-amber-800 hover:bg-amber-100'
+              }`}
+            >
+              Anfänger
+            </button>
+          </div>
+        )}
+
+        <div className={`bg-white border rounded-xl p-3 text-sm text-navy-800 whitespace-pre-line max-h-64 overflow-y-auto font-mono leading-relaxed ${
+          hasDualGroup && activeTab === 'BEGINNER' ? 'border-amber-300' : 'border-cream-300'
+        }`}>
           {text || <span className="italic text-navy-500">Kein Plan zum Teilen.</span>}
         </div>
       </div>

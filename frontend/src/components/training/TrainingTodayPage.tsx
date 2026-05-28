@@ -186,7 +186,7 @@ export function TrainingTodayPage() {
     }
   }
 
-  const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[] }) => {
+  const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string }) => {
     if (!currentTraining) return
     try {
       if (planId != null) {
