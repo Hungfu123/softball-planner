@@ -10,6 +10,7 @@ type Props = {
   defaultPlayerCount: number
   trainingDate?: string | null
   initialKind?: PlanKind
+  hasExistingPlan?: boolean
   onGenerate: (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string; kind?: PlanKind }) => Promise<void>
 }
 
@@ -33,7 +34,7 @@ function defaultDurationFor(dateStr?: string | null): number {
   return 90
 }
 
-export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, trainingDate, initialKind = 'MAIN', onGenerate }: Props) {
+export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, trainingDate, initialKind = 'MAIN', hasExistingPlan = false, onGenerate }: Props) {
   const initialDuration = useMemo(() => defaultDurationFor(trainingDate), [trainingDate])
   const isBeginner = initialKind === 'BEGINNER'
   const beginnerDefaultPlayerCount = 3
@@ -131,8 +132,12 @@ export function GeneratePlanDrawer({ open, onClose, defaultPlayerCount, training
       <div className="px-4 py-4 space-y-4">
         <p className="text-xs text-navy-600">
           {isBeginner
-            ? 'Eigener Plan für die Anfänger — läuft parallel zum Hauptgruppen-Plan.'
-            : 'Bestehender Plan wird ersetzt.'}
+            ? (hasExistingPlan
+                ? 'Bestehender Anfänger-Plan wird ersetzt.'
+                : 'Eigener Plan für die Anfänger — läuft parallel zum Hauptgruppen-Plan.')
+            : (hasExistingPlan
+                ? 'Bestehender Plan wird ersetzt.'
+                : 'Neuer Hauptgruppen-Plan wird erstellt.')}
         </p>
 
         <div>

@@ -15,6 +15,7 @@ type Props = {
   onShare: () => void
   onAddBeginnerGroup?: () => void
   onGenerateBeginnerPlan?: () => void
+  onGenerateMain?: () => void
 }
 
 type SectionStyle = {
@@ -255,7 +256,7 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan }: Props) {
+export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
   const activePlan = plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null
   const planContent = activePlan?.content ?? null
   const sections = planContent?.sections ?? []
@@ -266,6 +267,7 @@ export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, 
   const hasMainPlan = plans.some(p => p.kind === 'MAIN')
   const showKindTabs = plans.length >= 2
   const canGenerateSeparateBeginnerPlan = !hasBeginnerPlan && hasMainPlan && onGenerateBeginnerPlan != null
+  const canGenerateSeparateMainPlan = !hasMainPlan && hasBeginnerPlan && onGenerateMain != null
   const initialExpanded = sections.length > 0 && sections.length <= 5
   const [expanded, setExpanded] = useState<Set<number>>(
     () => new Set(initialExpanded ? sections.map((_, i) => i) : []),
@@ -409,6 +411,9 @@ export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, 
               {canGenerateSeparateBeginnerPlan && (
                 <MenuItem Icon={UserPlus} label="Separater Anfänger-Plan" onClick={() => { setMenuOpen(false); onGenerateBeginnerPlan!() }} />
               )}
+              {canGenerateSeparateMainPlan && (
+                <MenuItem Icon={UserPlus} label="Separater Hauptgruppen-Plan" onClick={() => { setMenuOpen(false); onGenerateMain!() }} />
+              )}
               <div className="border-t border-cream-200 my-1" />
               <MenuItem Icon={Trash2} label={activePlan?.kind === 'BEGINNER' ? 'Anfänger-Plan löschen' : 'Löschen'} onClick={() => { setMenuOpen(false); onDelete() }} danger />
             </div>
@@ -457,7 +462,7 @@ export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, 
           <div className="text-[11px] text-navy-600 font-semibold tabular-nums pb-1">
             {formatTotal(totalMinutes)} · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}
           </div>
-          {!hasBeginnerGroup && onAddBeginnerGroup && (
+          {!hasBeginnerGroup && onAddBeginnerGroup && activePlan?.kind !== 'BEGINNER' && (
             <button
               type="button"
               onClick={onAddBeginnerGroup}

@@ -3,6 +3,7 @@ package com.softball.application;
 import com.softball.domain.model.Drill;
 import com.softball.domain.model.DrillCategory;
 import com.softball.domain.model.DrillComplexity;
+import com.softball.domain.model.PlanKind;
 import com.softball.domain.model.SectionGroup;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.model.TrainingPlanContent;
@@ -105,6 +106,17 @@ class TrainingPlanServiceAddBeginnerGroupTest {
 
         assertThatThrownBy(() -> service.addBeginnerGroup(99L, 3, null))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void addBeginnerGroup_onBeginnerKindPlan_throws400() {
+        final TrainingPlan plan = makePlanWithSingleStationBlock();
+        plan.setKind(PlanKind.BEGINNER);
+        when(planRepository.findById(1L)).thenReturn(Optional.of(plan));
+
+        assertThatThrownBy(() -> service.addBeginnerGroup(1L, 3, "WERFEN"))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("Anfänger-Plan");
     }
 
     @Test

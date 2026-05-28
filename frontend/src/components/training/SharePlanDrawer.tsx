@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Copy, Check, MessageCircle } from 'lucide-react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
-import type { TrainingPlanContentResponse, SectionGroup } from '@/types'
+import type { TrainingPlanContentResponse, SectionGroup, PlanKind } from '@/types'
 
 type Props = {
   open: boolean
   onClose: () => void
   planContent: TrainingPlanContentResponse | null
   trainingDate: string | null
+  planKind?: PlanKind
 }
 
 type ShareGroup = 'ALL' | 'MAIN' | 'BEGINNER'
@@ -22,6 +23,7 @@ function buildShareText(
   planContent: TrainingPlanContentResponse | null,
   trainingDate: string | null,
   group: ShareGroup = 'ALL',
+  planKind: PlanKind = 'MAIN',
 ): string {
   if (!planContent) return ''
   const lines: string[] = []
@@ -29,8 +31,9 @@ function buildShareText(
   const dateStr = trainingDate
     ? new Date(trainingDate + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })
     : ''
-  const groupSuffix = group !== 'ALL' ? ` — ${GROUP_LABEL[group]}` : ''
-  lines.push(`⚾ *Trainingsplan${dateStr ? ` — ${dateStr}` : ''}${groupSuffix}*`)
+  const kindSuffix = planKind === 'BEGINNER' ? ' — Anfänger' : ''
+  const groupSuffix = group !== 'ALL' ? ` — ${GROUP_LABEL[group]} (Gruppe)` : ''
+  lines.push(`⚾ *Trainingsplan${dateStr ? ` — ${dateStr}` : ''}${kindSuffix}${groupSuffix}*`)
   lines.push('')
 
   const pushHeadline = (h: string) => {
@@ -111,7 +114,7 @@ function buildShareText(
   return lines.join('\n').trim()
 }
 
-export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Props) {
+export function SharePlanDrawer({ open, onClose, planContent, trainingDate, planKind = 'MAIN' }: Props) {
   const hasDualGroup = useMemo(
     () => planContent?.sections.some(s => s.group === 'BEGINNER') ?? false,
     [planContent],
@@ -120,8 +123,8 @@ export function SharePlanDrawer({ open, onClose, planContent, trainingDate }: Pr
   const [activeTab, setActiveTab] = useState<'MAIN' | 'BEGINNER'>('MAIN')
 
   const text = useMemo(
-    () => buildShareText(planContent, trainingDate, hasDualGroup ? activeTab : 'ALL'),
-    [planContent, trainingDate, hasDualGroup, activeTab],
+    () => buildShareText(planContent, trainingDate, hasDualGroup ? activeTab : 'ALL', planKind),
+    [planContent, trainingDate, hasDualGroup, activeTab, planKind],
   )
 
   const [copied, setCopied] = useState(false)
