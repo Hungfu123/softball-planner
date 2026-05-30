@@ -109,6 +109,17 @@ public class GameService {
     }
 
     @Transactional
+    public Game setCoachRotation(final Long gameId,
+                                  final CoachRotationPair firstBaseRotation,
+                                  final CoachRotationPair thirdBaseRotation) {
+        final Game game = findById(gameId);
+        game.setFirstBaseCoachRotation(firstBaseRotation);
+        game.setThirdBaseCoachRotation(thirdBaseRotation);
+        log.info("Game {} coach-rotation set: 1B={}, 3B={}", gameId, firstBaseRotation, thirdBaseRotation);
+        return gameRepository.save(game);
+    }
+
+    @Transactional
     public List<Game> swapGames(final Long gameId1, final Long gameId2) {
         if (gameId1.equals(gameId2)) {
             throw new BusinessValidationException("Kann ein Spiel nicht mit sich selbst tauschen");

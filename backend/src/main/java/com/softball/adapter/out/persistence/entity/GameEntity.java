@@ -38,6 +38,14 @@ public class GameEntity {
     @Column(name = "batting_side", length = 10)
     private String battingSide;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "first_base_coach_rotation", length = 20)
+    private com.softball.domain.model.CoachRotationPair firstBaseCoachRotation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "third_base_coach_rotation", length = 20)
+    private com.softball.domain.model.CoachRotationPair thirdBaseCoachRotation;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_day_id", nullable = false)
     @JsonIgnore
@@ -79,4 +87,8 @@ public class GameEntity {
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
     public String getBattingSide() { return battingSide; }
     public void setBattingSide(final String battingSide) { this.battingSide = battingSide; }
+    public com.softball.domain.model.CoachRotationPair getFirstBaseCoachRotation() { return firstBaseCoachRotation; }
+    public void setFirstBaseCoachRotation(final com.softball.domain.model.CoachRotationPair v) { this.firstBaseCoachRotation = v; }
+    public com.softball.domain.model.CoachRotationPair getThirdBaseCoachRotation() { return thirdBaseCoachRotation; }
+    public void setThirdBaseCoachRotation(final com.softball.domain.model.CoachRotationPair v) { this.thirdBaseCoachRotation = v; }
 }

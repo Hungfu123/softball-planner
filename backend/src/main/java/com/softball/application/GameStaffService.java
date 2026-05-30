@@ -64,7 +64,7 @@ public class GameStaffService {
 
         gameStaffRepository.deleteByGameId(game.getId());
 
-        return staffRequests.stream().map(req -> {
+        final List<GameStaff> saved = staffRequests.stream().map(req -> {
             final Player player = playerRepository.findById(req.playerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Player", req.playerId()));
             final StaffRole role = parseStaffRole(req.role());
@@ -74,6 +74,27 @@ public class GameStaffService {
             staff.setRole(role);
             return gameStaffRepository.save(staff);
         }).toList();
+
+        clearRotationForFilledStaffSlots(game, saved);
+
+        return saved;
+    }
+
+    private void clearRotationForFilledStaffSlots(final Game game, final List<GameStaff> staff) {
+        final boolean has1B = staff.stream().anyMatch(s -> s.getRole() == StaffRole.BASE_COACH_1ST);
+        final boolean has3B = staff.stream().anyMatch(s -> s.getRole() == StaffRole.BASE_COACH_3RD);
+        boolean dirty = false;
+        if (has1B && game.getFirstBaseCoachRotation() != null) {
+            game.setFirstBaseCoachRotation(null);
+            dirty = true;
+        }
+        if (has3B && game.getThirdBaseCoachRotation() != null) {
+            game.setThirdBaseCoachRotation(null);
+            dirty = true;
+        }
+        if (dirty) {
+            gameRepository.save(game);
+        }
     }
 
     private void validate(final Long gameId, final List<GameStaffRequest> staffRequests) {

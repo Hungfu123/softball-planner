@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.CoachRotationPair;
 import com.softball.domain.model.Game;
 
 import java.time.Instant;
@@ -9,7 +10,9 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
                             int lineupEntryCount,
                             Instant endedAt,
                             String battingSide,
-                            long atBatCount) {
+                            long atBatCount,
+                            CoachRotationPair firstBaseCoachRotation,
+                            CoachRotationPair thirdBaseCoachRotation) {
 
     public static GameResponse from(final Game game) {
         return from(game, 0L, null);
@@ -27,7 +30,9 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
             game.getLineupEntryCount(),
             game.getEndedAt(),
             game.getBattingSide(),
-            atBatCount
+            atBatCount,
+            game.getFirstBaseCoachRotation(),
+            game.getThirdBaseCoachRotation()
         );
     }
 }
