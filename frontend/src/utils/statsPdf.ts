@@ -15,7 +15,7 @@ function formatDec(val: number): string {
 }
 
 function formatPct(val: number): string {
-  return `${Math.round(val * 100)} %`
+  return `${Math.round(val * 100)}%`
 }
 
 function formatTimestamp(): string {
@@ -166,7 +166,7 @@ export interface BattingStatsPdfOptions {
 }
 
 export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: BattingStatsPdfOptions) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' })
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 14
@@ -238,43 +238,44 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
     body: rows,
     theme: 'plain',
     styles: {
-      fontSize: 8,
-      cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
+      fontSize: 6.5,
+      cellPadding: { top: 1.6, bottom: 1.6, left: 1, right: 1 },
       lineColor: COLOR_GRAY_LINE,
       lineWidth: 0,
       textColor: COLOR_NAVY,
+      overflow: 'visible',
     },
     headStyles: {
       fillColor: COLOR_NAVY,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 7.5,
+      fontSize: 6,
       halign: 'center',
-      cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
+      cellPadding: { top: 2, bottom: 2, left: 1, right: 1 },
       lineWidth: 0,
     },
     alternateRowStyles: { fillColor: COLOR_CREAM_TINT },
     columnStyles: {
-      0: { cellWidth: 9, halign: 'right', textColor: COLOR_GRAY_MUTED, font: 'courier' },
-      1: { cellWidth: 42, fontStyle: 'bold' },
-      2: { halign: 'right', font: 'courier' },
-      3: { halign: 'right', font: 'courier' },
-      4: { halign: 'right', font: 'courier' },
-      5: { halign: 'right', fontStyle: 'bold', font: 'courier' },
-      6: { halign: 'right', font: 'courier' },
-      7: { halign: 'right', font: 'courier' },
-      8: { halign: 'right', font: 'courier' },
-      9: { halign: 'right', font: 'courier' },
-      10: { halign: 'right', font: 'courier' },
-      11: { halign: 'right', font: 'courier' },
-      12: { halign: 'right', font: 'courier' },
-      13: { halign: 'right', font: 'courier' },
-      14: { halign: 'right', font: 'courier' },
-      15: { halign: 'right', font: 'courier' },
-      16: { halign: 'right', font: 'courier' },
-      17: { halign: 'right', font: 'courier' },
-      18: { halign: 'right', font: 'courier' },
-      19: { halign: 'right', fontStyle: 'bold', font: 'courier' },
+      0: { cellWidth: 6.5, halign: 'right', textColor: COLOR_GRAY_MUTED, font: 'courier' },
+      1: { cellWidth: 26, fontStyle: 'bold' },
+      2: { cellWidth: 7, halign: 'right', font: 'courier' },
+      3: { cellWidth: 7, halign: 'right', font: 'courier' },
+      4: { cellWidth: 7, halign: 'right', font: 'courier' },
+      5: { cellWidth: 9.5, halign: 'right', fontStyle: 'bold', font: 'courier' },
+      6: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      7: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      8: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      9: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      10: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      11: { cellWidth: 7.5, halign: 'right', font: 'courier' },
+      12: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      13: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      14: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      15: { cellWidth: 6.5, halign: 'right', font: 'courier' },
+      16: { cellWidth: 7.5, halign: 'right', font: 'courier' },
+      17: { cellWidth: 8.5, halign: 'right', font: 'courier' },
+      18: { cellWidth: 9.5, halign: 'right', font: 'courier' },
+      19: { cellWidth: 9.5, halign: 'right', fontStyle: 'bold', font: 'courier' },
     },
     didDrawCell: (data) => {
       // Thicker red rule below the header row
