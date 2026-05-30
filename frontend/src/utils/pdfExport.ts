@@ -1,7 +1,8 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season } from '@/types'
+import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season, CoachRotationPair } from '@/types'
 import { FIELD_POSITIONS } from '@/types'
+import { getPairLabel, resolveRotation } from './coachRotation'
 
 /**
  * Returns a short display name suitable for the field diagram.
@@ -169,10 +170,92 @@ function drawFieldDiagram(
 }
 
 export interface GameData {
-  game: { id: number; gameNumber: number; opponentTeam: { id: number; name: string } | null; scoreUs: number | null; scoreThem: number | null }
+  game: {
+    id: number
+    gameNumber: number
+    opponentTeam: { id: number; name: string } | null
+    scoreUs: number | null
+    scoreThem: number | null
+    firstBaseCoachRotation?: CoachRotationPair | null
+    thirdBaseCoachRotation?: CoachRotationPair | null
+  }
   lineup: LineupEntryResponse[]
   staff: GameStaffResponse[]
   substitutions: SubstitutionResponse[]
+}
+
+function drawCoachRotationBox(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  pair: CoachRotationPair,
+  lineup: LineupEntryResponse[],
+  baseLabel: '1B' | '3B',
+): number {
+  const resolved = resolveRotation(pair, lineup.map(e => ({
+    battingOrder: e.battingOrder,
+    position: e.position,
+    player: { name: e.player.name },
+  })))
+  const half = w / 2
+  const blockH = 16
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor(200, 46, 46)
+  doc.setCharSpace(1.2)
+  doc.text(`${baseLabel}-COACH ROTATION · ${getPairLabel(pair).toUpperCase()}`, x, y + 3)
+  doc.setCharSpace(0)
+  let cursorY = y + 6
+
+  doc.setFillColor(252, 234, 234)
+  doc.rect(x, cursorY, half, blockH, 'F')
+  doc.setFillColor(248, 244, 232)
+  doc.rect(x + half, cursorY, half, blockH, 'F')
+  doc.setDrawColor(30, 41, 59)
+  doc.setLineWidth(0.4)
+  doc.line(x + half, cursorY, x + half, cursorY + blockH)
+
+  doc.setFontSize(7)
+  doc.setTextColor(160, 30, 30)
+  doc.setFont('helvetica', 'bold')
+  doc.setCharSpace(1.5)
+  doc.text(`SCHLAG ${resolved.higher.range}`, x + 2, cursorY + 4)
+  doc.setCharSpace(0)
+  doc.setFontSize(11)
+  doc.setTextColor(30, 41, 59)
+  doc.text(resolved.higher.name, x + 2, cursorY + 10)
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(`Pos ${resolved.higher.pos}`, x + 2, cursorY + 14)
+
+  doc.setFontSize(7)
+  doc.setTextColor(71, 85, 105)
+  doc.setFont('helvetica', 'bold')
+  doc.setCharSpace(1.5)
+  doc.text(`SCHLAG ${resolved.lower.range}`, x + half + 2, cursorY + 4)
+  doc.setCharSpace(0)
+  doc.setFontSize(11)
+  doc.setTextColor(30, 41, 59)
+  doc.text(resolved.lower.name, x + half + 2, cursorY + 10)
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(`Pos ${resolved.lower.pos}`, x + half + 2, cursorY + 14)
+
+  cursorY += blockH + 3
+
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'italic')
+  doc.setTextColor(120, 120, 120)
+  doc.text(
+    `Warmup: ${resolved.higher.name} ${resolved.higher.warmup}, ${resolved.lower.name} ${resolved.lower.warmup}`,
+    x, cursorY,
+  )
+  doc.setTextColor(0, 0, 0)
+  return cursorY + 4
 }
 
 export function generatePdf(gameDay: GameDayResponse, games: GameData[], season: Season | null) {
@@ -246,6 +329,16 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       doc.text(staffText, contentLeft, y)
       doc.setTextColor(0, 0, 0)
       y += 3
+    }
+
+    // Coach-Rotation-Boxen (wenn Coach-Staff-Slot leer und Rotation gesetzt)
+    const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
+    const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
+    if (!has1BCoach && game.firstBaseCoachRotation) {
+      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.firstBaseCoachRotation, lineup, '1B') + 1
+    }
+    if (!has3BCoach && game.thirdBaseCoachRotation) {
+      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.thirdBaseCoachRotation, lineup, '3B') + 1
     }
 
     if (lineup.length === 0) {
@@ -403,6 +496,19 @@ export function generateScoringPdf(gameDay: GameDayResponse, games: GameData[], 
       doc.text(staffText, margin, y)
       doc.setTextColor(0, 0, 0)
       y += 2
+    }
+
+    // Coach-Rotation-Boxen
+    {
+      const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
+      const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
+      const fullW = pageWidth - 2 * margin
+      if (!has1BCoach && game.firstBaseCoachRotation) {
+        y = drawCoachRotationBox(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B') + 1
+      }
+      if (!has3BCoach && game.thirdBaseCoachRotation) {
+        y = drawCoachRotationBox(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B') + 1
+      }
     }
 
     if (sorted.length === 0) { y += 3; continue }
@@ -655,6 +761,19 @@ export function generateLineupWithFieldPdf(
       doc.text(staffText, lineupX, y)
       doc.setTextColor(0, 0, 0)
       y += 3
+    }
+
+    // Coach-Rotation-Boxen (volle Breite, oberhalb Lineup+Field)
+    {
+      const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
+      const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
+      const fullW = pageWidth - 2 * margin
+      if (!has1BCoach && game.firstBaseCoachRotation) {
+        y = drawCoachRotationBox(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B') + 1
+      }
+      if (!has3BCoach && game.thirdBaseCoachRotation) {
+        y = drawCoachRotationBox(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B') + 1
+      }
     }
 
     const contentTopY = y

@@ -1,4 +1,10 @@
-import type { CoachRotationPair, LineupEntryResponse } from '@/types'
+import type { CoachRotationPair } from '@/types'
+
+export interface CoachRotationLineupRow {
+  battingOrder: number
+  position: string | null
+  player: { name: string }
+}
 
 interface ResolvedCoachSide {
   name: string
@@ -28,7 +34,7 @@ const ROTATION_CONFIG: Record<CoachRotationPair, RotationConfig> = {
   POS_5_10: { lower: 5, higher: 10, lowerRange: '6–10', higherRange: '1–5',       lowerWarmup: '#3–#4', higherWarmup: '#8–#9' },
 }
 
-export function resolveRotation(pair: CoachRotationPair, lineup: LineupEntryResponse[]): ResolvedRotation {
+export function resolveRotation(pair: CoachRotationPair, lineup: CoachRotationLineupRow[]): ResolvedRotation {
   const config = ROTATION_CONFIG[pair]
   const higherEntry = lineup.find(e => e.battingOrder === config.higher)
   const lowerEntry  = lineup.find(e => e.battingOrder === config.lower)
@@ -62,7 +68,7 @@ export function getPairPositions(pair: CoachRotationPair): [number, number] {
   return [lower, higher]
 }
 
-export function scoreRotationPair(pair: CoachRotationPair, lineup: LineupEntryResponse[]): number {
+export function scoreRotationPair(pair: CoachRotationPair, lineup: CoachRotationLineupRow[]): number {
   let score = 100
   const config = ROTATION_CONFIG[pair]
 
@@ -81,7 +87,7 @@ export function scoreRotationPair(pair: CoachRotationPair, lineup: LineupEntryRe
   return score
 }
 
-export function recommendRotationPair(lineup: LineupEntryResponse[]): CoachRotationPair {
+export function recommendRotationPair(lineup: CoachRotationLineupRow[]): CoachRotationPair {
   const scored = ALL_ROTATION_PAIRS.map(p => ({ pair: p, score: scoreRotationPair(p, lineup) }))
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score

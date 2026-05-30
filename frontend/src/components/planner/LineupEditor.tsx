@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/sortable'
 import { LineupRow } from './LineupRow'
 import { LineupRowSwapSheet } from './LineupRowSwapSheet'
-import type { LocalLineupEntry, Player } from '@/types'
+import type { CoachRotationPair, LocalLineupEntry, Player } from '@/types'
 import { POSITIONS, FIELD_POSITIONS } from '@/types'
 import { CrossBones, TrashBin, DiceIcon } from '@/icons'
 
@@ -33,6 +33,8 @@ interface Props {
   onCopyOtherGame?: () => void
   onAutoGenerate?: () => void
   autoGenerateLoading?: boolean
+  firstBaseCoachRotation?: CoachRotationPair | null
+  thirdBaseCoachRotation?: CoachRotationPair | null
 }
 
 const FIELD_POS_SET = new Set<string>(FIELD_POSITIONS)
@@ -43,6 +45,7 @@ export function LineupEditor({
   entries, poolPlayers, onRemove, onSetPosition, onSetDhBatter,
   onMoveUp, onMoveDown, onReorder, onSwapWithPool, onSwapWithLineup,
   onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
+  firstBaseCoachRotation, thirdBaseCoachRotation,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -161,6 +164,8 @@ export function LineupEditor({
                     onMoveUp={onMoveUp}
                     onMoveDown={onMoveDown}
                     onOpenSwap={setSwapRow}
+                    firstBaseCoachRotation={firstBaseCoachRotation}
+                    thirdBaseCoachRotation={thirdBaseCoachRotation}
                   />
                 )
               })}
