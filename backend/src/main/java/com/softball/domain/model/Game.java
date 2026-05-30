@@ -14,6 +14,8 @@ public class Game {
     private int lineupEntryCount;
     private Instant endedAt;
     private String battingSide;
+    private CoachRotationPair firstBaseCoachRotation;
+    private CoachRotationPair thirdBaseCoachRotation;
     private List<LineupEntry> lineupEntries = new ArrayList<>();
     private List<GameStaff> staff = new ArrayList<>();
 
@@ -47,4 +49,8 @@ public class Game {
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
     public String getBattingSide() { return battingSide; }
     public void setBattingSide(final String battingSide) { this.battingSide = battingSide; }
+    public CoachRotationPair getFirstBaseCoachRotation() { return firstBaseCoachRotation; }
+    public void setFirstBaseCoachRotation(final CoachRotationPair v) { this.firstBaseCoachRotation = v; }
+    public CoachRotationPair getThirdBaseCoachRotation() { return thirdBaseCoachRotation; }
+    public void setThirdBaseCoachRotation(final CoachRotationPair v) { this.thirdBaseCoachRotation = v; }
 }
