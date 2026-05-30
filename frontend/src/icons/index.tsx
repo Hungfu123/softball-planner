@@ -31,6 +31,7 @@ import {
   Zap,
   Send,
   ChevronRight as LucideChevronRight,
+  Flag,
 } from 'lucide-react'
 
 interface IconProps {
@@ -65,6 +66,7 @@ export const BoltIcon = (p: IconProps) => <Zap size={p.size ?? 20} className={p.
 export const SadFaceIcon = (p: IconProps) => <Frown size={p.size ?? 20} className={p.className} />
 export const SendIcon = (p: IconProps) => <Send size={p.size ?? 16} className={p.className} />
 export const ChevronRight = (p: IconProps) => <LucideChevronRight size={p.size ?? 16} className={p.className} />
+export const CoachFlagIcon = (p: IconProps) => <Flag size={p.size ?? 14} className={p.className} />
 export const ArrowsSwap = (p: IconProps) => <LucideArrowLeftRight size={p.size ?? 16} className={p.className} />
 
 // Custom SVGs — keine Lucide-Equivalente passen (Brand/Baseball-spezifisch)
