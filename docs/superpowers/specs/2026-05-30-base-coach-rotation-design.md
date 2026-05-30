@@ -214,6 +214,85 @@ className={`font-display px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-[11px]
 
 Compact-Variant funktioniert in allen Container-Breiten (Mobile ~360px, lg ~226px, xl ~296px). Kein Container-Query nötig.
 
+### Icons
+
+Alle Icons aus `frontend/src/icons/index.tsx` (wrapped lucide-react, kein neues Library):
+
+- **`StarIcon`** (existiert) — Recommendation-Marker im Picker
+- **`AlertTriangle`** (existiert) — Warnings (Pitcher als Coach, Lineup < 10)
+- **`CoachFlagIcon`** (NEU, wrap `Flag` from lucide-react) — Coach-Badge im Lineup-Editor
+
+Neuer Icon-Export hinzufügen:
+```tsx
+import { Flag } from 'lucide-react'
+export const CoachFlagIcon = (p: IconProps) => <Flag size={p.size ?? 14} className={p.className} />
+```
+
+### Lineup-Editor Coach-Badge-Integration
+
+Neben jedem Lineup-Eintrag der ein Coach ist, kleines Pill-Badge anzeigen:
+
+```tsx
+{isCoachPosition && (
+  <span className="inline-flex items-center gap-0.5 ml-2 px-1.5 py-0.5
+    text-[9px] font-bold tracking-widest uppercase rounded-full
+    bg-softball-red-100 text-softball-red-700">
+    <CoachFlagIcon size={9} />
+    {baseLabel /* "1B" | "3B" */}
+  </span>
+)}
+```
+
+**Logik:** Für jeden Lineup-Eintrag prüfen ob `entry.battingOrder` in `firstBaseCoachRotation` oder `thirdBaseCoachRotation` Paar ist → Badge anzeigen.
+
+Falls Spieler beide Rollen hat (z.B. gleicher Spieler in beiden Paaren) → 2 Badges hintereinander.
+
+### Recommendation-Logik
+
+Beim Picker-Anzeigen: System empfiehlt das beste Paar basierend auf aktuellem Lineup.
+
+**Scoring:**
+
+```typescript
+function scoreRotationPair(pair: CoachRotationPair, lineup: LineupEntry[]): number {
+  let score = 100
+  const positions = getPairPositions(pair)  // z.B. [3, 8] für POS_3_8
+
+  for (const pos of positions) {
+    const entry = lineup.find(e => e.battingOrder === pos)
+    if (!entry) { score -= 40; continue }  // Lineup unvollständig
+
+    // Wenn Position der Pitcher ist
+    if (entry.position === 'P') score -= 50
+
+    // Wenn Position Cleanup-Hitter (Pos 4 ist klassisch Cleanup)
+    if (entry.battingOrder === 4) score -= 30
+  }
+
+  // Wrap-Around Paar leicht abgewertet (3+8, 4+9)
+  if (pair !== 'POS_5_10') score -= 5
+
+  return score
+}
+```
+
+**Empfehlung-Markierung:**
+
+```tsx
+{recommendedPair === pair && (
+  <span className="inline-flex items-center gap-0.5 ml-1">
+    <StarIcon size={10} className="text-amber-500 fill-amber-500" />
+    <span className="text-[8px] text-amber-700 font-bold">Empfohlen</span>
+  </span>
+)}
+```
+
+Tooltip beim Hover: "Empfohlen weil: Pos 8 ist kein Pitcher, Pos 5 + 10 sind moderate Hitter, keine Wrap-Logik."
+
+Edge-Cases:
+- Tie zwischen Paaren → 5+10 als Tiebreaker (Default)
+- Alle Paare niedriger Score (z.B. <40) → 5+10 + Warning "Lineup hat keine ideale Coach-Konstellation"
+
 ## PDF
 
 ### Wo
@@ -376,6 +455,15 @@ function resolveRotation(pair: CoachRotationPair, lineup: LineupEntryResponse[])
   - Disabled wenn Lineup < 10
   - 2-Block zeigt korrekte Spieler-Namen
   - Warmup-Line zeigt korrekte Ranges
+  - Recommendation-Star markiert das beste Paar
+- `LineupEditor.test.tsx`:
+  - Coach-Badge erscheint neben Pos der im Rotation-Paar ist
+  - Bei 2 Rollen für selben Spieler → 2 Badges
+- `coachRotationScoring.test.ts` (neue Util-Datei):
+  - Score-Berechnung — Pitcher auf Pos im Paar → niedriger
+  - Score-Berechnung — Cleanup-Hitter auf Pos 4 → niedriger
+  - Tiebreaker — bei gleichem Score 5+10 gewinnt
+  - Edge: alle Paare schlecht → 5+10 + Warning
 - `pdfExport.test.ts`:
   - `resolveRotation` für alle 3 Paare
   - Wrap-Around-Ranges sind korrekt
@@ -405,3 +493,5 @@ Keine.
 - **PDF Full-Breite in `generateLineupWithFieldPdf` Header** statt in Lineup-Col: 190mm vs 70mm → maximale Lesbarkeit im Feld-Einsatz.
 - **App Compact-Variant ohne 10-Cell-Strip**: Strip war redundant zur 2-Block-Info, drei Visualisierungen für gleiche Info überfrachtet.
 - **Default-Paar 5+10**: einziges Paar ohne Wrap-Around, mathematisch sauberer Split.
+- **Custom-Icons via `src/icons/index.tsx`** statt Unicode-Emojis: konsistent mit existing Codebase (CLAUDE.md no-icon-library Convention).
+- **Recommendation-Engine basiert auf Lineup-Positionen-Profile** (Pitcher, Cleanup-Hitter): hilft User ohne ihn zu zwingen — manuelles Override jederzeit möglich.
