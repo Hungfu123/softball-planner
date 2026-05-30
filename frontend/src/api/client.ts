@@ -196,6 +196,8 @@ export const deleteLeagueResult = (resultId: number) =>
   request<void>(`/results/${resultId}`, { method: 'DELETE' })
 
 // Games
+export const getGame = (gameId: number) =>
+  request<GameResponse>(`/games/${gameId}`)
 export const updateOpponent = (gameId: number, opponentTeamId: number | null) =>
   request<GameResponse>(`/games/${gameId}/opponent`, {
     method: 'PUT',

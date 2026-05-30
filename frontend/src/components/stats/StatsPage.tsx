@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ChevronDown, Trophy, Download } from 'lucide-react'
 import * as api from '@/api/client'
-import type { PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
+import type { GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
@@ -34,6 +34,7 @@ export function StatsPage() {
   const [seasonsForYear, setSeasonsForYear] = useState<Season[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
   const [gamesStats, setGamesStats] = useState<SeasonPlayerStats[]>([])
+  const [selectedGame, setSelectedGame] = useState<GameResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [showGlossary, setShowGlossary] = useState(false)
 
@@ -120,9 +121,26 @@ export function StatsPage() {
     api.getYearSeasons(selectedYear).then(setSeasonsForYear).catch(() => setSeasonsForYear([]))
   }, [scopeKind, selectedYear])
 
+  // Load game details when scope=game for context-label + PDF filename
+  useEffect(() => {
+    if (scopeKind !== 'game' || selectedGameId == null) {
+      setSelectedGame(null)
+      return
+    }
+    api.getGame(selectedGameId).then(setSelectedGame).catch(() => setSelectedGame(null))
+  }, [scopeKind, selectedGameId])
+
   const contextInfo = useMemo(() => {
     if (scopeKind === 'game') {
-      return selectedGameId != null ? `Nur dieses Spiel — Stats aus den At-Bats` : 'Kein Spiel ausgewählt'
+      if (selectedGameId == null) return 'Kein Spiel ausgewählt'
+      if (!selectedGame) return `Spiel ${selectedGameId}`
+      const opp = selectedGame.opponentTeam?.name
+      const score = selectedGame.scoreUs != null && selectedGame.scoreThem != null
+        ? ` · ${selectedGame.scoreUs}:${selectedGame.scoreThem}`
+        : ''
+      return opp
+        ? `Spiel ${selectedGame.gameNumber} vs ${opp}${score}`
+        : `Spiel ${selectedGame.gameNumber}${score}`
     }
     if (scopeKind === 'season') {
       const s = seasons.find(x => x.id === selectedSeasonId)
@@ -134,7 +152,7 @@ export function StatsPage() {
       return `Jahr ${selectedYear} · ${seasonsForYear.length} ${seasonsForYear.length === 1 ? 'Saison' : 'Saisons'}: ${names}`
     }
     return `Alle Jahre · ${seasons.length} ${seasons.length === 1 ? 'Saison' : 'Saisons'}`
-  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId])
+  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame])
 
   return (
     <div className="space-y-6">
