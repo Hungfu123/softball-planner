@@ -21,7 +21,7 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair } from '@/types'
 import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import * as api from '@/api/client'
@@ -159,6 +159,29 @@ export function GameDayPlanner() {
       await staff.save(activeGame.id, entries)
       await refreshStats()
       toast.show('Coaches gespeichert')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const coachRotationLineup = lineup.entries.map((e, i) => ({
+    battingOrder: i + 1,
+    position: e.position,
+    player: { name: e.player.name },
+  }))
+
+  const handleRotationSave = async (
+    firstBase: CoachRotationPair | null,
+    thirdBase: CoachRotationPair | null
+  ) => {
+    if (!activeGame || !gameDay) return
+    try {
+      const updated = await api.setCoachRotation(activeGame.id, firstBase, thirdBase)
+      setGameDay({
+        ...gameDay,
+        games: gameDay.games.map(g => g.id === updated.id ? { ...g, ...updated } : g),
+      })
+      toast.show('Coach-Rotation gespeichert')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -657,6 +680,8 @@ export function GameDayPlanner() {
                         onAutoGenerate={triggerAutoGenerate}
                         autoGenerateLoading={autoSingleLoading}
                         onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
+                        firstBaseCoachRotation={activeGame?.firstBaseCoachRotation}
+                        thirdBaseCoachRotation={activeGame?.thirdBaseCoachRotation}
                       />
                       <SubstitutionEditor
                         substitutions={lineup.substitutions}
@@ -698,6 +723,8 @@ export function GameDayPlanner() {
                   onAutoGenerate={triggerAutoGenerate}
                   autoGenerateLoading={autoSingleLoading}
                   onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
+                  firstBaseCoachRotation={activeGame?.firstBaseCoachRotation}
+                  thirdBaseCoachRotation={activeGame?.thirdBaseCoachRotation}
                 />
                 <SubstitutionEditor
                   substitutions={lineup.substitutions}
@@ -744,6 +771,9 @@ export function GameDayPlanner() {
                   staff={staff.staff}
                   availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
                   onSave={handleStaffSave}
+                  lineup={coachRotationLineup}
+                  game={activeGame!}
+                  onSaveRotation={handleRotationSave}
                 />
                 <BenchDisplay players={benchPlayers} />
               </div>
@@ -801,6 +831,9 @@ export function GameDayPlanner() {
                   staff={staff.staff}
                   availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
                   onSave={handleStaffSave}
+                  lineup={coachRotationLineup}
+                  game={activeGame!}
+                  onSaveRotation={handleRotationSave}
                 />
               </div>
 
@@ -872,6 +905,9 @@ export function GameDayPlanner() {
                 staff={staff.staff}
                 availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
                 onSave={handleStaffSave}
+                lineup={coachRotationLineup}
+                game={activeGame!}
+                onSaveRotation={handleRotationSave}
               />
               <BenchDisplay players={benchPlayers} />
             </div>

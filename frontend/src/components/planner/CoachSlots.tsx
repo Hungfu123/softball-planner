@@ -1,14 +1,20 @@
-import { useState, useEffect, useRef } from 'react'
-import type { Player, GameStaffResponse } from '@/types'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import type { Player, GameStaffResponse, CoachRotationPair, GameResponse } from '@/types'
+import type { CoachRotationLineupRow } from '@/utils/coachRotation'
 import { STAFF_ROLES } from '@/types'
+import { StarIcon } from '@/icons'
+import { ALL_ROTATION_PAIRS, getPairLabel, recommendRotationPair, resolveRotation } from '@/utils/coachRotation'
 
 interface Props {
   staff: GameStaffResponse[]
   availablePlayers: Player[]
+  lineup: CoachRotationLineupRow[]
+  game: GameResponse
   onSave: (entries: { playerId: number; role: string }[]) => Promise<void>
+  onSaveRotation: (firstBase: CoachRotationPair | null, thirdBase: CoachRotationPair | null) => Promise<void>
 }
 
-export function CoachSlots({ staff, availablePlayers, onSave }: Props) {
+export function CoachSlots({ staff, availablePlayers, lineup, game, onSave, onSaveRotation }: Props) {
   const [coach1st, setCoach1st] = useState<number | ''>('')
   const [coach3rd, setCoach3rd] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
@@ -43,15 +49,24 @@ export function CoachSlots({ staff, availablePlayers, onSave }: Props) {
     doSave(newC1, newC3)
   }
 
+  const handleRotationPick = (role: string, pair: CoachRotationPair) => {
+    const next1B = role === 'BASE_COACH_1ST' ? pair : (game.firstBaseCoachRotation ?? null)
+    const next3B = role === 'BASE_COACH_3RD' ? pair : (game.thirdBaseCoachRotation ?? null)
+    onSaveRotation(next1B, next3B)
+  }
+
   return (
     <div>
       <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 mb-2 pb-1.5 border-b border-cream-200 flex items-center gap-2">
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Coaches
       </h2>
-      <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm p-3 space-y-3">
+      <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm p-3 space-y-4">
         {Object.entries(STAFF_ROLES).map(([role, label]) => {
           const value = role === 'BASE_COACH_1ST' ? coach1st : coach3rd
+          const currentRotation = role === 'BASE_COACH_1ST'
+            ? (game.firstBaseCoachRotation ?? null)
+            : (game.thirdBaseCoachRotation ?? null)
 
           return (
             <div key={role}>
@@ -67,9 +82,86 @@ export function CoachSlots({ staff, availablePlayers, onSave }: Props) {
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
+              {!value && lineup.length >= 10 && (
+                <RotationPicker
+                  lineup={lineup}
+                  currentValue={currentRotation}
+                  onPick={(pair) => handleRotationPick(role, pair)}
+                />
+              )}
+              {!value && lineup.length < 10 && (
+                <div className="mt-2 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
+                  Lineup mit 10 Spielern nötig für Coach-Rotation
+                </div>
+              )}
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+interface RotationPickerProps {
+  lineup: CoachRotationLineupRow[]
+  currentValue: CoachRotationPair | null
+  onPick: (pair: CoachRotationPair) => void
+}
+
+function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
+  const recommended = useMemo(() => recommendRotationPair(lineup), [lineup])
+  const active: CoachRotationPair = currentValue ?? recommended
+  const resolved = useMemo(() => resolveRotation(active, lineup), [active, lineup])
+
+  return (
+    <div className="mt-2 space-y-2">
+      <div className="font-display text-[9px] tracking-widest uppercase font-bold text-gray-500">
+        ↳ Rotation aus Lineup
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {ALL_ROTATION_PAIRS.map(pair => {
+          const isActive = active === pair
+          const isRecommended = recommended === pair
+          return (
+            <button
+              key={pair}
+              onClick={() => onPick(pair)}
+              className={`font-display px-2.5 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded-full transition-colors min-h-[36px] whitespace-nowrap inline-flex items-center gap-1 cursor-pointer
+                ${isActive
+                  ? 'bg-navy-900 text-white shadow-sm'
+                  : 'bg-cream-100 text-gray-600 hover:bg-cream-200 hover:text-navy-900 border border-cream-300'}`}
+            >
+              {getPairLabel(pair)}
+              {isRecommended && !isActive && (
+                <StarIcon size={9} className="text-amber-500 fill-amber-500" />
+              )}
+            </button>
+          )
+        })}
+      </div>
+      <div className="bg-cream-50 border border-cream-300 rounded-xl p-3">
+        <div className="font-display text-[9px] tracking-widest uppercase font-bold text-softball-red-600 mb-2">
+          Aktiv · {getPairLabel(active).toUpperCase()}
+        </div>
+        <div className="grid grid-cols-2 gap-0.5 rounded-lg overflow-hidden border border-cream-200">
+          <div className="bg-softball-red-50 p-2.5">
+            <div className="font-display text-[10px] tracking-widest uppercase font-bold text-softball-red-700 mb-1">
+              Schlag {resolved.higher.range}
+            </div>
+            <div className="font-display font-extrabold text-navy-900 text-sm">{resolved.higher.name}</div>
+            <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.higher.pos}</div>
+          </div>
+          <div className="bg-cream-100 p-2.5 border-l-2 border-navy-900">
+            <div className="font-display text-[10px] tracking-widest uppercase font-bold text-navy-700 mb-1">
+              Schlag {resolved.lower.range}
+            </div>
+            <div className="font-display font-extrabold text-navy-900 text-sm">{resolved.lower.name}</div>
+            <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.lower.pos}</div>
+          </div>
+        </div>
+        <div className="font-display text-[10px] text-gray-500 italic mt-2">
+          Warmup: {resolved.higher.name} {resolved.higher.warmup}, {resolved.lower.name} {resolved.lower.warmup}
+        </div>
       </div>
     </div>
   )
