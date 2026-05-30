@@ -209,6 +209,16 @@ className={`font-display px-2.5 sm:px-3 py-1.5 text-[10px] sm:text-[11px]
 - **Lineup < 10 Einträge:** Pills disabled (`opacity-50 pointer-events-none`), Hinweis-Box: "Lineup mit 10 Spielern nötig".
 - **Backup-Pos im Lineup leer:** Player-Name zeigt "—" im 2-Block, kein Crash.
 - **Pos 8 = Pitcher + User wählt 3+8:** Soft-Warning-Chip `bg-amber-100 text-amber-800 text-[9px]`: "⚠ Pitcher als Coach".
+- **DH-Setup auf Coach-Position:** Wenn z.B. Pos 5 ein Fielder mit `dhBatterPlayer` ist → Coach = der **Fielder** (auf dem Feld). DH-Batter coacht nicht. Resolve-Funktion nutzt `entry.player.name`, ignoriert `entry.dhBatterPlayer`.
+- **Substitution mid-game:** Rotation-Setup ist statisch beim Lineup-Setup gesetzt. Sub während Live-Scoring beeinflusst Coach-Setup nicht. PDF zeigt Original-Lineup-Spieler.
+- **Game endedAt gesetzt (Spiel beendet):** Rotation darf weiter geändert werden (nach-träglich Korrektur für Print).
+- **Player auf Base wenn er coachen sollte:** Out-of-scope. Schema rein lineup-positions-basiert, ignoriert Base-Runner-Realität.
+- **Lineup-Order-Change nach Rotation gesetzt:** Display refresht automatisch (neue Pos 5 = anderer Player). Enum-Wert bleibt.
+- **Spielbogen-Games:** Feature nur für Legacy-ScoringPage (`Game` mit Lineup). Spielbogen-Workflow unberührt — `Game.firstBaseCoachRotation` Field existiert zwar an allen Games, wird aber im Spielbogen-PDF/UI nicht angezeigt.
+- **Race Condition (Staff + Rotation parallel gespeichert):** Backend mit `@Transactional` — letzter Save gewinnt. Staff hat Cleanup-Priorität (Rotation wird auf null gesetzt wenn Staff angefügt wird).
+- **Game ohne Lineup-Einträge:** Picker disabled, Vorschau "—".
+- **Recommendation bei Lineup ohne Pitcher-Position:** Pitcher-Penalty entfällt → andere Faktoren entscheiden (Cleanup, Wrap-Penalty). Falls Tie → 5+10 Default.
+- **Beide Coach-Slots belegt (Bench-Coach 1B + Bench-Coach 3B):** beide Rotation-Felder auf null gesetzt durch Cleanup → kein Rotation-Display im PDF.
 
 ### Responsivität
 
