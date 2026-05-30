@@ -43,6 +43,11 @@ public class GameController {
         return GameResponse.from(game, atBatCount, liveScoreUs);
     }
 
+    @GetMapping("/{id}")
+    public GameResponse getGame(@PathVariable final Long id) {
+        return toResponseWithLive(gameService.findById(id));
+    }
+
     @PutMapping("/{id}/opponent")
     public GameResponse updateOpponent(@PathVariable final Long id, @RequestBody final UpdateGameRequest request) {
         return toResponseWithLive(gameService.updateOpponent(id, request.opponentTeamId()));
