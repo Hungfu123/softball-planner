@@ -1,14 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, Trophy } from 'lucide-react'
+import { ChevronDown, Trophy, Download } from 'lucide-react'
 import * as api from '@/api/client'
 import type { PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
+import { generateBattingStatsPdf } from '@/utils/statsPdf'
 
 type ScopeKind = 'season' | 'year' | 'allTime' | 'game'
 type ViewKind = 'batting' | 'games'
+
+const SCOPE_LABEL_MAP: Record<ScopeKind, string> = {
+  season: 'Saison',
+  year: 'Jahr',
+  allTime: 'Alle Zeit',
+  game: 'Spiel',
+}
 
 export function StatsPage() {
   const [params, setParams] = useSearchParams()
@@ -132,7 +140,7 @@ export function StatsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-cream-300">
+        <div className="flex items-center gap-2 sm:gap-3 mb-4 pb-3 border-b border-cream-300">
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h1>
           <button
             onClick={() => setShowGlossary(true)}
@@ -142,6 +150,20 @@ export function StatsPage() {
             <span className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-cream-300 text-gray-600 text-xs font-bold">i</span>
             <span className="hidden sm:inline">Abkürzungen</span>
           </button>
+          {view === 'batting' && battingStats.length > 0 && (
+            <button
+              onClick={() => generateBattingStatsPdf({
+                stats: battingStats,
+                contextLabel: contextInfo,
+                scopeLabel: SCOPE_LABEL_MAP[scopeKind],
+              })}
+              className="font-display group relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm"
+              title="Schlag-Statistiken als PDF exportieren"
+            >
+              <Download size={12} className="transition-transform group-hover:translate-y-0.5" />
+              PDF
+            </button>
+          )}
         </div>
 
         {/* Compact Filter-Row: Scope-Pills + Selector inline */}
@@ -228,7 +250,10 @@ export function StatsPage() {
           </div>
         </div>
       ) : view === 'batting' ? (
-        <BattingStatsTable stats={battingStats} onOpenGlossary={() => setShowGlossary(true)} />
+        <BattingStatsTable
+          stats={battingStats}
+          onOpenGlossary={() => setShowGlossary(true)}
+        />
       ) : (
         <GamesStatsTable stats={gamesStats} />
       )}
