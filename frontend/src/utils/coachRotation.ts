@@ -9,50 +9,42 @@ export interface CoachRotationLineupRow {
 interface ResolvedCoachSide {
   name: string
   pos: number
-  range: string
-  warmup: string
 }
 
 export interface ResolvedRotation {
   pair: CoachRotationPair
-  higher: ResolvedCoachSide
-  lower: ResolvedCoachSide
+  primary: ResolvedCoachSide       // steht meiste Zeit an Base
+  backup: ResolvedCoachSide        // übernimmt während Primary's Warmup + Schlag
+  backupCoverRange: string         // z.B. "Schlag #8 – #10"
+  primaryAbSlot: string            // z.B. "#10"
 }
 
 interface RotationConfig {
-  lower: number
-  higher: number
-  lowerRange: string
-  higherRange: string
-  lowerWarmup: string
-  higherWarmup: string
+  lower: number              // niedrigere Lineup-Position
+  higher: number             // höhere Lineup-Position
+  primaryPos: number         // wer ist Primary (= higher, mehr Zeit zum coachen)
+  backupPos: number          // wer ist Backup
+  backupCoverRange: string   // z.B. "#8 – #10"
+  primaryAbSlot: string      // z.B. "#10"
 }
 
 const ROTATION_CONFIG: Record<CoachRotationPair, RotationConfig> = {
-  POS_3_8:  { lower: 3, higher: 8,  lowerRange: '4–8',  higherRange: '9–10, 1–3', lowerWarmup: '#1–#2', higherWarmup: '#6–#7' },
-  POS_4_9:  { lower: 4, higher: 9,  lowerRange: '5–9',  higherRange: '10, 1–4',   lowerWarmup: '#2–#3', higherWarmup: '#7–#8' },
-  POS_5_10: { lower: 5, higher: 10, lowerRange: '6–10', higherRange: '1–5',       lowerWarmup: '#3–#4', higherWarmup: '#8–#9' },
+  POS_3_8:  { lower: 3, higher: 8,  primaryPos: 8,  backupPos: 3, backupCoverRange: '#6 – #8',  primaryAbSlot: '#8' },
+  POS_4_9:  { lower: 4, higher: 9,  primaryPos: 9,  backupPos: 4, backupCoverRange: '#7 – #9',  primaryAbSlot: '#9' },
+  POS_5_10: { lower: 5, higher: 10, primaryPos: 10, backupPos: 5, backupCoverRange: '#8 – #10', primaryAbSlot: '#10' },
 }
 
 export function resolveRotation(pair: CoachRotationPair, lineup: CoachRotationLineupRow[]): ResolvedRotation {
   const config = ROTATION_CONFIG[pair]
-  const higherEntry = lineup.find(e => e.battingOrder === config.higher)
-  const lowerEntry  = lineup.find(e => e.battingOrder === config.lower)
+  const primaryEntry = lineup.find(e => e.battingOrder === config.primaryPos)
+  const backupEntry  = lineup.find(e => e.battingOrder === config.backupPos)
 
   return {
     pair,
-    higher: {
-      name: higherEntry?.player.name ?? '—',
-      pos: config.higher,
-      range: config.higherRange,
-      warmup: config.higherWarmup,
-    },
-    lower: {
-      name: lowerEntry?.player.name ?? '—',
-      pos: config.lower,
-      range: config.lowerRange,
-      warmup: config.lowerWarmup,
-    },
+    primary: { name: primaryEntry?.player.name ?? '—', pos: config.primaryPos },
+    backup:  { name: backupEntry?.player.name  ?? '—', pos: config.backupPos },
+    backupCoverRange: config.backupCoverRange,
+    primaryAbSlot: config.primaryAbSlot,
   }
 }
 
