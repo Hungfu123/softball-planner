@@ -177,10 +177,12 @@ export function GameDayPlanner() {
     if (!activeGame || !gameDay) return
     try {
       const updated = await api.setCoachRotation(activeGame.id, firstBase, thirdBase)
-      setGameDay({
-        ...gameDay,
-        games: gameDay.games.map(g => g.id === updated.id ? { ...g, ...updated } : g),
-      })
+      // Replace game in array with the freshly-returned GameResponse (not spread-merge —
+      // avoids stale-field issues if the API response shape ever diverges).
+      setGameDay(prev => prev ? ({
+        ...prev,
+        games: prev.games.map(g => g.id === updated.id ? updated : g),
+      }) : prev)
       toast.show('Coach-Rotation gespeichert')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
