@@ -125,11 +125,12 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
           return (
             <button
               key={pair}
+              type="button"
               onClick={() => onPick(pair)}
-              className={`font-display px-2.5 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded-full transition-colors min-h-[36px] whitespace-nowrap inline-flex items-center gap-1 cursor-pointer
+              className={`font-display px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded-full transition-colors min-h-[40px] whitespace-nowrap inline-flex items-center gap-1 cursor-pointer touch-manipulation
                 ${isActive
                   ? 'bg-navy-900 text-white shadow-sm'
-                  : 'bg-cream-100 text-gray-600 hover:bg-cream-200 hover:text-navy-900 border border-cream-300'}`}
+                  : 'bg-cream-100 text-gray-700 hover:bg-cream-200 hover:text-navy-900 active:bg-cream-300 border border-cream-300'}`}
             >
               {getPairLabel(pair)}
               {isRecommended && !isActive && (
@@ -159,8 +160,9 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
             <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.lower.pos}</div>
           </div>
         </div>
-        <div className="font-display text-[10px] text-gray-500 italic mt-2">
-          Warmup: {resolved.higher.name} {resolved.higher.warmup}, {resolved.lower.name} {resolved.lower.warmup}
+        <div className="font-display text-[10px] text-gray-500 italic mt-2 space-y-0.5">
+          <div>Warmup: {resolved.higher.name} {resolved.higher.warmup}, {resolved.lower.name} {resolved.lower.warmup}</div>
+          <div>Bei Coach auf Base → Partner übernimmt bis Rückkehr ins Dugout</div>
         </div>
       </div>
     </div>

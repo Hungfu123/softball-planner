@@ -254,6 +254,11 @@ function drawCoachRotationBox(
     `Warmup: ${resolved.higher.name} ${resolved.higher.warmup}, ${resolved.lower.name} ${resolved.lower.warmup}`,
     x, cursorY,
   )
+  cursorY += 3
+  doc.text(
+    'Bei Coach auf Base → Partner übernimmt bis Rückkehr ins Dugout',
+    x, cursorY,
+  )
   doc.setTextColor(0, 0, 0)
   return cursorY + 4
 }
