@@ -29,9 +29,9 @@ interface RotationConfig {
 }
 
 const ROTATION_CONFIG: Record<CoachRotationPair, RotationConfig> = {
-  POS_3_8:  { lower: 3, higher: 8,  primaryPos: 8,  backupPos: 3, backupCoverRange: '#6 – #8',  primaryAbSlot: '#8' },
-  POS_4_9:  { lower: 4, higher: 9,  primaryPos: 9,  backupPos: 4, backupCoverRange: '#7 – #9',  primaryAbSlot: '#9' },
-  POS_5_10: { lower: 5, higher: 10, primaryPos: 10, backupPos: 5, backupCoverRange: '#8 – #10', primaryAbSlot: '#10' },
+  POS_3_8:  { lower: 3, higher: 8,  primaryPos: 8,  backupPos: 3, backupCoverRange: '#6–#8',  primaryAbSlot: '#8' },
+  POS_4_9:  { lower: 4, higher: 9,  primaryPos: 9,  backupPos: 4, backupCoverRange: '#7–#9',  primaryAbSlot: '#9' },
+  POS_5_10: { lower: 5, higher: 10, primaryPos: 10, backupPos: 5, backupCoverRange: '#8–#10', primaryAbSlot: '#10' },
 }
 
 export function resolveRotation(pair: CoachRotationPair, lineup: CoachRotationLineupRow[]): ResolvedRotation {
