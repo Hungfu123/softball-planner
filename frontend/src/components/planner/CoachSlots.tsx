@@ -166,7 +166,7 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
             {' '}(<strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> wärmt auf + schlägt {resolved.primaryAbSlot})
           </div>
           <div>
-            Falls <strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> nach Schlag auf Base → <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> bleibt bis Rückkehr ins Dugout
+            Falls <strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> nach Schlag auf Base → <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> bleibt bis Rückkehr zur Bank
           </div>
         </div>
       </div>
