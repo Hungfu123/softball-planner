@@ -184,6 +184,60 @@ export interface GameData {
   substitutions: SubstitutionResponse[]
 }
 
+function drawCoachRotationCompact(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  pair: CoachRotationPair,
+  lineup: LineupEntryResponse[],
+  baseLabel: '1B' | '3B',
+): number {
+  const resolved = resolveRotation(pair, lineup.map(e => ({
+    battingOrder: e.battingOrder,
+    position: e.position,
+    player: { name: e.player.name },
+  })))
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6.5)
+  doc.setTextColor(120, 120, 120)
+  const labelW = doc.getTextWidth(`${baseLabel}-Coach: `)
+
+  // Label kursiv-grau
+  doc.text(`${baseLabel}-Coach: `, x, y)
+
+  // Primary fett navy
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  const primaryText = `${resolved.primary.name} (P${resolved.primary.pos})`
+  doc.text(primaryText, x + labelW, y)
+  const primaryW = doc.getTextWidth(primaryText)
+
+  // Separator
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  const sepText = ' · Backup '
+  doc.text(sepText, x + labelW + primaryW, y)
+  const sepW = doc.getTextWidth(sepText)
+
+  // Backup fett navy
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  const backupText = `${resolved.backup.name} (P${resolved.backup.pos})`
+  doc.text(backupText, x + labelW + primaryW + sepW, y)
+  const backupW = doc.getTextWidth(backupText)
+
+  // Range italic gray
+  doc.setFont('helvetica', 'italic')
+  doc.setTextColor(120, 120, 120)
+  doc.text(` Schlag ${resolved.backupCoverRange}`, x + labelW + primaryW + sepW + backupW, y)
+
+  void w
+  doc.setTextColor(0, 0, 0)
+  return y + 3
+}
+
 function drawCoachRotationBox(
   doc: jsPDF,
   x: number,
@@ -774,16 +828,16 @@ export function generateLineupWithFieldPdf(
       y += 3
     }
 
-    // Coach-Rotation-Boxen (volle Breite, oberhalb Lineup+Field)
+    // Coach-Rotation-Compact-Line (kein 22mm-Block — würde Lineup+Field-Layout brechen)
     {
       const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
       const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
       const fullW = pageWidth - 2 * margin
       if (!has1BCoach && game.firstBaseCoachRotation) {
-        y = drawCoachRotationBox(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B') + 1
+        y = drawCoachRotationCompact(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B') + 0.5
       }
       if (!has3BCoach && game.thirdBaseCoachRotation) {
-        y = drawCoachRotationBox(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B') + 1
+        y = drawCoachRotationCompact(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B') + 0.5
       }
     }
 
