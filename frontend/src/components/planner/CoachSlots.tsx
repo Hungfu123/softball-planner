@@ -145,25 +145,29 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
           Aktiv · {getPairLabel(active).toUpperCase()}
         </div>
         <div className="grid grid-cols-2 gap-0.5 rounded-lg overflow-hidden border border-cream-200">
-          <div className="bg-softball-red-50 p-2.5">
-            <div className="font-display text-[10px] tracking-widest uppercase font-bold text-softball-red-700 mb-1">
-              Schlag {resolved.higher.range}
-            </div>
-            <div className="font-display font-extrabold text-navy-900 text-sm">{resolved.higher.name}</div>
-            <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.higher.pos}</div>
-          </div>
-          <div className="bg-cream-100 p-2.5 border-l-2 border-navy-900">
+          <div className="bg-cream-100 p-2.5">
             <div className="font-display text-[10px] tracking-widest uppercase font-bold text-navy-700 mb-1">
-              Schlag {resolved.lower.range}
+              Primary
             </div>
-            <div className="font-display font-extrabold text-navy-900 text-sm">{resolved.lower.name}</div>
-            <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.lower.pos}</div>
+            <div className="font-display font-extrabold text-navy-900 text-sm">{resolved.primary.name}</div>
+            <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.primary.pos} · steht standard</div>
+          </div>
+          <div className="bg-softball-red-50 p-2.5 border-l-2 border-softball-red-600">
+            <div className="font-display text-[10px] tracking-widest uppercase font-bold text-softball-red-700 mb-1">
+              Backup
+            </div>
+            <div className="font-display font-extrabold text-navy-900 text-sm">{resolved.backup.name}</div>
+            <div className="font-display text-[10px] tracking-wider text-gray-500">Pos {resolved.backup.pos} · übernimmt {resolved.backupCoverRange}</div>
           </div>
         </div>
-        <div className="font-display text-[10px] text-gray-500 italic mt-2 space-y-0.5">
-          <div>Warmup: {resolved.higher.name} {resolved.higher.warmup}, {resolved.lower.name} {resolved.lower.warmup}</div>
-          <div>1 Coach auf Base → Partner deckt beide Bases</div>
-          <div>Beide auf Base → Bench oder nächster freier Lineup-Spieler kurz einspringen</div>
+        <div className="font-display text-[10px] text-gray-700 italic mt-2 space-y-1">
+          <div>
+            <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> coacht Schlag {resolved.backupCoverRange}
+            {' '}(<strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> wärmt auf + schlägt {resolved.primaryAbSlot})
+          </div>
+          <div>
+            Falls <strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> nach Schlag auf Base → <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> bleibt bis Rückkehr ins Dugout
+          </div>
         </div>
       </div>
     </div>

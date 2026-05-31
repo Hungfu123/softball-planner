@@ -26,36 +26,38 @@ const fullLineup: CoachRotationLineupRow[] = [
 ]
 
 describe('resolveRotation', () => {
-  it('POS_5_10 maps to Mike/Tristan correctly', () => {
+  it('POS_5_10 maps Primary=Tristan (Pos 10), Backup=Mike (Pos 5)', () => {
     const r = resolveRotation('POS_5_10', fullLineup)
-    expect(r.lower.name).toBe('Mike')
-    expect(r.lower.pos).toBe(5)
-    expect(r.lower.range).toBe('6–10')
-    expect(r.lower.warmup).toBe('#3–#4')
-    expect(r.higher.name).toBe('Tristan')
-    expect(r.higher.pos).toBe(10)
-    expect(r.higher.range).toBe('1–5')
-    expect(r.higher.warmup).toBe('#8–#9')
+    expect(r.primary.name).toBe('Tristan')
+    expect(r.primary.pos).toBe(10)
+    expect(r.backup.name).toBe('Mike')
+    expect(r.backup.pos).toBe(5)
+    expect(r.backupCoverRange).toBe('#8 – #10')
+    expect(r.primaryAbSlot).toBe('#10')
   })
 
-  it('POS_4_9 has wrap range for higher', () => {
+  it('POS_4_9 maps Primary=Vivi (Pos 9), Backup=Mitchi (Pos 4)', () => {
     const r = resolveRotation('POS_4_9', fullLineup)
-    expect(r.lower.name).toBe('Mitchi')
-    expect(r.higher.name).toBe('Vivi')
-    expect(r.higher.range).toBe('10, 1–4')
-    expect(r.lower.range).toBe('5–9')
+    expect(r.primary.name).toBe('Vivi')
+    expect(r.primary.pos).toBe(9)
+    expect(r.backup.name).toBe('Mitchi')
+    expect(r.backup.pos).toBe(4)
+    expect(r.backupCoverRange).toBe('#7 – #9')
+    expect(r.primaryAbSlot).toBe('#9')
   })
 
-  it('POS_3_8 has wrap range for higher', () => {
+  it('POS_3_8 maps Primary=Madita (Pos 8), Backup=Yuki (Pos 3)', () => {
     const r = resolveRotation('POS_3_8', fullLineup)
-    expect(r.lower.name).toBe('Yuki')
-    expect(r.higher.name).toBe('Madita')
-    expect(r.higher.range).toBe('9–10, 1–3')
+    expect(r.primary.name).toBe('Madita')
+    expect(r.primary.pos).toBe(8)
+    expect(r.backup.name).toBe('Yuki')
+    expect(r.backup.pos).toBe(3)
+    expect(r.backupCoverRange).toBe('#6 – #8')
   })
 
   it('returns em-dash when position not in lineup', () => {
     const r = resolveRotation('POS_5_10', fullLineup.slice(0, 8))
-    expect(r.higher.name).toBe('—')
+    expect(r.primary.name).toBe('—')
   })
 })
 

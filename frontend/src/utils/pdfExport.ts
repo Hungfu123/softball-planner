@@ -201,6 +201,7 @@ function drawCoachRotationBox(
   const half = w / 2
   const blockH = 16
 
+  // Eyebrow
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7)
   doc.setTextColor(200, 46, 46)
@@ -209,54 +210,59 @@ function drawCoachRotationBox(
   doc.setCharSpace(0)
   let cursorY = y + 6
 
-  doc.setFillColor(252, 234, 234)
-  doc.rect(x, cursorY, half, blockH, 'F')
+  // Linker Block: Primary (cream)
   doc.setFillColor(248, 244, 232)
+  doc.rect(x, cursorY, half, blockH, 'F')
+  // Rechter Block: Backup (rot)
+  doc.setFillColor(252, 234, 234)
   doc.rect(x + half, cursorY, half, blockH, 'F')
-  doc.setDrawColor(30, 41, 59)
+  doc.setDrawColor(200, 46, 46)
   doc.setLineWidth(0.4)
   doc.line(x + half, cursorY, x + half, cursorY + blockH)
 
-  doc.setFontSize(7)
-  doc.setTextColor(160, 30, 30)
-  doc.setFont('helvetica', 'bold')
-  doc.setCharSpace(1.5)
-  doc.text(`SCHLAG ${resolved.higher.range}`, x + 2, cursorY + 4)
-  doc.setCharSpace(0)
-  doc.setFontSize(11)
-  doc.setTextColor(30, 41, 59)
-  doc.text(resolved.higher.name, x + 2, cursorY + 10)
-  doc.setFontSize(6.5)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(`Pos ${resolved.higher.pos}`, x + 2, cursorY + 14)
-
+  // Primary Text
   doc.setFontSize(7)
   doc.setTextColor(71, 85, 105)
   doc.setFont('helvetica', 'bold')
   doc.setCharSpace(1.5)
-  doc.text(`SCHLAG ${resolved.lower.range}`, x + half + 2, cursorY + 4)
+  doc.text('PRIMARY · STEHT STANDARD', x + 2, cursorY + 4)
   doc.setCharSpace(0)
   doc.setFontSize(11)
   doc.setTextColor(30, 41, 59)
-  doc.text(resolved.lower.name, x + half + 2, cursorY + 10)
+  doc.text(resolved.primary.name, x + 2, cursorY + 10)
   doc.setFontSize(6.5)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(`Pos ${resolved.lower.pos}`, x + half + 2, cursorY + 14)
+  doc.text(`Pos ${resolved.primary.pos}`, x + 2, cursorY + 14)
+
+  // Backup Text
+  doc.setFontSize(7)
+  doc.setTextColor(160, 30, 30)
+  doc.setFont('helvetica', 'bold')
+  doc.setCharSpace(1.5)
+  doc.text(`BACKUP · SCHLAG ${resolved.backupCoverRange}`, x + half + 2, cursorY + 4)
+  doc.setCharSpace(0)
+  doc.setFontSize(11)
+  doc.setTextColor(30, 41, 59)
+  doc.text(resolved.backup.name, x + half + 2, cursorY + 10)
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(`Pos ${resolved.backup.pos}`, x + half + 2, cursorY + 14)
 
   cursorY += blockH + 3
 
+  // Erklärung
   doc.setFontSize(6.5)
   doc.setFont('helvetica', 'italic')
   doc.setTextColor(120, 120, 120)
   doc.text(
-    `Warmup: ${resolved.higher.name} ${resolved.higher.warmup}, ${resolved.lower.name} ${resolved.lower.warmup}`,
+    `${resolved.backup.name} coacht Schlag ${resolved.backupCoverRange} (${resolved.primary.name} wärmt auf + schlägt ${resolved.primaryAbSlot})`,
     x, cursorY,
   )
   cursorY += 3
   doc.text(
-    '1 Coach auf Base → Partner deckt beide Bases · Beide auf Base → Bench/nächster Lineup-Spieler einspringen',
+    `Falls ${resolved.primary.name} nach Schlag auf Base → ${resolved.backup.name} bleibt bis Rückkehr ins Dugout`,
     x, cursorY,
   )
   doc.setTextColor(0, 0, 0)
