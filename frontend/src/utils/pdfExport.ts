@@ -262,7 +262,7 @@ function drawCoachRotationBox(
   )
   cursorY += 3
   doc.text(
-    `Falls ${resolved.primary.name} nach Schlag auf Base → ${resolved.backup.name} bleibt bis Rückkehr ins Dugout`,
+    `Falls ${resolved.primary.name} nach Schlag auf Base → ${resolved.backup.name} bleibt bis Rückkehr zur Bank`,
     x, cursorY,
   )
   doc.setTextColor(0, 0, 0)
