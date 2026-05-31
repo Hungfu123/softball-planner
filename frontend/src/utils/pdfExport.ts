@@ -256,7 +256,7 @@ function drawCoachRotationBox(
   )
   cursorY += 3
   doc.text(
-    'Bei Coach auf Base → Partner übernimmt bis Rückkehr ins Dugout',
+    '1 Coach auf Base → Partner deckt beide Bases · Beide auf Base → Bench/nächster Lineup-Spieler einspringen',
     x, cursorY,
   )
   doc.setTextColor(0, 0, 0)

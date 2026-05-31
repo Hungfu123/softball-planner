@@ -162,7 +162,8 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
         </div>
         <div className="font-display text-[10px] text-gray-500 italic mt-2 space-y-0.5">
           <div>Warmup: {resolved.higher.name} {resolved.higher.warmup}, {resolved.lower.name} {resolved.lower.warmup}</div>
-          <div>Bei Coach auf Base → Partner übernimmt bis Rückkehr ins Dugout</div>
+          <div>1 Coach auf Base → Partner deckt beide Bases</div>
+          <div>Beide auf Base → Bench oder nächster freier Lineup-Spieler kurz einspringen</div>
         </div>
       </div>
     </div>
