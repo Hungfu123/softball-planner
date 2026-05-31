@@ -123,20 +123,27 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
           const isActive = active === pair
           const isRecommended = recommended === pair
           return (
-            <button
-              key={pair}
-              type="button"
-              onClick={() => onPick(pair)}
-              className={`font-display px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded-full transition-colors min-h-[40px] whitespace-nowrap inline-flex items-center gap-1 cursor-pointer touch-manipulation
-                ${isActive
-                  ? 'bg-navy-900 text-white shadow-sm'
-                  : 'bg-cream-100 text-gray-700 hover:bg-cream-200 hover:text-navy-900 active:bg-cream-300 border border-cream-300'}`}
-            >
-              {getPairLabel(pair)}
+            <div key={pair} className="flex flex-col items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => onPick(pair)}
+                className={`font-display px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded-full transition-all duration-150 min-h-[40px] whitespace-nowrap inline-flex items-center gap-1 cursor-pointer touch-manipulation
+                  hover:-translate-y-px active:scale-[0.96]
+                  ${isActive
+                    ? 'bg-navy-900 text-white shadow-md'
+                    : 'bg-cream-100 text-gray-700 hover:bg-cream-200 hover:text-navy-900 active:bg-cream-300 border border-cream-300'}`}
+              >
+                {getPairLabel(pair)}
+                {isRecommended && !isActive && (
+                  <StarIcon size={9} className="text-amber-500 fill-amber-500" />
+                )}
+              </button>
               {isRecommended && !isActive && (
-                <StarIcon size={9} className="text-amber-500 fill-amber-500" />
+                <span className="font-display text-[7px] tracking-widest uppercase font-bold text-amber-700">
+                  Empfohlen
+                </span>
               )}
-            </button>
+            </div>
           )
         })}
       </div>
@@ -144,7 +151,7 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
         <div className="font-display text-[9px] tracking-widest uppercase font-bold text-softball-red-600 mb-2">
           Aktiv · {getPairLabel(active).toUpperCase()}
         </div>
-        <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden border border-cream-300">
+        <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden border border-cream-300 relative">
           {/* PRIMARY — navy-dominant, weiß Text */}
           <div className="bg-navy-900 p-2.5 relative">
             <div className="font-display text-[10px] tracking-widest uppercase font-bold text-softball-red-300 mb-1 flex items-center gap-1">
@@ -162,6 +169,10 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
             </div>
             <div className="font-display font-extrabold text-navy-900 text-sm leading-tight">{resolved.backup.name}</div>
             <div className="font-mono text-[10px] tracking-wider text-gray-600 mt-0.5">#{resolved.backup.pos} · Schlag {resolved.backupCoverRange}</div>
+          </div>
+          {/* Handoff-Indicator: kleiner Wechsel-Knubbel mittig auf Trennlinie */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-cream-50 border-2 border-navy-900 flex items-center justify-center shadow-sm">
+            <span className="font-mono text-[10px] font-extrabold text-navy-900 leading-none">↻</span>
           </div>
         </div>
         <div className="font-display text-[10px] text-gray-700 italic mt-2 space-y-1">

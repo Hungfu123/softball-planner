@@ -184,6 +184,10 @@ export interface GameData {
   substitutions: SubstitutionResponse[]
 }
 
+/**
+ * Ultra-kompakt 1-zeilig — passt in Aufstellung-mit-Feld-PDF ohne Layout zu brechen.
+ * 3 Games + 2 Rotationen × 3mm = ~18mm Overhead total → 3 Games/Page funktioniert weiter.
+ */
 function drawCoachRotationCompact(
   doc: jsPDF,
   x: number,
@@ -198,54 +202,54 @@ function drawCoachRotationCompact(
     position: e.position,
     player: { name: e.player.name },
   })))
-
   void w
 
-  // Eyebrow rot
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.setTextColor(200, 46, 46)
-  doc.setCharSpace(1.2)
-  doc.text(`${baseLabel}-COACH ROTATION · ${getPairLabel(pair).toUpperCase()}`, x, y + 3)
-  doc.setCharSpace(0)
-  let cursorY = y + 6
-
-  // Zeile 1: Primary
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(`● ${resolved.primary.name}`, x, cursorY)
-  const primaryW = doc.getTextWidth(`● ${resolved.primary.name}`)
-  doc.setFont('courier', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(` #${resolved.primary.pos}`, x + primaryW, cursorY)
-  const primaryPosW = doc.getTextWidth(` #${resolved.primary.pos}`)
-  doc.setFont('helvetica', 'normal')
-  doc.text(' · coacht standard', x + primaryW + primaryPosW, cursorY)
-  cursorY += 3.5
-
-  // Zeile 2: Backup
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(`○ ${resolved.backup.name}`, x, cursorY)
-  const backupW = doc.getTextWidth(`○ ${resolved.backup.name}`)
-  doc.setFont('courier', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(` #${resolved.backup.pos}`, x + backupW, cursorY)
-  const backupPosW = doc.getTextWidth(` #${resolved.backup.pos}`)
-  doc.setFont('helvetica', 'normal')
-  doc.text(` · übernimmt Schlag ${resolved.backupCoverRange} — ${resolved.primary.name} wärmt auf + schlägt ${resolved.primaryAbSlot}`, x + backupW + backupPosW, cursorY)
-  cursorY += 3.5
-
-  // Zeile 3: On-Base-Fallback (italic gray)
-  doc.setFont('helvetica', 'italic')
+  // 1 Zeile, Mehrere Segmente
   doc.setFontSize(6.5)
-  doc.setTextColor(140, 140, 140)
-  doc.text(`Falls ${resolved.primary.name} nach Schlag auf Base → ${resolved.backup.name} bleibt bis Rückkehr zur Bank`, x, cursorY)
-  cursorY += 3
+  let cx = x
+
+  // Label rot
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(200, 46, 46)
+  doc.text(`${baseLabel}-COACH`, cx, y + 2)
+  cx += doc.getTextWidth(`${baseLabel}-COACH`) + 2
+
+  // Primary fett navy
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(`● ${resolved.primary.name}`, cx, y + 2)
+  cx += doc.getTextWidth(`● ${resolved.primary.name}`)
+  // Pos courier
+  doc.setFont('courier', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(` #${resolved.primary.pos}`, cx, y + 2)
+  cx += doc.getTextWidth(` #${resolved.primary.pos}`)
+  // "standard"
+  doc.setFont('helvetica', 'normal')
+  doc.text(` standard`, cx, y + 2)
+  cx += doc.getTextWidth(` standard`)
+
+  // Separator
+  doc.setTextColor(180, 180, 180)
+  doc.text(` | `, cx, y + 2)
+  cx += doc.getTextWidth(` | `)
+
+  // Backup fett navy
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(`○ ${resolved.backup.name}`, cx, y + 2)
+  cx += doc.getTextWidth(`○ ${resolved.backup.name}`)
+  // Pos courier
+  doc.setFont('courier', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(` #${resolved.backup.pos}`, cx, y + 2)
+  cx += doc.getTextWidth(` #${resolved.backup.pos}`)
+  // Range
+  doc.setFont('helvetica', 'normal')
+  doc.text(` Schlag ${resolved.backupCoverRange}`, cx, y + 2)
 
   doc.setTextColor(0, 0, 0)
-  return cursorY
+  return y + 3
 }
 
 function drawCoachRotationBox(
@@ -265,13 +269,19 @@ function drawCoachRotationBox(
   const half = w / 2
   const blockH = 16
 
-  // Eyebrow
+  // Eyebrow + Trennlinie rechts
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7)
   doc.setTextColor(200, 46, 46)
   doc.setCharSpace(1.2)
-  doc.text(`${baseLabel}-COACH ROTATION · ${getPairLabel(pair).toUpperCase()}`, x, y + 3)
+  const eyebrowText = `${baseLabel}-COACH ROTATION · ${getPairLabel(pair).toUpperCase()}`
+  doc.text(eyebrowText, x, y + 3)
+  const eyebrowW = doc.getTextWidth(eyebrowText)
   doc.setCharSpace(0)
+  // Sports-Scorebook Trennlinie rechts der Eyebrow
+  doc.setDrawColor(200, 46, 46)
+  doc.setLineWidth(0.3)
+  doc.line(x + eyebrowW + 2, y + 2.5, x + w, y + 2.5)
   let cursorY = y + 6
 
   // Linker Block: Primary (navy-dominant — der "Anchor"-Coach)
@@ -844,10 +854,10 @@ export function generateLineupWithFieldPdf(
       const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
       const fullW = pageWidth - 2 * margin
       if (!has1BCoach && game.firstBaseCoachRotation) {
-        y = drawCoachRotationCompact(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B') + 0.5
+        y = drawCoachRotationCompact(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B')
       }
       if (!has3BCoach && game.thirdBaseCoachRotation) {
-        y = drawCoachRotationCompact(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B') + 0.5
+        y = drawCoachRotationCompact(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B')
       }
     }
 
@@ -890,6 +900,7 @@ export function generateLineupWithFieldPdf(
         body: rows,
         theme: 'plain',
         styles: { fontSize: 9, cellPadding: 1.2 },
+        rowPageBreak: 'avoid',  // verhindert Split der Lineup-Rows über Seitenwechsel
         columnStyles: {
           0: { cellWidth: 8, halign: 'right', textColor: [150, 150, 150], font: 'courier' },
           1: { cellWidth: 'auto', fontStyle: 'bold' },
