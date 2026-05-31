@@ -178,11 +178,12 @@ export function GameDayPlanner() {
     try {
       console.log('[CoachRotation] sending', { gameId: activeGame.id, firstBase, thirdBase })
       const updated = await api.setCoachRotation(activeGame.id, firstBase, thirdBase)
-      console.log('[CoachRotation] response', updated)
-      setGameDay(prev => prev ? ({
-        ...prev,
-        games: prev.games.map(g => g.id === updated.id ? updated : g),
-      }) : prev)
+      console.log('[CoachRotation] response', updated, 'thirdBase=', updated.thirdBaseCoachRotation)
+      // Force-reload entire gameDay → guarantees fresh state from backend (kein client-merge)
+      const freshGameDay = await api.getGameDay(gameDay.id)
+      console.log('[CoachRotation] gameDay refetched, active game rotation=',
+        freshGameDay.games.find(g => g.id === activeGame.id))
+      setGameDay(freshGameDay)
       toast.show('Coach-Rotation gespeichert')
     } catch (e: unknown) {
       console.error('[CoachRotation] error', e)
