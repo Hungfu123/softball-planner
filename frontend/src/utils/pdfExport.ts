@@ -199,43 +199,47 @@ function drawCoachRotationCompact(
     player: { name: e.player.name },
   })))
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(6.5)
-  doc.setTextColor(120, 120, 120)
-  const labelW = doc.getTextWidth(`${baseLabel}-Coach: `)
-
-  // Label kursiv-grau
-  doc.text(`${baseLabel}-Coach: `, x, y)
-
-  // Primary fett navy
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  const primaryText = `${resolved.primary.name} (P${resolved.primary.pos})`
-  doc.text(primaryText, x + labelW, y)
-  const primaryW = doc.getTextWidth(primaryText)
-
-  // Separator
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  const sepText = ' · Backup '
-  doc.text(sepText, x + labelW + primaryW, y)
-  const sepW = doc.getTextWidth(sepText)
-
-  // Backup fett navy
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  const backupText = `${resolved.backup.name} (P${resolved.backup.pos})`
-  doc.text(backupText, x + labelW + primaryW + sepW, y)
-  const backupW = doc.getTextWidth(backupText)
-
-  // Range italic gray
-  doc.setFont('helvetica', 'italic')
-  doc.setTextColor(120, 120, 120)
-  doc.text(` Schlag ${resolved.backupCoverRange}`, x + labelW + primaryW + sepW + backupW, y)
-
   void w
+
+  // Eyebrow rot
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
+  doc.setTextColor(200, 46, 46)
+  doc.setCharSpace(1.2)
+  doc.text(`${baseLabel}-COACH ROTATION · ${getPairLabel(pair).toUpperCase()}`, x, y + 3)
+  doc.setCharSpace(0)
+  let cursorY = y + 6
+
+  // Zeile 1: Primary
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(resolved.primary.name, x, cursorY)
+  const primaryW = doc.getTextWidth(resolved.primary.name)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(` (Pos ${resolved.primary.pos}) coacht standard`, x + primaryW, cursorY)
+  cursorY += 3.5
+
+  // Zeile 2: Backup
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(resolved.backup.name, x, cursorY)
+  const backupW = doc.getTextWidth(resolved.backup.name)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(` (Pos ${resolved.backup.pos}) übernimmt Schlag ${resolved.backupCoverRange} – ${resolved.primary.name} wärmt auf + schlägt ${resolved.primaryAbSlot}`, x + backupW, cursorY)
+  cursorY += 3.5
+
+  // Zeile 3: On-Base-Fallback (italic gray)
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(6.5)
+  doc.setTextColor(140, 140, 140)
+  doc.text(`Falls ${resolved.primary.name} nach Schlag auf Base → ${resolved.backup.name} bleibt bis Rückkehr zur Bank`, x, cursorY)
+  cursorY += 3
+
   doc.setTextColor(0, 0, 0)
-  return y + 3
+  return cursorY
 }
 
 function drawCoachRotationBox(
