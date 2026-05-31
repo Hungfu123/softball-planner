@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { CoachRotationPair, LocalLineupEntry, Player } from '@/types'
-import { GripHandle, ChevronUp, ChevronDown, XMark, ArrowsSwap, CoachFlagIcon } from '@/icons'
+import { GripHandle, ChevronUp, ChevronDown, XMark, ArrowsSwap } from '@/icons'
 import { getPairPositions } from '@/utils/coachRotation'
 
 interface Props {
@@ -191,8 +191,10 @@ export function LineupRow({
 
 function CoachBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase rounded-full bg-softball-red-100 text-softball-red-700 shrink-0">
-      <CoachFlagIcon size={9} />
+    <span
+      className="font-mono inline-flex items-center justify-center min-w-[26px] h-[18px] px-1.5 text-[10px] font-extrabold tracking-widest uppercase rounded bg-navy-900 text-white shrink-0 shadow-sm"
+      title={`${label}-Coach Rotation`}
+    >
       {label}
     </span>
   )
