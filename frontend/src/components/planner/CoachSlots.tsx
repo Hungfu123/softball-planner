@@ -113,6 +113,8 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
   const active: CoachRotationPair = currentValue ?? recommended
   const resolved = useMemo(() => resolveRotation(active, lineup), [active, lineup])
 
+  console.log('[RotationPicker] render', { currentValue, recommended, active })
+
   return (
     <div className="mt-2 space-y-2">
       <div className="font-display text-[9px] tracking-widest uppercase font-bold text-gray-500">
