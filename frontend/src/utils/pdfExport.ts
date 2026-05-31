@@ -214,21 +214,27 @@ function drawCoachRotationCompact(
   doc.setFontSize(7)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text(resolved.primary.name, x, cursorY)
-  const primaryW = doc.getTextWidth(resolved.primary.name)
-  doc.setFont('helvetica', 'normal')
+  doc.text(`● ${resolved.primary.name}`, x, cursorY)
+  const primaryW = doc.getTextWidth(`● ${resolved.primary.name}`)
+  doc.setFont('courier', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(` (Pos ${resolved.primary.pos}) coacht standard`, x + primaryW, cursorY)
+  doc.text(` #${resolved.primary.pos}`, x + primaryW, cursorY)
+  const primaryPosW = doc.getTextWidth(` #${resolved.primary.pos}`)
+  doc.setFont('helvetica', 'normal')
+  doc.text(' · coacht standard', x + primaryW + primaryPosW, cursorY)
   cursorY += 3.5
 
   // Zeile 2: Backup
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text(resolved.backup.name, x, cursorY)
-  const backupW = doc.getTextWidth(resolved.backup.name)
-  doc.setFont('helvetica', 'normal')
+  doc.text(`○ ${resolved.backup.name}`, x, cursorY)
+  const backupW = doc.getTextWidth(`○ ${resolved.backup.name}`)
+  doc.setFont('courier', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(` (Pos ${resolved.backup.pos}) übernimmt Schlag ${resolved.backupCoverRange} – ${resolved.primary.name} wärmt auf + schlägt ${resolved.primaryAbSlot}`, x + backupW, cursorY)
+  doc.text(` #${resolved.backup.pos}`, x + backupW, cursorY)
+  const backupPosW = doc.getTextWidth(` #${resolved.backup.pos}`)
+  doc.setFont('helvetica', 'normal')
+  doc.text(` · übernimmt Schlag ${resolved.backupCoverRange} — ${resolved.primary.name} wärmt auf + schlägt ${resolved.primaryAbSlot}`, x + backupW + backupPosW, cursorY)
   cursorY += 3.5
 
   // Zeile 3: On-Base-Fallback (italic gray)
@@ -268,34 +274,34 @@ function drawCoachRotationBox(
   doc.setCharSpace(0)
   let cursorY = y + 6
 
-  // Linker Block: Primary (cream)
-  doc.setFillColor(248, 244, 232)
+  // Linker Block: Primary (navy-dominant — der "Anchor"-Coach)
+  doc.setFillColor(30, 41, 59)  // navy-900
   doc.rect(x, cursorY, half, blockH, 'F')
-  // Rechter Block: Backup (rot)
-  doc.setFillColor(252, 234, 234)
+  // Rechter Block: Backup (cream sekundär)
+  doc.setFillColor(248, 244, 232)  // cream-100
   doc.rect(x + half, cursorY, half, blockH, 'F')
-  doc.setDrawColor(200, 46, 46)
+  doc.setDrawColor(200, 46, 46)  // rote Trennlinie
   doc.setLineWidth(0.4)
   doc.line(x + half, cursorY, x + half, cursorY + blockH)
 
-  // Primary Text
+  // Primary Text (auf navy → weiß/rot)
   doc.setFontSize(7)
-  doc.setTextColor(71, 85, 105)
+  doc.setTextColor(252, 165, 165)  // softball-red-300 hellrot
   doc.setFont('helvetica', 'bold')
   doc.setCharSpace(1.5)
   doc.text('PRIMARY · STEHT STANDARD', x + 2, cursorY + 4)
   doc.setCharSpace(0)
   doc.setFontSize(11)
-  doc.setTextColor(30, 41, 59)
+  doc.setTextColor(255, 255, 255)
   doc.text(resolved.primary.name, x + 2, cursorY + 10)
   doc.setFontSize(6.5)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(`Pos ${resolved.primary.pos}`, x + 2, cursorY + 14)
+  doc.setFont('courier', 'normal')
+  doc.setTextColor(220, 215, 200)  // cream
+  doc.text(`#${resolved.primary.pos}`, x + 2, cursorY + 14)
 
-  // Backup Text
+  // Backup Text (auf cream → navy)
   doc.setFontSize(7)
-  doc.setTextColor(160, 30, 30)
+  doc.setTextColor(120, 120, 120)
   doc.setFont('helvetica', 'bold')
   doc.setCharSpace(1.5)
   doc.text(`BACKUP · SCHLAG ${resolved.backupCoverRange}`, x + half + 2, cursorY + 4)
@@ -304,9 +310,9 @@ function drawCoachRotationBox(
   doc.setTextColor(30, 41, 59)
   doc.text(resolved.backup.name, x + half + 2, cursorY + 10)
   doc.setFontSize(6.5)
-  doc.setFont('helvetica', 'normal')
+  doc.setFont('courier', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(`Pos ${resolved.backup.pos}`, x + half + 2, cursorY + 14)
+  doc.text(`#${resolved.backup.pos}`, x + half + 2, cursorY + 14)
 
   cursorY += blockH + 3
 
