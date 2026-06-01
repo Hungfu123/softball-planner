@@ -32,7 +32,7 @@ describe('resolveRotation', () => {
     expect(r.primary.pos).toBe(10)
     expect(r.backup.name).toBe('Mike')
     expect(r.backup.pos).toBe(5)
-    expect(r.backupCoverRange).toBe('#8 – #10')
+    expect(r.backupCoverRange).toBe('#8–#10')
     expect(r.primaryAbSlot).toBe('#10')
   })
 
@@ -42,7 +42,7 @@ describe('resolveRotation', () => {
     expect(r.primary.pos).toBe(9)
     expect(r.backup.name).toBe('Mitchi')
     expect(r.backup.pos).toBe(4)
-    expect(r.backupCoverRange).toBe('#7 – #9')
+    expect(r.backupCoverRange).toBe('#7–#9')
     expect(r.primaryAbSlot).toBe('#9')
   })
 
@@ -52,7 +52,7 @@ describe('resolveRotation', () => {
     expect(r.primary.pos).toBe(8)
     expect(r.backup.name).toBe('Yuki')
     expect(r.backup.pos).toBe(3)
-    expect(r.backupCoverRange).toBe('#6 – #8')
+    expect(r.backupCoverRange).toBe('#6–#8')
   })
 
   it('returns em-dash when position not in lineup', () => {
