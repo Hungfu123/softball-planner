@@ -1221,5 +1221,47 @@
     ],
     "description": "Besenstange hinter dem Rücken halten (in den Ellbogen eingehakt). Mit der Hüfte drehen und versuchen, den Ball am Tee mit der Stange zu berühren.\n\nTrainiert die Hüftrotation OHNE Arme — isoliert die Beine/Hüfte vom Schwung. Spieler merkt, ob er mit den Armen aushilft oder sauber aus der Hüfte arbeitet.",
     "rotation": "Nach 10 Wiederholungen wechseln."
+  },
+  {
+    "id": "star-drill",
+    "name": "Star Drill (Outfield)",
+    "categories": [
+      "OUTFIELD",
+      "FIELDING",
+      "THROWING"
+    ],
+    "minPlayers": 3,
+    "equipment": [
+      "Bälle",
+      "Handschuhe",
+      "Hütchen"
+    ],
+    "description": "Coach steht an einem festen Punkt (z.B. Home/Logo), Spieler startet vor ihm mit Blick zum Coach. Pro Wurf läuft der Spieler einen Routen-Schenkel raus, fängt den Ball und wirft per Crow-Hop zurück zum Coach. Die Routen zeigen in verschiedene Richtungen und zeichnen so einen Stern — jeder Schenkel trainiert einen anderen Glove-Catch, den ein Outfielder im Spiel braucht. Hütchen markieren, wohin die Spieler laufen.\n\nCatch-Typen (Schenkel): Drop-Step / over the shoulder (gerade nach hinten, Ball über die Schulter) — Reverse Pivot (nach hinten, andere Schulter, Hüfte dreht) — Backhand (Ball auf der Glove-fernen Seite, laufend) — Forehand (Ball auf der Glove-Seite) — Coming in (kurzer Wurf, Spieler rennt nach vorne rein, Catch in Bewegung) — seitlich links/rechts (Ball auf die Seite werfen, Fang seitlich).\n\nCoaching-Punkte: Chop-Chop-Step vor dem Catch (Füße sortieren, nicht flach-footed) — Catch laufend durch, nicht stehen bleiben, direkt in den Wurf — Glove-Hand führt, Augen auf den Ball bis er im Glove ist — Wurf zurück ist ein echter Crow-Hop-Wurf auf Linie, kein Lob.",
+    "hasImage": false,
+    "pdfPage": null,
+    "rotation": "Spieler stellen sich in einer Schlange vor dem Coach an. Wer den Stern komplett durch hat, stellt sich hinten wieder an. Nächster startet, sobald der vordere Schenkel läuft — hoher Durchsatz, wenig Standzeit.",
+    "variants": null,
+    "complexity": "ADVANCED"
+  },
+  {
+    "id": "gap-communication",
+    "name": "Gap Communication (Outfield)",
+    "categories": [
+      "OUTFIELD",
+      "FIELDING",
+      "RELAY"
+    ],
+    "minPlayers": 2,
+    "equipment": [
+      "Bälle",
+      "2 Hütchen",
+      "Handschuhe"
+    ],
+    "description": "Zwei Fielder starten vorne nebeneinander beim Coach. Auf Go rennt jeder um sein Hütchen (einer links, einer rechts) — dadurch laufen sie zuerst auseinander und dann aufeinander zu, konvergierend auf den Ball, den der Coach mittig ins Gap wirft. Die Route um die Hütchen erzwingt, dass beide gleichzeitig und ohne sich anzuschauen auf denselben Ball zulaufen — genau die Spielsituation, in der es zu Kollision oder Drop kommt.\n\nKommunikation: Wer den Ball früher liest, ruft laut 3x \"Ball, Ball, Ball\" und macht den Catch. Der andere weicht ab, wird Backup/Relay und ruft die Base-Nummer, zu der geworfen werden soll. Catch und dann Wurf zurück zum Coach.\n\nCoaching-Punkte: Augen auf den Ball, nicht auf den anderen Mann — mit Augen UND Ohren spielen — früher, lauter Call, kein Doppel-Call, kein Zögern — der abweichende Mann stoppt nicht, sondern läuft als Backup weiter — beide voll laufen, sonst kein echter Konvergenz-Druck.",
+    "hasImage": false,
+    "pdfPage": null,
+    "rotation": "Ab 2 Spielern (+ Coach). Bei mehr Spielern immer paarweise nach der Reihe. Der Fielder, der den Ball nicht fängt, ist Backup/Relay.",
+    "variants": null,
+    "complexity": "ADVANCED"
   }
 ]
