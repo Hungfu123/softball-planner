@@ -37,7 +37,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
     if (variant === 'past') { setWeather(null); return }
     const daysAhead = Math.floor(
       (new Date(gameDay.date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
-    if (daysAhead < 0 || daysAhead > 14) { setWeather(null); return }
+    if (daysAhead < 0 || daysAhead > 16) { setWeather(null); return }
     let cancelled = false
     getGameDayWeather(gameDay.id)
       .then(w => { if (!cancelled) setWeather(w) })
