@@ -11,6 +11,7 @@ interface Props {
 
 function fmtShort(dateStr?: string) {
   if (!dateStr) return null
+  if (dateStr === new Date().toISOString().slice(0, 10)) return 'Heute'
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short' })
 }
