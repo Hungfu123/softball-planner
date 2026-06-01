@@ -862,8 +862,8 @@ export function generateLineupWithFieldPdf(
       }
     }
 
-    drawCoachRow('3B')
     drawCoachRow('1B')
+    drawCoachRow('3B')
 
     const contentTopY = y
     let lineupBottomY = contentTopY
