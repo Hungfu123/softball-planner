@@ -61,10 +61,10 @@ public class GamedayAwardCalculator {
     private Optional<BattingStats> pickPower(final List<BattingStats> stats) {
         return stats.stream()
             .filter(s -> s.plateAppearances() >= MIN_PA)
+            .filter(s -> s.totalBases() > 0 && hasExtraBaseHit(s))
             .max(Comparator
                 .comparingInt(BattingStats::totalBases)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()))
-            .filter(s -> s.totalBases() > 0 && hasExtraBaseHit(s));
+                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
     }
 
     private Optional<BattingStats> pickSpeed(final List<BattingStats> stats) {

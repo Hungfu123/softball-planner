@@ -83,4 +83,30 @@ class GamedayAwardCalculatorTest {
         assertThat(awards.get(AwardType.ON_BASE).playerId()).isEqualTo(2L);
         assertThat(awards.get(AwardType.ON_BASE).displayValue()).isEqualTo("OBP 0.750");
     }
+
+    @Test
+    void power_awardedToExtraBaseHitLeader() {
+        var a = stats(1, "Singles", 4, 5, 0, 0, 0, 0, "0.500", "1.000");
+        var b = stats(2, "Doubler", 3, 4, 0, 0, 0, 2, "0.400", "1.100");
+        var awards = byType(calc.calculate(List.of(a, b)));
+        assertThat(awards.get(AwardType.POWER).playerId()).isEqualTo(2L);
+        assertThat(awards.get(AwardType.POWER).displayValue()).isEqualTo("4 Bases");
+    }
+
+    @Test
+    void speed_awardedToStealLeader() {
+        var a = stats(1, "Fast", 3, 3, 0, 0, 3, 0, "0.450", "0.900");
+        var b = stats(2, "Slower", 3, 3, 0, 0, 1, 0, "0.450", "0.900");
+        var awards = byType(calc.calculate(List.of(a, b)));
+        assertThat(awards.get(AwardType.SPEED).playerId()).isEqualTo(1L);
+        assertThat(awards.get(AwardType.SPEED).displayValue()).isEqualTo("3 SB");
+    }
+
+    @Test
+    void mvp_tiebreakPrefersSmallestPlayerId() {
+        var a = stats(5, "Five", 3, 6, 2, 1, 0, 1, "0.500", "1.000");
+        var b = stats(2, "Two",  3, 6, 2, 1, 0, 1, "0.500", "1.000");
+        var awards = byType(calc.calculate(List.of(a, b)));
+        assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(2L);
+    }
 }
