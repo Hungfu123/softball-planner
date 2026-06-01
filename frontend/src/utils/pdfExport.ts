@@ -185,9 +185,9 @@ export interface GameData {
 }
 
 /**
- * Kompakt 2-zeilig — passt in Aufstellung-mit-Feld-PDF ohne Layout zu brechen.
- * Zeile 1: Eyebrow + Range. Zeile 2: lesbare Erklärung Standard + Wechsel.
- * NUR ASCII-Chars verwenden — jsPDF default-Helvetica kann ●/○/→ nicht.
+ * Kompakt 1-zeilig im gleichen Style wie "1B Coach: Mike".
+ * Keine eigene Eyebrow — einfach Prefix "3B Coach Rotation:" + Beschreibung.
+ * ASCII-only.
  */
 function drawCoachRotationCompact(
   doc: jsPDF,
@@ -205,54 +205,57 @@ function drawCoachRotationCompact(
   })))
   void w
 
-  // Zeile 1: Eyebrow rot
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.setTextColor(200, 46, 46)
-  doc.setCharSpace(1.2)
-  doc.text(`${baseLabel}-COACH ROTATION  ${getPairLabel(pair).toUpperCase()}`, x, y + 2.5)
-  doc.setCharSpace(0)
-
-  // Zeile 2: explizite Erklärung
+  const cy = y + 2.5
   let cx = x
-  const cy = y + 6
+
+  // Prefix: "3B Coach: " (gleiche Optik wie "1B Coach: Mike")
   doc.setFontSize(7)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text('Standard: ', cx, cy)
-  cx += doc.getTextWidth('Standard: ')
+  doc.text(`${baseLabel} Coach: `, cx, cy)
+  cx += doc.getTextWidth(`${baseLabel} Coach: `)
 
+  // Primary fett navy
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
   doc.text(`${resolved.primary.name} (Pos ${resolved.primary.pos})`, cx, cy)
   cx += doc.getTextWidth(`${resolved.primary.name} (Pos ${resolved.primary.pos})`)
 
+  // Body normal grey
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text('  -  Bei Schlag ', cx, cy)
-  cx += doc.getTextWidth('  -  Bei Schlag ')
+  doc.text(' coacht standard. Bei Schlag ', cx, cy)
+  cx += doc.getTextWidth(' coacht standard. Bei Schlag ')
 
+  // Range fett navy
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
   doc.text(resolved.backupCoverRange, cx, cy)
   cx += doc.getTextWidth(resolved.backupCoverRange)
 
+  // Body grey
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
   doc.text(' uebernimmt ', cx, cy)
   cx += doc.getTextWidth(' uebernimmt ')
 
+  // Backup name fett navy
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
   doc.text(`${resolved.backup.name} (Pos ${resolved.backup.pos})`, cx, cy)
   cx += doc.getTextWidth(`${resolved.backup.name} (Pos ${resolved.backup.pos})`)
 
+  // Closing
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(`, danach ${resolved.primary.name} zurueck`, cx, cy)
+  doc.text(`. Ab Schlag ${getNextSlot(resolved.primary.pos)} wieder ${resolved.primary.name}.`, cx, cy)
 
   doc.setTextColor(0, 0, 0)
-  return y + 8
+  return y + 4
+}
+
+function getNextSlot(pos: number): string {
+  return pos === 10 ? '#1' : `#${pos + 1}`
 }
 
 function drawCoachRotationBox(
