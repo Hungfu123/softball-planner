@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
 import { XMark } from '@/icons'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
 interface SheetProps {
   open: boolean
@@ -10,6 +11,7 @@ interface SheetProps {
 
 /** Bottom-Sheet auf mobile / Center-Modal auf Desktop. Tap auf Backdrop schließt. */
 export function DetailSheet({ open, onClose, title, children }: SheetProps) {
+  useBodyScrollLock(open)
   if (!open) return null
   return (
     <div
