@@ -31,7 +31,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   POWER: {
     icon: <Flame size={11} strokeWidth={2.5} />,
-    label: 'Power',
+    label: 'Slugger',
     accentBar: 'bg-amber-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -40,7 +40,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   SPEED: {
     icon: <Wind size={11} strokeWidth={2.5} />,
-    label: 'Speed',
+    label: 'Speedster',
     accentBar: 'bg-sky-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -49,7 +49,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   ON_BASE: {
     icon: <Target size={11} strokeWidth={2.5} />,
-    label: 'On-Base',
+    label: 'Table-Setter',
     accentBar: 'bg-emerald-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -58,7 +58,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   WALK: {
     icon: <Footprints size={11} strokeWidth={2.5} />,
-    label: 'Walk',
+    label: 'Walk-König',
     accentBar: 'bg-violet-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
