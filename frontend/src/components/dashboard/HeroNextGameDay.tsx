@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Check, ClipboardList } from 'lucide-react'
-import type { AwardResponse, GameDayResponse } from '@/types'
-import { getGameDayAwards } from '@/api/client'
+import type { AwardResponse, GameDayResponse, WeatherResponse } from '@/types'
+import { getGameDayAwards, getGameDayWeather } from '@/api/client'
 import { AwardBadges } from './AwardBadges'
+import { WeatherPill } from './WeatherPill'
 
 interface Props {
   gameDay: GameDayResponse
@@ -31,6 +32,19 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
     return () => { cancelled = true }
   }, [variant, gameDay.id])
 
+  const [weather, setWeather] = useState<WeatherResponse | null>(null)
+  useEffect(() => {
+    if (variant === 'past') { setWeather(null); return }
+    const daysAhead = Math.floor(
+      (new Date(gameDay.date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
+    if (daysAhead < 0 || daysAhead > 14) { setWeather(null); return }
+    let cancelled = false
+    getGameDayWeather(gameDay.id)
+      .then(w => { if (!cancelled) setWeather(w) })
+      .catch(() => { /* silent — nice-to-have */ })
+    return () => { cancelled = true }
+  }, [variant, gameDay.id, gameDay.date])
+
   return (
     <div className="rounded-2xl overflow-hidden shadow-lg shadow-navy-900/15">
       <div className={`${stripeBg} text-white px-4 py-1.5 flex items-center gap-2 font-display text-[11px] font-bold tracking-widest uppercase`}>
@@ -43,15 +57,18 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
         {stripeLabel}
       </div>
       <div className="bg-navy-900 text-white px-3.5 py-2.5 sm:px-5 sm:py-4 md:py-5">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="font-display font-extrabold text-lg sm:text-2xl md:text-3xl tracking-wide leading-none">
             {formatHeroDate(gameDay.date)}
           </div>
-          {gameDay.location && (
-            <div className="text-[10px] sm:text-xs text-white/65 truncate inline-flex items-center gap-1">
-              <MapPin size={11} className="shrink-0" /> {gameDay.location}
-            </div>
-          )}
+          <div className="flex flex-col items-end gap-0.5 shrink-0">
+            {gameDay.location && (
+              <div className="text-[10px] sm:text-xs text-white/65 truncate inline-flex items-center gap-1">
+                <MapPin size={11} className="shrink-0" /> {gameDay.location}
+              </div>
+            )}
+            <WeatherPill weather={weather} />
+          </div>
         </div>
         {gameDay.games.length > 0 && (
           <div className="mt-2 sm:mt-3 space-y-0.5 sm:space-y-1">

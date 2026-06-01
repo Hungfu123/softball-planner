@@ -359,6 +359,13 @@ export interface ScoreboardResponse {
   totalAtBats: number
 }
 
+export interface WeatherResponse {
+  tempMin: number
+  tempMax: number
+  wmoCode: number
+  precipitationProbabilityPct: number
+}
+
 export type AwardType = 'MVP' | 'POWER' | 'SPEED' | 'ON_BASE'
 
 export interface AwardResponse {
