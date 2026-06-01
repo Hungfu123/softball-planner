@@ -143,39 +143,43 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
           )
         })}
       </div>
-      <div className="relative bg-cream-50 border border-cream-300 rounded-xl p-3 overflow-hidden">
+      <div className="relative bg-cream-50 border border-cream-300 rounded-xl p-2 overflow-hidden">
         {/* Score-Card Hairline-Eyebrow */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono text-[9px] tracking-[0.3em] uppercase font-bold text-softball-red-600 shrink-0">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="font-mono text-[8px] tracking-[0.3em] uppercase font-bold text-softball-red-600 shrink-0">
             Aktiv · {getPairLabel(active).toUpperCase()}
           </span>
           <span className="h-px flex-1 bg-softball-red-600/30" />
         </div>
-        <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden border border-cream-300">
+        <div className="grid grid-cols-2 gap-0 rounded-md overflow-hidden border border-cream-300">
           {/* PRIMARY — navy-dominant */}
-          <div className="bg-navy-900 px-3 py-2.5">
-            <div className="font-mono text-[9px] tracking-[0.25em] uppercase font-bold text-cream-200/70 mb-1.5">
+          <div className="bg-navy-900 px-2.5 py-1.5">
+            <div className="font-mono text-[8px] tracking-[0.25em] uppercase font-bold text-cream-200/70">
               Primary
             </div>
-            <div className="font-display font-extrabold text-white text-base leading-none mb-1">
+            <div className="font-display font-extrabold text-white text-sm leading-tight mt-0.5">
               {resolved.primary.name}
             </div>
-            <div className="font-mono text-[10px] text-cream-200/80 tabular-nums">
+            <div className="font-mono text-[9px] text-cream-200/80 tabular-nums">
               #{resolved.primary.pos}
             </div>
           </div>
           {/* BACKUP — cream sekundär */}
-          <div className="bg-cream-100 px-3 py-2.5">
-            <div className="font-mono text-[9px] tracking-[0.25em] uppercase font-bold text-gray-500 mb-1.5">
+          <div className="bg-cream-100 px-2.5 py-1.5">
+            <div className="font-mono text-[8px] tracking-[0.25em] uppercase font-bold text-gray-500">
               Backup
             </div>
-            <div className="font-display font-extrabold text-navy-900 text-base leading-none mb-1">
+            <div className="font-display font-extrabold text-navy-900 text-sm leading-tight mt-0.5">
               {resolved.backup.name}
             </div>
-            <div className="font-mono text-[10px] text-gray-600 tabular-nums">
+            <div className="font-mono text-[9px] text-gray-600 tabular-nums">
               #{resolved.backup.pos} · Schlag {resolved.backupCoverRange}
             </div>
           </div>
+        </div>
+        {/* Compact hint: bis Primary zurück */}
+        <div className="font-display text-[9px] text-gray-500 italic mt-1.5 leading-tight">
+          <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> coacht bis <strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> vom Schlag zurück
         </div>
       </div>
     </div>
