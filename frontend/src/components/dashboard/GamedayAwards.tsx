@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Medal } from 'lucide-react'
 import type { AwardResponse } from '@/types'
 import { getGameDayAwards } from '@/api/client'
-import { AwardBadges } from './AwardBadges'
+import { AwardsCard } from './AwardsCard'
 
 interface Props {
   gameDayId: number
@@ -17,8 +16,8 @@ function fmtShort(dateStr?: string) {
 }
 
 /**
- * Auszeichnungen des (letzten) Spieltags als eigene helle Editorial-Karte —
- * bewusst aus dem dunklen Hero ausgelagert. Lädt still; rendert nichts ohne Awards.
+ * Auszeichnungen des (letzten) Spieltags als eigene helle Karte.
+ * Lädt still; rendert nichts ohne Awards.
  */
 export function GamedayAwards({ gameDayId, date }: Props) {
   const [awards, setAwards] = useState<AwardResponse[]>([])
@@ -30,24 +29,5 @@ export function GamedayAwards({ gameDayId, date }: Props) {
     return () => { cancelled = true }
   }, [gameDayId])
 
-  if (awards.length === 0) return null
-
-  return (
-    <div className="bg-cream-50 border border-cream-300 rounded-2xl p-3.5 sm:p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-2.5">
-        <div className="inline-flex items-center gap-1.5">
-          <Medal size={15} className="text-softball-red-600 shrink-0" strokeWidth={2.2} />
-          <span className="font-display text-[11px] sm:text-xs font-extrabold tracking-widest uppercase text-navy-900">
-            Auszeichnungen
-          </span>
-        </div>
-        {fmtShort(date) && (
-          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-gray-400">
-            {fmtShort(date)}
-          </span>
-        )}
-      </div>
-      <AwardBadges awards={awards} tone="light" layout="grid" />
-    </div>
-  )
+  return <AwardsCard awards={awards} subtitle={fmtShort(date)} />
 }

@@ -134,6 +134,12 @@ export const getGameDayStats = (id: number) =>
   request<GameDayPlayerStats[]>(`/gamedays/${id}/stats`)
 export const getGameDayAwards = (id: number) =>
   request<AwardResponse[]>(`/gamedays/${id}/awards`)
+export const getSeasonAwards = (seasonId: number) =>
+  request<AwardResponse[]>(`/seasons/${seasonId}/awards`)
+export const getYearAwards = (year: number) =>
+  request<AwardResponse[]>(`/years/${year}/awards`)
+export const getAllTimeAwards = () =>
+  request<AwardResponse[]>(`/stats/all-time/awards`)
 export const getGameDayWeather = async (id: number): Promise<WeatherResponse | null> => {
   const w = await request<WeatherResponse | undefined>(`/gamedays/${id}/weather`)
   return w ?? null

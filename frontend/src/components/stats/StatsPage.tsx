@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ChevronDown, Trophy, Download } from 'lucide-react'
 import * as api from '@/api/client'
-import type { GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
+import type { AwardResponse, GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
+import { AwardsCard } from '@/components/dashboard/AwardsCard'
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
@@ -34,6 +35,7 @@ export function StatsPage() {
   const [years, setYears] = useState<number[]>([])
   const [seasonsForYear, setSeasonsForYear] = useState<Season[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
+  const [awards, setAwards] = useState<AwardResponse[]>([])
   const [gamesStats, setGamesStats] = useState<SeasonPlayerStats[]>([])
   const [selectedGame, setSelectedGame] = useState<GameResponse | null>(null)
   const [loading, setLoading] = useState(false)
@@ -99,17 +101,26 @@ export function StatsPage() {
       if (scopeKind === 'allTime') return api.getAllTimeStats()
       return Promise.resolve([])
     }
+    // Auszeichnungen (gleiche Titel wie pro Spieltag, aber über den gewählten Scope)
+    const awardsP = (): Promise<AwardResponse[]> => {
+      if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonAwards(selectedSeasonId)
+      if (scopeKind === 'year') return api.getYearAwards(selectedYear)
+      if (scopeKind === 'allTime') return api.getAllTimeAwards()
+      return Promise.resolve([]) // 'game' = kein eigener Award-Scope
+    }
 
-    Promise.all([battingP(), gamesP()])
-      .then(([batting, games]) => {
+    Promise.all([battingP(), gamesP(), awardsP().catch(() => [] as AwardResponse[])])
+      .then(([batting, games, awards]) => {
         if (cancelled) return
         setBattingStats(batting)
         setGamesStats(games)
+        setAwards(awards)
       })
       .catch(() => {
         if (cancelled) return
         setBattingStats([])
         setGamesStats([])
+        setAwards([])
       })
       .finally(() => { if (!cancelled) setLoading(false) })
 
@@ -260,6 +271,20 @@ export function StatsPage() {
           <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
         )}
       </div>
+
+      {/* Auszeichnungen (Scope-weit) — gleiche Titel wie pro Spieltag */}
+      {!loading && awards.length > 0 && (
+        <div className="mb-3">
+          <AwardsCard
+            awards={awards}
+            subtitle={
+              scopeKind === 'allTime' ? 'All-Time'
+                : scopeKind === 'year' ? String(selectedYear)
+                : seasons.find(s => s.id === selectedSeasonId)?.name
+            }
+          />
+        </div>
+      )}
 
       {/* Content */}
       {loading ? (

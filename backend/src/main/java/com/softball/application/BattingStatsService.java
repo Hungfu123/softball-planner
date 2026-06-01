@@ -78,34 +78,47 @@ public class BattingStatsService {
 
     @Transactional(readOnly = true)
     public List<PlayerBattingStatsResponse> getSeasonStats(final Long seasonId) {
-        final List<AtBat> atBats = atBatRepository.findBySeasonId(seasonId);
-        final List<BaseRunningEvent> steals = stealingRepository.findBySeasonId(seasonId);
-        return statsFromEvents(atBats, steals);
+        return toResponses(getSeasonBattingStats(seasonId));
     }
 
     @Transactional(readOnly = true)
     public List<PlayerBattingStatsResponse> getYearStats(final int year) {
-        final List<AtBat> atBats = atBatRepository.findByYear(year);
-        final List<BaseRunningEvent> steals = stealingRepository.findByYear(year);
-        return statsFromEvents(atBats, steals);
+        return toResponses(getYearBattingStats(year));
     }
 
     @Transactional(readOnly = true)
     public List<PlayerBattingStatsResponse> getAllTimeStats() {
-        final List<AtBat> atBats = atBatRepository.findAll();
-        final List<BaseRunningEvent> steals = stealingRepository.findAll();
-        return statsFromEvents(atBats, steals);
+        return toResponses(getAllTimeBattingStats());
     }
 
-    private List<PlayerBattingStatsResponse> statsFromEvents(final List<AtBat> atBats, final List<BaseRunningEvent> steals) {
+    /** Domänen-Aggregation (für Awards & DTO-Wiederverwendung) — pro Saison / Jahr / All-Time. */
+    @Transactional(readOnly = true)
+    public List<BattingStats> getSeasonBattingStats(final Long seasonId) {
+        return battingStatsFromEvents(
+            atBatRepository.findBySeasonId(seasonId), stealingRepository.findBySeasonId(seasonId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BattingStats> getYearBattingStats(final int year) {
+        return battingStatsFromEvents(
+            atBatRepository.findByYear(year), stealingRepository.findByYear(year));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BattingStats> getAllTimeBattingStats() {
+        return battingStatsFromEvents(atBatRepository.findAll(), stealingRepository.findAll());
+    }
+
+    private List<BattingStats> battingStatsFromEvents(final List<AtBat> atBats, final List<BaseRunningEvent> steals) {
         final Set<Long> playerIds = new HashSet<>();
         for (final AtBat a : atBats) if (a.getBatter() != null) playerIds.add(a.getBatter().getId());
         for (final BaseRunningEvent e : steals) if (e.getRunner() != null) playerIds.add(e.getRunner().getId());
         if (playerIds.isEmpty()) return List.of();
 
         final List<Player> players = playerRepository.findAllById(playerIds);
-        return toResponses(calculator.calculateForPlayers(players, atBats, steals));
+        return calculator.calculateForPlayers(players, atBats, steals);
     }
+
 
     private List<Player> collectPlayers(final List<AtBat> atBats,
                                          final List<BaseRunningEvent> steals,
