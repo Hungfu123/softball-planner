@@ -48,6 +48,13 @@ class OpenMeteoWeatherAdapterTest {
         assertThat(f.get().tempMax()).isEqualTo(21);
         assertThat(f.get().precipitationProbabilityPct()).isEqualTo(40);
         assertThat(f.get().wmoCode()).isEqualTo(61);
+        // Stündliche Slots: nur Fenster 8–18 → 08, 13, 18 Uhr
+        assertThat(f.get().hours()).hasSize(3);
+        assertThat(f.get().hours().get(0).hour()).isEqualTo(8);
+        assertThat(f.get().hours().get(0).temp()).isEqualTo(12);
+        assertThat(f.get().hours().get(0).wmoCode()).isEqualTo(2);
+        assertThat(f.get().hours().get(0).precipitationProbabilityPct()).isEqualTo(10);
+        assertThat(f.get().hours().get(2).hour()).isEqualTo(18);
     }
 
     @Test

@@ -359,11 +359,19 @@ export interface ScoreboardResponse {
   totalAtBats: number
 }
 
+export interface WeatherHourSlot {
+  hour: number
+  temp: number
+  wmoCode: number
+  precipitationProbabilityPct: number
+}
+
 export interface WeatherResponse {
   tempMin: number
   tempMax: number
   wmoCode: number
   precipitationProbabilityPct: number
+  hours: WeatherHourSlot[]
 }
 
 export type AwardType = 'MVP' | 'POWER' | 'SPEED' | 'ON_BASE'

@@ -2,6 +2,7 @@ package com.softball.adapter.out.weather;
 
 import com.softball.domain.model.Coordinates;
 import com.softball.domain.model.DayForecast;
+import com.softball.domain.model.HourSlot;
 import com.softball.domain.port.out.WeatherForecastPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,6 +64,7 @@ public class OpenMeteoWeatherAdapter implements WeatherForecastPort {
         Double min = null, max = null;
         int maxPrecip = 0;
         Integer preferredCode = null, firstCode = null;
+        final List<HourSlot> slots = new ArrayList<>();
 
         for (int i = 0; i < times.size(); i++) {
             final int hour = parseHour(times.get(i));
@@ -71,15 +74,19 @@ public class OpenMeteoWeatherAdapter implements WeatherForecastPort {
             final double t = h.temperature_2m().get(i);
             min = (min == null) ? t : Math.min(min, t);
             max = (max == null) ? t : Math.max(max, t);
+            int precip = 0;
             if (h.precipitation_probability() != null) {
                 final Integer p = h.precipitation_probability().get(i);
-                if (p != null) maxPrecip = Math.max(maxPrecip, p);
+                if (p != null) precip = p;
             }
+            maxPrecip = Math.max(maxPrecip, precip);
+            int code = 0;
             if (h.weather_code() != null) {
-                final int code = h.weather_code().get(i);
+                code = h.weather_code().get(i);
                 if (firstCode == null) firstCode = code;
                 if (hour == PREFERRED_HOUR) preferredCode = code;
             }
+            slots.add(new HourSlot(hour, (int) Math.round(t), code, precip));
         }
         if (min == null) {
             return Optional.empty();
@@ -87,7 +94,7 @@ public class OpenMeteoWeatherAdapter implements WeatherForecastPort {
         // wmoCode kann fehlen falls API weather_code weglässt → 0 (klar) als neutraler Default
         final int wmo = (preferredCode != null) ? preferredCode : (firstCode != null ? firstCode : 0);
         return Optional.of(new DayForecast(
-            (int) Math.round(min), (int) Math.round(max), wmo, maxPrecip));
+            (int) Math.round(min), (int) Math.round(max), wmo, maxPrecip, slots));
     }
 
     private int parseHour(final String iso) {
