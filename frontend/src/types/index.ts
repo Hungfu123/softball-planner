@@ -359,6 +359,15 @@ export interface ScoreboardResponse {
   totalAtBats: number
 }
 
+export type AwardType = 'MVP' | 'POWER' | 'SPEED' | 'ON_BASE'
+
+export interface AwardResponse {
+  type: AwardType
+  playerId: number
+  playerName: string
+  displayValue: string
+}
+
 export interface PlayerBattingStatsResponse {
   playerId: number
   playerName: string

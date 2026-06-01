@@ -84,6 +84,7 @@ import type {
   UndoResult,
   InningAdvanceEventResponse,
   CoachRotationPair,
+  AwardResponse,
 } from '@/types'
 
 // Players
@@ -130,6 +131,8 @@ export const setAvailablePlayers = (gameDayId: number, playerIds: number[]) =>
   })
 export const getGameDayStats = (id: number) =>
   request<GameDayPlayerStats[]>(`/gamedays/${id}/stats`)
+export const getGameDayAwards = (id: number) =>
+  request<AwardResponse[]>(`/gamedays/${id}/awards`)
 export const getGameDayLineups = (id: number) =>
   request<GameDayLineupsResponse>(`/gamedays/${id}/lineups`)
 export const deleteGameDay = (id: number) =>
