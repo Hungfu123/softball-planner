@@ -233,11 +233,11 @@ function drawCoachRotationCompact(
   doc.text(`${resolved.backup.name} (Pos ${resolved.backup.pos})`, cx, cy)
   cx += doc.getTextWidth(`${resolved.backup.name} (Pos ${resolved.backup.pos})`)
 
-  // " uebernimmt Schlag "
+  // " coacht bei Schlag "
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(' uebernimmt Schlag ', cx, cy)
-  cx += doc.getTextWidth(' uebernimmt Schlag ')
+  doc.text(' coacht bei Schlag ', cx, cy)
+  cx += doc.getTextWidth(' coacht bei Schlag ')
 
   // Range fett navy
   doc.setFont('helvetica', 'bold')
@@ -245,10 +245,10 @@ function drawCoachRotationCompact(
   doc.text(resolved.backupCoverRange, cx, cy)
   cx += doc.getTextWidth(resolved.backupCoverRange)
 
-  // Closing
+  // Closing: "bis Dat vom Schlag zurueck ist"
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(`. Sonst immer ${resolved.primary.name}.`, cx, cy)
+  doc.text(`, bis ${resolved.primary.name} vom Schlag zurueck ist.`, cx, cy)
 
   doc.setTextColor(0, 0, 0)
   return y + 4
