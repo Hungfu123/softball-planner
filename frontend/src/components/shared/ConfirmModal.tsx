@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { XMark, AlertTriangle } from '@/icons'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
 interface Props {
   title: string
@@ -12,6 +13,7 @@ interface Props {
 
 export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancelLabel = 'Abbrechen', onConfirm, onCancel }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  useBodyScrollLock(true)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

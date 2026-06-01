@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Drawer } from 'vaul'
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { motion, AnimatePresence } from 'motion/react'
 import { XMark } from '@/icons'
 
@@ -31,6 +32,9 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
   const isMobile = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia(`(max-width: ${mobileBreakpoint - 1}px)`).matches
+
+  // Mobile: vaul Drawer sperrt das Scrollen selbst. Desktop-Modal braucht eigenen Lock.
+  useBodyScrollLock(open && !isMobile)
 
   if (isMobile) {
     const Root = nested ? Drawer.NestedRoot : Drawer.Root
