@@ -245,10 +245,10 @@ function drawCoachRotationCompact(
   doc.text(resolved.backupCoverRange, cx, cy)
   cx += doc.getTextWidth(resolved.backupCoverRange)
 
-  // Closing: "bis Dat vom Schlag zurueck ist"
+  // Closing: "bis Dat vom Schlag zurück ist"
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(`, bis ${resolved.primary.name} vom Schlag zurueck ist.`, cx, cy)
+  doc.text(`, bis ${resolved.primary.name} vom Schlag zurück ist.`, cx, cy)
 
   doc.setTextColor(0, 0, 0)
   return y + 4
@@ -833,35 +833,37 @@ export function generateLineupWithFieldPdf(
     doc.setTextColor(0, 0, 0)
     y += 4
 
-    // --- Staff-Line ---
-    if (staff.length > 0) {
+    // --- Coach-Zeilen (3B zuerst weil wichtiger, 1B danach) ---
+    // Jede Base bekommt eine Zeile: entweder Staff-Coach oder Rotation aus Lineup.
+    const subInIds = new Map(substitutions.map(s => [s.playerIn.id, s]))
+    const fullW = pageWidth - 2 * margin
+
+    const drawStaffLine = (baseLabel: '1B' | '3B', staffMember: GameStaffResponse): void => {
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(120, 120, 120)
-      const subInIds = new Map(substitutions.map(s => [s.playerIn.id, s]))
-      const staffText = staff.map(s => {
-        const roleLabel = s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'
-        const sub = subInIds.get(s.player.id)
-        if (sub) return `${roleLabel}: ${s.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
-        return `${roleLabel}: ${s.player.name}`
-      }).join('  ·  ')
-      doc.text(staffText, lineupX, y)
+      const sub = subInIds.get(staffMember.player.id)
+      const text = sub
+        ? `${baseLabel} Coach: ${staffMember.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
+        : `${baseLabel} Coach: ${staffMember.player.name}`
+      doc.text(text, lineupX, y + 2.5)
       doc.setTextColor(0, 0, 0)
-      y += 3
     }
 
-    // Coach-Rotation-Compact-Line (kein 22mm-Block — würde Lineup+Field-Layout brechen)
-    {
-      const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
-      const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
-      const fullW = pageWidth - 2 * margin
-      if (!has1BCoach && game.firstBaseCoachRotation) {
-        y = drawCoachRotationCompact(doc, margin, y, fullW, game.firstBaseCoachRotation, lineup, '1B')
-      }
-      if (!has3BCoach && game.thirdBaseCoachRotation) {
-        y = drawCoachRotationCompact(doc, margin, y, fullW, game.thirdBaseCoachRotation, lineup, '3B')
+    const drawCoachRow = (baseLabel: '1B' | '3B'): void => {
+      const role = baseLabel === '1B' ? 'BASE_COACH_1ST' : 'BASE_COACH_3RD'
+      const staffMember = staff.find(s => s.role === role)
+      const rotation = baseLabel === '1B' ? game.firstBaseCoachRotation : game.thirdBaseCoachRotation
+      if (staffMember) {
+        drawStaffLine(baseLabel, staffMember)
+        y += 3.5
+      } else if (rotation) {
+        y = drawCoachRotationCompact(doc, lineupX, y, fullW, rotation, lineup, baseLabel)
       }
     }
+
+    drawCoachRow('3B')
+    drawCoachRow('1B')
 
     const contentTopY = y
     let lineupBottomY = contentTopY
