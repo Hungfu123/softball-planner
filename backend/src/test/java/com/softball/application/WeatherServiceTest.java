@@ -25,7 +25,7 @@ class WeatherServiceTest {
         GeocodingPort geo = mock(GeocodingPort.class);
         WeatherForecastPort wx = mock(WeatherForecastPort.class);
         Coordinates c = new Coordinates(50.93, 6.95);
-        DayForecast f = new DayForecast(12, 21, 61, 40);
+        DayForecast f = new DayForecast(12, 21, 61, 40, java.util.List.of());
         when(geo.geocode("Köln")).thenReturn(Optional.of(c));
         when(wx.forecast(c, LocalDate.of(2026, 6, 5))).thenReturn(Optional.of(f));
 

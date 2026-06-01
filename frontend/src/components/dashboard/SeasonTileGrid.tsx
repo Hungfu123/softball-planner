@@ -1,8 +1,6 @@
-import {
-  Trophy, Award, CalendarDays, TrendingUp, Droplets,
-  Sun, CloudSun, CloudFog, CloudRain, CloudSnow, CloudLightning, Cloud,
-} from 'lucide-react'
+import { Trophy, Award, CalendarDays, TrendingUp, Droplets } from 'lucide-react'
 import type { GameDayResponse, PlayerBattingStatsResponse, WeatherResponse } from '@/types'
+import { weatherIcon } from './weatherIcon'
 
 interface Props {
   seasonId: number
@@ -13,20 +11,10 @@ interface Props {
   onOpenLiga: () => void
   onOpenStats: () => void
   onOpenResults: () => void
+  onOpenWeather: () => void
 }
 
-/** WMO-Weather-Code → lucide-Icon-Element (size parametrisierbar, vermeidet "component during render"). */
-function weatherIcon(code: number, size: number, className: string) {
-  if (code === 0) return <Sun size={size} className={className} />
-  if (code <= 3) return <CloudSun size={size} className={className} />
-  if (code === 45 || code === 48) return <CloudFog size={size} className={className} />
-  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return <CloudRain size={size} className={className} />
-  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return <CloudSnow size={size} className={className} />
-  if (code >= 95) return <CloudLightning size={size} className={className} />
-  return <Cloud size={size} className={className} />
-}
-
-export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, onOpenLiga, onOpenStats, onOpenResults }: Props) {
+export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, onOpenLiga, onOpenStats, onOpenResults, onOpenWeather }: Props) {
   // Liga-Stand: Win/Loss/Tie aus Spielen mit Score
   const games = gameDays.flatMap(gd => gd.games)
   const playedGames = games.filter(g => g.scoreUs != null && g.scoreThem != null)
@@ -52,8 +40,6 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
   const runDiff = runsScored - runsConceded
 
   const tileBase = 'text-left bg-cream-50 border border-cream-300 rounded-xl p-2.5 sm:p-3 md:p-4 flex flex-col hover:border-navy-400 hover:bg-white transition-colors active:scale-[0.98] cursor-pointer'
-  // Nicht-interaktive Kachel (z.B. Wetter): nur Info, kein Klick/Hover/Navigation.
-  const tileStatic = 'bg-cream-50 border border-cream-300 rounded-xl p-2.5 sm:p-3 md:p-4 flex flex-col'
   const iconHeader = 'flex items-center gap-1.5 mb-1'
   const labelCls = 'font-display text-[9px] sm:text-[10px] tracking-widest font-bold text-gray-500 uppercase'
   const bigCls = 'font-display text-lg sm:text-xl md:text-2xl font-extrabold text-navy-900 leading-none mt-0.5'
@@ -73,7 +59,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
           Sonst Liga als span-2-Hero (kein leerer halber Slot). Wetter kostet so KEINE Extra-Zeile. */}
       {weather && nextGameDay ? (
         <>
-          <div className={tileStatic}>
+          <button onClick={onOpenWeather} className={tileBase}>
             <div className={iconHeader}>
               {weatherIcon(weather.wmoCode, 18, 'text-navy-800')}
               <span className={labelCls}>Wetter</span>
@@ -92,7 +78,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
                 <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Regen</div>
               </div>
             </div>
-          </div>
+          </button>
 
           <button onClick={onOpenLiga} className={tileBase}>
             <div className={iconHeader}>

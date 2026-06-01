@@ -9,6 +9,7 @@ import { SeasonTileGrid } from './SeasonTileGrid'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
 import { DetailSheet } from './DashboardSheets'
+import { WeatherDayBreakdown } from './WeatherDayBreakdown'
 import { PlusCircle, CrossBones } from '@/icons'
 import { EditGameDayModal } from './EditGameDayModal'
 import {
@@ -30,7 +31,7 @@ export function Dashboard() {
   const [stats, setStats] = useState<SeasonPlayerStats[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
   const [weather, setWeather] = useState<WeatherResponse | null>(null)
-  const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | null>(null)
+  const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | 'weather' | null>(null)
   const [showStatsDetails, setShowStatsDetails] = useState(false)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
   const [showAllPastGameDays, setShowAllPastGameDays] = useState(false)
@@ -310,6 +311,7 @@ export function Dashboard() {
               onOpenLiga={() => setOpenSheet('liga')}
               onOpenStats={() => setOpenSheet('stats')}
               onOpenResults={() => setOpenSheet('results')}
+              onOpenWeather={() => setOpenSheet('weather')}
             />
           )}
 
@@ -544,6 +546,10 @@ export function Dashboard() {
                 </div>
               )
             })()}
+          </DetailSheet>
+
+          <DetailSheet open={openSheet === 'weather'} onClose={() => setOpenSheet(null)} title="Wetter · Tagesablauf">
+            <WeatherDayBreakdown hours={weather?.hours ?? []} location={upcomingGd?.location} />
           </DetailSheet>
         </>
       )}
