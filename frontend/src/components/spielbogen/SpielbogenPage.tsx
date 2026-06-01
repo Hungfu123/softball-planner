@@ -5,7 +5,7 @@ import { ChevronLeft as ChevronLeftLucide, Flag, RotateCcw, HelpCircle, Clipboar
 import { CheatsheetDrawer } from './CheatsheetDrawer'
 import { useSpielbogenScoring } from '@/hooks/useSpielbogenScoring'
 import { useToastContext } from '@/components/layout/Layout'
-import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { SpielbogenPageSkeleton } from './SpielbogenPageSkeleton'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { BogenSideToggle } from './BogenSideToggle'
@@ -222,7 +222,7 @@ export default function SpielbogenPage() {
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  if (loading && !sheet) return <LoadingSkeleton />
+  if (loading && !sheet) return <SpielbogenPageSkeleton />
 
   if (error) {
     return (

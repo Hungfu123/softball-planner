@@ -6,6 +6,7 @@ import type { GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStat
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
+import { StatsTableSkeleton } from './StatsTableSkeleton'
 import { generateBattingStatsPdf } from '@/utils/statsPdf'
 
 type ScopeKind = 'season' | 'year' | 'allTime' | 'game'
@@ -262,11 +263,7 @@ export function StatsPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-48 h-1.5 bg-cream-200 rounded-full overflow-hidden">
-            <div className="h-full w-1/3 bg-navy-800 rounded-full animate-[shimmer_1s_ease-in-out_infinite]" />
-          </div>
-        </div>
+        <StatsTableSkeleton />
       ) : view === 'batting' ? (
         <BattingStatsTable
           stats={battingStats}

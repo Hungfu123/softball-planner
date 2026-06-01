@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSpielbogenList } from '@/hooks/useSpielbogenList'
-import { Button, EmptyState, LoadingSkeleton, ConfirmModal } from '@/components/shared'
+import { Button, EmptyState, ConfirmModal } from '@/components/shared'
+import { SpielbogenListSkeleton } from './SpielbogenListSkeleton'
 import { CrossBones, PlusCircle, TrashBin, Pencil } from '@/icons'
 import type { SpielbogenResponse, BogenStatus } from '@/types'
 import { BogenMetaEditModal } from './BogenMetaEditModal'
@@ -23,7 +24,7 @@ export default function SpielbogenList() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [editBogen, setEditBogen] = useState<SpielbogenResponse | null>(null)
 
-  if (loading) return <LoadingSkeleton />
+  if (loading) return <SpielbogenListSkeleton />
 
   return (
     <div className="space-y-4">

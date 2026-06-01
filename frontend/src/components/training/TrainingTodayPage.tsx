@@ -13,6 +13,7 @@ import { AttendanceCounter } from './AttendanceCounter'
 import { StatsDrawer } from './StatsDrawer'
 import { PlanEditDrawer } from './PlanEditDrawer'
 import { TrainingPlanView } from './TrainingPlanView'
+import { TrainingPlanSkeleton } from './TrainingPlanSkeleton'
 import { TrainingPickerDrawer } from './TrainingPickerDrawer'
 import { GeneratePlanDrawer } from './GeneratePlanDrawer'
 import { SharePlanDrawer } from './SharePlanDrawer'
@@ -22,7 +23,7 @@ type MobileTab = 'anwesenheit' | 'plan'
 type AttendanceSort = 'alpha' | 'frequency' | 'decided'
 
 export function TrainingTodayPage() {
-  const { trainings, attendance, toggleAttendance, cancelTraining } = useTraining()
+  const { trainings, attendance, toggleAttendance, cancelTraining, loading: trainingsLoading } = useTraining()
   const { players } = usePlayers()
   const [statsOpen, setStatsOpen] = useState(false)
   const [planEditOpen, setPlanEditOpen] = useState(false)
@@ -33,6 +34,7 @@ export function TrainingTodayPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const [addBeginnerOpen, setAddBeginnerOpen] = useState(false)
   const [plans, setPlans] = useState<TrainingPlanResponse[]>([])
+  const [planLoading, setPlanLoading] = useState(true)
   const [activePlanKind, setActivePlanKind] = useState<PlanKind>('MAIN')
   const [generateKind, setGenerateKind] = useState<PlanKind>('MAIN')
   const [mobileTab, setMobileTab] = useState<MobileTab>('anwesenheit')
@@ -108,20 +110,25 @@ export function TrainingTodayPage() {
   )
 
   const loadPlanFor = async (trainingId: number) => {
+    setPlanLoading(true)
     try {
       const result = await api.getTrainingPlansByTrainingId(trainingId)
       setPlans(result)
     } catch {
       setPlans([])
+    } finally {
+      setPlanLoading(false)
     }
   }
 
   useEffect(() => {
     if (!currentTraining) {
       setPlans([])
+      setPlanLoading(false)
       return
     }
     let cancelled = false
+    setPlanLoading(true)
     api.getTrainingPlansByTrainingId(currentTraining.id)
       .then(result => {
         if (cancelled) return
@@ -129,6 +136,9 @@ export function TrainingTodayPage() {
       })
       .catch(() => {
         if (!cancelled) setPlans([])
+      })
+      .finally(() => {
+        if (!cancelled) setPlanLoading(false)
       })
     return () => { cancelled = true }
   }, [currentTraining])
@@ -245,14 +255,18 @@ export function TrainingTodayPage() {
 
   const hasExistingPlanForGenerateKind = plans.some(p => p.kind === generateKind)
 
-  if (!currentTraining) {
+  if (trainingsLoading || !currentTraining) {
     return (
       <div className="min-h-screen bg-cream-50 p-4">
         <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto p-4 space-y-4">
           <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
             Training
           </h1>
-          <p className="text-navy-700">Kein Training verfügbar.</p>
+          {trainingsLoading ? (
+            <TrainingPlanSkeleton />
+          ) : (
+            <p className="text-navy-700">Kein Training verfügbar.</p>
+          )}
         </div>
       </div>
     )
@@ -364,6 +378,7 @@ export function TrainingTodayPage() {
           <section className={`${mobileTab === 'plan' ? '' : 'hidden lg:block'} mt-4 lg:mt-0`}>
             <TrainingPlanView
               plans={plans}
+              loading={planLoading}
               activePlanKind={activePlanKind}
               onSwitchKind={setActivePlanKind}
               drills={drills}
