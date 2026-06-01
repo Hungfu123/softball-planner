@@ -66,7 +66,7 @@ Für fertige Spieltage automatisch Titel vergeben aus den Batting-Stats des Spie
 | Titel | Icon (lucide) | Kriterium | Schwelle |
 |-------|---------------|-----------|----------|
 | MVP des Spieltags | `Trophy` | höchster Composite `TB + RBI + BB + SB` | ≥2 PA; Tiebreak OPS → PA |
-| Power | `Flame` | meiste Total Bases | nur wenn ≥1 Extra-Base-Hit existiert |
+| Power | `Flame` | meiste Total Bases **unter Spielern mit Extra-Base-Hit** | ≥2 PA; nur Spieler mit ≥1 XBH & TB>0 (Pre-Filter, damit nicht der Singles-Leader den Titel blockiert) |
 | Speed | `Wind` | meiste Stolen Bases | nur wenn ≥1 SB |
 | On-Base | `Target` | beste OBP | ≥2 PA; **nur wenn ≠ MVP-Spieler** (sonst weglassen, kein Doppel) |
 
