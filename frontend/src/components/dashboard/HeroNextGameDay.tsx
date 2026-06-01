@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Check, ClipboardList } from 'lucide-react'
-import type { AwardResponse, GameDayResponse } from '@/types'
-import { getGameDayAwards } from '@/api/client'
-import { AwardBadges } from './AwardBadges'
+import type { GameDayResponse } from '@/types'
 
 interface Props {
   gameDay: GameDayResponse
@@ -20,16 +17,6 @@ function formatHeroDate(dateStr: string) {
 export function HeroNextGameDay({ gameDay, variant }: Props) {
   const stripeLabel = variant === 'today' ? 'Heute · Nächster Spieltag' : variant === 'upcoming' ? 'Nächster Spieltag' : 'Letzter Spieltag'
   const stripeBg = variant === 'past' ? 'bg-navy-700' : 'bg-softball-red-600'
-
-  const [awards, setAwards] = useState<AwardResponse[]>([])
-  useEffect(() => {
-    if (variant !== 'past') { setAwards([]); return }
-    let cancelled = false
-    getGameDayAwards(gameDay.id)
-      .then(a => { if (!cancelled) setAwards(a) })
-      .catch(() => { /* silent — nice-to-have */ })
-    return () => { cancelled = true }
-  }, [variant, gameDay.id])
 
   return (
     <div className="rounded-2xl overflow-hidden shadow-lg shadow-navy-900/15">
@@ -132,11 +119,6 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                 </div>
               )
             })}
-          </div>
-        )}
-        {variant === 'past' && awards.length > 0 && (
-          <div className="mt-2 sm:mt-3">
-            <AwardBadges awards={awards} tone="dark" />
           </div>
         )}
         <Link

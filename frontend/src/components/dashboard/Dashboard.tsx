@@ -5,6 +5,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { DashboardLoading } from './DashboardLoading'
+import { GamedayAwards } from './GamedayAwards'
 import { SeasonTileGrid } from './SeasonTileGrid'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
@@ -203,6 +204,11 @@ export function Dashboard() {
 
       {selectedSeasonId && heroGameDay && (
         <HeroNextGameDay gameDay={heroGameDay} variant={heroVariant} />
+      )}
+
+      {/* Spieltags-Auszeichnungen als eigene helle Karte — nur für vergangenen Hero-Spieltag */}
+      {selectedSeasonId && heroGameDay && heroVariant === 'past' && (
+        <GamedayAwards gameDayId={heroGameDay.id} date={heroGameDay.date} />
       )}
 
       {/* Spieltage der Saison werden geladen → Loading-State statt Empty-State-Flash */}
