@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { GameDayResponse } from '@/types'
+import type { AwardResponse, GameDayResponse } from '@/types'
 import { TrashBin, Pencil } from '@/icons'
+import { getGameDayAwards } from '@/api/client'
+import { AwardBadges } from './AwardBadges'
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -22,6 +25,17 @@ export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
   const gamesWithCompleteLineup = gameDay.games.filter(g => g.lineupEntryCount >= 9).length
   const gamesWithPartialLineup = gameDay.games.filter(g => g.lineupEntryCount > 0 && g.lineupEntryCount < 9).length
   const allLineupsReady = totalGames > 0 && gamesWithCompleteLineup === totalGames
+  const isFinished = gameDay.games.some(g => g.endedAt != null)
+
+  const [awards, setAwards] = useState<AwardResponse[]>([])
+  useEffect(() => {
+    if (!isFinished) { setAwards([]); return }
+    let cancelled = false
+    getGameDayAwards(gameDay.id)
+      .then(a => { if (!cancelled) setAwards(a) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [isFinished, gameDay.id])
 
   return (
     <Link
@@ -90,6 +104,11 @@ export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
           <span className="text-sm text-gray-400">— offen —</span>
         ) : null}
       </div>
+      {awards.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-cream-200">
+          <AwardBadges awards={awards} tone="light" />
+        </div>
+      )}
     </Link>
   )
 }
