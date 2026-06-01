@@ -75,14 +75,17 @@ public class OpenMeteoWeatherAdapter implements WeatherForecastPort {
                 final Integer p = h.precipitation_probability().get(i);
                 if (p != null) maxPrecip = Math.max(maxPrecip, p);
             }
-            final int code = h.weather_code().get(i);
-            if (firstCode == null) firstCode = code;
-            if (hour == PREFERRED_HOUR) preferredCode = code;
+            if (h.weather_code() != null) {
+                final int code = h.weather_code().get(i);
+                if (firstCode == null) firstCode = code;
+                if (hour == PREFERRED_HOUR) preferredCode = code;
+            }
         }
         if (min == null) {
             return Optional.empty();
         }
-        final int wmo = (preferredCode != null) ? preferredCode : firstCode;
+        // wmoCode kann fehlen falls API weather_code weglässt → 0 (klar) als neutraler Default
+        final int wmo = (preferredCode != null) ? preferredCode : (firstCode != null ? firstCode : 0);
         return Optional.of(new DayForecast(
             (int) Math.round(min), (int) Math.round(max), wmo, maxPrecip));
     }
