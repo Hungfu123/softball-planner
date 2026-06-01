@@ -221,23 +221,11 @@ function drawCoachRotationCompact(
   doc.text(`${resolved.primary.name} (Pos ${resolved.primary.pos})`, cx, cy)
   cx += doc.getTextWidth(`${resolved.primary.name} (Pos ${resolved.primary.pos})`)
 
-  // Body normal grey
+  // Separator
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(' coacht standard. Bei Schlag ', cx, cy)
-  cx += doc.getTextWidth(' coacht standard. Bei Schlag ')
-
-  // Range fett navy
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(resolved.backupCoverRange, cx, cy)
-  cx += doc.getTextWidth(resolved.backupCoverRange)
-
-  // Body grey
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(' uebernimmt ', cx, cy)
-  cx += doc.getTextWidth(' uebernimmt ')
+  doc.text('. ', cx, cy)
+  cx += doc.getTextWidth('. ')
 
   // Backup name fett navy
   doc.setFont('helvetica', 'bold')
@@ -245,17 +233,25 @@ function drawCoachRotationCompact(
   doc.text(`${resolved.backup.name} (Pos ${resolved.backup.pos})`, cx, cy)
   cx += doc.getTextWidth(`${resolved.backup.name} (Pos ${resolved.backup.pos})`)
 
+  // " uebernimmt Schlag "
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(' uebernimmt Schlag ', cx, cy)
+  cx += doc.getTextWidth(' uebernimmt Schlag ')
+
+  // Range fett navy
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(resolved.backupCoverRange, cx, cy)
+  cx += doc.getTextWidth(resolved.backupCoverRange)
+
   // Closing
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(120, 120, 120)
-  doc.text(`. Ab Schlag ${getNextSlot(resolved.primary.pos)} wieder ${resolved.primary.name}.`, cx, cy)
+  doc.text(`. Sonst immer ${resolved.primary.name}.`, cx, cy)
 
   doc.setTextColor(0, 0, 0)
   return y + 4
-}
-
-function getNextSlot(pos: number): string {
-  return pos === 10 ? '#1' : `#${pos + 1}`
 }
 
 function drawCoachRotationBox(
