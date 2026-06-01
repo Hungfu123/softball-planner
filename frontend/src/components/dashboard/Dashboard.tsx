@@ -4,6 +4,7 @@ import { useSeasons } from '@/hooks/useSeasons'
 import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
 import { HeroNextGameDay } from './HeroNextGameDay'
+import { DashboardLoading } from './DashboardLoading'
 import { SeasonTileGrid } from './SeasonTileGrid'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
@@ -14,7 +15,7 @@ import {
   Button,
   ConfirmModal, LoadingSkeleton, ResponsiveSheet,
 } from '@/components/shared'
-import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse } from '@/types'
+import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse, WeatherResponse } from '@/types'
 import * as api from '@/api/client'
 
 
@@ -23,8 +24,12 @@ export function Dashboard() {
   const toast = useToastContext()
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
+  // true bis der erste Spieltag-Fetch der aktuellen Saison fertig ist —
+  // verhindert dass der "Noch kein Spieltag"-Empty-State aufblitzt während noch geladen wird.
+  const [gameDaysLoading, setGameDaysLoading] = useState(true)
   const [stats, setStats] = useState<SeasonPlayerStats[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
+  const [weather, setWeather] = useState<WeatherResponse | null>(null)
   const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | null>(null)
   const [showStatsDetails, setShowStatsDetails] = useState(false)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
@@ -55,12 +60,14 @@ export function Dashboard() {
     if (!selectedSeasonId) return
     setShowAllGameDays(false)
     setShowAllPastGameDays(false)
+    setGameDaysLoading(true)
     Promise.all([
       api.getGameDays(selectedSeasonId),
       api.getSeasonStats(selectedSeasonId),
       api.getSeasonBattingStats(selectedSeasonId).catch(() => [] as PlayerBattingStatsResponse[]),
     ]).then(([gd, st, bs]) => { setGameDays(gd); setStats(st); setBattingStats(bs) })
       .catch(e => toast.show(e.message, 'error'))
+      .finally(() => setGameDaysLoading(false))
   }, [selectedSeasonId, toast])
 
   // Auto-Refresh wenn Dashboard sichtbar UND keine Modal/Editor-Aktion läuft —
@@ -77,6 +84,22 @@ export function Dashboard() {
     const id = window.setInterval(tick, 30_000)
     return () => window.clearInterval(id)
   }, [selectedSeasonId, editorActive])
+
+  // Wetter für den nächsten/heutigen Spieltag (≤16 Tage) — Open-Meteo via Backend.
+  // Wird als Bento-Tile angezeigt; nice-to-have, Fehler still.
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    const upcoming = gameDays.find(gd => gd.date >= today)
+    if (!upcoming) { setWeather(null); return }
+    const daysAhead = Math.floor(
+      (new Date(upcoming.date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
+    if (daysAhead < 0 || daysAhead > 16) { setWeather(null); return }
+    let cancelled = false
+    api.getGameDayWeather(upcoming.id)
+      .then(w => { if (!cancelled) setWeather(w) })
+      .catch(() => { /* silent */ })
+    return () => { cancelled = true }
+  }, [gameDays])
 
   const handleCreateGameDay = async () => {
     if (!selectedSeasonId || !newGdDate || !newGdGameCount) return
@@ -181,8 +204,15 @@ export function Dashboard() {
         <HeroNextGameDay gameDay={heroGameDay} variant={heroVariant} />
       )}
 
-      {/* Saison existiert aber 0 Spieltage → Empty-State Hero-Card */}
-      {selectedSeasonId && !heroGameDay && gameDays.length === 0 && (
+      {/* Spieltage der Saison werden geladen → Loading-State statt Empty-State-Flash */}
+      {selectedSeasonId && gameDaysLoading && (
+        <div data-testid="dashboard-loading">
+          <DashboardLoading />
+        </div>
+      )}
+
+      {/* Saison existiert aber 0 Spieltage → Empty-State Hero-Card (erst NACH dem Laden) */}
+      {selectedSeasonId && !gameDaysLoading && !heroGameDay && gameDays.length === 0 && (
         <div className="bg-cream-50 border border-cream-300 rounded-2xl p-6 sm:p-8 text-center">
           <div className="mx-auto mb-4 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-navy-50 text-navy-700">
             <CrossBones size={24} />
@@ -275,6 +305,8 @@ export function Dashboard() {
               seasonId={selectedSeasonId}
               gameDays={gameDays}
               battingStats={battingStats}
+              weather={weather}
+              nextGameDay={upcomingGd}
               onOpenLiga={() => setOpenSheet('liga')}
               onOpenStats={() => setOpenSheet('stats')}
               onOpenResults={() => setOpenSheet('results')}

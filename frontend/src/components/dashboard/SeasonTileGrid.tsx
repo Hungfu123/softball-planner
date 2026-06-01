@@ -1,16 +1,33 @@
-import { Trophy, Award, CalendarDays, TrendingUp } from 'lucide-react'
-import type { GameDayResponse, PlayerBattingStatsResponse } from '@/types'
+import { Link } from 'react-router-dom'
+import {
+  Trophy, Award, CalendarDays, TrendingUp, Droplets,
+  Sun, CloudSun, CloudFog, CloudRain, CloudSnow, CloudLightning, Cloud,
+} from 'lucide-react'
+import type { GameDayResponse, PlayerBattingStatsResponse, WeatherResponse } from '@/types'
 
 interface Props {
   seasonId: number
   gameDays: GameDayResponse[]
   battingStats: PlayerBattingStatsResponse[]
+  weather?: WeatherResponse | null
+  nextGameDay?: GameDayResponse | null
   onOpenLiga: () => void
   onOpenStats: () => void
   onOpenResults: () => void
 }
 
-export function SeasonTileGrid({ gameDays, battingStats, onOpenLiga, onOpenStats, onOpenResults }: Props) {
+/** WMO-Weather-Code → lucide-Icon-Element (size parametrisierbar, vermeidet "component during render"). */
+function weatherIcon(code: number, size: number, className: string) {
+  if (code === 0) return <Sun size={size} className={className} />
+  if (code <= 3) return <CloudSun size={size} className={className} />
+  if (code === 45 || code === 48) return <CloudFog size={size} className={className} />
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return <CloudRain size={size} className={className} />
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return <CloudSnow size={size} className={className} />
+  if (code >= 95) return <CloudLightning size={size} className={className} />
+  return <Cloud size={size} className={className} />
+}
+
+export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, onOpenLiga, onOpenStats, onOpenResults }: Props) {
   // Liga-Stand: Win/Loss/Tie aus Spielen mit Score
   const games = gameDays.flatMap(gd => gd.games)
   const playedGames = games.filter(g => g.scoreUs != null && g.scoreThem != null)
@@ -51,18 +68,61 @@ export function SeasonTileGrid({ gameDays, battingStats, onOpenLiga, onOpenStats
 
   return (
     <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-      {/* Row 1 — LIGA Hero (span 2 cols) */}
-      <button onClick={onOpenLiga} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
-        <Trophy size={22} strokeWidth={2.2} className="text-navy-800 shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className={labelCls}>Liga</div>
-          <div className={heroBig}>{wins}–{losses}{ties > 0 ? `–${ties}` : ''}</div>
-        </div>
-        <div className="text-right shrink-0">
-          <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-300 leading-none">{playedGames.length}</div>
-          <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Spiele</div>
-        </div>
-      </button>
+      {/* Row 1 — Wetter (nächster Spieltag) + Liga als halbe Kacheln, wenn Forecast vorliegt.
+          Sonst Liga als span-2-Hero (kein leerer halber Slot). Wetter kostet so KEINE Extra-Zeile. */}
+      {weather && nextGameDay ? (
+        <>
+          <Link to={`/gameday/${nextGameDay.id}`} className={tileBase}>
+            <div className={iconHeader}>
+              {weatherIcon(weather.wmoCode, 18, 'text-navy-800')}
+              <span className={labelCls}>Wetter</span>
+            </div>
+            <div className="flex items-end justify-between gap-2 mt-0.5">
+              <div className="min-w-0">
+                <div className={bigCls}>{weather.tempMin}–{weather.tempMax}°</div>
+                <div className={`${subCls} truncate`}>Nächster Spieltag</div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className={`font-display text-base sm:text-lg font-extrabold leading-none inline-flex items-center gap-1 ${
+                  weather.precipitationProbabilityPct >= 50 ? 'text-softball-red-600' : 'text-navy-800'
+                }`}>
+                  <Droplets size={13} className="shrink-0" />{weather.precipitationProbabilityPct}%
+                </div>
+                <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Regen</div>
+              </div>
+            </div>
+          </Link>
+
+          <button onClick={onOpenLiga} className={tileBase}>
+            <div className={iconHeader}>
+              <Trophy size={18} strokeWidth={2.2} className="text-navy-800" />
+              <span className={labelCls}>Liga</span>
+            </div>
+            <div className="flex items-end justify-between gap-2 mt-0.5">
+              <div className="min-w-0">
+                <div className={bigCls}>{wins}–{losses}{ties > 0 ? `–${ties}` : ''}</div>
+                <div className={subCls}>Bilanz</div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-display text-base sm:text-lg font-extrabold text-gray-300 leading-none">{playedGames.length}</div>
+                <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Spiele</div>
+              </div>
+            </div>
+          </button>
+        </>
+      ) : (
+        <button onClick={onOpenLiga} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
+          <Trophy size={22} strokeWidth={2.2} className="text-navy-800 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className={labelCls}>Liga</div>
+            <div className={heroBig}>{wins}–{losses}{ties > 0 ? `–${ties}` : ''}</div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-300 leading-none">{playedGames.length}</div>
+            <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Spiele</div>
+          </div>
+        </button>
+      )}
 
       {/* Row 2 — TOP HITTER + RUNS */}
       <button onClick={onOpenStats} className={tileBase}>
