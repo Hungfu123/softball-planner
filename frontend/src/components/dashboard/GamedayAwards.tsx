@@ -47,7 +47,7 @@ export function GamedayAwards({ gameDayId, date }: Props) {
           </span>
         )}
       </div>
-      <AwardBadges awards={awards} tone="light" />
+      <AwardBadges awards={awards} tone="light" layout="grid" />
     </div>
   )
 }
