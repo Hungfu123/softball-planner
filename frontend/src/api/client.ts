@@ -84,6 +84,8 @@ import type {
   UndoResult,
   InningAdvanceEventResponse,
   CoachRotationPair,
+  AwardResponse,
+  WeatherResponse,
 } from '@/types'
 
 // Players
@@ -130,6 +132,12 @@ export const setAvailablePlayers = (gameDayId: number, playerIds: number[]) =>
   })
 export const getGameDayStats = (id: number) =>
   request<GameDayPlayerStats[]>(`/gamedays/${id}/stats`)
+export const getGameDayAwards = (id: number) =>
+  request<AwardResponse[]>(`/gamedays/${id}/awards`)
+export const getGameDayWeather = async (id: number): Promise<WeatherResponse | null> => {
+  const w = await request<WeatherResponse | undefined>(`/gamedays/${id}/weather`)
+  return w ?? null
+}
 export const getGameDayLineups = (id: number) =>
   request<GameDayLineupsResponse>(`/gamedays/${id}/lineups`)
 export const deleteGameDay = (id: number) =>
