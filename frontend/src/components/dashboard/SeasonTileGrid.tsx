@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import {
   Trophy, Award, CalendarDays, TrendingUp, Droplets,
   Sun, CloudSun, CloudFog, CloudRain, CloudSnow, CloudLightning, Cloud,
@@ -53,6 +52,8 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
   const runDiff = runsScored - runsConceded
 
   const tileBase = 'text-left bg-cream-50 border border-cream-300 rounded-xl p-2.5 sm:p-3 md:p-4 flex flex-col hover:border-navy-400 hover:bg-white transition-colors active:scale-[0.98] cursor-pointer'
+  // Nicht-interaktive Kachel (z.B. Wetter): nur Info, kein Klick/Hover/Navigation.
+  const tileStatic = 'bg-cream-50 border border-cream-300 rounded-xl p-2.5 sm:p-3 md:p-4 flex flex-col'
   const iconHeader = 'flex items-center gap-1.5 mb-1'
   const labelCls = 'font-display text-[9px] sm:text-[10px] tracking-widest font-bold text-gray-500 uppercase'
   const bigCls = 'font-display text-lg sm:text-xl md:text-2xl font-extrabold text-navy-900 leading-none mt-0.5'
@@ -72,7 +73,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
           Sonst Liga als span-2-Hero (kein leerer halber Slot). Wetter kostet so KEINE Extra-Zeile. */}
       {weather && nextGameDay ? (
         <>
-          <Link to={`/gameday/${nextGameDay.id}`} className={tileBase}>
+          <div className={tileStatic}>
             <div className={iconHeader}>
               {weatherIcon(weather.wmoCode, 18, 'text-navy-800')}
               <span className={labelCls}>Wetter</span>
@@ -80,7 +81,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
             <div className="flex items-end justify-between gap-2 mt-0.5">
               <div className="min-w-0">
                 <div className={bigCls}>{weather.tempMin}–{weather.tempMax}°</div>
-                <div className={`${subCls} truncate`}>Nächster Spieltag</div>
+                <div className={`${subCls} truncate`}>{nextGameDay.location ?? 'Nächster Spieltag'}</div>
               </div>
               <div className="text-right shrink-0">
                 <div className={`font-display text-base sm:text-lg font-extrabold leading-none inline-flex items-center gap-1 ${
@@ -91,7 +92,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
                 <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Regen</div>
               </div>
             </div>
-          </Link>
+          </div>
 
           <button onClick={onOpenLiga} className={tileBase}>
             <div className={iconHeader}>
