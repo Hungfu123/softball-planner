@@ -27,4 +27,16 @@ public class AwardService {
         log.info("Awards für GameDay {}: {} vergeben", gameDayId, awards.size());
         return awards;
     }
+
+    public List<Award> getSeasonAwards(final Long seasonId) {
+        return calculator.calculate(battingStatsService.getSeasonBattingStats(seasonId));
+    }
+
+    public List<Award> getYearAwards(final int year) {
+        return calculator.calculate(battingStatsService.getYearBattingStats(year));
+    }
+
+    public List<Award> getAllTimeAwards() {
+        return calculator.calculate(battingStatsService.getAllTimeBattingStats());
+    }
 }
