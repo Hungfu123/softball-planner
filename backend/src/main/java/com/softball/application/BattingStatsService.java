@@ -58,6 +58,12 @@ public class BattingStatsService {
 
     @Transactional(readOnly = true)
     public List<PlayerBattingStatsResponse> getGameDayStats(final Long gameDayId) {
+        return toResponses(getGameDayBattingStats(gameDayId));
+    }
+
+    /** Domänen-Aggregation pro Spieltag (für Awards & DTO-Wiederverwendung). */
+    @Transactional(readOnly = true)
+    public List<BattingStats> getGameDayBattingStats(final Long gameDayId) {
         final List<Game> games = gameRepository.findByGameDayIdOrderByGameNumberAsc(gameDayId);
         final List<Long> gameIds = games.stream().map(Game::getId).toList();
         if (gameIds.isEmpty()) return List.of();
@@ -67,7 +73,7 @@ public class BattingStatsService {
         final List<LineupEntry> lineups = lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds);
 
         final List<Player> players = collectPlayers(atBats, steals, lineups);
-        return toResponses(calculator.calculateForPlayers(players, atBats, steals));
+        return calculator.calculateForPlayers(players, atBats, steals);
     }
 
     @Transactional(readOnly = true)
