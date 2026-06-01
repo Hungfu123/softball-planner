@@ -3,9 +3,11 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes, UserPlus } from 'lucide-react'
 import { BatIcon } from '@/icons'
 import type { TrainingPlanSectionResponse, DrillResponse, TrainingPlanResponse, PlanKind } from '@/types'
+import { TrainingPlanSkeleton } from './TrainingPlanSkeleton'
 
 type Props = {
   plans: TrainingPlanResponse[]
+  loading?: boolean
   activePlanKind: PlanKind
   onSwitchKind: (kind: PlanKind) => void
   drills: DrillResponse[]
@@ -256,7 +258,7 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
+export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwitchKind, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
   const activePlan = plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null
   const planContent = activePlan?.content ?? null
   const sections = planContent?.sections ?? []
@@ -358,6 +360,10 @@ export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, 
 
   const hasPlan = sections.length > 0
 
+  if (loading) {
+    return <TrainingPlanSkeleton />
+  }
+
   return (
     <div data-training-plan-view>
       <div className="flex items-center justify-between mb-2 gap-2">
@@ -453,7 +459,7 @@ export function TrainingPlanView({ plans, activePlanKind, onSwitchKind, drills, 
         </div>
       )}
 
-      {sections.length === 0 ? (
+      {!loading && sections.length === 0 ? (
         <div className="bg-white border border-cream-300 rounded-2xl p-4 text-sm text-navy-700">
           <p className="opacity-70 italic">Noch kein Plan für dieses Training.</p>
         </div>

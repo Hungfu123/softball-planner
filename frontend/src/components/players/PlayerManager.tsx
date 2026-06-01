@@ -17,7 +17,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
-import { EmptyState, ConfirmModal, LoadingSkeleton } from '@/components/shared'
+import { EmptyState, ConfirmModal } from '@/components/shared'
+import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
 import type { Player } from '@/types'
 
 function SortablePlayerRow({ player, index }: { player: Player; index: number }) {
@@ -180,7 +181,7 @@ export function PlayerManager() {
   }
 
   if (loading) {
-    return <LoadingSkeleton />
+    return <PlayerManagerSkeleton />
   }
 
   return (

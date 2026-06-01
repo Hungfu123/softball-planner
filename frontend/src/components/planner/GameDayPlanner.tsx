@@ -23,7 +23,7 @@ import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair } from '@/types'
 import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf } from '@/utils/pdfExport'
-import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -362,7 +362,7 @@ export function GameDayPlanner() {
   }
 
   if (loading || !gameDay) {
-    return <LoadingSkeleton />
+    return <GameDayPlannerSkeleton />
   }
 
   const lineupPlayerIds = new Set(lineup.entries.map(e => e.player.id))
