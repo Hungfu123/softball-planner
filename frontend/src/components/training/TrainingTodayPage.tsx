@@ -4,6 +4,7 @@ import { ChevronDown, Calendar, Ban } from 'lucide-react'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
+import { pickDefaultTrainingId } from '@/utils/defaultTraining'
 import * as api from '@/api/client'
 import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
@@ -47,16 +48,10 @@ export function TrainingTodayPage() {
     return () => { cancelled = true }
   }, [])
 
-  const sortedActiveTrainings = useMemo(
-    () => trainings.filter(t => !t.cancelled).slice().sort((a, b) => a.date.localeCompare(b.date)),
+  const defaultTrainingId = useMemo(
+    () => pickDefaultTrainingId(trainings, new Date().toISOString().slice(0, 10)),
     [trainings],
   )
-
-  const defaultTrainingId = useMemo(() => {
-    const now = new Date()
-    const upcoming = sortedActiveTrainings.find(t => new Date(t.date) >= now)
-    return upcoming?.id ?? sortedActiveTrainings[sortedActiveTrainings.length - 1]?.id ?? null
-  }, [sortedActiveTrainings])
 
   const currentTrainingId = selectedTrainingId ?? defaultTrainingId
   const currentTraining = useMemo(
