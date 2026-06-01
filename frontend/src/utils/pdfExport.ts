@@ -185,8 +185,9 @@ export interface GameData {
 }
 
 /**
- * Ultra-kompakt 1-zeilig — passt in Aufstellung-mit-Feld-PDF ohne Layout zu brechen.
- * 3 Games + 2 Rotationen × 3mm = ~18mm Overhead total → 3 Games/Page funktioniert weiter.
+ * Kompakt 2-zeilig — passt in Aufstellung-mit-Feld-PDF ohne Layout zu brechen.
+ * Zeile 1: Eyebrow + Range. Zeile 2: lesbare Erklärung Standard + Wechsel.
+ * NUR ASCII-Chars verwenden — jsPDF default-Helvetica kann ●/○/→ nicht.
  */
 function drawCoachRotationCompact(
   doc: jsPDF,
@@ -204,52 +205,54 @@ function drawCoachRotationCompact(
   })))
   void w
 
-  // 1 Zeile, Mehrere Segmente
-  doc.setFontSize(6.5)
-  let cx = x
-
-  // Label rot
+  // Zeile 1: Eyebrow rot
   doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7)
   doc.setTextColor(200, 46, 46)
-  doc.text(`${baseLabel}-COACH`, cx, y + 2)
-  cx += doc.getTextWidth(`${baseLabel}-COACH`) + 2
+  doc.setCharSpace(1.2)
+  doc.text(`${baseLabel}-COACH ROTATION  ${getPairLabel(pair).toUpperCase()}`, x, y + 2.5)
+  doc.setCharSpace(0)
 
-  // Primary fett navy
+  // Zeile 2: explizite Erklärung
+  let cx = x
+  const cy = y + 6
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text('Standard: ', cx, cy)
+  cx += doc.getTextWidth('Standard: ')
+
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text(`● ${resolved.primary.name}`, cx, y + 2)
-  cx += doc.getTextWidth(`● ${resolved.primary.name}`)
-  // Pos courier
-  doc.setFont('courier', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(` #${resolved.primary.pos}`, cx, y + 2)
-  cx += doc.getTextWidth(` #${resolved.primary.pos}`)
-  // "standard"
+  doc.text(`${resolved.primary.name} (Pos ${resolved.primary.pos})`, cx, cy)
+  cx += doc.getTextWidth(`${resolved.primary.name} (Pos ${resolved.primary.pos})`)
+
   doc.setFont('helvetica', 'normal')
-  doc.text(` standard`, cx, y + 2)
-  cx += doc.getTextWidth(` standard`)
+  doc.setTextColor(120, 120, 120)
+  doc.text('  -  Bei Schlag ', cx, cy)
+  cx += doc.getTextWidth('  -  Bei Schlag ')
 
-  // Separator
-  doc.setTextColor(180, 180, 180)
-  doc.text(` | `, cx, y + 2)
-  cx += doc.getTextWidth(` | `)
-
-  // Backup fett navy
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text(`○ ${resolved.backup.name}`, cx, y + 2)
-  cx += doc.getTextWidth(`○ ${resolved.backup.name}`)
-  // Pos courier
-  doc.setFont('courier', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(` #${resolved.backup.pos}`, cx, y + 2)
-  cx += doc.getTextWidth(` #${resolved.backup.pos}`)
-  // Range
+  doc.text(resolved.backupCoverRange, cx, cy)
+  cx += doc.getTextWidth(resolved.backupCoverRange)
+
   doc.setFont('helvetica', 'normal')
-  doc.text(` Schlag ${resolved.backupCoverRange}`, cx, y + 2)
+  doc.setTextColor(120, 120, 120)
+  doc.text(' uebernimmt ', cx, cy)
+  cx += doc.getTextWidth(' uebernimmt ')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(`${resolved.backup.name} (Pos ${resolved.backup.pos})`, cx, cy)
+  cx += doc.getTextWidth(`${resolved.backup.name} (Pos ${resolved.backup.pos})`)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120, 120, 120)
+  doc.text(`, danach ${resolved.primary.name} zurueck`, cx, cy)
 
   doc.setTextColor(0, 0, 0)
-  return y + 3
+  return y + 8
 }
 
 function drawCoachRotationBox(
@@ -336,7 +339,7 @@ function drawCoachRotationBox(
   )
   cursorY += 3
   doc.text(
-    `Falls ${resolved.primary.name} nach Schlag auf Base → ${resolved.backup.name} bleibt bis Rückkehr zur Bank`,
+    `Falls ${resolved.primary.name} nach Schlag auf Base: ${resolved.backup.name} bleibt bis Rueckkehr zur Bank`,
     x, cursorY,
   )
   doc.setTextColor(0, 0, 0)
