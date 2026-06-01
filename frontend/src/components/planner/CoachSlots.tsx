@@ -123,65 +123,58 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
           const isActive = active === pair
           const isRecommended = recommended === pair
           return (
-            <div key={pair} className="flex flex-col items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => onPick(pair)}
-                className={`font-display px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded-full transition-all duration-150 min-h-[40px] whitespace-nowrap inline-flex items-center gap-1 cursor-pointer touch-manipulation
-                  hover:-translate-y-px active:scale-[0.96]
-                  ${isActive
-                    ? 'bg-navy-900 text-white shadow-md'
-                    : 'bg-cream-100 text-gray-700 hover:bg-cream-200 hover:text-navy-900 active:bg-cream-300 border border-cream-300'}`}
-              >
-                {getPairLabel(pair)}
-                {isRecommended && !isActive && (
-                  <StarIcon size={9} className="text-amber-500 fill-amber-500" />
-                )}
-              </button>
+            <button
+              key={pair}
+              type="button"
+              onClick={() => onPick(pair)}
+              className={`relative font-display min-w-[78px] px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded-full transition-all duration-150 min-h-[40px] whitespace-nowrap inline-flex items-center justify-center gap-1 cursor-pointer touch-manipulation
+                hover:-translate-y-px active:scale-[0.96]
+                ${isActive
+                  ? 'bg-navy-900 text-white shadow-md'
+                  : 'bg-cream-100 text-gray-700 hover:bg-cream-200 hover:text-navy-900 active:bg-cream-300 border border-cream-300'}`}
+            >
+              {getPairLabel(pair)}
               {isRecommended && !isActive && (
-                <span className="font-display text-[7px] tracking-widest uppercase font-bold text-amber-700">
-                  Empfohlen
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-400 ring-2 ring-cream-50">
+                  <StarIcon size={7} className="text-white fill-white" />
                 </span>
               )}
-            </div>
+            </button>
           )
         })}
       </div>
-      <div className="bg-cream-50 border border-cream-300 rounded-xl p-3">
-        <div className="font-display text-[9px] tracking-widest uppercase font-bold text-softball-red-600 mb-2">
-          Aktiv · {getPairLabel(active).toUpperCase()}
+      <div className="relative bg-cream-50 border border-cream-300 rounded-xl p-3 overflow-hidden">
+        {/* Score-Card Hairline-Eyebrow */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="font-mono text-[9px] tracking-[0.3em] uppercase font-bold text-softball-red-600 shrink-0">
+            Aktiv · {getPairLabel(active).toUpperCase()}
+          </span>
+          <span className="h-px flex-1 bg-softball-red-600/30" />
         </div>
-        <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden border border-cream-300 relative">
-          {/* PRIMARY — navy-dominant, weiß Text */}
-          <div className="bg-navy-900 p-2.5 relative">
-            <div className="font-display text-[10px] tracking-widest uppercase font-bold text-softball-red-300 mb-1 flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-softball-red-500" />
+        <div className="grid grid-cols-2 gap-0 rounded-lg overflow-hidden border border-cream-300">
+          {/* PRIMARY — navy-dominant */}
+          <div className="bg-navy-900 px-3 py-2.5">
+            <div className="font-mono text-[9px] tracking-[0.25em] uppercase font-bold text-cream-200/70 mb-1.5">
               Primary
             </div>
-            <div className="font-display font-extrabold text-white text-sm leading-tight">{resolved.primary.name}</div>
-            <div className="font-mono text-[10px] tracking-wider text-cream-200 mt-0.5">#{resolved.primary.pos} · steht standard</div>
+            <div className="font-display font-extrabold text-white text-base leading-none mb-1">
+              {resolved.primary.name}
+            </div>
+            <div className="font-mono text-[10px] text-cream-200/80 tabular-nums">
+              #{resolved.primary.pos}
+            </div>
           </div>
           {/* BACKUP — cream sekundär */}
-          <div className="bg-cream-100 p-2.5 relative">
-            <div className="font-display text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1 flex items-center gap-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full border-2 border-navy-900 bg-transparent" />
+          <div className="bg-cream-100 px-3 py-2.5">
+            <div className="font-mono text-[9px] tracking-[0.25em] uppercase font-bold text-gray-500 mb-1.5">
               Backup
             </div>
-            <div className="font-display font-extrabold text-navy-900 text-sm leading-tight">{resolved.backup.name}</div>
-            <div className="font-mono text-[10px] tracking-wider text-gray-600 mt-0.5">#{resolved.backup.pos} · Schlag {resolved.backupCoverRange}</div>
-          </div>
-          {/* Handoff-Indicator: kleiner Wechsel-Knubbel mittig auf Trennlinie */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-cream-50 border-2 border-navy-900 flex items-center justify-center shadow-sm">
-            <span className="font-mono text-[10px] font-extrabold text-navy-900 leading-none">↻</span>
-          </div>
-        </div>
-        <div className="font-display text-[10px] text-gray-700 italic mt-2 space-y-1">
-          <div>
-            <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> coacht Schlag {resolved.backupCoverRange}
-            {' '}(<strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> wärmt auf + schlägt {resolved.primaryAbSlot})
-          </div>
-          <div>
-            Falls <strong className="not-italic font-bold text-navy-900">{resolved.primary.name}</strong> nach Schlag auf Base → <strong className="not-italic font-bold text-navy-900">{resolved.backup.name}</strong> bleibt bis Rückkehr zur Bank
+            <div className="font-display font-extrabold text-navy-900 text-base leading-none mb-1">
+              {resolved.backup.name}
+            </div>
+            <div className="font-mono text-[10px] text-gray-600 tabular-nums">
+              #{resolved.backup.pos} · Schlag {resolved.backupCoverRange}
+            </div>
           </div>
         </div>
       </div>
