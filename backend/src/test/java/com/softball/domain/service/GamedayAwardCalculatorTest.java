@@ -109,4 +109,21 @@ class GamedayAwardCalculatorTest {
         var awards = byType(calc.calculate(List.of(a, b)));
         assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(2L);
     }
+
+    @Test
+    void walk_awardedToWalkLeaderExcludingMvp() {
+        // MVP hat zwar die meisten Walks (5), wird aber als MVP ausgeschlossen → Walk an Nächstbesten
+        var mvp = stats(1, "Power", 3, 9, 4, 5, 0, 3, "0.450", "1.200");
+        var patient = stats(2, "Geduld", 4, 1, 0, 3, 0, 0, "0.600", "0.700");
+        var awards = byType(calc.calculate(List.of(mvp, patient)));
+        assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(1L);
+        assertThat(awards.get(AwardType.WALK).playerId()).isEqualTo(2L);
+        assertThat(awards.get(AwardType.WALK).displayValue()).isEqualTo("3 BB");
+    }
+
+    @Test
+    void walk_absentWhenNoWalks() {
+        var a = stats(1, "Aggro", 3, 5, 1, 0, 0, 1, "0.400", "1.000");
+        assertThat(byType(calc.calculate(List.of(a)))).doesNotContainKey(AwardType.WALK);
+    }
 }

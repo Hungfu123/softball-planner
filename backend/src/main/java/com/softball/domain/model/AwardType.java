@@ -5,5 +5,6 @@ public enum AwardType {
     MVP,
     POWER,
     SPEED,
-    ON_BASE
+    ON_BASE,
+    WALK
 }

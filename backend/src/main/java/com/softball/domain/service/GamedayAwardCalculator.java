@@ -37,6 +37,9 @@ public class GamedayAwardCalculator {
         pickOnBase(stats, mvpId).ifPresent(s -> result.add(new Award(
             AwardType.ON_BASE, s.playerId(), s.playerName(), "OBP " + s.onBasePct().toPlainString())));
 
+        pickWalks(stats, mvpId).ifPresent(s -> result.add(new Award(
+            AwardType.WALK, s.playerId(), s.playerName(), s.walks() + " BB")));
+
         return result;
     }
 
@@ -82,6 +85,15 @@ public class GamedayAwardCalculator {
             .max(Comparator
                 .comparing(BattingStats::onBasePct)
                 .thenComparingInt(BattingStats::plateAppearances)
+                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
+    }
+
+    private Optional<BattingStats> pickWalks(final List<BattingStats> stats, final Long excludeId) {
+        return stats.stream()
+            .filter(s -> s.walks() > 0)
+            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
+            .max(Comparator
+                .comparingInt(BattingStats::walks)
                 .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
     }
 }
