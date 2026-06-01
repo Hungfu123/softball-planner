@@ -218,8 +218,8 @@ function drawCoachRotationCompact(
   // Primary fett navy
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text(`${resolved.primary.name} (Pos ${resolved.primary.pos})`, cx, cy)
-  cx += doc.getTextWidth(`${resolved.primary.name} (Pos ${resolved.primary.pos})`)
+  doc.text(resolved.primary.name, cx, cy)
+  cx += doc.getTextWidth(resolved.primary.name)
 
   // Separator
   doc.setFont('helvetica', 'normal')
@@ -230,8 +230,8 @@ function drawCoachRotationCompact(
   // Backup name fett navy
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text(`${resolved.backup.name} (Pos ${resolved.backup.pos})`, cx, cy)
-  cx += doc.getTextWidth(`${resolved.backup.name} (Pos ${resolved.backup.pos})`)
+  doc.text(resolved.backup.name, cx, cy)
+  cx += doc.getTextWidth(resolved.backup.name)
 
   // " coacht bei Schlag "
   doc.setFont('helvetica', 'normal')
