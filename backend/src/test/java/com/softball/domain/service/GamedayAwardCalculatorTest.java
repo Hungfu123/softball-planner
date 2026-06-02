@@ -127,6 +127,23 @@ class GamedayAwardCalculatorTest {
         assertThat(byType(calc.calculate(List.of(a)))).doesNotContainKey(AwardType.WALK);
     }
 
+    private BattingStats withAvg(long id, String name, int pa, String avg, String obp, String ops) {
+        BigDecimal obpBd = new BigDecimal(obp);
+        BigDecimal slg = new BigDecimal(ops).subtract(obpBd);
+        return new BattingStats(id, name, pa, pa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            new BigDecimal(avg), obpBd, slg);
+    }
+
+    @Test
+    void topHitter_bestAvgExcludingMvp() {
+        var ace = withAvg(1, "Ace", 4, "0.200", "0.450", "1.200");   // höchster OPS → MVP
+        var champ = withAvg(2, "Champ", 4, "0.600", "0.600", "0.900"); // höchster AVG → Top Hitter
+        var awards = byType(calc.calculate(List.of(ace, champ)));
+        assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(1L);
+        assertThat(awards.get(AwardType.TOP_HITTER).playerId()).isEqualTo(2L);
+        assertThat(awards.get(AwardType.TOP_HITTER).displayValue()).isEqualTo("AVG .600");
+    }
+
     @Test
     void rbi_awardedToRbiLeaderExcludingMvp() {
         // MVP hat zwar die meisten RBI, wird ausgeschlossen → RBI-Titel an Nächstbesten

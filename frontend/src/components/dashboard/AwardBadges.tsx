@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Trophy, Flame, Wind, Target, Footprints, Hammer } from 'lucide-react'
+import { Trophy, Flame, Wind, Target, Footprints, Hammer, Award } from 'lucide-react'
 import type { AwardResponse, AwardType } from '@/types'
 
 interface Props {
@@ -28,6 +28,15 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightChip: 'bg-softball-red-50 border-softball-red-100',
     darkIcon: 'text-softball-red-400',
     lightIcon: 'text-softball-red-600',
+  },
+  TOP_HITTER: {
+    icon: <Award size={11} strokeWidth={2.5} />,
+    label: 'Top Hitter',
+    accentBar: 'bg-teal-500',
+    darkChip: 'bg-white/8 border-white/12',
+    lightChip: 'bg-navy-50 border-navy-100',
+    darkIcon: 'text-teal-300',
+    lightIcon: 'text-teal-600',
   },
   POWER: {
     icon: <Flame size={11} strokeWidth={2.5} />,
