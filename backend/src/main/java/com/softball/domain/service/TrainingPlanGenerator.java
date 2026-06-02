@@ -12,6 +12,7 @@ import com.softball.domain.model.TrainingPlanSection;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -355,6 +356,15 @@ public class TrainingPlanGenerator {
                 continue;
             }
 
+            // Kern-Kategorien des Focus (ohne THROWING — das ist universeller Filler, in fast
+            // jedem Focus-Pool). Drills mit Kern-Kategorie zuerst, damit ein Outfield-Focus auch
+            // garantiert Outfield-Drills bekommt und nicht nur die geteilten THROWING-Drills.
+            final Set<DrillCategory> coreCats = new HashSet<>(
+                    FOCUS_CATEGORY_MAP.getOrDefault(singleFocus.toUpperCase(), List.of()));
+            coreCats.remove(DrillCategory.THROWING);
+            final java.util.function.Predicate<Drill> isCore = d ->
+                    !coreCats.isEmpty() && d.getCategories().stream().anyMatch(coreCats::contains);
+
             // Drills nach Level aufteilen: Grundlagen (Level 1) vs. Position/Simulation (Level 2+)
             final List<Drill> basics = new ArrayList<>(focusDrills.stream()
                     .filter(d -> drillLevel(d) == 1).toList());
@@ -362,6 +372,9 @@ public class TrainingPlanGenerator {
                     .filter(d -> drillLevel(d) >= 2).toList());
             Collections.shuffle(basics);
             Collections.shuffle(advanced);
+            // Stabiler Sort: Kern-Kategorie-Drills zuerst (Shuffle-Reihenfolge bleibt je Tier erhalten)
+            basics.sort(Comparator.comparingInt(d -> isCore.test(d) ? 0 : 1));
+            advanced.sort(Comparator.comparingInt(d -> isCore.test(d) ? 0 : 1));
 
             int focusUsed = 0;
 
