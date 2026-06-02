@@ -286,7 +286,7 @@ export function GameDayPlanner() {
   const handleExportSignatures = () => {
     if (!gameDay) return
     try {
-      generateSignatureListPdf(gameDay, players)
+      generateSignatureListPdf(gameDay, gameDay.availablePlayers)
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
