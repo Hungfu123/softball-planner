@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type MouseEvent as ReactMouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GameResponse, LeagueTeamResponse } from '@/types'
 import { TeamCombobox } from '@/components/shared'
@@ -17,6 +18,16 @@ interface Props {
 export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentChanged, onSwapped, gameCompletions }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
+  // Fixed-Position-Anker fürs Swap-Menü (Portal an document.body, damit es nicht
+  // vom overflow-x-auto der Tab-Leiste abgeschnitten wird — Desktop-Bug).
+  const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number } | null>(null)
+
+  const toggleMenu = (id: number, e: ReactMouseEvent) => {
+    if (menuGameId === id) { setMenuGameId(null); return }
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setMenuAnchor({ top: r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - 220)) })
+    setMenuGameId(id)
+  }
   const [swapping, setSwapping] = useState(false)
   const [leagueTeams, setLeagueTeams] = useState<LeagueTeamResponse[]>([])
   const [swapError, setSwapError] = useState<string | null>(null)
@@ -56,6 +67,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
     g.opponentTeam ? `Spiel ${g.gameNumber} (vs ${g.opponentTeam.name})` : `Spiel ${g.gameNumber}`
 
   const activeGame = games[activeIndex]
+  const menuGame = games.find(g => g.id === menuGameId) ?? null
 
   const prevDisabled = activeIndex <= 0
   const nextDisabled = activeIndex >= games.length - 1
@@ -64,6 +76,29 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
 
   return (
     <div>
+      {/* Swap-Menü als Portal an document.body (fixed) — entkommt dem overflow-x-auto
+          der Tab-Leiste, das es auf Desktop sonst abschneidet. */}
+      {menuGame && menuAnchor && createPortal(
+        <div
+          data-swap-menu
+          style={{ position: 'fixed', top: menuAnchor.top, left: menuAnchor.left }}
+          className="bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-[60] min-w-[200px]"
+        >
+          <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Lineup tauschen mit…</div>
+          {games.filter(g => g.id !== menuGame.id).map(target => (
+            <button
+              key={target.id}
+              disabled={swapping}
+              onClick={() => handleSwap(menuGame.id, target.id)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer transition-colors"
+            >
+              {gameLabel(target)}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+
       {/* Mobile: Pagination-Bar — Pfeile + Hero-Title + Dots (Swipe primär) */}
       <div className="lg:hidden flex items-center gap-2 py-2 border-b border-cream-300">
         <button
@@ -106,35 +141,19 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           <ChevronRight size={20} />
         </button>
         {games.length > 1 && activeGame && (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setMenuGameId(menuGameId === activeGame.id ? null : activeGame.id)}
-              aria-label="Lineup-Aktionen"
-              className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer rounded-md"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="5" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="12" cy="19" r="2" />
-              </svg>
-            </button>
-            {menuGameId === activeGame.id && (
-              <div data-swap-menu className="absolute top-full right-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
-                <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Lineup tauschen mit…</div>
-                {games.filter(g => g.id !== activeGame.id).map(target => (
-                  <button
-                    key={target.id}
-                    disabled={swapping}
-                    onClick={() => handleSwap(activeGame.id, target.id)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer"
-                  >
-                    {gameLabel(target)}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <button
+            type="button"
+            data-swap-menu
+            onClick={(e) => toggleMenu(activeGame.id, e)}
+            aria-label="Lineup-Aktionen"
+            className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer rounded-md"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
         )}
       </div>
 
@@ -165,40 +184,19 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
             </button>
 
             {games.length > 1 && (
-              <div className="relative">
-                <button
-                  onClick={e => { e.stopPropagation(); setMenuGameId(menuGameId === game.id ? null : game.id) }}
-                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
-                  title="Lineup tauschen"
-                  aria-label="Lineup-Aktionen"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="5" r="2" />
-                    <circle cx="12" cy="12" r="2" />
-                    <circle cx="12" cy="19" r="2" />
-                  </svg>
-                </button>
-                {menuGameId === game.id && (
-                  <div
-                    data-swap-menu
-                    className="absolute top-full left-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-50 min-w-[200px]"
-                  >
-                    <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                      Lineup tauschen mit...
-                    </div>
-                    {games.filter(g => g.id !== game.id).map(target => (
-                      <button
-                        key={target.id}
-                        disabled={swapping}
-                        onClick={() => handleSwap(game.id, target.id)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-navy-50 hover:text-navy-700 disabled:opacity-50 cursor-pointer transition-colors"
-                      >
-                        {gameLabel(target)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                data-swap-menu
+                onClick={e => { e.stopPropagation(); toggleMenu(game.id, e) }}
+                className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100 p-1 text-gray-400 hover:text-gray-600 transition-opacity cursor-pointer"
+                title="Lineup tauschen"
+                aria-label="Lineup-Aktionen"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="5" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="12" cy="19" r="2" />
+                </svg>
+              </button>
             )}
           </div>
         ))}
