@@ -33,7 +33,7 @@ export function Dashboard() {
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
   const [weather, setWeather] = useState<WeatherResponse | null>(null)
   // Award-Sheet: Scope = ganze Saison oder ein einzelner Spieltag (gameDayId)
-  const [awardScope, setAwardScope] = useState<'season' | number | null>(null)
+  const [awardScope, setAwardScope] = useState<'season' | number | null>('season')
   const [scopeAwards, setScopeAwards] = useState<AwardResponse[]>([])
   const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | 'weather' | 'awards' | null>(null)
   const [showStatsDetails, setShowStatsDetails] = useState(false)
@@ -66,7 +66,7 @@ export function Dashboard() {
     setShowAllGameDays(false)
     setShowAllPastGameDays(false)
     setGameDaysLoading(true)
-    setAwardScope(null) // Default-Scope neu bestimmen wenn Saison wechselt
+    setAwardScope('season') // Default: ganze Saison (passt zum Top-Hitter-Teaser auf der Kachel)
     Promise.all([
       api.getGameDays(selectedSeasonId),
       api.getSeasonStats(selectedSeasonId),
@@ -75,15 +75,6 @@ export function Dashboard() {
       .catch(e => toast.show(e.message, 'error'))
       .finally(() => setGameDaysLoading(false))
   }, [selectedSeasonId, toast])
-
-  // Award-Sheet geöffnet & kein Scope gewählt → Default: heutiger Spieltag, sonst letzter, sonst Saison
-  useEffect(() => {
-    if (openSheet !== 'awards' || awardScope !== null) return
-    const today = new Date().toISOString().slice(0, 10)
-    const todayGd = gameDays.find(gd => gd.date === today)
-    const lastPlayed = [...gameDays].reverse().find(gd => gd.date <= today)
-    setAwardScope(todayGd?.id ?? lastPlayed?.id ?? 'season')
-  }, [openSheet, awardScope, gameDays])
 
   // Awards für den gewählten Scope laden (Saison oder einzelner Spieltag)
   useEffect(() => {
@@ -317,7 +308,7 @@ export function Dashboard() {
                       showAll={showAllPastGameDays}
                       onShowAll={() => setShowAllPastGameDays(true)}
                       onShowLess={() => setShowAllPastGameDays(false)}
-                      visibleCount={3}
+                      visibleCount={1}
                       onEdit={id => setEditGameDayId(id)}
                       onDelete={id => setDeleteGameDayId(id)}
                     />
