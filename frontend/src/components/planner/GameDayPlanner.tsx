@@ -24,7 +24,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair } from '@/types'
 import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
-import { GamedayAwards } from '@/components/dashboard/GamedayAwards'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -555,9 +554,6 @@ export function GameDayPlanner() {
           </div>
         </div>
       </div>
-
-      {/* Spieltags-Auszeichnungen — erscheint nur bei gespieltem Spieltag (sonst null) */}
-      <GamedayAwards gameDayId={gameDay.id} date={gameDay.date} />
 
       <>
       {/* Tabs */}
