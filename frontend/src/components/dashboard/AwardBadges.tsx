@@ -113,12 +113,31 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     )
   }
 
+  // MVP als dunkler "Trophy"-Hero — klarer Fokuspunkt über den dezenten Neben-Titeln.
+  const mvpHero = (award: AwardResponse) => (
+    <div className="relative overflow-hidden rounded-xl bg-navy-900 px-3.5 py-3 shadow-md shadow-navy-900/20">
+      <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-softball-red-600/30 blur-2xl" aria-hidden="true" />
+      <div className="relative flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-softball-red-600/20 border border-softball-red-500/30 flex items-center justify-center shrink-0 text-softball-red-300">
+          <Trophy size={18} strokeWidth={2.5} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-[9px] tracking-[0.25em] uppercase font-bold text-softball-red-300">MVP</div>
+          <div className="font-display text-lg font-extrabold leading-tight truncate text-white">{award.playerName}</div>
+        </div>
+        <div className="font-display text-[11px] font-extrabold tracking-widest uppercase text-white/70 shrink-0">
+          {award.displayValue}
+        </div>
+      </div>
+    </div>
+  )
+
   if (layout === 'grid') {
     const mvp = awards.find(a => a.type === 'MVP')
     const rest = awards.filter(a => a.type !== 'MVP')
     return (
-      <div className="flex flex-col gap-1.5">
-        {mvp && badge(mvp)}
+      <div className="flex flex-col gap-2">
+        {mvp && mvpHero(mvp)}
         {rest.length > 0 && (
           <div className="grid grid-cols-2 gap-1.5">
             {rest.map(badge)}
