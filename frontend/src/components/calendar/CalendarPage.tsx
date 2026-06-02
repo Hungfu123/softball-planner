@@ -185,11 +185,11 @@ export function CalendarPage() {
                 <span className={`font-display text-[10px] sm:text-xs font-bold tabular-nums ${isToday ? 'text-softball-red-700' : hasEntries ? 'text-navy-900' : 'text-gray-400'}`}>
                   {day}
                 </span>
-                {/* Mobile: kompakte Punkte (kein Platz für Text) */}
+                {/* Mobile: Mini-Balken pro Eintrag (deutlicher als Punkte) */}
                 {dots.length > 0 && (
-                  <div className="flex sm:hidden flex-wrap items-center justify-center gap-0.5 px-0.5">
-                    {dots.slice(0, 4).map((c, di) => (
-                      <span key={di} className={`w-1.5 h-1.5 rounded-full ${c}`} />
+                  <div className="flex sm:hidden flex-col gap-0.5 w-full px-1 mt-0.5">
+                    {dots.slice(0, 3).map((c, di) => (
+                      <span key={di} className={`h-1 rounded-full ${c}`} />
                     ))}
                   </div>
                 )}
@@ -241,11 +241,11 @@ export function CalendarPage() {
       {/* Agenda des Monats */}
       <div className="space-y-2">
         <h2 className="font-display text-[12px] font-extrabold tracking-widest uppercase text-gray-700 px-1">Im {monthLabel}</h2>
-        {monthEntries.length === 0 ? (
+        {monthEntries.filter(e => e.gds.length > 0).length === 0 ? (
           <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm shadow-navy-900/5 p-4 text-center text-sm text-gray-500">
-            Keine Einträge in diesem Monat.
+            Keine Spieltage in diesem Monat.
           </div>
-        ) : monthEntries.map(entry => {
+        ) : monthEntries.filter(e => e.gds.length > 0).map(entry => {
           const d = new Date(cursor.y, cursor.m, entry.day)
           const wd = d.toLocaleDateString('de-DE', { weekday: 'short' })
           return (
@@ -276,13 +276,6 @@ export function CalendarPage() {
                     </Link>
                   )
                 })}
-                {entry.trs.map(tr => (
-                  <div key={tr.id} className="flex items-center gap-2 text-gray-600">
-                    <Dumbbell size={13} className="text-gray-400 shrink-0" />
-                    <span className="text-sm font-medium">Training{tr.time ? ` · ${tr.time}` : ''}</span>
-                    {tr.location && <span className="text-[11px] text-gray-500 inline-flex items-center gap-1"><MapPin size={10} /> {tr.location}</span>}
-                  </div>
-                ))}
               </div>
             </div>
           )
