@@ -89,7 +89,7 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     const nameCls = isDark
       ? isMvp ? 'text-white font-extrabold' : 'text-white/90 font-bold'
       : isMvp ? 'text-navy-900 font-extrabold' : 'text-navy-800 font-bold'
-    const valueCls = isDark ? 'text-white/50' : 'text-navy-500'
+    const valueCls = isDark ? 'text-white/50' : 'text-gray-500'
 
     return (
       <div
@@ -102,7 +102,7 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
           <div className="min-w-0">
             <div className={`font-display text-[10px] sm:text-[11px] tracking-wide uppercase leading-none truncate ${nameCls}`}>
               {meta.label}
-              <span className={`font-normal ${isDark ? 'text-white/55' : 'text-navy-500'}`}> · {award.playerName}</span>
+              <span className={`font-normal ${isDark ? 'text-white/55' : 'text-gray-500'}`}> · {award.playerName}</span>
             </div>
             <div className={`font-display text-[9px] sm:text-[10px] tracking-widest uppercase leading-tight mt-0.5 ${valueCls}`}>
               {award.displayValue}
@@ -118,11 +118,11 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     <div className="relative overflow-hidden rounded-xl bg-navy-900 px-3.5 py-3 shadow-md shadow-navy-900/20">
       <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-softball-red-600/30 blur-2xl" aria-hidden="true" />
       <div className="relative flex items-center gap-3">
-        <div className="w-9 h-9 rounded-lg bg-softball-red-600/20 border border-softball-red-500/30 flex items-center justify-center shrink-0 text-softball-red-300">
+        <div className="w-9 h-9 rounded-lg bg-softball-red-600/20 border border-softball-red-500/30 flex items-center justify-center shrink-0 text-softball-red-400">
           <Trophy size={18} strokeWidth={2.5} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-display text-[9px] tracking-[0.25em] uppercase font-bold text-softball-red-300">MVP</div>
+          <div className="font-display text-[9px] tracking-[0.25em] uppercase font-bold text-softball-red-400">MVP</div>
           <div className="font-display text-lg font-extrabold leading-tight truncate text-white">{award.playerName}</div>
         </div>
         <div className="font-display text-[11px] font-extrabold tracking-widest uppercase text-white/70 shrink-0">
