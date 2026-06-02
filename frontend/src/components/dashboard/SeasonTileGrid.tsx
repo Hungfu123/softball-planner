@@ -1,4 +1,4 @@
-import { Trophy, Award, CalendarDays, TrendingUp, Droplets } from 'lucide-react'
+import { Trophy, Medal, ChevronRight, CalendarDays, TrendingUp, Droplets } from 'lucide-react'
 import type { GameDayResponse, PlayerBattingStatsResponse, WeatherResponse } from '@/types'
 import { weatherIcon } from './weatherIcon'
 
@@ -112,28 +112,27 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
       )}
 
       {/* Row 2 — TOP HITTER + RUNS */}
+      {/* Auszeichnungen-Kachel: Top Hitter als Teaser, Klick → Award-Sheet (Saison/Spieltag) */}
       <button onClick={onOpenAwards} className={tileBase}>
-        <div className={iconHeader}>
-          <Award size={18} strokeWidth={2.2} className="text-softball-red-700" />
-          <span className={labelCls}>Top Hitter</span>
-        </div>
-        {topHitter ? (
-          <div className="flex items-end justify-between gap-2 mt-0.5">
-            <div className="min-w-0">
-              <div className={`${bigCls} truncate`}>
-                {fmtAvg(topHitter.battingAverage)}<span className="text-[10px] tracking-widest font-bold text-gray-500 ml-1">AVG</span>
-              </div>
-              <div className={`${subCls} truncate`}>{topHitter.playerName}</div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="font-display text-base sm:text-lg font-extrabold text-gray-300 leading-none">{topHitter.plateAppearances}</div>
-              <div className={`${labelCls} text-[8px] sm:text-[9px]`}>PA</div>
-            </div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="inline-flex items-center gap-1.5">
+            <Medal size={18} strokeWidth={2.2} className="text-softball-red-700" />
+            <span className={labelCls}>Auszeichnungen</span>
           </div>
+          <ChevronRight size={14} className="text-gray-400 shrink-0" />
+        </div>
+        <div className="font-display text-[9px] tracking-widest uppercase text-gray-400 font-bold leading-none mb-0.5">Top Hitter</div>
+        {topHitter ? (
+          <>
+            <div className={`${bigCls} truncate`}>
+              {fmtAvg(topHitter.battingAverage)}<span className="text-[10px] tracking-widest font-bold text-gray-500 ml-1">AVG</span>
+            </div>
+            <div className={`${subCls} truncate`}>{topHitter.playerName}</div>
+          </>
         ) : (
           <>
-            <div className="font-display text-base font-bold text-gray-400 mt-0.5">—</div>
-            <div className={subCls}>Min. {MIN_PA} PA nötig</div>
+            <div className="font-display text-base font-bold text-gray-400">—</div>
+            <div className={subCls}>Titel ab erstem Spiel</div>
           </>
         )}
       </button>
