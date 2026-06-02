@@ -5,7 +5,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { DashboardLoading } from './DashboardLoading'
-import { GamedayAwards } from './GamedayAwards'
+import { AwardBadges } from './AwardBadges'
 import { SeasonTileGrid } from './SeasonTileGrid'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
@@ -17,7 +17,7 @@ import {
   Button,
   ConfirmModal, LoadingSkeleton, ResponsiveSheet,
 } from '@/components/shared'
-import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse, WeatherResponse } from '@/types'
+import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse, WeatherResponse, AwardResponse } from '@/types'
 import * as api from '@/api/client'
 
 
@@ -32,7 +32,8 @@ export function Dashboard() {
   const [stats, setStats] = useState<SeasonPlayerStats[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
   const [weather, setWeather] = useState<WeatherResponse | null>(null)
-  const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | 'weather' | null>(null)
+  const [seasonAwards, setSeasonAwards] = useState<AwardResponse[]>([])
+  const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | 'weather' | 'awards' | null>(null)
   const [showStatsDetails, setShowStatsDetails] = useState(false)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
   const [showAllPastGameDays, setShowAllPastGameDays] = useState(false)
@@ -63,6 +64,7 @@ export function Dashboard() {
     setShowAllGameDays(false)
     setShowAllPastGameDays(false)
     setGameDaysLoading(true)
+    api.getSeasonAwards(selectedSeasonId).then(setSeasonAwards).catch(() => setSeasonAwards([]))
     Promise.all([
       api.getGameDays(selectedSeasonId),
       api.getSeasonStats(selectedSeasonId),
@@ -206,11 +208,6 @@ export function Dashboard() {
         <HeroNextGameDay gameDay={heroGameDay} variant={heroVariant} />
       )}
 
-      {/* Spieltags-Auszeichnungen als eigene helle Karte — nur für vergangenen Hero-Spieltag */}
-      {selectedSeasonId && heroGameDay && heroVariant === 'past' && (
-        <GamedayAwards gameDayId={heroGameDay.id} date={heroGameDay.date} />
-      )}
-
       {/* Spieltage der Saison werden geladen → Loading-State statt Empty-State-Flash */}
       {selectedSeasonId && gameDaysLoading && (
         <div data-testid="dashboard-loading">
@@ -315,7 +312,7 @@ export function Dashboard() {
               weather={weather}
               nextGameDay={upcomingGd}
               onOpenLiga={() => setOpenSheet('liga')}
-              onOpenStats={() => setOpenSheet('stats')}
+              onOpenAwards={() => setOpenSheet('awards')}
               onOpenResults={() => setOpenSheet('results')}
               onOpenWeather={() => setOpenSheet('weather')}
             />
@@ -556,6 +553,28 @@ export function Dashboard() {
 
           <DetailSheet open={openSheet === 'weather'} onClose={() => setOpenSheet(null)} title="Wetter · Tagesablauf">
             <WeatherDayBreakdown hours={weather?.hours ?? []} location={upcomingGd?.location} />
+          </DetailSheet>
+
+          <DetailSheet open={openSheet === 'awards'} onClose={() => setOpenSheet(null)} title="Saison-Auszeichnungen">
+            {seasonAwards.length > 0 ? (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Wer hatte diese Saison die Nase vorn — die Titelträger auf einen Blick.
+                </p>
+                <AwardBadges awards={seasonAwards} tone="light" layout="grid" />
+                <button
+                  onClick={() => setOpenSheet('stats')}
+                  className="font-display w-full h-10 rounded-lg bg-navy-900 hover:bg-navy-800 text-white font-extrabold text-[11px] tracking-widest uppercase transition-colors cursor-pointer"
+                >
+                  Volle Statistik
+                </button>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="font-display text-base font-bold text-navy-900 uppercase tracking-wide mb-1">Noch keine Auszeichnungen</p>
+                <p className="text-sm text-gray-500">Spiel ein paar Spiele mit erfasstem Scoring — dann gibt's Titel.</p>
+              </div>
+            )}
           </DetailSheet>
         </>
       )}

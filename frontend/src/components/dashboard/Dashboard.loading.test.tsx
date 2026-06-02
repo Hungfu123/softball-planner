@@ -16,6 +16,7 @@ vi.mock('@/api/client', () => ({
   getSeasonBattingStats: vi.fn(),
   getGameDayWeather: vi.fn(),
   getGameDayAwards: vi.fn(),
+  getSeasonAwards: vi.fn(),
   createSeason: vi.fn(),
   updateSeason: vi.fn(),
   deleteSeason: vi.fn(),
@@ -43,6 +44,7 @@ describe('Dashboard — Loading-State beim Laden der Spieltage', () => {
     mockApi.getSeasonBattingStats.mockResolvedValue([] as PlayerBattingStatsResponse[])
     mockApi.getGameDayWeather.mockResolvedValue(null)
     mockApi.getGameDayAwards.mockResolvedValue([])
+    mockApi.getSeasonAwards.mockResolvedValue([])
   })
 
   it('zeigt KEINEN "Noch kein Spieltag"-Empty-State während die Spieltage laden, sondern einen Loading-State', async () => {

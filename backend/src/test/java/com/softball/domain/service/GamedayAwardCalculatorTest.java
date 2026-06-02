@@ -126,4 +126,15 @@ class GamedayAwardCalculatorTest {
         var a = stats(1, "Aggro", 3, 5, 1, 0, 0, 1, "0.400", "1.000");
         assertThat(byType(calc.calculate(List.of(a)))).doesNotContainKey(AwardType.WALK);
     }
+
+    @Test
+    void rbi_awardedToRbiLeaderExcludingMvp() {
+        // MVP hat zwar die meisten RBI, wird ausgeschlossen → RBI-Titel an Nächstbesten
+        var mvp = stats(1, "Boss", 4, 10, 6, 1, 0, 3, "0.500", "1.300");
+        var driver = stats(2, "Lieferant", 4, 4, 4, 0, 0, 1, "0.400", "0.900");
+        var awards = byType(calc.calculate(List.of(mvp, driver)));
+        assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(1L);
+        assertThat(awards.get(AwardType.RBI).playerId()).isEqualTo(2L);
+        assertThat(awards.get(AwardType.RBI).displayValue()).isEqualTo("4 RBI");
+    }
 }

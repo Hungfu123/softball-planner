@@ -9,12 +9,12 @@ interface Props {
   weather?: WeatherResponse | null
   nextGameDay?: GameDayResponse | null
   onOpenLiga: () => void
-  onOpenStats: () => void
+  onOpenAwards: () => void
   onOpenResults: () => void
   onOpenWeather: () => void
 }
 
-export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, onOpenLiga, onOpenStats, onOpenResults, onOpenWeather }: Props) {
+export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, onOpenLiga, onOpenAwards, onOpenResults, onOpenWeather }: Props) {
   // Liga-Stand: Win/Loss/Tie aus Spielen mit Score
   const games = gameDays.flatMap(gd => gd.games)
   const playedGames = games.filter(g => g.scoreUs != null && g.scoreThem != null)
@@ -112,7 +112,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
       )}
 
       {/* Row 2 — TOP HITTER + RUNS */}
-      <button onClick={onOpenStats} className={tileBase}>
+      <button onClick={onOpenAwards} className={tileBase}>
         <div className={iconHeader}>
           <Award size={18} strokeWidth={2.2} className="text-softball-red-700" />
           <span className={labelCls}>Top Hitter</span>
