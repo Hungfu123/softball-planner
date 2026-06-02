@@ -601,6 +601,21 @@ export function Dashboard() {
                 )
               })()}
 
+              {/* Kontextzeile: bei gewähltem Spieltag Datum + Ort, sonst ganze Saison */}
+              {(() => {
+                if (awardScope === 'season' || awardScope === null) {
+                  return <p className="font-display text-[11px] tracking-widest uppercase font-bold text-gray-400">Ganze Saison</p>
+                }
+                const gd = gameDays.find(g => g.id === awardScope)
+                if (!gd) return null
+                const d = new Date(gd.date + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'long' })
+                return (
+                  <p className="font-display text-[11px] tracking-widest uppercase font-bold text-gray-400">
+                    {d}{gd.location ? ` · ${gd.location}` : ''}
+                  </p>
+                )
+              })()}
+
               {scopeAwards.length > 0 ? (
                 <AwardBadges awards={scopeAwards} tone="light" layout="grid" />
               ) : (
