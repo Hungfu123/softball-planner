@@ -114,6 +114,23 @@ export const getStandings = (id: number) =>
   request<StandingEntry[]>(`/seasons/${id}/standings`)
 
 // Game Days
+export const getAllGameDays = () => request<GameDayResponse[]>('/gamedays/all')
+
+/** Lädt den ICS-Kalender (mit Auth, da Basic-Auth global) und triggert den Download. */
+export async function downloadCalendarIcs(trainings: boolean) {
+  const res = await fetch(`${API}/calendar.ics?trainings=${trainings}`, { headers: getAuthHeaders() })
+  if (!res.ok) throw new Error('Kalender-Export fehlgeschlagen')
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'deadsox.ics'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 export const getGameDays = (seasonId: number) =>
   request<GameDayResponse[]>(`/seasons/${seasonId}/gamedays`)
 export const createGameDay = (seasonId: number, date: string, label?: string, location?: string, numberOfGames?: number) =>

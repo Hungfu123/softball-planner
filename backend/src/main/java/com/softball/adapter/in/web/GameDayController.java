@@ -51,6 +51,11 @@ public class GameDayController {
         return gameDayService.create(seasonId, request.date(), request.label(), request.location(), request.numberOfGames());
     }
 
+    @GetMapping("/gamedays/all")
+    public List<GameDayResponse> getAll() {
+        return gameDayService.findAllAsDto();
+    }
+
     @GetMapping("/gamedays/{id}")
     public GameDayResponse getById(@PathVariable final Long id) {
         return gameDayService.findByIdAsDto(id);
