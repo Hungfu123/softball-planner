@@ -26,18 +26,20 @@ public class GamedayAwardCalculator {
         final Optional<BattingStats> mvp = pickMvp(stats);
         mvp.ifPresent(s -> result.add(new Award(
             AwardType.MVP, s.playerId(), s.playerName(), "OPS " + s.ops().toPlainString())));
+        final Long mvpId = mvp.map(BattingStats::playerId).orElse(null);
+
+        pickTopHitter(stats, mvpId).ifPresent(s -> result.add(new Award(
+            AwardType.TOP_HITTER, s.playerId(), s.playerName(), "AVG " + fmtAvg(s.battingAverage()))));
 
         pickPower(stats).ifPresent(s -> result.add(new Award(
             AwardType.POWER, s.playerId(), s.playerName(), s.totalBases() + " Bases")));
 
-        final Long mvpForRbi = mvp.map(BattingStats::playerId).orElse(null);
-        pickRbi(stats, mvpForRbi).ifPresent(s -> result.add(new Award(
+        pickRbi(stats, mvpId).ifPresent(s -> result.add(new Award(
             AwardType.RBI, s.playerId(), s.playerName(), s.runsBattedIn() + " RBI")));
 
         pickSpeed(stats).ifPresent(s -> result.add(new Award(
             AwardType.SPEED, s.playerId(), s.playerName(), s.stolenBases() + " SB")));
 
-        final Long mvpId = mvp.map(BattingStats::playerId).orElse(null);
         pickOnBase(stats, mvpId).ifPresent(s -> result.add(new Award(
             AwardType.ON_BASE, s.playerId(), s.playerName(), "OBP " + s.onBasePct().toPlainString())));
 
@@ -45,6 +47,12 @@ public class GamedayAwardCalculator {
             AwardType.WALK, s.playerId(), s.playerName(), s.walks() + " BB")));
 
         return result;
+    }
+
+    /** AVG ohne führende Null (Baseball-Konvention): 0.833 → .833, 1.000 → 1.000. */
+    private String fmtAvg(final java.math.BigDecimal avg) {
+        final String s = avg.setScale(3, java.math.RoundingMode.HALF_UP).toPlainString();
+        return s.startsWith("0") ? s.substring(1) : s;
     }
 
     private boolean hasExtraBaseHit(final BattingStats s) {
@@ -57,6 +65,17 @@ public class GamedayAwardCalculator {
             .filter(s -> s.plateAppearances() >= MIN_PA)
             .max(Comparator
                 .comparing(BattingStats::ops)
+                .thenComparingInt(BattingStats::plateAppearances)
+                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
+    }
+
+    private Optional<BattingStats> pickTopHitter(final List<BattingStats> stats, final Long excludeId) {
+        return stats.stream()
+            .filter(s -> s.plateAppearances() >= MIN_PA)
+            .filter(s -> s.battingAverage().signum() > 0)
+            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
+            .max(Comparator
+                .comparing(BattingStats::battingAverage)
                 .thenComparingInt(BattingStats::plateAppearances)
                 .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
     }
