@@ -55,7 +55,7 @@ export function Layout() {
               <img src="/deadsox.jpeg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
               <span className="font-display font-extrabold text-base tracking-wider hidden sm:block">DEAD SOX</span>
             </Link>
-            <nav className="flex items-stretch gap-0.5 sm:gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 justify-end">
+            <nav className="flex items-stretch gap-0.5 sm:gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 justify-center sm:justify-end">
               {TABS.map(tab => {
                 const active = activeTab === tab.path
                 return (
