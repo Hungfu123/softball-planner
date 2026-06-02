@@ -265,6 +265,12 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
   const renderItems = groupSectionsForRender(sections)
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
   const hasBeginnerGroup = sections.some(s => s.group === 'BEGINNER')
+  const [groupView, setGroupView] = useState<'MAIN' | 'BEGINNER'>('MAIN')
+  // Bei Inline-Anfängergruppe: pro Tab gemeinsame (ALL) + gruppen-eigene Blöcke
+  const displayed: IndexedSection[] = sections
+    .map((section, index) => ({ section, index }))
+    .filter(it => !hasBeginnerGroup || (it.section.group ?? 'ALL') === 'ALL' || it.section.group === groupView)
+  const displayedMinutes = displayed.reduce((sum, it) => sum + (it.section.durationMinutes ?? 0), 0)
   const hasBeginnerPlan = plans.some(p => p.kind === 'BEGINNER')
   const hasMainPlan = plans.some(p => p.kind === 'MAIN')
   const showKindTabs = plans.length >= 2
@@ -459,6 +465,33 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
         </div>
       )}
 
+      {hasBeginnerGroup && (
+        <div className="mb-3 inline-flex bg-cream-200 rounded-lg p-0.5" role="tablist" aria-label="Gruppe">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={groupView === 'MAIN'}
+            onClick={() => setGroupView('MAIN')}
+            className={`px-3 py-1.5 rounded font-display text-xs font-bold tracking-widest uppercase cursor-pointer transition-colors ${
+              groupView === 'MAIN' ? 'bg-navy-900 text-white' : 'text-navy-700 hover:bg-navy-100'
+            }`}
+          >
+            Hauptgruppe
+          </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={groupView === 'BEGINNER'}
+            onClick={() => setGroupView('BEGINNER')}
+            className={`px-3 py-1.5 rounded font-display text-xs font-bold tracking-widest uppercase cursor-pointer transition-colors ${
+              groupView === 'BEGINNER' ? 'bg-amber-700 text-white' : 'text-amber-700 hover:bg-amber-100'
+            }`}
+          >
+            Anfänger
+          </button>
+        </div>
+      )}
+
       {!loading && sections.length === 0 ? (
         <div className="bg-white border border-cream-300 rounded-2xl p-4 text-sm text-navy-700">
           <p className="opacity-70 italic">Noch kein Plan für dieses Training.</p>
@@ -466,7 +499,7 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
       ) : (
         <div className="space-y-1.5">
           <div className="text-[11px] text-navy-600 font-semibold tabular-nums pb-1">
-            {formatTotal(totalMinutes)} · {sections.length} {sections.length === 1 ? 'Block' : 'Blöcke'}
+            {formatTotal(hasBeginnerGroup ? displayedMinutes : totalMinutes)} · {hasBeginnerGroup ? displayed.length : sections.length} {(hasBeginnerGroup ? displayed.length : sections.length) === 1 ? 'Block' : 'Blöcke'}
           </div>
           {!hasBeginnerGroup && onAddBeginnerGroup && activePlan?.kind !== 'BEGINNER' && (
             <button
@@ -478,7 +511,8 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
               <UserPlus size={14} /> Anfänger-Gruppe hinzufügen
             </button>
           )}
-          {renderItems.map((item, idx) => {
+          {hasBeginnerGroup && renderSectionSlice(displayed, 'grp')}
+          {!hasBeginnerGroup && renderItems.map((item, idx) => {
             if (item.kind === 'all') {
               return (
                 <div key={`all-${idx}`} className="space-y-1.5">
