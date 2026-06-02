@@ -47,25 +47,16 @@ public class GamedayAwardCalculator {
         return result;
     }
 
-    /**
-     * MVP-Composite = Schlag-Gesamtleistung: Total Bases + RBI + Walks.
-     * Bewusst OHNE Stolen Bases (Speed hat den eigenen Speedster-Titel) und ohne
-     * reines OPS (Counting-Stats sind auf Spieltag-Ebene robuster als Quoten bei wenigen ABs).
-     */
-    private int composite(final BattingStats s) {
-        return s.totalBases() + s.runsBattedIn() + s.walks();
-    }
-
     private boolean hasExtraBaseHit(final BattingStats s) {
         return s.doubles() + s.triples() + s.homeRuns() > 0;
     }
 
     private Optional<BattingStats> pickMvp(final List<BattingStats> stats) {
+        // MVP = bester OPS (On-Base + Slugging = bester Gesamt-Schläger). Tiebreak: mehr PA.
         return stats.stream()
             .filter(s -> s.plateAppearances() >= MIN_PA)
             .max(Comparator
-                .comparingInt(this::composite)
-                .thenComparing(BattingStats::ops)
+                .comparing(BattingStats::ops)
                 .thenComparingInt(BattingStats::plateAppearances)
                 .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
     }

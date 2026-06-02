@@ -39,7 +39,7 @@ class GamedayAwardCalculatorTest {
     }
 
     @Test
-    void mvp_picksHighestComposite() {
+    void mvp_picksHighestOps() {
         var a = stats(1, "Anna", 3, 8, 3, 1, 0, 2, "0.500", "1.300");
         var b = stats(2, "Ben", 3, 4, 0, 0, 2, 1, "0.400", "0.800");
         var awards = byType(calc.calculate(List.of(a, b)));
