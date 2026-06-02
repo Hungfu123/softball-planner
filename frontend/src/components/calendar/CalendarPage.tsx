@@ -189,7 +189,7 @@ export function CalendarPage() {
                 {dots.length > 0 && (
                   <div className="flex sm:hidden flex-col gap-0.5 w-full px-1 mt-0.5">
                     {dots.slice(0, 3).map((c, di) => (
-                      <span key={di} className={`h-1 rounded-full ${c}`} />
+                      <span key={di} className={`h-1.5 rounded-full ${c}`} />
                     ))}
                   </div>
                 )}
