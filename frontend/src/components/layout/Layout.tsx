@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ChevronLeft } from '@/icons'
+import { Home, CalendarDays, Dumbbell, Users, BarChart3, ClipboardList, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
 import { createContext, useContext, type ReactNode } from 'react'
@@ -23,14 +24,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
-const TABS = [
-  { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele' },
-  { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender' },
-  { path: '/training', label: 'Training', shortLabel: 'Training' },
-  { path: '/players', label: 'Spieler', shortLabel: 'Spieler' },
-  { path: '/stats', label: 'Statistik', shortLabel: 'Stats' },
-  { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen' },
-] as const
+const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon }[] = [
+  { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
+  { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
+  { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
+  { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
+  { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
+  { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
+]
 
 export function Layout() {
   const toast = useToast()
@@ -54,21 +55,23 @@ export function Layout() {
               <img src="/deadsox.jpeg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
               <span className="font-display font-extrabold text-base tracking-wider hidden sm:block">DEAD SOX</span>
             </Link>
-            <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 justify-end">
-              {TABS.map(tab => (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className={`font-display shrink-0 px-3 py-1.5 text-[11px] sm:text-xs font-bold tracking-widest rounded-full transition-colors duration-200 whitespace-nowrap ${
-                    activeTab === tab.path
-                      ? 'bg-white text-navy-900'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <span className="sm:hidden uppercase">{tab.shortLabel}</span>
-                  <span className="hidden sm:inline uppercase">{tab.label}</span>
-                </Link>
-              ))}
+            <nav className="flex items-stretch gap-0.5 sm:gap-1.5 overflow-x-auto scrollbar-none flex-1 min-w-0 justify-end">
+              {TABS.map(tab => {
+                const active = activeTab === tab.path
+                return (
+                  <Link
+                    key={tab.path}
+                    to={tab.path}
+                    className={`font-display shrink-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-xs font-bold tracking-wide sm:tracking-widest rounded-lg sm:rounded-full transition-colors duration-200 whitespace-nowrap ${
+                      active ? 'bg-white text-navy-900' : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <tab.Icon size={17} strokeWidth={2.2} className="shrink-0" />
+                    <span className="uppercase sm:hidden">{tab.shortLabel}</span>
+                    <span className="uppercase hidden sm:inline">{tab.label}</span>
+                  </Link>
+                )
+              })}
             </nav>
           </div>
         </header>
