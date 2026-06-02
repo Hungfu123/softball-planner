@@ -47,8 +47,13 @@ public class GamedayAwardCalculator {
         return result;
     }
 
+    /**
+     * MVP-Composite = Schlag-Gesamtleistung: Total Bases + RBI + Walks.
+     * Bewusst OHNE Stolen Bases (Speed hat den eigenen Speedster-Titel) und ohne
+     * reines OPS (Counting-Stats sind auf Spieltag-Ebene robuster als Quoten bei wenigen ABs).
+     */
     private int composite(final BattingStats s) {
-        return s.totalBases() + s.runsBattedIn() + s.walks() + s.stolenBases();
+        return s.totalBases() + s.runsBattedIn() + s.walks();
     }
 
     private boolean hasExtraBaseHit(final BattingStats s) {
