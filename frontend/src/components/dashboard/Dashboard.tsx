@@ -230,8 +230,9 @@ export function Dashboard() {
         <HeroNextGameDay gameDay={heroGameDay} variant={heroVariant} />
       )}
 
-      {/* Spieltage der Saison werden geladen → Loading-State statt Empty-State-Flash */}
-      {selectedSeasonId && gameDaysLoading && (
+      {/* Skeleton NUR beim Erst-Laden (keine Daten da) — nicht bei Refetch, sonst
+          rendern Hero (alte Daten) + Skeleton gleichzeitig ("2 Heroes"). */}
+      {selectedSeasonId && gameDaysLoading && gameDays.length === 0 && (
         <div data-testid="dashboard-loading">
           <DashboardLoading />
         </div>
