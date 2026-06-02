@@ -22,7 +22,7 @@ import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, ClipboardIcon, Users
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair } from '@/types'
-import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf } from '@/utils/pdfExport'
+import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
 import * as api from '@/api/client'
 
@@ -283,6 +283,15 @@ export function GameDayPlanner() {
     }
   }
 
+  const handleExportSignatures = () => {
+    if (!gameDay) return
+    try {
+      generateSignatureListPdf(gameDay, players)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const triggerAutoGenerate = () => {
     if (!activeGame) return
     if (lineup.entries.length > 0) {
@@ -486,6 +495,11 @@ export function GameDayPlanner() {
                 label="PDF"
                 onClick={() => lineup.hasChanges ? setShowExportConfirm(true) : handleExportPdf()}
               />
+              <ToolbarBtn
+                icon={<UsersIcon size={16} />}
+                label="Liste"
+                onClick={handleExportSignatures}
+              />
             </div>
           </div>
 
@@ -555,6 +569,14 @@ export function GameDayPlanner() {
               >
                 <ExportDoc size={14} />
                 <span>PDF</span>
+              </button>
+              <button
+                onClick={handleExportSignatures}
+                className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                title="Anwesenheitsliste (Unterschriften) als PDF"
+              >
+                <UsersIcon size={14} />
+                <span>Liste</span>
               </button>
             </div>
           </div>

@@ -947,3 +947,60 @@ export function generateLineupWithFieldPdf(
   doc.setProperties({ title: parts.join('_') })
   doc.save(parts.join('_') + '.pdf')
 }
+
+/**
+ * Anwesenheits-/Unterschriften-Liste für einen Spieltag: alle Spieler nummeriert
+ * untereinander mit leerem Unterschrift-Feld daneben. Header mit Spieltag (wann/wo).
+ */
+export function generateSignatureListPdf(
+  gameDay: GameDayResponse,
+  players: { id: number; name: string }[],
+) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const pageWidth = doc.internal.pageSize.getWidth()
+  let y = 18
+
+  const formatDate = (d: string) =>
+    new Date(d + 'T00:00:00').toLocaleDateString('de-DE', {
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+    })
+
+  doc.setFontSize(16)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(10, 15, 92) // navy-900
+  doc.text('Anwesenheitsliste', pageWidth / 2, y, { align: 'center' })
+  y += 7
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(70, 70, 70)
+  const sub = `${gameDay.label || 'Spieltag'} · ${formatDate(gameDay.date)}`
+    + (gameDay.location ? ` · ${gameDay.location}` : '')
+  doc.text(sub, pageWidth / 2, y, { align: 'center' })
+  y += 8
+
+  const sorted = [...players].sort((a, b) => a.name.localeCompare(b.name, 'de'))
+  const body: string[][] = sorted.map((p, i) => [String(i + 1), p.name, ''])
+  // Leerzeilen für Gäste/Nachzügler
+  for (let i = 0; i < 4; i++) body.push([String(sorted.length + i + 1), '', ''])
+
+  autoTable(doc, {
+    startY: y,
+    head: [['#', 'Name', 'Unterschrift']],
+    body,
+    theme: 'grid',
+    styles: { fontSize: 11, cellPadding: { top: 3, bottom: 3, left: 2, right: 2 }, minCellHeight: 11, valign: 'middle', lineColor: [210, 210, 210], lineWidth: 0.2, textColor: [20, 20, 20] },
+    headStyles: { fillColor: [10, 15, 92], textColor: 255, fontStyle: 'bold', fontSize: 10, halign: 'left' },
+    columnStyles: {
+      0: { cellWidth: 14, halign: 'center', textColor: [120, 120, 120] },
+      1: { cellWidth: 72, fontStyle: 'bold' },
+      2: { cellWidth: 'auto' },
+    },
+    margin: { left: 20, right: 20 },
+  })
+
+  const parts = ['Anwesenheit', gameDay.label || 'Spieltag', gameDay.date]
+  if (gameDay.location) parts.push(gameDay.location)
+  doc.setProperties({ title: parts.join('_') })
+  doc.save(parts.join('_') + '.pdf')
+}
