@@ -4,6 +4,7 @@ package com.softball.domain.model;
 public enum AwardType {
     MVP,
     POWER,
+    RBI,
     SPEED,
     ON_BASE,
     WALK

@@ -30,6 +30,10 @@ public class GamedayAwardCalculator {
         pickPower(stats).ifPresent(s -> result.add(new Award(
             AwardType.POWER, s.playerId(), s.playerName(), s.totalBases() + " Bases")));
 
+        final Long mvpForRbi = mvp.map(BattingStats::playerId).orElse(null);
+        pickRbi(stats, mvpForRbi).ifPresent(s -> result.add(new Award(
+            AwardType.RBI, s.playerId(), s.playerName(), s.runsBattedIn() + " RBI")));
+
         pickSpeed(stats).ifPresent(s -> result.add(new Award(
             AwardType.SPEED, s.playerId(), s.playerName(), s.stolenBases() + " SB")));
 
@@ -85,6 +89,16 @@ public class GamedayAwardCalculator {
             .max(Comparator
                 .comparing(BattingStats::onBasePct)
                 .thenComparingInt(BattingStats::plateAppearances)
+                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
+    }
+
+    private Optional<BattingStats> pickRbi(final List<BattingStats> stats, final Long excludeId) {
+        return stats.stream()
+            .filter(s -> s.plateAppearances() >= MIN_PA)
+            .filter(s -> s.runsBattedIn() > 0)
+            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
+            .max(Comparator
+                .comparingInt(BattingStats::runsBattedIn)
                 .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
     }
 
