@@ -185,10 +185,34 @@ export function CalendarPage() {
                 <span className={`font-display text-[10px] sm:text-xs font-bold tabular-nums ${isToday ? 'text-softball-red-700' : hasEntries ? 'text-navy-900' : 'text-gray-400'}`}>
                   {day}
                 </span>
+                {/* Mobile: kompakte Punkte (kein Platz für Text) */}
                 {dots.length > 0 && (
-                  <div className="flex flex-wrap items-center justify-center gap-0.5 px-0.5">
+                  <div className="flex sm:hidden flex-wrap items-center justify-center gap-0.5 px-0.5">
                     {dots.slice(0, 4).map((c, di) => (
                       <span key={di} className={`w-1.5 h-1.5 rounded-full ${c}`} />
+                    ))}
+                  </div>
+                )}
+                {/* Desktop: lesbare Mini-Einträge (Gegner + Ort) */}
+                {e && (e.gds.length > 0 || e.trs.length > 0) && (
+                  <div className="hidden sm:flex flex-col gap-0.5 w-full px-1 mt-0.5">
+                    {e.gds.map(gd => {
+                      const meta = seasonMeta.get(gd.seasonId)
+                      const opp = (gd.games.map(g => g.opponentTeam?.name).filter(Boolean) as string[])[0]
+                      const extra = gd.games.filter(g => g.opponentTeam).length - 1
+                      return (
+                        <div key={gd.id} className={`rounded px-1 py-0.5 leading-tight ${meta?.bg ?? 'bg-gray-100'}`}>
+                          <div className={`text-[9px] font-bold truncate ${meta?.text ?? 'text-gray-700'}`}>
+                            {opp ? `vs ${opp}${extra > 0 ? ` +${extra}` : ''}` : (gd.label || 'Spieltag')}
+                          </div>
+                          {gd.location && <div className="text-[8px] text-gray-500 truncate">{gd.location}</div>}
+                        </div>
+                      )
+                    })}
+                    {e.trs.map(tr => (
+                      <div key={tr.id} className="text-[9px] text-gray-500 truncate leading-tight">
+                        Training{tr.location ? ` · ${tr.location}` : ''}
+                      </div>
                     ))}
                   </div>
                 )}

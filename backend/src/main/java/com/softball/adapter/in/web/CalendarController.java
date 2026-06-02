@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 /**
  * iCalendar-Export (.ics) aller Spieltage (+ optional Trainings) über alle Saisons.
  * Abonnierbar/importierbar in jeden Kalender. Reine Serialisierung (Adapter-Layer).
+ * Öffentlich (permitAll in SecurityConfig) damit Kalender-Apps abonnieren können.
  */
 @RestController
 public class CalendarController {
@@ -51,11 +53,11 @@ public class CalendarController {
 
         final String stamp = ZonedDateTime.now(ZoneOffset.UTC).format(STAMP);
         final StringBuilder ics = new StringBuilder();
-        ics.append("BEGIN:VCALENDAR\r\n")
-           .append("VERSION:2.0\r\n")
-           .append("PRODID:-//Dead Sox//Softball Planner//DE\r\n")
-           .append("CALSCALE:GREGORIAN\r\n")
-           .append("X-WR-CALNAME:Dead Sox\r\n");
+        appendLine(ics, "BEGIN:VCALENDAR");
+        appendLine(ics, "VERSION:2.0");
+        appendLine(ics, "PRODID:-//Dead Sox//Softball Planner//DE");
+        appendLine(ics, "CALSCALE:GREGORIAN");
+        appendLine(ics, "X-WR-CALNAME:Dead Sox");
 
         for (final GameDayResponse gd : gameDayService.findAllAsDto()) {
             if (gd.date() == null) continue;
@@ -78,7 +80,7 @@ public class CalendarController {
             }
         }
 
-        ics.append("END:VCALENDAR\r\n");
+        appendLine(ics, "END:VCALENDAR");
 
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/calendar;charset=UTF-8"));
@@ -89,24 +91,44 @@ public class CalendarController {
     /** All-Day-VEVENT (DTSTART/DTEND als DATE, DTEND = Folgetag). */
     private void appendEvent(final StringBuilder ics, final String uid, final LocalDate date,
                              final String summary, final String location, final String stamp) {
-        ics.append("BEGIN:VEVENT\r\n")
-           .append("UID:").append(uid).append("@softball-planner\r\n")
-           .append("DTSTAMP:").append(stamp).append("\r\n")
-           .append("DTSTART;VALUE=DATE:").append(date.format(DATE)).append("\r\n")
-           .append("DTEND;VALUE=DATE:").append(date.plusDays(1).format(DATE)).append("\r\n")
-           .append("SUMMARY:").append(escape(summary)).append("\r\n");
+        appendLine(ics, "BEGIN:VEVENT");
+        appendLine(ics, "UID:" + uid + "@softball-planner");
+        appendLine(ics, "DTSTAMP:" + stamp);
+        appendLine(ics, "DTSTART;VALUE=DATE:" + date.format(DATE));
+        appendLine(ics, "DTEND;VALUE=DATE:" + date.plusDays(1).format(DATE));
+        appendLine(ics, "SUMMARY:" + escape(summary));
         if (location != null && !location.isBlank()) {
-            ics.append("LOCATION:").append(escape(location)).append("\r\n");
+            appendLine(ics, "LOCATION:" + escape(location));
         }
-        ics.append("END:VEVENT\r\n");
+        appendLine(ics, "END:VEVENT");
     }
 
-    /** ICS-Text-Escaping: Backslash, Komma, Semikolon, Zeilenumbruch. */
+    /**
+     * Schreibt eine Content-Line mit CRLF und RFC-5545-Zeilen-Folding (max 75 Oktette,
+     * Fortsetzung mit führendem Space). UTF-8-Multibyte-sicher (Umlaute).
+     */
+    private void appendLine(final StringBuilder ics, final String content) {
+        int lineBytes = 0;
+        for (int i = 0; i < content.length(); i++) {
+            final char c = content.charAt(i);
+            final int cb = String.valueOf(c).getBytes(StandardCharsets.UTF_8).length;
+            if (lineBytes + cb > 73) { // konservativ < 75 inkl. Fortsetzungs-Space
+                ics.append("\r\n ");
+                lineBytes = 1; // führender Space der Fortsetzungszeile
+            }
+            ics.append(c);
+            lineBytes += cb;
+        }
+        ics.append("\r\n");
+    }
+
+    /** ICS-Text-Escaping: Backslash, Komma, Semikolon, Zeilenumbruch; CR entfernt. */
     private String escape(final String s) {
         return s == null ? "" : s
             .replace("\\", "\\\\")
             .replace(",", "\\,")
             .replace(";", "\\;")
+            .replace("\r", "")
             .replace("\n", "\\n");
     }
 }
