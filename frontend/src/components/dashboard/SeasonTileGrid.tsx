@@ -61,7 +61,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
         <>
           <button onClick={onOpenWeather} className={tileBase}>
             <div className={iconHeader}>
-              {weatherIcon(weather.wmoCode, 18, 'text-navy-800')}
+              {weatherIcon(weather.wmoCode, 18, 'text-softball-red-700')}
               <span className={labelCls}>Wetter</span>
             </div>
             <div className="flex items-end justify-between gap-2 mt-0.5">
@@ -82,7 +82,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
 
           <button onClick={onOpenLiga} className={tileBase}>
             <div className={iconHeader}>
-              <Trophy size={18} strokeWidth={2.2} className="text-navy-800" />
+              <Trophy size={18} strokeWidth={2.2} className="text-softball-red-700" />
               <span className={labelCls}>Liga</span>
             </div>
             <div className="flex items-end justify-between gap-2 mt-0.5">
@@ -99,7 +99,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
         </>
       ) : (
         <button onClick={onOpenLiga} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
-          <Trophy size={22} strokeWidth={2.2} className="text-navy-800 shrink-0" />
+          <Trophy size={22} strokeWidth={2.2} className="text-softball-red-700 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className={labelCls}>Liga</div>
             <div className={heroBig}>{wins}–{losses}{ties > 0 ? `–${ties}` : ''}</div>
@@ -169,7 +169,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
 
       {/* Row 3 — ERGEBNISSE Strip (span 2 cols) */}
       <button onClick={onOpenResults} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
-        <CalendarDays size={20} strokeWidth={2.2} className="text-navy-800 shrink-0" />
+        <CalendarDays size={20} strokeWidth={2.2} className="text-softball-red-700 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className={labelCls}>Ergebnisse</div>
           <div className="flex items-center gap-1.5 mt-1">
