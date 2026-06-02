@@ -1,4 +1,4 @@
-import { useEffect, useState, useId } from 'react'
+import { useEffect, useState, useId, Fragment } from 'react'
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import type { DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
@@ -521,20 +521,38 @@ export function PlanEditDrawer({ open, onClose, planContent, planId, onSave }: P
                 ) : (
                   sections.map((s, idx) => {
                     const drill = s.drillId ? drills.find(d => d.id === s.drillId) : undefined
+                    // Gruppen-Überschrift, wenn sich die Gruppe ändert (nur bei Anfängergruppe).
+                    const hasBeginnerGroup = sections.some(x => x.group === 'BEGINNER')
+                    const group = s.group ?? 'ALL'
+                    const prevGroup = idx > 0 ? (sections[idx - 1].group ?? 'ALL') : null
+                    const showHeader = hasBeginnerGroup && group !== prevGroup
+                    const headerLabel = group === 'MAIN' ? 'Hauptgruppe' : group === 'BEGINNER' ? 'Anfänger' : 'Gemeinsam'
+                    const headerCls = group === 'MAIN' ? 'bg-navy-50 text-navy-800'
+                      : group === 'BEGINNER' ? 'bg-amber-50 text-amber-800'
+                      : 'bg-cream-200 text-navy-700'
                     return (
-                      <SortableSection
-                        key={`section-${idx}`}
-                        section={s}
-                        idx={idx}
-                        drill={drill}
-                        expanded={expandedSet.has(idx)}
-                        selected={selectedSet.has(idx)}
-                        onToggleSelect={() => toggleSelected(idx)}
-                        onToggleExpanded={() => toggleExpanded(idx)}
-                        onUpdate={(patch) => updateSection(idx, patch)}
-                        onRemove={() => removeSection(idx)}
-                        onSwap={planId != null ? () => openSwapPicker(idx) : undefined}
-                      />
+                      <Fragment key={`sec-${idx}`}>
+                        {showHeader && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <span className={`font-display text-[10px] font-extrabold tracking-widest uppercase px-2 py-0.5 rounded ${headerCls}`}>
+                              {headerLabel}
+                            </span>
+                            <span className="flex-1 h-px bg-cream-300" />
+                          </div>
+                        )}
+                        <SortableSection
+                          section={s}
+                          idx={idx}
+                          drill={drill}
+                          expanded={expandedSet.has(idx)}
+                          selected={selectedSet.has(idx)}
+                          onToggleSelect={() => toggleSelected(idx)}
+                          onToggleExpanded={() => toggleExpanded(idx)}
+                          onUpdate={(patch) => updateSection(idx, patch)}
+                          onRemove={() => removeSection(idx)}
+                          onSwap={planId != null ? () => openSwapPicker(idx) : undefined}
+                        />
+                      </Fragment>
                     )
                   })
                 )}
