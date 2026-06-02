@@ -71,10 +71,16 @@ export function GameDayPlanner() {
     return () => window.removeEventListener('beforeunload', handler)
   }, [lineup.hasChanges])
 
+  // First-load gate: keep the full-page skeleton until lineup AND staff for the
+  // active game have loaded once. Tab switches afterwards stay smooth (lineup is
+  // cached, staff shows its own inline skeleton via CoachSlots `loading`).
+  const [ready, setReady] = useState(false)
   useEffect(() => {
     if (activeGame) {
-      lineup.load(activeGame.id)
-      staff.load(activeGame.id)
+      Promise.all([
+        lineup.load(activeGame.id),
+        staff.load(activeGame.id),
+      ]).then(() => setReady(true))
     }
   }, [activeGame?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -361,7 +367,7 @@ export function GameDayPlanner() {
     }
   }
 
-  if (loading || !gameDay) {
+  if (loading || !gameDay || !ready) {
     return <GameDayPlannerSkeleton />
   }
 
@@ -773,6 +779,7 @@ export function GameDayPlanner() {
                   onSave={handleStaffSave}
                   lineup={coachRotationLineup}
                   game={activeGame!}
+                  loading={!staff.loaded}
                   onSaveRotation={handleRotationSave}
                 />
                 <BenchDisplay players={benchPlayers} />
@@ -833,6 +840,7 @@ export function GameDayPlanner() {
                   onSave={handleStaffSave}
                   lineup={coachRotationLineup}
                   game={activeGame!}
+                  loading={!staff.loaded}
                   onSaveRotation={handleRotationSave}
                 />
               </div>
@@ -907,6 +915,7 @@ export function GameDayPlanner() {
                 onSave={handleStaffSave}
                 lineup={coachRotationLineup}
                 game={activeGame!}
+                loading={!staff.loaded}
                 onSaveRotation={handleRotationSave}
               />
               <BenchDisplay players={benchPlayers} />

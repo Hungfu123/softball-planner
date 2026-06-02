@@ -4,9 +4,12 @@ import * as api from '@/api/client'
 
 export function useStaff() {
   const [staff, setStaff] = useState<GameStaffResponse[]>([])
+  const [loaded, setLoaded] = useState(false)
 
   const load = useCallback(async (gameId: number) => {
+    setLoaded(false)
     setStaff(await api.getStaff(gameId))
+    setLoaded(true)
   }, [])
 
   const save = useCallback(async (
@@ -18,5 +21,5 @@ export function useStaff() {
     return saved
   }, [])
 
-  return { staff, load, save }
+  return { staff, loaded, load, save }
 }
