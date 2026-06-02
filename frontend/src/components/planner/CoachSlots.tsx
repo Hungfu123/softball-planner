@@ -10,11 +10,12 @@ interface Props {
   availablePlayers: Player[]
   lineup: CoachRotationLineupRow[]
   game: GameResponse
+  loading?: boolean
   onSave: (entries: { playerId: number; role: string }[]) => Promise<void>
   onSaveRotation: (firstBase: CoachRotationPair | null, thirdBase: CoachRotationPair | null) => Promise<void>
 }
 
-export function CoachSlots({ staff, availablePlayers, lineup, game, onSave, onSaveRotation }: Props) {
+export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onSave, onSaveRotation }: Props) {
   const [coach1st, setCoach1st] = useState<number | ''>('')
   const [coach3rd, setCoach3rd] = useState<number | ''>('')
   const [saving, setSaving] = useState(false)
@@ -62,7 +63,14 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, onSave, onSa
         Coaches
       </h2>
       <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm p-3 space-y-4">
-        {Object.entries(STAFF_ROLES).map(([role, label]) => {
+        {loading ? (
+          [0, 1].map(i => (
+            <div key={i}>
+              <div className="skeleton-shimmer h-3 w-20 rounded-full bg-cream-200 mb-1.5" />
+              <div className="skeleton-shimmer h-[38px] w-full rounded-lg bg-cream-200" />
+            </div>
+          ))
+        ) : Object.entries(STAFF_ROLES).map(([role, label]) => {
           const value = role === 'BASE_COACH_1ST' ? coach1st : coach3rd
           const currentRotation = role === 'BASE_COACH_1ST'
             ? (game.firstBaseCoachRotation ?? null)
