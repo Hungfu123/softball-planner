@@ -55,6 +55,14 @@ public class GameDayService {
             .toList();
     }
 
+    /** Alle Spieltage über alle Saisons (für die Kalender-Übersicht). */
+    @Transactional(readOnly = true)
+    public List<GameDayResponse> findAllAsDto() {
+        return seasonService.findAll().stream()
+            .flatMap(s -> findBySeasonIdAsDto(s.getId()).stream())
+            .toList();
+    }
+
     @Transactional(readOnly = true)
     public GameDayResponse findByIdAsDto(final Long id) {
         return toResponseWithLive(findById(id));
