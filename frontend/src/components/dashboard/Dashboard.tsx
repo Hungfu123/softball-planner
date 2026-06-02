@@ -32,7 +32,9 @@ export function Dashboard() {
   const [stats, setStats] = useState<SeasonPlayerStats[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
   const [weather, setWeather] = useState<WeatherResponse | null>(null)
-  const [seasonAwards, setSeasonAwards] = useState<AwardResponse[]>([])
+  // Award-Sheet: Scope = ganze Saison oder ein einzelner Spieltag (gameDayId)
+  const [awardScope, setAwardScope] = useState<'season' | number | null>(null)
+  const [scopeAwards, setScopeAwards] = useState<AwardResponse[]>([])
   const [openSheet, setOpenSheet] = useState<'liga' | 'stats' | 'results' | 'weather' | 'awards' | null>(null)
   const [showStatsDetails, setShowStatsDetails] = useState(false)
   const [showAllGameDays, setShowAllGameDays] = useState(false)
@@ -64,7 +66,7 @@ export function Dashboard() {
     setShowAllGameDays(false)
     setShowAllPastGameDays(false)
     setGameDaysLoading(true)
-    api.getSeasonAwards(selectedSeasonId).then(setSeasonAwards).catch(() => setSeasonAwards([]))
+    setAwardScope(null) // Default-Scope neu bestimmen wenn Saison wechselt
     Promise.all([
       api.getGameDays(selectedSeasonId),
       api.getSeasonStats(selectedSeasonId),
@@ -73,6 +75,26 @@ export function Dashboard() {
       .catch(e => toast.show(e.message, 'error'))
       .finally(() => setGameDaysLoading(false))
   }, [selectedSeasonId, toast])
+
+  // Award-Sheet geöffnet & kein Scope gewählt → Default: heutiger Spieltag, sonst letzter, sonst Saison
+  useEffect(() => {
+    if (openSheet !== 'awards' || awardScope !== null) return
+    const today = new Date().toISOString().slice(0, 10)
+    const todayGd = gameDays.find(gd => gd.date === today)
+    const lastPlayed = [...gameDays].reverse().find(gd => gd.date <= today)
+    setAwardScope(todayGd?.id ?? lastPlayed?.id ?? 'season')
+  }, [openSheet, awardScope, gameDays])
+
+  // Awards für den gewählten Scope laden (Saison oder einzelner Spieltag)
+  useEffect(() => {
+    if (awardScope === null) return
+    let cancelled = false
+    const p = awardScope === 'season'
+      ? (selectedSeasonId != null ? api.getSeasonAwards(selectedSeasonId) : Promise.resolve([] as AwardResponse[]))
+      : api.getGameDayAwards(awardScope)
+    p.then(a => { if (!cancelled) setScopeAwards(a) }).catch(() => { if (!cancelled) setScopeAwards([]) })
+    return () => { cancelled = true }
+  }, [awardScope, selectedSeasonId])
 
   // Auto-Refresh wenn Dashboard sichtbar UND keine Modal/Editor-Aktion läuft —
   // alle 30s gameDays re-fetchen für Live-Scores im Hero. Pausiert während
@@ -555,26 +577,50 @@ export function Dashboard() {
             <WeatherDayBreakdown hours={weather?.hours ?? []} location={upcomingGd?.location} />
           </DetailSheet>
 
-          <DetailSheet open={openSheet === 'awards'} onClose={() => setOpenSheet(null)} title="Saison-Auszeichnungen">
-            {seasonAwards.length > 0 ? (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Wer hatte diese Saison die Nase vorn — die Titelträger auf einen Blick.
-                </p>
-                <AwardBadges awards={seasonAwards} tone="light" layout="grid" />
-                <button
-                  onClick={() => setOpenSheet('stats')}
-                  className="font-display w-full h-10 rounded-lg bg-navy-900 hover:bg-navy-800 text-white font-extrabold text-[11px] tracking-widest uppercase transition-colors cursor-pointer"
-                >
-                  Volle Statistik
-                </button>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="font-display text-base font-bold text-navy-900 uppercase tracking-wide mb-1">Noch keine Auszeichnungen</p>
-                <p className="text-sm text-gray-500">Spiel ein paar Spiele mit erfasstem Scoring — dann gibt's Titel.</p>
-              </div>
-            )}
+          <DetailSheet open={openSheet === 'awards'} onClose={() => setOpenSheet(null)} title="Auszeichnungen">
+            <div className="space-y-4">
+              {/* Scope-Filter: ganze Saison oder einzelner Spieltag */}
+              {(() => {
+                const today = new Date().toISOString().slice(0, 10)
+                const days = gameDays.filter(gd => gd.date <= today).slice().reverse()
+                const pill = (active: boolean) =>
+                  `font-display text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                    active ? 'bg-navy-900 text-white' : 'bg-cream-100 text-navy-700 hover:bg-cream-200 border border-cream-300'
+                  }`
+                const fmt = (d: string) =>
+                  d === today ? 'Heute' : new Date(d + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: 'short' })
+                return (
+                  <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
+                    <button className={pill(awardScope === 'season')} onClick={() => setAwardScope('season')}>Saison</button>
+                    {days.map(gd => (
+                      <button key={gd.id} className={pill(awardScope === gd.id)} onClick={() => setAwardScope(gd.id)}>
+                        {fmt(gd.date)}
+                      </button>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {scopeAwards.length > 0 ? (
+                <AwardBadges awards={scopeAwards} tone="light" layout="grid" />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="font-display text-base font-bold text-navy-900 uppercase tracking-wide mb-1">Noch keine Auszeichnungen</p>
+                  <p className="text-sm text-gray-500">
+                    {awardScope === 'season'
+                      ? "Spiel ein paar Spiele mit erfasstem Scoring — dann gibt's Titel."
+                      : "Für diesen Spieltag ist noch kein Scoring erfasst."}
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={() => setOpenSheet('stats')}
+                className="font-display w-full h-10 rounded-lg bg-navy-900 hover:bg-navy-800 text-white font-extrabold text-[11px] tracking-widest uppercase transition-colors cursor-pointer"
+              >
+                Volle Statistik
+              </button>
+            </div>
           </DetailSheet>
         </>
       )}
