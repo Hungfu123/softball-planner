@@ -2031,6 +2031,9 @@ export function ScoringPage() {
               <div className="font-display mt-1 text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-widest">
                 {hbpFlash} <span className="text-softball-red-700">→ 1B</span>
               </div>
+              <div className="font-display mt-2 text-sm sm:text-base font-bold text-softball-red-700 italic tracking-wide">
+                Einen fürs Team mitgenommen
+              </div>
             </motion.div>
             {/* Ink-Splatter */}
             {[...Array(10)].map((_, i) => {
