@@ -35,7 +35,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   TOP_HITTER: {
     icon: <Award size={12} strokeWidth={2.5} />,
     label: 'Top Hitter',
-    desc: 'Höchste Trefferquote (AVG) — Treffer geteilt durch Schlagversuche.',
+    desc: 'Höchste Trefferquote (AVG) — Hits geteilt durch At-Bats.',
     accentBar: 'bg-teal-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -45,7 +45,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   POWER: {
     icon: <Flame size={12} strokeWidth={2.5} />,
     label: 'Slugger',
-    desc: 'Meiste Total Bases — Summe aller erreichten Bases durch Treffer (Single=1, Double=2, Triple=3, Homerun=4). Misst die Schlagkraft.',
+    desc: 'Meiste Total Bases — Summe aller erreichten Bases durch Hits (Single=1, Double=2, Triple=3, Homerun=4). Misst die Schlagkraft.',
     accentBar: 'bg-amber-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -55,7 +55,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   RBI: {
     icon: <Truck size={12} strokeWidth={2.5} />,
     label: 'Lieferant',
-    desc: 'Meiste Runs Batted In (RBI) — Mitspieler, die er mit seinen Treffern nach Hause gebracht hat.',
+    desc: 'Meiste Runs Batted In (RBI) — Mitspieler, die er mit seinen Hits nach Hause gebracht hat.',
     accentBar: 'bg-rose-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
