@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Trophy, Flame, Wind, Target, Hammer, Award, Bandage, Fan, Sparkles } from 'lucide-react'
+import { Trophy, Flame, Wind, Target, Hammer, Award, Shield, Fan, Sparkles } from 'lucide-react'
 import type { AwardResponse, AwardType } from '@/types'
 
 interface Props {
@@ -84,8 +84,8 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-violet-600',
   },
   HBP: {
-    icon: <Bandage size={11} strokeWidth={2.5} />,
-    label: 'Prügelknabe',
+    icon: <Shield size={11} strokeWidth={2.5} />,
+    label: 'Tank',
     accentBar: 'bg-orange-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
