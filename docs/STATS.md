@@ -31,6 +31,7 @@ Aggregierte Spieler-Statistiken über Saison(s) hinweg. Basiert auf `AtBat`-Reco
 - **Spielbogen-Quelle:** aktuell trägt Spielbogen NICHT zu globalen Stats bei (separat). Falls Wunsch → AtBatRepository erweitern.
 - **Rate-Stat-Qualifier** (`BattingStatsCalculator.QUALIFIED_MIN_AT_BATS = 5`): `BattingStats.qualified = atBats >= 5`. Verhindert irreführende Mini-Samples (3-für-3 = 1.000). Frontend: in aggregierten Scopes (Saison/Jahr/Alle Zeit) werden unqualifizierte standardmäßig ausgeblendet (Toggle "Alle zeigen" → ausgegraut + `<5 ABs`-Marker), Top-Hitter-Banner + Dashboard-Kachel filtern auf `qualified`. Pro Spiel (`scope=game`) KEIN Qualifier. Awards behalten eigene niedrige Schwelle (`MIN_PA=2`, Gameday hat selten 5 ABs).
 - **Award-Gleichstand** (`GamedayAwardCalculator`): teilen sich mehrere Spieler den besten angezeigten Stat-Wert, werden ALLE geführt — `Award.playerName` kommagetrennt (alphabetisch), `playerId = null`. Vergleich nur über die angezeigte Metrik (kein PA-/ID-Tiebreak).
+- **MVP-Sonderregel bei Neben-Awards** (TOP_HITTER/RBI/ON_BASE/WALK, `topTiedSharedWithMvp`): MVP gewinnt einen Neben-Award nicht ALLEIN (kein Doppel-Krönen). Teilt er den Spitzenwert aber mit ≥1 Nicht-MVP (echter Tie), wird er mitgenannt (z.B. Top Hitter "Mike, Yuki"). Steht nur der MVP an der Spitze → Award geht an nächstbesten Nicht-MVP. POWER/SPEED haben keinen MVP-Ausschluss.
 
 ## Frontend Files
 - `components/stats/StatsPage.tsx`
