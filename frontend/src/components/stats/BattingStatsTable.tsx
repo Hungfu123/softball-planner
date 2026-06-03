@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react'
-import { Trophy, ChevronDown, ChevronUp, Info, Zap } from 'lucide-react'
+import { Trophy, ChevronDown, ChevronUp, Info, Zap, Check } from 'lucide-react'
 import type { PlayerBattingStatsResponse } from '@/types'
+
+const MIN_AB_LABEL = 'min. 5 ABs'
 
 interface Props {
   stats: PlayerBattingStatsResponse[]
   onOpenGlossary?: () => void
+  /** Rate-Stat-Qualifier (≥5 ABs) anwenden — true für aggregierte Scopes (Saison/Jahr/Alle Zeit), false pro Spiel. */
+  applyQualifier?: boolean
 }
 
-export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
+export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false }: Props) {
   const [showDetails, setShowDetails] = useState(false)
+  const [showUnqualified, setShowUnqualified] = useState(false)
 
   const sorted = useMemo(() => {
     return [...stats].sort((a, b) => {
@@ -18,7 +23,21 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
     })
   }, [stats])
 
-  const maxBA = useMemo(() => Math.max(...sorted.map(s => Number(s.battingAverage)), 0.001), [sorted])
+  const { qualified, unqualified } = useMemo(() => {
+    if (!applyQualifier) return { qualified: sorted, unqualified: [] as PlayerBattingStatsResponse[] }
+    return {
+      qualified: sorted.filter(s => s.qualified),
+      unqualified: sorted.filter(s => !s.qualified),
+    }
+  }, [sorted, applyQualifier])
+
+  const visible = showUnqualified ? [...qualified, ...unqualified] : qualified
+
+  // Balken-Skala nur aus qualifizierten — sonst sprengt ein 1.000-Mini-Sample die Skala
+  const maxBA = useMemo(
+    () => Math.max(...(qualified.length ? qualified : sorted).map(s => Number(s.battingAverage)), 0.001),
+    [qualified, sorted],
+  )
 
   if (stats.length === 0) {
     return (
@@ -49,6 +68,28 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
             Abkürzungen
           </button>
         )}
+        {applyQualifier && unqualified.length > 0 && (
+          <button
+            onClick={() => setShowUnqualified(x => !x)}
+            role="checkbox"
+            aria-checked={showUnqualified}
+            className={`font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
+              showUnqualified
+                ? 'bg-navy-900 border-navy-900 text-white'
+                : 'border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400'
+            }`}
+            title={`Spieler unter ${MIN_AB_LABEL} ${showUnqualified ? 'ausblenden' : 'einblenden'}`}
+          >
+            <span
+              className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-[4px] border transition-colors ${
+                showUnqualified ? 'bg-white border-white text-navy-900' : 'border-gray-400 text-transparent'
+              }`}
+            >
+              <Check size={10} strokeWidth={3.5} />
+            </span>
+            Auch &lt;5 ABs ({unqualified.length})
+          </button>
+        )}
       </div>
 
       {/* Table — 60/30/10: White 60% / Navy 30% / Softball-Red 10% */}
@@ -59,7 +100,7 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
               <tr className="bg-navy-900 text-white">
                 <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">#</th>
                 <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Spieler</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Schlag</th>
+                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">ABs</th>
                 <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Treffer</th>
                 <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Batting Average (AVG)">
                   AVG
@@ -82,24 +123,32 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((s, idx) => {
+              {visible.map((s, idx) => {
                 const baPct = Math.round(Number(s.battingAverage) * 100)
                 const barWidth = Math.round((Number(s.battingAverage) / maxBA) * 100)
-                const isTop = idx === 0 && s.atBats > 0
+                const isUnq = applyQualifier && !s.qualified
+                const isTop = idx === 0 && s.atBats > 0 && !isUnq
                 const dimZero = (v: number) => v === 0 ? 'text-gray-300' : 'text-navy-900'
                 return (
                   <tr
                     key={s.playerId}
                     className={`border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
                       idx % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'
-                    }`}
+                    } ${isUnq ? 'opacity-50' : ''}`}
                   >
-                    {/* Rang — Top-1 in Softball-Red (10% Accent) */}
+                    {/* Rang — Top-1 in Softball-Red (10% Accent); unqualifizierte ohne Rang */}
                     <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
-                      {isTop ? <Trophy size={16} className="text-softball-red-600" /> : idx + 1}
+                      {isUnq ? '–' : isTop ? <Trophy size={16} className="text-softball-red-600" /> : idx + 1}
                     </td>
                     {/* Spieler — Navy für Hierarchie */}
-                    <td className="px-3 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide">{s.playerName}</td>
+                    <td className="px-3 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide">
+                      {s.playerName}
+                      {isUnq && (
+                        <span className="ml-2 font-sans text-[9px] font-bold tracking-wide uppercase text-gray-500 bg-cream-200 rounded-full px-1.5 py-0.5 align-middle">
+                          &lt;5 ABs
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right font-display tabular-nums text-gray-700">{s.atBats}</td>
                     <td className="px-3 py-2 text-right font-display tabular-nums text-gray-700">{s.hits}</td>
                     {/* AVG — Headline-Metrik prominent in Navy */}
@@ -143,10 +192,29 @@ export function BattingStatsTable({ stats, onOpenGlossary }: Props) {
                   </tr>
                 )
               })}
+              {visible.length === 0 && (
+                <tr>
+                  <td colSpan={showDetails ? 16 : 10} className="px-3 py-8 text-center text-sm text-gray-500">
+                    Kein Spieler mit {MIN_AB_LABEL} in diesem Zeitraum.
+                    {unqualified.length > 0 && (
+                      <button onClick={() => setShowUnqualified(true)} className="ml-1 text-navy-700 underline hover:text-softball-red-600 cursor-pointer">
+                        Alle anzeigen
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {applyQualifier && unqualified.length > 0 && (
+        <p className="text-[11px] text-gray-500 px-1">
+          Quoten (AVG/OBP/SLG/OPS) brauchen {MIN_AB_LABEL}, sonst verzerren Mini-Stichproben das Bild
+          (z.B. 3-für-3 = 1.000).
+        </p>
+      )}
     </div>
   )
 }

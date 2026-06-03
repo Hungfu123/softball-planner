@@ -27,7 +27,8 @@ public record PlayerBattingStatsResponse(
     BigDecimal battingAverage,
     BigDecimal onBasePct,
     BigDecimal sluggingPct,
-    BigDecimal ops
+    BigDecimal ops,
+    boolean qualified
 ) {
     public static PlayerBattingStatsResponse from(final BattingStats s) {
         return new PlayerBattingStatsResponse(
@@ -37,7 +38,8 @@ public record PlayerBattingStatsResponse(
             s.walks(), s.hitByPitch(), s.strikeouts(), s.outs(),
             s.reachedOnError(),
             s.stolenBases(), s.caughtStealing(), s.pickoffs(), s.runsBattedIn(), s.totalBases(),
-            s.battingAverage(), s.onBasePct(), s.sluggingPct(), s.ops()
+            s.battingAverage(), s.onBasePct(), s.sluggingPct(), s.ops(),
+            s.qualified()
         );
     }
 }

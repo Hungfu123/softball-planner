@@ -33,12 +33,12 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
 
             <Section title="Berechnete Quoten">
               <Row
-                abbr="AB / Schlagversuche"
+                abbr="AB / At-Bats"
                 def="Alle Versuche — Walks und HBP zählen nicht, da man nicht geschlagen hat"
               />
               <Row
                 abbr="BA / Trefferquote (Batting Average)"
-                def="Treffer ÷ Schlagversuche. z.B. 7/21 = 0,333 = 33 %. Gut ab 30 %."
+                def="Treffer ÷ At-Bats. z.B. 7/21 = 0,333 = 33 %. Gut ab 30 %."
               />
               <Row
                 abbr="OBP / Auf-Base-Quote"
@@ -55,6 +55,10 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
               <Row
                 abbr="RBI / Runs Batted In"
                 def="Runs die du durch deinen Hit nach Hause gebracht hast."
+              />
+              <Row
+                abbr="Mindest-ABs (ab 5)"
+                def="In Saison-/Jahr-/Alle-Zeit-Statistiken werden Quoten erst ab 5 At-Bats gewertet — sonst verzerren Mini-Stichproben das Bild (3-für-3 = 1.000). Über 'Alle zeigen' lassen sich Spieler darunter trotzdem einblenden."
               />
             </Section>
       </div>

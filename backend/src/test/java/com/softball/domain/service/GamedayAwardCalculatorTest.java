@@ -26,7 +26,7 @@ class GamedayAwardCalculatorTest {
             tb - 2 * xbh, 0, xbh, 0, 0,
             bb, 0, 0, 0, 0,
             sb, 0, 0, rbi, tb,
-            BigDecimal.ZERO, obpBd, slg);
+            BigDecimal.ZERO, obpBd, slg, pa >= BattingStatsCalculator.QUALIFIED_MIN_AT_BATS);
     }
 
     private Map<AwardType, Award> byType(List<Award> awards) {
@@ -103,11 +103,14 @@ class GamedayAwardCalculatorTest {
     }
 
     @Test
-    void mvp_tiebreakPrefersSmallestPlayerId() {
+    void mvp_tieListsAllTiedPlayers() {
         var a = stats(5, "Five", 3, 6, 2, 1, 0, 1, "0.500", "1.000");
         var b = stats(2, "Two",  3, 6, 2, 1, 0, 1, "0.500", "1.000");
-        var awards = byType(calc.calculate(List.of(a, b)));
-        assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(2L);
+        var mvp = byType(calc.calculate(List.of(a, b))).get(AwardType.MVP);
+        // Gleicher OPS → beide Gewinner: Namen alphabetisch, playerId mehrdeutig → null
+        assertThat(mvp.playerName()).isEqualTo("Five, Two");
+        assertThat(mvp.playerId()).isNull();
+        assertThat(mvp.displayValue()).isEqualTo("OPS 1.000");
     }
 
     @Test
@@ -131,7 +134,7 @@ class GamedayAwardCalculatorTest {
         BigDecimal obpBd = new BigDecimal(obp);
         BigDecimal slg = new BigDecimal(ops).subtract(obpBd);
         return new BattingStats(id, name, pa, pa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            new BigDecimal(avg), obpBd, slg);
+            new BigDecimal(avg), obpBd, slg, pa >= BattingStatsCalculator.QUALIFIED_MIN_AT_BATS);
     }
 
     @Test
