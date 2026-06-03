@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Trophy, Flame, Wind, Target, Hammer, Award, Shield, Fan, Sparkles } from 'lucide-react'
+import { Trophy, Flame, Zap, Target, Truck, Award, Shield, Fan, Sparkles } from 'lucide-react'
 import type { AwardResponse, AwardType } from '@/types'
 
 interface Props {
@@ -23,7 +23,7 @@ interface AwardMeta {
 
 const AWARD_META: Record<AwardType, AwardMeta> = {
   MVP: {
-    icon: <Trophy size={11} strokeWidth={2.5} />,
+    icon: <Trophy size={12} strokeWidth={2.5} />,
     label: 'MVP',
     desc: 'Wertvollster Spieler — bester OPS (On-Base- + Schlagstärke zusammen). Der kompletteste Schläger.',
     accentBar: 'bg-softball-red-500',
@@ -33,7 +33,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-softball-red-600',
   },
   TOP_HITTER: {
-    icon: <Award size={11} strokeWidth={2.5} />,
+    icon: <Award size={12} strokeWidth={2.5} />,
     label: 'Top Hitter',
     desc: 'Höchste Trefferquote (AVG) — Treffer geteilt durch Schlagversuche.',
     accentBar: 'bg-teal-500',
@@ -43,7 +43,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-teal-600',
   },
   POWER: {
-    icon: <Flame size={11} strokeWidth={2.5} />,
+    icon: <Flame size={12} strokeWidth={2.5} />,
     label: 'Slugger',
     desc: 'Meiste Total Bases — Summe aller erreichten Bases durch Treffer (Single=1, Double=2, Triple=3, Homerun=4). Misst die Schlagkraft.',
     accentBar: 'bg-amber-500',
@@ -53,7 +53,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-amber-600',
   },
   RBI: {
-    icon: <Hammer size={11} strokeWidth={2.5} />,
+    icon: <Truck size={12} strokeWidth={2.5} />,
     label: 'Lieferant',
     desc: 'Meiste Runs Batted In (RBI) — Mitspieler, die er mit seinen Treffern nach Hause gebracht hat.',
     accentBar: 'bg-rose-500',
@@ -63,7 +63,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-rose-600',
   },
   SPEED: {
-    icon: <Wind size={11} strokeWidth={2.5} />,
+    icon: <Zap size={12} strokeWidth={2.5} />,
     label: 'Speedster',
     desc: 'Meiste Stolen Bases — Bases, die er zwischen den Würfen geklaut hat.',
     accentBar: 'bg-sky-400',
@@ -73,7 +73,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-sky-600',
   },
   ON_BASE: {
-    icon: <Target size={11} strokeWidth={2.5} />,
+    icon: <Target size={12} strokeWidth={2.5} />,
     label: 'Base-Flatrate',
     desc: 'Höchste On-Base-Quote (OBP) — wie oft er auf eine Base kommt, inklusive Walks und Hit-by-Pitch.',
     accentBar: 'bg-emerald-500',
@@ -83,7 +83,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-emerald-600',
   },
   WALK: {
-    icon: <Sparkles size={11} strokeWidth={2.5} />,
+    icon: <Sparkles size={12} strokeWidth={2.5} />,
     label: 'Aura-Farmer',
     desc: 'Meiste Walks — viermal Ball, der Batter darf gratis auf die 1. Base. Der Pitcher hat zu viel Respekt.',
     accentBar: 'bg-violet-500',
@@ -93,7 +93,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-violet-600',
   },
   HBP: {
-    icon: <Shield size={11} strokeWidth={2.5} />,
+    icon: <Shield size={12} strokeWidth={2.5} />,
     label: 'Tank',
     desc: 'Am häufigsten vom Pitch getroffen (Hit by Pitch) — darf dafür gratis auf die 1. Base. Einen fürs Team mitgenommen.',
     accentBar: 'bg-orange-500',
@@ -103,7 +103,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-orange-600',
   },
   STRIKEOUT: {
-    icon: <Fan size={11} strokeWidth={2.5} />,
+    icon: <Fan size={12} strokeWidth={2.5} />,
     label: 'Windmühle',
     desc: 'Meiste Strikeouts — dreimal Strike und der Batter ist out. Gag-Titel: schlägt am häufigsten in die Luft, statt den Ball zu treffen.',
     accentBar: 'bg-zinc-400',
