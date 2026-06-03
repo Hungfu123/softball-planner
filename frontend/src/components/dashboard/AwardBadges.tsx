@@ -65,7 +65,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   SPEED: {
     icon: <Zap size={12} strokeWidth={2.5} />,
     label: 'Speedster',
-    desc: 'Meiste Stolen Bases — Bases, die er zwischen den Würfen geklaut hat.',
+    desc: 'Meiste Stolen Bases — läuft auf eigene Faust zur nächsten Base, ohne dass ein Mitspieler trifft (während der Pitcher wirft).',
     accentBar: 'bg-sky-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
