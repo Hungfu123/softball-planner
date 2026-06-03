@@ -88,10 +88,10 @@ public class TrainingPlanService {
 
         final PlanKind effectiveKind = kind != null ? kind : PlanKind.MAIN;
 
-        if (trainingPlanRepository.findByTrainingIdAndKind(trainingId, effectiveKind).isPresent()) {
-            throw new BusinessValidationException(
-                    "Plan dieses Typs existiert bereits (kind=" + effectiveKind + ")");
-        }
+        // Idempotentes (Neu-)Generieren: existiert bereits ein Plan dieses Typs, wird er ersetzt
+        // (statt 400). Vermeidet Konflikte bei stale Frontend-State / parallelem Regenerate.
+        trainingPlanRepository.findByTrainingIdAndKind(trainingId, effectiveKind)
+                .ifPresent(existing -> trainingPlanRepository.deleteById(existing.getId()));
 
         final List<InfieldPosition> safePositions = infieldPositions != null ? infieldPositions : List.of();
 
