@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, Trophy, Download } from 'lucide-react'
+import { ChevronDown, Download } from 'lucide-react'
 import * as api from '@/api/client'
 import type { AwardResponse, GameDayResponse, GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
 import { AwardsCard } from '@/components/dashboard/AwardsCard'
@@ -287,34 +287,6 @@ export function StatsPage() {
         </div>
       </div>
 
-      {/* Highlight-Banner: Top-Stat als visueller Anker */}
-      {(() => {
-        // Aggregierte Scopes: nur qualifizierte (≥5 ABs) — verhindert irreführende Mini-Samples als "Top Hitter"
-        const topPlayer = battingStats
-          .filter(p => isAggregatedScope(scopeKind) ? p.qualified : p.atBats > 0)
-          .sort((a, b) => Number(b.battingAverage) - Number(a.battingAverage))[0]
-        if (!topPlayer) return null
-        const fmtAvg = (v: number) => {
-          const s = v.toFixed(3)
-          return s.startsWith('0') ? s.slice(1) : s
-        }
-        return (
-          <div className="bg-cream-50 border border-cream-300 rounded-xl px-4 py-2.5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-softball-red-50 text-softball-red-700 flex items-center justify-center shrink-0">
-              <Trophy size={18} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-display text-[10px] font-bold tracking-widest uppercase text-gray-500">Top Hitter · {contextInfo}</div>
-              <div className="font-display font-extrabold text-navy-900 truncate">{topPlayer.playerName}</div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="font-display text-2xl sm:text-3xl font-extrabold text-softball-red-600 leading-none tabular-nums">{fmtAvg(Number(topPlayer.battingAverage))}</div>
-              <div className="font-display text-[9px] font-bold tracking-widest text-gray-500">AVG</div>
-            </div>
-          </div>
-        )
-      })()}
-
       {/* View Tabs — 'Einsätze' macht nur Sinn bei aggregierten Scopes */}
       <div className="flex gap-2 border-b border-cream-300">
         <ViewTab active={view === 'batting'} onClick={() => setView('batting')}>Schlagen</ViewTab>
@@ -326,14 +298,7 @@ export function StatsPage() {
       {/* Auszeichnungen (Scope-weit) — gleiche Titel wie pro Spieltag */}
       {!loading && awards.length > 0 && (
         <div className="mb-3">
-          <AwardsCard
-            awards={awards}
-            subtitle={
-              scopeKind === 'allTime' ? 'All-Time'
-                : scopeKind === 'year' ? String(selectedYear)
-                : seasons.find(s => s.id === selectedSeasonId)?.name
-            }
-          />
+          <AwardsCard awards={awards} subtitle={contextInfo} />
         </div>
       )}
 
