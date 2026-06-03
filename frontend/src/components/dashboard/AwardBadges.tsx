@@ -45,7 +45,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   POWER: {
     icon: <Flame size={12} strokeWidth={2.5} />,
     label: 'Abrissbirne',
-    desc: 'Meiste Total Bases — pure Schlagkraft (HR=4, 3B=3, 2B=2, 1B=1).',
+    desc: 'Meiste Total Bases — wie HART er trifft: jeder Hit zählt Bases (HR=4, 3B=3, 2B=2, 1B=1).',
     accentBar: 'bg-amber-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -75,7 +75,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   ON_BASE: {
     icon: <Target size={12} strokeWidth={2.5} />,
     label: 'Mr. Reliable',
-    desc: 'Beste OBP — kommt am öftesten auf Base (inkl. Walks & Hit by Pitch).',
+    desc: 'Beste OBP — wie OFT er auf Base kommt (Hits + Walks + Hit by Pitch).',
     accentBar: 'bg-emerald-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
