@@ -44,7 +44,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   POWER: {
     icon: <Flame size={12} strokeWidth={2.5} />,
-    label: 'Slugger',
+    label: 'Abrissbirne',
     desc: 'Meiste Total Bases — Summe aller erreichten Bases durch Hits (Single=1, Double=2, Triple=3, Homerun=4). Misst die Schlagkraft.',
     accentBar: 'bg-amber-500',
     darkChip: 'bg-white/8 border-white/12',
