@@ -374,7 +374,7 @@ export interface WeatherResponse {
   hours: WeatherHourSlot[]
 }
 
-export type AwardType = 'MVP' | 'TOP_HITTER' | 'POWER' | 'RBI' | 'SPEED' | 'ON_BASE' | 'WALK' | 'HBP'
+export type AwardType = 'MVP' | 'TOP_HITTER' | 'POWER' | 'RBI' | 'SPEED' | 'ON_BASE' | 'WALK' | 'HBP' | 'STRIKEOUT'
 
 export interface AwardResponse {
   type: AwardType
