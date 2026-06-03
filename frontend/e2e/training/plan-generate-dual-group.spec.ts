@@ -78,7 +78,10 @@ test.describe('Trainingsplan — Dual Group', () => {
     // Schwerpunkt wählen (Backend validiert @NotBlank focus).
     // INFIELD_DEFENSE hat advanced-Drills → triggert Stations-Block (Voraussetzung für
     // dual-group MAIN/BEGINNER-Split). WERFEN hätte nur sequentielle Drills, kein Split.
-    await drawer.getByRole('button', { name: /Infield Defense/i }).click()
+    // .last() = HAUPT-Focus ("Schwerpunkte"): bei aktivierter Anfängergruppe rendert der
+    // "Focus Anfänger (optional)"-Selektor mit denselben Buttons DAVOR → .first() wäre der
+    // Anfänger-Focus und liesse den Haupt-focus leer (→ @NotBlank 400).
+    await drawer.getByRole('button', { name: /Infield Defense/i }).last().click()
     await page.waitForTimeout(150)
 
     // Submit-Button im Footer (eindeutig im Drawer-Scope).

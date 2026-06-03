@@ -6,7 +6,6 @@ import com.softball.domain.model.PlanKind;
 import com.softball.domain.model.TrainingPlan;
 import com.softball.domain.port.out.TrainingPlanRepository;
 import com.softball.domain.port.out.TrainingRepository;
-import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,16 +61,24 @@ class TrainingPlanServiceMultiPlanTest {
     }
 
     @Test
-    void generate_duplicateKind_throws400() {
+    void generate_duplicateKind_replacesExisting() {
+        // Idempotent: existierender MAIN-Plan wird gelöscht + neu erstellt (kein 400).
         when(trainingRepository.existsById(99L)).thenReturn(true);
         when(planRepository.findByTrainingIdAndKind(99L, PlanKind.MAIN))
                 .thenReturn(Optional.of(makeStoredPlan(1L, 99L, PlanKind.MAIN)));
+        when(drillService.filterByFocus(anyString(), anyInt())).thenReturn(drillPool());
+        when(planRepository.save(any())).thenAnswer(inv -> {
+            final TrainingPlan p = inv.getArgument(0);
+            p.setId(2L);
+            return p;
+        });
 
-        assertThatThrownBy(() -> service.generate(99L, PlanKind.MAIN, 10, "WERFEN", 90,
-                List.of(), false, 0, null))
-                .isInstanceOf(BusinessValidationException.class)
-                .hasMessageContaining("existiert bereits")
-                .hasMessageContaining("MAIN");
+        final var resp = service.generate(99L, PlanKind.MAIN, 10, "WERFEN", 90,
+                List.of(), false, 0, null);
+
+        verify(planRepository).deleteById(1L); // alter Plan entfernt
+        assertThat(resp.kind()).isEqualTo(PlanKind.MAIN);
+        assertThat(resp.trainingId()).isEqualTo(99L);
     }
 
     @Test
