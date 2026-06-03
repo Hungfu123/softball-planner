@@ -26,10 +26,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon }[] = [
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
-  { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
+  { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
 ]
 
