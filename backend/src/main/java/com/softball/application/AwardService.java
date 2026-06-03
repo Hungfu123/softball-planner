@@ -22,6 +22,7 @@ public class AwardService {
     }
 
     public List<Award> getGameDayAwards(final Long gameDayId) {
+        // Spieltag: kleine Stichprobe erwünscht → kein 5-AB-Qualifier (nur MIN_PA im Calculator).
         final List<BattingStats> stats = battingStatsService.getGameDayBattingStats(gameDayId);
         final List<Award> awards = calculator.calculate(stats);
         log.info("Awards für GameDay {}: {} vergeben", gameDayId, awards.size());
@@ -29,14 +30,22 @@ public class AwardService {
     }
 
     public List<Award> getSeasonAwards(final Long seasonId) {
-        return calculator.calculate(battingStatsService.getSeasonBattingStats(seasonId));
+        return calculator.calculate(qualifiedOnly(battingStatsService.getSeasonBattingStats(seasonId)));
     }
 
     public List<Award> getYearAwards(final int year) {
-        return calculator.calculate(battingStatsService.getYearBattingStats(year));
+        return calculator.calculate(qualifiedOnly(battingStatsService.getYearBattingStats(year)));
     }
 
     public List<Award> getAllTimeAwards() {
-        return calculator.calculate(battingStatsService.getAllTimeBattingStats());
+        return calculator.calculate(qualifiedOnly(battingStatsService.getAllTimeBattingStats()));
+    }
+
+    /**
+     * Aggregierte Scopes (Saison/Jahr/Alle Zeit): nur qualifizierte Spieler (≥5 ABs) sind
+     * award-berechtigt — verhindert irreführende Mini-Samples (z.B. 1.000 AVG aus 3 ABs).
+     */
+    private List<BattingStats> qualifiedOnly(final List<BattingStats> stats) {
+        return stats.stream().filter(BattingStats::qualified).toList();
     }
 }
