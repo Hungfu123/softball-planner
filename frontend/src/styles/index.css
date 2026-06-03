@@ -6,10 +6,10 @@
  *   Status: emerald (alles gut), amber (warnung).
  */
 @theme {
-  --color-cream-50: #FFFBF3;
-  --color-cream-100: #FBF7F0;
-  --color-cream-200: #F2EBDA;
-  --color-cream-300: #E8DEC5;
+  --color-cream-50: #FFFEF9;
+  --color-cream-100: #FDF7E6;
+  --color-cream-200: #F4EAD0;
+  --color-cream-300: #E9DBBA;
 
   --color-navy-50: #F0F1FA;
   --color-navy-100: #E8EAF6;
