@@ -18,11 +18,11 @@ import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, ClipboardIcon, UsersIcon, BallIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair } from '@/types'
-import { generatePdf, generateScoringPdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
+import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
 import * as api from '@/api/client'
 
@@ -263,16 +263,6 @@ export function GameDayPlanner() {
     }
   }
 
-  const handleExportScoring = async () => {
-    if (!gameDay) return
-    try {
-      const gameData = await loadGameData()
-      if (gameData) generateScoringPdf(gameDay, gameData, season)
-    } catch (e: unknown) {
-      toast.show((e as Error).message, 'error')
-    }
-  }
-
   const handleExportLineupField = async () => {
     if (!gameDay) return
     try {
@@ -481,11 +471,6 @@ export function GameDayPlanner() {
                 />
               )}
               <ToolbarBtn
-                icon={<ClipboardIcon size={16} />}
-                label="Scoring"
-                onClick={handleExportScoring}
-              />
-              <ToolbarBtn
                 icon={<ExportDoc size={16} />}
                 label="Aufstellung"
                 onClick={handleExportLineupField}
@@ -546,14 +531,6 @@ export function GameDayPlanner() {
                   <span>Auto</span>
                 </button>
               )}
-              <button
-                onClick={handleExportScoring}
-                className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
-                title="Scoring-Sheet drucken"
-              >
-                <ClipboardIcon size={14} />
-                <span>Scoring</span>
-              </button>
               <button
                 onClick={handleExportLineupField}
                 className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
