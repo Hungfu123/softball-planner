@@ -67,7 +67,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   ON_BASE: {
     icon: <Target size={11} strokeWidth={2.5} />,
-    label: 'Table-Setter',
+    label: 'Base-Flatrate',
     accentBar: 'bg-emerald-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
