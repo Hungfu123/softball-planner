@@ -25,7 +25,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   MVP: {
     icon: <Trophy size={12} strokeWidth={2.5} />,
     label: 'MVP',
-    desc: 'Wertvollster Spieler — bester OPS: On-Base-Quote + Schlagstärke zusammengerechnet. Kommt also oft auf Base UND schlägt kraftvoll.',
+    desc: 'Bester OPS (On-Base + Slugging). Kommt oft auf Base UND haut hart rein.',
     accentBar: 'bg-softball-red-500',
     darkChip: 'bg-softball-red-600/20 border-softball-red-500/30',
     lightChip: 'bg-softball-red-50 border-softball-red-100',
@@ -35,7 +35,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   TOP_HITTER: {
     icon: <Award size={12} strokeWidth={2.5} />,
     label: 'Top Hitter',
-    desc: 'Höchste Trefferquote (AVG) — Hits geteilt durch At-Bats.',
+    desc: 'Beste AVG — Hits ÷ At-Bats. Trifft am zuverlässigsten.',
     accentBar: 'bg-teal-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -45,7 +45,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   POWER: {
     icon: <Flame size={12} strokeWidth={2.5} />,
     label: 'Abrissbirne',
-    desc: 'Meiste Total Bases — Summe aller erreichten Bases durch Hits (Single=1, Double=2, Triple=3, Homerun=4). Misst die Schlagkraft.',
+    desc: 'Meiste Total Bases — pure Schlagkraft (HR=4, 3B=3, 2B=2, 1B=1).',
     accentBar: 'bg-amber-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -55,7 +55,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   RBI: {
     icon: <Truck size={12} strokeWidth={2.5} />,
     label: 'Lieferant',
-    desc: 'Meiste Runs Batted In (RBI) — Mitspieler, die er mit seinen Hits nach Hause gebracht hat.',
+    desc: 'Meiste RBI — bringt Mitspieler per Hit nach Hause.',
     accentBar: 'bg-rose-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -65,7 +65,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   SPEED: {
     icon: <Zap size={12} strokeWidth={2.5} />,
     label: 'Speedster',
-    desc: 'Meiste Stolen Bases — läuft auf eigene Faust zur nächsten Base, ohne dass ein Mitspieler trifft (während der Pitcher wirft).',
+    desc: 'Meiste Steals — klaut Bases, während der Pitcher wirft.',
     accentBar: 'bg-sky-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -75,7 +75,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   ON_BASE: {
     icon: <Target size={12} strokeWidth={2.5} />,
     label: 'Base-Flatrate',
-    desc: 'Höchste On-Base-Quote (OBP) — wie oft er auf eine Base kommt, inklusive Walks und Hit-by-Pitch.',
+    desc: 'Beste OBP — kommt am öftesten auf Base (inkl. Walks & Hit by Pitch).',
     accentBar: 'bg-emerald-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -85,7 +85,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   WALK: {
     icon: <Sparkles size={12} strokeWidth={2.5} />,
     label: 'Aura-Farmer',
-    desc: 'Meiste Walks — viermal Ball, der Batter darf gratis auf die 1. Base. Der Pitcher hat zu viel Respekt.',
+    desc: 'Meiste Walks — 4 Balls, gratis auf 1B. Pitcher hat zu viel Respekt.',
     accentBar: 'bg-violet-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -95,7 +95,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   HBP: {
     icon: <Shield size={12} strokeWidth={2.5} />,
     label: 'Tank',
-    desc: 'Am häufigsten vom Pitch getroffen (Hit by Pitch) — darf dafür gratis auf die 1. Base. Einen fürs Team mitgenommen.',
+    desc: 'Meiste Hit by Pitch — vom Pitch getroffen, gratis auf 1B. Einen fürs Team.',
     accentBar: 'bg-orange-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -105,7 +105,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   STRIKEOUT: {
     icon: <Fan size={12} strokeWidth={2.5} />,
     label: 'Windmühle',
-    desc: 'Meiste Strikeouts — dreimal Strike und der Batter ist out. Gag-Titel: schlägt am häufigsten in die Luft, statt den Ball zu treffen.',
+    desc: 'Meiste Strikeouts — schlägt am öftesten in die Luft statt den Ball zu treffen. Gag-Titel.',
     accentBar: 'bg-zinc-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -156,7 +156,7 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
           </div>
         </div>
         {open && (
-          <div className={`px-2.5 pb-2 pt-1 text-[10px] leading-snug ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+          <div className={`px-2.5 pb-2 pt-1 text-[9px] leading-snug ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
             {meta.desc}
           </div>
         )}
@@ -188,7 +188,7 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
           </div>
         </div>
         {open && (
-          <div className="relative mt-2 text-[11px] leading-snug text-white/70">
+          <div className="relative mt-2 text-[10px] leading-snug text-white/70">
             {AWARD_META.MVP.desc}
           </div>
         )}
