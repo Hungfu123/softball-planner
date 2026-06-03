@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Trophy, Flame, Wind, Target, Footprints, Hammer, Award, Bandage } from 'lucide-react'
+import { Trophy, Flame, Wind, Target, Hammer, Award, Bandage, Fan, Sparkles } from 'lucide-react'
 import type { AwardResponse, AwardType } from '@/types'
 
 interface Props {
@@ -75,8 +75,8 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightIcon: 'text-emerald-600',
   },
   WALK: {
-    icon: <Footprints size={11} strokeWidth={2.5} />,
-    label: 'Walk-König',
+    icon: <Sparkles size={11} strokeWidth={2.5} />,
+    label: 'Aura-Farmer',
     accentBar: 'bg-violet-500',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -91,6 +91,15 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
     lightChip: 'bg-navy-50 border-navy-100',
     darkIcon: 'text-orange-300',
     lightIcon: 'text-orange-600',
+  },
+  STRIKEOUT: {
+    icon: <Fan size={11} strokeWidth={2.5} />,
+    label: 'Windmühle',
+    accentBar: 'bg-zinc-400',
+    darkChip: 'bg-white/8 border-white/12',
+    lightChip: 'bg-navy-50 border-navy-100',
+    darkIcon: 'text-zinc-300',
+    lightIcon: 'text-zinc-500',
   },
 }
 

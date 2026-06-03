@@ -88,6 +88,14 @@ public class GamedayAwardCalculator {
             result.add(award(AwardType.HBP, hbp, hbp.get(0).hitByPitch() + " HBP"));
         }
 
+        // Windmühle: meiste Strikeouts (Gag). Kein MVP-Ausschluss (Power-Hitter striken oft), Ties gelistet.
+        final List<BattingStats> strikeouts = topTied(stats,
+            s -> s.strikeouts() > 0,
+            Comparator.comparingInt(BattingStats::strikeouts));
+        if (!strikeouts.isEmpty()) {
+            result.add(award(AwardType.STRIKEOUT, strikeouts, strikeouts.get(0).strikeouts() + " K"));
+        }
+
         return result;
     }
 
