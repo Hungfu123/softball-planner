@@ -138,6 +138,18 @@ class GamedayAwardCalculatorTest {
     }
 
     @Test
+    void topHitter_mvpCoListedOnTrueTie() {
+        // Yuki = MVP (höchster OPS). Mike + Yuki teilen den besten AVG (.833) → beide auf Top Hitter.
+        var yuki = withAvg(1, "Yuki", 4, "0.833", "0.833", "2.250");
+        var mike = withAvg(2, "Mike", 4, "0.833", "0.500", "0.900");
+        var awards = byType(calc.calculate(List.of(yuki, mike)));
+        assertThat(awards.get(AwardType.MVP).playerName()).isEqualTo("Yuki");
+        assertThat(awards.get(AwardType.TOP_HITTER).playerName()).isEqualTo("Mike, Yuki");
+        assertThat(awards.get(AwardType.TOP_HITTER).playerId()).isNull();
+        assertThat(awards.get(AwardType.TOP_HITTER).displayValue()).isEqualTo("AVG .833");
+    }
+
+    @Test
     void topHitter_bestAvgExcludingMvp() {
         var ace = withAvg(1, "Ace", 4, "0.200", "0.450", "1.200");   // höchster OPS → MVP
         var champ = withAvg(2, "Champ", 4, "0.600", "0.600", "0.900"); // höchster AVG → Top Hitter

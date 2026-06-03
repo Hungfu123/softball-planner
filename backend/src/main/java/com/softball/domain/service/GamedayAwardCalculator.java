@@ -38,9 +38,9 @@ public class GamedayAwardCalculator {
         }
         final Set<Long> mvpIds = ids(mvp);
 
-        final List<BattingStats> topHitter = topTied(stats,
-            s -> s.plateAppearances() >= MIN_PA && s.battingAverage().signum() > 0 && !mvpIds.contains(s.playerId()),
-            Comparator.comparing(BattingStats::battingAverage));
+        final List<BattingStats> topHitter = topTiedSharedWithMvp(stats,
+            s -> s.plateAppearances() >= MIN_PA && s.battingAverage().signum() > 0,
+            Comparator.comparing(BattingStats::battingAverage), mvpIds);
         if (!topHitter.isEmpty()) {
             result.add(award(AwardType.TOP_HITTER, topHitter, "AVG " + fmtAvg(topHitter.get(0).battingAverage())));
         }
@@ -52,9 +52,9 @@ public class GamedayAwardCalculator {
             result.add(award(AwardType.POWER, power, power.get(0).totalBases() + " Bases"));
         }
 
-        final List<BattingStats> rbi = topTied(stats,
-            s -> s.plateAppearances() >= MIN_PA && s.runsBattedIn() > 0 && !mvpIds.contains(s.playerId()),
-            Comparator.comparingInt(BattingStats::runsBattedIn));
+        final List<BattingStats> rbi = topTiedSharedWithMvp(stats,
+            s -> s.plateAppearances() >= MIN_PA && s.runsBattedIn() > 0,
+            Comparator.comparingInt(BattingStats::runsBattedIn), mvpIds);
         if (!rbi.isEmpty()) {
             result.add(award(AwardType.RBI, rbi, rbi.get(0).runsBattedIn() + " RBI"));
         }
@@ -66,16 +66,16 @@ public class GamedayAwardCalculator {
             result.add(award(AwardType.SPEED, speed, speed.get(0).stolenBases() + " SB"));
         }
 
-        final List<BattingStats> onBase = topTied(stats,
-            s -> s.plateAppearances() >= MIN_PA && !mvpIds.contains(s.playerId()),
-            Comparator.comparing(BattingStats::onBasePct));
+        final List<BattingStats> onBase = topTiedSharedWithMvp(stats,
+            s -> s.plateAppearances() >= MIN_PA,
+            Comparator.comparing(BattingStats::onBasePct), mvpIds);
         if (!onBase.isEmpty()) {
             result.add(award(AwardType.ON_BASE, onBase, "OBP " + onBase.get(0).onBasePct().toPlainString()));
         }
 
-        final List<BattingStats> walks = topTied(stats,
-            s -> s.walks() > 0 && !mvpIds.contains(s.playerId()),
-            Comparator.comparingInt(BattingStats::walks));
+        final List<BattingStats> walks = topTiedSharedWithMvp(stats,
+            s -> s.walks() > 0,
+            Comparator.comparingInt(BattingStats::walks), mvpIds);
         if (!walks.isEmpty()) {
             result.add(award(AwardType.WALK, walks, walks.get(0).walks() + " BB"));
         }
@@ -91,7 +91,30 @@ public class GamedayAwardCalculator {
     private List<BattingStats> topTied(final List<BattingStats> stats,
                                        final Predicate<BattingStats> eligible,
                                        final Comparator<BattingStats> metric) {
+        return topOf(stats.stream().filter(eligible).toList(), metric);
+    }
+
+    /**
+     * Neben-Award mit MVP-Sonderregel: Der MVP gewinnt einen Neben-Award nicht ALLEIN
+     * (kein Doppel-Krönen). Teilt er den Spitzenwert aber mit mindestens einem Nicht-MVP
+     * (echter Gleichstand), wird er mitgenannt. Steht nur der MVP an der Spitze, geht der
+     * Award an den/die nächstbesten Nicht-MVP.
+     */
+    private List<BattingStats> topTiedSharedWithMvp(final List<BattingStats> stats,
+                                                    final Predicate<BattingStats> eligible,
+                                                    final Comparator<BattingStats> metric,
+                                                    final Set<Long> mvpIds) {
         final List<BattingStats> pool = stats.stream().filter(eligible).toList();
+        final List<BattingStats> winners = topOf(pool, metric);
+        final boolean hasNonMvp = winners.stream().anyMatch(s -> !mvpIds.contains(s.playerId()));
+        if (hasNonMvp) {
+            return winners; // MVP wird bei echtem Tie mitgelistet
+        }
+        // Nur MVP(s) an der Spitze → ausschließen, nächstbesten Nicht-MVP nehmen
+        return topOf(pool.stream().filter(s -> !mvpIds.contains(s.playerId())).toList(), metric);
+    }
+
+    private List<BattingStats> topOf(final List<BattingStats> pool, final Comparator<BattingStats> metric) {
         final Optional<BattingStats> best = pool.stream().max(metric);
         if (best.isEmpty()) {
             return List.of();
