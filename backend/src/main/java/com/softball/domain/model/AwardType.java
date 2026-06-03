@@ -8,5 +8,6 @@ public enum AwardType {
     RBI,
     SPEED,
     ON_BASE,
-    WALK
+    WALK,
+    HBP
 }

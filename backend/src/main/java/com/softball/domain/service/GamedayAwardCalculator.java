@@ -80,6 +80,14 @@ public class GamedayAwardCalculator {
             result.add(award(AwardType.WALK, walks, walks.get(0).walks() + " BB"));
         }
 
+        // Prügelknabe: am häufigsten vom Pitch getroffen (HBP). Kein MVP-Ausschluss (Nischen-Award), Ties gelistet.
+        final List<BattingStats> hbp = topTied(stats,
+            s -> s.hitByPitch() > 0,
+            Comparator.comparingInt(BattingStats::hitByPitch));
+        if (!hbp.isEmpty()) {
+            result.add(award(AwardType.HBP, hbp, hbp.get(0).hitByPitch() + " HBP"));
+        }
+
         return result;
     }
 
