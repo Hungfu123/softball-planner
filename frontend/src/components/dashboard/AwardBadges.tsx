@@ -65,7 +65,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   SPEED: {
     icon: <Zap size={12} strokeWidth={2.5} />,
     label: 'Speedster',
-    desc: 'Meiste Steals — klaut Bases, während der Pitcher wirft.',
+    desc: 'Meiste Steals — Bases gestealed, während der Pitcher wirft.',
     accentBar: 'bg-sky-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -74,7 +74,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   },
   ON_BASE: {
     icon: <Target size={12} strokeWidth={2.5} />,
-    label: 'Base-Flatrate',
+    label: 'Mr. Reliable',
     desc: 'Beste OBP — kommt am öftesten auf Base (inkl. Walks & Hit by Pitch).',
     accentBar: 'bg-emerald-500',
     darkChip: 'bg-white/8 border-white/12',
