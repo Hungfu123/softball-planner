@@ -205,6 +205,26 @@ class BattingStatsCalculatorTest {
         assertThat(stats.get(0).battingAverage()).isEqualByComparingTo("0.000");
     }
 
+    @Test
+    void qualified_falseBelowFiveAtBats() {
+        final List<AtBat> atBats = List.of(
+            atBat(AtBatResult.SINGLE), atBat(AtBatResult.SINGLE), atBat(AtBatResult.SINGLE),
+            atBat(AtBatResult.WALK)); // 3 AB + 1 BB = 4 PA → nur 3 AB
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        assertThat(s.atBats()).isEqualTo(3);
+        assertThat(s.qualified()).isFalse();
+    }
+
+    @Test
+    void qualified_trueAtFiveAtBats() {
+        final List<AtBat> atBats = List.of(
+            atBat(AtBatResult.SINGLE), atBat(AtBatResult.OUT), atBat(AtBatResult.OUT),
+            atBat(AtBatResult.STRIKEOUT), atBat(AtBatResult.OUT)); // 5 AB
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        assertThat(s.atBats()).isEqualTo(5);
+        assertThat(s.qualified()).isTrue();
+    }
+
     // --- Edge Cases ---
 
     @Test

@@ -29,7 +29,8 @@ public record BattingStats(
     int totalBases,
     BigDecimal battingAverage,
     BigDecimal onBasePct,
-    BigDecimal sluggingPct
+    BigDecimal sluggingPct,
+    boolean qualified
 ) {
     public BigDecimal ops() {
         return onBasePct.add(sluggingPct).setScale(3, RoundingMode.HALF_UP);

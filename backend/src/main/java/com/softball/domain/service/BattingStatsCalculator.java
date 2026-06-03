@@ -25,6 +25,12 @@ import java.util.Map;
  */
 public class BattingStatsCalculator {
 
+    /**
+     * Mindestanzahl At-Bats, ab der Rate-Stats (AVG/OBP/SLG/OPS) als aussagekräftig gelten.
+     * Verhindert irreführende Mini-Samples (z.B. 3-für-3 = 1.000) in aggregierten Scopes.
+     */
+    public static final int QUALIFIED_MIN_AT_BATS = 5;
+
     public List<BattingStats> calculateForPlayers(final List<Player> players,
                                                    final List<AtBat> atBats,
                                                    final List<BaseRunningEvent> stealingEvents) {
@@ -101,7 +107,8 @@ public class BattingStatsCalculator {
             walks, hbp, strikeouts, outs,
             reachedOnError,
             stolenBases, caughtStealing, pickoffs, rbi, totalBases,
-            ba, obp, slg
+            ba, obp, slg,
+            atBats >= QUALIFIED_MIN_AT_BATS
         );
     }
 

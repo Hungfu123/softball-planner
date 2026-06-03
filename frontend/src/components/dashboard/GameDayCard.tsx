@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { BarChart3 } from 'lucide-react'
 import type { AwardResponse, GameDayResponse } from '@/types'
 import { TrashBin, Pencil } from '@/icons'
 import { getGameDayAwards } from '@/api/client'
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
+  const navigate = useNavigate()
   const playerCount = gameDay.availablePlayers.length
   const totalGames = gameDay.games.length
   const gamesWithOpponent = gameDay.games.filter(g => g.opponentTeam)
@@ -104,9 +106,20 @@ export function GameDayCard({ gameDay, isNext, onDelete, onEdit }: Props) {
           <span className="text-sm text-gray-400">— offen —</span>
         ) : null}
       </div>
-      {awards.length > 0 && (
+      {isFinished && (
         <div className="mt-2 pt-2 border-t border-cream-200">
-          <AwardBadges awards={awards} tone="light" />
+          {awards.length > 0 && <AwardBadges awards={awards} tone="light" />}
+          <button
+            onClick={(e) => {
+              e.preventDefault(); e.stopPropagation()
+              navigate(`/stats?scope=gameDay&gameDayId=${gameDay.id}&view=batting`)
+            }}
+            className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide uppercase text-navy-700 hover:text-softball-red-600 cursor-pointer"
+            title="Schlag-Statistiken dieses Spieltags ansehen"
+          >
+            <BarChart3 size={13} />
+            Stats des Spieltags
+          </button>
         </div>
       )}
     </Link>

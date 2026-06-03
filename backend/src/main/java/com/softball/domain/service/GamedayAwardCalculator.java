@@ -8,10 +8,17 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Pure Auswahl-Logik für Spieltags-Auszeichnungen. Kein Spring, keine I/O.
- * Reihenfolge: MVP, POWER, SPEED, ON_BASE (jeweils nur falls qualifiziert).
+ * Reihenfolge: MVP, TOP_HITTER, POWER, RBI, SPEED, ON_BASE, WALK (jeweils nur falls qualifiziert).
+ *
+ * Gleichstand: Teilen sich mehrere Spieler den besten (angezeigten) Stat-Wert, werden ALLE
+ * als Gewinner geführt — {@code playerName} listet die Namen kommagetrennt, {@code playerId}
+ * ist dann {@code null} (mehrdeutig).
  */
 public class GamedayAwardCalculator {
 
@@ -23,30 +30,91 @@ public class GamedayAwardCalculator {
             return result;
         }
 
-        final Optional<BattingStats> mvp = pickMvp(stats);
-        mvp.ifPresent(s -> result.add(new Award(
-            AwardType.MVP, s.playerId(), s.playerName(), "OPS " + s.ops().toPlainString())));
-        final Long mvpId = mvp.map(BattingStats::playerId).orElse(null);
+        final List<BattingStats> mvp = topTied(stats,
+            s -> s.plateAppearances() >= MIN_PA,
+            Comparator.comparing(BattingStats::ops));
+        if (!mvp.isEmpty()) {
+            result.add(award(AwardType.MVP, mvp, "OPS " + mvp.get(0).ops().toPlainString()));
+        }
+        final Set<Long> mvpIds = ids(mvp);
 
-        pickTopHitter(stats, mvpId).ifPresent(s -> result.add(new Award(
-            AwardType.TOP_HITTER, s.playerId(), s.playerName(), "AVG " + fmtAvg(s.battingAverage()))));
+        final List<BattingStats> topHitter = topTied(stats,
+            s -> s.plateAppearances() >= MIN_PA && s.battingAverage().signum() > 0 && !mvpIds.contains(s.playerId()),
+            Comparator.comparing(BattingStats::battingAverage));
+        if (!topHitter.isEmpty()) {
+            result.add(award(AwardType.TOP_HITTER, topHitter, "AVG " + fmtAvg(topHitter.get(0).battingAverage())));
+        }
 
-        pickPower(stats).ifPresent(s -> result.add(new Award(
-            AwardType.POWER, s.playerId(), s.playerName(), s.totalBases() + " Bases")));
+        final List<BattingStats> power = topTied(stats,
+            s -> s.plateAppearances() >= MIN_PA && s.totalBases() > 0 && hasExtraBaseHit(s),
+            Comparator.comparingInt(BattingStats::totalBases));
+        if (!power.isEmpty()) {
+            result.add(award(AwardType.POWER, power, power.get(0).totalBases() + " Bases"));
+        }
 
-        pickRbi(stats, mvpId).ifPresent(s -> result.add(new Award(
-            AwardType.RBI, s.playerId(), s.playerName(), s.runsBattedIn() + " RBI")));
+        final List<BattingStats> rbi = topTied(stats,
+            s -> s.plateAppearances() >= MIN_PA && s.runsBattedIn() > 0 && !mvpIds.contains(s.playerId()),
+            Comparator.comparingInt(BattingStats::runsBattedIn));
+        if (!rbi.isEmpty()) {
+            result.add(award(AwardType.RBI, rbi, rbi.get(0).runsBattedIn() + " RBI"));
+        }
 
-        pickSpeed(stats).ifPresent(s -> result.add(new Award(
-            AwardType.SPEED, s.playerId(), s.playerName(), s.stolenBases() + " SB")));
+        final List<BattingStats> speed = topTied(stats,
+            s -> s.stolenBases() > 0,
+            Comparator.comparingInt(BattingStats::stolenBases));
+        if (!speed.isEmpty()) {
+            result.add(award(AwardType.SPEED, speed, speed.get(0).stolenBases() + " SB"));
+        }
 
-        pickOnBase(stats, mvpId).ifPresent(s -> result.add(new Award(
-            AwardType.ON_BASE, s.playerId(), s.playerName(), "OBP " + s.onBasePct().toPlainString())));
+        final List<BattingStats> onBase = topTied(stats,
+            s -> s.plateAppearances() >= MIN_PA && !mvpIds.contains(s.playerId()),
+            Comparator.comparing(BattingStats::onBasePct));
+        if (!onBase.isEmpty()) {
+            result.add(award(AwardType.ON_BASE, onBase, "OBP " + onBase.get(0).onBasePct().toPlainString()));
+        }
 
-        pickWalks(stats, mvpId).ifPresent(s -> result.add(new Award(
-            AwardType.WALK, s.playerId(), s.playerName(), s.walks() + " BB")));
+        final List<BattingStats> walks = topTied(stats,
+            s -> s.walks() > 0 && !mvpIds.contains(s.playerId()),
+            Comparator.comparingInt(BattingStats::walks));
+        if (!walks.isEmpty()) {
+            result.add(award(AwardType.WALK, walks, walks.get(0).walks() + " BB"));
+        }
 
         return result;
+    }
+
+    /**
+     * Alle Spieler, die den besten Wert der Metrik teilen (Gleichstand → mehrere Gewinner).
+     * Die Metrik vergleicht NUR den angezeigten Stat (kein PA-/ID-Tiebreak), damit ein echter
+     * Gleichstand auch als solcher erkannt wird.
+     */
+    private List<BattingStats> topTied(final List<BattingStats> stats,
+                                       final Predicate<BattingStats> eligible,
+                                       final Comparator<BattingStats> metric) {
+        final List<BattingStats> pool = stats.stream().filter(eligible).toList();
+        final Optional<BattingStats> best = pool.stream().max(metric);
+        if (best.isEmpty()) {
+            return List.of();
+        }
+        final BattingStats top = best.get();
+        return pool.stream().filter(s -> metric.compare(s, top) == 0).toList();
+    }
+
+    /**
+     * Baut den Award aus allen Gewinnern: Namen alphabetisch kommagetrennt, {@code playerId} nur
+     * bei einem einzigen Gewinner gesetzt (sonst {@code null}, da mehrdeutig).
+     */
+    private Award award(final AwardType type, final List<BattingStats> winners, final String displayValue) {
+        final List<BattingStats> sorted = winners.stream()
+            .sorted(Comparator.comparing(BattingStats::playerName, String.CASE_INSENSITIVE_ORDER))
+            .toList();
+        final String names = sorted.stream().map(BattingStats::playerName).collect(Collectors.joining(", "));
+        final Long playerId = sorted.size() == 1 ? sorted.get(0).playerId() : null;
+        return new Award(type, playerId, names, displayValue);
+    }
+
+    private Set<Long> ids(final List<BattingStats> winners) {
+        return winners.stream().map(BattingStats::playerId).collect(Collectors.toSet());
     }
 
     /** AVG ohne führende Null (Baseball-Konvention): 0.833 → .833, 1.000 → 1.000. */
@@ -57,72 +125,5 @@ public class GamedayAwardCalculator {
 
     private boolean hasExtraBaseHit(final BattingStats s) {
         return s.doubles() + s.triples() + s.homeRuns() > 0;
-    }
-
-    private Optional<BattingStats> pickMvp(final List<BattingStats> stats) {
-        // MVP = bester OPS (On-Base + Slugging = bester Gesamt-Schläger). Tiebreak: mehr PA.
-        return stats.stream()
-            .filter(s -> s.plateAppearances() >= MIN_PA)
-            .max(Comparator
-                .comparing(BattingStats::ops)
-                .thenComparingInt(BattingStats::plateAppearances)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
-    }
-
-    private Optional<BattingStats> pickTopHitter(final List<BattingStats> stats, final Long excludeId) {
-        return stats.stream()
-            .filter(s -> s.plateAppearances() >= MIN_PA)
-            .filter(s -> s.battingAverage().signum() > 0)
-            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
-            .max(Comparator
-                .comparing(BattingStats::battingAverage)
-                .thenComparingInt(BattingStats::plateAppearances)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
-    }
-
-    private Optional<BattingStats> pickPower(final List<BattingStats> stats) {
-        return stats.stream()
-            .filter(s -> s.plateAppearances() >= MIN_PA)
-            .filter(s -> s.totalBases() > 0 && hasExtraBaseHit(s))
-            .max(Comparator
-                .comparingInt(BattingStats::totalBases)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
-    }
-
-    private Optional<BattingStats> pickSpeed(final List<BattingStats> stats) {
-        return stats.stream()
-            .filter(s -> s.stolenBases() > 0)
-            .max(Comparator
-                .comparingInt(BattingStats::stolenBases)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
-    }
-
-    private Optional<BattingStats> pickOnBase(final List<BattingStats> stats, final Long excludeId) {
-        return stats.stream()
-            .filter(s -> s.plateAppearances() >= MIN_PA)
-            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
-            .max(Comparator
-                .comparing(BattingStats::onBasePct)
-                .thenComparingInt(BattingStats::plateAppearances)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
-    }
-
-    private Optional<BattingStats> pickRbi(final List<BattingStats> stats, final Long excludeId) {
-        return stats.stream()
-            .filter(s -> s.plateAppearances() >= MIN_PA)
-            .filter(s -> s.runsBattedIn() > 0)
-            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
-            .max(Comparator
-                .comparingInt(BattingStats::runsBattedIn)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
-    }
-
-    private Optional<BattingStats> pickWalks(final List<BattingStats> stats, final Long excludeId) {
-        return stats.stream()
-            .filter(s -> s.walks() > 0)
-            .filter(s -> excludeId == null || !s.playerId().equals(excludeId))
-            .max(Comparator
-                .comparingInt(BattingStats::walks)
-                .thenComparing(Comparator.comparingLong(BattingStats::playerId).reversed()));
     }
 }

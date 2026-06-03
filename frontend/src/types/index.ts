@@ -378,7 +378,8 @@ export type AwardType = 'MVP' | 'TOP_HITTER' | 'POWER' | 'RBI' | 'SPEED' | 'ON_B
 
 export interface AwardResponse {
   type: AwardType
-  playerId: number
+  /** null bei Gleichstand mit mehreren Gewinnern — dann listet playerName alle Namen */
+  playerId: number | null
   playerName: string
   displayValue: string
 }
@@ -407,6 +408,7 @@ export interface PlayerBattingStatsResponse {
   onBasePct: number
   sluggingPct: number
   ops: number
+  qualified: boolean
 }
 
 export const AT_BAT_RESULT_LABELS: Record<AtBatResult, string> = {

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ChevronDown, Trophy, Download } from 'lucide-react'
 import * as api from '@/api/client'
-import type { AwardResponse, GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
+import type { AwardResponse, GameDayResponse, GameResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
 import { AwardsCard } from '@/components/dashboard/AwardsCard'
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
@@ -10,14 +10,25 @@ import { StatsGlossarySheet } from './StatsGlossarySheet'
 import { StatsTableSkeleton } from './StatsTableSkeleton'
 import { generateBattingStatsPdf } from '@/utils/statsPdf'
 
-type ScopeKind = 'season' | 'year' | 'allTime' | 'game'
+type ScopeKind = 'season' | 'year' | 'allTime' | 'gameDay' | 'game'
 type ViewKind = 'batting' | 'games'
 
 const SCOPE_LABEL_MAP: Record<ScopeKind, string> = {
   season: 'Saison',
   year: 'Jahr',
   allTime: 'Alle Zeit',
+  gameDay: 'Spieltag',
   game: 'Spiel',
+}
+
+/** Scopes mit Rate-Stat-Qualifier (≥5 ABs). Einzel-Spiel + Spieltag bleiben ungefiltert. */
+function isAggregatedScope(scope: ScopeKind): boolean {
+  return scope === 'season' || scope === 'year' || scope === 'allTime'
+}
+
+function formatGameDayLabel(gd: GameDayResponse): string {
+  const d = new Date(gd.date + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return gd.label ? `${d} · ${gd.label}` : d
 }
 
 export function StatsPage() {
@@ -30,8 +41,10 @@ export function StatsPage() {
   const gameIdParam = params.get('gameId')
   const gameIdParsed = gameIdParam ? Number(gameIdParam) : null
   const selectedGameId = gameIdParsed != null && !Number.isNaN(gameIdParsed) ? gameIdParsed : null
+  const gameDayIdParam = params.get('gameDayId')
 
   const [seasons, setSeasons] = useState<Season[]>([])
+  const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
   const [years, setYears] = useState<number[]>([])
   const [seasonsForYear, setSeasonsForYear] = useState<Season[]>([])
   const [battingStats, setBattingStats] = useState<PlayerBattingStatsResponse[]>([])
@@ -45,6 +58,10 @@ export function StatsPage() {
   useEffect(() => {
     api.getSeasons().then(setSeasons).catch(() => setSeasons([]))
     api.getDistinctYears().then(setYears).catch(() => setYears([]))
+    // Spieltage absteigend nach Datum (neueste zuerst) für den Spieltag-Selector
+    api.getAllGameDays()
+      .then(gds => setGameDays([...gds].sort((a, b) => b.date.localeCompare(a.date))))
+      .catch(() => setGameDays([]))
   }, [])
 
   // Default selections if missing
@@ -58,12 +75,18 @@ export function StatsPage() {
     return years[0] ?? new Date().getFullYear()
   }, [yearParam, years])
 
+  const selectedGameDayId = useMemo(() => {
+    if (gameDayIdParam) return Number(gameDayIdParam)
+    return gameDays[0]?.id ?? null
+  }, [gameDayIdParam, gameDays])
+
   // Update search params
   const setScope = (kind: ScopeKind) => {
     const next = new URLSearchParams(params)
     next.set('scope', kind)
     if (kind === 'season' && selectedSeasonId != null) next.set('seasonId', String(selectedSeasonId))
     if (kind === 'year') next.set('year', String(selectedYear))
+    if (kind === 'gameDay' && selectedGameDayId != null) next.set('gameDayId', String(selectedGameDayId))
     setParams(next, { replace: true })
   }
   const setView = (v: ViewKind) => {
@@ -81,6 +104,11 @@ export function StatsPage() {
     next.set('year', String(y))
     setParams(next, { replace: true })
   }
+  const setGameDayId = (id: number) => {
+    const next = new URLSearchParams(params)
+    next.set('gameDayId', String(id))
+    setParams(next, { replace: true })
+  }
 
   // Load stats when scope changes
   useEffect(() => {
@@ -89,13 +117,14 @@ export function StatsPage() {
 
     const battingP = (): Promise<PlayerBattingStatsResponse[]> => {
       if (scopeKind === 'game' && selectedGameId != null) return api.getGameBattingStats(selectedGameId)
+      if (scopeKind === 'gameDay' && selectedGameDayId != null) return api.getGameDayBattingStats(selectedGameDayId)
       if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonBattingStats(selectedSeasonId)
       if (scopeKind === 'year') return api.getYearBattingStats(selectedYear)
       if (scopeKind === 'allTime') return api.getAllTimeBattingStats()
       return Promise.resolve([])
     }
     const gamesP = (): Promise<SeasonPlayerStats[]> => {
-      if (scopeKind === 'game') return Promise.resolve([]) // Einsätze pro einzelnem Spiel = nicht sinnvoll
+      if (scopeKind === 'game' || scopeKind === 'gameDay') return Promise.resolve([]) // Einsätze nur über aggregierte Scopes
       if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonStats(selectedSeasonId)
       if (scopeKind === 'year') return api.getYearStats(selectedYear)
       if (scopeKind === 'allTime') return api.getAllTimeStats()
@@ -103,6 +132,7 @@ export function StatsPage() {
     }
     // Auszeichnungen (gleiche Titel wie pro Spieltag, aber über den gewählten Scope)
     const awardsP = (): Promise<AwardResponse[]> => {
+      if (scopeKind === 'gameDay' && selectedGameDayId != null) return api.getGameDayAwards(selectedGameDayId)
       if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonAwards(selectedSeasonId)
       if (scopeKind === 'year') return api.getYearAwards(selectedYear)
       if (scopeKind === 'allTime') return api.getAllTimeAwards()
@@ -125,7 +155,7 @@ export function StatsPage() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [scopeKind, selectedSeasonId, selectedYear, selectedGameId])
+  }, [scopeKind, selectedSeasonId, selectedYear, selectedGameId, selectedGameDayId])
 
   // Load seasons-by-year for Kontext-Info
   useEffect(() => {
@@ -154,6 +184,10 @@ export function StatsPage() {
         ? `Spiel ${selectedGame.gameNumber} vs ${opp}${score}`
         : `Spiel ${selectedGame.gameNumber}${score}`
     }
+    if (scopeKind === 'gameDay') {
+      const gd = gameDays.find(x => x.id === selectedGameDayId)
+      return gd ? `Spieltag · ${formatGameDayLabel(gd)}` : 'Kein Spieltag ausgewählt'
+    }
     if (scopeKind === 'season') {
       const s = seasons.find(x => x.id === selectedSeasonId)
       return s ? `${s.name} · ${s.year}` : 'Keine Saison ausgewählt'
@@ -164,7 +198,7 @@ export function StatsPage() {
       return `Jahr ${selectedYear} · ${seasonsForYear.length} ${seasonsForYear.length === 1 ? 'Saison' : 'Saisons'}: ${names}`
     }
     return `Alle Jahre · ${seasons.length} ${seasons.length === 1 ? 'Saison' : 'Saisons'}`
-  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame])
+  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame, gameDays, selectedGameDayId])
 
   return (
     <div className="space-y-6">
@@ -183,7 +217,8 @@ export function StatsPage() {
           {view === 'batting' && battingStats.length > 0 && (
             <button
               onClick={() => generateBattingStatsPdf({
-                stats: battingStats,
+                // Aggregierte Scopes: nur qualifizierte (≥5 ABs) exportieren — wie in der Tabelle
+                stats: isAggregatedScope(scopeKind) ? battingStats.filter(s => s.qualified) : battingStats,
                 contextLabel: contextInfo,
                 scopeLabel: SCOPE_LABEL_MAP[scopeKind],
               })}
@@ -201,11 +236,26 @@ export function StatsPage() {
           {scopeKind === 'game' && (
             <ScopeChip active={true} onClick={() => { /* noop */ }}>Dieses Spiel</ScopeChip>
           )}
+          <ScopeChip active={scopeKind === 'gameDay'} onClick={() => setScope('gameDay')}>Spieltag</ScopeChip>
           <ScopeChip active={scopeKind === 'season'} onClick={() => setScope('season')}>Saison</ScopeChip>
           <ScopeChip active={scopeKind === 'year'} onClick={() => setScope('year')}>Jahr</ScopeChip>
           <ScopeChip active={scopeKind === 'allTime'} onClick={() => setScope('allTime')}>Alle Zeit</ScopeChip>
 
           {/* Selector inline rechts daneben statt eigene Reihe */}
+          {scopeKind === 'gameDay' && gameDays.length > 0 && (
+            <div className="relative inline-flex items-center ml-auto sm:ml-0">
+              <select
+                value={selectedGameDayId ?? ''}
+                onChange={e => setGameDayId(Number(e.target.value))}
+                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400 max-w-[60vw] sm:max-w-none truncate"
+              >
+                {gameDays.map(gd => (
+                  <option key={gd.id} value={gd.id}>{formatGameDayLabel(gd)}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
+            </div>
+          )}
           {scopeKind === 'season' && seasons.length > 0 && (
             <div className="relative inline-flex items-center ml-auto sm:ml-0">
               <select
@@ -239,8 +289,9 @@ export function StatsPage() {
 
       {/* Highlight-Banner: Top-Stat als visueller Anker */}
       {(() => {
+        // Aggregierte Scopes: nur qualifizierte (≥5 ABs) — verhindert irreführende Mini-Samples als "Top Hitter"
         const topPlayer = battingStats
-          .filter(p => p.atBats > 0)
+          .filter(p => isAggregatedScope(scopeKind) ? p.qualified : p.atBats > 0)
           .sort((a, b) => Number(b.battingAverage) - Number(a.battingAverage))[0]
         if (!topPlayer) return null
         const fmtAvg = (v: number) => {
@@ -267,7 +318,7 @@ export function StatsPage() {
       {/* View Tabs — 'Einsätze' macht nur Sinn bei aggregierten Scopes */}
       <div className="flex gap-2 border-b border-cream-300">
         <ViewTab active={view === 'batting'} onClick={() => setView('batting')}>Schlagen</ViewTab>
-        {scopeKind !== 'game' && (
+        {scopeKind !== 'game' && scopeKind !== 'gameDay' && (
           <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
         )}
       </div>
@@ -286,6 +337,14 @@ export function StatsPage() {
         </div>
       )}
 
+      {/* Hinweis: Spieltag zeigt ALLE Schläge (kein Mindest-AB), Gesamt-Scopes filtern */}
+      {!loading && view === 'batting' && scopeKind === 'gameDay' && battingStats.length > 0 && (
+        <p className="text-[11px] text-gray-500 px-1 -mt-2">
+          Spieltags-Ansicht: alle Schläge ungefiltert. In den Gesamt-Statistiken (Saison/Jahr/Alle Zeit)
+          werden Quoten erst ab 5 At-Bats gewertet.
+        </p>
+      )}
+
       {/* Content */}
       {loading ? (
         <StatsTableSkeleton />
@@ -293,6 +352,7 @@ export function StatsPage() {
         <BattingStatsTable
           stats={battingStats}
           onOpenGlossary={() => setShowGlossary(true)}
+          applyQualifier={isAggregatedScope(scopeKind)}
         />
       ) : (
         <GamesStatsTable stats={gamesStats} />

@@ -29,6 +29,8 @@ Aggregierte Spieler-Statistiken über Saison(s) hinweg. Basiert auf `AtBat`-Reco
   - OPS = OBP + SLG
 - **Sacrifice-Behandlung:** SH und SF reduzieren AB (und somit AVG-Schutz). SF zählt für OBP-Nenner.
 - **Spielbogen-Quelle:** aktuell trägt Spielbogen NICHT zu globalen Stats bei (separat). Falls Wunsch → AtBatRepository erweitern.
+- **Rate-Stat-Qualifier** (`BattingStatsCalculator.QUALIFIED_MIN_AT_BATS = 5`): `BattingStats.qualified = atBats >= 5`. Verhindert irreführende Mini-Samples (3-für-3 = 1.000). Frontend: in aggregierten Scopes (Saison/Jahr/Alle Zeit) werden unqualifizierte standardmäßig ausgeblendet (Toggle "Alle zeigen" → ausgegraut + `<5 ABs`-Marker), Top-Hitter-Banner + Dashboard-Kachel filtern auf `qualified`. Pro Spiel (`scope=game`) KEIN Qualifier. Awards behalten eigene niedrige Schwelle (`MIN_PA=2`, Gameday hat selten 5 ABs).
+- **Award-Gleichstand** (`GamedayAwardCalculator`): teilen sich mehrere Spieler den besten angezeigten Stat-Wert, werden ALLE geführt — `Award.playerName` kommagetrennt (alphabetisch), `playerId = null`. Vergleich nur über die angezeigte Metrik (kein PA-/ID-Tiebreak).
 
 ## Frontend Files
 - `components/stats/StatsPage.tsx`

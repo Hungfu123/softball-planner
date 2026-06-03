@@ -27,9 +27,8 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
     .slice(-4)
     .map(g => ((g.scoreUs ?? 0) > (g.scoreThem ?? 0) ? 'W' : (g.scoreUs ?? 0) < (g.scoreThem ?? 0) ? 'L' : 'T'))
 
-  // Top Hitter: höchste battingAverage mit Min-Plate-Appearances
-  const MIN_PA = 5
-  const eligible = battingStats.filter(p => p.plateAppearances >= MIN_PA)
+  // Top Hitter: höchste battingAverage, nur qualifizierte (≥5 ABs, Backend-Flag)
+  const eligible = battingStats.filter(p => p.qualified)
   const topHitter = eligible.length > 0
     ? [...eligible].sort((a, b) => b.battingAverage - a.battingAverage)[0]
     : null
