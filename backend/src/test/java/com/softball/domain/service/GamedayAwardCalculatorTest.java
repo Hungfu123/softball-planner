@@ -90,7 +90,7 @@ class GamedayAwardCalculatorTest {
         var b = stats(2, "Doubler", 3, 4, 0, 0, 0, 2, "0.400", "1.100");
         var awards = byType(calc.calculate(List.of(a, b)));
         assertThat(awards.get(AwardType.POWER).playerId()).isEqualTo(2L);
-        assertThat(awards.get(AwardType.POWER).displayValue()).isEqualTo("4 Bases");
+        assertThat(awards.get(AwardType.POWER).displayValue()).isEqualTo("4 Total Bases");
     }
 
     @Test
@@ -99,7 +99,7 @@ class GamedayAwardCalculatorTest {
         var b = stats(2, "Slower", 3, 3, 0, 0, 1, 0, "0.450", "0.900");
         var awards = byType(calc.calculate(List.of(a, b)));
         assertThat(awards.get(AwardType.SPEED).playerId()).isEqualTo(1L);
-        assertThat(awards.get(AwardType.SPEED).displayValue()).isEqualTo("3 SB");
+        assertThat(awards.get(AwardType.SPEED).displayValue()).isEqualTo("3 Steals");
     }
 
     @Test
@@ -121,7 +121,7 @@ class GamedayAwardCalculatorTest {
         var awards = byType(calc.calculate(List.of(mvp, patient)));
         assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(1L);
         assertThat(awards.get(AwardType.WALK).playerId()).isEqualTo(2L);
-        assertThat(awards.get(AwardType.WALK).displayValue()).isEqualTo("3 BB");
+        assertThat(awards.get(AwardType.WALK).displayValue()).isEqualTo("3 Walks");
     }
 
     @Test
@@ -167,6 +167,6 @@ class GamedayAwardCalculatorTest {
         var awards = byType(calc.calculate(List.of(mvp, driver)));
         assertThat(awards.get(AwardType.MVP).playerId()).isEqualTo(1L);
         assertThat(awards.get(AwardType.RBI).playerId()).isEqualTo(2L);
-        assertThat(awards.get(AwardType.RBI).displayValue()).isEqualTo("4 RBI");
+        assertThat(awards.get(AwardType.RBI).displayValue()).isEqualTo("4 Runs gebracht");
     }
 }

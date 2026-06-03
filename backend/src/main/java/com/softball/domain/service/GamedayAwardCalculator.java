@@ -49,21 +49,21 @@ public class GamedayAwardCalculator {
             s -> s.plateAppearances() >= MIN_PA && s.totalBases() > 0 && hasExtraBaseHit(s),
             Comparator.comparingInt(BattingStats::totalBases));
         if (!power.isEmpty()) {
-            result.add(award(AwardType.POWER, power, power.get(0).totalBases() + " Bases"));
+            result.add(award(AwardType.POWER, power, power.get(0).totalBases() + " Total Bases"));
         }
 
         final List<BattingStats> rbi = topTiedSharedWithMvp(stats,
             s -> s.plateAppearances() >= MIN_PA && s.runsBattedIn() > 0,
             Comparator.comparingInt(BattingStats::runsBattedIn), mvpIds);
         if (!rbi.isEmpty()) {
-            result.add(award(AwardType.RBI, rbi, rbi.get(0).runsBattedIn() + " RBI"));
+            result.add(award(AwardType.RBI, rbi, rbi.get(0).runsBattedIn() + " Runs gebracht"));
         }
 
         final List<BattingStats> speed = topTied(stats,
             s -> s.stolenBases() > 0,
             Comparator.comparingInt(BattingStats::stolenBases));
         if (!speed.isEmpty()) {
-            result.add(award(AwardType.SPEED, speed, speed.get(0).stolenBases() + " SB"));
+            result.add(award(AwardType.SPEED, speed, speed.get(0).stolenBases() + " Steals"));
         }
 
         final List<BattingStats> onBase = topTiedSharedWithMvp(stats,
@@ -77,7 +77,7 @@ public class GamedayAwardCalculator {
             s -> s.walks() > 0,
             Comparator.comparingInt(BattingStats::walks), mvpIds);
         if (!walks.isEmpty()) {
-            result.add(award(AwardType.WALK, walks, walks.get(0).walks() + " BB"));
+            result.add(award(AwardType.WALK, walks, walks.get(0).walks() + " Walks"));
         }
 
         // Prügelknabe: am häufigsten vom Pitch getroffen (HBP). Kein MVP-Ausschluss (Nischen-Award), Ties gelistet.
@@ -85,7 +85,7 @@ public class GamedayAwardCalculator {
             s -> s.hitByPitch() > 0,
             Comparator.comparingInt(BattingStats::hitByPitch));
         if (!hbp.isEmpty()) {
-            result.add(award(AwardType.HBP, hbp, hbp.get(0).hitByPitch() + " HBP"));
+            result.add(award(AwardType.HBP, hbp, hbp.get(0).hitByPitch() + "× Hit by Pitch"));
         }
 
         // Windmühle: meiste Strikeouts (Gag). Kein MVP-Ausschluss (Power-Hitter striken oft), Ties gelistet.
@@ -93,7 +93,7 @@ public class GamedayAwardCalculator {
             s -> s.strikeouts() > 0,
             Comparator.comparingInt(BattingStats::strikeouts));
         if (!strikeouts.isEmpty()) {
-            result.add(award(AwardType.STRIKEOUT, strikeouts, strikeouts.get(0).strikeouts() + " K"));
+            result.add(award(AwardType.STRIKEOUT, strikeouts, strikeouts.get(0).strikeouts() + " Strikeouts"));
         }
 
         return result;
