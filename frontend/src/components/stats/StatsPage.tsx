@@ -287,6 +287,13 @@ export function StatsPage() {
         </div>
       </div>
 
+      {/* Auszeichnungen (Scope-weit) — Highlights des Zeitraums, über den Detail-Tabs */}
+      {!loading && awards.length > 0 && (
+        <div className="mb-3">
+          <AwardsCard awards={awards} subtitle={contextInfo} />
+        </div>
+      )}
+
       {/* View Tabs — 'Einsätze' macht nur Sinn bei aggregierten Scopes */}
       <div className="flex gap-2 border-b border-cream-300">
         <ViewTab active={view === 'batting'} onClick={() => setView('batting')}>Schlagen</ViewTab>
@@ -294,13 +301,6 @@ export function StatsPage() {
           <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
         )}
       </div>
-
-      {/* Auszeichnungen (Scope-weit) — gleiche Titel wie pro Spieltag */}
-      {!loading && awards.length > 0 && (
-        <div className="mb-3">
-          <AwardsCard awards={awards} subtitle={contextInfo} />
-        </div>
-      )}
 
       {/* Hinweis: Spieltag zeigt ALLE Schläge (kein Mindest-AB), Gesamt-Scopes filtern */}
       {!loading && view === 'batting' && scopeKind === 'gameDay' && battingStats.length > 0 && (
