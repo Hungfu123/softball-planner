@@ -179,23 +179,21 @@ export function CalendarPage() {
                 <span className={`font-display text-[10px] sm:text-xs font-bold tabular-nums ${isToday ? 'text-softball-red-700' : hasEntries ? 'text-navy-900' : 'text-gray-400'}`}>
                   {day}
                 </span>
-                {/* Mobil: Balken pro Eintrag + Ort */}
+                {/* Mobil: dicker Balken mit Ort drin */}
                 {e && (e.gds.length > 0 || e.trs.length > 0) && (
                   <div className="flex sm:hidden flex-col gap-0.5 w-full px-1 mt-0.5">
                     {e.gds.map(gd => {
                       const meta = seasonMeta.get(gd.seasonId)
                       return (
-                        <div key={gd.id} className="flex flex-col gap-0.5 leading-tight">
-                          <span className={`h-1.5 rounded-full ${meta?.dot ?? 'bg-gray-500'}`} />
-                          {gd.location && <span className="text-[8px] text-gray-500 truncate text-center">{gd.location}</span>}
-                        </div>
+                        <span key={gd.id} className={`rounded px-1 py-0.5 text-[8px] font-bold text-white text-center truncate leading-tight ${meta?.dot ?? 'bg-gray-500'}`}>
+                          {gd.location || '·'}
+                        </span>
                       )
                     })}
                     {e.trs.map(tr => (
-                      <div key={tr.id} className="flex flex-col gap-0.5 leading-tight">
-                        <span className={`h-1.5 rounded-full ${TRAINING_DOT}`} />
-                        {tr.location && <span className="text-[8px] text-gray-500 truncate text-center">{tr.location}</span>}
-                      </div>
+                      <span key={tr.id} className={`rounded px-1 py-0.5 text-[8px] font-bold text-white text-center truncate leading-tight ${TRAINING_DOT}`}>
+                        {tr.location || 'Training'}
+                      </span>
                     ))}
                   </div>
                 )}
