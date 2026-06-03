@@ -257,34 +257,35 @@ export function Dashboard() {
             const heroIsUpcoming = heroVariant === 'today' || heroVariant === 'upcoming'
             return (
               <>
-                {/* Anstehend-Sektion: nur wenn Hero=Upcoming UND weitere Upcoming existieren */}
-                {heroIsUpcoming && (
-                  <div>
-                    <div className="flex items-center justify-between px-1 mb-2">
-                      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
-                        Anstehend
-                      </h2>
-                      <button
-                        onClick={() => setShowNewGameDay(true)}
-                        className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <PlusCircle size={14} />
-                        Neuer Spieltag
-                      </button>
-                    </div>
-                    {upcoming.length > 0 && (
-                      <UpcomingList
-                        gameDays={upcoming}
-                        showAll={showAllGameDays}
-                        onShowAll={() => setShowAllGameDays(true)}
-                        onShowLess={() => setShowAllGameDays(false)}
-                        visibleCount={3}
-                        onEdit={id => setEditGameDayId(id)}
-                        onDelete={id => setDeleteGameDayId(id)}
-                      />
-                    )}
+                {/* Anstehend-Sektion: IMMER sichtbar — "Neuer Spieltag"-Button muss
+                    auch erreichbar sein wenn kein anstehender Spieltag existiert. */}
+                <div>
+                  <div className="flex items-center justify-between px-1 mb-2">
+                    <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
+                      Anstehend
+                    </h2>
+                    <button
+                      onClick={() => setShowNewGameDay(true)}
+                      className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <PlusCircle size={14} />
+                      Neuer Spieltag
+                    </button>
                   </div>
-                )}
+                  {upcoming.length > 0 ? (
+                    <UpcomingList
+                      gameDays={upcoming}
+                      showAll={showAllGameDays}
+                      onShowAll={() => setShowAllGameDays(true)}
+                      onShowLess={() => setShowAllGameDays(false)}
+                      visibleCount={3}
+                      onEdit={id => setEditGameDayId(id)}
+                      onDelete={id => setDeleteGameDayId(id)}
+                    />
+                  ) : !heroIsUpcoming && (
+                    <p className="px-1 text-[12px] text-gray-400">Kein anstehender Spieltag geplant.</p>
+                  )}
+                </div>
 
                 {/* Letzte Spieltage — IMMER sichtbar wenn Past existieren */}
                 {past.length > 0 && (
@@ -293,15 +294,6 @@ export function Dashboard() {
                       <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
                         Letzte Spieltage
                       </h2>
-                      {!heroIsUpcoming && (
-                        <button
-                          onClick={() => setShowNewGameDay(true)}
-                          className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
-                        >
-                          <PlusCircle size={14} />
-                          Neuer Spieltag
-                        </button>
-                      )}
                     </div>
                     <UpcomingList
                       gameDays={past}
