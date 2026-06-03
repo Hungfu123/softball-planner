@@ -24,7 +24,7 @@ export function CalendarPage() {
   const [seasons, setSeasons] = useState<Season[]>([])
   const [gamedays, setGamedays] = useState<GameDayResponse[]>([])
   const [trainings, setTrainings] = useState<TrainingResponse[]>([])
-  const [showTrainings, setShowTrainings] = useState(true)
+  const [showTrainings, setShowTrainings] = useState(false)
   const [exporting, setExporting] = useState(false)
 
   const today = new Date()
@@ -168,16 +168,10 @@ export function CalendarPage() {
             const e = byDate.get(key)
             const isToday = key === todayKey
             const hasEntries = !!e && (e.gds.length > 0 || e.trs.length > 0)
-            // Marker-Punkte: je Spieltag ein Season-Punkt (max 3) + Training-Punkt
-            const dots: string[] = []
-            if (e) {
-              for (const gd of e.gds) dots.push(seasonMeta.get(gd.seasonId)?.dot ?? 'bg-gray-500')
-              if (e.trs.length > 0) dots.push(TRAINING_DOT)
-            }
             return (
               <div
                 key={key}
-                className={`aspect-square sm:aspect-auto sm:min-h-20 rounded-lg border flex flex-col items-center justify-start pt-1 gap-0.5 ${
+                className={`min-h-16 sm:min-h-20 rounded-lg border flex flex-col items-center justify-start pt-1 gap-0.5 ${
                   isToday ? 'border-softball-red-500 bg-softball-red-50'
                     : hasEntries ? 'border-cream-300 bg-white' : 'border-transparent'
                 }`}
@@ -185,11 +179,23 @@ export function CalendarPage() {
                 <span className={`font-display text-[10px] sm:text-xs font-bold tabular-nums ${isToday ? 'text-softball-red-700' : hasEntries ? 'text-navy-900' : 'text-gray-400'}`}>
                   {day}
                 </span>
-                {/* Mobile: Mini-Balken pro Eintrag (deutlicher als Punkte) */}
-                {dots.length > 0 && (
+                {/* Mobil: Balken pro Eintrag + Ort */}
+                {e && (e.gds.length > 0 || e.trs.length > 0) && (
                   <div className="flex sm:hidden flex-col gap-0.5 w-full px-1 mt-0.5">
-                    {dots.slice(0, 3).map((c, di) => (
-                      <span key={di} className={`h-1.5 rounded-full ${c}`} />
+                    {e.gds.map(gd => {
+                      const meta = seasonMeta.get(gd.seasonId)
+                      return (
+                        <div key={gd.id} className="flex flex-col gap-0.5 leading-tight">
+                          <span className={`h-1.5 rounded-full ${meta?.dot ?? 'bg-gray-500'}`} />
+                          {gd.location && <span className="text-[8px] text-gray-500 truncate text-center">{gd.location}</span>}
+                        </div>
+                      )
+                    })}
+                    {e.trs.map(tr => (
+                      <div key={tr.id} className="flex flex-col gap-0.5 leading-tight">
+                        <span className={`h-1.5 rounded-full ${TRAINING_DOT}`} />
+                        {tr.location && <span className="text-[8px] text-gray-500 truncate text-center">{tr.location}</span>}
+                      </div>
                     ))}
                   </div>
                 )}
