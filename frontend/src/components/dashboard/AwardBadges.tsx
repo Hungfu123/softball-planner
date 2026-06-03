@@ -65,7 +65,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   SPEED: {
     icon: <Zap size={12} strokeWidth={2.5} />,
     label: 'Speedster',
-    desc: 'Meiste Steals — Bases gestealed, während der Pitcher wirft.',
+    desc: 'Meiste Steals — stealed Bases, während der Pitcher wirft.',
     accentBar: 'bg-sky-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
@@ -105,7 +105,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   STRIKEOUT: {
     icon: <Fan size={12} strokeWidth={2.5} />,
     label: 'Windmühle',
-    desc: 'Meiste Strikeouts — schlägt am öftesten in die Luft statt den Ball zu treffen. Gag-Titel.',
+    desc: 'Meiste Strikeouts — schlägt am öftesten in die Luft statt den Ball zu treffen.',
     accentBar: 'bg-zinc-400',
     darkChip: 'bg-white/8 border-white/12',
     lightChip: 'bg-navy-50 border-navy-100',
