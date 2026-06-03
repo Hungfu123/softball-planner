@@ -25,7 +25,7 @@ const AWARD_META: Record<AwardType, AwardMeta> = {
   MVP: {
     icon: <Trophy size={12} strokeWidth={2.5} />,
     label: 'MVP',
-    desc: 'Wertvollster Spieler — bester OPS (On-Base- + Schlagstärke zusammen). Der kompletteste Schläger.',
+    desc: 'Wertvollster Spieler — bester OPS: On-Base-Quote + Schlagstärke zusammengerechnet. Kommt also oft auf Base UND schlägt kraftvoll.',
     accentBar: 'bg-softball-red-500',
     darkChip: 'bg-softball-red-600/20 border-softball-red-500/30',
     lightChip: 'bg-softball-red-50 border-softball-red-100',
