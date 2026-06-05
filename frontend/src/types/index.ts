@@ -219,6 +219,9 @@ export interface DrillResponse {
 
 export type SectionGroup = 'ALL' | 'MAIN' | 'BEGINNER'
 
+export type StationType = 'LIVE' | 'TEE' | 'BUNT' | 'KORKEN' | 'HUETCHEN' | 'OTHER'
+export type StationLevel = 'ADVANCED' | 'BEGINNER'
+
 export interface TrainingPlanSectionResponse {
   drillId: string | null
   sectionType: string | null
@@ -234,6 +237,9 @@ export interface TrainingPlanSectionResponse {
   parallelGroup: number | null
   playersPerGroup: number | null
   group?: SectionGroup
+  stationType?: StationType | null
+  stationLevel?: StationLevel | null
+  stationChoiceGroup?: number | null
 }
 
 export interface TrainingPlanContentResponse {
