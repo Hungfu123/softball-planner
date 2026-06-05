@@ -382,6 +382,7 @@ export function TrainingTodayPage() {
               activePlanKind={activePlanKind}
               onSwitchKind={setActivePlanKind}
               drills={drills}
+              playerCount={presentIds.size}
               onEdit={() => setPlanEditOpen(true)}
               onSaveStations={async (nextStations) => {
                 if (!activePlan?.content) return
