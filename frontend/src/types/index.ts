@@ -665,3 +665,30 @@ export interface BogenSheetResponse {
   runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   inningRuns: Record<number, { home: number; away: number }>
 }
+
+export type PairingMode = 'HEIM_GAST' | 'TEAM_1_2'
+export interface InvitationGame { time: string; teamA: string; teamB: string; ump: string }
+export interface InvitationContact { role: string; name: string; email: string; phone: string }
+export interface InvitationResponse {
+  id: number
+  title: string
+  letterDate: string | null
+  eventDate: string | null
+  venue: string | null
+  pairingMode: PairingMode
+  bodyText: string | null
+  guestTeams: string[]
+  games: InvitationGame[]
+  contacts: InvitationContact[]
+}
+export interface InvitationRequest {
+  title: string
+  letterDate: string | null
+  eventDate: string | null
+  venue: string | null
+  pairingMode: PairingMode
+  bodyText: string | null
+  guestTeams: string[]
+  games: InvitationGame[]
+  contacts: InvitationContact[]
+}

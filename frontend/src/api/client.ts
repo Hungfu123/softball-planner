@@ -86,6 +86,8 @@ import type {
   CoachRotationPair,
   AwardResponse,
   WeatherResponse,
+  InvitationResponse,
+  InvitationRequest,
 } from '@/types'
 
 // Players
@@ -560,3 +562,16 @@ export async function correctLastSpielbogenAtBat(
     { method: 'PATCH', body: JSON.stringify(payload) }
   )
 }
+
+export const getInvitations = () =>
+  request<InvitationResponse[]>(`/invitations`)
+export const getInvitation = (id: number) =>
+  request<InvitationResponse>(`/invitations/${id}`)
+export const createInvitation = (data: InvitationRequest) =>
+  request<InvitationResponse>(`/invitations`, { method: 'POST', body: JSON.stringify(data) })
+export const updateInvitation = (id: number, data: InvitationRequest) =>
+  request<InvitationResponse>(`/invitations/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const duplicateInvitation = (id: number) =>
+  request<InvitationResponse>(`/invitations/${id}/duplicate`, { method: 'POST' })
+export const deleteInvitation = (id: number) =>
+  request<void>(`/invitations/${id}`, { method: 'DELETE' })
