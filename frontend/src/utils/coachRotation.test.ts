@@ -6,6 +6,7 @@ import {
   recommendRotationPair,
   getPairLabel,
   getPairPositions,
+  validRotationPairs,
 } from './coachRotation'
 
 function makeEntry(battingOrder: number, name: string, position: string | null = 'LF'): CoachRotationLineupRow {
@@ -103,5 +104,23 @@ describe('getPairPositions', () => {
     expect(getPairPositions('POS_5_10')).toEqual([5, 10])
     expect(getPairPositions('POS_4_9')).toEqual([4, 9])
     expect(getPairPositions('POS_3_8')).toEqual([3, 8])
+  })
+})
+
+describe('validRotationPairs', () => {
+  const nine = Array.from({ length: 9 }, (_, i) => makeEntry(i + 1, `P${i + 1}`))
+  const ten = Array.from({ length: 10 }, (_, i) => makeEntry(i + 1, `P${i + 1}`))
+
+  it('excludes POS_5_10 for 9 players (no position 10)', () => {
+    expect(validRotationPairs(nine)).toEqual(['POS_3_8', 'POS_4_9'])
+  })
+
+  it('allows all pairs for 10 players', () => {
+    expect(validRotationPairs(ten)).toEqual(['POS_3_8', 'POS_4_9', 'POS_5_10'])
+  })
+
+  it('recommends a valid pair for 9 players (never POS_5_10)', () => {
+    expect(recommendRotationPair(nine)).not.toBe('POS_5_10')
+    expect(validRotationPairs(nine)).toContain(recommendRotationPair(nine))
   })
 })

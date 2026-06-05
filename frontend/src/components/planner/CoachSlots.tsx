@@ -3,7 +3,7 @@ import type { Player, GameStaffResponse, CoachRotationPair, GameResponse } from 
 import type { CoachRotationLineupRow } from '@/utils/coachRotation'
 import { STAFF_ROLES } from '@/types'
 import { StarIcon } from '@/icons'
-import { ALL_ROTATION_PAIRS, getPairLabel, recommendRotationPair, resolveRotation } from '@/utils/coachRotation'
+import { getPairLabel, recommendRotationPair, resolveRotation, validRotationPairs } from '@/utils/coachRotation'
 
 interface Props {
   staff: GameStaffResponse[]
@@ -90,16 +90,16 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onS
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              {!value && lineup.length >= 10 && (
+              {!value && lineup.length >= 9 && (
                 <RotationPicker
                   lineup={lineup}
                   currentValue={currentRotation}
                   onPick={(pair) => handleRotationPick(role, pair)}
                 />
               )}
-              {!value && lineup.length < 10 && (
+              {!value && lineup.length < 9 && (
                 <div className="mt-2 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5">
-                  Lineup mit 10 Spielern nötig für Coach-Rotation
+                  Lineup mit mind. 9 Spielern nötig für Coach-Rotation
                 </div>
               )}
             </div>
@@ -117,8 +117,10 @@ interface RotationPickerProps {
 }
 
 function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
+  const pairs = useMemo(() => validRotationPairs(lineup), [lineup])
   const recommended = useMemo(() => recommendRotationPair(lineup), [lineup])
-  const active: CoachRotationPair = currentValue ?? recommended
+  // gespeichertes Paar nur nutzen, wenn es für die aktuelle Lineup-Größe gültig ist
+  const active: CoachRotationPair = (currentValue && pairs.includes(currentValue)) ? currentValue : recommended
   const resolved = useMemo(() => resolveRotation(active, lineup), [active, lineup])
 
   return (
@@ -127,7 +129,7 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
         ↳ Rotation aus Lineup
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {ALL_ROTATION_PAIRS.map(pair => {
+        {pairs.map(pair => {
           const isActive = active === pair
           const isRecommended = recommended === pair
           return (

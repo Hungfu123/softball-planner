@@ -50,6 +50,12 @@ export function resolveRotation(pair: CoachRotationPair, lineup: CoachRotationLi
 
 export const ALL_ROTATION_PAIRS: CoachRotationPair[] = ['POS_3_8', 'POS_4_9', 'POS_5_10']
 
+/** Paare, deren beide Positionen im Lineup existieren (höhere Position ≤ Spieleranzahl).
+ *  9 Spieler → POS_3_8 + POS_4_9 (POS_5_10 braucht Position 10). */
+export function validRotationPairs(lineup: CoachRotationLineupRow[]): CoachRotationPair[] {
+  return ALL_ROTATION_PAIRS.filter(p => ROTATION_CONFIG[p].higher <= lineup.length)
+}
+
 export function getPairLabel(pair: CoachRotationPair): string {
   const { lower, higher } = ROTATION_CONFIG[pair]
   return `Pos ${lower}+${higher}`
@@ -80,7 +86,9 @@ export function scoreRotationPair(pair: CoachRotationPair, lineup: CoachRotation
 }
 
 export function recommendRotationPair(lineup: CoachRotationLineupRow[]): CoachRotationPair {
-  const scored = ALL_ROTATION_PAIRS.map(p => ({ pair: p, score: scoreRotationPair(p, lineup) }))
+  const valid = validRotationPairs(lineup)
+  const pool = valid.length > 0 ? valid : ALL_ROTATION_PAIRS
+  const scored = pool.map(p => ({ pair: p, score: scoreRotationPair(p, lineup) }))
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
     if (a.pair === 'POS_5_10') return -1
