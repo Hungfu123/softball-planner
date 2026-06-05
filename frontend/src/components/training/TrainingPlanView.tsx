@@ -4,6 +4,9 @@ import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertica
 import { BatIcon } from '@/icons'
 import type { TrainingPlanSectionResponse, DrillResponse, TrainingPlanResponse, PlanKind } from '@/types'
 import { TrainingPlanSkeleton } from './TrainingPlanSkeleton'
+import { deriveStations } from './stations/deriveStations'
+import { StationsDiagram } from './stations/StationsDiagram'
+import { StationsEditorDrawer } from './stations/StationsEditorDrawer'
 
 type Props = {
   plans: TrainingPlanResponse[]
@@ -12,6 +15,7 @@ type Props = {
   onSwitchKind: (kind: PlanKind) => void
   drills: DrillResponse[]
   onEdit: () => void
+  onSaveStations?: (sections: TrainingPlanSectionResponse[]) => void
   onRegenerate: () => void
   onDelete: () => void
   onShare: () => void
@@ -258,10 +262,13 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwitchKind, drills, onEdit, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
+export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwitchKind, drills, onEdit, onSaveStations, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
   const activePlan = plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null
   const planContent = activePlan?.content ?? null
   const sections = planContent?.sections ?? []
+  const stations = deriveStations(sections)
+  const [stationsFull, setStationsFull] = useState(false)
+  const [stationsEditor, setStationsEditor] = useState(false)
   const renderItems = groupSectionsForRender(sections)
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
   const hasBeginnerGroup = sections.some(s => s.group === 'BEGINNER')
@@ -359,6 +366,27 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
               )
             })}
           </div>
+          {isBattingGroup && stations.length > 0 && (
+            <div className="px-2 pb-2">
+              <button
+                type="button"
+                onClick={() => setStationsFull(true)}
+                className="w-full text-left cursor-pointer"
+                title="Vollbild anzeigen"
+              >
+                <StationsDiagram stations={stations} size="mini" />
+              </button>
+              {onSaveStations && (
+                <button
+                  type="button"
+                  onClick={() => setStationsEditor(true)}
+                  className="mt-1.5 text-[11px] font-bold uppercase tracking-wider text-navy-700 hover:text-softball-red-600 cursor-pointer"
+                >
+                  Stationen bearbeiten
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )
     })
@@ -561,6 +589,24 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
             </div>
           )}
         </div>
+      )}
+      {stationsFull && stations.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setStationsFull(false)}>
+          <div className="w-full max-w-3xl" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-end mb-2">
+              <button onClick={() => setStationsFull(false)} className="text-cream-100 hover:text-white text-sm font-bold uppercase tracking-wider cursor-pointer">Schließen ✕</button>
+            </div>
+            <StationsDiagram stations={stations} size="full" />
+          </div>
+        </div>
+      )}
+      {onSaveStations && (
+        <StationsEditorDrawer
+          open={stationsEditor}
+          sections={sections}
+          onClose={() => setStationsEditor(false)}
+          onSave={next => { onSaveStations(next); setStationsEditor(false) }}
+        />
       )}
     </div>
   )
