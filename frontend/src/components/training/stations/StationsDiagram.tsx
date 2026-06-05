@@ -26,7 +26,7 @@ export function StationsDiagram({ stations, size = 'mini' }: Props) {
     >
       <div className="pointer-events-none absolute inset-0 opacity-30"
            style={{ borderLeft: '3px solid rgba(244,236,216,.4)', borderBottom: '3px solid rgba(244,236,216,.4)', margin: full ? 16 : 8 }} />
-      <div className={`relative grid grid-cols-2 ${full ? 'gap-4' : 'gap-2'}`}>
+      <div className={`relative grid grid-cols-1 sm:grid-cols-2 ${full ? 'gap-4' : 'gap-2'}`}>
         {stations.map(st => {
           const meta = STATION_META[st.type]
           const Icon = meta.Icon
@@ -50,7 +50,7 @@ export function StationsDiagram({ stations, size = 'mini' }: Props) {
               <Icon size={full ? 20 : 16} className={meta.accent ? 'text-softball-red-300' : 'text-cream-100'} />
               <div className="min-w-0">
                 <div className={`font-bold text-cream-50 truncate ${full ? 'text-sm' : 'text-xs'}`}>{st.label}</div>
-                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-cream-300">
+                <div className="flex flex-wrap items-center gap-x-1.5 text-[10px] uppercase tracking-wider text-cream-300">
                   <span>{meta.label}</span>
                   {st.level && (
                     <span className={st.level === 'ADVANCED' ? 'text-softball-red-300' : 'text-amber-300'}>
