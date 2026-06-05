@@ -69,6 +69,23 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
     </g>
   )
 
+  // Beschriftete Spieler-Reihe (Infield/Outfield) — verteilt im offenen Feld
+  const fielderRow = (nums: number[], yNorm: number, label: string, xLn: number, xRn: number) => {
+    if (nums.length === 0) return null
+    const xL = AREA.x0 + xLn * (AREA.x1 - AREA.x0)
+    const xR = AREA.x0 + xRn * (AREA.x1 - AREA.x0)
+    const y = AREA.y0 + yNorm * (AREA.y1 - AREA.y0)
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <text x={(xL + xR) / 2} y={y - badgeR - 6} textAnchor="middle" fill="#9fb3d1" fontSize={labelSize} fontWeight={700} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>{label}</text>
+        {nums.map((num, i) => {
+          const bx = nums.length === 1 ? (xL + xR) / 2 : xL + (i / (nums.length - 1)) * (xR - xL)
+          return <Badge key={num} x={bx} y={y} n={num} role="single" />
+        })}
+      </g>
+    )
+  }
+
   return (
     <div
       className="relative rounded-xl overflow-hidden"
@@ -135,28 +152,9 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
           )
         })}
 
-        {/* Outfield — verteilt im offenen Feld (Sicherheitsabstand zu den Schlag-Stationen) */}
-        {outfield.length > 0 && (() => {
-          const n = outfield.length
-          const xL = AREA.x0 + 0.34 * (AREA.x1 - AREA.x0)
-          const xR = AREA.x0 + 0.78 * (AREA.x1 - AREA.x0)
-          const yBase = AREA.y0 + 0.42 * (AREA.y1 - AREA.y0)
-          const perRow = Math.min(5, n)
-          const gapY = badgeR * 2 + 8
-          return (
-            <g style={{ pointerEvents: 'none' }}>
-              <text x={(xL + xR) / 2} y={yBase - badgeR - 7} textAnchor="middle" fill="#9fb3d1" fontSize={labelSize} fontWeight={700} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>Outfield</text>
-              {outfield.map((num, i) => {
-                const row = Math.floor(i / perRow)
-                const rowCount = Math.min(perRow, n - row * perRow)
-                const idxInRow = i % perRow
-                const bx = rowCount === 1 ? (xL + xR) / 2 : xL + (idxInRow / (rowCount - 1)) * (xR - xL)
-                const by = yBase + row * gapY
-                return <Badge key={num} x={bx} y={by} n={num} role="single" />
-              })}
-            </g>
-          )
-        })()}
+        {/* Rest-Spieler im Feld verteilt: Infield (mittig) + Outfield (tief), für Sicherheit/Übersicht */}
+        {fielderRow(outfield.slice(0, 4), 0.58, 'Infield', 0.42, 0.74)}
+        {fielderRow(outfield.slice(4), 0.32, 'Outfield', 0.55, 0.78)}
 
         {withSlots.map((st, i) => {
           const meta = STATION_META[st.type]
