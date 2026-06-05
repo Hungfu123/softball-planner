@@ -1,41 +1,35 @@
 import { describe, it, expect } from 'vitest'
-import { deriveStations } from './deriveStations'
-import type { TrainingPlanSectionResponse } from '@/types'
+import { resolveStations, toDiagramStations, DEFAULT_STATIONS } from './deriveStations'
+import type { TrainingStation } from '@/types'
 
-function section(partial: Partial<TrainingPlanSectionResponse>): TrainingPlanSectionResponse {
-  return {
-    drillId: null, sectionType: null, title: null, durationMinutes: null,
-    rounds: null, adaptationNotes: null, rotationPlan: null, setupNotes: null,
-    tips: null, groupSetup: null, userNotes: null, parallelGroup: null,
-    playersPerGroup: null, ...partial,
-  }
-}
+describe('resolveStations', () => {
+  it('falls back to the default set (Live/Tee/Bunt) when none stored', () => {
+    const stations = resolveStations(null)
+    expect(stations.map(s => s.type)).toEqual(['LIVE', 'TEE', 'BUNT'])
+    expect(stations[0]).toMatchObject({ rotation: 1, label: 'Live' })
+  })
 
-describe('deriveStations', () => {
-  it('returns only sections with a stationType, numbered in order', () => {
-    const stations = deriveStations([
-      section({ title: 'Warmup' }),
-      section({ title: 'Live', stationType: 'LIVE' }),
-      section({ title: 'Tee', stationType: 'TEE' }),
+  it('uses the stored set when present', () => {
+    const stored: TrainingStation[] = [{ type: 'KORKEN' }, { type: 'HUETCHEN' }]
+    expect(resolveStations(stored).map(s => s.type)).toEqual(['KORKEN', 'HUETCHEN'])
+  })
+
+  it('treats an empty list as "use default"', () => {
+    expect(resolveStations([]).map(s => s.type)).toEqual(DEFAULT_STATIONS.map(s => s.type))
+  })
+})
+
+describe('toDiagramStations', () => {
+  it('numbers stations and carries label/level/choiceGroup through', () => {
+    const result = toDiagramStations([
+      { type: 'HUETCHEN', label: 'Footwork', level: 'ADVANCED', choiceGroup: 1 },
+      { type: 'TEE', level: 'BEGINNER', choiceGroup: 1 },
     ])
-    expect(stations).toHaveLength(2)
-    expect(stations[0]).toMatchObject({ rotation: 1, label: 'Live', type: 'LIVE' })
-    expect(stations[1]).toMatchObject({ rotation: 2, label: 'Tee', type: 'TEE' })
+    expect(result[0]).toMatchObject({ rotation: 1, label: 'Footwork', type: 'HUETCHEN', level: 'ADVANCED', choiceGroup: 1 })
+    expect(result[1]).toMatchObject({ rotation: 2, type: 'TEE', level: 'BEGINNER', choiceGroup: 1 })
   })
 
-  it('carries level, parallelGroup and choiceGroup through', () => {
-    const stations = deriveStations([
-      section({ title: 'A', stationType: 'HUETCHEN', stationLevel: 'ADVANCED', parallelGroup: 2, stationChoiceGroup: 1 }),
-    ])
-    expect(stations[0]).toMatchObject({ level: 'ADVANCED', parallelGroup: 2, choiceGroup: 1 })
-  })
-
-  it('falls back to a generic label when title is missing', () => {
-    const stations = deriveStations([section({ title: null, stationType: 'BUNT' })])
-    expect(stations[0].label).toBe('Station')
-  })
-
-  it('returns empty array when no section is a station', () => {
-    expect(deriveStations([section({ title: 'x' })])).toEqual([])
+  it('falls back to the type meta label when no custom label', () => {
+    expect(toDiagramStations([{ type: 'BUNT' }])[0].label).toBe('Bunt')
   })
 })
