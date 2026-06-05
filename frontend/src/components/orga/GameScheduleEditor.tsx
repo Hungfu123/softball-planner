@@ -43,40 +43,42 @@ export function GameScheduleEditor({ games, teams, onChange }: Props) {
       ) : (
         <div className="space-y-2">
           {games.map((g, i) => (
-            <div key={i} className="grid grid-cols-[80px_1fr_1fr_1fr_auto] items-center gap-2 group">
-              <input
-                value={g.time}
-                onChange={e => update(i, { time: e.target.value })}
-                placeholder="10:00"
-                className={inputCls}
-              />
-              <select value={g.teamA} onChange={e => update(i, { teamA: e.target.value })} className={inputCls}>
-                <option value="">– Team –</option>
-                {teams.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <select value={g.teamB} onChange={e => update(i, { teamB: e.target.value })} className={inputCls}>
-                <option value="">– Team –</option>
-                {teams.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <select value={g.ump} onChange={e => update(i, { ump: e.target.value })} className={inputCls}>
+            // mobile: Karte (Zeit+Löschen, dann TeamA/TeamB, dann Ump) · ab sm: eine Zeile
+            <div
+              key={i}
+              className="rounded-xl border border-cream-300 bg-cream-50 p-2.5 space-y-2 sm:space-y-0 sm:p-0 sm:border-0 sm:bg-transparent sm:flex sm:items-center sm:gap-2"
+            >
+              <div className="flex items-center gap-2 sm:contents">
+                <input
+                  value={g.time}
+                  onChange={e => update(i, { time: e.target.value })}
+                  placeholder="10:00"
+                  className={`${inputCls} w-20 text-center tabular-nums font-semibold sm:w-16 sm:shrink-0`}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeGame(i)}
+                  aria-label="Spiel entfernen"
+                  title="Entfernen"
+                  className="ml-auto shrink-0 p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer sm:ml-0 sm:order-5"
+                >
+                  <TrashBin size={16} />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:contents">
+                <select value={g.teamA} onChange={e => update(i, { teamA: e.target.value })} className={`${inputCls} sm:flex-1 sm:order-2`}>
+                  <option value="">– Team –</option>
+                  {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <select value={g.teamB} onChange={e => update(i, { teamB: e.target.value })} className={`${inputCls} sm:flex-1 sm:order-3`}>
+                  <option value="">– Team –</option>
+                  {teams.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <select value={g.ump} onChange={e => update(i, { ump: e.target.value })} className={`${inputCls} w-full sm:flex-1 sm:order-4`}>
                 <option value="">– Ump –</option>
-                {teams.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
+                {teams.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <button
-                type="button"
-                onClick={() => removeGame(i)}
-                aria-label="Spiel entfernen"
-                title="Entfernen"
-                className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
-              >
-                <TrashBin size={16} />
-              </button>
             </div>
           ))}
         </div>

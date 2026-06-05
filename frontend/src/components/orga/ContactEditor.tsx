@@ -42,41 +42,47 @@ export function ContactEditor({ contacts, onChange }: Props) {
       ) : (
         <div className="space-y-2">
           {contacts.map((c, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-2 group">
-              <input
-                value={c.role}
-                onChange={e => update(i, { role: e.target.value })}
-                placeholder="Rolle"
-                className={inputCls}
-              />
+            // mobile: Karte (Rolle+Löschen, Name, Mail, Tel) · ab sm: eine Zeile
+            <div
+              key={i}
+              className="rounded-xl border border-cream-300 bg-cream-50 p-2.5 space-y-2 sm:space-y-0 sm:p-0 sm:border-0 sm:bg-transparent sm:flex sm:items-center sm:gap-2"
+            >
+              <div className="flex items-center gap-2 sm:contents">
+                <input
+                  value={c.role}
+                  onChange={e => update(i, { role: e.target.value })}
+                  placeholder="Rolle"
+                  className={`${inputCls} flex-1 font-semibold sm:flex-none sm:w-28 sm:order-1`}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeContact(i)}
+                  aria-label="Kontakt entfernen"
+                  title="Entfernen"
+                  className="ml-auto shrink-0 p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer sm:ml-0 sm:order-5"
+                >
+                  <TrashBin size={16} />
+                </button>
+              </div>
               <input
                 value={c.name}
                 onChange={e => update(i, { name: e.target.value })}
                 placeholder="Name"
-                className={inputCls}
+                className={`${inputCls} w-full sm:flex-1 sm:order-2`}
               />
               <input
                 type="email"
                 value={c.email}
                 onChange={e => update(i, { email: e.target.value })}
                 placeholder="E-Mail"
-                className={inputCls}
+                className={`${inputCls} w-full sm:flex-1 sm:order-3`}
               />
               <input
                 value={c.phone}
                 onChange={e => update(i, { phone: e.target.value })}
                 placeholder="Telefon"
-                className={inputCls}
+                className={`${inputCls} w-full sm:flex-1 sm:order-4`}
               />
-              <button
-                type="button"
-                onClick={() => removeContact(i)}
-                aria-label="Kontakt entfernen"
-                title="Entfernen"
-                className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
-              >
-                <TrashBin size={16} />
-              </button>
             </div>
           ))}
         </div>
