@@ -11,17 +11,41 @@ interface Props {
   applyQualifier?: boolean
 }
 
+type SortKey =
+  | 'playerName' | 'atBats' | 'hits' | 'battingAverage' | 'walks' | 'strikeouts'
+  | 'homeRuns' | 'stolenBases' | 'caughtStealing' | 'pickoffs'
+  | 'onBasePct' | 'sluggingPct' | 'ops'
+type SortDir = 'asc' | 'desc'
+
 export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false }: Props) {
   const [showDetails, setShowDetails] = useState(false)
   const [showUnqualified, setShowUnqualified] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>('battingAverage')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  const handleSort = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'playerName' ? 'asc' : 'desc') // Namen A→Z, Zahlen hoch→niedrig
+    }
+  }
 
   const sorted = useMemo(() => {
+    const dir = sortDir === 'asc' ? 1 : -1
     return [...stats].sort((a, b) => {
-      const bDiff = Number(b.battingAverage) - Number(a.battingAverage)
-      if (bDiff !== 0) return bDiff
+      let cmp: number
+      if (sortKey === 'playerName') {
+        cmp = a.playerName.localeCompare(b.playerName)
+      } else {
+        cmp = Number(a[sortKey] ?? 0) - Number(b[sortKey] ?? 0)
+      }
+      if (cmp !== 0) return cmp * dir
+      // Tiebreaker immer stabil: Treffer absteigend, dann Name
       return b.hits - a.hits || a.playerName.localeCompare(b.playerName)
     })
-  }, [stats])
+  }, [stats, sortKey, sortDir])
 
   const { qualified, unqualified } = useMemo(() => {
     if (!applyQualifier) return { qualified: sorted, unqualified: [] as PlayerBattingStatsResponse[] }
@@ -38,6 +62,27 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     () => Math.max(...(qualified.length ? qualified : sorted).map(s => Number(s.battingAverage)), 0.001),
     [qualified, sorted],
   )
+
+  const sortTh = (key: SortKey, label: string, opts?: { title?: string; align?: 'left' | 'right' }) => {
+    const align = opts?.align ?? 'right'
+    const alignCls = align === 'right' ? 'text-right' : 'text-left'
+    const active = sortKey === key
+    return (
+      <th
+        onClick={() => handleSort(key)}
+        title={opts?.title}
+        aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+        className={`font-display ${alignCls} px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-pointer select-none transition-colors ${active ? 'text-white' : 'text-white/70 hover:text-white'}`}
+      >
+        <span className={`inline-flex items-center gap-0.5 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+          {label}
+          {active
+            ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />)
+            : <ChevronDown size={11} className="opacity-0" />}
+        </span>
+      </th>
+    )
+  }
 
   if (stats.length === 0) {
     return (
@@ -99,25 +144,23 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
             <thead>
               <tr className="bg-navy-900 text-white">
                 <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">#</th>
-                <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Spieler</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">ABs</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Treffer</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Batting Average (AVG)">
-                  AVG
-                </th>
+                {sortTh('playerName', 'Spieler', { align: 'left' })}
+                {sortTh('atBats', 'ABs')}
+                {sortTh('hits', 'Treffer')}
+                {sortTh('battingAverage', 'AVG', { title: 'Batting Average (AVG)' })}
                 <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Quote</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Walks</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">K</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">HR</th>
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">SB</th>
+                {sortTh('walks', 'Walks')}
+                {sortTh('strikeouts', 'K')}
+                {sortTh('homeRuns', 'HR')}
+                {sortTh('stolenBases', 'SB')}
                 {showDetails && (
                   <>
-                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Caught Stealing — beim Steal-Versuch erwischt">CS</th>
-                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Pickoff — ohne Steal-Versuch getagt (≠ CS)">PO</th>
+                    {sortTh('caughtStealing', 'CS', { title: 'Caught Stealing — beim Steal-Versuch erwischt' })}
+                    {sortTh('pickoffs', 'PO', { title: 'Pickoff — ohne Steal-Versuch getagt (≠ CS)' })}
                     <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Hits 1/2/3/HR</th>
-                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Auf-Base-Quote (OBP)">OBP</th>
-                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="Schlagstärke (SLG)">SLG</th>
-                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-help" onClick={onOpenGlossary} title="OBP + SLG = Gesamtstärke">OPS</th>
+                    {sortTh('onBasePct', 'OBP', { title: 'Auf-Base-Quote (OBP)' })}
+                    {sortTh('sluggingPct', 'SLG', { title: 'Schlagstärke (SLG)' })}
+                    {sortTh('ops', 'OPS', { title: 'OBP + SLG = Gesamtstärke' })}
                   </>
                 )}
               </tr>
