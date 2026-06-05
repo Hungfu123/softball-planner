@@ -12,9 +12,9 @@ interface Props {
 }
 
 const VB_W = 360
-const VB_H = 320
-const HOME = { x: 30, y: 286 }
-const AREA = { x0: 60, x1: 336, y0: 44, y1: 266 } // füllt die Feld-Ecke besser aus
+const VB_H = 292
+const HOME = { x: 28, y: 270 }
+const AREA = { x0: 52, x1: 344, y0: 40, y1: 250 } // füllt die Feld-Ecke besser aus
 
 const toSvg = (nx: number, ny: number) => ({
   x: AREA.x0 + nx * (AREA.x1 - AREA.x0),
