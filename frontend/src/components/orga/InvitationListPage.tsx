@@ -125,51 +125,79 @@ export function InvitationListPage() {
           icon={<CrossBones size={48} />}
         />
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {invitations.map(inv => (
             <div
               key={inv.id}
-              className="flex items-center gap-3 px-4 py-3 bg-white border border-cream-300 rounded-xl group"
+              className="relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all"
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-navy-900 font-semibold truncate">{inv.title || 'Ohne Titel'}</p>
-                {inv.eventDate && (
-                  <p className="text-xs text-navy-500">{deDate(inv.eventDate)}</p>
-                )}
-              </div>
-              <div className="actions-reveal flex gap-1 shrink-0">
-                <button
-                  onClick={() => openEdit(inv)}
-                  aria-label={`${inv.title} bearbeiten`}
-                  title="Bearbeiten"
-                  className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
-                >
-                  <Pencil size={16} />
-                </button>
-                <button
-                  onClick={() => handleDuplicate(inv.id)}
-                  aria-label={`${inv.title} duplizieren`}
-                  title="Duplizieren"
-                  className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
-                >
-                  <ArrowsSwap size={16} />
-                </button>
-                <button
-                  onClick={() => handlePdf(inv)}
-                  aria-label={`${inv.title} als PDF`}
-                  title="PDF generieren"
-                  className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
-                >
-                  <ExportDoc size={16} />
-                </button>
-                <button
-                  onClick={() => setDeleteId(inv.id)}
-                  aria-label={`${inv.title} löschen`}
-                  title="Löschen"
-                  className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
-                >
-                  <TrashBin size={16} />
-                </button>
+              {/* Akzent-Kante links (Softball-Red) */}
+              <span className="absolute inset-y-0 left-0 w-1 bg-softball-red-600" />
+              <div className="pl-4 pr-2.5 py-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-display text-base font-extrabold text-navy-900 leading-tight truncate">
+                      {inv.title || 'Ohne Titel'}
+                    </h2>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
+                      {inv.eventDate && (
+                        <span className="inline-flex items-center gap-1 font-bold tabular-nums text-white bg-navy-900 rounded-full px-2 py-0.5">
+                          {deDate(inv.eventDate)}
+                        </span>
+                      )}
+                      {inv.venue && <span className="text-navy-500 truncate max-w-[12rem]">{inv.venue}</span>}
+                      <span className="font-bold uppercase tracking-wider text-[10px] text-navy-600 bg-cream-200 rounded-full px-2 py-0.5">
+                        {inv.pairingMode === 'TEAM_1_2' ? 'Team 1/2' : 'Heim/Gast'}
+                      </span>
+                      {inv.games.length > 0 && (
+                        <span className="text-navy-400 tabular-nums">{inv.games.length} Spiele</span>
+                      )}
+                    </div>
+                    {inv.guestTeams.filter(Boolean).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {inv.guestTeams.filter(Boolean).map((t, i) => (
+                          <span key={i} className="text-[11px] font-semibold text-navy-700 bg-cream-100 border border-cream-300 rounded-md px-1.5 py-0.5">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-0.5 shrink-0">
+                    <button
+                      onClick={() => openEdit(inv)}
+                      aria-label={`${inv.title} bearbeiten`}
+                      title="Bearbeiten"
+                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDuplicate(inv.id)}
+                      aria-label={`${inv.title} duplizieren`}
+                      title="Duplizieren"
+                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                    >
+                      <ArrowsSwap size={16} />
+                    </button>
+                    <button
+                      onClick={() => handlePdf(inv)}
+                      aria-label={`${inv.title} als PDF`}
+                      title="PDF generieren"
+                      className="p-2 rounded-lg text-softball-red-600 hover:text-white hover:bg-softball-red-600 cursor-pointer"
+                    >
+                      <ExportDoc size={16} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(inv.id)}
+                      aria-label={`${inv.title} löschen`}
+                      title="Löschen"
+                      className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+                    >
+                      <TrashBin size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
