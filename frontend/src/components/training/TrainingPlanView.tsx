@@ -118,6 +118,14 @@ function groupSections(sections: TrainingPlanSectionResponse[]): StationGroup[] 
   return result
 }
 
+/** Summe der Dauer — parallele Stationen (gleiche parallelGroup) zählen EINMAL, da gleichzeitig. */
+function sumPlanMinutes(sections: TrainingPlanSectionResponse[]): number {
+  return groupSections(sections).reduce(
+    (sum, g) => sum + (g.type === 'single' ? (sections[g.idx].durationMinutes ?? 0) : (g.durationMinutes ?? 0)),
+    0,
+  )
+}
+
 type IndexedSection = { section: TrainingPlanSectionResponse; index: number }
 
 type SectionRenderItem =
@@ -278,14 +286,14 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
     setStationsFull(true)
   }
   const renderItems = groupSectionsForRender(sections)
-  const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
+  const totalMinutes = sumPlanMinutes(sections)
   const hasBeginnerGroup = sections.some(s => s.group === 'BEGINNER')
   const [groupView, setGroupView] = useState<'MAIN' | 'BEGINNER'>('MAIN')
   // Bei Inline-Anfängergruppe: pro Tab gemeinsame (ALL) + gruppen-eigene Blöcke
   const displayed: IndexedSection[] = sections
     .map((section, index) => ({ section, index }))
     .filter(it => !hasBeginnerGroup || (it.section.group ?? 'ALL') === 'ALL' || it.section.group === groupView)
-  const displayedMinutes = displayed.reduce((sum, it) => sum + (it.section.durationMinutes ?? 0), 0)
+  const displayedMinutes = sumPlanMinutes(displayed.map(it => it.section))
   const hasBeginnerPlan = plans.some(p => p.kind === 'BEGINNER')
   const hasMainPlan = plans.some(p => p.kind === 'MAIN')
   const showKindTabs = plans.length >= 2
