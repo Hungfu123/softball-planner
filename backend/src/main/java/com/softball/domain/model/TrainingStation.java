@@ -6,6 +6,9 @@ public class TrainingStation {
     private String label;
     private StationLevel level;
     private Integer choiceGroup;
+    /** Normalisierte Feld-Position 0..1 (links→rechts / oben→unten). Null = Auto-Platz. */
+    private Double x;
+    private Double y;
 
     public TrainingStation() {}
 
@@ -17,4 +20,8 @@ public class TrainingStation {
     public void setLevel(final StationLevel level) { this.level = level; }
     public Integer getChoiceGroup() { return choiceGroup; }
     public void setChoiceGroup(final Integer choiceGroup) { this.choiceGroup = choiceGroup; }
+    public Double getX() { return x; }
+    public void setX(final Double x) { this.x = x; }
+    public Double getY() { return y; }
+    public void setY(final Double y) { this.y = y; }
 }

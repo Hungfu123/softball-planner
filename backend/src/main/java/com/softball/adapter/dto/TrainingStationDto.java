@@ -5,11 +5,12 @@ import com.softball.domain.model.StationType;
 import com.softball.domain.model.TrainingStation;
 
 public record TrainingStationDto(
-        StationType type, String label, StationLevel level, Integer choiceGroup) {
+        StationType type, String label, StationLevel level, Integer choiceGroup, Double x, Double y) {
 
     public static TrainingStationDto from(final TrainingStation station) {
         return new TrainingStationDto(
-                station.getType(), station.getLabel(), station.getLevel(), station.getChoiceGroup());
+                station.getType(), station.getLabel(), station.getLevel(), station.getChoiceGroup(),
+                station.getX(), station.getY());
     }
 
     public TrainingStation toDomain() {
@@ -18,6 +19,8 @@ public record TrainingStationDto(
         station.setLabel(label);
         station.setLevel(level);
         station.setChoiceGroup(choiceGroup);
+        station.setX(x);
+        station.setY(y);
         return station;
     }
 }

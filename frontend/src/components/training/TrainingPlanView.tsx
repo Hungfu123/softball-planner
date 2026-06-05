@@ -4,7 +4,7 @@ import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertica
 import { BatIcon } from '@/icons'
 import type { TrainingPlanSectionResponse, DrillResponse, TrainingPlanResponse, PlanKind, TrainingStation } from '@/types'
 import { TrainingPlanSkeleton } from './TrainingPlanSkeleton'
-import { resolveStations } from './stations/deriveStations'
+import { resolveStations, toDiagramStations, DEFAULT_STATIONS } from './stations/deriveStations'
 import { StationsDiagram } from './stations/StationsDiagram'
 import { StationsEditorDrawer } from './stations/StationsEditorDrawer'
 
@@ -269,6 +269,13 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
   const stations = resolveStations(planContent?.stations)
   const [stationsFull, setStationsFull] = useState(false)
   const [stationsEditor, setStationsEditor] = useState(false)
+  // Draft fürs Drag-Arrangieren im Vollbild (rohe TrainingStation-Liste, round-trip-fähig)
+  const [arrangeDraft, setArrangeDraft] = useState<TrainingStation[]>([])
+  const openArrange = () => {
+    const base = planContent?.stations && planContent.stations.length > 0 ? planContent.stations : DEFAULT_STATIONS
+    setArrangeDraft(base.map(s => ({ ...s })))
+    setStationsFull(true)
+  }
   const renderItems = groupSectionsForRender(sections)
   const totalMinutes = sections.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0)
   const hasBeginnerGroup = sections.some(s => s.group === 'BEGINNER')
@@ -588,9 +595,9 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
             <div className="p-2">
               <button
                 type="button"
-                onClick={() => setStationsFull(true)}
+                onClick={openArrange}
                 className="w-full text-left cursor-pointer"
-                title="Vollbild anzeigen"
+                title="Vollbild · Stationen anordnen"
               >
                 <StationsDiagram stations={stations} size="mini" />
               </button>
@@ -598,13 +605,32 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
           </div>
         </div>
       )}
-      {stationsFull && stations.length > 0 && (
+      {stationsFull && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setStationsFull(false)}>
           <div className="w-full max-w-3xl" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-end mb-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-cream-100 text-xs font-bold uppercase tracking-wider">
+                {onSaveStations ? 'Stationen ziehen zum Anordnen' : 'Batting-Stationen'}
+              </span>
               <button onClick={() => setStationsFull(false)} className="text-cream-100 hover:text-white text-sm font-bold uppercase tracking-wider cursor-pointer">Schließen ✕</button>
             </div>
-            <StationsDiagram stations={stations} size="full" />
+            <StationsDiagram
+              stations={toDiagramStations(arrangeDraft)}
+              size="full"
+              editable={!!onSaveStations}
+              onMove={(idx, x, y) => setArrangeDraft(prev => prev.map((s, i) => i === idx ? { ...s, x, y } : s))}
+            />
+            {onSaveStations && (
+              <div className="flex justify-end gap-2 mt-3">
+                <button onClick={() => setStationsFull(false)} className="rounded-lg border border-cream-300/40 px-4 py-2 text-sm font-bold text-cream-100 hover:bg-white/10 cursor-pointer">Abbrechen</button>
+                <button
+                  onClick={() => { onSaveStations(arrangeDraft); setStationsFull(false) }}
+                  className="rounded-lg bg-softball-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-softball-red-700 cursor-pointer"
+                >
+                  Anordnung speichern
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
