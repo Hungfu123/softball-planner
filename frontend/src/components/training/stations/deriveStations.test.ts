@@ -3,10 +3,13 @@ import { resolveStations, toDiagramStations, DEFAULT_STATIONS } from './deriveSt
 import type { TrainingStation } from '@/types'
 
 describe('resolveStations', () => {
-  it('falls back to the default set (Live/Tee/Bunt) when none stored', () => {
+  it('falls back to the default set when none stored (Live first)', () => {
     const stations = resolveStations(null)
-    expect(stations.map(s => s.type)).toEqual(['LIVE', 'TEE', 'BUNT'])
+    expect(stations.map(s => s.type)).toEqual(['LIVE', 'TEE', 'BUNT', 'KORKEN', 'HUETCHEN', 'TEE'])
     expect(stations[0]).toMatchObject({ rotation: 1, label: 'Live' })
+    // Wahl-Paar (Hütchen Advanced / Tee Beginner)
+    expect(stations[4]).toMatchObject({ level: 'ADVANCED', choiceGroup: 1 })
+    expect(stations[5]).toMatchObject({ level: 'BEGINNER', choiceGroup: 1 })
   })
 
   it('uses the stored set when present', () => {

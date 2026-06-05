@@ -12,20 +12,26 @@ const VB_H = 300
 const HOME = { x: 30, y: 262 }
 const AREA = { x0: 82, x1: 312, y0: 52, y1: 212 } // Stationen-Platzierungsbereich
 
-/** Auto-Layout: verteilt Stationen serpentinenförmig im Feld, sodass die rote Route nicht kreuzt. */
+/**
+ * Auto-Layout: Stationen als Ring-Tour entlang des Feldrands, Start oben-rechts (Station 1 = Live),
+ * im Uhrzeigersinn. Die rote Route folgt dem Rand → kreuzt nicht.
+ */
 function layoutPositions(n: number): { x: number; y: number }[] {
-  const midX = (AREA.x0 + AREA.x1) / 2
-  const midY = (AREA.y0 + AREA.y1) / 2
-  if (n === 1) return [{ x: midX, y: midY }]
-  const rows = Math.ceil(n / 2)
-  return Array.from({ length: n }, (_, i) => {
-    const row = Math.floor(i / 2)
-    const loneLast = i === n - 1 && n % 2 === 1
-    const col = row % 2 === 0 ? i % 2 : 1 - (i % 2) // Serpentine
-    const x = loneLast ? midX : AREA.x0 + col * (AREA.x1 - AREA.x0)
-    const y = rows === 1 ? midY : AREA.y0 + (row * (AREA.y1 - AREA.y0)) / (rows - 1)
-    return { x, y }
-  })
+  const L = AREA.x0, R = AREA.x1, T = AREA.y0, B = AREA.y1
+  const w = R - L, h = B - T
+  if (n === 1) return [{ x: R, y: T }]
+  const per = 2 * (w + h)
+  const walk = (d: number) => {
+    let dd = ((d % per) + per) % per
+    if (dd < h) return { x: R, y: T + dd }          // rechte Kante runter
+    dd -= h
+    if (dd < w) return { x: R - dd, y: B }          // untere Kante nach links
+    dd -= w
+    if (dd < h) return { x: L, y: B - dd }           // linke Kante hoch
+    dd -= h
+    return { x: L + dd, y: T }                        // obere Kante nach rechts
+  }
+  return Array.from({ length: n }, (_, i) => walk((i / n) * per))
 }
 
 export function StationsDiagram({ stations, size = 'mini' }: Props) {

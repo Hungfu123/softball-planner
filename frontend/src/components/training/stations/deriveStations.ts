@@ -11,11 +11,14 @@ export interface Station {
   choiceGroup: number | null
 }
 
-/** Standard-Set: immer dabei (Live + Tee + Bunt), bis der Coach es anpasst. */
+/** Standard-Set: immer dabei, bis der Coach es anpasst. Station 5/6 = Wahl-Paar (Advanced/Beginner). */
 export const DEFAULT_STATIONS: TrainingStation[] = [
   { type: 'LIVE' },
   { type: 'TEE' },
   { type: 'BUNT' },
+  { type: 'KORKEN' },
+  { type: 'HUETCHEN', level: 'ADVANCED', choiceGroup: 1 },
+  { type: 'TEE', level: 'BEGINNER', choiceGroup: 1 },
 ]
 
 /** Macht aus der gespeicherten Stationen-Liste die Diagramm-Form. */
