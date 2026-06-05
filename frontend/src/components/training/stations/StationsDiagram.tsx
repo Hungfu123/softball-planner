@@ -89,15 +89,22 @@ export function StationsDiagram({ stations, size = 'mini', editable = false, onM
         <path d={`M${HOME.x} ${HOME.y} L${VB_W - 18} ${HOME.y}`} stroke="rgba(244,236,216,.45)" strokeWidth={4} strokeLinecap="round" fill="none" />
         <path d={`M${HOME.x - 7} ${HOME.y} l14 0 0 -8 -7 -7 -7 7 z`} fill="#f4ecd8" />
 
-        {/* Roter Leitfaden — Rotations-Route mit Pfeilen */}
-        {pts.slice(1).map((p, i) => (
-          <line
-            key={`route-${i}`}
-            x1={pts[i].x} y1={pts[i].y} x2={p.x} y2={p.y}
-            stroke="#e23b32" strokeWidth={full ? 3 : 2.5} strokeDasharray="6 5" strokeLinecap="round"
-            markerEnd="url(#leitfaden-arrow)" opacity={0.9}
-          />
-        ))}
+        {/* Roter Leitfaden — orthogonale Rotations-Route (rechte Winkel) mit Pfeilen */}
+        {pts.slice(1).map((p, i) => {
+          const a = pts[i]
+          const eps = 1.5
+          const aligned = Math.abs(a.x - p.x) < eps || Math.abs(a.y - p.y) < eps
+          // gerade wenn ausgerichtet, sonst ein Knick (erst horizontal, dann vertikal)
+          const d = aligned ? `M${a.x} ${a.y} L${p.x} ${p.y}` : `M${a.x} ${a.y} L${p.x} ${a.y} L${p.x} ${p.y}`
+          return (
+            <path
+              key={`route-${i}`}
+              d={d} fill="none"
+              stroke="#e23b32" strokeWidth={full ? 3 : 2.5} strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round"
+              markerEnd="url(#leitfaden-arrow)" opacity={0.9}
+            />
+          )
+        })}
 
         {/* WÄHLE-1-Rahmen um Choice-Gruppen */}
         {[...groups.values()].filter(idxs => idxs.length > 1).map((idxs, gi) => {

@@ -6,7 +6,7 @@ describe('resolveStations', () => {
   it('falls back to the default set when none stored (Live first, with positions)', () => {
     const stations = resolveStations(null)
     expect(stations.map(s => s.type)).toEqual(['LIVE', 'TEE', 'BUNT', 'KORKEN', 'HUETCHEN', 'TEE'])
-    expect(stations[0]).toMatchObject({ rotation: 1, label: 'Live', x: 0.95, y: 0.05 })
+    expect(stations[0]).toMatchObject({ rotation: 1, label: 'Live', x: 0.92, y: 0.08 })
     // Wahl-Paar Hütchen + Tee(Besen), ohne Level
     expect(stations[4]).toMatchObject({ type: 'HUETCHEN', choiceGroup: 1, level: null })
     expect(stations[5]).toMatchObject({ label: 'Tee (Besen)', choiceGroup: 1, level: null })

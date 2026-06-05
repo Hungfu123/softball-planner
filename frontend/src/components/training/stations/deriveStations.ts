@@ -19,12 +19,12 @@ export interface Station {
  * Korken drüber, Tee unten angereiht, Hütchen + Tee(Besen) = Wahl-Paar. Per Drag verschiebbar.
  */
 export const DEFAULT_STATIONS: TrainingStation[] = [
-  { type: 'LIVE', x: 0.95, y: 0.05 },
-  { type: 'TEE', x: 0.45, y: 0.92 },
-  { type: 'BUNT', x: 0.05, y: 0.95 },
-  { type: 'KORKEN', x: 0.05, y: 0.5 },
-  { type: 'HUETCHEN', x: 0.08, y: 0.08, choiceGroup: 1 },
-  { type: 'TEE', label: 'Tee (Besen)', x: 0.34, y: 0.1, choiceGroup: 1 },
+  { type: 'LIVE', x: 0.92, y: 0.08 },
+  { type: 'TEE', x: 0.92, y: 0.82 }, // unter Live → 1→2 gerade vertikal
+  { type: 'BUNT', x: 0.08, y: 0.82 }, // Ecke, gleiche Höhe wie Tee → 2→3 horizontal
+  { type: 'KORKEN', x: 0.08, y: 0.5 }, // über Bunt → 3→4 vertikal
+  { type: 'HUETCHEN', x: 0.08, y: 0.12, choiceGroup: 1 }, // über Korken → 4→5 vertikal
+  { type: 'TEE', label: 'Tee (Besen)', x: 0.4, y: 0.12, choiceGroup: 1 }, // neben Hütchen → 5→6 horizontal
 ]
 
 /** Fallback-Position für Stationen ohne gesetzte Koordinaten (z.B. frisch hinzugefügt). */
