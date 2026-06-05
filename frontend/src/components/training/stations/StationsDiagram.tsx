@@ -12,9 +12,9 @@ interface Props {
 }
 
 const VB_W = 360
-const VB_H = 300
-const HOME = { x: 30, y: 262 }
-const AREA = { x0: 58, x1: 338, y0: 46, y1: 242 } // füllt die Feld-Ecke besser aus
+const VB_H = 320
+const HOME = { x: 30, y: 286 }
+const AREA = { x0: 60, x1: 336, y0: 44, y1: 266 } // füllt die Feld-Ecke besser aus
 
 const toSvg = (nx: number, ny: number) => ({
   x: AREA.x0 + nx * (AREA.x1 - AREA.x0),
@@ -179,8 +179,9 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
                 <Badge x={x} y={y - puckR - badgeR - 1} n={st.slots[0].number} role="single" />
               ) : (
                 <>
-                  <Badge x={x - puckR + 1} y={y - puckR - badgeR + 2} n={st.slots[0].number} role="active" />
-                  <Badge x={x + puckR - 1} y={y - puckR - badgeR + 2} n={st.slots[1].number} role="passive" />
+                  {/* seitlich am Puck: aktiv links, passiv rechts → weniger Höhe, keine Kollision */}
+                  <Badge x={x - puckR - badgeR + 2} y={y} n={st.slots[0].number} role="active" />
+                  <Badge x={x + puckR + badgeR - 2} y={y} n={st.slots[1].number} role="passive" />
                 </>
               )}
               <text x={x} y={y + puckR + labelSize + 3} textAnchor="middle" fill="#f4ecd8" fontSize={labelSize} fontWeight={700} style={{ pointerEvents: 'none' }}>{st.label}</text>
