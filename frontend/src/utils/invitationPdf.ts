@@ -32,7 +32,7 @@ function joinTeams(teams: string[]): string {
   return `${t.slice(0, -1).join(', ')} und ${t[t.length - 1]}`
 }
 
-export async function generateInvitationPdf(inv: InvitationResponse): Promise<void> {
+export async function buildInvitationPdf(inv: InvitationResponse): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const left = 20
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -70,9 +70,10 @@ export async function generateInvitationPdf(inv: InvitationResponse): Promise<vo
     margin: { left, right: left },
     head: [['', colA, colB, 'Ump']],
     body: inv.games.map(g => [g.time ?? '', g.teamA ?? '', g.teamB ?? '', g.ump ?? '']),
-    theme: 'grid',
+    theme: 'striped',
     headStyles: { fillColor: [19, 40, 74], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 10 },
-    styles: { fontSize: 10, cellPadding: 2 },
+    styles: { fontSize: 10, cellPadding: 2.4, textColor: [25, 35, 55], lineColor: [222, 216, 198], lineWidth: 0.1 },
+    alternateRowStyles: { fillColor: [244, 238, 222] },
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 22 } },
   })
   y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8
@@ -97,6 +98,11 @@ export async function generateInvitationPdf(inv: InvitationResponse): Promise<vo
     doc.text(`${c.role ? c.role + ': ' : ''}${parts}`, left, y); y += 5
   }
 
+  return doc
+}
+
+export async function generateInvitationPdf(inv: InvitationResponse): Promise<void> {
+  const doc = await buildInvitationPdf(inv)
   const year = inv.eventDate ? inv.eventDate.slice(0, 4) : ''
   const safeTitle = (inv.title || 'Einladung').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_')
   doc.save(`Einladung_${safeTitle}${year ? '_' + year : ''}.pdf`)
