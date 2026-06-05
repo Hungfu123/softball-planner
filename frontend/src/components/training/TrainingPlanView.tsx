@@ -366,23 +366,25 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
               )
             })}
           </div>
-          {isBattingGroup && stations.length > 0 && (
+          {isBattingGroup && (onSaveStations || stations.length > 0) && (
             <div className="px-2 pb-2">
-              <button
-                type="button"
-                onClick={() => setStationsFull(true)}
-                className="w-full text-left cursor-pointer"
-                title="Vollbild anzeigen"
-              >
-                <StationsDiagram stations={stations} size="mini" />
-              </button>
+              {stations.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStationsFull(true)}
+                  className="w-full text-left cursor-pointer"
+                  title="Vollbild anzeigen"
+                >
+                  <StationsDiagram stations={stations} size="mini" />
+                </button>
+              )}
               {onSaveStations && (
                 <button
                   type="button"
                   onClick={() => setStationsEditor(true)}
                   className="mt-1.5 text-[11px] font-bold uppercase tracking-wider text-navy-700 hover:text-softball-red-600 cursor-pointer"
                 >
-                  Stationen bearbeiten
+                  {stations.length > 0 ? 'Stationen bearbeiten' : '+ Stationen-Diagramm anlegen'}
                 </button>
               )}
             </div>
