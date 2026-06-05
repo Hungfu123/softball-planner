@@ -22,7 +22,7 @@ export const DEFAULT_STATIONS: TrainingStation[] = [
   { type: 'LIVE', x: 0.92, y: 0.08 },
   { type: 'TEE', x: 0.92, y: 0.82 }, // unter Live → 1→2 gerade vertikal
   { type: 'BUNT', x: 0.08, y: 0.82 }, // Ecke, gleiche Höhe wie Tee → 2→3 horizontal
-  { type: 'KORKEN', x: 0.08, y: 0.5 }, // über Bunt → 3→4 vertikal
+  { type: 'KORKEN', label: 'Korken/Whiffle', x: 0.08, y: 0.5 }, // über Bunt → 3→4 vertikal
   { type: 'HUETCHEN', x: 0.08, y: 0.12, choiceGroup: 1 }, // über Korken → 4→5 vertikal
   { type: 'TEE', label: 'Tee (Besen)', x: 0.4, y: 0.12, choiceGroup: 1 }, // neben Hütchen → 5→6 horizontal
 ]
