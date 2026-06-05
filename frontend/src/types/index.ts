@@ -228,6 +228,9 @@ export interface TrainingStation {
   label?: string | null
   level?: StationLevel | null
   choiceGroup?: number | null
+  /** Normalisierte Feld-Position 0..1 (links→rechts / oben→unten). Null = Auto-Platz. */
+  x?: number | null
+  y?: number | null
 }
 
 export interface TrainingPlanSectionResponse {
