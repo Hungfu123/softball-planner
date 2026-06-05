@@ -15,9 +15,6 @@ public class TrainingPlanSection {
     private Integer parallelGroup;
     private Integer playersPerGroup;
     private SectionGroup group = SectionGroup.ALL;
-    private StationType stationType;
-    private StationLevel stationLevel;
-    private Integer stationChoiceGroup;
 
     public TrainingPlanSection() {}
 
@@ -49,10 +46,4 @@ public class TrainingPlanSection {
     public void setPlayersPerGroup(final Integer playersPerGroup) { this.playersPerGroup = playersPerGroup; }
     public SectionGroup getGroup() { return group != null ? group : SectionGroup.ALL; }
     public void setGroup(final SectionGroup group) { this.group = group; }
-    public StationType getStationType() { return stationType; }
-    public void setStationType(final StationType stationType) { this.stationType = stationType; }
-    public StationLevel getStationLevel() { return stationLevel; }
-    public void setStationLevel(final StationLevel stationLevel) { this.stationLevel = stationLevel; }
-    public Integer getStationChoiceGroup() { return stationChoiceGroup; }
-    public void setStationChoiceGroup(final Integer stationChoiceGroup) { this.stationChoiceGroup = stationChoiceGroup; }
 }

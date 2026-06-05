@@ -6,6 +6,7 @@ public class TrainingPlanContent {
     private List<TrainingPlanSection> sections;
     private String groupDistributionHint;
     private String overallNotes;
+    private List<TrainingStation> stations;
 
     public TrainingPlanContent() {}
 
@@ -22,4 +23,6 @@ public class TrainingPlanContent {
     public void setGroupDistributionHint(final String groupDistributionHint) { this.groupDistributionHint = groupDistributionHint; }
     public String getOverallNotes() { return overallNotes; }
     public void setOverallNotes(final String overallNotes) { this.overallNotes = overallNotes; }
+    public List<TrainingStation> getStations() { return stations; }
+    public void setStations(final List<TrainingStation> stations) { this.stations = stations; }
 }

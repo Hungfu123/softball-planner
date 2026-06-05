@@ -222,6 +222,14 @@ export type SectionGroup = 'ALL' | 'MAIN' | 'BEGINNER'
 export type StationType = 'LIVE' | 'TEE' | 'BUNT' | 'KORKEN' | 'HUETCHEN' | 'OTHER'
 export type StationLevel = 'ADVANCED' | 'BEGINNER'
 
+/** Eine Batting-Station im Trainings-Setup (eigenes Set, entkoppelt von Plan-Drills). */
+export interface TrainingStation {
+  type: StationType
+  label?: string | null
+  level?: StationLevel | null
+  choiceGroup?: number | null
+}
+
 export interface TrainingPlanSectionResponse {
   drillId: string | null
   sectionType: string | null
@@ -237,15 +245,13 @@ export interface TrainingPlanSectionResponse {
   parallelGroup: number | null
   playersPerGroup: number | null
   group?: SectionGroup
-  stationType?: StationType | null
-  stationLevel?: StationLevel | null
-  stationChoiceGroup?: number | null
 }
 
 export interface TrainingPlanContentResponse {
   sections: TrainingPlanSectionResponse[]
   groupDistributionHint: string | null
   overallNotes: string | null
+  stations?: TrainingStation[] | null
 }
 
 export type PlanKind = 'MAIN' | 'BEGINNER'

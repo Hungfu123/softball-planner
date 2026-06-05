@@ -1,8 +1,6 @@
 package com.softball.adapter.dto;
 
 import com.softball.domain.model.SectionGroup;
-import com.softball.domain.model.StationLevel;
-import com.softball.domain.model.StationType;
 import com.softball.domain.model.TrainingPlanSection;
 
 public record TrainingPlanSectionResponse(
@@ -10,7 +8,7 @@ public record TrainingPlanSectionResponse(
         Integer rounds, String adaptationNotes, String rotationPlan, String setupNotes,
         String tips, String groupSetup, String userNotes,
         Integer parallelGroup, Integer playersPerGroup,
-        SectionGroup group, StationType stationType, StationLevel stationLevel, Integer stationChoiceGroup) {
+        SectionGroup group) {
 
     public static TrainingPlanSectionResponse from(final TrainingPlanSection section) {
         return new TrainingPlanSectionResponse(
@@ -19,7 +17,7 @@ public record TrainingPlanSectionResponse(
                 section.getRotationPlan(), section.getSetupNotes(), section.getTips(),
                 section.getGroupSetup(), section.getUserNotes(),
                 section.getParallelGroup(), section.getPlayersPerGroup(),
-                section.getGroup(), section.getStationType(), section.getStationLevel(), section.getStationChoiceGroup()
+                section.getGroup()
         );
     }
 
@@ -39,9 +37,6 @@ public record TrainingPlanSectionResponse(
         section.setParallelGroup(parallelGroup);
         section.setPlayersPerGroup(playersPerGroup);
         section.setGroup(group != null ? group : SectionGroup.ALL);
-        section.setStationType(stationType);
-        section.setStationLevel(stationLevel);
-        section.setStationChoiceGroup(stationChoiceGroup);
         return section;
     }
 }

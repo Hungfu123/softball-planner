@@ -383,9 +383,9 @@ export function TrainingTodayPage() {
               onSwitchKind={setActivePlanKind}
               drills={drills}
               onEdit={() => setPlanEditOpen(true)}
-              onSaveStations={async (nextSections) => {
+              onSaveStations={async (nextStations) => {
                 if (!activePlan?.content) return
-                const updated = await api.updateTrainingPlan(activePlan.id, { ...activePlan.content, sections: nextSections })
+                const updated = await api.updateTrainingPlan(activePlan.id, { ...activePlan.content, stations: nextStations })
                 setPlans(prev => prev.map(p => p.id === activePlan.id ? updated : p))
                 toast.success('Stationen gespeichert')
               }}

@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, ChevronDown, Circle, Pencil, MoreVertical, Sparkles, Trash2, BookOpen, Share2, Boxes, UserPlus } from 'lucide-react'
 import { BatIcon } from '@/icons'
-import type { TrainingPlanSectionResponse, DrillResponse, TrainingPlanResponse, PlanKind } from '@/types'
+import type { TrainingPlanSectionResponse, DrillResponse, TrainingPlanResponse, PlanKind, TrainingStation } from '@/types'
 import { TrainingPlanSkeleton } from './TrainingPlanSkeleton'
-import { deriveStations } from './stations/deriveStations'
+import { resolveStations } from './stations/deriveStations'
 import { StationsDiagram } from './stations/StationsDiagram'
 import { StationsEditorDrawer } from './stations/StationsEditorDrawer'
 
@@ -15,7 +15,7 @@ type Props = {
   onSwitchKind: (kind: PlanKind) => void
   drills: DrillResponse[]
   onEdit: () => void
-  onSaveStations?: (sections: TrainingPlanSectionResponse[]) => void
+  onSaveStations?: (stations: TrainingStation[]) => void
   onRegenerate: () => void
   onDelete: () => void
   onShare: () => void
@@ -266,7 +266,7 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
   const activePlan = plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null
   const planContent = activePlan?.content ?? null
   const sections = planContent?.sections ?? []
-  const stations = deriveStations(sections)
+  const stations = resolveStations(planContent?.stations)
   const [stationsFull, setStationsFull] = useState(false)
   const [stationsEditor, setStationsEditor] = useState(false)
   const renderItems = groupSectionsForRender(sections)
@@ -366,29 +366,6 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
               )
             })}
           </div>
-          {isBattingGroup && (onSaveStations || stations.length > 0) && (
-            <div className="px-2 pb-2">
-              {stations.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setStationsFull(true)}
-                  className="w-full text-left cursor-pointer"
-                  title="Vollbild anzeigen"
-                >
-                  <StationsDiagram stations={stations} size="mini" />
-                </button>
-              )}
-              {onSaveStations && (
-                <button
-                  type="button"
-                  onClick={() => setStationsEditor(true)}
-                  className="mt-1.5 text-[11px] font-bold uppercase tracking-wider text-navy-700 hover:text-softball-red-600 cursor-pointer"
-                >
-                  {stations.length > 0 ? 'Stationen bearbeiten' : '+ Stationen-Diagramm anlegen'}
-                </button>
-              )}
-            </div>
-          )}
         </div>
       )
     })
@@ -590,6 +567,35 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
               <div className="whitespace-pre-line">{planContent.overallNotes}</div>
             </div>
           )}
+
+          {/* Batting-Stationen — eigenes Set, immer dabei (Default Live/Tee/Bunt) */}
+          <div className="mt-3 bg-navy-50 border border-navy-200 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-navy-100">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-navy-800 flex items-center gap-1.5">
+                <BatIcon size={14} className="text-softball-red-600" />
+                Batting-Stationen
+              </span>
+              {onSaveStations && (
+                <button
+                  type="button"
+                  onClick={() => setStationsEditor(true)}
+                  className="text-[10px] font-bold uppercase tracking-wider text-navy-700 hover:text-softball-red-600 cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Pencil size={12} /> Bearbeiten
+                </button>
+              )}
+            </div>
+            <div className="p-2">
+              <button
+                type="button"
+                onClick={() => setStationsFull(true)}
+                className="w-full text-left cursor-pointer"
+                title="Vollbild anzeigen"
+              >
+                <StationsDiagram stations={stations} size="mini" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
       {stationsFull && stations.length > 0 && (
@@ -605,7 +611,7 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
       {onSaveStations && (
         <StationsEditorDrawer
           open={stationsEditor}
-          sections={sections}
+          stations={planContent?.stations}
           onClose={() => setStationsEditor(false)}
           onSave={next => { onSaveStations(next); setStationsEditor(false) }}
         />
