@@ -14,7 +14,7 @@ interface Props {
 const VB_W = 360
 const VB_H = 300
 const HOME = { x: 30, y: 262 }
-const AREA = { x0: 82, x1: 312, y0: 52, y1: 212 }
+const AREA = { x0: 58, x1: 338, y0: 46, y1: 242 } // füllt die Feld-Ecke besser aus
 
 const toSvg = (nx: number, ny: number) => ({
   x: AREA.x0 + nx * (AREA.x1 - AREA.x0),
@@ -83,16 +83,11 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
         onPointerUp={() => setDragIdx(null)}
         onPointerLeave={() => setDragIdx(null)}
       >
-        <defs>
-          <marker id="leitfaden-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" fill="#e23b32" />
-          </marker>
-        </defs>
-
         <path d={`M${HOME.x} ${HOME.y} L${HOME.x} 30`} stroke="rgba(244,236,216,.45)" strokeWidth={4} strokeLinecap="round" fill="none" />
         <path d={`M${HOME.x} ${HOME.y} L${VB_W - 18} ${HOME.y}`} stroke="rgba(244,236,216,.45)" strokeWidth={4} strokeLinecap="round" fill="none" />
         <path d={`M${HOME.x - 7} ${HOME.y} l14 0 0 -8 -7 -7 -7 7 z`} fill="#f4ecd8" />
 
+        {/* Roter Leitfaden — orthogonale Rotations-Route */}
         {pts.slice(1).map((p, i) => {
           const a = pts[i]
           const eps = 1.5
@@ -100,8 +95,27 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
           const d = aligned ? `M${a.x} ${a.y} L${p.x} ${p.y}` : `M${a.x} ${a.y} L${p.x} ${a.y} L${p.x} ${p.y}`
           return (
             <path key={`route-${i}`} d={d} fill="none"
-              stroke="#e23b32" strokeWidth={full ? 3 : 2.5} strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round"
-              markerEnd="url(#leitfaden-arrow)" opacity={0.9} />
+              stroke="#e23b32" strokeWidth={full ? 3 : 2.5} strokeDasharray="6 5" strokeLinecap="round" strokeLinejoin="round" opacity={0.85} />
+          )
+        })}
+        {/* Richtungs-Pfeile (Mittelpunkt jedes Segments, klar sichtbar) */}
+        {pts.slice(1).map((p, i) => {
+          const a = pts[i]
+          const eps = 1.5
+          let mx: number, my: number, ang: number
+          if (Math.abs(a.x - p.x) < eps || Math.abs(a.y - p.y) < eps) {
+            mx = (a.x + p.x) / 2; my = (a.y + p.y) / 2
+            ang = (Math.atan2(p.y - a.y, p.x - a.x) * 180) / Math.PI
+          } else {
+            // Knick a→(p.x,a.y)→p: Pfeil auf das längere Bein
+            const legH = Math.abs(p.x - a.x), legV = Math.abs(p.y - a.y)
+            if (legH >= legV) { mx = (a.x + p.x) / 2; my = a.y; ang = p.x > a.x ? 0 : 180 }
+            else { mx = p.x; my = (a.y + p.y) / 2; ang = p.y > a.y ? 90 : -90 }
+          }
+          const s = full ? 6 : 5
+          return (
+            <path key={`arr-${i}`} d={`M${-s} ${-s} L${s * 1.4} 0 L${-s} ${s} Z`} fill="#e23b32"
+              transform={`translate(${mx} ${my}) rotate(${ang})`} style={{ pointerEvents: 'none' }} />
           )
         })}
 
@@ -121,20 +135,23 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
           )
         })}
 
+        {/* Outfield — verteilt im offenen Feld (Sicherheitsabstand zu den Schlag-Stationen) */}
         {outfield.length > 0 && (() => {
-          const cx = AREA.x0 + 0.62 * (AREA.x1 - AREA.x0)
-          const cy = AREA.y0 + 0.5 * (AREA.y1 - AREA.y0)
-          const gap = badgeR * 2 + 4
-          const perRow = Math.min(4, outfield.length)
+          const n = outfield.length
+          const xL = AREA.x0 + 0.34 * (AREA.x1 - AREA.x0)
+          const xR = AREA.x0 + 0.78 * (AREA.x1 - AREA.x0)
+          const yBase = AREA.y0 + 0.42 * (AREA.y1 - AREA.y0)
+          const perRow = Math.min(5, n)
+          const gapY = badgeR * 2 + 8
           return (
             <g style={{ pointerEvents: 'none' }}>
-              <text x={cx} y={cy - badgeR - 6} textAnchor="middle" fill="#9fb3d1" fontSize={labelSize} fontWeight={700} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>Outfield</text>
+              <text x={(xL + xR) / 2} y={yBase - badgeR - 7} textAnchor="middle" fill="#9fb3d1" fontSize={labelSize} fontWeight={700} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>Outfield</text>
               {outfield.map((num, i) => {
                 const row = Math.floor(i / perRow)
-                const colCount = Math.min(perRow, outfield.length - row * perRow)
-                const col = i % perRow
-                const bx = cx + (col - (colCount - 1) / 2) * gap
-                const by = cy + row * gap
+                const rowCount = Math.min(perRow, n - row * perRow)
+                const idxInRow = i % perRow
+                const bx = rowCount === 1 ? (xL + xR) / 2 : xL + (idxInRow / (rowCount - 1)) * (xR - xL)
+                const by = yBase + row * gapY
                 return <Badge key={num} x={bx} y={by} n={num} role="single" />
               })}
             </g>
@@ -176,6 +193,15 @@ export function StationsDiagram({ stations, size = 'mini', playerCount = 0, edit
           )
         })}
       </svg>
+      <div className="px-3 py-2 border-t border-cream-100/10 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-cream-300">
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: '#e23b32' }} /> aktiv (ungerade)
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="inline-block w-2.5 h-2.5 rounded-full border" style={{ borderColor: '#9fb3d1' }} /> passiv/Hilfe (gerade)
+        </span>
+        <span className="text-cream-300/80">Rotation entlang Pfeile: passiv → aktiv → weiter zur nächsten Station · Outfield rotiert nach</span>
+      </div>
     </div>
   )
 }
