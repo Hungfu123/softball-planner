@@ -16,6 +16,7 @@ type Props = {
   drills: DrillResponse[]
   onEdit: () => void
   onSaveStations?: (stations: TrainingStation[]) => void
+  playerCount?: number
   onRegenerate: () => void
   onDelete: () => void
   onShare: () => void
@@ -262,7 +263,7 @@ function MenuItem({ Icon, label, onClick, danger = false }: { Icon: typeof Penci
   )
 }
 
-export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwitchKind, drills, onEdit, onSaveStations, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
+export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwitchKind, drills, onEdit, onSaveStations, playerCount, onRegenerate, onDelete, onShare, onAddBeginnerGroup, onGenerateBeginnerPlan, onGenerateMain }: Props) {
   const activePlan = plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null
   const planContent = activePlan?.content ?? null
   const sections = planContent?.sections ?? []
@@ -599,7 +600,7 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
                 className="w-full text-left cursor-pointer"
                 title="Vollbild · Stationen anordnen"
               >
-                <StationsDiagram stations={stations} size="mini" />
+                <StationsDiagram stations={stations} size="mini" playerCount={playerCount} />
               </button>
             </div>
           </div>
@@ -617,6 +618,7 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
             <StationsDiagram
               stations={toDiagramStations(arrangeDraft)}
               size="full"
+              playerCount={playerCount}
               editable={!!onSaveStations}
               onMove={(idx, x, y) => setArrangeDraft(prev => prev.map((s, i) => i === idx ? { ...s, x, y } : s))}
             />
