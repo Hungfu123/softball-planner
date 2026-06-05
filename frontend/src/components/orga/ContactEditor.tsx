@@ -1,0 +1,86 @@
+import { PlusCircle, TrashBin } from '@/icons'
+import type { InvitationContact } from '@/types'
+
+interface Props {
+  contacts: InvitationContact[]
+  onChange: (contacts: InvitationContact[]) => void
+}
+
+const inputCls =
+  'w-full border border-cream-300 rounded-lg px-3 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
+
+export function ContactEditor({ contacts, onChange }: Props) {
+  const update = (index: number, patch: Partial<InvitationContact>) => {
+    onChange(contacts.map((c, i) => (i === index ? { ...c, ...patch } : c)))
+  }
+
+  const addContact = () => {
+    onChange([...contacts, { role: '', name: '', email: '', phone: '' }])
+  }
+
+  const removeContact = (index: number) => {
+    onChange(contacts.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-sm font-bold uppercase tracking-wide text-navy-700">Kontakt</h3>
+        <button
+          type="button"
+          onClick={addContact}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-navy-700 bg-white border border-cream-300 rounded-lg hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
+        >
+          <PlusCircle size={16} /> Kontakt
+        </button>
+      </div>
+
+      {contacts.length === 0 ? (
+        <p className="text-center text-sm text-navy-400 italic py-4 border border-dashed border-cream-300 rounded-lg">
+          Noch keine Kontakte.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {contacts.map((c, i) => (
+            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-center gap-2 group">
+              <input
+                value={c.role}
+                onChange={e => update(i, { role: e.target.value })}
+                placeholder="Rolle"
+                className={inputCls}
+              />
+              <input
+                value={c.name}
+                onChange={e => update(i, { name: e.target.value })}
+                placeholder="Name"
+                className={inputCls}
+              />
+              <input
+                type="email"
+                value={c.email}
+                onChange={e => update(i, { email: e.target.value })}
+                placeholder="E-Mail"
+                className={inputCls}
+              />
+              <input
+                value={c.phone}
+                onChange={e => update(i, { phone: e.target.value })}
+                placeholder="Telefon"
+                className={inputCls}
+              />
+              <button
+                type="button"
+                onClick={() => removeContact(i)}
+                aria-label="Kontakt entfernen"
+                title="Entfernen"
+                className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+              >
+                <TrashBin size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}

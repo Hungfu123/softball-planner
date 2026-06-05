@@ -9,6 +9,7 @@ import { LoginPage } from '@/components/auth/LoginPage'
 import { setAuth, hasAuth, clearAuth } from '@/api/client'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
+import { InvitationListPage } from '@/components/orga/InvitationListPage'
 
 // Lazy-load heavy pages
 const TrainingTodayPage = lazy(() => import('@/components/training/TrainingTodayPage').then(m => ({ default: m.TrainingTodayPage })))
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
       { path: '/stats', element: <LazyStats />, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen', element: <LazySpielbogenList />, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen/new', element: <LazySpielbogenWizard />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   { path: '/spielbogen/:id', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },

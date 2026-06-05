@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import { ChevronLeft } from '@/icons'
-import { Home, CalendarDays, Dumbbell, Users, BarChart3, ClipboardList, type LucideIcon } from 'lucide-react'
+import { Home, CalendarDays, Dumbbell, Users, BarChart3, ClipboardList, Mail, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { useToast } from '@/hooks/useToast'
 import { createContext, useContext, type ReactNode } from 'react'
@@ -31,6 +31,7 @@ const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon 
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
   { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
+  { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail },
 ]
 
 export function Layout() {
