@@ -6,64 +6,130 @@ interface Props {
   size?: 'mini' | 'full'
 }
 
-/** Auto-Layout: 2 Spalten, in Reihenfolge gefüllt; choiceGroup-Paare gerahmt. */
+// Feld-Koordinatensystem (Lageplan). Home-Plate unten-links, Foul-Linien = die Ecke.
+const VB_W = 360
+const VB_H = 300
+const HOME = { x: 30, y: 262 }
+const AREA = { x0: 82, x1: 312, y0: 52, y1: 212 } // Stationen-Platzierungsbereich
+
+/** Auto-Layout: verteilt Stationen serpentinenförmig im Feld, sodass die rote Route nicht kreuzt. */
+function layoutPositions(n: number): { x: number; y: number }[] {
+  const midX = (AREA.x0 + AREA.x1) / 2
+  const midY = (AREA.y0 + AREA.y1) / 2
+  if (n === 1) return [{ x: midX, y: midY }]
+  const rows = Math.ceil(n / 2)
+  return Array.from({ length: n }, (_, i) => {
+    const row = Math.floor(i / 2)
+    const loneLast = i === n - 1 && n % 2 === 1
+    const col = row % 2 === 0 ? i % 2 : 1 - (i % 2) // Serpentine
+    const x = loneLast ? midX : AREA.x0 + col * (AREA.x1 - AREA.x0)
+    const y = rows === 1 ? midY : AREA.y0 + (row * (AREA.y1 - AREA.y0)) / (rows - 1)
+    return { x, y }
+  })
+}
+
 export function StationsDiagram({ stations, size = 'mini' }: Props) {
   if (stations.length === 0) return null
   const full = size === 'full'
+  const pos = layoutPositions(stations.length)
 
-  const choiceCounts = new Map<number, number>()
-  for (const s of stations) {
-    if (s.choiceGroup != null) choiceCounts.set(s.choiceGroup, (choiceCounts.get(s.choiceGroup) ?? 0) + 1)
-  }
+  const puckR = full ? 17 : 14
+  const numSize = full ? 17 : 14
+  const iconSize = full ? 13 : 11
+  const labelSize = full ? 11 : 9
+
+  // Choice-Gruppen für "WÄHLE 1"-Rahmen
+  const groups = new Map<number, number[]>()
+  stations.forEach((s, i) => {
+    if (s.choiceGroup != null) {
+      const arr = groups.get(s.choiceGroup) ?? []
+      arr.push(i)
+      groups.set(s.choiceGroup, arr)
+    }
+  })
 
   return (
     <div
-      className={`relative rounded-xl overflow-hidden ${full ? 'p-6' : 'p-3'}`}
-      style={{
-        background:
-          'radial-gradient(120% 90% at 15% 0%, #16305c 0%, transparent 55%), linear-gradient(135deg,#13284a,#0d1b34)',
-      }}
+      className="relative rounded-xl overflow-hidden"
+      style={{ background: 'radial-gradient(120% 90% at 15% 0%, #16305c 0%, transparent 55%), linear-gradient(135deg,#13284a,#0d1b34)' }}
     >
-      <div className="pointer-events-none absolute inset-0 opacity-30"
-           style={{ borderLeft: '3px solid rgba(244,236,216,.4)', borderBottom: '3px solid rgba(244,236,216,.4)', margin: full ? 16 : 8 }} />
-      <div className={`relative grid grid-cols-1 sm:grid-cols-2 ${full ? 'gap-4' : 'gap-2'}`}>
-        {stations.map(st => {
-          const meta = STATION_META[st.type]
-          const Icon = meta.Icon
-          const inChoice = st.choiceGroup != null && (choiceCounts.get(st.choiceGroup) ?? 0) > 1
+      <svg viewBox={`0 0 ${VB_W} ${VB_H}`} className="w-full h-auto block">
+        <defs>
+          <marker id="leitfaden-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" fill="#e23b32" />
+          </marker>
+        </defs>
+
+        {/* Feld: Foul-Linien (die Ecke) + Home-Plate */}
+        <path d={`M${HOME.x} ${HOME.y} L${HOME.x} 30`} stroke="rgba(244,236,216,.45)" strokeWidth={4} strokeLinecap="round" fill="none" />
+        <path d={`M${HOME.x} ${HOME.y} L${VB_W - 18} ${HOME.y}`} stroke="rgba(244,236,216,.45)" strokeWidth={4} strokeLinecap="round" fill="none" />
+        <path d={`M${HOME.x - 7} ${HOME.y} l14 0 0 -8 -7 -7 -7 7 z`} fill="#f4ecd8" />
+
+        {/* Roter Leitfaden — Rotations-Route mit Pfeilen */}
+        {pos.slice(1).map((p, i) => (
+          <line
+            key={`route-${i}`}
+            x1={pos[i].x} y1={pos[i].y} x2={p.x} y2={p.y}
+            stroke="#e23b32" strokeWidth={full ? 3 : 2.5} strokeDasharray="6 5" strokeLinecap="round"
+            markerEnd="url(#leitfaden-arrow)" opacity={0.9}
+          />
+        ))}
+
+        {/* WÄHLE-1-Rahmen um Choice-Gruppen */}
+        {[...groups.values()].filter(idxs => idxs.length > 1).map((idxs, gi) => {
+          const xs = idxs.map(i => pos[i].x)
+          const ys = idxs.map(i => pos[i].y)
+          const pad = puckR + (full ? 16 : 12)
+          const x = Math.min(...xs) - pad
+          const y = Math.min(...ys) - pad
+          const w = Math.max(...xs) - Math.min(...xs) + pad * 2
+          const h = Math.max(...ys) - Math.min(...ys) + pad * 2
           return (
-            <div
-              key={st.rotation}
-              className={`flex items-center gap-2 rounded-lg ${full ? 'px-3 py-2.5' : 'px-2 py-1.5'} ${
-                inChoice ? 'border border-dashed border-amber-400/70' : ''
-              }`}
-              style={{ background: 'rgba(244,236,216,.06)' }}
-            >
-              <span
-                className={`flex items-center justify-center rounded-full text-cream-50 font-bold tabular-nums ${
-                  full ? 'w-9 h-9 text-base' : 'w-7 h-7 text-xs'
-                }`}
-                style={{ background: meta.accent ? '#e23b32' : '#234a86', border: '2px solid #f4ecd8' }}
-              >
-                {st.rotation}
-              </span>
-              <Icon size={full ? 20 : 16} className={meta.accent ? 'text-softball-red-300' : 'text-cream-100'} />
-              <div className="min-w-0">
-                <div className={`font-bold text-cream-50 truncate ${full ? 'text-sm' : 'text-xs'}`}>{st.label}</div>
-                <div className="flex flex-wrap items-center gap-x-1.5 text-[10px] uppercase tracking-wider text-cream-300">
-                  <span>{meta.label}</span>
-                  {st.level && (
-                    <span className={st.level === 'ADVANCED' ? 'text-softball-red-300' : 'text-amber-300'}>
-                      · {st.level === 'ADVANCED' ? 'Advanced' : 'Beginner'}
-                    </span>
-                  )}
-                  {inChoice && <span className="text-amber-300">· wähle 1</span>}
-                </div>
-              </div>
-            </div>
+            <g key={`choice-${gi}`}>
+              <rect x={x} y={y} width={w} height={h} rx={12} fill="rgba(231,185,74,.08)" stroke="#e7b94a" strokeWidth={1.5} strokeDasharray="7 6" />
+              <text x={x + w / 2} y={y - 4} textAnchor="middle" fill="#e7b94a" fontSize={labelSize} fontWeight={700} style={{ letterSpacing: 1, textTransform: 'uppercase' }}>
+                Wähle 1
+              </text>
+            </g>
           )
         })}
-      </div>
+
+        {/* Stationen-Marker */}
+        {stations.map((st, i) => {
+          const meta = STATION_META[st.type]
+          const Icon = meta.Icon
+          const { x, y } = pos[i]
+          const fill = meta.accent ? '#e23b32' : '#234a86'
+          return (
+            <g key={st.rotation}>
+              {st.type === 'LIVE' ? (
+                <rect x={x - puckR} y={y - puckR} width={puckR * 2} height={puckR * 2} rx={4}
+                      transform={`rotate(45 ${x} ${y})`} fill={fill} stroke="#f4ecd8" strokeWidth={2.5} />
+              ) : (
+                <circle cx={x} cy={y} r={puckR} fill={fill} stroke="#f4ecd8" strokeWidth={2.5} />
+              )}
+              <text x={x} y={y + numSize * 0.35} textAnchor="middle" fill="#f4ecd8" fontSize={numSize} fontWeight={800} style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {st.rotation}
+              </text>
+              {/* Icon-Badge oben-rechts am Puck */}
+              <g transform={`translate(${x + puckR - 3} ${y - puckR - iconSize + 3})`}>
+                <Icon size={iconSize} className={meta.accent ? 'text-softball-red-200' : 'text-cream-100'} />
+              </g>
+              {/* Label unter dem Puck */}
+              <text x={x} y={y + puckR + labelSize + 3} textAnchor="middle" fill="#f4ecd8" fontSize={labelSize} fontWeight={700}>
+                {st.label}
+              </text>
+              {st.level && (
+                <text x={x} y={y + puckR + labelSize * 2 + 4} textAnchor="middle"
+                      fill={st.level === 'ADVANCED' ? '#f4a8a3' : '#e7b94a'} fontSize={labelSize - 1} fontWeight={700}
+                      style={{ letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                  {st.level === 'ADVANCED' ? 'Advanced' : 'Beginner'}
+                </text>
+              )}
+            </g>
+          )
+        })}
+      </svg>
     </div>
   )
 }
