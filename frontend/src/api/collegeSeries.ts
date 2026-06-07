@@ -90,6 +90,7 @@ export function parseStandings(data: unknown): CollegeSeriesRow[] {
 
 export interface CollegeSeriesGame {
   id: string
+  stage: string                // 'Vorrunde' / 'Endrunde' …
   date: string | null          // 'YYYY-MM-DD' oder null (tba)
   matchdayLabel: string        // 'DD.MM.' oder 'TBA'
   home: string
@@ -139,13 +140,15 @@ function intOrNull(s: string | undefined): number | null {
 export function parseSchedule(data: unknown): CollegeSeriesGame[] {
   const stages = (data as { stages?: unknown[] } | null)?.stages ?? []
   const games: CollegeSeriesGame[] = []
-  for (const stage of stages as Array<{ games?: RawGame[] }>) {
+  for (const stage of stages as Array<{ name?: string; games?: RawGame[] }>) {
+    const stageName = String(stage?.name ?? '')
     for (const g of stage?.games ?? []) {
       const date = epochToDate(g.gameDate)
       const ownIsHome = String(g.homeTeamID ?? '') === DEAD_SOX_TEAM_ID
       const ownIsAway = String(g.awayTeamID ?? '') === DEAD_SOX_TEAM_ID
       games.push({
         id: String(g.ID ?? `${g.homeTeamID}-${g.awayTeamID}-${g.gameDate}`),
+        stage: stageName,
         date,
         matchdayLabel: date ? `${date.slice(8, 10)}.${date.slice(5, 7)}.` : 'TBA',
         home: String(g.homeTeamName ?? ''),
