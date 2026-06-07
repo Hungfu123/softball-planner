@@ -33,6 +33,8 @@ import {
   ChevronRight as LucideChevronRight,
   Flag,
   RotateCw,
+  House,
+  Building2,
 } from 'lucide-react'
 
 interface IconProps {
@@ -70,6 +72,8 @@ export const ChevronRight = (p: IconProps) => <LucideChevronRight size={p.size ?
 export const CoachFlagIcon = (p: IconProps) => <Flag size={p.size ?? 14} className={p.className} />
 export const ArrowsSwap = (p: IconProps) => <LucideArrowLeftRight size={p.size ?? 16} className={p.className} />
 export const RefreshIcon = (p: IconProps) => <RotateCw size={p.size ?? 16} className={p.className} />
+export const HomeStadiumIcon = (p: IconProps) => <House size={p.size ?? 16} className={p.className} />
+export const AwayIcon = (p: IconProps) => <Building2 size={p.size ?? 16} className={p.className} />
 
 // Custom SVGs — keine Lucide-Equivalente passen (Brand/Baseball-spezifisch)
 export function CrossBones({ size = 24, className }: IconProps) {
