@@ -409,29 +409,37 @@ git commit -m "✨ College-Series: Standings-Tabelle (Dead-Sox-Highlight, Lade/F
 
 ---
 
-## Task 4: Einbindung in die Season-Ansicht
+## Task 4: Einbindung in die Season-Ansicht (nur College Series)
+
+Die Live-Tabelle darf **nur** erscheinen, wenn die offene Season die College Series ist
+(externe IDs gelten nur für diese eine Liga). Gate per Season-Name (case-insensitive).
 
 **Files:**
 - Modify: Eltern-Komponente, die `<Standings .../>` rendert.
 
-- [ ] **Step 1: Einbindeort finden**
+- [ ] **Step 1: Einbindeort + Season-Objekt finden**
 
 Run: `cd frontend && grep -rn "<Standings" src`
-→ liefert die Eltern-Ansicht (z.B. eine Season-/Dashboard-Seite).
+→ liefert die Eltern-Ansicht. Prüfe dort, ob das `Season`-Objekt (mit `.name`) verfügbar ist
+(oder nur `seasonId`). Falls nur `seasonId`: den Season-Namen aus dem vorhandenen
+Seasons-State/`useSeasons` ziehen (die Ansicht kennt die aktive Season bereits).
 
-- [ ] **Step 2: Komponente einbinden**
+- [ ] **Step 2: Gate-Helper + bedingtes Rendern**
 
-In der gefundenen Eltern-Ansicht importieren und an passender Stelle rendern (eigene Sektion,
-klar als Live-College-Series gelabelt — getrennt von einer evtl. eigenen Standings-Tabelle):
+In der Eltern-Ansicht den Namen der aktiven Season prüfen und nur dann rendern:
 
 ```tsx
 import { CollegeSeriesStandings } from '@/components/dashboard/CollegeSeriesStandings'
+
+// season = aktive Season (aus Props/State); Name case-insensitive matchen:
+const isCollegeSeries = (season?.name ?? '').toLowerCase().includes('college series')
+
 // ... im JSX, an gewünschter Position:
-<CollegeSeriesStandings />
+{isCollegeSeries && <CollegeSeriesStandings />}
 ```
 
-> Genaue Platzierung (eigener Tab vs. Sektion) in der `frontend-design`-Phase entscheiden. Die
-> Komponente braucht keine Props (holt sich Daten selbst über den Hook).
+> Die Komponente braucht keine Props (holt Daten selbst über den Hook). Genaue Platzierung
+> (eigener Tab vs. Sektion) in der `frontend-design`-Phase entscheiden.
 
 - [ ] **Step 3: Commit**
 

@@ -107,8 +107,11 @@ interface CollegeSeriesRow {
 
 ## 5. Einbindung
 
-- Anzeige innerhalb der Season-Ansicht der App (die Season **ist** die College Series).
-- Klar gelabelt als Live-Daten, z.B. Sektion/Tab "College Series — Tabelle (live)".
+- Anzeige innerhalb der Season-Ansicht der App.
+- **Nur sichtbar, wenn die offene Season die College Series ist** — Gate per Season-Name
+  (case-insensitive Match auf "College Series"). Andere Seasons zeigen die Live-Tabelle nicht
+  (die externen IDs `243398103`/`455890221` gelten nur für diese eine Liga).
+- Klar gelabelt als Live-Daten, z.B. Sektion "College Series — Tabelle (live)".
 - Getrennt von einer evtl. vorhandenen eigenen Standings-Tabelle (zwei Welten, bewusst).
 - Genaue Platzierung (eigener Tab vs. Sektion in bestehender Ansicht) → in der
   `frontend-design`-Phase festlegen.
