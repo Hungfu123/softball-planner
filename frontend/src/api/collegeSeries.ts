@@ -100,7 +100,8 @@ export function parseStandings(data: unknown): StageStanding[] {
 
 export interface CollegeSeriesGame {
   id: string
-  stage: string                // 'Vorrunde' / 'Endrunde' …
+  stage: string                // 'Vorrunde' / 'Gruppenphase' / 'Finals' …
+  round: string                // metaText: 'Group 1', 'Semi Final', 'Final', 'Spiel um Platz 5' …
   date: string | null          // 'YYYY-MM-DD' oder null (tba)
   matchdayLabel: string        // 'DD.MM.' oder 'TBA'
   home: string
@@ -126,7 +127,7 @@ interface RawGame {
   homeTeamLogoURL?: string; awayTeamLogoURL?: string
   homeTeamTlc?: string; awayTeamTlc?: string
   homeScore?: string; awayScore?: string
-  status?: string; gameDate?: string
+  status?: string; gameDate?: string; metaText?: string
 }
 
 function epochToDate(epoch: string | undefined): string | null {
@@ -159,6 +160,7 @@ export function parseSchedule(data: unknown): CollegeSeriesGame[] {
       games.push({
         id: String(g.ID ?? `${g.homeTeamID}-${g.awayTeamID}-${g.gameDate}`),
         stage: stageName,
+        round: String(g.metaText ?? ''),
         date,
         matchdayLabel: date ? `${date.slice(8, 10)}.${date.slice(5, 7)}.` : 'TBA',
         home: String(g.homeTeamName ?? ''),

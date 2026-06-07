@@ -350,13 +350,47 @@ function groupByMatchday(games: CollegeSeriesGame[]): Array<[string, CollegeSeri
   return Array.from(map.entries())
 }
 
-// ---------- Endrunde (Gruppenphase / Um die Plätze / Finals) ----------
+// ---------- Endrunde (Turnier: Gruppenphase / Um die Plätze / Finals) ----------
+
+const GOLD = '#C9A227'
+const DEAD_SOX_NAME = 'Düsseldorf Dead Sox'
+
+const ROUND_DE: Record<string, string> = {
+  'semi final': 'Halbfinale',
+  'final': 'Finale',
+  'third place playoff': 'Spiel um Platz 3',
+  'quarter final': 'Viertelfinale',
+}
+function roundLabel(r: string): string {
+  return ROUND_DE[r.toLowerCase()] ?? r
+}
+const isThird = (r: string) => /platz\s*3|third/i.test(r)
+const isFinal = (r: string) => /^final$|finale/i.test(r.trim())
+
+interface GroupRow { name: string; logo: string | null; color: string; tlc: string; w: number; l: number; rd: number }
+function computeGroupStandings(games: CollegeSeriesGame[]): GroupRow[] {
+  const m = new Map<string, GroupRow>()
+  const get = (name: string, logo: string | null, color: string, tlc: string) => {
+    let r = m.get(name)
+    if (!r) { r = { name, logo, color, tlc, w: 0, l: 0, rd: 0 }; m.set(name, r) }
+    return r
+  }
+  for (const g of games) {
+    if (g.homeScore == null || g.awayScore == null) continue
+    const h = get(g.home, g.homeLogo, g.homeColor, g.homeTlc)
+    const a = get(g.away, g.awayLogo, g.awayColor, g.awayTlc)
+    h.rd += g.homeScore - g.awayScore
+    a.rd += g.awayScore - g.homeScore
+    if (g.homeScore > g.awayScore) { h.w++; a.l++ } else if (g.awayScore > g.homeScore) { a.w++; h.l++ }
+  }
+  return [...m.values()].sort((x, y) => y.w - x.w || y.rd - x.rd)
+}
 
 function EndrundeView({ stages, schedule }: { stages: StageStanding[]; schedule: CollegeSeriesGame[] }) {
-  if (stages.length === 0) return <EmptyState text="Keine Endrunden-Phasen." />
+  const stageGames = (name: string) => schedule.filter((g) => g.stage === name)
+  const anyData = stages.some((s) => s.rows.length > 0 || stageGames(s.name).length > 0)
 
-  const anyData = stages.some((s) => s.rows.length > 0 || schedule.some((g) => g.stage === s.name))
-  if (!anyData) {
+  if (stages.length === 0 || !anyData) {
     return (
       <div className="rounded-xl border border-dashed border-cream-300 bg-cream-100 px-4 py-7 text-center">
         <CrossBones className="mx-auto mb-2 h-7 w-7 text-navy-700/45" />
@@ -367,30 +401,178 @@ function EndrundeView({ stages, schedule }: { stages: StageStanding[]; schedule:
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {stages.map((s) => {
-        const games = schedule.filter((g) => g.stage === s.name)
-        const empty = s.rows.length === 0 && games.length === 0
+        const games = stageGames(s.name)
+        if (games.length === 0 && s.rows.length === 0) return null
         return (
           <div key={s.name}>
-            <div className="mb-2.5 inline-block rounded-full bg-cream-200 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-navy-700 shadow-[0_1px_2px_rgba(10,15,92,0.06)]">
-              {s.name}
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-navy-800 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-white shadow-[0_2px_6px_-1px_rgba(10,15,92,0.35)]">
+              {s.type === 'SE' && <TrophyIcon size={12} />}{s.name}
             </div>
-            {empty ? (
-              <p className="text-[11px] text-navy-700/55">Noch nicht gestartet.</p>
-            ) : (
-              <div className="space-y-3">
-                {s.rows.length > 0 && <StandingsTable rows={s.rows} />}
-                {games.length > 0 && (
-                  <div className="space-y-2">
-                    {games.map((g) => <ScoreboardCard key={g.id} game={g} />)}
-                  </div>
-                )}
-              </div>
-            )}
+            {s.type === 'GR' ? <GroupsView games={games} />
+              : s.type === 'SE' ? <BracketView games={games} />
+              : <PlacementView games={games} />}
           </div>
         )
       })}
+    </div>
+  )
+}
+
+// Finals: Runden als Spalten (Halbfinale → Finale), Champion gekrönt, Platz-3 separat.
+function BracketView({ games }: { games: CollegeSeriesGame[] }) {
+  const byRound = new Map<string, CollegeSeriesGame[]>()
+  for (const g of games) {
+    const k = g.round || 'Runde'
+    const arr = byRound.get(k) ?? []
+    arr.push(g)
+    byRound.set(k, arr)
+  }
+  const rounds = [...byRound.entries()].sort(
+    (a, b) => (isThird(a[0]) ? 1 : 0) - (isThird(b[0]) ? 1 : 0)
+      || (a[1][0].date ?? '').localeCompare(b[1][0].date ?? ''),
+  )
+  const finalGame = games.find((g) => isFinal(g.round))
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {rounds.filter(([r]) => !isThird(r)).map(([r, gs]) => (
+          <div key={r} className="flex min-w-[150px] flex-1 flex-col justify-center gap-2">
+            <div className="text-center text-[10px] font-extrabold uppercase tracking-wider text-navy-700/55">{roundLabel(r)}</div>
+            {gs.map((g) => <BracketMatch key={g.id} game={g} gold={isFinal(r)} />)}
+          </div>
+        ))}
+      </div>
+      {finalGame && <ChampionBanner game={finalGame} />}
+      {rounds.filter(([r]) => isThird(r)).map(([r, gs]) => (
+        <div key={r}>
+          <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-navy-700/55">{roundLabel(r)}</div>
+          {gs.map((g) => <BracketMatch key={g.id} game={g} />)}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function BracketMatch({ game, gold = false }: { game: CollegeSeriesGame; gold?: boolean }) {
+  const final = game.isFinal
+  const homeWin = final && (game.homeScore ?? 0) > (game.awayScore ?? 0)
+  const awayWin = final && (game.awayScore ?? 0) > (game.homeScore ?? 0)
+  const row = (name: string, logo: string | null, color: string, tlc: string, score: number | null, win: boolean, top: boolean) => (
+    <div className={`flex items-center gap-2 px-2.5 py-1.5 ${top ? 'border-t border-cream-200' : ''}`}>
+      <TeamAvatar logo={logo} tlc={tlc} color={color} name={name} />
+      <span className={`flex-1 truncate text-[12.5px] ${win ? 'font-extrabold text-navy-900' : 'font-semibold text-navy-900/65'}`}>{tlc || name}</span>
+      {final && <span className={`text-[14px] font-extrabold tabular-nums ${win ? 'text-green-600' : 'text-navy-900/45'}`}>{score}</span>}
+    </div>
+  )
+  return (
+    <div
+      className="overflow-hidden rounded-xl border bg-cream-50 shadow-[0_2px_8px_-3px_rgba(10,15,92,0.22)]"
+      style={gold ? { borderColor: GOLD, boxShadow: '0 3px 12px -2px rgba(201,162,39,0.45)' } : { borderColor: 'var(--color-cream-300)' }}
+    >
+      {row(game.away, game.awayLogo, game.awayColor, game.awayTlc, game.awayScore, awayWin, false)}
+      {row(game.home, game.homeLogo, game.homeColor, game.homeTlc, game.homeScore, homeWin, true)}
+    </div>
+  )
+}
+
+function ChampionBanner({ game }: { game: CollegeSeriesGame }) {
+  if (!game.isFinal) return null
+  const homeWin = (game.homeScore ?? 0) > (game.awayScore ?? 0)
+  const name = homeWin ? game.home : game.away
+  return (
+    <div
+      className="flex items-center justify-center gap-2 rounded-xl py-2 text-[13px] font-extrabold"
+      style={{ backgroundColor: 'rgba(201,162,39,0.12)', color: '#9a7d1e' }}
+    >
+      <TeamAvatar logo={homeWin ? game.homeLogo : game.awayLogo} tlc={homeWin ? game.homeTlc : game.awayTlc} color={homeWin ? game.homeColor : game.awayColor} name={name} />
+      {name} <TrophyIcon size={15} />
+    </div>
+  )
+}
+
+// Um die Plätze: Platzierungsspiele (z.B. "Spiel um Platz 5")
+function PlacementView({ games }: { games: CollegeSeriesGame[] }) {
+  return (
+    <div className="space-y-2.5">
+      {games.map((g) => (
+        <div key={g.id}>
+          {g.round && <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-navy-700/55">{g.round}</div>}
+          <ScoreboardCard game={g} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Gruppenphase: Sub-Tabs pro Gruppe → Tabelle + Paarungen
+function GroupsView({ games }: { games: CollegeSeriesGame[] }) {
+  const groupNames = [...new Set(games.map((g) => g.round || 'Gruppe'))]
+  const [grp, setGrp] = useState<string | null>(null)
+  const active = grp && groupNames.includes(grp) ? grp : groupNames[0]
+  const groupGames = games.filter((g) => (g.round || 'Gruppe') === active)
+  const standings = computeGroupStandings(groupGames)
+
+  return (
+    <div>
+      {groupNames.length > 1 && (
+        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          {groupNames.map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => setGrp(n)}
+              aria-pressed={n === active}
+              className={[
+                'flex-none rounded-full px-3.5 py-1.5 text-xs font-bold transition-all',
+                n === active
+                  ? 'bg-navy-700 text-white shadow-[0_2px_6px_-1px_rgba(10,15,92,0.4)]'
+                  : 'border border-cream-300 bg-cream-100 text-navy-700',
+              ].join(' ')}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-3 overflow-hidden rounded-xl border border-cream-300 bg-cream-50 shadow-sm">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-[9px] uppercase tracking-wider text-navy-700/55">
+              <th className="px-2 py-1.5 text-left">#</th>
+              <th className="px-2 py-1.5 text-left">Team</th>
+              <th className="px-2 py-1.5 text-right">W</th>
+              <th className="px-2 py-1.5 text-right">L</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standings.map((r, i) => {
+              const own = r.name === DEAD_SOX_NAME
+              return (
+                <tr key={r.name} className={`border-t border-cream-200 ${own ? 'bg-navy-50' : ''}`}>
+                  <td className="px-2 py-1.5 text-left font-bold text-navy-700/70">{i + 1}</td>
+                  <td className="px-2 py-1.5 text-left">
+                    <span className="flex items-center gap-2">
+                      <TeamAvatar logo={r.logo} tlc={r.tlc} color={r.color} name={r.name} />
+                      <span className={`truncate text-navy-900 ${own ? 'font-extrabold' : 'font-semibold'}`}>{r.name}</span>
+                    </span>
+                  </td>
+                  <td className="px-2 py-1.5 text-right font-bold text-green-700">{r.w}</td>
+                  <td className="px-2 py-1.5 text-right text-softball-red-600">{r.l}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-navy-700/55">Spiele</div>
+      <div className="space-y-2">
+        {groupGames.map((g) => <ScoreboardCard key={g.id} game={g} />)}
+      </div>
     </div>
   )
 }
