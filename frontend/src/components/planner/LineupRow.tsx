@@ -113,18 +113,20 @@ export function LineupRow({
         <ChevronDown size={12} className="text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
 
-      {/* DH area — fixed width to keep alignment consistent */}
-      <div className="w-8 shrink-0 flex items-center justify-center">
-        {isFieldPosition && !hasDh && canCheckDh && !showDhPicker && (
-          <button
-            onClick={() => setShowDhPicker(true)}
-            className="text-[11px] text-gray-400 group-hover/row:text-navy-600 group-hover/row:bg-navy-50 px-1.5 py-0.5 rounded transition-all opacity-0 group-hover/row:opacity-100"
-            title="Designated Hitter zuweisen"
-          >
-            +DH
-          </button>
-        )}
-      </div>
+      {/* DH area — fixed-width spacer only while no DH is set (badge reclaims the space) */}
+      {!hasDh && (
+        <div className="w-8 shrink-0 flex items-center justify-center">
+          {isFieldPosition && canCheckDh && !showDhPicker && (
+            <button
+              onClick={() => setShowDhPicker(true)}
+              className="text-[11px] font-bold text-navy-500 hover:text-navy-700 hover:bg-navy-50 px-1.5 py-0.5 rounded transition-colors"
+              title="Designated Hitter zuweisen"
+            >
+              +DH
+            </button>
+          )}
+        </div>
+      )}
 
       {/* DH picker dropdown */}
       {isFieldPosition && !hasDh && showDhPicker && (
@@ -152,11 +154,11 @@ export function LineupRow({
       {hasDh && (
         <button
           onClick={() => onSetDhBatter(entry.player.id, null)}
-          className="flex items-center gap-1 text-xs font-medium text-navy-700 bg-navy-50 pl-2 pr-1 py-0.5 rounded-lg hover:bg-navy-100 transition-colors"
-          title="DH entfernen"
+          className="flex items-center gap-1 shrink-0 max-w-[7rem] text-xs font-medium text-navy-700 bg-navy-50 pl-2 pr-1 py-0.5 rounded-lg hover:bg-navy-100 transition-colors"
+          title={`DH: ${entry.dhBatterName} — entfernen`}
         >
-          DH: {entry.dhBatterName}
-          <XMark size={12} className="opacity-50" />
+          <span className="truncate">DH: {entry.dhBatterName}</span>
+          <XMark size={12} className="opacity-50 shrink-0" />
         </button>
       )}
 
