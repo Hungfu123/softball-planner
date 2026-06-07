@@ -415,31 +415,41 @@ Die Live-Tabelle darf **nur** erscheinen, wenn die offene Season die College Ser
 (externe IDs gelten nur für diese eine Liga). Gate per Season-Name (case-insensitive).
 
 **Files:**
-- Modify: Eltern-Komponente, die `<Standings .../>` rendert.
+- Modify: `frontend/src/components/dashboard/Dashboard.tsx`
 
-- [ ] **Step 1: Einbindeort + Season-Objekt finden**
+**Kontext:** `Dashboard.tsx` ist das SPIELE-Tab. Es hat `seasons` (aus `useSeasons`) +
+`selectedSeasonId` (State). Die eigene `<Standings>` liegt in einem tile-getriggerten
+`DetailSheet` (~Zeile 392). Das Dashboard nutzt Bento-Tiles + Detail-Sheets, **keine** inline-
+Sektionen → die sichtbare Live-Sektion ist bewusst ein neues Element (User-Wunsch: sichtbar, nicht
+hinter Tile). `CollegeSeriesStandings` ist selbst schon eine Karten-Sektion.
 
-Run: `cd frontend && grep -rn "<Standings" src`
-→ liefert die Eltern-Ansicht. Prüfe dort, ob das `Season`-Objekt (mit `.name`) verfügbar ist
-(oder nur `seasonId`). Falls nur `seasonId`: den Season-Namen aus dem vorhandenen
-Seasons-State/`useSeasons` ziehen (die Ansicht kennt die aktive Season bereits).
+- [ ] **Step 1: Aktive Season + Gate ableiten**
 
-- [ ] **Step 2: Gate-Helper + bedingtes Rendern**
-
-In der Eltern-Ansicht den Namen der aktiven Season prüfen und nur dann rendern:
+In `Dashboard.tsx`, im Komponenten-Body (nach `selectedSeasonId`), ergänzen:
 
 ```tsx
-import { CollegeSeriesStandings } from '@/components/dashboard/CollegeSeriesStandings'
+const selectedSeason = seasons.find(s => s.id === selectedSeasonId)
+const isCollegeSeries = (selectedSeason?.name ?? '').toLowerCase().includes('college series')
+```
 
-// season = aktive Season (aus Props/State); Name case-insensitive matchen:
-const isCollegeSeries = (season?.name ?? '').toLowerCase().includes('college series')
+- [ ] **Step 2: Komponente importieren + als Sektion rendern**
 
-// ... im JSX, an gewünschter Position:
+Import oben ergänzen:
+
+```tsx
+import { CollegeSeriesStandings } from './CollegeSeriesStandings'
+```
+
+Im Haupt-`return` (innerhalb des `<div className="space-y-3 sm:space-y-4">`, an gewünschter
+Position — z.B. nach `<SeasonTileGrid .../>` / vor den Detail-Sheets) gated rendern:
+
+```tsx
 {isCollegeSeries && <CollegeSeriesStandings />}
 ```
 
-> Die Komponente braucht keine Props (holt Daten selbst über den Hook). Genaue Platzierung
-> (eigener Tab vs. Sektion) in der `frontend-design`-Phase entscheiden.
+> Die Komponente braucht keine Props (Daten via Hook). Exakte Position + visuelle Einbindung ins
+> Bento-Layout in der `frontend-design`-Phase festlegen (z.B. volle Breite unter dem Tile-Grid).
+> Wichtig: NUR dieser eine gated Render — nicht in anderen Seasons sichtbar.
 
 - [ ] **Step 3: Commit**
 
