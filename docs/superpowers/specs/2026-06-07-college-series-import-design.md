@@ -144,17 +144,16 @@ Admin → POST /api/league/import/college-series
 
 ---
 
-## 7. Offene Fragen (für Spec-Review)
+## 7. Geklärte Fragen
 
-1. **Idempotenz `LeagueResult`:** Sollen beim Re-Import *alle* `LeagueResult` der Season ersetzt
-   werden, oder nur die per Import angelegten? → Empfehlung: Flag `imported boolean` auf
-   `LeagueResult`, beim Re-Import nur `imported=true` ersetzen, manuell angelegte bleiben.
-2. **Schedule-Anzeige:** Wird der volle Liga-**Spielplan** (inkl. zukünftiger/tba-Spiele und
-   Dead-Sox-Spiele) als eigene Ansicht gebraucht, oder reicht die berechnete Standings-Tabelle?
-   Spielplan-Anzeige würde eine read-only Quelle für *alle* Spiele brauchen (nicht nur
-   Fremd-Final-Ergebnisse). → aktuell **out of scope**, bei Bedarf eigene Iteration.
-3. **Logos/Farben:** Team-Zeilen mit Logo/Farbe? → optionale Ausbaustufe, erfordert
-   `LeagueTeam`-Schema-Erweiterung.
+1. **Idempotenz `LeagueResult`:** Neue Spalte `imported boolean` auf `LeagueResult`. Beim
+   Re-Import nur `imported=true` löschen+neu schreiben; manuell angelegte Results bleiben
+   unberührt. (Flyway `V{n}`, Default `false`.)
+2. **Schedule-Anzeige:** **Out of scope.** Die berechnete Standings-Tabelle reicht. Kein voller
+   Liga-Spielplan, keine zukünftigen/tba-Spiele. Vorteil: alle 16 College-Series-Teams stehen
+   direkt in der App-Tabelle.
+3. **Logos/Farben:** **Nicht nötig.** Keine `LeagueTeam`-Schema-Erweiterung für logo/color/tlc.
+   Nur `external_team_id` kommt dazu (für stabiles Matching, siehe 4.4).
 
 ---
 
