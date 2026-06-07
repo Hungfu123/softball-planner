@@ -1,4 +1,23 @@
-# College-Series Standings-Anzeige Implementation Plan
+# College-Series Live-Anzeige Implementation Plan
+
+> **STATUS: UMGESETZT** (`feat/college-series-live-panel`, Commit `7bce17e`, live getestet).
+> Während der Umsetzung kamen per User-Feedback dazu: **Spielplan** (nicht nur Tabelle),
+> **Segmented Tabs / 2-Spalten-Desktop**, **Team-Logos statt Farbpunkte**, **Heim/Ausw.-Badges
+> statt `@`**, **Sieg/Niederlage**, **Filter + Cap**, **Refresh-Knopf**, **all-cream Design**.
+> Maßgeblicher Endstand: siehe Spec (finaler Stand) + die unten gelisteten As-Built-Dateien.
+> Die Task-Liste darunter ist die ursprüngliche (Standings-only) und dient als Historie.
+>
+> **As-Built-Dateien:**
+> - `frontend/src/api/collegeSeries.ts` — Fetch+Parse Standings **und** Schedule, `teamColorHex`,
+>   `teamLogoUrl`, `isCollegeSeriesSeason`
+> - `frontend/src/hooks/useCollegeSeries.ts` — Standings+Schedule parallel
+> - `frontend/src/components/dashboard/CollegeSeriesPanel.tsx` — Tabs/2-Spalten, Tabelle, Spielplan,
+>   Team-Avatare (Logo+Monogramm), States, Refresh
+> - `frontend/src/components/dashboard/Dashboard.tsx` — gegated eingebunden
+> - `frontend/src/icons/index.tsx` — `RefreshIcon`
+> - Verifiziert: `npm run build` grün, Lint 0 Errors, live-getestet.
+
+---
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
