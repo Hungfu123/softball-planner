@@ -78,18 +78,23 @@ keine Teil-Schreibvorgänge bei Parse-Fehler (Transaktion).
 ### 4.2 Fremd-Spiele (Final) → `LeagueResult`
 - Aus `schedule` alle `games` mit `status == "Final"`, bei denen **keine** Seite Dead Sox ist.
 - `gameDate` (unix-Sekunden) → `LocalDate` (Zeitzone Europe/Berlin).
-- `homeTeamID`/`awayTeamID` → bereits gemappte `LeagueTeam` (Lookup über External-ID).
+- `homeTeamName`/`awayTeamName` → `LeagueTeam` per `findOrCreateByName` (siehe 4.4).
 - `homeScore`/`awayScore` → `homeScore`/`awayScore`.
-- Idempotenz: bestehende importierte `LeagueResult` der Season vor dem Schreiben löschen und neu
-  setzen (nur die importierten — manuell angelegte nicht anrühren; siehe offene Frage 7.1).
+- Idempotenz: Upsert per natürlichem Key `(season, homeTeam, awayTeam, date)` — siehe Punkt 1
+  unter „Geklärte Fragen". Kein Löschen, keine Schema-Änderung.
 
 ### 4.3 Dead-Sox-Spiele
 - Übersprungen. (Optional später: Schedule-Anzeige; siehe offene Frage 7.2.)
 
-### 4.4 External-ID-Zuordnung
-`LeagueTeam` hat heute keine External-ID-Spalte. Für stabiles, wiederholbares Matching:
-neue nullable Spalte `external_team_id` (varchar) auf `league_team` (Flyway `V{n}`).
-Lookup beim Import läuft über diese Spalte statt über den Namen.
+### 4.4 Team-Zuordnung (per Name, keine Schema-Änderung)
+Matching läuft über den **Team-Namen** — die Schedule-Response liefert `homeTeamName`/
+`awayTeamName` direkt, Teams werden per `LeagueTeamService.findOrCreateByName(seasonId, name)`
+upgesertet (vorhandene wiederverwenden, fehlende als `ownTeam=false` anlegen).
+
+**Dead Sox** wird per externer Team-ID `406716409` erkannt und beim Team-Import
+**übersprungen** (Namens-Mismatch: extern "Düsseldorf Dead Sox" vs. App-ownTeam "Dead Sox").
+Da auch alle Dead-Sox-Spiele übersprungen werden, referenziert kein importiertes `LeagueResult`
+das eigene Team. → **Keine `external_team_id`-Spalte, keine Flyway-Migration nötig.**
 
 ---
 
@@ -108,7 +113,7 @@ adapter/dto/          CollegeSeriesImportResponse      {teamsCreated, resultsImp
 - **`CollegeSeriesImportService`** (application) orchestriert: Client aufrufen → mappen →
   `LeagueTeamRepository` + `LeagueResultRepository` schreiben. Eine Transaktion; bei Parse-/
   Netzwerkfehler komplett zurückrollen.
-- **Mapping** (unix→LocalDate, External-ID-Lookup, Dead-Sox-Filter) in eigener Mapper-Klasse,
+- **Mapping** (unix→LocalDate, Name-Matching, Dead-Sox-Filter) in eigener Mapper-Klasse,
   damit der Service schlank bleibt (SRP — der User flaggt God-Services).
 - IDs/Host als Konfiguration (`application.yml`: `college-series.league-id`,
   `.season-id`, `.base-url`), nicht hartkodiert im Service.
@@ -146,20 +151,21 @@ Admin → POST /api/league/import/college-series
 
 ## 7. Geklärte Fragen
 
-1. **Idempotenz `LeagueResult`:** Neue Spalte `imported boolean` auf `LeagueResult`. Beim
-   Re-Import nur `imported=true` löschen+neu schreiben; manuell angelegte Results bleiben
-   unberührt. (Flyway `V{n}`, Default `false`.)
+1. **Idempotenz `LeagueResult`:** Upsert per natürlichem Key `(season, homeTeam, awayTeam, date)`.
+   Beim Re-Import bestehende Season-Results in den Speicher laden; Treffer → Scores
+   aktualisieren, kein Treffer → neu anlegen. Kein Löschen, keine `imported`-Spalte, manuell
+   angelegte Results bleiben unberührt. (Kein Flyway nötig — rein additiv im Code.)
 2. **Schedule-Anzeige:** **Out of scope.** Die berechnete Standings-Tabelle reicht. Kein voller
    Liga-Spielplan, keine zukünftigen/tba-Spiele. Vorteil: alle 16 College-Series-Teams stehen
    direkt in der App-Tabelle.
 3. **Logos/Farben:** **Nicht nötig.** Keine `LeagueTeam`-Schema-Erweiterung für logo/color/tlc.
-   Nur `external_team_id` kommt dazu (für stabiles Matching, siehe 4.4).
+   Matching läuft über den Namen (siehe 4.4), daher gar keine Schema-Änderung.
 
 ---
 
 ## 8. Test-Strategie
 
-- **Unit:** Mapper (unix→LocalDate inkl. Zeitzone, Dead-Sox-Filter, External-ID-Lookup,
+- **Unit:** Mapper (unix→LocalDate inkl. Zeitzone, Dead-Sox-Filter, Name-Matching,
   Null-tolerante Felder) mit echten API-Sample-JSONs als Fixtures.
 - **Integration (Testcontainers):** `CollegeSeriesImportService` mit gemocktem `CollegeSeriesClient`
   (Fixture-JSON) → prüft, dass Teams upgesertet, nur Fremd-Final als `LeagueResult` geschrieben,
