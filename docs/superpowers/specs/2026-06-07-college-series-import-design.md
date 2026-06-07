@@ -1,174 +1,145 @@
-# College-Series Import — Design
+# College-Series Standings-Anzeige — Design
 
 **Datum:** 2026-06-07
 **Status:** Entwurf (Review ausstehend)
-**Ziel:** Liga-Daten der "College Series" (Standings, Spielplan, Teams) per Knopfdruck aus der
-externen college-series.de-API in den Softball-Planner ziehen und im eigenen Design rendern.
+**Ziel:** Die Liga-Tabelle der "College Series" live aus der externen
+`strikeout-scoring.com`-API holen und im eigenen Frontend-Design anzeigen — **reine Anzeige,
+kein Speichern, kein Backend**.
+
+> **Hinweis:** Eine frühere Version dieses Specs beschrieb einen Backend-Import mit Persistenz
+> (LeagueTeam/LeagueResult). Das wurde verworfen — der User will nur **anzeigen**, nicht
+> speichern, und den Fetch **direkt im Frontend**. Dieses Dokument ist die gültige Variante.
 
 ---
 
 ## 1. Problem & Ziel
 
-Die Dead Sox spielen in der College Series. Liga-Tabelle, Spielplan und Teamliste werden auf
-https://www.college-series.de gepflegt (Backend: `strikeout-scoring.com`). Heute müssen Fremd-
-Ergebnisse für die App-Tabelle manuell als `LeagueResult` eingetragen werden.
+Die Dead Sox spielen in der College Series. Die App hat dafür bereits eine Season "College
+Series" angelegt. Die offizielle Tabelle steht auf college-series.de (Backend:
+`strikeout-scoring.com`) — fertig berechnet.
 
-Ziel: Ein Admin drückt **einen Knopf**, das Backend holt die Liga-Daten aus der externen API,
-mappt sie auf das bestehende Domain-Modell und persistiert sie. Anzeige erfolgt im eigenen
-Design (volle Team-Namen, kein TLC-Kürzel).
+Ziel: In der App diese Tabelle **live** sehen, gerendert im eigenen Design (Navy-Theme, volle
+Team-Namen, Dead-Sox-Zeile hervorgehoben). Keine Persistenz, keine Vermischung mit der eigenen
+`Game`-basierten Standings-Berechnung.
 
-**Nicht-Ziel:** Kein Auto-Polling/Cron (bewusst nur manueller Knopf-Import). Keine
-Multi-Tenancy. Kein Schreiben zurück an college-series.
+**Nicht-Ziel:** Kein Speichern in der DB. Kein Backend-Endpoint. Keine Migration. Keine
+Integration mit eigenen `Game`/`LeagueResult`-Daten. Kein Schreiben zurück.
 
 ---
 
-## 2. Externe API (Referenz)
+## 2. Externe API
 
 Host: `https://api.strikeout-scoring.com/index.php`
-Offen: kein Auth, `Access-Control-Allow-Origin: *`, `Content-Type: application/json`.
+Offen: kein Auth, `Access-Control-Allow-Origin: *` → **Browser-Fetch direkt möglich**.
 IDs der College Series: League `243398103`, Season `455890221`.
 
-| Daten | Endpoint | Felder (Auszug) |
-|------|----------|-----------------|
-| Standings | `/league/standings/{league}/{season}` | teamID, name, tlc, g/w/l, wperc, rs/ra/rd, sos, logo |
-| Schedule | `/schedule/league/{league}/{season}` | stages[].games[]: ID, homeScore, awayScore, status (`Final`/sonst), `gameDate` (unix-Sekunden), home/awayTeamID, names, tlc, logo, color, hostName |
-| Teams | `/league/teams/{league}` | ID, name, nickname, tlc, color, logo |
-| Logos | `/uploads/team-{teamID}-{ts}.png` | PNG |
-| Tournaments | `/tournament/season-tournaments/{season}` | optional, nicht im Scope |
+**Endpoint (genutzt):** `GET /league/standings/243398103/455890221`
 
-> **Achtung Param-Reihenfolge:** Im URL-Pfad steht immer zuerst `243398103`, dann `455890221`.
-> Die Schedule-Response benennt `seasonID=455890221`, `leagueID=243398103` — die Reihenfolge
-> im Pfad bleibt aber konstant. Im Code als Konstanten `LEAGUE_ID` / `SEASON_ID` ablegen, nicht
-> raten.
+**Antwort-Struktur:**
+```
+{ standings: [ { name: "Vorrunde", type: "RS", rsStandings: [ { name: "League", members: [ ROW... ] } ] } ] }
+```
+Pfad zu den Team-Zeilen: `standings[].rsStandings[].members[]`. (Mehrere Stages/Gruppen möglich
+— defensiv über alle iterieren bzw. erste Stage nehmen.)
 
-**Dead Sox in der API:** `teamID=406716409`, name `"Düsseldorf Dead Sox"`, tlc `DUS`, color `navy`.
-→ "Eigenes Spiel" = `homeTeamID == 406716409 || awayTeamID == 406716409`.
+**Member-Felder (ALLE als String!):** `teamID`, `name` (voller Name), `nickname`, `tlc`, `color`,
+`logo`, `g`, `w`, `l`, `wperc`, `rs`, `ra`, `rd`, `sos`. → beim Parsen `Number(...)`.
 
-**Risiko:** Inoffizielle API, kein Vertrag, kann sich ändern. Mapper defensiv (Null-Felder
-tolerieren), Import-Fehler sauber als 502/400 mit Klartext-Meldung an den Admin zurückgeben,
-keine Teil-Schreibvorgänge bei Parse-Fehler (Transaktion).
+**Dead Sox:** `teamID == "406716409"` → Zeile in der Tabelle hervorheben.
+
+**Anonym:** plain `fetch()` ohne Custom-Header (Browser sendet Standard-UA). Bewusst kein
+Kontakt-User-Agent.
+
+**Risiko:** Inoffizielle API, kein Vertrag. CORS `*` kann wegfallen → dann bricht die Anzeige
+(Frontend-direkt hat keinen Fallback-Server). Lade-/Fehler-/Leer-Zustände sind daher Pflicht.
 
 ---
 
 ## 3. Entscheidungen (im Brainstorming geklärt)
 
-1. **Scope:** Standings + Schedule + Teams. (Anmeldungen/Tournaments raus.)
-2. **Trigger:** Knopf-Import. Admin klickt → Backend holt + persistiert einmalig.
-3. **Fetch im Backend**, nicht im Frontend (kein fremder Host im Browser, Daten in eigener DB).
-4. **Eigene Spiele:** Import schreibt **nur Fremd-gegen-Fremd**-Spiele als `LeagueResult`.
-   Dead-Sox-Spiele werden **nicht** importiert — die plant/scored das Team selbst als
-   `Game`/`GameDay`. Damit bleibt die `StandingsCalculator`-Regel ("ownTeam nie in
-   `LeagueResult`") intakt.
-5. **Standings** werden **nicht** von der externen `wperc` übernommen, sondern wie bisher von
-   `StandingsCalculator` aus eigenen `Game`-Rows + importierten `LeagueResult`-Rows gerechnet.
-6. **Anzeige:** volle Team-Namen, keine TLC-Kürzel.
+1. **Reine Anzeige**, kein Speichern, kein Backend.
+2. **Fetch direkt im Frontend** (deren CORS `*` erlaubt's).
+3. **Umfang: nur die Standings-Tabelle.** Kein Spielplan, keine Team-Stammdaten-Anlage.
+4. **Volle Team-Namen** (Feld `name`), keine TLC-Kürzel.
+5. **Dead-Sox-Zeile hervorgehoben.**
+6. **Eigenes Design** via `frontend-design`-Skill (Navy-Theme, custom Icons, deutsch).
+7. **Anonymer Fetch.**
+8. Live bei jedem Aufruf; **keine** eigene Standings-Berechnung (deren Werte direkt zeigen).
 
 ---
 
-## 4. Daten-Mapping
-
-### 4.1 Teams → `LeagueTeam`
-- Alle 16 Teams der `/league/teams`-Antwort.
-- Match per **Name** auf bestehende `LeagueTeam` der aktuellen Season (idempotent: vorhandene
-  nicht duplizieren, fehlende anlegen).
-- `"Düsseldorf Dead Sox"` → mappt auf den bestehenden **ownTeam**. **Nicht** als zweites Team
-  anlegen. (ownTeam-Name ist aktuell hardcoded "Dead Sox" in `SeasonService` — Matching daher
-  über eine explizite Alias-Zuordnung `406716409 → ownTeam`, nicht über String-Gleichheit.)
-
-### 4.2 Fremd-Spiele (Final) → `LeagueResult`
-- Aus `schedule` alle `games` mit `status == "Final"`, bei denen **keine** Seite Dead Sox ist.
-- `gameDate` (unix-Sekunden) → `LocalDate` (Zeitzone Europe/Berlin).
-- `homeTeamName`/`awayTeamName` → `LeagueTeam` per `findOrCreateByName` (siehe 4.4).
-- `homeScore`/`awayScore` → `homeScore`/`awayScore`.
-- Idempotenz: Upsert per natürlichem Key `(season, homeTeam, awayTeam, date)` — siehe Punkt 1
-  unter „Geklärte Fragen". Kein Löschen, keine Schema-Änderung.
-
-### 4.3 Dead-Sox-Spiele
-- Übersprungen. (Optional später: Schedule-Anzeige; siehe offene Frage 7.2.)
-
-### 4.4 Team-Zuordnung (per Name, keine Schema-Änderung)
-Matching läuft über den **Team-Namen** — die Schedule-Response liefert `homeTeamName`/
-`awayTeamName` direkt, Teams werden per `LeagueTeamService.findOrCreateByName(seasonId, name)`
-upgesertet (vorhandene wiederverwenden, fehlende als `ownTeam=false` anlegen).
-
-**Dead Sox** wird per externer Team-ID `406716409` erkannt und beim Team-Import
-**übersprungen** (Namens-Mismatch: extern "Düsseldorf Dead Sox" vs. App-ownTeam "Dead Sox").
-Da auch alle Dead-Sox-Spiele übersprungen werden, referenziert kein importiertes `LeagueResult`
-das eigene Team. → **Keine `external_team_id`-Spalte, keine Flyway-Migration nötig.**
-
----
-
-## 5. Architektur (Onion-konform)
+## 4. Architektur (Frontend-only)
 
 ```
-adapter/in/web/       CollegeSeriesImportController   POST /api/league/import/college-series
-application/          CollegeSeriesImportService       Orchestrierung + Transaktion + Mapping
-domain/port/out/      CollegeSeriesClient (Interface)  holt rohe Liga-Daten
-adapter/out/external/ StrikeoutScoringClient           implementiert Port (RestClient/HttpClient)
-adapter/dto/          CollegeSeriesImportResponse      {teamsCreated, resultsImported, skipped, ...}
+frontend/src/
+├── api/collegeSeries.ts          # fetchCollegeSeriesStandings(): direkter API-Call + Parsing
+├── hooks/useCollegeSeriesStandings.ts   # loading / error / data State
+└── components/.../CollegeSeriesStandings.tsx   # Tabellen-UI (frontend-design)
 ```
 
-- **Domain bleibt clean:** `CollegeSeriesClient` ist ein Outbound-Port (Interface) in
-  `domain/port/out/`. Die HTTP-Implementierung liegt im Adapter, gibt rohe DTOs/Records zurück.
-- **`CollegeSeriesImportService`** (application) orchestriert: Client aufrufen → mappen →
-  `LeagueTeamRepository` + `LeagueResultRepository` schreiben. Eine Transaktion; bei Parse-/
-  Netzwerkfehler komplett zurückrollen.
-- **Mapping** (unix→LocalDate, Name-Matching, Dead-Sox-Filter) in eigener Mapper-Klasse,
-  damit der Service schlank bleibt (SRP — der User flaggt God-Services).
-- IDs/Host als Konfiguration (`application.yml`: `college-series.league-id`,
-  `.season-id`, `.base-url`), nicht hartkodiert im Service.
+- **`api/collegeSeries.ts`** — kapselt URL + Konstanten (`LEAGUE_ID`, `SEASON_ID`, `BASE_URL`),
+  ruft die externe API direkt (NICHT über den `/api`-Client-Wrapper, das ist das eigene Backend),
+  flacht `standings[].rsStandings[].members[]` zu einer typed Liste, parst Strings zu Zahlen,
+  sortiert nach winPct↓, dann runDiff↓ (wie deren Tabelle).
+- **`useCollegeSeriesStandings`** — Hook mit `{ rows, loading, error, reload }`. Fängt
+  Netzwerk-/Parse-Fehler → `error`-State (kein Crash).
+- **`CollegeSeriesStandings.tsx`** — präsentationsorientiert: Tabelle mit Platz, Name, G, W, L,
+  Pct, RS, RA, RD. Dead-Sox-Zeile hervorgehoben. Lade-Spinner, Fehler-Zustand mit Retry,
+  Leer-Zustand (CrossBones-Icon-Konvention).
 
-### Datenfluss (Import)
-```
-Admin → POST /api/league/import/college-series
-  → CollegeSeriesImportService.import()
-    → CollegeSeriesClient.fetchTeams()      → /league/teams/{league}
-    → CollegeSeriesClient.fetchSchedule()   → /schedule/league/{league}/{season}
-    → mapTeams()    → upsert LeagueTeam (skip ownTeam-Alias)
-    → mapResults()  → filter Final & nicht-DeadSox → replace LeagueResult
-  → CollegeSeriesImportResponse (Zähler) → Toast im Frontend
+**Datentyp:**
+```ts
+interface CollegeSeriesRow {
+  teamId: string
+  name: string         // voller Name
+  games: number
+  wins: number
+  losses: number
+  winPct: number
+  runsScored: number
+  runsAgainst: number
+  runDiff: number
+  isOwnTeam: boolean   // teamId === '406716409'
+}
 ```
 
 ---
 
-## 6. Frontend (eigenes Design)
+## 5. Einbindung
 
-> Wird in der Implementierung mit der **frontend-design**-Skill umgesetzt. Hier nur die
-> Anforderungen, kein finaler Markup.
-
-- **Import-Knopf:** im Admin-/Standings-Kontext. Dark-Backdrop-`ConfirmModal` vor dem Import
-  ("Liga-Daten von college-series importieren? Überschreibt importierte Ergebnisse."), Toast mit
-  Ergebnis-Zählern danach. Loading-State während Fetch.
-- **Standings:** bestehende `Standings.tsx` rendert die berechnete Tabelle weiter — volle
-  Team-Namen statt TLC.
-- **Design-System:** Navy-Theme, Dead-Sox-Optik, custom SVG-Icons (keine Icon-Lib), Modals statt
-  `confirm()`, Hover-Reveal. Deutsch durchgehend.
-- **Logos/Farben (optional):** college-series liefert `logo`/`color` pro Team. Nice-to-have für
-  hübschere Team-Zeilen. Erfordert zusätzliche `LeagueTeam`-Spalten → bewusst als optionale
-  Ausbaustufe markiert, nicht im Kern-Scope (siehe offene Frage 7.3).
+- Anzeige innerhalb der Season-Ansicht der App (die Season **ist** die College Series).
+- Klar gelabelt als Live-Daten, z.B. Sektion/Tab "College Series — Tabelle (live)".
+- Getrennt von einer evtl. vorhandenen eigenen Standings-Tabelle (zwei Welten, bewusst).
+- Genaue Platzierung (eigener Tab vs. Sektion in bestehender Ansicht) → in der
+  `frontend-design`-Phase festlegen.
 
 ---
 
-## 7. Geklärte Fragen
+## 6. Zustände (Pflicht, da Live-Abhängigkeit)
 
-1. **Idempotenz `LeagueResult`:** Upsert per natürlichem Key `(season, homeTeam, awayTeam, date)`.
-   Beim Re-Import bestehende Season-Results in den Speicher laden; Treffer → Scores
-   aktualisieren, kein Treffer → neu anlegen. Kein Löschen, keine `imported`-Spalte, manuell
-   angelegte Results bleiben unberührt. (Kein Flyway nötig — rein additiv im Code.)
-2. **Schedule-Anzeige:** **Out of scope.** Die berechnete Standings-Tabelle reicht. Kein voller
-   Liga-Spielplan, keine zukünftigen/tba-Spiele. Vorteil: alle 16 College-Series-Teams stehen
-   direkt in der App-Tabelle.
-3. **Logos/Farben:** **Nicht nötig.** Keine `LeagueTeam`-Schema-Erweiterung für logo/color/tlc.
-   Matching läuft über den Namen (siehe 4.4), daher gar keine Schema-Änderung.
+- **Loading:** Spinner/Skeleton während Fetch.
+- **Error:** API nicht erreichbar / CORS weg / Parse-Fehler → freundliche deutsche Meldung +
+  "Erneut laden"-Button. Kein White-Screen.
+- **Empty:** API liefert leere `members` → Hinweis "Noch keine Tabellendaten".
+- **Success:** Tabelle, Dead-Sox-Zeile hervorgehoben.
+
+---
+
+## 7. PWA-Hinweis
+
+Service Worker cached same-origin `/api` (NetworkFirst). Der externe Cross-Origin-Call
+(`api.strikeout-scoring.com`) wird vom Workbox-Runtime-Caching standardmäßig nicht erfasst →
+läuft durch. Falls der SW doch dazwischenfunkt: Fetch mit `cache: 'no-store'`. Bei Offline
+zeigt die Anzeige den Error-Zustand (erwartbar, da Live-Feature).
 
 ---
 
 ## 8. Test-Strategie
 
-- **Unit:** Mapper (unix→LocalDate inkl. Zeitzone, Dead-Sox-Filter, Name-Matching,
-  Null-tolerante Felder) mit echten API-Sample-JSONs als Fixtures.
-- **Integration (Testcontainers):** `CollegeSeriesImportService` mit gemocktem `CollegeSeriesClient`
-  (Fixture-JSON) → prüft, dass Teams upgesertet, nur Fremd-Final als `LeagueResult` geschrieben,
-  Dead-Sox-Spiele übersprungen, ownTeam nicht dupliziert, Re-Import idempotent.
-- **Kein** Live-Call gegen die externe API im Test (flaky, unhöflich).
-- Frontend `npm run build` + Backend `./mvnw test -s .mvn/local-settings.xml` vor Commit.
+- **Parsing-Unit-Test:** `fetchCollegeSeriesStandings`-Parsing mit echtem API-Sample-JSON als
+  Fixture (Strings→Zahlen, Flatten der verschachtelten Struktur, Sortierung, `isOwnTeam`-Flag).
+  Netzwerk gemockt (`vi.fn()`/`fetch`-Mock), kein Live-Call im Test.
+- **Component-Smoke (optional):** Render mit Mock-Daten → Dead-Sox-Hervorhebung sichtbar,
+  Error-/Empty-Zustand rendern.
+- `npm run build` + `npm run lint` müssen grün sein.
+- Kein Live-Call gegen die externe API im Test (flaky).
