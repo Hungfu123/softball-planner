@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCollegeSeries } from '@/hooks/useCollegeSeries'
 import type { CollegeSeriesGame, CollegeSeriesRow } from '@/api/collegeSeries'
 import { teamColorHex, teamLogoUrl } from '@/api/collegeSeries'
-import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon, HomeStadiumIcon, AwayIcon } from '@/icons'
+import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon, HomeStadiumIcon } from '@/icons'
 
 type Tab = 'tabelle' | 'spielplan'
 type ScheduleFilter = 'alle' | 'deadsox'
@@ -41,6 +41,7 @@ export function CollegeSeriesPanel() {
   const { standings, schedule, loading, error, reload } = useCollegeSeries()
   const [tab, setTab] = useState<Tab>('tabelle')
   const [filter, setFilter] = useState<ScheduleFilter>('deadsox')
+  const stage = schedule.find((g) => g.stage)?.stage ?? ''
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cream-300 bg-cream-50 shadow-[0_4px_20px_-4px_rgba(10,15,92,0.18),0_2px_6px_-2px_rgba(10,15,92,0.12)]">
@@ -49,6 +50,11 @@ export function CollegeSeriesPanel() {
         <h2 className="flex items-center gap-2 text-base font-extrabold tracking-tight text-navy-900">
           <TrophyIcon size={20} className="text-navy-700" />
           College Series
+          {stage && (
+            <span className="rounded-full bg-cream-200 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide text-navy-700 shadow-[0_1px_2px_rgba(10,15,92,0.06)]">
+              {stage}
+            </span>
+          )}
         </h2>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-softball-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-softball-red-600">
@@ -242,18 +248,11 @@ function Schedule({
         <Chip active={filter === 'alle'} onClick={() => onFilter('alle')}>Alle Teams</Chip>
       </div>
 
-      {filter === 'deadsox' && (
-        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 rounded-xl bg-cream-100 px-3 py-2 text-[10.5px] text-navy-700/65">
-          <span className="flex items-center gap-1.5"><HomeStadiumIcon size={13} className="text-green-700" /> Zuhause = Heimspiel</span>
-          <span className="flex items-center gap-1.5"><AwayIcon size={13} className="text-navy-700" /> Auswärts = bei Gegner</span>
-        </div>
-      )}
-
       {dates.length === 0 ? (
         <EmptyState text="Keine Spiele gefunden." />
       ) : (
         <>
-          {/* Datum-Pills — nur ein Spieltag zur Zeit */}
+          {/* Datum-Pills — nur ein Spieltag zur Zeit (kein langes Scrollen) */}
           <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {dates.map((d) => (
               <button
@@ -273,8 +272,12 @@ function Schedule({
             ))}
           </div>
 
-          <div className="space-y-2">
-            {current.map((g) => <GameRow key={g.id} game={g} />)}
+          <div className="space-y-2.5">
+            {current.map((g) => <ScoreboardCard key={g.id} game={g} />)}
+          </div>
+
+          <div className="mt-3 flex items-center gap-1.5 text-[10px] text-navy-700/55">
+            <HomeStadiumIcon size={12} className="text-navy-700/70" /> Haus-Symbol = Heimrecht (Gastgeber)
           </div>
         </>
       )}
@@ -282,53 +285,24 @@ function Schedule({
   )
 }
 
-function GameRow({ game }: { game: CollegeSeriesGame }) {
-  return game.involvesOwn ? <OwnGameRow game={game} /> : <NeutralGameRow game={game} />
-}
-
-// Dead-Sox-Spiel: Heim/Auswärts-Badge + Gegner prominent, Ergebnis aus eigener Sicht.
-function OwnGameRow({ game }: { game: CollegeSeriesGame }) {
-  const home = game.ownIsHome
-  const opponent = home ? game.away : game.home
-  const opponentColor = home ? game.awayColor : game.homeColor
-  const opponentLogo = home ? game.awayLogo : game.homeLogo
-  const opponentTlc = home ? game.awayTlc : game.homeTlc
-  const ownScore = home ? game.homeScore : game.awayScore
-  const oppScore = home ? game.awayScore : game.homeScore
-  const win = game.isFinal && (ownScore ?? 0) > (oppScore ?? 0)
+// Scoreboard-Karte: beide Teams untereinander, Heim-Team mit Haus-Symbol,
+// Dead Sox hervorgehoben, Score/Sieger oder OFFEN. Funktioniert für alle Spiele.
+function ScoreboardCard({ game }: { game: CollegeSeriesGame }) {
+  const final = game.isFinal
+  const homeWin = final && (game.homeScore ?? 0) > (game.awayScore ?? 0)
+  const awayWin = final && (game.awayScore ?? 0) > (game.homeScore ?? 0)
+  const homeDs = game.involvesOwn && game.ownIsHome
+  const awayDs = game.involvesOwn && !game.ownIsHome
 
   return (
-    <div
-      className={[
-        'flex items-center justify-between gap-3 rounded-xl bg-cream-100 px-3.5 py-3 shadow-[0_1px_3px_rgba(10,15,92,0.10)] transition-all',
-        home ? 'border-l-4 border-green-600' : 'border-l-4 border-navy-700',
-      ].join(' ')}
-    >
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-        <span
-          className={[
-            'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide',
-            home ? 'bg-green-100 text-green-700' : 'bg-navy-100 text-navy-700',
-          ].join(' ')}
-        >
-          {home ? <HomeStadiumIcon size={11} /> : <AwayIcon size={11} />}
-          {home ? 'Zuhause' : 'Auswärts'}
-        </span>
-        <span className="shrink-0 text-[11px] text-navy-700/50">gegen</span>
-        <TeamAvatar logo={opponentLogo} tlc={opponentTlc} color={opponentColor} name={opponent} />
-        <span className="truncate text-[14px] font-bold text-navy-900" title={opponent}>{opponent}</span>
+    <div className="flex items-center gap-3 rounded-xl border border-cream-300 bg-cream-50 px-3 py-2.5 shadow-[0_2px_8px_-3px_rgba(10,15,92,0.22)]">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <TeamLine name={game.home} logo={game.homeLogo} tlc={game.homeTlc} color={game.homeColor}
+          isHome ds={homeDs} score={game.homeScore} final={final} win={homeWin} />
+        <TeamLine name={game.away} logo={game.awayLogo} tlc={game.awayTlc} color={game.awayColor}
+          isHome={false} ds={awayDs} score={game.awayScore} final={final} win={awayWin} />
       </div>
-
-      {game.isFinal ? (
-        <div className="flex shrink-0 items-center gap-2">
-          <span className={`rounded-md px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${win ? 'bg-green-100 text-green-700' : 'bg-softball-red-100 text-softball-red-600'}`}>
-            {win ? 'Sieg' : 'Niederlage'}
-          </span>
-          <span className={`text-[16px] font-extrabold tabular-nums ${win ? 'text-green-600' : 'text-softball-red-600'}`}>
-            {ownScore}:{oppScore}
-          </span>
-        </div>
-      ) : (
+      {!final && (
         <span className="shrink-0 rounded-full bg-navy-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-navy-700">
           Offen
         </span>
@@ -337,31 +311,31 @@ function OwnGameRow({ game }: { game: CollegeSeriesGame }) {
   )
 }
 
-// Fremd-Spiel (nur in "Alle Teams"): Gast bei Gastgeber, Heimteam markiert — kein "@".
-function NeutralGameRow({ game }: { game: CollegeSeriesGame }) {
-  const homeWin = game.isFinal && (game.homeScore ?? 0) > (game.awayScore ?? 0)
-  const awayWin = game.isFinal && (game.awayScore ?? 0) > (game.homeScore ?? 0)
-
+function TeamLine({
+  name, logo, tlc, color, isHome, ds, score, final, win,
+}: {
+  name: string; logo: string | null; tlc: string; color: string
+  isHome: boolean; ds: boolean; score: number | null; final: boolean; win: boolean
+}) {
+  const display = ds ? 'Dead Sox' : name
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-cream-100 px-3.5 py-2.5 shadow-[0_1px_3px_rgba(10,15,92,0.10)] transition-all hover:shadow-[0_2px_8px_-2px_rgba(10,15,92,0.18)]">
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px]">
-        <TeamAvatar logo={game.awayLogo} tlc={game.awayTlc} color={game.awayColor} name={game.away} />
-        <span className={`truncate ${awayWin ? 'font-extrabold text-navy-900' : 'font-medium text-navy-900/80'}`} title={game.away}>{game.away}</span>
-        <span className="shrink-0 text-[10px] font-semibold lowercase text-navy-700/45">bei</span>
-        <TeamAvatar logo={game.homeLogo} tlc={game.homeTlc} color={game.homeColor} name={game.home} />
-        <span className={`truncate ${homeWin ? 'font-extrabold text-navy-900' : 'font-medium text-navy-900/80'}`} title={game.home}>{game.home}</span>
-        <span className="shrink-0 rounded bg-cream-200 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-navy-700/70">Heim</span>
-      </div>
-
-      {game.isFinal ? (
-        <div className="flex shrink-0 items-center gap-1.5 tabular-nums">
-          <span className={`text-[15px] font-bold ${awayWin ? 'text-navy-900' : 'text-navy-700/45'}`}>{game.awayScore}</span>
-          <span className="text-navy-700/40">:</span>
-          <span className={`text-[15px] font-bold ${homeWin ? 'text-navy-900' : 'text-navy-700/45'}`}>{game.homeScore}</span>
-        </div>
-      ) : (
-        <span className="shrink-0 rounded-full bg-navy-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-navy-700">
-          Offen
+    <div className={`flex items-center gap-2.5 rounded-lg px-1.5 py-1 ${ds ? 'bg-navy-50' : ''}`}>
+      <TeamAvatar logo={logo} tlc={tlc} color={color} name={name} />
+      <span
+        className={`flex-1 truncate text-[14px] ${
+          ds ? 'font-extrabold text-navy-900'
+            : final && !win ? 'font-medium text-navy-900/55'
+            : final && win ? 'font-extrabold text-navy-900'
+            : 'font-semibold text-navy-900'
+        }`}
+        title={name}
+      >
+        {display}
+      </span>
+      {isHome && <HomeStadiumIcon size={13} className="shrink-0 text-navy-700/55" />}
+      {final && (
+        <span className={`shrink-0 text-[16px] font-extrabold tabular-nums ${win ? 'text-green-600' : 'text-navy-900/45'}`}>
+          {score}
         </span>
       )}
     </div>
