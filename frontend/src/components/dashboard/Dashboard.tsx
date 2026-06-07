@@ -7,6 +7,8 @@ import { HeroNextGameDay } from './HeroNextGameDay'
 import { DashboardLoading } from './DashboardLoading'
 import { AwardBadges } from './AwardBadges'
 import { SeasonTileGrid } from './SeasonTileGrid'
+import { CollegeSeriesPanel } from './CollegeSeriesPanel'
+import { isCollegeSeriesSeason } from '@/api/collegeSeries'
 import { UpcomingList } from './UpcomingList'
 import { Standings } from './Standings'
 import { DetailSheet } from './DashboardSheets'
@@ -322,6 +324,10 @@ export function Dashboard() {
               onOpenResults={() => setOpenSheet('results')}
               onOpenWeather={() => setOpenSheet('weather')}
             />
+          )}
+
+          {isCollegeSeriesSeason(seasons.find(s => s.id === selectedSeasonId)?.name) && (
+            <CollegeSeriesPanel />
           )}
 
           {showNewGameDay && (
