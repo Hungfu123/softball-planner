@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCollegeSeries } from '@/hooks/useCollegeSeries'
 import type { CollegeSeriesGame, CollegeSeriesRow } from '@/api/collegeSeries'
 import { teamColorHex, teamLogoUrl } from '@/api/collegeSeries'
-import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon } from '@/icons'
+import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon, HomeStadiumIcon, AwayIcon } from '@/icons'
 
 type Tab = 'tabelle' | 'spielplan'
 type ScheduleFilter = 'alle' | 'deadsox'
@@ -223,16 +223,17 @@ function Td({
 
 // ---------- Schedule ----------
 
-const MATCHDAY_LIMIT = 6
-
 function Schedule({
   games, filter, onFilter,
 }: { games: CollegeSeriesGame[]; filter: ScheduleFilter; onFilter: (f: ScheduleFilter) => void }) {
-  const [showAll, setShowAll] = useState(false)
+  const [picked, setPicked] = useState<string | null>(null)
   const filtered = filter === 'deadsox' ? games.filter((g) => g.involvesOwn) : games
-  const allGroups = groupByMatchday(filtered)
-  const capped = filter === 'alle' && !showAll && allGroups.length > MATCHDAY_LIMIT
-  const groups = capped ? allGroups.slice(0, MATCHDAY_LIMIT) : allGroups
+  const groups = groupByMatchday(filtered)
+  const dates = groups.map(([label]) => label)
+  // Default: nächster Spieltag mit offenem Spiel, sonst erster.
+  const defaultDate = (groups.find(([, gs]) => gs.some((g) => !g.isFinal)) ?? groups[0])?.[0]
+  const selected = picked && dates.includes(picked) ? picked : defaultDate
+  const current = groups.find(([label]) => label === selected)?.[1] ?? []
 
   return (
     <div>
@@ -241,31 +242,41 @@ function Schedule({
         <Chip active={filter === 'alle'} onClick={() => onFilter('alle')}>Alle Teams</Chip>
       </div>
 
-      {groups.length === 0 ? (
-        <EmptyState text="Keine Spiele gefunden." />
-      ) : (
-        <div className="space-y-3.5">
-          {groups.map(([label, gs]) => (
-            <div key={label}>
-              <div className="mb-2.5 inline-block rounded-full bg-cream-200 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-navy-700 shadow-[0_1px_2px_rgba(10,15,92,0.06)]">
-                {label}
-              </div>
-              <div className="space-y-2">
-                {gs.map((g) => <GameRow key={g.id} game={g} />)}
-              </div>
-            </div>
-          ))}
+      {filter === 'deadsox' && (
+        <div className="mb-3 flex flex-wrap gap-x-4 gap-y-1 rounded-xl bg-cream-100 px-3 py-2 text-[10.5px] text-navy-700/65">
+          <span className="flex items-center gap-1.5"><HomeStadiumIcon size={13} className="text-green-700" /> Zuhause = Heimspiel</span>
+          <span className="flex items-center gap-1.5"><AwayIcon size={13} className="text-navy-700" /> Auswärts = bei Gegner</span>
         </div>
       )}
 
-      {capped && (
-        <button
-          type="button"
-          onClick={() => setShowAll(true)}
-          className="mt-3 w-full rounded-xl border border-dashed border-cream-300 bg-cream-50 py-2.5 text-xs font-bold text-navy-700 transition-colors hover:border-navy-600 hover:text-navy-900"
-        >
-          Alle Spieltage anzeigen ({allGroups.length - MATCHDAY_LIMIT} weitere)
-        </button>
+      {dates.length === 0 ? (
+        <EmptyState text="Keine Spiele gefunden." />
+      ) : (
+        <>
+          {/* Datum-Pills — nur ein Spieltag zur Zeit */}
+          <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {dates.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => setPicked(d)}
+                aria-pressed={d === selected}
+                className={[
+                  'flex-none rounded-full px-3.5 py-1.5 text-xs font-extrabold transition-all',
+                  d === selected
+                    ? 'bg-navy-800 text-white shadow-[0_2px_6px_-1px_rgba(10,15,92,0.4)]'
+                    : 'border border-cream-300 bg-cream-100 text-navy-700 hover:border-navy-600',
+                ].join(' ')}
+              >
+                {d}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            {current.map((g) => <GameRow key={g.id} game={g} />)}
+          </div>
+        </>
       )}
     </div>
   )
@@ -290,18 +301,20 @@ function OwnGameRow({ game }: { game: CollegeSeriesGame }) {
     <div
       className={[
         'flex items-center justify-between gap-3 rounded-xl bg-cream-100 px-3.5 py-3 shadow-[0_1px_3px_rgba(10,15,92,0.10)] transition-all',
-        home ? 'border-l-4 border-navy-700' : 'border-l-4 border-cream-300',
+        home ? 'border-l-4 border-green-600' : 'border-l-4 border-navy-700',
       ].join(' ')}
     >
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
         <span
           className={[
-            'shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide',
-            home ? 'bg-navy-800 text-white' : 'bg-cream-200 text-navy-700 ring-1 ring-cream-300',
+            'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide',
+            home ? 'bg-green-100 text-green-700' : 'bg-navy-100 text-navy-700',
           ].join(' ')}
         >
-          {home ? 'Heim' : 'Ausw.'}
+          {home ? <HomeStadiumIcon size={11} /> : <AwayIcon size={11} />}
+          {home ? 'Zuhause' : 'Auswärts'}
         </span>
+        <span className="shrink-0 text-[11px] text-navy-700/50">gegen</span>
         <TeamAvatar logo={opponentLogo} tlc={opponentTlc} color={opponentColor} name={opponent} />
         <span className="truncate text-[14px] font-bold text-navy-900" title={opponent}>{opponent}</span>
       </div>
