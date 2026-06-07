@@ -229,8 +229,8 @@ function Td({
 
 function Schedule({ games }: { games: CollegeSeriesGame[] }) {
   const [picked, setPicked] = useState<string | null>(null)
-  const filtered = games.filter((g) => g.involvesOwn)
-  const groups = groupByMatchday(filtered)
+  // Alle Liga-Spiele des Spieltags (nicht nur Dead Sox); Dead-Sox-Spiele bleiben hervorgehoben.
+  const groups = groupByMatchday(games)
   const dates = groups.map(([label]) => label)
   // Default: nächster Spieltag mit offenem Spiel, sonst erster.
   const defaultDate = (groups.find(([, gs]) => gs.some((g) => !g.isFinal)) ?? groups[0])?.[0]
