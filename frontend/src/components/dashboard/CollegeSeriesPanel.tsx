@@ -1,0 +1,423 @@
+import { useState } from 'react'
+import { useCollegeSeries } from '@/hooks/useCollegeSeries'
+import type { CollegeSeriesGame, CollegeSeriesRow } from '@/api/collegeSeries'
+import { teamColorHex, teamLogoUrl } from '@/api/collegeSeries'
+import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon } from '@/icons'
+
+type Tab = 'tabelle' | 'spielplan'
+type ScheduleFilter = 'alle' | 'deadsox'
+
+function fmtPct(p: number): string {
+  const s = p.toFixed(3)
+  return s.startsWith('0') ? s.slice(1) : s
+}
+
+// Team-Logo als runder Avatar; fehlt das Logo → Monogramm (TLC) im Team-Farbton.
+function TeamAvatar({
+  logo, tlc, color, name, ring = false,
+}: { logo: string | null; tlc: string; color: string; name: string; ring?: boolean }) {
+  const url = teamLogoUrl(logo)
+  const initials = (tlc || name.slice(0, 3)).toUpperCase()
+  const isNone = (color ?? 'none').toLowerCase() === 'none'
+  return (
+    <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-cream-50 ${ring ? 'ring-1 ring-white/40' : 'ring-1 ring-cream-300'}`}>
+      {url ? (
+        <img src={url} alt="" loading="lazy" className="h-full w-full object-contain" />
+      ) : (
+        <span
+          className="flex h-full w-full items-center justify-center text-[8px] font-extrabold leading-none"
+          style={isNone
+            ? { backgroundColor: '#E8EAF6', color: '#1E2A8F' }
+            : { backgroundColor: teamColorHex(color), color: '#fff' }}
+        >
+          {initials}
+        </span>
+      )}
+    </span>
+  )
+}
+
+export function CollegeSeriesPanel() {
+  const { standings, schedule, loading, error, reload } = useCollegeSeries()
+  const [tab, setTab] = useState<Tab>('tabelle')
+  const [filter, setFilter] = useState<ScheduleFilter>('deadsox')
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-cream-300 bg-cream-50 shadow-[0_4px_20px_-4px_rgba(10,15,92,0.18),0_2px_6px_-2px_rgba(10,15,92,0.12)]">
+      {/* Kopf */}
+      <div className="flex items-center justify-between gap-3 border-b border-cream-200 px-4 py-3.5">
+        <h2 className="flex items-center gap-2 text-base font-extrabold tracking-tight text-navy-900">
+          <TrophyIcon size={20} className="text-navy-700" />
+          College Series
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-softball-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-softball-red-600">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-softball-red-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-softball-red-500" />
+            </span>
+            Live
+          </span>
+          <button
+            type="button"
+            onClick={reload}
+            disabled={loading}
+            aria-label="Tabelle aktualisieren"
+            title="Aktualisieren"
+            className="rounded-lg border border-cream-300 bg-cream-100 p-1.5 text-navy-700 transition-colors hover:border-navy-600 hover:text-navy-900 disabled:opacity-50"
+          >
+            <RefreshIcon size={15} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+
+      {/* Segmented Tabs — nur mobil; auf Desktop zeigen wir beide Spalten */}
+      <div className="px-4 pt-3 lg:hidden">
+        <div className="flex rounded-xl bg-cream-200 p-1 shadow-inner">
+          <SegBtn active={tab === 'tabelle'} onClick={() => setTab('tabelle')} icon={<TrophyIcon size={15} />}>
+            Tabelle
+          </SegBtn>
+          <SegBtn active={tab === 'spielplan'} onClick={() => setTab('spielplan')} icon={<CalendarIcon size={15} />}>
+            Spielplan
+          </SegBtn>
+        </div>
+      </div>
+
+      {loading && <div className="px-4 pb-4 pt-3"><LoadingState /></div>}
+      {error && !loading && <div className="px-4 pb-4 pt-3"><ErrorState message={error} onRetry={reload} /></div>}
+
+      {!loading && !error && (
+        <>
+          {/* Mobil: eine Ansicht pro Tab */}
+          <div className="px-4 pb-4 pt-3 lg:hidden">
+            {tab === 'tabelle' ? (
+              <StandingsTable rows={standings} />
+            ) : (
+              <Schedule games={schedule} filter={filter} onFilter={setFilter} />
+            )}
+          </div>
+
+          {/* Desktop: Tabelle + Spielplan nebeneinander */}
+          <div className="hidden lg:grid lg:grid-cols-5 lg:gap-6 lg:px-5 lg:pb-5 lg:pt-4">
+            <div className="lg:col-span-3 lg:border-r lg:border-cream-200 lg:pr-6">
+              <ColTitle icon={<TrophyIcon size={15} />}>Tabelle</ColTitle>
+              <StandingsTable rows={standings} />
+            </div>
+            <div className="lg:col-span-2">
+              <ColTitle icon={<CalendarIcon size={15} />}>Spielplan</ColTitle>
+              <Schedule games={schedule} filter={filter} onFilter={setFilter} />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="border-t border-cream-200 bg-cream-100 px-4 py-2 text-center text-[11px] text-navy-700/60">
+        Quelle: college-series.de · live abgerufen
+      </div>
+    </section>
+  )
+}
+
+// ---------- Segmented Button ----------
+
+function SegBtn({
+  active, onClick, icon, children,
+}: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={[
+        'flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-bold transition-all duration-200',
+        active
+          ? 'bg-cream-50 text-navy-900 shadow-[0_1px_3px_rgba(10,15,92,0.18)]'
+          : 'text-navy-700/70 hover:text-navy-800',
+      ].join(' ')}
+    >
+      {icon}
+      {children}
+    </button>
+  )
+}
+
+// ---------- Spalten-Titel (Desktop) ----------
+
+function ColTitle({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="mb-3.5 flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wider text-navy-700">
+      {icon}
+      {children}
+    </div>
+  )
+}
+
+// ---------- Standings ----------
+
+function StandingsTable({ rows }: { rows: CollegeSeriesRow[] }) {
+  if (rows.length === 0) return <EmptyState text="Noch keine Tabellendaten." />
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-separate border-spacing-0 text-[13px]">
+        <thead>
+          <tr className="text-[10px] uppercase tracking-wider text-navy-700/55">
+            <Th className="text-left">#</Th>
+            <Th className="text-left">Team</Th>
+            <Th className="text-right">G</Th><Th className="text-right">W</Th><Th className="text-right">L</Th><Th className="text-right">Pct</Th>
+            <Th className="hidden text-right sm:table-cell">RS</Th>
+            <Th className="hidden text-right sm:table-cell">RA</Th>
+            <Th className="text-right">Diff</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            const own = r.isOwnTeam
+            const zebra = i % 2 === 1 && !own
+            return (
+              <tr
+                key={r.teamId}
+                data-own={own}
+                className={own ? 'text-white' : 'text-navy-900'}
+              >
+                <Td own={own} zebra={zebra} className="rounded-l-lg text-left font-bold text-navy-700/70">
+                  {i + 1}
+                </Td>
+                <Td own={own} zebra={zebra} className="text-left font-semibold">
+                  <span className="flex items-center gap-2.5">
+                    <TeamAvatar logo={r.logo} tlc={r.tlc} color={r.color} name={r.name} ring={own} />
+                    <span className="truncate">{r.name}</span>
+                  </span>
+                </Td>
+                <Td own={own} zebra={zebra} className="tabular-nums">{r.games}</Td>
+                <Td own={own} zebra={zebra} className={`tabular-nums font-bold ${own ? 'text-emerald-300' : 'text-green-700'}`}>{r.wins}</Td>
+                <Td own={own} zebra={zebra} className={`tabular-nums ${own ? 'text-rose-300' : 'text-softball-red-600'}`}>{r.losses}</Td>
+                <Td own={own} zebra={zebra} className="tabular-nums font-bold">{fmtPct(r.winPct)}</Td>
+                <Td own={own} zebra={zebra} className="hidden tabular-nums sm:table-cell">{r.runsScored}</Td>
+                <Td own={own} zebra={zebra} className="hidden tabular-nums sm:table-cell">{r.runsAgainst}</Td>
+                <Td own={own} zebra={zebra} className="rounded-r-lg tabular-nums font-semibold">
+                  {r.runDiff > 0 ? `+${r.runDiff}` : r.runDiff}
+                </Td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function Th({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <th className={`px-1.5 pb-2 font-bold ${className}`}>{children}</th>
+}
+
+function Td({
+  children, own, zebra, className = '',
+}: { children: React.ReactNode; own: boolean; zebra: boolean; className?: string }) {
+  const bg = own ? 'bg-navy-800' : zebra ? 'bg-cream-100' : 'bg-transparent'
+  return (
+    <td className={`border-b border-cream-200 px-1.5 py-2 text-right ${bg} ${own ? 'shadow-[inset_0_0_0_9999px_rgba(17,27,107,0.0)]' : ''} ${className}`}>
+      {children}
+    </td>
+  )
+}
+
+// ---------- Schedule ----------
+
+const MATCHDAY_LIMIT = 6
+
+function Schedule({
+  games, filter, onFilter,
+}: { games: CollegeSeriesGame[]; filter: ScheduleFilter; onFilter: (f: ScheduleFilter) => void }) {
+  const [showAll, setShowAll] = useState(false)
+  const filtered = filter === 'deadsox' ? games.filter((g) => g.involvesOwn) : games
+  const allGroups = groupByMatchday(filtered)
+  const capped = filter === 'alle' && !showAll && allGroups.length > MATCHDAY_LIMIT
+  const groups = capped ? allGroups.slice(0, MATCHDAY_LIMIT) : allGroups
+
+  return (
+    <div>
+      <div className="mb-3 flex gap-2">
+        <Chip active={filter === 'deadsox'} onClick={() => onFilter('deadsox')}>nur Dead Sox</Chip>
+        <Chip active={filter === 'alle'} onClick={() => onFilter('alle')}>Alle Teams</Chip>
+      </div>
+
+      {groups.length === 0 ? (
+        <EmptyState text="Keine Spiele gefunden." />
+      ) : (
+        <div className="space-y-3.5">
+          {groups.map(([label, gs]) => (
+            <div key={label}>
+              <div className="mb-2.5 inline-block rounded-full bg-cream-200 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-navy-700 shadow-[0_1px_2px_rgba(10,15,92,0.06)]">
+                {label}
+              </div>
+              <div className="space-y-2">
+                {gs.map((g) => <GameRow key={g.id} game={g} />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {capped && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="mt-3 w-full rounded-xl border border-dashed border-cream-300 bg-cream-50 py-2.5 text-xs font-bold text-navy-700 transition-colors hover:border-navy-600 hover:text-navy-900"
+        >
+          Alle Spieltage anzeigen ({allGroups.length - MATCHDAY_LIMIT} weitere)
+        </button>
+      )}
+    </div>
+  )
+}
+
+function GameRow({ game }: { game: CollegeSeriesGame }) {
+  return game.involvesOwn ? <OwnGameRow game={game} /> : <NeutralGameRow game={game} />
+}
+
+// Dead-Sox-Spiel: Heim/Auswärts-Badge + Gegner prominent, Ergebnis aus eigener Sicht.
+function OwnGameRow({ game }: { game: CollegeSeriesGame }) {
+  const home = game.ownIsHome
+  const opponent = home ? game.away : game.home
+  const opponentColor = home ? game.awayColor : game.homeColor
+  const opponentLogo = home ? game.awayLogo : game.homeLogo
+  const opponentTlc = home ? game.awayTlc : game.homeTlc
+  const ownScore = home ? game.homeScore : game.awayScore
+  const oppScore = home ? game.awayScore : game.homeScore
+  const win = game.isFinal && (ownScore ?? 0) > (oppScore ?? 0)
+
+  return (
+    <div
+      className={[
+        'flex items-center justify-between gap-3 rounded-xl bg-cream-100 px-3.5 py-3 shadow-[0_1px_3px_rgba(10,15,92,0.10)] transition-all',
+        home ? 'border-l-4 border-navy-700' : 'border-l-4 border-cream-300',
+      ].join(' ')}
+    >
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span
+          className={[
+            'shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide',
+            home ? 'bg-navy-800 text-white' : 'bg-cream-200 text-navy-700 ring-1 ring-cream-300',
+          ].join(' ')}
+        >
+          {home ? 'Heim' : 'Ausw.'}
+        </span>
+        <TeamAvatar logo={opponentLogo} tlc={opponentTlc} color={opponentColor} name={opponent} />
+        <span className="truncate text-[14px] font-bold text-navy-900" title={opponent}>{opponent}</span>
+      </div>
+
+      {game.isFinal ? (
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={`rounded-md px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${win ? 'bg-green-100 text-green-700' : 'bg-softball-red-100 text-softball-red-600'}`}>
+            {win ? 'Sieg' : 'Niederlage'}
+          </span>
+          <span className={`text-[16px] font-extrabold tabular-nums ${win ? 'text-green-600' : 'text-softball-red-600'}`}>
+            {ownScore}:{oppScore}
+          </span>
+        </div>
+      ) : (
+        <span className="shrink-0 rounded-full bg-navy-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-navy-700">
+          Offen
+        </span>
+      )}
+    </div>
+  )
+}
+
+// Fremd-Spiel (nur in "Alle Teams"): Gast bei Gastgeber, Heimteam markiert — kein "@".
+function NeutralGameRow({ game }: { game: CollegeSeriesGame }) {
+  const homeWin = game.isFinal && (game.homeScore ?? 0) > (game.awayScore ?? 0)
+  const awayWin = game.isFinal && (game.awayScore ?? 0) > (game.homeScore ?? 0)
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-cream-100 px-3.5 py-2.5 shadow-[0_1px_3px_rgba(10,15,92,0.10)] transition-all hover:shadow-[0_2px_8px_-2px_rgba(10,15,92,0.18)]">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px]">
+        <TeamAvatar logo={game.awayLogo} tlc={game.awayTlc} color={game.awayColor} name={game.away} />
+        <span className={`truncate ${awayWin ? 'font-extrabold text-navy-900' : 'font-medium text-navy-900/80'}`} title={game.away}>{game.away}</span>
+        <span className="shrink-0 text-[10px] font-semibold lowercase text-navy-700/45">bei</span>
+        <TeamAvatar logo={game.homeLogo} tlc={game.homeTlc} color={game.homeColor} name={game.home} />
+        <span className={`truncate ${homeWin ? 'font-extrabold text-navy-900' : 'font-medium text-navy-900/80'}`} title={game.home}>{game.home}</span>
+        <span className="shrink-0 rounded bg-cream-200 px-1 py-px text-[8px] font-bold uppercase tracking-wide text-navy-700/70">Heim</span>
+      </div>
+
+      {game.isFinal ? (
+        <div className="flex shrink-0 items-center gap-1.5 tabular-nums">
+          <span className={`text-[15px] font-bold ${awayWin ? 'text-navy-900' : 'text-navy-700/45'}`}>{game.awayScore}</span>
+          <span className="text-navy-700/40">:</span>
+          <span className={`text-[15px] font-bold ${homeWin ? 'text-navy-900' : 'text-navy-700/45'}`}>{game.homeScore}</span>
+        </div>
+      ) : (
+        <span className="shrink-0 rounded-full bg-navy-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-navy-700">
+          Offen
+        </span>
+      )}
+    </div>
+  )
+}
+
+function groupByMatchday(games: CollegeSeriesGame[]): Array<[string, CollegeSeriesGame[]]> {
+  const map = new Map<string, CollegeSeriesGame[]>()
+  for (const g of games) {
+    const arr = map.get(g.matchdayLabel) ?? []
+    arr.push(g)
+    map.set(g.matchdayLabel, arr)
+  }
+  return Array.from(map.entries())
+}
+
+// ---------- Chip ----------
+
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={[
+        'rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200',
+        active
+          ? 'bg-navy-800 text-white shadow-[0_2px_6px_-1px_rgba(10,15,92,0.4)]'
+          : 'border border-cream-300 bg-cream-100 text-navy-700 hover:border-navy-600 hover:text-navy-800',
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ---------- States ----------
+
+function LoadingState() {
+  return (
+    <div className="space-y-2 py-2">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="h-9 animate-pulse rounded-lg bg-cream-200" style={{ animationDelay: `${i * 80}ms` }} />
+      ))}
+    </div>
+  )
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-8 text-center">
+      <AlertTriangle size={32} className="text-softball-red-500" />
+      <p className="text-sm text-navy-900/80">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-lg border border-navy-800 px-3.5 py-1.5 text-sm font-bold text-navy-800 transition-colors hover:bg-navy-800 hover:text-white"
+      >
+        Erneut laden
+      </button>
+    </div>
+  )
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 py-8 text-center text-navy-700/60">
+      <CrossBones className="h-8 w-8" />
+      <p className="text-sm">{text}</p>
+    </div>
+  )
+}
