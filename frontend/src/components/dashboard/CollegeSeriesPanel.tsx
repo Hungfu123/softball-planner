@@ -367,6 +367,35 @@ function roundLabel(r: string): string {
 const isThird = (r: string) => /platz\s*3|third/i.test(r)
 const isFinal = (r: string) => /^final$|finale/i.test(r.trim())
 
+// Kompakte 1-Zeilen-Paarung (für Gruppen + Platzierungsspiele — spart vertikalen Platz).
+function CompactGameRow({ game }: { game: CollegeSeriesGame }) {
+  const final = game.isFinal
+  const hw = final && (game.homeScore ?? 0) > (game.awayScore ?? 0)
+  const aw = final && (game.awayScore ?? 0) > (game.homeScore ?? 0)
+  const label = (g: CollegeSeriesGame, side: 'home' | 'away') => {
+    const tlc = side === 'home' ? g.homeTlc : g.awayTlc
+    const name = side === 'home' ? g.home : g.away
+    return tlc || name.slice(0, 3).toUpperCase()
+  }
+  return (
+    <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 odd:bg-cream-100">
+      <TeamAvatar logo={game.awayLogo} tlc={game.awayTlc} color={game.awayColor} name={game.away} />
+      <span className={`flex-1 truncate text-[12px] ${aw ? 'font-extrabold text-navy-900' : 'font-medium text-navy-900/70'}`}>{label(game, 'away')}</span>
+      {final ? (
+        <span className="shrink-0 text-[12.5px] font-extrabold tabular-nums">
+          <span className={aw ? 'text-green-600' : 'text-navy-900/45'}>{game.awayScore}</span>
+          <span className="text-navy-700/35">:</span>
+          <span className={hw ? 'text-green-600' : 'text-navy-900/45'}>{game.homeScore}</span>
+        </span>
+      ) : (
+        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wide text-navy-700/45">vs</span>
+      )}
+      <span className={`flex-1 truncate text-right text-[12px] ${hw ? 'font-extrabold text-navy-900' : 'font-medium text-navy-900/70'}`}>{label(game, 'home')}</span>
+      <TeamAvatar logo={game.homeLogo} tlc={game.homeTlc} color={game.homeColor} name={game.home} />
+    </div>
+  )
+}
+
 interface GroupRow { name: string; logo: string | null; color: string; tlc: string; w: number; l: number; rd: number }
 function computeGroupStandings(games: CollegeSeriesGame[]): GroupRow[] {
   const m = new Map<string, GroupRow>()
@@ -496,11 +525,11 @@ function ChampionBanner({ game }: { game: CollegeSeriesGame }) {
 // Um die Plätze: Platzierungsspiele (z.B. "Spiel um Platz 5")
 function PlacementView({ games }: { games: CollegeSeriesGame[] }) {
   return (
-    <div className="space-y-2.5">
+    <div className="overflow-hidden rounded-xl border border-cream-300 bg-cream-50">
       {games.map((g) => (
-        <div key={g.id}>
-          {g.round && <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-navy-700/55">{g.round}</div>}
-          <ScoreboardCard game={g} />
+        <div key={g.id} className="border-b border-cream-200 last:border-b-0">
+          {g.round && <div className="px-2 pt-1.5 text-[9px] font-bold uppercase tracking-wide text-navy-700/50">{g.round}</div>}
+          <CompactGameRow game={g} />
         </div>
       ))}
     </div>
@@ -569,9 +598,9 @@ function GroupsView({ games }: { games: CollegeSeriesGame[] }) {
         </table>
       </div>
 
-      <div className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-navy-700/55">Spiele</div>
-      <div className="space-y-2">
-        {groupGames.map((g) => <ScoreboardCard key={g.id} game={g} />)}
+      <div className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-navy-700/55">Spiele</div>
+      <div className="overflow-hidden rounded-xl border border-cream-300 bg-cream-50">
+        {groupGames.map((g) => <CompactGameRow key={g.id} game={g} />)}
       </div>
     </div>
   )
