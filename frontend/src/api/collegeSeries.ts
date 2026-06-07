@@ -59,15 +59,15 @@ function num(s: string | undefined): number {
   return Number.isFinite(n) ? n : 0
 }
 
-export function parseStandings(data: unknown): CollegeSeriesRow[] {
-  const stages = (data as { standings?: unknown[] } | null)?.standings ?? []
-  const members: RawMember[] = []
-  for (const stage of stages as Array<{ rsStandings?: Array<{ members?: RawMember[] }> }>) {
-    for (const group of stage?.rsStandings ?? []) {
-      for (const m of group?.members ?? []) members.push(m)
-    }
-  }
-  const rows: CollegeSeriesRow[] = members.map((m) => ({
+// Eine Liga-Phase mit ihrer Tabelle (Vorrunde / Gruppenphase / Um die Plätze / Finals).
+export interface StageStanding {
+  name: string
+  type: string   // RS = Vorrunde, GR = Gruppenphase, CU = Um die Plätze, SE = Finals
+  rows: CollegeSeriesRow[]
+}
+
+function mapRow(m: RawMember): CollegeSeriesRow {
+  return {
     teamId: String(m.teamID ?? ''),
     name: String(m.name ?? ''),
     color: String(m.color ?? 'none'),
@@ -81,9 +81,19 @@ export function parseStandings(data: unknown): CollegeSeriesRow[] {
     runsAgainst: num(m.ra),
     runDiff: num(m.rd),
     isOwnTeam: String(m.teamID ?? '') === DEAD_SOX_TEAM_ID,
-  }))
-  rows.sort((a, b) => b.winPct - a.winPct || b.runDiff - a.runDiff)
-  return rows
+  }
+}
+
+// Pro Phase getrennte Tabelle (mischt Phasen NICHT mehr).
+export function parseStandings(data: unknown): StageStanding[] {
+  const stages = (data as { standings?: unknown[] } | null)?.standings ?? []
+  return (stages as Array<{ name?: string; type?: string; rsStandings?: Array<{ members?: RawMember[] }> }>).map((stage) => {
+    const rows = (stage?.rsStandings ?? [])
+      .flatMap((g) => g?.members ?? [])
+      .map(mapRow)
+    rows.sort((a, b) => b.winPct - a.winPct || b.runDiff - a.runDiff)
+    return { name: String(stage?.name ?? ''), type: String(stage?.type ?? ''), rows }
+  })
 }
 
 // ---------- Schedule ----------
@@ -180,7 +190,7 @@ async function getJson(path: string): Promise<unknown> {
   return res.json()
 }
 
-export async function fetchCollegeSeriesStandings(): Promise<CollegeSeriesRow[]> {
+export async function fetchCollegeSeriesStandings(): Promise<StageStanding[]> {
   return parseStandings(await getJson(`/league/standings/${LEAGUE_ID}/${SEASON_ID}`))
 }
 

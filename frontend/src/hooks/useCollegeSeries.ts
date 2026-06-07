@@ -2,12 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   fetchCollegeSeriesStandings,
   fetchCollegeSeriesSchedule,
-  type CollegeSeriesRow,
+  type StageStanding,
   type CollegeSeriesGame,
 } from '@/api/collegeSeries'
 
 interface State {
-  standings: CollegeSeriesRow[]
+  standings: StageStanding[]
   schedule: CollegeSeriesGame[]
   loading: boolean
   error: string | null
@@ -15,7 +15,7 @@ interface State {
 }
 
 export function useCollegeSeries(): State {
-  const [standings, setStandings] = useState<CollegeSeriesRow[]>([])
+  const [standings, setStandings] = useState<StageStanding[]>([])
   const [schedule, setSchedule] = useState<CollegeSeriesGame[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

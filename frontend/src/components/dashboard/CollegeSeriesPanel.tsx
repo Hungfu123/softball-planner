@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useCollegeSeries } from '@/hooks/useCollegeSeries'
-import type { CollegeSeriesGame, CollegeSeriesRow } from '@/api/collegeSeries'
+import type { CollegeSeriesGame, CollegeSeriesRow, StageStanding } from '@/api/collegeSeries'
 import { teamColorHex, teamLogoUrl } from '@/api/collegeSeries'
 import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon, HomeStadiumIcon } from '@/icons'
 
-type Tab = 'tabelle' | 'spielplan'
+type Tab = 'tabelle' | 'spielplan' | 'endrunde'
 
 function fmtPct(p: number): string {
   const s = p.toFixed(3)
@@ -39,7 +39,12 @@ function TeamAvatar({
 export function CollegeSeriesPanel() {
   const { standings, schedule, loading, error, reload } = useCollegeSeries()
   const [tab, setTab] = useState<Tab>('tabelle')
-  const stage = schedule.find((g) => g.stage)?.stage ?? ''
+
+  // Vorrunde = reguläre Phase (type RS); der Rest = Endrunde (Gruppenphase/Um die Plätze/Finals).
+  const vorrunde = standings.find((s) => s.type === 'RS') ?? standings[0]
+  const endrundeStages = standings.filter((s) => s !== vorrunde)
+  const vorrundeName = vorrunde?.name ?? ''
+  const vorrundeGames = schedule.filter((g) => g.stage === vorrundeName)
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cream-300 bg-cream-50 shadow-[0_4px_20px_-4px_rgba(10,15,92,0.18),0_2px_6px_-2px_rgba(10,15,92,0.12)]">
@@ -48,11 +53,6 @@ export function CollegeSeriesPanel() {
         <h2 className="flex items-center gap-2 text-base font-extrabold tracking-tight text-navy-900">
           <TrophyIcon size={20} className="text-navy-700" />
           College Series
-          {stage && (
-            <span className="rounded-full bg-cream-200 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide text-navy-700 shadow-[0_1px_2px_rgba(10,15,92,0.06)]">
-              {stage}
-            </span>
-          )}
         </h2>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-softball-red-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-softball-red-600">
@@ -75,7 +75,7 @@ export function CollegeSeriesPanel() {
         </div>
       </div>
 
-      {/* Segmented Tabs — nur mobil; auf Desktop zeigen wir beide Spalten */}
+      {/* Segmented Tabs — nur mobil; auf Desktop zeigen wir Tabelle+Spielplan nebeneinander */}
       <div className="px-4 pt-3 lg:hidden">
         <div className="flex rounded-xl bg-cream-200 p-1 shadow-inner">
           <SegBtn active={tab === 'tabelle'} onClick={() => setTab('tabelle')} icon={<TrophyIcon size={15} />}>
@@ -83,6 +83,9 @@ export function CollegeSeriesPanel() {
           </SegBtn>
           <SegBtn active={tab === 'spielplan'} onClick={() => setTab('spielplan')} icon={<CalendarIcon size={15} />}>
             Spielplan
+          </SegBtn>
+          <SegBtn active={tab === 'endrunde'} onClick={() => setTab('endrunde')} icon={<TrophyIcon size={15} />}>
+            Endrunde
           </SegBtn>
         </div>
       </div>
@@ -94,22 +97,26 @@ export function CollegeSeriesPanel() {
         <>
           {/* Mobil: eine Ansicht pro Tab */}
           <div className="px-4 pb-4 pt-3 lg:hidden">
-            {tab === 'tabelle' ? (
-              <StandingsTable rows={standings} />
-            ) : (
-              <Schedule games={schedule} />
-            )}
+            {tab === 'tabelle' && <StandingsTable rows={vorrunde?.rows ?? []} />}
+            {tab === 'spielplan' && <Schedule games={vorrundeGames} />}
+            {tab === 'endrunde' && <EndrundeView stages={endrundeStages} schedule={schedule} />}
           </div>
 
-          {/* Desktop: Tabelle + Spielplan nebeneinander */}
-          <div className="hidden lg:grid lg:grid-cols-5 lg:gap-6 lg:px-5 lg:pb-5 lg:pt-4">
-            <div className="lg:col-span-3 lg:border-r lg:border-cream-200 lg:pr-6">
-              <ColTitle icon={<TrophyIcon size={15} />}>Tabelle</ColTitle>
-              <StandingsTable rows={standings} />
+          {/* Desktop: Tabelle + Spielplan nebeneinander, Endrunde darunter */}
+          <div className="hidden lg:block lg:px-5 lg:pb-5 lg:pt-4">
+            <div className="grid grid-cols-5 gap-6">
+              <div className="col-span-3 border-r border-cream-200 pr-6">
+                <ColTitle icon={<TrophyIcon size={15} />}>Tabelle</ColTitle>
+                <StandingsTable rows={vorrunde?.rows ?? []} />
+              </div>
+              <div className="col-span-2">
+                <ColTitle icon={<CalendarIcon size={15} />}>Spielplan</ColTitle>
+                <Schedule games={vorrundeGames} />
+              </div>
             </div>
-            <div className="lg:col-span-2">
-              <ColTitle icon={<CalendarIcon size={15} />}>Spielplan</ColTitle>
-              <Schedule games={schedule} />
+            <div className="mt-5 border-t border-cream-200 pt-4">
+              <ColTitle icon={<TrophyIcon size={15} />}>Endrunde</ColTitle>
+              <EndrundeView stages={endrundeStages} schedule={schedule} />
             </div>
           </div>
         </>
@@ -341,6 +348,51 @@ function groupByMatchday(games: CollegeSeriesGame[]): Array<[string, CollegeSeri
     map.set(g.matchdayLabel, arr)
   }
   return Array.from(map.entries())
+}
+
+// ---------- Endrunde (Gruppenphase / Um die Plätze / Finals) ----------
+
+function EndrundeView({ stages, schedule }: { stages: StageStanding[]; schedule: CollegeSeriesGame[] }) {
+  if (stages.length === 0) return <EmptyState text="Keine Endrunden-Phasen." />
+
+  const anyData = stages.some((s) => s.rows.length > 0 || schedule.some((g) => g.stage === s.name))
+  if (!anyData) {
+    return (
+      <div className="rounded-xl border border-dashed border-cream-300 bg-cream-100 px-4 py-7 text-center">
+        <CrossBones className="mx-auto mb-2 h-7 w-7 text-navy-700/45" />
+        <p className="text-sm font-bold text-navy-900/70">Endrunde noch nicht gestartet</p>
+        <p className="mt-1.5 text-[11px] text-navy-700/55">{stages.map((s) => s.name).join('  ·  ')}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      {stages.map((s) => {
+        const games = schedule.filter((g) => g.stage === s.name)
+        const empty = s.rows.length === 0 && games.length === 0
+        return (
+          <div key={s.name}>
+            <div className="mb-2.5 inline-block rounded-full bg-cream-200 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-navy-700 shadow-[0_1px_2px_rgba(10,15,92,0.06)]">
+              {s.name}
+            </div>
+            {empty ? (
+              <p className="text-[11px] text-navy-700/55">Noch nicht gestartet.</p>
+            ) : (
+              <div className="space-y-3">
+                {s.rows.length > 0 && <StandingsTable rows={s.rows} />}
+                {games.length > 0 && (
+                  <div className="space-y-2">
+                    {games.map((g) => <ScoreboardCard key={g.id} game={g} />)}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 // ---------- States ----------
