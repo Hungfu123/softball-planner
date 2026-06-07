@@ -5,7 +5,6 @@ import { teamColorHex, teamLogoUrl } from '@/api/collegeSeries'
 import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon, HomeStadiumIcon } from '@/icons'
 
 type Tab = 'tabelle' | 'spielplan'
-type ScheduleFilter = 'alle' | 'deadsox'
 
 function fmtPct(p: number): string {
   const s = p.toFixed(3)
@@ -40,7 +39,6 @@ function TeamAvatar({
 export function CollegeSeriesPanel() {
   const { standings, schedule, loading, error, reload } = useCollegeSeries()
   const [tab, setTab] = useState<Tab>('tabelle')
-  const [filter, setFilter] = useState<ScheduleFilter>('deadsox')
   const stage = schedule.find((g) => g.stage)?.stage ?? ''
 
   return (
@@ -99,7 +97,7 @@ export function CollegeSeriesPanel() {
             {tab === 'tabelle' ? (
               <StandingsTable rows={standings} />
             ) : (
-              <Schedule games={schedule} filter={filter} onFilter={setFilter} />
+              <Schedule games={schedule} />
             )}
           </div>
 
@@ -111,7 +109,7 @@ export function CollegeSeriesPanel() {
             </div>
             <div className="lg:col-span-2">
               <ColTitle icon={<CalendarIcon size={15} />}>Spielplan</ColTitle>
-              <Schedule games={schedule} filter={filter} onFilter={setFilter} />
+              <Schedule games={schedule} />
             </div>
           </div>
         </>
@@ -229,11 +227,9 @@ function Td({
 
 // ---------- Schedule ----------
 
-function Schedule({
-  games, filter, onFilter,
-}: { games: CollegeSeriesGame[]; filter: ScheduleFilter; onFilter: (f: ScheduleFilter) => void }) {
+function Schedule({ games }: { games: CollegeSeriesGame[] }) {
   const [picked, setPicked] = useState<string | null>(null)
-  const filtered = filter === 'deadsox' ? games.filter((g) => g.involvesOwn) : games
+  const filtered = games.filter((g) => g.involvesOwn)
   const groups = groupByMatchday(filtered)
   const dates = groups.map(([label]) => label)
   // Default: nächster Spieltag mit offenem Spiel, sonst erster.
@@ -243,11 +239,6 @@ function Schedule({
 
   return (
     <div>
-      <div className="mb-3 flex gap-2">
-        <Chip active={filter === 'deadsox'} onClick={() => onFilter('deadsox')}>nur Dead Sox</Chip>
-        <Chip active={filter === 'alle'} onClick={() => onFilter('alle')}>Alle Teams</Chip>
-      </div>
-
       {dates.length === 0 ? (
         <EmptyState text="Keine Spiele gefunden." />
       ) : (
@@ -350,26 +341,6 @@ function groupByMatchday(games: CollegeSeriesGame[]): Array<[string, CollegeSeri
     map.set(g.matchdayLabel, arr)
   }
   return Array.from(map.entries())
-}
-
-// ---------- Chip ----------
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={[
-        'rounded-full px-3.5 py-1.5 text-xs font-bold transition-all duration-200',
-        active
-          ? 'bg-navy-800 text-white shadow-[0_2px_6px_-1px_rgba(10,15,92,0.4)]'
-          : 'border border-cream-300 bg-cream-100 text-navy-700 hover:border-navy-600 hover:text-navy-800',
-      ].join(' ')}
-    >
-      {children}
-    </button>
-  )
 }
 
 // ---------- States ----------
