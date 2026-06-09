@@ -46,6 +46,12 @@ public class GameEntity {
     @Column(name = "third_base_coach_rotation", length = 20)
     private com.softball.domain.model.CoachRotationPair thirdBaseCoachRotation;
 
+    @Column(name = "first_base_coach_rotation_reversed", nullable = false)
+    private boolean firstBaseCoachRotationReversed;
+
+    @Column(name = "third_base_coach_rotation_reversed", nullable = false)
+    private boolean thirdBaseCoachRotationReversed;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_day_id", nullable = false)
     @JsonIgnore
@@ -91,4 +97,8 @@ public class GameEntity {
     public void setFirstBaseCoachRotation(final com.softball.domain.model.CoachRotationPair v) { this.firstBaseCoachRotation = v; }
     public com.softball.domain.model.CoachRotationPair getThirdBaseCoachRotation() { return thirdBaseCoachRotation; }
     public void setThirdBaseCoachRotation(final com.softball.domain.model.CoachRotationPair v) { this.thirdBaseCoachRotation = v; }
+    public boolean isFirstBaseCoachRotationReversed() { return firstBaseCoachRotationReversed; }
+    public void setFirstBaseCoachRotationReversed(final boolean v) { this.firstBaseCoachRotationReversed = v; }
+    public boolean isThirdBaseCoachRotationReversed() { return thirdBaseCoachRotationReversed; }
+    public void setThirdBaseCoachRotationReversed(final boolean v) { this.thirdBaseCoachRotationReversed = v; }
 }

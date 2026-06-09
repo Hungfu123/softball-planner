@@ -27,7 +27,7 @@ export interface LeagueTeamResponse {
   ownTeam: boolean
 }
 
-export type CoachRotationPair = 'POS_3_8' | 'POS_4_9' | 'POS_5_10'
+export type CoachRotationPair = 'POS_1_6' | 'POS_2_7' | 'POS_3_8' | 'POS_4_9' | 'POS_5_10'
 
 export interface GameResponse {
   id: number
@@ -42,6 +42,8 @@ export interface GameResponse {
   atBatCount?: number
   firstBaseCoachRotation?: CoachRotationPair | null
   thirdBaseCoachRotation?: CoachRotationPair | null
+  firstBaseCoachRotationReversed?: boolean
+  thirdBaseCoachRotationReversed?: boolean
 }
 
 export interface LineupEntryResponse {

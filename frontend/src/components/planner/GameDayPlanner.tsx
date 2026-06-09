@@ -178,11 +178,13 @@ export function GameDayPlanner() {
 
   const handleRotationSave = async (
     firstBase: CoachRotationPair | null,
-    thirdBase: CoachRotationPair | null
+    firstReversed: boolean,
+    thirdBase: CoachRotationPair | null,
+    thirdReversed: boolean
   ) => {
     if (!activeGame || !gameDay) return
     try {
-      const updated = await api.setCoachRotation(activeGame.id, firstBase, thirdBase)
+      const updated = await api.setCoachRotation(activeGame.id, firstBase, thirdBase, firstReversed, thirdReversed)
       setGameDay(prev => prev ? ({
         ...prev,
         games: prev.games.map(g => g.id === updated.id ? updated : g),

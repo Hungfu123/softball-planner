@@ -12,7 +12,9 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
                             String battingSide,
                             long atBatCount,
                             CoachRotationPair firstBaseCoachRotation,
-                            CoachRotationPair thirdBaseCoachRotation) {
+                            CoachRotationPair thirdBaseCoachRotation,
+                            boolean firstBaseCoachRotationReversed,
+                            boolean thirdBaseCoachRotationReversed) {
 
     public static GameResponse from(final Game game) {
         return from(game, 0L, null);
@@ -32,7 +34,9 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
             game.getBattingSide(),
             atBatCount,
             game.getFirstBaseCoachRotation(),
-            game.getThirdBaseCoachRotation()
+            game.getThirdBaseCoachRotation(),
+            game.isFirstBaseCoachRotationReversed(),
+            game.isThirdBaseCoachRotationReversed()
         );
     }
 }
