@@ -111,11 +111,16 @@ public class GameService {
     @Transactional
     public Game setCoachRotation(final Long gameId,
                                   final CoachRotationPair firstBaseRotation,
-                                  final CoachRotationPair thirdBaseRotation) {
+                                  final CoachRotationPair thirdBaseRotation,
+                                  final boolean firstBaseReversed,
+                                  final boolean thirdBaseReversed) {
         final Game game = findById(gameId);
         game.setFirstBaseCoachRotation(firstBaseRotation);
         game.setThirdBaseCoachRotation(thirdBaseRotation);
-        log.info("Game {} coach-rotation set: 1B={}, 3B={}", gameId, firstBaseRotation, thirdBaseRotation);
+        game.setFirstBaseCoachRotationReversed(firstBaseReversed);
+        game.setThirdBaseCoachRotationReversed(thirdBaseReversed);
+        log.info("Game {} coach-rotation set: 1B={} (rev={}), 3B={} (rev={})",
+            gameId, firstBaseRotation, firstBaseReversed, thirdBaseRotation, thirdBaseReversed);
         return gameRepository.save(game);
     }
 

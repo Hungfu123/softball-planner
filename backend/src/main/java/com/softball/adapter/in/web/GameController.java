@@ -52,7 +52,8 @@ public class GameController {
     public GameResponse setCoachRotation(@PathVariable final Long id,
                                           @RequestBody final SetCoachRotationRequest request) {
         return toResponseWithLive(gameService.setCoachRotation(
-            id, request.firstBaseCoachRotation(), request.thirdBaseCoachRotation()));
+            id, request.firstBaseCoachRotation(), request.thirdBaseCoachRotation(),
+            request.firstBaseCoachRotationReversed(), request.thirdBaseCoachRotationReversed()));
     }
 
     @PutMapping("/{id}/opponent")

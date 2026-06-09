@@ -16,6 +16,8 @@ public class Game {
     private String battingSide;
     private CoachRotationPair firstBaseCoachRotation;
     private CoachRotationPair thirdBaseCoachRotation;
+    private boolean firstBaseCoachRotationReversed;
+    private boolean thirdBaseCoachRotationReversed;
     private List<LineupEntry> lineupEntries = new ArrayList<>();
     private List<GameStaff> staff = new ArrayList<>();
 
@@ -53,4 +55,8 @@ public class Game {
     public void setFirstBaseCoachRotation(final CoachRotationPair v) { this.firstBaseCoachRotation = v; }
     public CoachRotationPair getThirdBaseCoachRotation() { return thirdBaseCoachRotation; }
     public void setThirdBaseCoachRotation(final CoachRotationPair v) { this.thirdBaseCoachRotation = v; }
+    public boolean isFirstBaseCoachRotationReversed() { return firstBaseCoachRotationReversed; }
+    public void setFirstBaseCoachRotationReversed(final boolean v) { this.firstBaseCoachRotationReversed = v; }
+    public boolean isThirdBaseCoachRotationReversed() { return thirdBaseCoachRotationReversed; }
+    public void setThirdBaseCoachRotationReversed(final boolean v) { this.thirdBaseCoachRotationReversed = v; }
 }

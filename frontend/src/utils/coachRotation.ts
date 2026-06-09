@@ -13,45 +13,61 @@ interface ResolvedCoachSide {
 
 export interface ResolvedRotation {
   pair: CoachRotationPair
+  reversed: boolean                // Richtung umgedreht (Primary = niedrigerer Slot)
   primary: ResolvedCoachSide       // steht meiste Zeit an Base
   backup: ResolvedCoachSide        // übernimmt während Primary's Warmup + Schlag
-  backupCoverRange: string         // z.B. "Schlag #8 – #10"
+  backupCoverRange: string         // z.B. "#8 – #10" (Schlag-Fenster, das Backup abdeckt)
   primaryAbSlot: string            // z.B. "#10"
 }
 
 interface RotationConfig {
   lower: number              // niedrigere Lineup-Position
   higher: number             // höhere Lineup-Position
-  primaryPos: number         // wer ist Primary (= higher, mehr Zeit zum coachen)
-  backupPos: number          // wer ist Backup
-  backupCoverRange: string   // z.B. "#8 – #10"
-  primaryAbSlot: string      // z.B. "#10"
 }
 
 const ROTATION_CONFIG: Record<CoachRotationPair, RotationConfig> = {
-  POS_3_8:  { lower: 3, higher: 8,  primaryPos: 8,  backupPos: 3, backupCoverRange: '#6–#8',  primaryAbSlot: '#8' },
-  POS_4_9:  { lower: 4, higher: 9,  primaryPos: 9,  backupPos: 4, backupCoverRange: '#7–#9',  primaryAbSlot: '#9' },
-  POS_5_10: { lower: 5, higher: 10, primaryPos: 10, backupPos: 5, backupCoverRange: '#8–#10', primaryAbSlot: '#10' },
+  POS_1_6:  { lower: 1, higher: 6 },
+  POS_2_7:  { lower: 2, higher: 7 },
+  POS_3_8:  { lower: 3, higher: 8 },
+  POS_4_9:  { lower: 4, higher: 9 },
+  POS_5_10: { lower: 5, higher: 10 },
 }
 
-export function resolveRotation(pair: CoachRotationPair, lineup: CoachRotationLineupRow[]): ResolvedRotation {
-  const config = ROTATION_CONFIG[pair]
-  const primaryEntry = lineup.find(e => e.battingOrder === config.primaryPos)
-  const backupEntry  = lineup.find(e => e.battingOrder === config.backupPos)
+/** Schlag-Slots [primary-2, primary-1, primary], in 1..n umgebrochen (wrap über Inning-Grenze).
+ *  Contiguous → "#6–#8", sonst Liste "#9, #10, #1". */
+function coverRange(primaryPos: number, n: number): string {
+  if (n < 1) return `#${primaryPos}`
+  const slots = [primaryPos - 2, primaryPos - 1, primaryPos].map(s => ((s - 1 + n) % n) + 1)
+  const contiguous = slots[1] === slots[0] + 1 && slots[2] === slots[1] + 1
+  return contiguous ? `#${slots[0]}–#${slots[2]}` : slots.map(s => `#${s}`).join(', ')
+}
+
+export function resolveRotation(
+  pair: CoachRotationPair,
+  lineup: CoachRotationLineupRow[],
+  reversed = false,
+): ResolvedRotation {
+  const { lower, higher } = ROTATION_CONFIG[pair]
+  // Default: Primary = höherer Slot (längste Pause bis nächster Schlag). Reversed dreht das um.
+  const primaryPos = reversed ? lower : higher
+  const backupPos = reversed ? higher : lower
+  const primaryEntry = lineup.find(e => e.battingOrder === primaryPos)
+  const backupEntry = lineup.find(e => e.battingOrder === backupPos)
 
   return {
     pair,
-    primary: { name: primaryEntry?.player.name ?? '—', pos: config.primaryPos },
-    backup:  { name: backupEntry?.player.name  ?? '—', pos: config.backupPos },
-    backupCoverRange: config.backupCoverRange,
-    primaryAbSlot: config.primaryAbSlot,
+    reversed,
+    primary: { name: primaryEntry?.player.name ?? '—', pos: primaryPos },
+    backup:  { name: backupEntry?.player.name  ?? '—', pos: backupPos },
+    backupCoverRange: coverRange(primaryPos, lineup.length),
+    primaryAbSlot: `#${primaryPos}`,
   }
 }
 
-export const ALL_ROTATION_PAIRS: CoachRotationPair[] = ['POS_3_8', 'POS_4_9', 'POS_5_10']
+export const ALL_ROTATION_PAIRS: CoachRotationPair[] = ['POS_1_6', 'POS_2_7', 'POS_3_8', 'POS_4_9', 'POS_5_10']
 
 /** Paare, deren beide Positionen im Lineup existieren (höhere Position ≤ Spieleranzahl).
- *  9 Spieler → POS_3_8 + POS_4_9 (POS_5_10 braucht Position 10). */
+ *  9 Spieler → POS_1_6…POS_4_9 (POS_5_10 braucht Position 10). */
 export function validRotationPairs(lineup: CoachRotationLineupRow[]): CoachRotationPair[] {
   return ALL_ROTATION_PAIRS.filter(p => ROTATION_CONFIG[p].higher <= lineup.length)
 }
@@ -78,6 +94,8 @@ export function scoreRotationPair(pair: CoachRotationPair, lineup: CoachRotation
     }
     if (entry.position === 'P') score -= 50
     if (entry.battingOrder === 4) score -= 30
+    // Leadoff/Table-Setter (#1, #2) nicht ins Coaching ziehen → nur manuell wählbar, nie empfohlen
+    if (entry.battingOrder <= 2) score -= 40
   }
 
   if (pair !== 'POS_5_10') score -= 5

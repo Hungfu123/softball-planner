@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import type { Player, GameStaffResponse, CoachRotationPair, GameResponse } from '@/types'
 import type { CoachRotationLineupRow } from '@/utils/coachRotation'
 import { STAFF_ROLES } from '@/types'
-import { StarIcon } from '@/icons'
+import { StarIcon, ArrowsSwap } from '@/icons'
 import { getPairLabel, recommendRotationPair, resolveRotation, validRotationPairs } from '@/utils/coachRotation'
 
 interface Props {
@@ -12,7 +12,12 @@ interface Props {
   game: GameResponse
   loading?: boolean
   onSave: (entries: { playerId: number; role: string }[]) => Promise<void>
-  onSaveRotation: (firstBase: CoachRotationPair | null, thirdBase: CoachRotationPair | null) => Promise<void>
+  onSaveRotation: (
+    firstBase: CoachRotationPair | null,
+    firstReversed: boolean,
+    thirdBase: CoachRotationPair | null,
+    thirdReversed: boolean,
+  ) => Promise<void>
 }
 
 export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onSave, onSaveRotation }: Props) {
@@ -50,10 +55,12 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onS
     doSave(newC1, newC3)
   }
 
-  const handleRotationPick = (role: string, pair: CoachRotationPair) => {
+  const handleRotationPick = (role: string, pair: CoachRotationPair, reversed: boolean) => {
     const next1B = role === 'BASE_COACH_1ST' ? pair : (game.firstBaseCoachRotation ?? null)
+    const next1Rev = role === 'BASE_COACH_1ST' ? reversed : (game.firstBaseCoachRotationReversed ?? false)
     const next3B = role === 'BASE_COACH_3RD' ? pair : (game.thirdBaseCoachRotation ?? null)
-    onSaveRotation(next1B, next3B)
+    const next3Rev = role === 'BASE_COACH_3RD' ? reversed : (game.thirdBaseCoachRotationReversed ?? false)
+    onSaveRotation(next1B, next1Rev, next3B, next3Rev)
   }
 
   return (
@@ -75,6 +82,9 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onS
           const currentRotation = role === 'BASE_COACH_1ST'
             ? (game.firstBaseCoachRotation ?? null)
             : (game.thirdBaseCoachRotation ?? null)
+          const currentReversed = role === 'BASE_COACH_1ST'
+            ? (game.firstBaseCoachRotationReversed ?? false)
+            : (game.thirdBaseCoachRotationReversed ?? false)
 
           return (
             <div key={role}>
@@ -94,7 +104,8 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onS
                 <RotationPicker
                   lineup={lineup}
                   currentValue={currentRotation}
-                  onPick={(pair) => handleRotationPick(role, pair)}
+                  currentReversed={currentReversed}
+                  onPick={(pair, reversed) => handleRotationPick(role, pair, reversed)}
                 />
               )}
               {!value && lineup.length < 9 && (
@@ -113,15 +124,18 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onS
 interface RotationPickerProps {
   lineup: CoachRotationLineupRow[]
   currentValue: CoachRotationPair | null
-  onPick: (pair: CoachRotationPair) => void
+  currentReversed: boolean
+  onPick: (pair: CoachRotationPair, reversed: boolean) => void
 }
 
-function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
+function RotationPicker({ lineup, currentValue, currentReversed, onPick }: RotationPickerProps) {
   const pairs = useMemo(() => validRotationPairs(lineup), [lineup])
   const recommended = useMemo(() => recommendRotationPair(lineup), [lineup])
   // gespeichertes Paar nur nutzen, wenn es für die aktuelle Lineup-Größe gültig ist
-  const active: CoachRotationPair = (currentValue && pairs.includes(currentValue)) ? currentValue : recommended
-  const resolved = useMemo(() => resolveRotation(active, lineup), [active, lineup])
+  const isStored = !!currentValue && pairs.includes(currentValue)
+  const active: CoachRotationPair = isStored ? currentValue! : recommended
+  const activeReversed = isStored ? currentReversed : false
+  const resolved = useMemo(() => resolveRotation(active, lineup, activeReversed), [active, lineup, activeReversed])
 
   return (
     <div className="mt-2 space-y-2">
@@ -136,7 +150,7 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
             <button
               key={pair}
               type="button"
-              onClick={() => onPick(pair)}
+              onClick={() => onPick(pair, pair === active ? activeReversed : false)}
               className={`relative font-display min-w-[78px] px-3 py-2 text-[10px] font-bold tracking-widest uppercase rounded-full transition-all duration-150 min-h-[40px] whitespace-nowrap inline-flex items-center justify-center gap-1 cursor-pointer touch-manipulation
                 hover:-translate-y-px active:scale-[0.96]
                 ${isActive
@@ -160,6 +174,19 @@ function RotationPicker({ lineup, currentValue, onPick }: RotationPickerProps) {
             Aktiv · {getPairLabel(active).toUpperCase()}
           </span>
           <span className="h-px flex-1 bg-softball-red-600/30" />
+          <button
+            type="button"
+            onClick={() => onPick(active, !activeReversed)}
+            className={`font-mono shrink-0 inline-flex items-center gap-1 text-[8px] tracking-[0.15em] uppercase font-bold rounded-full px-2 py-1 border transition-all duration-150 cursor-pointer active:scale-95 ${
+              activeReversed
+                ? 'text-navy-900 bg-navy-100 border-navy-300 hover:bg-navy-200'
+                : 'text-navy-600 bg-cream-100 border-cream-300 hover:bg-cream-200 hover:text-navy-900'
+            }`}
+            title="Primary ↔ Backup tauschen"
+          >
+            <ArrowsSwap size={9} className="shrink-0" />
+            Tauschen
+          </button>
         </div>
         <div className="grid grid-cols-2 gap-0 rounded-md overflow-hidden border border-cream-300">
           {/* PRIMARY — navy-dominant */}

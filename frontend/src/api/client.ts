@@ -235,11 +235,18 @@ export const getGame = (gameId: number) =>
 export const setCoachRotation = (
   gameId: number,
   firstBaseCoachRotation: CoachRotationPair | null,
-  thirdBaseCoachRotation: CoachRotationPair | null
+  thirdBaseCoachRotation: CoachRotationPair | null,
+  firstBaseCoachRotationReversed = false,
+  thirdBaseCoachRotationReversed = false
 ) =>
   request<GameResponse>(`/games/${gameId}/coach-rotation`, {
     method: 'PUT',
-    body: JSON.stringify({ firstBaseCoachRotation, thirdBaseCoachRotation }),
+    body: JSON.stringify({
+      firstBaseCoachRotation,
+      thirdBaseCoachRotation,
+      firstBaseCoachRotationReversed,
+      thirdBaseCoachRotationReversed,
+    }),
   })
 export const updateOpponent = (gameId: number, opponentTeamId: number | null) =>
   request<GameResponse>(`/games/${gameId}/opponent`, {

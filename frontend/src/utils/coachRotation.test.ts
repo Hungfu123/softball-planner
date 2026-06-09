@@ -60,6 +60,32 @@ describe('resolveRotation', () => {
     const r = resolveRotation('POS_5_10', fullLineup.slice(0, 8))
     expect(r.primary.name).toBe('—')
   })
+
+  it('reversed swaps Primary/Backup (POS_4_9 → Primary=Mitchi #4, Backup=Vivi #9)', () => {
+    const r = resolveRotation('POS_4_9', fullLineup, true)
+    expect(r.reversed).toBe(true)
+    expect(r.primary.name).toBe('Mitchi')
+    expect(r.primary.pos).toBe(4)
+    expect(r.backup.name).toBe('Vivi')
+    expect(r.backup.pos).toBe(9)
+    expect(r.backupCoverRange).toBe('#2–#4')
+    expect(r.primaryAbSlot).toBe('#4')
+  })
+
+  it('new pair POS_1_6 maps Primary=Miriam #6, Backup=Khang #1', () => {
+    const r = resolveRotation('POS_1_6', fullLineup)
+    expect(r.primary.name).toBe('Miriam')
+    expect(r.primary.pos).toBe(6)
+    expect(r.backup.name).toBe('Khang')
+    expect(r.backup.pos).toBe(1)
+    expect(r.backupCoverRange).toBe('#4–#6')
+  })
+
+  it('reversed Primary at low slot wraps cover-range across inning (POS_1_6 reversed → #9, #10, #1)', () => {
+    const r = resolveRotation('POS_1_6', fullLineup, true)
+    expect(r.primary.pos).toBe(1)
+    expect(r.backupCoverRange).toBe('#9, #10, #1')
+  })
 })
 
 describe('scoreRotationPair', () => {
@@ -112,11 +138,16 @@ describe('validRotationPairs', () => {
   const ten = Array.from({ length: 10 }, (_, i) => makeEntry(i + 1, `P${i + 1}`))
 
   it('excludes POS_5_10 for 9 players (no position 10)', () => {
-    expect(validRotationPairs(nine)).toEqual(['POS_3_8', 'POS_4_9'])
+    expect(validRotationPairs(nine)).toEqual(['POS_1_6', 'POS_2_7', 'POS_3_8', 'POS_4_9'])
   })
 
   it('allows all pairs for 10 players', () => {
-    expect(validRotationPairs(ten)).toEqual(['POS_3_8', 'POS_4_9', 'POS_5_10'])
+    expect(validRotationPairs(ten)).toEqual(['POS_1_6', 'POS_2_7', 'POS_3_8', 'POS_4_9', 'POS_5_10'])
+  })
+
+  it('never recommends a table-setter pair (1+6, 2+7)', () => {
+    expect(recommendRotationPair(nine)).not.toBe('POS_1_6')
+    expect(recommendRotationPair(nine)).not.toBe('POS_2_7')
   })
 
   it('recommends a valid pair for 9 players (never POS_5_10)', () => {

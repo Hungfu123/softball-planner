@@ -4,5 +4,7 @@ import com.softball.domain.model.CoachRotationPair;
 
 public record SetCoachRotationRequest(
     CoachRotationPair firstBaseCoachRotation,
-    CoachRotationPair thirdBaseCoachRotation
+    CoachRotationPair thirdBaseCoachRotation,
+    boolean firstBaseCoachRotationReversed,
+    boolean thirdBaseCoachRotationReversed
 ) {}

@@ -178,6 +178,8 @@ export interface GameData {
     scoreThem: number | null
     firstBaseCoachRotation?: CoachRotationPair | null
     thirdBaseCoachRotation?: CoachRotationPair | null
+    firstBaseCoachRotationReversed?: boolean
+    thirdBaseCoachRotationReversed?: boolean
   }
   lineup: LineupEntryResponse[]
   staff: GameStaffResponse[]
@@ -197,12 +199,13 @@ function drawCoachRotationCompact(
   pair: CoachRotationPair,
   lineup: LineupEntryResponse[],
   baseLabel: '1B' | '3B',
+  reversed: boolean,
 ): number {
   const resolved = resolveRotation(pair, lineup.map(e => ({
     battingOrder: e.battingOrder,
     position: e.position,
     player: { name: e.player.name },
-  })))
+  })), reversed)
   void w
 
   const cy = y + 2.5
@@ -262,12 +265,13 @@ function drawCoachRotationBox(
   pair: CoachRotationPair,
   lineup: LineupEntryResponse[],
   baseLabel: '1B' | '3B',
+  reversed: boolean,
 ): number {
   const resolved = resolveRotation(pair, lineup.map(e => ({
     battingOrder: e.battingOrder,
     position: e.position,
     player: { name: e.player.name },
-  })))
+  })), reversed)
   const half = w / 2
   const blockH = 16
 
@@ -422,10 +426,10 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
     const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
     const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
     if (!has1BCoach && game.firstBaseCoachRotation) {
-      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.firstBaseCoachRotation, lineup, '1B') + 1
+      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.firstBaseCoachRotation, lineup, '1B', game.firstBaseCoachRotationReversed ?? false) + 1
     }
     if (!has3BCoach && game.thirdBaseCoachRotation) {
-      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.thirdBaseCoachRotation, lineup, '3B') + 1
+      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.thirdBaseCoachRotation, lineup, '3B', game.thirdBaseCoachRotationReversed ?? false) + 1
     }
 
     if (lineup.length === 0) {
@@ -590,11 +594,14 @@ export function generateLineupWithFieldPdf(
       const role = baseLabel === '1B' ? 'BASE_COACH_1ST' : 'BASE_COACH_3RD'
       const staffMember = staff.find(s => s.role === role)
       const rotation = baseLabel === '1B' ? game.firstBaseCoachRotation : game.thirdBaseCoachRotation
+      const rotationReversed = baseLabel === '1B'
+        ? (game.firstBaseCoachRotationReversed ?? false)
+        : (game.thirdBaseCoachRotationReversed ?? false)
       if (staffMember) {
         drawStaffLine(baseLabel, staffMember)
         y += 3.5
       } else if (rotation) {
-        y = drawCoachRotationCompact(doc, lineupX, y, fullW, rotation, lineup, baseLabel)
+        y = drawCoachRotationCompact(doc, lineupX, y, fullW, rotation, lineup, baseLabel, rotationReversed)
       }
     }
 
