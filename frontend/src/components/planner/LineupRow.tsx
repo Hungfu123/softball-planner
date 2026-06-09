@@ -87,7 +87,7 @@ export function LineupRow({
         className="flex-1 min-w-0 flex items-center gap-1.5 text-left text-sm font-medium text-gray-900 px-1.5 py-1 -mx-1.5 -my-1 rounded hover:bg-cream-100 cursor-pointer group/swap"
         title="Spieler tauschen"
       >
-        <span className="truncate">{entry.player.name}</span>
+        <span className="truncate min-w-0">{entry.player.name}</span>
         {is1BCoach && <CoachBadge label="1B" />}
         {is3BCoach && <CoachBadge label="3B" />}
         <ArrowsSwap
@@ -154,7 +154,7 @@ export function LineupRow({
       {hasDh && (
         <button
           onClick={() => onSetDhBatter(entry.player.id, null)}
-          className="flex items-center gap-1 shrink-0 max-w-[7rem] text-xs font-medium text-navy-700 bg-navy-50 pl-2 pr-1 py-0.5 rounded-lg hover:bg-navy-100 transition-colors"
+          className="flex items-center gap-1 shrink min-w-0 max-w-[5.5rem] sm:max-w-[7rem] text-xs font-medium text-navy-700 bg-navy-50 pl-2 pr-1 py-0.5 rounded-lg hover:bg-navy-100 transition-colors"
           title={`DH: ${entry.dhBatterName} — entfernen`}
         >
           <span className="truncate">DH: {entry.dhBatterName}</span>
