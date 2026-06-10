@@ -88,6 +88,7 @@ import type {
   WeatherResponse,
   InvitationResponse,
   InvitationRequest,
+  LineupSetResponse,
 } from '@/types'
 
 // Players
@@ -178,6 +179,25 @@ export const setLineup = (
   method: 'PUT',
   body: JSON.stringify(entries),
 })
+
+// Lineup-Sets
+export const getLineupSets = (gameDayId: number) =>
+  request<LineupSetResponse[]>(`/gamedays/${gameDayId}/lineup-sets`)
+
+export const createLineupSet = (gameDayId: number, name: string) =>
+  request<LineupSetResponse>(`/gamedays/${gameDayId}/lineup-sets`, {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+
+export const renameLineupSet = (setId: number, name: string) =>
+  request<LineupSetResponse>(`/lineup-sets/${setId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  })
+
+export const deleteLineupSet = (setId: number) =>
+  request<void>(`/lineup-sets/${setId}`, { method: 'DELETE' })
 
 // Substitutions
 export const getSubstitutions = (gameId: number) =>
