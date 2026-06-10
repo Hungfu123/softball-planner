@@ -35,10 +35,6 @@ export function useLineup() {
   const savedSubsRef = useRef(savedSubstitutions)
   const activeIdRef = useRef<number | null>(null)
   const cache = useRef<Map<number, GameLineupState>>(new Map())
-  // Drafts applied by applySet() to not-yet-active games. Overlaid onto the real
-  // backend baseline when that game is loaded — so savedEntries/substitutions stay
-  // correct (hasChanges/revert work, substitutions are not wiped on save).
-  const pendingSetDrafts = useRef<Map<number, LocalLineupEntry[]>>(new Map())
 
   // Keep refs in sync
   entriesRef.current = entries
@@ -59,18 +55,13 @@ export function useLineup() {
     }
     activeIdRef.current = gameId
 
-    const pendingDraft = pendingSetDrafts.current.get(gameId)
-
-    // Restore from cache if available
+    // Restore from cache if available (applySet writes other games' drafts here eagerly).
     const cached = cache.current.get(gameId)
     if (cached) {
-      // A pending applySet draft overlays the cached draft entries; the cached
-      // saved* baseline (real backend state) is kept so hasChanges/revert work.
-      setEntries(pendingDraft ?? cached.entries)
+      setEntries(cached.entries)
       setSavedEntries(cached.savedEntries)
       setSubstitutions(cached.substitutions)
       setSavedSubstitutions(cached.savedSubstitutions)
-      pendingSetDrafts.current.delete(gameId)
       return
     }
 
@@ -80,13 +71,12 @@ export function useLineup() {
       api.getSubstitutions(gameId),
     ])
     setSavedEntries(data)
-    setEntries(pendingDraft ?? data.map(e => ({
+    setEntries(data.map(e => ({
       player: e.player,
       position: e.position,
       dhBatterId: e.dhBatterPlayer?.id ?? null,
       dhBatterName: e.dhBatterPlayer?.name ?? null,
     })))
-    pendingSetDrafts.current.delete(gameId)
     setSavedSubstitutions(subsData)
     setSubstitutions(subsData.map(s => ({
       playerOut: s.playerOut,
@@ -246,9 +236,7 @@ export function useLineup() {
   // Current draft entries for any game (active = live state, others = cache).
   // undefined = game was never loaded/modified (leave its DB state untouched).
   const draftEntriesFor = (gameId: number): LocalLineupEntry[] | undefined =>
-    gameId === activeIdRef.current
-      ? entriesRef.current
-      : (cache.current.get(gameId)?.entries ?? pendingSetDrafts.current.get(gameId))
+    gameId === activeIdRef.current ? entriesRef.current : cache.current.get(gameId)?.entries
 
   const entriesDiffer = (ents: LocalLineupEntry[], saved: LineupEntryResponse[]): boolean => {
     if (ents.length !== saved.length) return true
@@ -299,7 +287,6 @@ export function useLineup() {
           substitutions: prev?.substitutions ?? (gid === activeId ? subsRef.current : []),
           savedSubstitutions: prev?.savedSubstitutions ?? (gid === activeId ? savedSubsRef.current : []),
         })
-        pendingSetDrafts.current.delete(gid) // now persisted; cache holds the truth
         if (gid === activeId) setSavedEntries(saved)
       }
     } finally {
@@ -375,7 +362,11 @@ export function useLineup() {
       .slice(0, 10)
   }
 
-  const applySet = useCallback((
+  // Apply a whole-gameday set in ONE action: the active game updates live, every
+  // other game is written eagerly into the cache (with its real backend baseline
+  // loaded if not cached). So switching tabs immediately shows the applied lineup —
+  // no need to click into each game. Correct baseline keeps hasChanges/revert/save sane.
+  const applySet = useCallback(async (
     setItems: LineupSetEntryResponse[],
     games: { id: number; gameNumber: number }[],
     availablePlayers: Player[],
@@ -388,18 +379,34 @@ export function useLineup() {
       byGameNumber.set(e.gameNumber, arr)
     }
     const activeId = activeIdRef.current
-    for (const g of games) {
-      if (!byGameNumber.has(g.gameNumber)) continue   // game not in set -> leave its draft untouched
+    await Promise.all(games.map(async g => {
+      if (!byGameNumber.has(g.gameNumber)) return   // game not in set -> leave it untouched
       const draft = buildGameDraft(byGameNumber.get(g.gameNumber) ?? [], availableById)
       if (g.id === activeId) {
         setEntries(draft)
-      } else {
-        // Defer: overlay onto the real backend baseline when this game is loaded
-        // (see load()). Avoids fabricating an empty saved* baseline that would
-        // break hasChanges/revert and wipe substitutions on save.
-        pendingSetDrafts.current.set(g.id, draft)
+        return
       }
-    }
+      let baseline = cache.current.get(g.id)
+      if (!baseline) {
+        // Load the game's real saved state so the cached draft has a correct baseline.
+        const [data, subsData] = await Promise.all([
+          api.getLineup(g.id),
+          api.getSubstitutions(g.id),
+        ])
+        baseline = {
+          entries: [],
+          savedEntries: data,
+          substitutions: subsData.map(s => ({ playerOut: s.playerOut, playerIn: s.playerIn, inning: s.inning })),
+          savedSubstitutions: subsData,
+        }
+      }
+      cache.current.set(g.id, {
+        entries: draft,
+        savedEntries: baseline.savedEntries,
+        substitutions: baseline.substitutions,
+        savedSubstitutions: baseline.savedSubstitutions,
+      })
+    }))
   }, [])
 
   const fillEmptySlot = useCallback((slotId: number, player: Player) => {
