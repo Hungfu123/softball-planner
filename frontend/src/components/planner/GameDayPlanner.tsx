@@ -171,10 +171,14 @@ export function GameDayPlanner() {
     }
   }
 
-  const doApplySet = (set: LineupSetResponse) => {
+  const doApplySet = async (set: LineupSetResponse) => {
     const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
-    lineup.applySet(set.entries, games, availablePlayers)
-    toast.show(`Set „${set.name}" geladen — prüfen & speichern`)
+    try {
+      await lineup.applySet(set.entries, games, availablePlayers)
+      toast.show(`Set „${set.name}" auf alle Spiele geladen — prüfen & speichern`)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
   }
 
   const handleApplySet = (set: LineupSetResponse) => {
