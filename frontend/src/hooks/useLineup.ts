@@ -243,6 +243,70 @@ export function useLineup() {
     }
   }, [entries, substitutions])
 
+  // Current draft entries for any game (active = live state, others = cache).
+  // undefined = game was never loaded/modified (leave its DB state untouched).
+  const draftEntriesFor = (gameId: number): LocalLineupEntry[] | undefined =>
+    gameId === activeIdRef.current
+      ? entriesRef.current
+      : (cache.current.get(gameId)?.entries ?? pendingSetDrafts.current.get(gameId))
+
+  const entriesDiffer = (ents: LocalLineupEntry[], saved: LineupEntryResponse[]): boolean => {
+    if (ents.length !== saved.length) return true
+    return ents.some((e, i) => {
+      const s = saved[i]
+      if (!s || e.player.id !== s.player.id || e.position !== s.position) return true
+      return e.dhBatterId !== (s.dhBatterPlayer?.id ?? null)
+    })
+  }
+
+  // True if any of the given games has unsaved lineup changes (active or cached).
+  const hasUnsavedWork = useCallback((gameIds: number[]): boolean => {
+    const activeId = activeIdRef.current
+    return gameIds.some(gid => {
+      if (gid === activeId) return entriesDiffer(entriesRef.current, savedRef.current)
+      const c = cache.current.get(gid)
+      return c ? entriesDiffer(c.entries, c.savedEntries) : false
+    })
+  }, [])
+
+  // Persist every game's current draft lineup (across all tabs) to the DB.
+  // Used by "Als Set speichern" so a set captures the whole gameday. Lineups only
+  // (substitutions are saved via the per-game save). Throws on any empty slot.
+  const saveAllGames = useCallback(async (gameIds: number[]) => {
+    for (const gid of gameIds) {
+      const ents = draftEntriesFor(gid)
+      if (ents?.some(e => e.isEmptySlot)) {
+        throw new Error('Mindestens ein Lineup hat freie Slots — bitte erst füllen')
+      }
+    }
+    setSaving(true)
+    try {
+      const activeId = activeIdRef.current
+      for (const gid of gameIds) {
+        const ents = draftEntriesFor(gid)
+        if (!ents) continue // never touched -> leave DB as is
+        const payload = ents.map((e, i) => ({
+          playerId: e.player.id,
+          position: e.position ?? null,
+          battingOrder: i + 1,
+          dhBatterPlayerId: e.dhBatterId,
+        }))
+        const saved = await api.setLineup(gid, payload)
+        const prev = cache.current.get(gid)
+        cache.current.set(gid, {
+          entries: ents,
+          savedEntries: saved,
+          substitutions: prev?.substitutions ?? (gid === activeId ? subsRef.current : []),
+          savedSubstitutions: prev?.savedSubstitutions ?? (gid === activeId ? savedSubsRef.current : []),
+        })
+        pendingSetDrafts.current.delete(gid) // now persisted; cache holds the truth
+        if (gid === activeId) setSavedEntries(saved)
+      }
+    } finally {
+      setSaving(false)
+    }
+  }, [])
+
   const hasEmptySlots = entries.some(e => e.isEmptySlot)
 
   const hasChanges = (() => {
@@ -392,6 +456,6 @@ export function useLineup() {
     entries, substitutions, saving, hasChanges, hasEmptySlots, activeGameId,
     load, addPlayer, removePlayer, setPosition, setDhBatter,
     moveUp, moveDown, reorder, replacePlayer, swapEntries, save, importEntries, clearAll, removeUnavailable,
-    applySuggestion, applySet, fillEmptySlot, invalidateCache, addSubstitution, removeSubstitution, revert,
+    applySuggestion, applySet, fillEmptySlot, saveAllGames, hasUnsavedWork, invalidateCache, addSubstitution, removeSubstitution, revert,
   }
 }

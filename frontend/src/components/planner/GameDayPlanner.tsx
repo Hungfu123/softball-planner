@@ -50,6 +50,7 @@ export function GameDayPlanner() {
   const [saveSetOpen, setSaveSetOpen] = useState(false)
   const [renameSet, setRenameSet] = useState<LineupSetResponse | null>(null)
   const [deleteSet, setDeleteSet] = useState<LineupSetResponse | null>(null)
+  const [pendingApplySet, setPendingApplySet] = useState<LineupSetResponse | null>(null)
   const [showAutoAllConfirm, setShowAutoAllConfirm] = useState(false)
   const [showAutoSingleConfirm, setShowAutoSingleConfirm] = useState(false)
   const [autoAllLoading, setAutoAllLoading] = useState(false)
@@ -170,17 +171,32 @@ export function GameDayPlanner() {
     }
   }
 
-  const handleApplySet = (set: LineupSetResponse) => {
+  const doApplySet = (set: LineupSetResponse) => {
     const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     lineup.applySet(set.entries, games, availablePlayers)
     toast.show(`Set „${set.name}" geladen — prüfen & speichern`)
   }
 
+  const handleApplySet = (set: LineupSetResponse) => {
+    const gameIds = (gameDay?.games ?? []).map(g => g.id)
+    // Hinweis, falls ungespeicherte Änderungen überschrieben würden
+    if (lineup.hasUnsavedWork(gameIds)) {
+      setPendingApplySet(set)
+      return
+    }
+    doApplySet(set)
+  }
+
+  // "Als Set speichern" = ganzer Spieltag: speichert ZUERST alle Game-Lineups
+  // (Drafts aller Tabs) in die DB, dann snapshotet das Backend den frischen Stand.
   const handleSaveSet = async (name: string) => {
+    const gameIds = (gameDay?.games ?? []).map(g => g.id)
     try {
+      await lineup.saveAllGames(gameIds)
       await lineupSets.create(name)
+      await refreshStats()
       setSaveSetOpen(false)
-      toast.show(`Set „${name}" gespeichert`, 'success')
+      toast.show(`Set „${name}" + alle Lineups gespeichert`, 'success')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -1066,6 +1082,15 @@ export function GameDayPlanner() {
           confirmLabel="Löschen"
           onConfirm={handleDeleteSet}
           onCancel={() => setDeleteSet(null)}
+        />
+      )}
+      {pendingApplySet && (
+        <ConfirmModal
+          title="Set laden"
+          message={`Es gibt ungespeicherte Änderungen. Set „${pendingApplySet.name}" trotzdem laden? Nicht gespeicherte Änderungen gehen verloren.`}
+          confirmLabel="Set laden"
+          onConfirm={() => { doApplySet(pendingApplySet); setPendingApplySet(null) }}
+          onCancel={() => setPendingApplySet(null)}
         />
       )}
 
