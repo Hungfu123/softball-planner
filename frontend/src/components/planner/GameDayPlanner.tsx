@@ -156,16 +156,18 @@ export function GameDayPlanner() {
     selectGame(nextIdx)
   }
 
+  // Speichert ALLE Spiel-Lineups des Spieltags auf einmal (nicht nur das aktive).
   const handleSave = async () => {
-    if (!activeGame) return
-    if (lineup.hasEmptySlots) {
-      toast.show('Bitte freie Slots füllen, bevor du speicherst', 'error')
-      return
-    }
+    if (!gameDay) return
+    const games = gameDay.games.map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
-      await lineup.save(activeGame.id)
+      const skipped = await lineup.saveAllGames(games)
       await refreshStats()
-      toast.show('Lineup gespeichert')
+      if (skipped.length === 0) {
+        toast.show('Alle Lineups gespeichert')
+      } else {
+        toast.show(`Gespeichert. Spiel ${skipped.join(', ')}: freie Slots — bitte füllen & speichern`)
+      }
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -201,9 +203,13 @@ export function GameDayPlanner() {
   // "Als Set speichern" = ganzer Spieltag: speichert ZUERST alle Game-Lineups
   // (Drafts aller Tabs) in die DB, dann snapshotet das Backend den frischen Stand.
   const handleSaveSet = async (name: string) => {
-    const gameIds = (gameDay?.games ?? []).map(g => g.id)
+    const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
-      await lineup.saveAllGames(gameIds)
+      const skipped = await lineup.saveAllGames(games)
+      if (skipped.length > 0) {
+        toast.show(`Spiel ${skipped.join(', ')} hat freie Slots — erst füllen, dann Set speichern`, 'error')
+        return
+      }
       await lineupSets.create(name)
       await refreshStats()
       setSaveSetOpen(false)
@@ -453,6 +459,10 @@ export function GameDayPlanner() {
   const lineupUsedIds = new Set([...lineupPlayerIds, ...dhBatterIds])
   const allUsedIds = new Set([...lineupUsedIds, ...staffPlayerIds])
   const availablePlayers = gameDay.availablePlayers
+
+  // Save button reflects unsaved changes in ANY game (not just the active tab),
+  // since saving persists the whole gameday at once.
+  const anyUnsaved = lineup.hasChanges || lineup.hasUnsavedWork(gameDay.games.map(g => g.id))
 
   const poolPlayers = availablePlayers.filter(p => !lineupUsedIds.has(p.id))
 
@@ -832,7 +842,7 @@ export function GameDayPlanner() {
               </div>
 
               <SaveButton
-                hasChanges={lineup.hasChanges}
+                hasChanges={anyUnsaved}
                 saving={lineup.saving}
                 onSave={handleSave}
                 onCancel={lineup.revert}
@@ -1013,7 +1023,7 @@ export function GameDayPlanner() {
 
           {/* Mobile: Sticky Save Button */}
           <SaveButton
-            hasChanges={lineup.hasChanges}
+            hasChanges={anyUnsaved}
             saving={lineup.saving}
             onSave={handleSave}
             onCancel={lineup.revert}
