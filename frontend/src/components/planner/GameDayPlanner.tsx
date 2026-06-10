@@ -7,6 +7,9 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { GameTabs } from './GameTabs'
 import { LineupEditor } from './LineupEditor'
+import { LineupSetBar } from './LineupSetBar'
+import { SaveSetModal } from './SaveSetModal'
+import { useLineupSets } from '@/hooks/useLineupSets'
 import { PlayerPool } from './PlayerPool'
 import { FieldView } from './FieldView'
 import { FieldPositionAssignSheet } from './FieldPositionAssignSheet'
@@ -21,7 +24,7 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse } from '@/types'
 import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
 import * as api from '@/api/client'
@@ -31,6 +34,7 @@ export function GameDayPlanner() {
   const gameDayId = Number(id)
   const { gameDay, setGameDay, stats, loading, refreshStats, setAvailablePlayers } = useGameDay(gameDayId)
   const lineup = useLineup()
+  const lineupSets = useLineupSets(gameDayId)
   const staff = useStaff()
   const { players } = usePlayers()
   const toast = useToastContext()
@@ -43,6 +47,9 @@ export function GameDayPlanner() {
   const navigate = useNavigate()
   const [showCopyLineup, setShowCopyLineup] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [saveSetOpen, setSaveSetOpen] = useState(false)
+  const [renameSet, setRenameSet] = useState<LineupSetResponse | null>(null)
+  const [deleteSet, setDeleteSet] = useState<LineupSetResponse | null>(null)
   const [showAutoAllConfirm, setShowAutoAllConfirm] = useState(false)
   const [showAutoSingleConfirm, setShowAutoSingleConfirm] = useState(false)
   const [autoAllLoading, setAutoAllLoading] = useState(false)
@@ -150,10 +157,51 @@ export function GameDayPlanner() {
 
   const handleSave = async () => {
     if (!activeGame) return
+    if (lineup.hasEmptySlots) {
+      toast.show('Bitte freie Slots füllen, bevor du speicherst', 'error')
+      return
+    }
     try {
       await lineup.save(activeGame.id)
       await refreshStats()
       toast.show('Lineup gespeichert')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleApplySet = (set: LineupSetResponse) => {
+    const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
+    lineup.applySet(set.entries, games, availablePlayers)
+    toast.show(`Set „${set.name}" geladen — prüfen & speichern`)
+  }
+
+  const handleSaveSet = async (name: string) => {
+    try {
+      await lineupSets.create(name)
+      setSaveSetOpen(false)
+      toast.show(`Set „${name}" gespeichert`, 'success')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleRenameSet = async (name: string) => {
+    if (!renameSet) return
+    try {
+      await lineupSets.rename(renameSet.id, name)
+      setRenameSet(null)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleDeleteSet = async () => {
+    if (!deleteSet) return
+    try {
+      await lineupSets.remove(deleteSet.id)
+      setDeleteSet(null)
+      toast.show('Set gelöscht')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -632,6 +680,17 @@ export function GameDayPlanner() {
         </div>
       ) : (
         <>
+          {/* Lineup-Sets — gespeicherte Aufstellungs-Varianten */}
+          {gameDay.games.length > 0 && (
+            <LineupSetBar
+              sets={lineupSets.sets}
+              onApply={handleApplySet}
+              onSaveNew={() => setSaveSetOpen(true)}
+              onRename={s => setRenameSet(s)}
+              onDelete={s => setDeleteSet(s)}
+            />
+          )}
+
           {/* Lineup ↔ Feld Tab-Toggle (mobile + lg, hidden at xl since both shown side-by-side) */}
           <div className="flex bg-cream-100 border border-cream-300 rounded-lg p-0.5 lg:max-w-md xl:hidden">
             <button
@@ -683,6 +742,7 @@ export function GameDayPlanner() {
                         onReorder={lineup.reorder}
                         onSwapWithPool={handleSwapWithPool}
                         onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
+                        onFillSlot={lineup.fillEmptySlot}
                         onClear={() => setShowClearConfirm(true)}
                         onAutoGenerate={triggerAutoGenerate}
                         autoGenerateLoading={autoSingleLoading}
@@ -726,6 +786,7 @@ export function GameDayPlanner() {
                   onReorder={lineup.reorder}
                   onSwapWithPool={handleSwapWithPool}
                   onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
+                  onFillSlot={lineup.fillEmptySlot}
                   onClear={() => setShowClearConfirm(true)}
                   onAutoGenerate={triggerAutoGenerate}
                   autoGenerateLoading={autoSingleLoading}
@@ -982,6 +1043,29 @@ export function GameDayPlanner() {
             toast.show('Lineup kopiert')
           }}
           onClose={() => setShowCopyLineup(false)}
+        />
+      )}
+
+      <SaveSetModal
+        open={saveSetOpen}
+        title="Als Set speichern"
+        onCancel={() => setSaveSetOpen(false)}
+        onConfirm={handleSaveSet}
+      />
+      <SaveSetModal
+        open={renameSet !== null}
+        title="Set umbenennen"
+        initialName={renameSet?.name ?? ''}
+        onCancel={() => setRenameSet(null)}
+        onConfirm={handleRenameSet}
+      />
+      {deleteSet && (
+        <ConfirmModal
+          title="Set löschen"
+          message={`Set „${deleteSet.name}" wirklich löschen?`}
+          confirmLabel="Löschen"
+          onConfirm={handleDeleteSet}
+          onCancel={() => setDeleteSet(null)}
         />
       )}
 

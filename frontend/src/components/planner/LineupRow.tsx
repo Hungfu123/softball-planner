@@ -20,6 +20,7 @@ interface Props {
   onMoveUp: (index: number) => void
   onMoveDown: (index: number) => void
   onOpenSwap: (entry: LocalLineupEntry) => void
+  onFillSlot: (slotId: number, player: Player) => void
   firstBaseCoachRotation?: CoachRotationPair | null
   thirdBaseCoachRotation?: CoachRotationPair | null
 }
@@ -27,7 +28,7 @@ interface Props {
 export function LineupRow({
   entry, index, isFirst, isLast, availablePositions,
   isFieldPosition, canCheckDh, poolPlayers,
-  onRemove, onSetPosition, onSetDhBatter, onMoveUp, onMoveDown, onOpenSwap,
+  onRemove, onSetPosition, onSetDhBatter, onMoveUp, onMoveDown, onOpenSwap, onFillSlot,
   firstBaseCoachRotation, thirdBaseCoachRotation,
 }: Props) {
   const battingOrder = index + 1
@@ -80,21 +81,43 @@ export function LineupRow({
         {index + 1}
       </span>
 
-      {/* Name — Tap/Click öffnet Swap-Sheet */}
-      <button
-        type="button"
-        onClick={() => onOpenSwap(entry)}
-        className="flex-1 min-w-[3rem] flex items-center gap-1.5 text-left text-sm font-medium text-gray-900 px-1.5 py-1 -mx-1.5 -my-1 rounded hover:bg-cream-100 cursor-pointer group/swap"
-        title="Spieler tauschen"
-      >
-        <span className="truncate min-w-0">{entry.player.name}</span>
-        {is1BCoach && <CoachBadge label="1B" />}
-        {is3BCoach && <CoachBadge label="3B" />}
-        <ArrowsSwap
-          size={12}
-          className="shrink-0 text-gray-300 sm:opacity-0 sm:group-hover/swap:opacity-100 sm:group-hover/swap:text-navy-600 transition-opacity"
-        />
-      </button>
+      {/* Name — leerer Slot zeigt Fill-Picker; sonst Tap/Click öffnet Swap-Sheet */}
+      {entry.isEmptySlot ? (
+        <div className="flex-1 min-w-[3rem] flex items-center gap-1.5">
+          <span className="text-sm font-medium text-amber-700 shrink-0">— frei —</span>
+          <div className="relative">
+            <select
+              value=""
+              onChange={e => {
+                const p = poolPlayers.find(pl => pl.id === Number(e.target.value))
+                if (p) onFillSlot(entry.player.id, p)
+              }}
+              className="appearance-none text-xs border border-amber-400 bg-amber-50 rounded-lg pl-2 pr-6 py-1 outline-none focus:ring-2 focus:ring-amber-100 cursor-pointer"
+            >
+              <option value="">Spieler…</option>
+              {poolPlayers.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <ChevronDown size={12} className="text-amber-600 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onOpenSwap(entry)}
+          className="flex-1 min-w-[3rem] flex items-center gap-1.5 text-left text-sm font-medium text-gray-900 px-1.5 py-1 -mx-1.5 -my-1 rounded hover:bg-cream-100 cursor-pointer group/swap"
+          title="Spieler tauschen"
+        >
+          <span className="truncate min-w-0">{entry.player.name}</span>
+          {is1BCoach && <CoachBadge label="1B" />}
+          {is3BCoach && <CoachBadge label="3B" />}
+          <ArrowsSwap
+            size={12}
+            className="shrink-0 text-gray-300 sm:opacity-0 sm:group-hover/swap:opacity-100 sm:group-hover/swap:text-navy-600 transition-opacity"
+          />
+        </button>
+      )}
 
       {/* Position Dropdown */}
       <div className="relative w-16 sm:w-20">
