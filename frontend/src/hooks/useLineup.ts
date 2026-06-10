@@ -35,6 +35,10 @@ export function useLineup() {
   const savedSubsRef = useRef(savedSubstitutions)
   const activeIdRef = useRef<number | null>(null)
   const cache = useRef<Map<number, GameLineupState>>(new Map())
+  // Drafts applied by applySet() to not-yet-active games. Overlaid onto the real
+  // backend baseline when that game is loaded — so savedEntries/substitutions stay
+  // correct (hasChanges/revert work, substitutions are not wiped on save).
+  const pendingSetDrafts = useRef<Map<number, LocalLineupEntry[]>>(new Map())
 
   // Keep refs in sync
   entriesRef.current = entries
@@ -55,13 +59,18 @@ export function useLineup() {
     }
     activeIdRef.current = gameId
 
+    const pendingDraft = pendingSetDrafts.current.get(gameId)
+
     // Restore from cache if available
     const cached = cache.current.get(gameId)
     if (cached) {
-      setEntries(cached.entries)
+      // A pending applySet draft overlays the cached draft entries; the cached
+      // saved* baseline (real backend state) is kept so hasChanges/revert work.
+      setEntries(pendingDraft ?? cached.entries)
       setSavedEntries(cached.savedEntries)
       setSubstitutions(cached.substitutions)
       setSavedSubstitutions(cached.savedSubstitutions)
+      pendingSetDrafts.current.delete(gameId)
       return
     }
 
@@ -71,12 +80,13 @@ export function useLineup() {
       api.getSubstitutions(gameId),
     ])
     setSavedEntries(data)
-    setEntries(data.map(e => ({
+    setEntries(pendingDraft ?? data.map(e => ({
       player: e.player,
       position: e.position,
       dhBatterId: e.dhBatterPlayer?.id ?? null,
       dhBatterName: e.dhBatterPlayer?.name ?? null,
     })))
+    pendingSetDrafts.current.delete(gameId)
     setSavedSubstitutions(subsData)
     setSubstitutions(subsData.map(s => ({
       playerOut: s.playerOut,
@@ -320,13 +330,10 @@ export function useLineup() {
       if (g.id === activeId) {
         setEntries(draft)
       } else {
-        const existing = cache.current.get(g.id)
-        cache.current.set(g.id, {
-          entries: draft,
-          savedEntries: existing?.savedEntries ?? [],
-          substitutions: existing?.substitutions ?? [],
-          savedSubstitutions: existing?.savedSubstitutions ?? [],
-        })
+        // Defer: overlay onto the real backend baseline when this game is loaded
+        // (see load()). Avoids fabricating an empty saved* baseline that would
+        // break hasChanges/revert and wipe substitutions on save.
+        pendingSetDrafts.current.set(g.id, draft)
       }
     }
   }, [])
