@@ -174,8 +174,15 @@ export function GameDayPlanner() {
   const doApplySet = async (set: LineupSetResponse) => {
     const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
-      await lineup.applySet(set.entries, games, availablePlayers)
-      toast.show(`Set „${set.name}" auf alle Spiele geladen — prüfen & speichern`)
+      const skipped = await lineup.applySet(set.entries, games, availablePlayers)
+      await refreshStats()
+      if (skipped.length === 0) {
+        toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')
+      } else {
+        toast.show(
+          `Set „${set.name}" angewendet. Spiel ${skipped.join(', ')}: freie Slots (Abwesende) — bitte füllen & speichern`,
+        )
+      }
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }

@@ -362,15 +362,17 @@ export function useLineup() {
       .slice(0, 10)
   }
 
-  // Apply a whole-gameday set in ONE action: the active game updates live, every
-  // other game is written eagerly into the cache (with its real backend baseline
-  // loaded if not cached). So switching tabs immediately shows the applied lineup —
-  // no need to click into each game. Correct baseline keeps hasChanges/revert/save sane.
+  // Apply a whole-gameday set in ONE action across ALL games:
+  //  - games whose lineup is COMPLETE (no absent player) are persisted to the DB
+  //    immediately — no extra "Lineup speichern" click needed.
+  //  - games with an empty slot (a set player is absent) are left as an UNSAVED
+  //    draft so the user fills the gap, then saves that game manually.
+  // Returns the gameNumbers that were left unsaved (had gaps).
   const applySet = useCallback(async (
     setItems: LineupSetEntryResponse[],
     games: { id: number; gameNumber: number }[],
     availablePlayers: Player[],
-  ) => {
+  ): Promise<number[]> => {
     const availableById = new Map(availablePlayers.map(p => [p.id, p]))
     const byGameNumber = new Map<number, LineupSetEntryResponse[]>()
     for (const e of setItems) {
@@ -379,34 +381,58 @@ export function useLineup() {
       byGameNumber.set(e.gameNumber, arr)
     }
     const activeId = activeIdRef.current
+    const skipped: number[] = []
+
+    const baselineFor = async (gameId: number): Promise<GameLineupState> => {
+      const cached = cache.current.get(gameId)
+      if (cached) return cached
+      const [data, subsData] = await Promise.all([api.getLineup(gameId), api.getSubstitutions(gameId)])
+      return {
+        entries: [],
+        savedEntries: data,
+        substitutions: subsData.map(s => ({ playerOut: s.playerOut, playerIn: s.playerIn, inning: s.inning })),
+        savedSubstitutions: subsData,
+      }
+    }
+
     await Promise.all(games.map(async g => {
-      if (!byGameNumber.has(g.gameNumber)) return   // game not in set -> leave it untouched
+      if (!byGameNumber.has(g.gameNumber)) return // game not in set -> leave untouched
       const draft = buildGameDraft(byGameNumber.get(g.gameNumber) ?? [], availableById)
-      if (g.id === activeId) {
-        setEntries(draft)
+
+      if (draft.some(e => e.isEmptySlot)) {
+        // Has a gap (absent player) — cannot persist; leave as an unsaved draft.
+        skipped.push(g.gameNumber)
+        const base = await baselineFor(g.id)
+        if (g.id === activeId) {
+          setEntries(draft)
+        } else {
+          cache.current.set(g.id, { ...base, entries: draft })
+        }
         return
       }
-      let baseline = cache.current.get(g.id)
-      if (!baseline) {
-        // Load the game's real saved state so the cached draft has a correct baseline.
-        const [data, subsData] = await Promise.all([
-          api.getLineup(g.id),
-          api.getSubstitutions(g.id),
-        ])
-        baseline = {
-          entries: [],
-          savedEntries: data,
-          substitutions: subsData.map(s => ({ playerOut: s.playerOut, playerIn: s.playerIn, inning: s.inning })),
-          savedSubstitutions: subsData,
-        }
-      }
+
+      // Complete lineup — persist immediately.
+      const payload = draft.map((e, i) => ({
+        playerId: e.player.id,
+        position: e.position ?? null,
+        battingOrder: i + 1,
+        dhBatterPlayerId: e.dhBatterId,
+      }))
+      const saved = await api.setLineup(g.id, payload)
+      const base = await baselineFor(g.id)
       cache.current.set(g.id, {
         entries: draft,
-        savedEntries: baseline.savedEntries,
-        substitutions: baseline.substitutions,
-        savedSubstitutions: baseline.savedSubstitutions,
+        savedEntries: saved,
+        substitutions: base.substitutions,
+        savedSubstitutions: base.savedSubstitutions,
       })
+      if (g.id === activeId) {
+        setEntries(draft)
+        setSavedEntries(saved)
+      }
     }))
+
+    return skipped
   }, [])
 
   const fillEmptySlot = useCallback((slotId: number, player: Player) => {
