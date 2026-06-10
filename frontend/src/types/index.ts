@@ -85,6 +85,23 @@ export interface LocalLineupEntry {
   position: string | null
   dhBatterId: number | null
   dhBatterName: string | null
+  isEmptySlot?: boolean   // draft-only: placeholder for an absent player (player is a synthetic sentinel)
+}
+
+export interface LineupSetEntryResponse {
+  id: number
+  gameNumber: number
+  player: Player
+  position: string | null
+  battingOrder: number
+  dhBatterPlayer: Player | null
+}
+
+export interface LineupSetResponse {
+  id: number
+  gameDayId: number
+  name: string
+  entries: LineupSetEntryResponse[]
 }
 
 export interface SubstitutionResponse {
