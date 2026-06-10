@@ -257,41 +257,50 @@ export function useLineup() {
     })
   }, [])
 
-  // Persist every game's current draft lineup (across all tabs) to the DB.
-  // Used by "Als Set speichern" so a set captures the whole gameday. Lineups only
-  // (substitutions are saved via the per-game save). Throws on any empty slot.
-  const saveAllGames = useCallback(async (gameIds: number[]) => {
-    for (const gid of gameIds) {
-      const ents = draftEntriesFor(gid)
-      if (ents?.some(e => e.isEmptySlot)) {
-        throw new Error('Mindestens ein Lineup hat freie Slots — bitte erst füllen')
-      }
-    }
+  // Persist EVERY game's current draft (lineup + substitutions) across all tabs.
+  // Drives the "Lineup speichern" button (whole gameday) and "Als Set speichern".
+  // Games with an empty slot (absent player) are skipped — their gameNumber is
+  // returned so the caller can prompt the user to fill them. Untouched games are
+  // left as-is.
+  const saveAllGames = useCallback(async (games: { id: number; gameNumber: number }[]): Promise<number[]> => {
+    const activeId = activeIdRef.current
+    const skipped: number[] = []
     setSaving(true)
     try {
-      const activeId = activeIdRef.current
-      for (const gid of gameIds) {
-        const ents = draftEntriesFor(gid)
+      for (const g of games) {
+        const ents = draftEntriesFor(g.id)
         if (!ents) continue // never touched -> leave DB as is
+        if (ents.some(e => e.isEmptySlot)) { skipped.push(g.gameNumber); continue }
+
         const payload = ents.map((e, i) => ({
           playerId: e.player.id,
           position: e.position ?? null,
           battingOrder: i + 1,
           dhBatterPlayerId: e.dhBatterId,
         }))
-        const saved = await api.setLineup(gid, payload)
-        const prev = cache.current.get(gid)
-        cache.current.set(gid, {
+        const subs = g.id === activeId ? subsRef.current : (cache.current.get(g.id)?.substitutions ?? [])
+        const subsPayload = subs.map(s => ({
+          playerOutId: s.playerOut.id,
+          playerInId: s.playerIn.id,
+          inning: s.inning,
+        }))
+        const saved = await api.setLineup(g.id, payload)
+        const savedSubs = await api.setSubstitutions(g.id, subsPayload)
+        cache.current.set(g.id, {
           entries: ents,
           savedEntries: saved,
-          substitutions: prev?.substitutions ?? (gid === activeId ? subsRef.current : []),
-          savedSubstitutions: prev?.savedSubstitutions ?? (gid === activeId ? savedSubsRef.current : []),
+          substitutions: subs,
+          savedSubstitutions: savedSubs,
         })
-        if (gid === activeId) setSavedEntries(saved)
+        if (g.id === activeId) {
+          setSavedEntries(saved)
+          setSavedSubstitutions(savedSubs)
+        }
       }
     } finally {
       setSaving(false)
     }
+    return skipped
   }, [])
 
   const hasEmptySlots = entries.some(e => e.isEmptySlot)
