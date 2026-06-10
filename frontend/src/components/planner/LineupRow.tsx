@@ -84,7 +84,7 @@ export function LineupRow({
       <button
         type="button"
         onClick={() => onOpenSwap(entry)}
-        className="flex-1 min-w-0 flex items-center gap-1.5 text-left text-sm font-medium text-gray-900 px-1.5 py-1 -mx-1.5 -my-1 rounded hover:bg-cream-100 cursor-pointer group/swap"
+        className="flex-1 min-w-[3rem] flex items-center gap-1.5 text-left text-sm font-medium text-gray-900 px-1.5 py-1 -mx-1.5 -my-1 rounded hover:bg-cream-100 cursor-pointer group/swap"
         title="Spieler tauschen"
       >
         <span className="truncate min-w-0">{entry.player.name}</span>
