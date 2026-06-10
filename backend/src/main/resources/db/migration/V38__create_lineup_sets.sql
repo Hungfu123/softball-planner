@@ -13,7 +13,7 @@ CREATE TABLE lineup_set_entry (
     player_id           BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
     position            VARCHAR(255),
     batting_order       INT NOT NULL,
-    dh_batter_player_id BIGINT REFERENCES players(id) ON DELETE CASCADE
+    dh_batter_player_id BIGINT REFERENCES players(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_lineup_set_game_day ON lineup_set(game_day_id);
