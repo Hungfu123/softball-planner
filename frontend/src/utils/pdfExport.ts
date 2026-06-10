@@ -2,7 +2,7 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season, CoachRotationPair } from '@/types'
 import { FIELD_POSITIONS } from '@/types'
-import { getPairLabel, resolveRotation } from './coachRotation'
+import { resolveRotation } from './coachRotation'
 
 /**
  * Returns a short display name suitable for the field diagram.
@@ -257,98 +257,6 @@ function drawCoachRotationCompact(
   return y + 4
 }
 
-function drawCoachRotationBox(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  w: number,
-  pair: CoachRotationPair,
-  lineup: LineupEntryResponse[],
-  baseLabel: '1B' | '3B',
-  reversed: boolean,
-): number {
-  const resolved = resolveRotation(pair, lineup.map(e => ({
-    battingOrder: e.battingOrder,
-    position: e.position,
-    player: { name: e.player.name },
-  })), reversed)
-  const half = w / 2
-  const blockH = 16
-
-  // Eyebrow + Trennlinie rechts
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(7)
-  doc.setTextColor(200, 46, 46)
-  doc.setCharSpace(1.2)
-  const eyebrowText = `${baseLabel}-COACH ROTATION · ${getPairLabel(pair).toUpperCase()}`
-  doc.text(eyebrowText, x, y + 3)
-  const eyebrowW = doc.getTextWidth(eyebrowText)
-  doc.setCharSpace(0)
-  // Sports-Scorebook Trennlinie rechts der Eyebrow
-  doc.setDrawColor(200, 46, 46)
-  doc.setLineWidth(0.3)
-  doc.line(x + eyebrowW + 2, y + 2.5, x + w, y + 2.5)
-  let cursorY = y + 6
-
-  // Linker Block: Primary (navy-dominant — der "Anchor"-Coach)
-  doc.setFillColor(30, 41, 59)  // navy-900
-  doc.rect(x, cursorY, half, blockH, 'F')
-  // Rechter Block: Backup (cream sekundär)
-  doc.setFillColor(248, 244, 232)  // cream-100
-  doc.rect(x + half, cursorY, half, blockH, 'F')
-  doc.setDrawColor(200, 46, 46)  // rote Trennlinie
-  doc.setLineWidth(0.4)
-  doc.line(x + half, cursorY, x + half, cursorY + blockH)
-
-  // Primary Text (auf navy → weiß/rot)
-  doc.setFontSize(7)
-  doc.setTextColor(252, 165, 165)  // softball-red-300 hellrot
-  doc.setFont('helvetica', 'bold')
-  doc.setCharSpace(1.5)
-  doc.text('PRIMARY · STEHT STANDARD', x + 2, cursorY + 4)
-  doc.setCharSpace(0)
-  doc.setFontSize(11)
-  doc.setTextColor(255, 255, 255)
-  doc.text(resolved.primary.name, x + 2, cursorY + 10)
-  doc.setFontSize(6.5)
-  doc.setFont('courier', 'normal')
-  doc.setTextColor(220, 215, 200)  // cream
-  doc.text(`#${resolved.primary.pos}`, x + 2, cursorY + 14)
-
-  // Backup Text (auf cream → navy)
-  doc.setFontSize(7)
-  doc.setTextColor(120, 120, 120)
-  doc.setFont('helvetica', 'bold')
-  doc.setCharSpace(1.5)
-  doc.text(`BACKUP · SCHLAG ${resolved.backupCoverRange}`, x + half + 2, cursorY + 4)
-  doc.setCharSpace(0)
-  doc.setFontSize(11)
-  doc.setTextColor(30, 41, 59)
-  doc.text(resolved.backup.name, x + half + 2, cursorY + 10)
-  doc.setFontSize(6.5)
-  doc.setFont('courier', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(`#${resolved.backup.pos}`, x + half + 2, cursorY + 14)
-
-  cursorY += blockH + 3
-
-  // Erklärung
-  doc.setFontSize(6.5)
-  doc.setFont('helvetica', 'italic')
-  doc.setTextColor(120, 120, 120)
-  doc.text(
-    `${resolved.backup.name} coacht Schlag ${resolved.backupCoverRange} (${resolved.primary.name} wärmt auf + schlägt ${resolved.primaryAbSlot})`,
-    x, cursorY,
-  )
-  cursorY += 3
-  doc.text(
-    `Falls ${resolved.primary.name} nach Schlag auf Base: ${resolved.backup.name} bleibt bis Rueckkehr zur Bank`,
-    x, cursorY,
-  )
-  doc.setTextColor(0, 0, 0)
-  return cursorY + 4
-}
-
 export function generatePdf(gameDay: GameDayResponse, games: GameData[], season: Season | null) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -420,16 +328,6 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       doc.text(staffText, contentLeft, y)
       doc.setTextColor(0, 0, 0)
       y += 3
-    }
-
-    // Coach-Rotation-Boxen (wenn Coach-Staff-Slot leer und Rotation gesetzt)
-    const has1BCoach = staff.some(s => s.role === 'BASE_COACH_1ST')
-    const has3BCoach = staff.some(s => s.role === 'BASE_COACH_3RD')
-    if (!has1BCoach && game.firstBaseCoachRotation) {
-      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.firstBaseCoachRotation, lineup, '1B', game.firstBaseCoachRotationReversed ?? false) + 1
-    }
-    if (!has3BCoach && game.thirdBaseCoachRotation) {
-      y = drawCoachRotationBox(doc, contentLeft, y, contentWidth, game.thirdBaseCoachRotation, lineup, '3B', game.thirdBaseCoachRotationReversed ?? false) + 1
     }
 
     if (lineup.length === 0) {
