@@ -29,6 +29,7 @@ interface Props {
   onReorder: (oldIndex: number, newIndex: number) => void
   onSwapWithPool: (rowPlayerId: number, poolPlayer: Player) => void
   onSwapWithLineup: (rowPlayerId: number, otherRowPlayerId: number) => void
+  onFillSlot: (slotId: number, player: Player) => void
   onClear?: () => void
   onCopyOtherGame?: () => void
   onAutoGenerate?: () => void
@@ -43,7 +44,7 @@ const SELECTABLE_POSITIONS = (POSITIONS as readonly string[]).filter(p => p !== 
 
 export function LineupEditor({
   entries, poolPlayers, onRemove, onSetPosition, onSetDhBatter,
-  onMoveUp, onMoveDown, onReorder, onSwapWithPool, onSwapWithLineup,
+  onMoveUp, onMoveDown, onReorder, onSwapWithPool, onSwapWithLineup, onFillSlot,
   onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
   firstBaseCoachRotation, thirdBaseCoachRotation,
 }: Props) {
@@ -164,6 +165,7 @@ export function LineupEditor({
                     onMoveUp={onMoveUp}
                     onMoveDown={onMoveDown}
                     onOpenSwap={setSwapRow}
+                    onFillSlot={onFillSlot}
                     firstBaseCoachRotation={firstBaseCoachRotation}
                     thirdBaseCoachRotation={thirdBaseCoachRotation}
                   />
