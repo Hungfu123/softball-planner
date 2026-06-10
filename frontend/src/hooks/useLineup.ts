@@ -1,6 +1,18 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry } from '@/types'
+import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse } from '@/types'
 import * as api from '@/api/client'
+
+let emptySlotSeq = 0
+function makeEmptySlot(position: string | null): LocalLineupEntry {
+  emptySlotSeq -= 1
+  return {
+    player: { id: emptySlotSeq, name: '— frei —' } as Player,
+    position,
+    dhBatterId: null,
+    dhBatterName: null,
+    isEmptySlot: true,
+  }
+}
 
 interface GameLineupState {
   entries: LocalLineupEntry[]
@@ -184,6 +196,9 @@ export function useLineup() {
   }, [])
 
   const save = useCallback(async (gameId: number) => {
+    if (entries.some(e => e.isEmptySlot)) {
+      throw new Error('Lineup hat freie Slots — bitte füllen oder entfernen')
+    }
     const toSave = entries
       .map((e, i) => ({
         playerId: e.player.id,
@@ -217,6 +232,8 @@ export function useLineup() {
       setSaving(false)
     }
   }, [entries, substitutions])
+
+  const hasEmptySlots = entries.some(e => e.isEmptySlot)
 
   const hasChanges = (() => {
     if (entries.length !== savedEntries.length) return true
@@ -261,6 +278,67 @@ export function useLineup() {
     })))
   }, [savedEntries, savedSubstitutions])
 
+  // Build one game's draft from set entries; absent players -> empty placeholder slot.
+  const buildGameDraft = (
+    setItems: LineupSetEntryResponse[],
+    availableById: Map<number, Player>,
+  ): LocalLineupEntry[] => {
+    return [...setItems]
+      .sort((a, b) => a.battingOrder - b.battingOrder)
+      .map(e => {
+        const player = availableById.get(e.player.id)
+        if (!player) {
+          return makeEmptySlot(e.position)   // field player absent -> empty slot, DH dropped with it
+        }
+        const dhPresent = e.dhBatterPlayer != null && availableById.has(e.dhBatterPlayer.id)
+        return {
+          player,
+          position: e.position,
+          dhBatterId: dhPresent ? e.dhBatterPlayer!.id : null,
+          dhBatterName: dhPresent ? e.dhBatterPlayer!.name : null,
+        }
+      })
+      .slice(0, 10)
+  }
+
+  const applySet = useCallback((
+    setItems: LineupSetEntryResponse[],
+    games: { id: number; gameNumber: number }[],
+    availablePlayers: Player[],
+  ) => {
+    const availableById = new Map(availablePlayers.map(p => [p.id, p]))
+    const byGameNumber = new Map<number, LineupSetEntryResponse[]>()
+    for (const e of setItems) {
+      const arr = byGameNumber.get(e.gameNumber) ?? []
+      arr.push(e)
+      byGameNumber.set(e.gameNumber, arr)
+    }
+    const activeId = activeIdRef.current
+    for (const g of games) {
+      if (!byGameNumber.has(g.gameNumber)) continue   // game not in set -> leave its draft untouched
+      const draft = buildGameDraft(byGameNumber.get(g.gameNumber) ?? [], availableById)
+      if (g.id === activeId) {
+        setEntries(draft)
+      } else {
+        const existing = cache.current.get(g.id)
+        cache.current.set(g.id, {
+          entries: draft,
+          savedEntries: existing?.savedEntries ?? [],
+          substitutions: existing?.substitutions ?? [],
+          savedSubstitutions: existing?.savedSubstitutions ?? [],
+        })
+      }
+    }
+  }, [])
+
+  const fillEmptySlot = useCallback((slotId: number, player: Player) => {
+    setEntries(prev => prev.map(e =>
+      e.player.id === slotId
+        ? { player, position: e.position, dhBatterId: null, dhBatterName: null }
+        : e
+    ))
+  }, [])
+
   const applySuggestion = useCallback((suggestions: LineupSuggestionEntry[], availablePlayers: Player[]) => {
     const playerMap = new Map(availablePlayers.map(p => [p.id, p]))
     // Build full lineup from suggestion, keeping DH info from existing entries
@@ -304,9 +382,9 @@ export function useLineup() {
   const activeGameId = activeIdRef.current
 
   return {
-    entries, substitutions, saving, hasChanges, activeGameId,
+    entries, substitutions, saving, hasChanges, hasEmptySlots, activeGameId,
     load, addPlayer, removePlayer, setPosition, setDhBatter,
     moveUp, moveDown, reorder, replacePlayer, swapEntries, save, importEntries, clearAll, removeUnavailable,
-    applySuggestion, invalidateCache, addSubstitution, removeSubstitution, revert,
+    applySuggestion, applySet, fillEmptySlot, invalidateCache, addSubstitution, removeSubstitution, revert,
   }
 }
