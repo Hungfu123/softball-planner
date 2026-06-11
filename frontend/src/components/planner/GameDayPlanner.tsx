@@ -750,7 +750,7 @@ export function GameDayPlanner() {
 
           {/* Main Layout — 3 cols on lg, 4 cols on xl (Lineup | Field+Coaches | Pool+Bench | Training) */}
           <div
-            className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] xl:grid-cols-[360px_320px_minmax(0,1fr)_260px] gap-4 lg:gap-5"
+            className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] xl:grid-cols-[minmax(360px,1fr)_320px_360px_240px] gap-5 lg:gap-6"
             onTouchStart={onSwipeStart}
             onTouchEnd={onSwipeEnd}
           >
@@ -963,10 +963,10 @@ export function GameDayPlanner() {
             <div className="hidden xl:block space-y-4 order-4">
               <div>
                 <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-cream-200">
-                  <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
+                  <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-400">
                     Training
                   </span>
-                  <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
+                  <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold">
                     Letzte 3 Monate
                   </span>
                 </div>
