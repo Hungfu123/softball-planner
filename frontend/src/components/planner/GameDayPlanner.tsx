@@ -133,14 +133,11 @@ export function GameDayPlanner() {
     }
   }, [gameDay?.date, selectedPeriodId])
 
+  // Nur den Tab wechseln — das Laden von Lineup/Staff übernimmt zentral der
+  // Effect auf activeGame?.id (verhindert doppelte, konkurrierende load()-Aufrufe).
   const selectGame = useCallback((i: number) => {
     setActiveTab(i)
-    const game = gameDay?.games[i]
-    if (game) {
-      lineup.load(game.id)
-      staff.load(game.id)
-    }
-  }, [gameDay, lineup, staff])
+  }, [])
 
   const onSwipeStart = (e: React.TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
@@ -657,14 +654,7 @@ export function GameDayPlanner() {
         games={gameDay.games}
         activeIndex={activeTab}
         seasonId={gameDay.seasonId}
-        onSelect={(i) => {
-          setActiveTab(i)
-          const game = gameDay.games[i]
-          if (game) {
-            lineup.load(game.id)
-            staff.load(game.id)
-          }
-        }}
+        onSelect={(i) => setActiveTab(i)}
         gameCompletions={(() => {
           const map = new Map<number, { total: number; fieldCount: number }>()
           for (const game of gameDay.games) {
