@@ -164,6 +164,10 @@ export const getGameDayWeather = async (id: number): Promise<WeatherResponse | n
   const w = await request<WeatherResponse | undefined>(`/gamedays/${id}/weather`)
   return w ?? null
 }
+export const getTrainingWeather = async (id: number): Promise<WeatherResponse | null> => {
+  const w = await request<WeatherResponse | undefined>(`/trainings/${id}/weather`)
+  return w ?? null
+}
 export const getGameDayLineups = (id: number) =>
   request<GameDayLineupsResponse>(`/gamedays/${id}/lineups`)
 export const deleteGameDay = (id: number) =>
