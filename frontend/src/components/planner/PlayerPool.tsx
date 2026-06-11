@@ -33,11 +33,11 @@ function formatPositions(positions: string[]): string {
 
 function gameCountBadge(gc: number): string {
   // 4 Stufen: 0 = noch nicht gespielt (Alarm-Rot), 0.5–1 = wenige Einsätze (Amber-Warn),
-  // 2 = Ziel erreicht (Emerald-grün), 3+ = mehr als genug (Sky-neutral).
+  // 2 = Ziel erreicht (Emerald-grün), 3+ = mehr als genug (Navy, on-brand).
   if (gc === 0) return 'bg-softball-red-100 text-softball-red-600'
   if (gc <= 1) return 'bg-amber-100 text-amber-700'
   if (gc < 3) return 'bg-emerald-100 text-emerald-700'
-  return 'bg-sky-100 text-sky-700'
+  return 'bg-navy-100 text-navy-700'
 }
 
 type TrainingFilter = '3months' | 'all'
