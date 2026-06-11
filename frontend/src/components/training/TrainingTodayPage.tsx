@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
 import { ChevronDown, Calendar, Ban, Droplets } from 'lucide-react'
 import { weatherIcon } from '@/components/dashboard/weatherIcon'
+import { WeatherDayBreakdown } from '@/components/dashboard/WeatherDayBreakdown'
+import { DetailSheet } from '@/components/dashboard/DashboardSheets'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
@@ -64,6 +66,7 @@ export function TrainingTodayPage() {
 
   // Wetter zum gewählten Training (Forecast nur für nahe Termine verfügbar)
   const [weather, setWeather] = useState<WeatherResponse | null>(null)
+  const [weatherOpen, setWeatherOpen] = useState(false)
   useEffect(() => {
     if (!currentTraining || currentTraining.cancelled) { setWeather(null); return }
     let stale = false
@@ -293,9 +296,11 @@ export function TrainingTodayPage() {
           </h1>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             {weather && (
-              <div
-                className="inline-flex items-center gap-1.5 bg-white border border-cream-300 rounded-lg px-2.5 py-1.5 shadow-sm"
-                title="Wetter zum Training"
+              <button
+                type="button"
+                onClick={() => setWeatherOpen(true)}
+                className="inline-flex items-center gap-1.5 bg-white border border-cream-300 hover:border-navy-400 hover:bg-cream-50 rounded-lg px-2.5 py-1.5 shadow-sm cursor-pointer"
+                title="Wetter — Tagesablauf anzeigen"
               >
                 {weatherIcon(weather.wmoCode, 16, 'text-navy-800')}
                 <span className="font-display text-sm font-extrabold text-navy-900 tabular-nums">
@@ -306,7 +311,7 @@ export function TrainingTodayPage() {
                 }`}>
                   <Droplets size={12} className="shrink-0" />{weather.precipitationProbabilityPct}%
                 </span>
-              </div>
+              </button>
             )}
             <button
               type="button"
@@ -483,6 +488,10 @@ export function TrainingTodayPage() {
           selectedId={currentTrainingId}
           onSelect={setSelectedTrainingId}
         />
+
+        <DetailSheet open={weatherOpen} onClose={() => setWeatherOpen(false)} title="Wetter · Tagesablauf">
+          <WeatherDayBreakdown hours={weather?.hours ?? []} location={currentTraining.location || 'Düsseldorf'} />
+        </DetailSheet>
 
         {deleteConfirmOpen && (
           <ConfirmModal
