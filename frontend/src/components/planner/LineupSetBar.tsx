@@ -13,6 +13,7 @@ interface Props {
 
 export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, onDelete }: Props) {
   const [menuId, setMenuId] = useState<number | null>(null)
+  const menuSet = sets.find(s => s.id === menuId) ?? null
 
   return (
     <div className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50/60 px-3 py-2">
@@ -61,23 +62,6 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, 
                       ⋯
                     </button>
                   </div>
-
-                  {menuId === set.id && (
-                    <div className="absolute right-0 top-full mt-1 z-50 min-w-[9rem] rounded-lg border border-cream-300 bg-white shadow-lg py-1">
-                      <button
-                        onClick={() => { onRename(set); setMenuId(null) }}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-navy-800 hover:bg-cream-100 cursor-pointer"
-                      >
-                        <Pencil size={12} /> Umbenennen
-                      </button>
-                      <button
-                        onClick={() => { onDelete(set); setMenuId(null) }}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
-                      >
-                        <TrashBin size={12} /> Löschen
-                      </button>
-                    </div>
-                  )}
                 </div>
               )
             })}
@@ -96,9 +80,33 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, 
         <span className="sm:hidden">Set</span>
       </button>
 
-      {/* Klick-außerhalb schließt das Menü */}
-      {menuId !== null && (
-        <div className="fixed inset-0 z-40" onClick={() => setMenuId(null)} aria-hidden />
+      {/* Verwalten-Menü als fixed Overlay (escaped das overflow-Clipping der Pill-Reihe) */}
+      {menuSet && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setMenuId(null)}
+        >
+          <div
+            className="bg-cream-50 rounded-2xl shadow-xl w-full max-w-xs p-2"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="px-3 py-2 font-display text-[11px] font-bold tracking-widest uppercase text-gray-400 border-b border-cream-200 truncate">
+              {menuSet.name}
+            </p>
+            <button
+              onClick={() => { onRename(menuSet); setMenuId(null) }}
+              className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-navy-800 hover:bg-cream-100 rounded-lg cursor-pointer"
+            >
+              <Pencil size={14} /> Umbenennen
+            </button>
+            <button
+              onClick={() => { onDelete(menuSet); setMenuId(null) }}
+              className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-softball-red-600 hover:bg-softball-red-50 rounded-lg cursor-pointer"
+            >
+              <TrashBin size={14} /> Löschen
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
