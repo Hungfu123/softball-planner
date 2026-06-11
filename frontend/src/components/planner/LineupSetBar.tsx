@@ -40,7 +40,7 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, 
                   >
                     <button
                       onClick={() => onApply(set)}
-                      className={`font-display pl-2.5 pr-1.5 py-1 text-[11px] font-bold tracking-wide uppercase cursor-pointer inline-flex items-center gap-1.5 active:scale-[0.97] transition-transform ${
+                      className={`font-display pl-3 pr-2 py-2 text-[11px] font-bold tracking-wide uppercase cursor-pointer inline-flex items-center gap-1.5 active:scale-[0.97] transition-transform ${
                         active ? 'text-white' : 'text-navy-800'
                       }`}
                       title={active ? `„${set.name}" ist geladen — erneut anwenden` : `„${set.name}" in den Editor laden`}
@@ -50,10 +50,12 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, 
                     </button>
                     <button
                       onClick={() => setMenuId(menuId === set.id ? null : set.id)}
-                      className={`px-1.5 py-1 text-xs cursor-pointer rounded-r-full ${
-                        active ? 'text-white/70 hover:text-white' : 'text-gray-400 hover:text-navy-700'
+                      className={`px-2.5 py-2 text-sm leading-none cursor-pointer rounded-r-full border-l ${
+                        active
+                          ? 'border-white/20 text-white/80 hover:bg-white/10'
+                          : 'border-cream-300 text-gray-500 hover:text-navy-700 hover:bg-cream-100'
                       }`}
-                      title="Verwalten"
+                      title="Umbenennen / Löschen"
                       aria-label="Set verwalten"
                     >
                       ⋯
@@ -64,13 +66,13 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, 
                     <div className="absolute right-0 top-full mt-1 z-50 min-w-[9rem] rounded-lg border border-cream-300 bg-white shadow-lg py-1">
                       <button
                         onClick={() => { onRename(set); setMenuId(null) }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-navy-800 hover:bg-cream-100 cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-navy-800 hover:bg-cream-100 cursor-pointer"
                       >
                         <Pencil size={12} /> Umbenennen
                       </button>
                       <button
                         onClick={() => { onDelete(set); setMenuId(null) }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-xs font-medium text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
                       >
                         <TrashBin size={12} /> Löschen
                       </button>
