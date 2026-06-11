@@ -283,7 +283,7 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
 
   // Games
   for (let gameIndex = 0; gameIndex < games.length; gameIndex++) {
-    const { game, lineup, staff } = games[gameIndex]
+    const { game, lineup } = games[gameIndex]
     // Page break after every 3 games or when running out of space
     if (gameIndex > 0 && gameIndex % 3 === 0) {
       doc.addPage()
@@ -309,26 +309,6 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
     doc.setLineWidth(0.5)
     doc.line(contentLeft, y + 1, contentRight, y + 1)
     y += 4
-
-    // Staff (with substitution info if a coach gets subbed in)
-    if (staff.length > 0) {
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(120, 120, 120)
-      const { substitutions: gameSubs } = games[gameIndex]
-      const subInIds = new Map(gameSubs.map(s => [s.playerIn.id, s]))
-      const staffText = staff.map(s => {
-        const roleLabel = s.role === 'BASE_COACH_1ST' ? '1B Coach' : '3B Coach'
-        const sub = subInIds.get(s.player.id)
-        if (sub) {
-          return `${roleLabel}: ${s.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
-        }
-        return `${roleLabel}: ${s.player.name}`
-      }).join('  ·  ')
-      doc.text(staffText, contentLeft, y)
-      doc.setTextColor(0, 0, 0)
-      y += 3
-    }
 
     if (lineup.length === 0) {
       doc.setFontSize(8)
@@ -384,7 +364,8 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       gameUsedIds.add(e.player.id)
       if (e.dhBatterPlayer) gameUsedIds.add(e.dhBatterPlayer.id)
     }
-    for (const s of staff) gameUsedIds.add(s.player.id)
+    // Base-Coaches NICHT ausschließen: reine Coaches (nicht im Lineup) erscheinen
+    // als normaler Name in der Bank-Zeile (keine separate Coach-Anzeige im PDF).
     for (const sub of substitutions) gameUsedIds.add(sub.playerIn.id)
     const bench = gameDay.availablePlayers.filter(p => !gameUsedIds.has(p.id))
     if (bench.length > 0) {
