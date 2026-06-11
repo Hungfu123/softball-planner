@@ -51,6 +51,7 @@ export function GameDayPlanner() {
   const [renameSet, setRenameSet] = useState<LineupSetResponse | null>(null)
   const [deleteSet, setDeleteSet] = useState<LineupSetResponse | null>(null)
   const [pendingApplySet, setPendingApplySet] = useState<LineupSetResponse | null>(null)
+  const [activeSetId, setActiveSetId] = useState<number | null>(null)
   const [showAutoAllConfirm, setShowAutoAllConfirm] = useState(false)
   const [showAutoSingleConfirm, setShowAutoSingleConfirm] = useState(false)
   const [autoAllLoading, setAutoAllLoading] = useState(false)
@@ -177,6 +178,7 @@ export function GameDayPlanner() {
     const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
       const skipped = await lineup.applySet(set.entries, games, availablePlayers)
+      setActiveSetId(set.id)
       await refreshStats()
       if (skipped.length === 0) {
         toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')
@@ -233,6 +235,7 @@ export function GameDayPlanner() {
     if (!deleteSet) return
     try {
       await lineupSets.remove(deleteSet.id)
+      if (activeSetId === deleteSet.id) setActiveSetId(null)
       setDeleteSet(null)
       toast.show('Set gelöscht')
     } catch (e: unknown) {
@@ -721,6 +724,7 @@ export function GameDayPlanner() {
           {gameDay.games.length > 0 && (
             <LineupSetBar
               sets={lineupSets.sets}
+              activeSetId={activeSetId}
               onApply={handleApplySet}
               onSaveNew={() => setSaveSetOpen(true)}
               onRename={s => setRenameSet(s)}
