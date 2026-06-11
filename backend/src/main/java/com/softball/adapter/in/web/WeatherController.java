@@ -2,8 +2,10 @@ package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.WeatherResponse;
 import com.softball.application.GameDayService;
+import com.softball.application.TrainingService;
 import com.softball.application.WeatherService;
 import com.softball.domain.model.GameDay;
+import com.softball.domain.model.Training;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +19,16 @@ public class WeatherController {
 
     private final WeatherService weatherService;
     private final GameDayService gameDayService;
+    private final TrainingService trainingService;
     private final String defaultLocation;
 
     public WeatherController(final WeatherService weatherService,
                              final GameDayService gameDayService,
+                             final TrainingService trainingService,
                              @Value("${weather.default-location:Düsseldorf}") final String defaultLocation) {
         this.weatherService = weatherService;
         this.gameDayService = gameDayService;
+        this.trainingService = trainingService;
         this.defaultLocation = defaultLocation;
     }
 
@@ -35,6 +40,18 @@ public class WeatherController {
             ? defaultLocation
             : gd.getLocation();
         return weatherService.getForecast(location, gd.getDate())
+            .map(WeatherResponse::from)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/api/trainings/{trainingId}/weather")
+    public ResponseEntity<WeatherResponse> getTrainingWeather(@PathVariable final Long trainingId) {
+        final Training t = trainingService.findById(trainingId);
+        final String location = (t.getLocation() == null || t.getLocation().isBlank())
+            ? defaultLocation
+            : t.getLocation();
+        return weatherService.getForecast(location, t.getDate())
             .map(WeatherResponse::from)
             .map(ResponseEntity::ok)
             .orElseGet(() -> ResponseEntity.noContent().build());

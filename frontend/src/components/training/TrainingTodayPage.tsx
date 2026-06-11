@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
-import { ChevronDown, Calendar, Ban } from 'lucide-react'
+import { ChevronDown, Calendar, Ban, Droplets } from 'lucide-react'
+import { weatherIcon } from '@/components/dashboard/weatherIcon'
 import { useTraining } from '@/hooks/useTraining'
 import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
 import { pickDefaultTrainingId } from '@/utils/defaultTraining'
 import * as api from '@/api/client'
-import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse } from '@/types'
+import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse, WeatherResponse } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
@@ -60,6 +61,17 @@ export function TrainingTodayPage() {
     () => trainings.find(t => t.id === currentTrainingId) ?? null,
     [trainings, currentTrainingId],
   )
+
+  // Wetter zum gewählten Training (Forecast nur für nahe Termine verfügbar)
+  const [weather, setWeather] = useState<WeatherResponse | null>(null)
+  useEffect(() => {
+    if (!currentTraining || currentTraining.cancelled) { setWeather(null); return }
+    let stale = false
+    api.getTrainingWeather(currentTraining.id)
+      .then(w => { if (!stale) setWeather(w) })
+      .catch(() => { if (!stale) setWeather(null) })
+    return () => { stale = true }
+  }, [currentTraining?.id, currentTraining?.cancelled])
 
   const presentIds = useMemo(() => {
     if (!currentTraining) return new Set<number>()
@@ -279,7 +291,23 @@ export function TrainingTodayPage() {
           <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
             Training
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {weather && (
+              <div
+                className="inline-flex items-center gap-1.5 bg-white border border-cream-300 rounded-lg px-2.5 py-1.5 shadow-sm"
+                title="Wetter zum Training"
+              >
+                {weatherIcon(weather.wmoCode, 16, 'text-navy-800')}
+                <span className="font-display text-sm font-extrabold text-navy-900 tabular-nums">
+                  {weather.tempMin}–{weather.tempMax}°
+                </span>
+                <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
+                  weather.precipitationProbabilityPct >= 50 ? 'text-softball-red-600' : 'text-navy-500'
+                }`}>
+                  <Droplets size={12} className="shrink-0" />{weather.precipitationProbabilityPct}%
+                </span>
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setPickerOpen(true)}
