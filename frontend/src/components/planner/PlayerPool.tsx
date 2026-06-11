@@ -32,10 +32,11 @@ function formatPositions(positions: string[]): string {
 }
 
 function gameCountBadge(gc: number): string {
-  // 3 Stufen: 0 = noch nicht gespielt (Alarm-Rot), 1-2 = wenige Einsätze (Amber-Warn),
-  // 3+ = ausreichend (Emerald-OK). Keine Sonderfarbe für 2 — semantisch identisch zu 1.
+  // 4 Stufen: 0 = noch nicht gespielt (Alarm-Rot), 0.5–1 = wenige Einsätze (Amber-Warn),
+  // 2 = okay (Navy-neutral), 3+ = ausreichend (Emerald-OK).
   if (gc === 0) return 'bg-softball-red-100 text-softball-red-600'
-  if (gc <= 2) return 'bg-amber-100 text-amber-700'
+  if (gc <= 1) return 'bg-amber-100 text-amber-700'
+  if (gc < 3) return 'bg-navy-100 text-navy-700'
   return 'bg-emerald-100 text-emerald-700'
 }
 
