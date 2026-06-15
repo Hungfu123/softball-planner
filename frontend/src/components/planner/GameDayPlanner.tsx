@@ -648,8 +648,10 @@ export function GameDayPlanner() {
       </div>
 
       <>
-      {/* Tabs */}
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-2 sm:px-4 pt-2">
+      {/* Tabs — mobil sticky unter dem App-Header (h=59px), damit der Spiel-Wechsler
+          beim Lineup-Scrollen immer erreichbar bleibt (sonst nur fummeliger Swipe).
+          Desktop: normaler Fluss. */}
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-2 sm:px-4 pt-2 sticky top-[59px] z-40 lg:static lg:top-auto lg:z-auto">
       <GameTabs
         games={gameDay.games}
         activeIndex={activeTab}
