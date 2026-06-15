@@ -1,6 +1,7 @@
 package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.*;
+import com.softball.application.GameScoringService;
 import com.softball.application.GameService;
 import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
@@ -23,23 +24,28 @@ public class GameController {
     private final LineupSuggestionService lineupSuggestionService;
     private final SubstitutionService substitutionService;
     private final AtBatRepository atBatRepository;
+    private final GameScoringService gameScoringService;
 
     public GameController(final GameService gameService, final LineupService lineupService,
                           final GameStaffService gameStaffService,
                           final LineupSuggestionService lineupSuggestionService,
                           final SubstitutionService substitutionService,
-                          final AtBatRepository atBatRepository) {
+                          final AtBatRepository atBatRepository,
+                          final GameScoringService gameScoringService) {
         this.gameService = gameService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
         this.lineupSuggestionService = lineupSuggestionService;
         this.substitutionService = substitutionService;
         this.atBatRepository = atBatRepository;
+        this.gameScoringService = gameScoringService;
     }
 
     private GameResponse toResponseWithLive(final Game game) {
         final long atBatCount = atBatRepository.countByGameId(game.getId());
-        final Integer liveScoreUs = atBatCount > 0 ? atBatRepository.sumRunsScoredByGameId(game.getId()) : null;
+        // liveScoreUs inkl. Steal-Runs (Steal of Home + Kaskade) — sonst weicht die Karte
+        // von der Scoring-Page ab.
+        final Integer liveScoreUs = atBatCount > 0 ? gameScoringService.computeLiveScoreUs(game.getId()) : null;
         return GameResponse.from(game, atBatCount, liveScoreUs);
     }
 

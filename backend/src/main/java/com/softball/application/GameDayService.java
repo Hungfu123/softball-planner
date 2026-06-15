@@ -27,17 +27,20 @@ public class GameDayService {
     private final AtBatRepository atBatRepository;
     private final SeasonService seasonService;
     private final AvailabilityService availabilityService;
+    private final GameScoringService gameScoringService;
 
     public GameDayService(final GameDayRepository gameDayRepository,
                           final LineupEntryRepository lineupEntryRepository,
                           final AtBatRepository atBatRepository,
                           final SeasonService seasonService,
-                          final AvailabilityService availabilityService) {
+                          final AvailabilityService availabilityService,
+                          final GameScoringService gameScoringService) {
         this.gameDayRepository = gameDayRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.atBatRepository = atBatRepository;
         this.seasonService = seasonService;
         this.availabilityService = availabilityService;
+        this.gameScoringService = gameScoringService;
     }
 
     @Transactional(readOnly = true)
@@ -49,7 +52,7 @@ public class GameDayService {
             .filter(java.util.Objects::nonNull)
             .toList();
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
-        final Map<Long, Integer> liveScores = atBatRepository.sumRunsScoredByGameIds(gameIds);
+        final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
         return days.stream()
             .map(d -> GameDayResponse.from(d, counts, liveScores))
             .toList();
@@ -74,7 +77,7 @@ public class GameDayService {
             .filter(java.util.Objects::nonNull)
             .toList();
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
-        final Map<Long, Integer> liveScores = atBatRepository.sumRunsScoredByGameIds(gameIds);
+        final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
         return GameDayResponse.from(gameDay, counts, liveScores);
     }
 
