@@ -42,6 +42,9 @@ class GameDayServiceTest {
     @Mock
     private AvailabilityService availabilityService;
 
+    @Mock
+    private com.softball.application.GameScoringService gameScoringService;
+
     @InjectMocks
     private GameDayService gameDayService;
 

@@ -168,6 +168,182 @@ class GameScoringServiceTest {
     }
 
     @Test
+    void stealOfHome_thenLaterAtBat_runStillCounts() {
+        // Regression: Steal of Home darf nicht verschwinden sobald ein weiterer
+        // AtBat folgt. Der Run liegt auf keinem AtBat — muss aus den Events abgeleitet
+        // und persistent gezählt werden.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant tSteal = Instant.parse("2026-04-21T10:01:00Z");
+        final Instant t2 = Instant.parse("2026-04-21T10:02:00Z");
+        // AB1: Khang out, Hung bleibt auf 3B
+        final AtBat ab1 = atBat(1, 1, khang, AtBatResult.OUT, new BaseState(null, null, hung.getId()));
+        ab1.setCreatedAt(t1);
+        // Hung klaut Home → Run
+        final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, tSteal);
+        // AB2 danach: Anne single, Hung ist längst gescort
+        final AtBat ab2 = atBat(2, 1, anne, AtBatResult.SINGLE, new BaseState(anne.getId(), null, null));
+        ab2.setCreatedAt(t2);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab1, ab2));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of(anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(1);
+    }
+
+    @Test
+    void cascadeStealHome_thenLaterAtBat_runStillCounts() {
+        // Regression: Kaskaden-Run (Double/Triple-Steal wo 3B-Runner scort) muss
+        // ebenfalls persistent gezählt werden, auch nach weiteren AtBats.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant tSteal = Instant.parse("2026-04-21T10:01:00Z");
+        final Instant t2 = Instant.parse("2026-04-21T10:02:00Z");
+        // Bases loaded
+        final AtBat ab1 = atBat(1, 1, hung, AtBatResult.WALK, new BaseState(hung.getId(), anne.getId(), khang.getId()));
+        ab1.setCreatedAt(t1);
+        // Hung klaut 2B → Kaskade: Anne → 3B, Khang scort Home
+        final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, tSteal);
+        // weiterer AtBat danach — State nach dem Steal: Hung 2B, Anne 3B
+        final AtBat ab2 = atBat(2, 1, hung, AtBatResult.OUT, new BaseState(null, hung.getId(), anne.getId()));
+        ab2.setCreatedAt(t2);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab1, ab2));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of(hung, anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(1);
+    }
+
+    @Test
+    void stealOfHome_inEarlierInning_stillCountsAfterInningChange() {
+        // Steal of Home in Inning 1, danach Inning 2 mit AtBats → Run bleibt im Score.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant tSteal = Instant.parse("2026-04-21T10:01:00Z");
+        final Instant t2 = Instant.parse("2026-04-21T10:30:00Z");
+        final AtBat ab1 = atBat(1, 1, khang, AtBatResult.OUT, new BaseState(null, null, hung.getId()));
+        ab1.setCreatedAt(t1);
+        final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, tSteal);
+        final AtBat ab2 = atBat(2, 2, anne, AtBatResult.SINGLE, new BaseState(anne.getId(), null, null));
+        ab2.setCreatedAt(t2);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab1, ab2));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of(anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.currentInning()).isEqualTo(2);
+        assertThat(sb.scoreUs()).isEqualTo(1);
+    }
+
+    @Test
+    void computeLiveScoreUs_includesStealRuns() {
+        // liveScoreUs (Karten/Dashboard) muss Steal-of-Home-Runs enthalten — wie die Scoring-Page.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant tSteal = Instant.parse("2026-04-21T10:01:00Z");
+        final Instant t2 = Instant.parse("2026-04-21T10:02:00Z");
+        final AtBat hr = atBat(1, 1, hung, AtBatResult.HOMERUN, BaseState.empty());
+        hr.setRunsScored(1);
+        hr.setCreatedAt(t1);
+        final AtBat triple = atBat(2, 1, anne, AtBatResult.TRIPLE, new BaseState(null, null, anne.getId()));
+        triple.setCreatedAt(t2);
+        final BaseRunningEvent steal = stealingEvent(anne, 1, BaseRunningEventType.STOLEN_BASE,
+            Instant.parse("2026-04-21T10:03:00Z"));
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(hr, triple));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+
+        assertThat(service.computeLiveScoreUs(1L)).isEqualTo(2); // 1 HR + 1 Steal of Home
+    }
+
+    @Test
+    void computeLiveScoreUs_emptyGame_isZero() {
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        assertThat(service.computeLiveScoreUs(1L)).isZero();
+    }
+
+    @Test
+    void stealOfHome_isCountedExactlyOnce_notDoubled() {
+        // Over-count-Guard: Steal of Home als letztes Event darf NICHT doppelt zählen
+        // (Replay + Anzeige-Fold). Genau 1 Run.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant tSteal = Instant.parse("2026-04-21T10:01:00Z");
+        final AtBat ab = atBat(1, 1, khang, AtBatResult.OUT, new BaseState(null, null, hung.getId()));
+        ab.setCreatedAt(t1);
+        final BaseRunningEvent steal = stealingEvent(hung, 1, BaseRunningEventType.STOLEN_BASE, tSteal);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(1);
+        assertThat(sb.baseState().third()).isNull();
+    }
+
+    @Test
+    void hitDrivenRunAndStealRun_noOverCount() {
+        // HR (2 Runs auf AtBat) + späterer Steal of Home (1 Run aus Event) = genau 3,
+        // keine Doppelzählung zwischen AtBat-Runs und Steal-Runs.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant t2 = Instant.parse("2026-04-21T10:01:00Z");
+        final Instant tSteal = Instant.parse("2026-04-21T10:02:00Z");
+        final AtBat hr = atBat(1, 1, hung, AtBatResult.HOMERUN, BaseState.empty());
+        hr.setRunsScored(2);
+        hr.setCreatedAt(t1);
+        final AtBat single = atBat(2, 1, anne, AtBatResult.TRIPLE, new BaseState(null, null, anne.getId()));
+        single.setCreatedAt(t2);
+        final BaseRunningEvent steal = stealingEvent(anne, 1, BaseRunningEventType.STOLEN_BASE, tSteal);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(hr, single));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(steal));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of());
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isEqualTo(3);
+    }
+
+    @Test
+    void caughtStealingAtHome_doesNotScore() {
+        // Over-count-Guard: Runner auf 3B wird beim Klau-Versuch erwischt → kein Run.
+        mockGame();
+        final Instant t1 = Instant.parse("2026-04-21T10:00:00Z");
+        final Instant tCs = Instant.parse("2026-04-21T10:01:00Z");
+        final Instant t2 = Instant.parse("2026-04-21T10:02:00Z");
+        final AtBat ab = atBat(1, 1, khang, AtBatResult.OUT, new BaseState(null, null, hung.getId()));
+        ab.setCreatedAt(t1);
+        final BaseRunningEvent cs = stealingEvent(hung, 1, BaseRunningEventType.CAUGHT_STEALING, tCs);
+        final AtBat ab2 = atBat(2, 1, anne, AtBatResult.SINGLE, new BaseState(anne.getId(), null, null));
+        ab2.setCreatedAt(t2);
+
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab, ab2));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of(cs));
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(playerRepository.findAllById(any())).thenReturn(List.of(anne));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.scoreUs()).isZero();
+    }
+
+    @Test
     void tripleSteal_basesLoaded_thirdRunnerScores() {
         mockGame();
         final Instant atBatTime = Instant.parse("2026-04-21T10:00:00Z");
