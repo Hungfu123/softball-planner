@@ -54,6 +54,12 @@ export function StatsPage() {
   const [loading, setLoading] = useState(false)
   const [showGlossary, setShowGlossary] = useState(false)
 
+  // playerId → gewichteter Game-Zähler (totalGames) für RBI/G in der Batting-Tabelle.
+  const gamesByPlayerId = useMemo(
+    () => new Map(gamesStats.map(g => [g.playerId, g.totalGames])),
+    [gamesStats],
+  )
+
   // Initial loads
   useEffect(() => {
     api.getSeasons().then(setSeasons).catch(() => setSeasons([]))
@@ -318,6 +324,8 @@ export function StatsPage() {
           stats={battingStats}
           onOpenGlossary={() => setShowGlossary(true)}
           applyQualifier={isAggregatedScope(scopeKind)}
+          gamesByPlayerId={gamesByPlayerId}
+          showPerGame={isAggregatedScope(scopeKind)}
         />
       ) : (
         <GamesStatsTable stats={gamesStats} />
