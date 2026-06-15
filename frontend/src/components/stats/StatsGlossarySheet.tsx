@@ -57,6 +57,10 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
                 def="Runs die du durch deinen Hit nach Hause gebracht hast."
               />
               <Row
+                abbr="RBI/G"
+                def="RBI pro Spiel — RBI geteilt durch die (gewichteten) Spiele des Spielers (Feld=1.0, EH/DH=0.5). Nur in Saison-/Jahr-/Alle-Zeit-Statistiken."
+              />
+              <Row
                 abbr="Mindest-ABs (ab 5)"
                 def="In Saison-/Jahr-/Alle-Zeit-Statistiken werden Quoten erst ab 5 At-Bats gewertet — sonst verzerren Mini-Stichproben das Bild (3-für-3 = 1.000). Über 'Alle zeigen' lassen sich Spieler darunter trotzdem einblenden."
               />

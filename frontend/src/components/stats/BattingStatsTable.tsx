@@ -9,15 +9,19 @@ interface Props {
   onOpenGlossary?: () => void
   /** Rate-Stat-Qualifier (≥5 ABs) anwenden — true für aggregierte Scopes (Saison/Jahr/Alle Zeit), false pro Spiel. */
   applyQualifier?: boolean
+  /** playerId → gewichteter Game-Zähler (totalGames). Nenner für RBI/G. */
+  gamesByPlayerId?: Map<number, number>
+  /** RBI/G-Spalte zeigen — nur in aggregierten Scopes wo totalGames vorliegt. */
+  showPerGame?: boolean
 }
 
 type SortKey =
   | 'playerName' | 'atBats' | 'hits' | 'battingAverage' | 'walks' | 'strikeouts'
   | 'homeRuns' | 'stolenBases' | 'caughtStealing' | 'pickoffs'
-  | 'onBasePct' | 'sluggingPct' | 'ops'
+  | 'onBasePct' | 'sluggingPct' | 'ops' | 'runsBattedIn' | 'rbiPerGame'
 type SortDir = 'asc' | 'desc'
 
-export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false }: Props) {
+export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
   const [showDetails, setShowDetails] = useState(false)
   const [showUnqualified, setShowUnqualified] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('battingAverage')
@@ -32,12 +36,20 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     }
   }
 
+  // RBI/G = RBI / gewichtete Spiele. Ohne Game-Zähler (z.B. Scope Spiel) → null.
+  const rbiPerGame = (s: PlayerBattingStatsResponse): number | null => {
+    const games = gamesByPlayerId?.get(s.playerId) ?? 0
+    return games > 0 ? s.runsBattedIn / games : null
+  }
+
   const sorted = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1
     return [...stats].sort((a, b) => {
       let cmp: number
       if (sortKey === 'playerName') {
         cmp = a.playerName.localeCompare(b.playerName)
+      } else if (sortKey === 'rbiPerGame') {
+        cmp = (rbiPerGame(a) ?? -1) - (rbiPerGame(b) ?? -1)
       } else {
         cmp = Number(a[sortKey] ?? 0) - Number(b[sortKey] ?? 0)
       }
@@ -45,7 +57,8 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
       // Tiebreaker immer stabil: Treffer absteigend, dann Name
       return b.hits - a.hits || a.playerName.localeCompare(b.playerName)
     })
-  }, [stats, sortKey, sortDir])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stats, sortKey, sortDir, gamesByPlayerId])
 
   const { qualified, unqualified } = useMemo(() => {
     if (!applyQualifier) return { qualified: sorted, unqualified: [] as PlayerBattingStatsResponse[] }
@@ -153,6 +166,8 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                 {sortTh('strikeouts', 'K')}
                 {sortTh('homeRuns', 'HR')}
                 {sortTh('stolenBases', 'SB')}
+                {sortTh('runsBattedIn', 'RBI', { title: 'Runs Batted In — Läufe durch eigenen Schlag ermöglicht' })}
+                {showPerGame && sortTh('rbiPerGame', 'RBI/G', { title: 'RBI pro Spiel (gewichteter Game-Zähler)' })}
                 {showDetails && (
                   <>
                     {sortTh('caughtStealing', 'CS', { title: 'Caught Stealing — beim Steal-Versuch erwischt' })}
@@ -220,6 +235,16 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                       ) : '0'}
                     </td>
                     <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.stolenBases)}`}>{s.stolenBases}</td>
+                    {/* RBI — Counting-Stat, immer sichtbar */}
+                    <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${dimZero(s.runsBattedIn)}`}>{s.runsBattedIn}</td>
+                    {showPerGame && (() => {
+                      const pg = rbiPerGame(s)
+                      return (
+                        <td className="px-3 py-2 text-right font-display tabular-nums text-navy-900">
+                          {pg != null ? pg.toFixed(2) : '—'}
+                        </td>
+                      )
+                    })()}
                     {showDetails && (
                       <>
                         <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.caughtStealing)}`}>{s.caughtStealing}</td>
@@ -237,7 +262,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
               })}
               {visible.length === 0 && (
                 <tr>
-                  <td colSpan={showDetails ? 16 : 10} className="px-3 py-8 text-center text-sm text-gray-500">
+                  <td colSpan={(showDetails ? 16 : 10) + 1 + (showPerGame ? 1 : 0)} className="px-3 py-8 text-center text-sm text-gray-500">
                     Kein Spieler mit {MIN_AB_LABEL} in diesem Zeitraum.
                     {unqualified.length > 0 && (
                       <button onClick={() => setShowUnqualified(true)} className="ml-1 text-navy-700 underline hover:text-softball-red-600 cursor-pointer">
