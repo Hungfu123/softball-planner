@@ -18,6 +18,7 @@ Aggregierte Spieler-Statistiken über Saison(s) hinweg. Basiert auf `AtBat`-Reco
   - Field-Position (P/C/1B/2B/3B/SS/LF/CF/RF) = **1.0** Spiel
   - **EH** (Extra Hitter, kein Field) = **0.5** Spiel
   - **DH-Batter** (annotiert via `dhBatterPlayerId`) = **0.5** Spiel
+  - **DH-Host** (Field-Player MIT `dhBatterPlayerId`) = **0.5** Spiel — Batting an DH abgegeben, DH-Spiel teilt sich 0.5/0.5 zwischen Host + DH-Batter. `positionCounts` zählt die Field-Position trotzdem (er hat ja gefeldet).
   - `position == null` = 1.0 Spiel (gezählt aber nicht in `positionCounts`)
 - **Batting-Stats-Berechnung** (`BattingStatsCalculator`):
   - PA = Plate Appearances (alles inkl. BB, HBP, SAC)
@@ -42,5 +43,5 @@ Aggregierte Spieler-Statistiken über Saison(s) hinweg. Basiert auf `AtBat`-Reco
 
 ## Häufige Fallstricke
 - **Top-Hitter zeigt falsche Werte**: meist Cache-Stale oder falsche Filter (Saison/All-Time). Backend-Endpoint prüfen.
-- **DH-Batter doppelt gezählt**: passiert wenn DH-Annotation falsch verstanden wird. DH ist KEIN eigener `LineupEntry`, nur `dhBatterPlayerId` auf Field-Player. Field-Player zählt 1.0, DH-Batter 0.5.
+- **DH-Batter doppelt gezählt**: passiert wenn DH-Annotation falsch verstanden wird. DH ist KEIN eigener `LineupEntry`, nur `dhBatterPlayerId` auf Field-Player. Field-Player MIT DH zählt 0.5 (Batting abgegeben), DH-Batter 0.5 → Spiel teilt sich 0.5/0.5.
 - **Game-Total stimmt nicht überein**: Position-Counts summieren mit EH+DH-Weighting (nicht 1.0). Total-Games-Played jedoch zählt jeden Anwesenheits-Tag = 1.0.
