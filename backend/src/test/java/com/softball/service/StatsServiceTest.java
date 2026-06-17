@@ -72,6 +72,49 @@ class StatsServiceTest {
     }
 
     @Test
+    void getSeasonStats_dhHostCountsHalfGame_splitWithDhBatter() {
+        // Max spielt 2 Games als Feldspieler. In Game 2 schlägt Lisa als DH für ihn.
+        // → Game 1 = 1.0, Game 2 (DH-Host) = 0.5  ⇒  Max = 1.5
+        // → Lisa (DH-Batter) = 0.5
+        final Player max = new Player("Max");
+        max.setId(1L);
+        final Player lisa = new Player("Lisa");
+        lisa.setId(2L);
+
+        final Season season = new Season(1L, "Saison 2026", 2026);
+
+        final GameDay gd1 = new GameDay(LocalDate.of(2026, 3, 15), null, null, season);
+        final Game g1 = new Game(10L, 1);
+        g1.setGameDay(gd1);
+        gd1.setGames(List.of(g1));
+
+        final GameDay gd2 = new GameDay(LocalDate.of(2026, 3, 22), null, null, season);
+        final Game g2 = new Game(20L, 1);
+        g2.setGameDay(gd2);
+        gd2.setGames(List.of(g2));
+
+        season.setGameDays(Set.of(gd1, gd2));
+        when(seasonRepository.findByIdWithGameDaysAndGames(1L)).thenReturn(Optional.of(season));
+
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(any())).thenReturn(List.of(
+            new LineupEntry(g1, max, Position.SS, 1),
+            new LineupEntry(g2, max, Position.SS, 1, lisa)  // DH-Host
+        ));
+
+        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L);
+
+        final SeasonPlayerStats maxStats = stats.stream()
+            .filter(s -> s.playerName().equals("Max")).findFirst().orElseThrow();
+        final SeasonPlayerStats lisaStats = stats.stream()
+            .filter(s -> s.playerName().equals("Lisa")).findFirst().orElseThrow();
+
+        assertThat(maxStats.totalGames()).isEqualTo(1.5);
+        assertThat(maxStats.positionCounts()).containsEntry("SS", 2L);
+        assertThat(lisaStats.totalGames()).isEqualTo(0.5);
+        assertThat(lisaStats.positionCounts()).containsEntry("DH", 1L);
+    }
+
+    @Test
     void getSeasonStats_emptySeasonReturnsEmptyList() {
         final Season season = new Season(1L, "Empty", 2026);
         season.setGameDays(Set.of());

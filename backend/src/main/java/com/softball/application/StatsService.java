@@ -50,7 +50,11 @@ public class StatsService {
                     final Position pos = entry.getPosition();
 
                     playerNames.putIfAbsent(pid, entry.getPlayer().getName());
-                    playerGames.merge(pid, pos != null ? pos.getGameWeight() : 1.0, Double::sum);
+                    // Field-Host mit DH zählt 0.5 (Batting an DH abgegeben) — DH-Spiel teilt sich 0.5/0.5
+                    final double hostWeight = entry.getDhBatterPlayer() != null
+                        ? 0.5
+                        : (pos != null ? pos.getGameWeight() : 1.0);
+                    playerGames.merge(pid, hostWeight, Double::sum);
                     if (pos != null) {
                         playerPositions.computeIfAbsent(pid, k -> new HashMap<>())
                             .merge(pos.displayName(), 1L, Long::sum);
@@ -113,7 +117,11 @@ public class StatsService {
                 final Long pid = entry.getPlayer().getId();
                 final Position pos = entry.getPosition();
                 playerNames.putIfAbsent(pid, entry.getPlayer().getName());
-                playerGames.merge(pid, pos != null ? pos.getGameWeight() : 1.0, Double::sum);
+                // Field-Host mit DH zählt 0.5 (Batting an DH abgegeben) — DH-Spiel teilt sich 0.5/0.5
+                final double hostWeight = entry.getDhBatterPlayer() != null
+                    ? 0.5
+                    : (pos != null ? pos.getGameWeight() : 1.0);
+                playerGames.merge(pid, hostWeight, Double::sum);
                 if (pos != null) {
                     playerPositions.computeIfAbsent(pid, k -> new HashMap<>())
                         .merge(pos.displayName(), 1L, Long::sum);
