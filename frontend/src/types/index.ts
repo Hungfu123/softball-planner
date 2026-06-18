@@ -70,7 +70,7 @@ export interface GameDayPlayerStats {
   playerId: number
   playerName: string
   gameCount: number
-  positions: { gameNumber: number; position: string }[]
+  positions: { gameNumber: number; position: string; weight: number }[]
 }
 
 export interface SeasonPlayerStats {

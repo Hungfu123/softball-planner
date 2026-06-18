@@ -211,6 +211,23 @@ class LineupValidatorTest {
             assertThatCode(() -> validator.validateNoConflictWithStaff(entries, Set.of(99L)))
                 .doesNotThrowAnyException();
         }
+
+        @Test
+        void dhHostMayBeStaff_passes() {
+            // Spieler 1 ist DH-Host (gibt Batting an DH 99 ab) → schlägt nicht → darf Base Coach sein
+            final List<LineupInput> entries = List.of(entryWithDh(1L, "1B", 1, 99L));
+            assertThatCode(() -> validator.validateNoConflictWithStaff(entries, Set.of(1L)))
+                .doesNotThrowAnyException();
+        }
+
+        @Test
+        void dhBatterIsStaff_throws() {
+            // DH-Batter 99 schlägt → darf NICHT Base Coach sein
+            final List<LineupInput> entries = List.of(entryWithDh(1L, "1B", 1, 99L));
+            assertThatThrownBy(() -> validator.validateNoConflictWithStaff(entries, Set.of(99L)))
+                .isInstanceOf(LineupValidationException.class)
+                .hasMessageContaining("DH-Batter");
+        }
     }
 
     @Nested

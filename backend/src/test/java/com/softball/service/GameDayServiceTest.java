@@ -142,10 +142,10 @@ class GameDayServiceTest {
         assertThat(dhBatterStats.gameCount()).isEqualTo(0.5);
         assertThat(dhBatterStats.positions().getFirst().position()).isEqualTo("DH");
 
-        // player1 (fielder with DH batter) still counts as 1.0 game
+        // player1 (DH-Host, Batting an DH abgegeben) counts as 0.5 game — DH-Spiel teilt sich 0.5/0.5
         final GameDayPlayerStats fielderStats = stats.stream()
             .filter(s -> s.playerName().equals("Max")).findFirst().orElseThrow();
-        assertThat(fielderStats.gameCount()).isEqualTo(1.0);
+        assertThat(fielderStats.gameCount()).isEqualTo(0.5);
     }
 
     @Test

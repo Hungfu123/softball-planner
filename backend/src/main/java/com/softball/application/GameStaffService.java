@@ -117,11 +117,19 @@ public class GameStaffService {
             parseStaffRole(req.role());
         }
 
-        final Set<Long> lineupPlayerIds = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId).stream()
-            .map(e -> e.getPlayer().getId())
-            .collect(Collectors.toSet());
+        // Base Coach darf nur sein, wer nicht schlägt. Gesperrt sind alle Schläger:
+        // normale Lineup-Spieler + DH-Batter. Der DH-Host (gibt Batting an DH ab) schlägt
+        // nicht und darf Base Coach sein.
+        final Set<Long> battingPlayerIds = new HashSet<>();
+        for (final LineupEntry e : lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId)) {
+            if (e.getDhBatterPlayer() != null) {
+                battingPlayerIds.add(e.getDhBatterPlayer().getId());
+            } else {
+                battingPlayerIds.add(e.getPlayer().getId());
+            }
+        }
         for (final GameStaffRequest req : staffRequests) {
-            if (lineupPlayerIds.contains(req.playerId())) {
+            if (battingPlayerIds.contains(req.playerId())) {
                 throw new BusinessValidationException("Spieler " + req.playerId() + " ist bereits im Lineup");
             }
         }
