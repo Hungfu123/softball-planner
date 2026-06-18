@@ -217,13 +217,17 @@ public class GameDayService {
             for (final LineupEntry entry : entries) {
                 if (entry.getPlayer().getId().equals(player.getId())) {
                     final Position pos = entry.getPosition();
-                    gameCount += pos != null ? pos.getGameWeight() : 1.0;
+                    // Field-Host mit DH zählt 0.5 (Batting an DH abgegeben) — DH-Spiel teilt sich 0.5/0.5
+                    final double weight = entry.getDhBatterPlayer() != null
+                        ? 0.5
+                        : (pos != null ? pos.getGameWeight() : 1.0);
+                    gameCount += weight;
                     positions.add(new GameDayPlayerStats.GamePosition(game.getGameNumber(),
-                        pos != null ? pos.displayName() : null));
+                        pos != null ? pos.displayName() : null, weight));
                 }
                 if (entry.getDhBatterPlayer() != null && entry.getDhBatterPlayer().getId().equals(player.getId())) {
                     gameCount += 0.5;
-                    positions.add(new GameDayPlayerStats.GamePosition(game.getGameNumber(), "DH"));
+                    positions.add(new GameDayPlayerStats.GamePosition(game.getGameNumber(), "DH", 0.5));
                 }
             }
         }

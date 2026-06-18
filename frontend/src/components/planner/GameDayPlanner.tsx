@@ -455,6 +455,9 @@ export function GameDayPlanner() {
 
   const lineupPlayerIds = new Set(lineup.entries.map(e => e.player.id))
   const dhBatterIds = new Set(lineup.entries.filter(e => e.dhBatterId).map(e => e.dhBatterId!))
+  // Base Coach darf nur sein, wer nicht schlägt: Bank-Spieler + DH-Host (gibt Batting an DH ab).
+  // Gesperrt: schlagende Lineup-Spieler (battingLineupIds) + DH-Batter (dhBatterIds).
+  const battingLineupIds = new Set(lineup.entries.filter(e => !e.dhBatterId).map(e => e.player.id))
   const staffPlayerIds = new Set(staff.staff.map(s => s.player.id))
   const lineupUsedIds = new Set([...lineupPlayerIds, ...dhBatterIds])
   const allUsedIds = new Set([...lineupUsedIds, ...staffPlayerIds])
@@ -473,11 +476,25 @@ export function GameDayPlanner() {
   const adjustedStats = (() => {
     if (!activeGame || lineup.activeGameId !== activeGame.id) return stats
     const gameNum = activeGame.gameNumber
+
+    // Lokaler Einsatz-Gewichtung eines Spielers im aktiven (ungespeicherten) Spiel:
+    // DH-Batter = 0.5, Feld-Host (gibt Batting an DH ab) = 0.5, EH = 0.5, sonst 1.0
+    const localWeight = (playerId: number): number => {
+      if (dhBatterIds.has(playerId)) return 0.5
+      const entry = lineup.entries.find(e => e.player.id === playerId)
+      if (!entry) return 0
+      if (entry.dhBatterId) return 0.5
+      if (entry.position === 'EH') return 0.5
+      return 1.0
+    }
+
     return stats.map(s => {
-      const savedInGame = s.positions.some(p => p.gameNumber === gameNum)
-      const localInGame = lineupPlayerIds.has(s.playerId)
-      if (savedInGame === localInGame) return s
-      return { ...s, gameCount: s.gameCount + (localInGame ? 1 : -1) }
+      const savedWeight = s.positions
+        .filter(p => p.gameNumber === gameNum)
+        .reduce((sum, p) => sum + p.weight, 0)
+      const local = localWeight(s.playerId)
+      if (savedWeight === local) return s
+      return { ...s, gameCount: s.gameCount - savedWeight + local }
     })
   })()
 
@@ -870,7 +887,7 @@ export function GameDayPlanner() {
                 <FieldView entries={lineup.entries} onPositionClick={setAssignPosition} />
                 <CoachSlots
                   staff={staff.staff}
-                  availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
+                  availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
                   onSave={handleStaffSave}
                   lineup={coachRotationLineup}
                   game={activeGame!}
@@ -931,7 +948,7 @@ export function GameDayPlanner() {
 
                 <CoachSlots
                   staff={staff.staff}
-                  availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
+                  availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
                   onSave={handleStaffSave}
                   lineup={coachRotationLineup}
                   game={activeGame!}
@@ -1006,7 +1023,7 @@ export function GameDayPlanner() {
             <div className="lg:hidden space-y-4 order-3">
               <CoachSlots
                 staff={staff.staff}
-                availablePlayers={availablePlayers.filter(p => !lineupPlayerIds.has(p.id) && !dhBatterIds.has(p.id))}
+                availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
                 onSave={handleStaffSave}
                 lineup={coachRotationLineup}
                 game={activeGame!}

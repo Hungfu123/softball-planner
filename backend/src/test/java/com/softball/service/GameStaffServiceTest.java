@@ -136,6 +136,34 @@ class GameStaffServiceTest {
         }
 
         @Test
+        void dhHostMayBeStaff_passes() {
+            // player1 ist DH-Host (player2 schlägt als DH für ihn) → schlägt nicht → darf Base Coach sein
+            final LineupEntry hostEntry = new LineupEntry(game, player1, Position.SS, 1, player2);
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of(hostEntry));
+            when(playerRepository.findById(1L)).thenReturn(Optional.of(player1));
+            when(gameStaffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            final List<GameStaff> result = gameStaffService.setStaff(10L,
+                List.of(new GameStaffRequest(1L, "BASE_COACH_1ST")));
+
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        void dhBatterCannotBeStaff_throws() {
+            // player2 ist DH-Batter für Host player1 → schlägt → darf NICHT Base Coach sein
+            final LineupEntry hostEntry = new LineupEntry(game, player1, Position.SS, 1, player2);
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L)).thenReturn(List.of(hostEntry));
+
+            assertThatThrownBy(() -> gameStaffService.setStaff(10L, List.of(
+                new GameStaffRequest(2L, "BASE_COACH_1ST")
+            ))).isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("bereits im Lineup");
+        }
+
+        @Test
         void gameNotFound_throws() {
             when(gameRepository.findById(99L)).thenReturn(Optional.empty());
 

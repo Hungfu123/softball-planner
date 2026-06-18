@@ -98,6 +98,13 @@ public class LineupValidator {
 
     void validateNoConflictWithStaff(final List<LineupInput> entries, final Set<Long> staffPlayerIds) {
         for (final LineupInput entry : entries) {
+            if (entry.dhBatterPlayerId() != null) {
+                // DH-Host schlägt nicht und darf Base Coach sein. Der DH-Batter schlägt → darf NICHT coachen.
+                if (staffPlayerIds.contains(entry.dhBatterPlayerId())) {
+                    throw new LineupValidationException("DH-Batter " + entry.dhBatterPlayerId() + " ist bereits als Base Coach eingeteilt");
+                }
+                continue;
+            }
             if (staffPlayerIds.contains(entry.playerId())) {
                 throw new LineupValidationException("Spieler " + entry.playerId() + " ist bereits als Base Coach eingeteilt");
             }

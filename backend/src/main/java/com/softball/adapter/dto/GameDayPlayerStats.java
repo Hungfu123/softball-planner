@@ -8,5 +8,5 @@ public record GameDayPlayerStats(
     double gameCount,
     List<GamePosition> positions
 ) {
-    public record GamePosition(int gameNumber, String position) {}
+    public record GamePosition(int gameNumber, String position, double weight) {}
 }
