@@ -174,9 +174,13 @@ export function useTraining() {
     api.getTrainingStats(activePeriodId ?? undefined).then(setStats)
   }
 
-  const renamePeriod = async (periodId: number, name: string) => {
-    await api.renameTrainingPeriod(periodId, name)
+  const updatePeriod = async (
+    periodId: number,
+    data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; location?: string | null },
+  ) => {
+    await api.updateTrainingPeriod(periodId, data)
     await loadPeriods()
+    await loadAll(activePeriodId)
   }
 
   const deletePeriod = async (periodId: number) => {
@@ -220,7 +224,7 @@ export function useTraining() {
     createBulk,
     deleteTraining,
     cancelTraining,
-    renamePeriod,
+    updatePeriod,
     deletePeriod,
     importCsv,
   }

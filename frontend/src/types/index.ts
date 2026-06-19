@@ -172,6 +172,9 @@ export interface TrainingPeriodResponse {
   name: string
   startDate: string
   endDate: string
+  weekdays: number[]
+  time: string | null
+  location: string | null
 }
 
 export type TrainingType = 'REGULAR' | 'PITCHER_CATCHER'
