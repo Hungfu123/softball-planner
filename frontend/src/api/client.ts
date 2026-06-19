@@ -330,8 +330,10 @@ export const importTrainingCsv = (csv: string, periodName?: string) =>
 // Training Periods
 export const getTrainingPeriods = () =>
   request<TrainingPeriodResponse[]>('/trainings/periods')
-export const renameTrainingPeriod = (id: number, name: string) =>
-  request<TrainingPeriodResponse>(`/trainings/periods/${id}`, { method: 'PUT', body: JSON.stringify({ name }) })
+export const updateTrainingPeriod = (
+  id: number,
+  data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; location?: string | null },
+) => request<TrainingPeriodResponse>(`/trainings/periods/${id}`, { method: 'PUT', body: JSON.stringify(data) })
 export const deleteTrainingPeriod = (id: number) =>
   request<void>(`/trainings/periods/${id}`, { method: 'DELETE' })
 
