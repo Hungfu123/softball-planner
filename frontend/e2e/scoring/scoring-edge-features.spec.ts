@@ -28,13 +28,11 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.baseState.third).toBe(ids[7])       // 2B → 3B
   })
 
-  test('Force-Out 3rd-Out Banner: erscheint in CorrectionSheet wenn outsAfter===3', async ({ page, scoringPage }) => {
+  test('3rd-Out OUT: kein CorrectionSheet, Runner scort nicht, Inning endet', async ({ page, scoringPage }) => {
     const ids = scoringPage.playerIds
-    // Setup: 2 Outs in Inning 1 + Runner auf 3B (Setup-State für Force-Play-Risk)
+    // Setup: 2 Outs in Inning 1 + Runner auf 3B
     await seedAtBat(scoringPage.gameId, ids[0], 'OUT', 1, { first: null, second: null, third: null })
     await seedAtBat(scoringPage.gameId, ids[1], 'OUT', 1, { first: null, second: null, third: null })
-    // 3. AB: TRIPLE → Runner auf 3B (state nach diesem AB hat Runner aber AB war nicht OUT)
-    // Wir brauchen: 2 outs + Runner ON state, dann OUT als 3. → Sheet öffnet mit outsAfter=3
     await seedAtBat(scoringPage.gameId, ids[2], 'TRIPLE', 1, { first: null, second: null, third: ids[2] })
     await page.reload()
     await page.waitForTimeout(500)
@@ -44,20 +42,16 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.outsInCurrentInning).toBe(2)
     expect(sb.baseState.third).toBe(ids[2])
 
-    // OUT recorden → 3. Out, CorrectionSheet öffnet mit Banner
+    // OUT recorden → 3. Out. Inning vorbei: KEIN Sheet, kein Run für den 3B-Runner.
     await page.getByRole('button', { name: /^AUS\b/ }).click()
     await page.waitForTimeout(500)
 
-    // Banner sichtbar
-    await expect(page.getByText(/3\. Out im Inning/i)).toBeVisible({ timeout: 2000 })
-    await expect(page.getByText(/Force-Out.*als 3\. Out zählt der Run NICHT/i)).toBeVisible()
-
-    // Sheet schließen
-    await page.getByRole('button', { name: /✓ Passt/i }).click()
-    await page.waitForTimeout(300)
+    // Sheet öffnet NICHT
+    await expect(page.getByText(/3\. Out im Inning/i)).toBeHidden()
 
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.outsInCurrentInning).toBe(3)
+    expect(sb.scoreUs).toBe(0)
   })
 
   test('Stats nach Undo: Player-Stats werden revertet', async ({ page, scoringPage }) => {
