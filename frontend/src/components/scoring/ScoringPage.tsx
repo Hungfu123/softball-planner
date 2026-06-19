@@ -304,17 +304,16 @@ export function ScoringPage() {
     // Pre-AB Runner-Snapshot fuer CorrectionSheet — ermoeglicht Cycle zurueck
     // zur urspruenglichen Base falls Runner doch stehen blieb.
     setPreAbRunners(displayRunners)
-    // OUT+hadRunners: IMMER Sheet öffnen (auch 3rd Out — wegen Force-Out-Banner).
-    // Andere Hits nur wenn Inning danach noch läuft.
+    // Sheet nur öffnen wenn das Inning danach noch läuft. Macht der Batter das
+    // 3. Out, ist das Inning vorbei — kein Runner kann mehr scoren (Softball-Regel),
+    // also kein Sheet, sofort als Out mit 0 Runs verbuchen.
     const outsBeforeAB = scoreboard.outsInCurrentInning ?? 0
     const inningOverAfterAB = outsBeforeAB + (result === 'OUT' ? 1 : 0) >= 3
     const hadRunners = displayRunners.length > 0
     const willOpenCorrection = hadRunners
-      && (
-        result === 'OUT'
-        || (!inningOverAfterAB && (result === 'SINGLE' || result === 'DOUBLE'
-            || result === 'TRIPLE' || result === 'REACHED_ON_ERROR'))
-      )
+      && !inningOverAfterAB
+      && (result === 'OUT' || result === 'SINGLE' || result === 'DOUBLE'
+          || result === 'TRIPLE' || result === 'REACHED_ON_ERROR')
     try {
       const nextState = advanceBases(displayBaseState, result, batterIdSnapshot)
       const runsScored = countScored(displayBaseState, nextState, result, batterIdSnapshot)
