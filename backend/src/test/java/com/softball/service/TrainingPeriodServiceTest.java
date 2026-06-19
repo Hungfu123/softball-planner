@@ -69,36 +69,6 @@ class TrainingPeriodServiceTest {
     }
 
     @Test
-    void rename_periodNotFound_throws() {
-        when(periodRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.rename(99L, "Neuer Name"))
-            .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void rename_blankName_throws() {
-        final var period = new TrainingPeriod("Alt", LocalDate.of(2025, 1, 1), LocalDate.of(2025, 3, 31));
-        when(periodRepository.findById(1L)).thenReturn(Optional.of(period));
-
-        assertThatThrownBy(() -> service.rename(1L, "  "))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Name");
-    }
-
-    @Test
-    void rename_updatesName() {
-        final var period = new TrainingPeriod("Alt", LocalDate.of(2025, 1, 1), LocalDate.of(2025, 3, 31));
-        period.setId(1L);
-        when(periodRepository.findById(1L)).thenReturn(Optional.of(period));
-        when(periodRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        final TrainingPeriodResponse result = service.rename(1L, "Neu");
-
-        assertThat(result.name()).isEqualTo("Neu");
-    }
-
-    @Test
     void delete_periodNotFound_throws() {
         when(periodRepository.existsById(99L)).thenReturn(false);
 

@@ -65,17 +65,6 @@ public class TrainingPeriodService {
     }
 
     @Transactional
-    public TrainingPeriodResponse rename(final Long periodId, final String name) {
-        final TrainingPeriod period = periodRepository.findById(periodId)
-            .orElseThrow(() -> new ResourceNotFoundException("TrainingPeriod", periodId));
-        if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Name darf nicht leer sein");
-        }
-        period.setName(name.trim());
-        return TrainingPeriodResponse.from(periodRepository.save(period));
-    }
-
-    @Transactional
     public TrainingPeriodResponse update(final Long periodId, final String name, final LocalDate startDate,
                                           final LocalDate endDate, final List<Integer> weekdays,
                                           final String time, final String location) {
