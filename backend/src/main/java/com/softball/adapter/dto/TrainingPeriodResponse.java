@@ -9,7 +9,11 @@ public record TrainingPeriodResponse(Long id, String name, LocalDate startDate, 
                                      List<Integer> weekdays, String time, String location) {
 
     public static TrainingPeriodResponse from(final TrainingPeriod period) {
-        return new TrainingPeriodResponse(period.getId(), period.getName(), period.getStartDate(), period.getEndDate(),
-            period.getWeekdays(), period.getTime(), period.getLocation());
+        return from(period, period.getWeekdays());
+    }
+
+    public static TrainingPeriodResponse from(final TrainingPeriod period, final List<Integer> weekdays) {
+        return new TrainingPeriodResponse(period.getId(), period.getName(), period.getStartDate(),
+            period.getEndDate(), weekdays, period.getTime(), period.getLocation());
     }
 }
