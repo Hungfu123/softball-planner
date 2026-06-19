@@ -163,6 +163,20 @@ class TrainingPeriodServiceTest {
     }
 
     @Test
+    void findAll_derivesWeekdaysFromTrainings_whenPeriodHasNone() {
+        final TrainingPeriod period = new TrainingPeriod(3L, "Alt", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 1));
+        // weekdays leer (Alt-Daten)
+        when(periodRepository.findAllByOrderByStartDateDesc()).thenReturn(List.of(period));
+        final Training tue = new Training(LocalDate.of(2026, 1, 6), null, null); // Dienstag
+        tue.setId(1L);
+        when(trainingRepository.findByPeriodIdOrderByDateDesc(3L)).thenReturn(List.of(tue));
+
+        final List<TrainingPeriodResponse> result = service.findAll();
+
+        assertThat(result.getFirst().weekdays()).containsExactly(2);
+    }
+
+    @Test
     void update_missingPeriod_throws() {
         when(periodRepository.findById(404L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.update(404L, "X", LocalDate.now(), LocalDate.now().plusDays(1), List.of(1), null, null))

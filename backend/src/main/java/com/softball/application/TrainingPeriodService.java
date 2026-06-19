@@ -42,7 +42,17 @@ public class TrainingPeriodService {
     @Transactional(readOnly = true)
     public List<TrainingPeriodResponse> findAll() {
         return periodRepository.findAllByOrderByStartDateDesc().stream()
-            .map(TrainingPeriodResponse::from)
+            .map(p -> {
+                if (p.getWeekdays() != null && !p.getWeekdays().isEmpty()) {
+                    return TrainingPeriodResponse.from(p);
+                }
+                final List<Integer> derived = trainingRepository.findByPeriodIdOrderByDateDesc(p.getId()).stream()
+                    .map(t -> t.getDate().getDayOfWeek().getValue())
+                    .distinct()
+                    .sorted()
+                    .toList();
+                return TrainingPeriodResponse.from(p, derived);
+            })
             .toList();
     }
 

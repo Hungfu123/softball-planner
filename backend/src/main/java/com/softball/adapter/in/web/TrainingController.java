@@ -111,8 +111,9 @@ public class TrainingController {
 
     @PutMapping("/periods/{id}")
     public TrainingPeriodResponse updatePeriod(@PathVariable final Long id,
-                                                @Valid @RequestBody final RenamePeriodRequest request) {
-        return periodService.rename(id, request.name());
+                                                @Valid @RequestBody final UpdateTrainingPeriodRequest request) {
+        return periodService.update(id, request.name(), request.startDate(), request.endDate(),
+            request.weekdays(), request.time(), request.location());
     }
 
     @DeleteMapping("/periods/{id}")
