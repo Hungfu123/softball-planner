@@ -1,12 +1,17 @@
 package com.softball.domain.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TrainingPeriod {
     private Long id;
     private String name;
     private LocalDate startDate;
     private LocalDate endDate;
+    private List<Integer> weekdays = new ArrayList<>();
+    private String time;
+    private String location;
 
     public TrainingPeriod() {}
 
@@ -31,4 +36,11 @@ public class TrainingPeriod {
     public void setStartDate(final LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(final LocalDate endDate) { this.endDate = endDate; }
+
+    public List<Integer> getWeekdays() { return weekdays; }
+    public void setWeekdays(final List<Integer> weekdays) { this.weekdays = weekdays != null ? weekdays : new ArrayList<>(); }
+    public String getTime() { return time; }
+    public void setTime(final String time) { this.time = time; }
+    public String getLocation() { return location; }
+    public void setLocation(final String location) { this.location = location; }
 }
