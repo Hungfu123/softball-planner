@@ -236,7 +236,7 @@ class TrainingServiceTest {
             service.createBulk(List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
                 "18:00", "Feld", "Sommer", null);
 
-            verify(periodRepository).save(any(TrainingPeriod.class));
+            verify(periodRepository, atLeastOnce()).save(any(TrainingPeriod.class));
         }
 
         @Test

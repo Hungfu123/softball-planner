@@ -89,6 +89,10 @@ public class TrainingService {
         if (periodName != null && !periodName.isBlank()) {
             period = periodRepository.findByNameIgnoreCase(periodName.trim())
                 .orElseGet(() -> periodRepository.save(new TrainingPeriod(periodName.trim(), startDate, endDate)));
+            period.setWeekdays(new java.util.ArrayList<>(weekdays));
+            period.setTime(time);
+            period.setLocation(location);
+            period = periodRepository.save(period);
         }
 
         final List<LocalDate> candidateDates = new ArrayList<>();

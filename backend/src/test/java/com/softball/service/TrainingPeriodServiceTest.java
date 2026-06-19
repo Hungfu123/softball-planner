@@ -31,6 +31,7 @@ class TrainingPeriodServiceTest {
     @Mock private TrainingRepository trainingRepository;
     @Mock private TrainingAttendanceRepository attendanceRepository;
     @Mock private TrainingPlanRepository trainingPlanRepository;
+    @Mock private com.softball.application.RegularPlayerAutoFiller autoFiller;
 
     @InjectMocks private TrainingPeriodService service;
 
@@ -133,5 +134,38 @@ class TrainingPeriodServiceTest {
 
         verify(attendanceRepository, never()).deleteByTrainingIds(any());
         verify(periodRepository).deleteById(1L);
+    }
+
+    @Test
+    void update_addsWeekday_createsFutureTrainings_andPersistsRhythm() {
+        final LocalDate today = LocalDate.now();
+        final LocalDate start = today.minusDays(1);
+        final LocalDate end = today.plusWeeks(2);
+
+        final TrainingPeriod period = new TrainingPeriod(7L, "Sommer", start, end);
+        when(periodRepository.findById(7L)).thenReturn(Optional.of(period));
+        when(periodRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(trainingRepository.findByPeriodIdOrderByDateDesc(7L)).thenReturn(List.of());
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            final Training t = inv.getArgument(0);
+            t.setId(99L);
+            return t;
+        });
+
+        // Rhythmus: der Wochentag von 'today' -> mind. 1 künftiger Termin (today) wird angelegt.
+        final int todayDow = today.getDayOfWeek().getValue();
+        final TrainingPeriodResponse res = service.update(7L, "Sommer", start, end, List.of(todayDow), "18:00", "Park");
+
+        assertThat(res.weekdays()).containsExactly(todayDow);
+        assertThat(res.time()).isEqualTo("18:00");
+        verify(trainingRepository, atLeastOnce()).save(any(Training.class));
+        verify(autoFiller, atLeastOnce()).autoFill(any(Training.class));
+    }
+
+    @Test
+    void update_missingPeriod_throws() {
+        when(periodRepository.findById(404L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.update(404L, "X", LocalDate.now(), LocalDate.now().plusDays(1), List.of(1), null, null))
+            .isInstanceOf(ResourceNotFoundException.class);
     }
 }
