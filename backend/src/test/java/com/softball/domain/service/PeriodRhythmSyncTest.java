@@ -57,4 +57,13 @@ class PeriodRhythmSyncTest {
         final PeriodRhythmSync.SyncPlan plan = sync.computeFuture(List.of(4), start, end, today, List.of(pastTue));
         assertThat(plan.trainingIdsToDelete()).isEmpty();
     }
+
+    @Test
+    void removeWeekday_doesNotDeleteTrainingOutsidePeriodWindow() {
+        // Donnerstag 2026-06-18 liegt nach end (2026-06-14) -> darf NICHT gelöscht werden,
+        // auch wenn Donnerstag nicht mehr im Rhythmus ist.
+        final Training afterEnd = training(3L, LocalDate.of(2026, 6, 18)); // Donnerstag, nach end
+        final PeriodRhythmSync.SyncPlan plan = sync.computeFuture(List.of(2), start, end, today, List.of(afterEnd));
+        assertThat(plan.trainingIdsToDelete()).isEmpty();
+    }
 }

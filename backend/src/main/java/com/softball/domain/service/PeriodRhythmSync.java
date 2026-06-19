@@ -37,6 +37,7 @@ public class PeriodRhythmSync {
 
         final List<Long> trainingIdsToDelete = existing.stream()
             .filter(t -> !t.getDate().isBefore(today))
+            .filter(t -> !t.getDate().isAfter(end))
             .filter(t -> !targetDays.contains(t.getDate().getDayOfWeek()))
             .map(Training::getId)
             .collect(Collectors.toCollection(ArrayList::new));
