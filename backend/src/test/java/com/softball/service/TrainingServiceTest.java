@@ -1,12 +1,11 @@
 package com.softball.service;
 
 import com.softball.adapter.dto.TrainingResponse;
+import com.softball.application.RegularPlayerAutoFiller;
 import com.softball.application.TrainingService;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.TrainingPeriod;
 import com.softball.shared.exception.ResourceNotFoundException;
-import com.softball.domain.port.out.PlayerRepository;
-import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.domain.port.out.TrainingPeriodRepository;
 import com.softball.domain.port.out.TrainingRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,9 +30,8 @@ import static org.mockito.Mockito.*;
 class TrainingServiceTest {
 
     @Mock private TrainingRepository trainingRepository;
-    @Mock private TrainingAttendanceRepository attendanceRepository;
-    @Mock private PlayerRepository playerRepository;
     @Mock private TrainingPeriodRepository periodRepository;
+    @Mock private RegularPlayerAutoFiller autoFiller;
 
     @InjectMocks private TrainingService service;
 
@@ -96,12 +94,11 @@ class TrainingServiceTest {
                 t.setId(1L);
                 return t;
             });
-            when(playerRepository.findByRegularTrue()).thenReturn(List.of());
 
             final TrainingResponse result = service.create(LocalDate.of(2025, 6, 1), "18:00", "Feld", null);
 
             assertThat(result.date()).isEqualTo(LocalDate.of(2025, 6, 1));
-            verify(playerRepository).findByRegularTrue(); // autoFill aufgerufen
+            verify(autoFiller).autoFill(any()); // autoFill aufgerufen
         }
 
         @Test
@@ -112,7 +109,7 @@ class TrainingServiceTest {
             final TrainingResponse result = service.create(LocalDate.of(2025, 6, 1), "19:00", "Feld B", null);
 
             assertThat(result.time()).isEqualTo("19:00");
-            verify(playerRepository, never()).findByRegularTrue(); // kein autoFill
+            verify(autoFiller, never()).autoFill(any()); // kein autoFill
         }
 
         @Test
@@ -123,7 +120,6 @@ class TrainingServiceTest {
                 t.setId(1L);
                 return t;
             });
-            when(playerRepository.findByRegularTrue()).thenReturn(List.of());
 
             final TrainingResponse result = service.create(LocalDate.of(2025, 6, 1), "18:00", "Feld", "Hitting");
 
@@ -214,7 +210,6 @@ class TrainingServiceTest {
                 t.setId(1L);
                 return t;
             });
-            when(playerRepository.findByRegularTrue()).thenReturn(List.of());
 
             final List<TrainingResponse> result = service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
@@ -231,7 +226,6 @@ class TrainingServiceTest {
                 t.setId(1L);
                 return t;
             });
-            when(playerRepository.findByRegularTrue()).thenReturn(List.of());
             when(periodRepository.findByNameIgnoreCase("Sommer")).thenReturn(Optional.empty());
             when(periodRepository.save(any(TrainingPeriod.class))).thenAnswer(inv -> {
                 final TrainingPeriod p = inv.getArgument(0);
@@ -258,7 +252,7 @@ class TrainingServiceTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst().time()).isEqualTo("18:00"); // updated
-            verify(playerRepository, never()).findByRegularTrue(); // kein autoFill fuer bestehendes
+            verify(autoFiller, never()).autoFill(any()); // kein autoFill fuer bestehendes
         }
     }
 }

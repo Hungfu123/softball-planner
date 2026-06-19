@@ -1,13 +1,9 @@
 package com.softball.application;
 
 import com.softball.adapter.dto.TrainingResponse;
-import com.softball.domain.model.Player;
 import com.softball.domain.model.Training;
-import com.softball.domain.model.TrainingAttendance;
 import com.softball.domain.model.TrainingPeriod;
 import com.softball.shared.exception.ResourceNotFoundException;
-import com.softball.domain.port.out.PlayerRepository;
-import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.domain.port.out.TrainingPeriodRepository;
 import com.softball.domain.port.out.TrainingRepository;
 import org.springframework.stereotype.Service;
@@ -22,18 +18,15 @@ import java.util.stream.Collectors;
 public class TrainingService {
 
     private final TrainingRepository trainingRepository;
-    private final TrainingAttendanceRepository attendanceRepository;
-    private final PlayerRepository playerRepository;
     private final TrainingPeriodRepository periodRepository;
+    private final RegularPlayerAutoFiller autoFiller;
 
     public TrainingService(final TrainingRepository trainingRepository,
-                           final TrainingAttendanceRepository attendanceRepository,
-                           final PlayerRepository playerRepository,
-                           final TrainingPeriodRepository periodRepository) {
+                           final TrainingPeriodRepository periodRepository,
+                           final RegularPlayerAutoFiller autoFiller) {
         this.trainingRepository = trainingRepository;
-        this.attendanceRepository = attendanceRepository;
-        this.playerRepository = playerRepository;
         this.periodRepository = periodRepository;
+        this.autoFiller = autoFiller;
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +63,7 @@ public class TrainingService {
             training.setType(type);
         }
         training = trainingRepository.save(training);
-        autoFillRegularPlayers(training);
+        autoFiller.autoFill(training);
         return TrainingResponse.from(training);
     }
 
@@ -123,7 +116,7 @@ public class TrainingService {
                 if (type != null) training.setType(type);
                 training.setPeriod(period);
                 training = trainingRepository.save(training);
-                autoFillRegularPlayers(training);
+                autoFiller.autoFill(training);
                 results.add(TrainingResponse.from(training));
             }
         }
@@ -155,14 +148,5 @@ public class TrainingService {
             throw new ResourceNotFoundException("Training", id);
         }
         trainingRepository.deleteById(id);
-    }
-
-    void autoFillRegularPlayers(final Training training) {
-        final List<Player> regularPlayers = playerRepository.findByRegularTrue();
-        final List<TrainingAttendance> attendances = regularPlayers.stream()
-            .map(player -> new TrainingAttendance(training, player, true))
-            .toList();
-        attendanceRepository.saveAll(attendances);
-        training.getAttendances().addAll(attendances);
     }
 }
