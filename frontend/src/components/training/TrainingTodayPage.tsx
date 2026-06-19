@@ -21,12 +21,14 @@ import { TrainingPickerDrawer } from './TrainingPickerDrawer'
 import { GeneratePlanDrawer } from './GeneratePlanDrawer'
 import { SharePlanDrawer } from './SharePlanDrawer'
 import { AddBeginnerGroupDrawer } from './AddBeginnerGroupDrawer'
+import { PeriodManagerDrawer } from './PeriodManagerDrawer'
 
 type MobileTab = 'anwesenheit' | 'plan'
 type AttendanceSort = 'alpha' | 'frequency' | 'decided'
 
 export function TrainingTodayPage() {
-  const { trainings, attendance, toggleAttendance, cancelTraining, loading: trainingsLoading } = useTraining()
+  const { trainings, attendance, toggleAttendance, cancelTraining, loading: trainingsLoading,
+    periods, activePeriodId, selectPeriod, createBulk, updatePeriod, deletePeriod } = useTraining()
   const { players } = usePlayers()
   const [statsOpen, setStatsOpen] = useState(false)
   const [planEditOpen, setPlanEditOpen] = useState(false)
@@ -36,6 +38,7 @@ export function TrainingTodayPage() {
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [addBeginnerOpen, setAddBeginnerOpen] = useState(false)
+  const [periodManagerOpen, setPeriodManagerOpen] = useState(false)
   const [plans, setPlans] = useState<TrainingPlanResponse[]>([])
   const [planLoading, setPlanLoading] = useState(true)
   const [activePlanKind, setActivePlanKind] = useState<PlanKind>('MAIN')
@@ -324,6 +327,13 @@ export function TrainingTodayPage() {
               {new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
               <ChevronDown size={14} className="text-navy-400" />
             </button>
+            <button
+              type="button"
+              onClick={() => setPeriodManagerOpen(true)}
+              className="text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer underline underline-offset-2"
+            >
+              Perioden verwalten
+            </button>
             {!currentTraining.cancelled && (
               <button
                 type="button"
@@ -487,6 +497,17 @@ export function TrainingTodayPage() {
           trainings={trainings}
           selectedId={currentTrainingId}
           onSelect={setSelectedTrainingId}
+        />
+
+        <PeriodManagerDrawer
+          open={periodManagerOpen}
+          onClose={() => setPeriodManagerOpen(false)}
+          periods={periods}
+          activePeriodId={activePeriodId}
+          onSelect={selectPeriod}
+          onCreate={createBulk}
+          onUpdate={updatePeriod}
+          onDelete={deletePeriod}
         />
 
         <DetailSheet open={weatherOpen} onClose={() => setWeatherOpen(false)} title="Wetter · Tagesablauf">
