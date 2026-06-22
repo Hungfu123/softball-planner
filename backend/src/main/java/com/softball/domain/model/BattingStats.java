@@ -17,6 +17,7 @@ public record BattingStats(
     int doubles,
     int triples,
     int homeRuns,
+    int runs,
     int walks,
     int hitByPitch,
     int strikeouts,

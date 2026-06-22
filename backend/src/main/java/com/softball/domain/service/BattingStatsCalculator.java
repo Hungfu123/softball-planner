@@ -31,6 +31,8 @@ public class BattingStatsCalculator {
      */
     public static final int QUALIFIED_MIN_AT_BATS = 5;
 
+    private final BaseRunningReplay baseRunningReplay = new BaseRunningReplay();
+
     public List<BattingStats> calculateForPlayers(final List<Player> players,
                                                    final List<AtBat> atBats,
                                                    final List<BaseRunningEvent> stealingEvents) {
@@ -46,16 +48,20 @@ public class BattingStatsCalculator {
             stealsByPlayer.computeIfAbsent(e.getRunner().getId(), k -> new java.util.ArrayList<>()).add(e);
         }
 
+        final Map<Long, Integer> runsByPlayer = baseRunningReplay.replay(atBats, stealingEvents).runsByPlayerId();
+
         return players.stream()
             .map(p -> calculateForPlayer(p,
                 atBatsByPlayer.getOrDefault(p.getId(), List.of()),
-                stealsByPlayer.getOrDefault(p.getId(), List.of())))
+                stealsByPlayer.getOrDefault(p.getId(), List.of()),
+                runsByPlayer.getOrDefault(p.getId(), 0)))
             .toList();
     }
 
     public BattingStats calculateForPlayer(final Player player,
                                             final List<AtBat> playerAtBats,
-                                            final List<BaseRunningEvent> playerStealingEvents) {
+                                            final List<BaseRunningEvent> playerStealingEvents,
+                                            final int runs) {
         int plateAppearances = 0;
         int atBats = 0;
         int hits = 0, singles = 0, doubles = 0, triples = 0, homeRuns = 0;
@@ -104,6 +110,7 @@ public class BattingStatsCalculator {
             player.getId(), player.getName(),
             plateAppearances, atBats, hits,
             singles, doubles, triples, homeRuns,
+            runs,
             walks, hbp, strikeouts, outs,
             reachedOnError,
             stolenBases, caughtStealing, pickoffs, rbi, totalBases,
