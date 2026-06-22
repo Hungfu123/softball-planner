@@ -58,6 +58,10 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
                 def="Runs die du durch deinen Hit nach Hause gebracht hast."
               />
               <Row
+                abbr="R/G"
+                def="Runs pro Spiel — erzielte Läufe geteilt durch die (gewichteten) Spiele des Spielers (Feld=1.0, EH/DH=0.5). Nur in Saison-/Jahr-/Alle-Zeit-Statistiken."
+              />
+              <Row
                 abbr="RBI/G"
                 def="RBI pro Spiel — RBI geteilt durch die (gewichteten) Spiele des Spielers (Feld=1.0, EH/DH=0.5). Nur in Saison-/Jahr-/Alle-Zeit-Statistiken."
               />

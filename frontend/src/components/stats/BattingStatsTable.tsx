@@ -18,7 +18,7 @@ interface Props {
 type SortKey =
   | 'playerName' | 'atBats' | 'hits' | 'battingAverage' | 'walks' | 'strikeouts'
   | 'homeRuns' | 'runs' | 'stolenBases' | 'caughtStealing' | 'pickoffs'
-  | 'onBasePct' | 'sluggingPct' | 'ops' | 'runsBattedIn' | 'rbiPerGame'
+  | 'onBasePct' | 'sluggingPct' | 'ops' | 'runsBattedIn' | 'rbiPerGame' | 'runsPerGame'
 type SortDir = 'asc' | 'desc'
 
 export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
@@ -42,6 +42,12 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     return games > 0 ? s.runsBattedIn / games : null
   }
 
+  // R/G = Runs / gewichtete Spiele. Ohne Game-Zähler (z.B. Scope Spiel) → null.
+  const runsPerGame = (s: PlayerBattingStatsResponse): number | null => {
+    const games = gamesByPlayerId?.get(s.playerId) ?? 0
+    return games > 0 ? s.runs / games : null
+  }
+
   const sorted = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1
     return [...stats].sort((a, b) => {
@@ -50,6 +56,8 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
         cmp = a.playerName.localeCompare(b.playerName)
       } else if (sortKey === 'rbiPerGame') {
         cmp = (rbiPerGame(a) ?? -1) - (rbiPerGame(b) ?? -1)
+      } else if (sortKey === 'runsPerGame') {
+        cmp = (runsPerGame(a) ?? -1) - (runsPerGame(b) ?? -1)
       } else {
         cmp = Number(a[sortKey] ?? 0) - Number(b[sortKey] ?? 0)
       }
@@ -169,6 +177,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                 {sortTh('stolenBases', 'SB')}
                 {sortTh('runsBattedIn', 'RBI', { title: 'Runs Batted In — Läufe durch eigenen Schlag ermöglicht' })}
                 {showPerGame && sortTh('rbiPerGame', 'RBI/G', { title: 'RBI pro Spiel (gewichteter Game-Zähler)' })}
+                {showPerGame && sortTh('runsPerGame', 'R/G', { title: 'Runs Scored pro Spiel (gewichteter Game-Zähler)' })}
                 {showDetails && (
                   <>
                     {sortTh('caughtStealing', 'CS', { title: 'Caught Stealing — beim Steal-Versuch erwischt' })}
@@ -241,6 +250,14 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                     <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${dimZero(s.runsBattedIn)}`}>{s.runsBattedIn}</td>
                     {showPerGame && (() => {
                       const pg = rbiPerGame(s)
+                      return (
+                        <td className="px-3 py-2 text-right font-display tabular-nums text-navy-900">
+                          {pg != null ? pg.toFixed(2) : '—'}
+                        </td>
+                      )
+                    })()}
+                    {showPerGame && (() => {
+                      const pg = runsPerGame(s)
                       return (
                         <td className="px-3 py-2 text-right font-display tabular-nums text-navy-900">
                           {pg != null ? pg.toFixed(2) : '—'}
