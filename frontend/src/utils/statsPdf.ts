@@ -204,7 +204,7 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
   }
 
   const head = [[
-    '#', 'Spieler', 'PA', 'AB', 'H', 'AVG', '1B', '2B', '3B', 'HR',
+    '#', 'Spieler', 'PA', 'AB', 'H', 'AVG', '1B', '2B', '3B', 'HR', 'R',
     'BB', 'HBP', 'K', 'SB', 'CS', 'PO', 'RBI', 'OBP', 'SLG', 'OPS',
   ]]
 
@@ -219,6 +219,7 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
     String(s.doubles),
     String(s.triples),
     String(s.homeRuns),
+    String(s.runs),
     String(s.walks),
     String(s.hitByPitch),
     String(s.strikeouts),
@@ -266,16 +267,17 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
       7: { cellWidth: 6.5, halign: 'right', font: 'courier' },
       8: { cellWidth: 6.5, halign: 'right', font: 'courier' },
       9: { cellWidth: 6.5, halign: 'right', font: 'courier' },
-      10: { cellWidth: 6.5, halign: 'right', font: 'courier' },
-      11: { cellWidth: 7.5, halign: 'right', font: 'courier' },
-      12: { cellWidth: 6.5, halign: 'right', font: 'courier' },
-      13: { cellWidth: 6.5, halign: 'right', font: 'courier' },
-      14: { cellWidth: 6.5, halign: 'right', font: 'courier' },
-      15: { cellWidth: 6.5, halign: 'right', font: 'courier' },
-      16: { cellWidth: 7.5, halign: 'right', font: 'courier' },
-      17: { cellWidth: 8.5, halign: 'right', font: 'courier' },
-      18: { cellWidth: 9.5, halign: 'right', font: 'courier' },
-      19: { cellWidth: 9.5, halign: 'right', fontStyle: 'bold', font: 'courier' },
+      10: { cellWidth: 6.5, halign: 'right', font: 'courier' },   // R
+      11: { cellWidth: 6.5, halign: 'right', font: 'courier' },   // BB
+      12: { cellWidth: 7.5, halign: 'right', font: 'courier' },   // HBP
+      13: { cellWidth: 6.5, halign: 'right', font: 'courier' },   // K
+      14: { cellWidth: 6.5, halign: 'right', font: 'courier' },   // SB
+      15: { cellWidth: 6.5, halign: 'right', font: 'courier' },   // CS
+      16: { cellWidth: 6.5, halign: 'right', font: 'courier' },   // PO
+      17: { cellWidth: 7.5, halign: 'right', font: 'courier' },   // RBI
+      18: { cellWidth: 8.5, halign: 'right', font: 'courier' },   // OBP
+      19: { cellWidth: 9.5, halign: 'right', font: 'courier' },   // SLG
+      20: { cellWidth: 9.5, halign: 'right', fontStyle: 'bold', font: 'courier' }, // OPS
     },
     didDrawCell: (data) => {
       // Thicker red rule below the header row
@@ -314,7 +316,7 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
   doc.setTextColor(...COLOR_GRAY_TEXT)
-  const legend = 'PA Plate Appearances · AB At Bats · H Hits · AVG Batting Average · BB Walks · HBP Hit by Pitch · K Strikeouts · SB Stolen Bases · CS Caught Stealing · PO Pickoffs · RBI Runs Batted In · OBP On-Base · SLG Slugging · OPS OBP + SLG'
+  const legend = 'PA Plate Appearances · AB At Bats · H Hits · R Runs Scored · AVG Batting Average · BB Walks · HBP Hit by Pitch · K Strikeouts · SB Stolen Bases · CS Caught Stealing · PO Pickoffs · RBI Runs Batted In · OBP On-Base · SLG Slugging · OPS OBP + SLG'
   const lines = doc.splitTextToSize(legend, pageWidth - 2 * margin)
   doc.text(lines, margin, legendY)
 
