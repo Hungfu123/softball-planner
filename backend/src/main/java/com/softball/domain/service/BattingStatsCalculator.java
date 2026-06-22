@@ -58,7 +58,7 @@ public class BattingStatsCalculator {
             .toList();
     }
 
-    public BattingStats calculateForPlayer(final Player player,
+    BattingStats calculateForPlayer(final Player player,
                                             final List<AtBat> playerAtBats,
                                             final List<BaseRunningEvent> playerStealingEvents,
                                             final int runs) {
