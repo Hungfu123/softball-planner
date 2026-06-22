@@ -4,6 +4,7 @@ import com.softball.domain.model.AtBat;
 import com.softball.domain.model.AtBatResult;
 import com.softball.domain.model.BaseRunningEvent;
 import com.softball.domain.model.BaseRunningEventType;
+import com.softball.domain.model.BaseState;
 import com.softball.domain.model.BattingStats;
 import com.softball.domain.model.Player;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,7 @@ class BattingStatsCalculatorTest {
 
     @Test
     void emptyInput_returnsZeros() {
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), List.of(), 0);
 
         assertThat(s.playerId()).isEqualTo(1L);
         assertThat(s.plateAppearances()).isZero();
@@ -46,7 +47,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.SINGLE)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.plateAppearances()).isEqualTo(3);
         assertThat(s.atBats()).isEqualTo(1); // nur Single zählt
@@ -70,7 +71,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.OUT)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.plateAppearances()).isEqualTo(4);
         assertThat(s.atBats()).isEqualTo(4);          // ROE zählt als AB
@@ -96,7 +97,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.OUT)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.atBats()).isEqualTo(6);
         assertThat(s.hits()).isEqualTo(2);
@@ -114,7 +115,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.OUT)      // 0
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.atBats()).isEqualTo(5);
         assertThat(s.totalBases()).isEqualTo(10); // 1+2+3+4+0
@@ -131,7 +132,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.STRIKEOUT)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.plateAppearances()).isEqualTo(4);
         // OBP = (1 hit + 1 walk + 1 hbp) / 4 PA = 0.750
@@ -147,7 +148,7 @@ class BattingStatsCalculatorTest {
             stealingEvent(BaseRunningEventType.CAUGHT_STEALING)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), steals);
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), steals, 0);
 
         assertThat(s.stolenBases()).isEqualTo(3);
         assertThat(s.caughtStealing()).isEqualTo(1);
@@ -161,7 +162,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.OUT)        // 1 AB, 0 H, 0 TB
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         // AB=2, H=1, TB=4, BB=1, PA=3
         // OBP = 2/3 = 0.667
@@ -210,7 +211,7 @@ class BattingStatsCalculatorTest {
         final List<AtBat> atBats = List.of(
             atBat(AtBatResult.SINGLE), atBat(AtBatResult.SINGLE), atBat(AtBatResult.SINGLE),
             atBat(AtBatResult.WALK)); // 3 AB + 1 BB = 4 PA → nur 3 AB
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.atBats()).isEqualTo(3);
         assertThat(s.qualified()).isFalse();
     }
@@ -220,7 +221,7 @@ class BattingStatsCalculatorTest {
         final List<AtBat> atBats = List.of(
             atBat(AtBatResult.SINGLE), atBat(AtBatResult.OUT), atBat(AtBatResult.OUT),
             atBat(AtBatResult.STRIKEOUT), atBat(AtBatResult.OUT)); // 5 AB
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.atBats()).isEqualTo(5);
         assertThat(s.qualified()).isTrue();
     }
@@ -236,7 +237,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.WALK)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.plateAppearances()).isEqualTo(3);
         assertThat(s.atBats()).isZero();
@@ -259,7 +260,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.HIT_BY_PITCH)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.atBats()).isZero();
         assertThat(s.hitByPitch()).isEqualTo(2);
@@ -275,7 +276,7 @@ class BattingStatsCalculatorTest {
             stealingEvent(BaseRunningEventType.STOLEN_BASE)
         );
 
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), steals);
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), steals, 0);
 
         assertThat(s.plateAppearances()).isZero();
         assertThat(s.stolenBases()).isEqualTo(2);
@@ -290,7 +291,7 @@ class BattingStatsCalculatorTest {
         hr.setRbi(4);
         hr.setRunsScored(4);
 
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(hr), List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(hr), List.of(), 0);
 
         assertThat(s.atBats()).isEqualTo(1);
         assertThat(s.homeRuns()).isEqualTo(1);
@@ -305,7 +306,7 @@ class BattingStatsCalculatorTest {
         final AtBat hit2 = atBat(hung, AtBatResult.DOUBLE);  hit2.setRbi(2);
         final AtBat hit3 = atBat(hung, AtBatResult.HOMERUN); hit3.setRbi(3);
 
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(hit1, hit2, hit3), List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(hit1, hit2, hit3), List.of(), 0);
 
         assertThat(s.runsBattedIn()).isEqualTo(6);
     }
@@ -315,7 +316,7 @@ class BattingStatsCalculatorTest {
         final AtBat single = atBat(hung, AtBatResult.SINGLE);
         single.setRbi(null); // Bug-safety: null RBI darf nicht NPE
 
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(single), List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(single), List.of(), 0);
 
         assertThat(s.runsBattedIn()).isZero();
     }
@@ -328,7 +329,7 @@ class BattingStatsCalculatorTest {
         broken.setResult(null);
         final AtBat valid = atBat(hung, AtBatResult.SINGLE);
 
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(broken, valid), List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(broken, valid), List.of(), 0);
 
         assertThat(s.plateAppearances()).isEqualTo(1); // Nur der valide zählt
         assertThat(s.atBats()).isEqualTo(1);
@@ -358,7 +359,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.OUT),
             atBat(AtBatResult.OUT)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.battingAverage()).isEqualByComparingTo("0.333");
     }
 
@@ -370,7 +371,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.SINGLE),
             atBat(AtBatResult.OUT)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.battingAverage()).isEqualByComparingTo("0.667");
     }
 
@@ -381,7 +382,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.SINGLE),
             atBat(AtBatResult.OUT)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.battingAverage()).isEqualByComparingTo("0.500");
     }
 
@@ -392,7 +393,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.DOUBLE),
             atBat(AtBatResult.HOMERUN)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.battingAverage()).isEqualByComparingTo("1.000");
         assertThat(s.onBasePct()).isEqualByComparingTo("1.000");
         // SLG = (1+2+4)/3 = 7/3 = 2.333
@@ -412,7 +413,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.STRIKEOUT),
             atBat(AtBatResult.WALK)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.hits()).isEqualTo(s.singles() + s.doubles() + s.triples() + s.homeRuns());
         assertThat(s.hits()).isEqualTo(5);
@@ -428,7 +429,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.WALK),         // nicht AB
             atBat(AtBatResult.HIT_BY_PITCH)  // nicht AB
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         assertThat(s.plateAppearances()).isEqualTo(5);
         assertThat(s.atBats()).isEqualTo(3);
@@ -443,7 +444,7 @@ class BattingStatsCalculatorTest {
             stealingEvent(BaseRunningEventType.OUT_ON_PLAY),
             stealingEvent(BaseRunningEventType.OUT_ON_PLAY)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), events);
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), events, 0);
 
         assertThat(s.stolenBases()).isEqualTo(1);
         assertThat(s.caughtStealing()).isZero(); // OUT_ON_PLAY fließt NICHT in CS
@@ -457,7 +458,7 @@ class BattingStatsCalculatorTest {
             stealingEvent(BaseRunningEventType.STOLEN_BASE),
             stealingEvent(BaseRunningEventType.CAUGHT_STEALING)
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), events);
+        final BattingStats s = calculator.calculateForPlayer(hung, List.of(), events, 0);
 
         assertThat(s.stolenBases()).isEqualTo(2);
         assertThat(s.caughtStealing()).isEqualTo(2);
@@ -469,7 +470,7 @@ class BattingStatsCalculatorTest {
     void opsWithOnlyWalks_isOnePointZero() {
         // Pure walks: OBP=1.000, SLG=0.000, OPS=1.000
         final List<AtBat> atBats = List.of(atBat(AtBatResult.WALK), atBat(AtBatResult.WALK));
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         assertThat(s.ops()).isEqualByComparingTo("1.000");
     }
 
@@ -481,7 +482,7 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.WALK),     // 0 AB
             atBat(AtBatResult.STRIKEOUT) // 1 AB, 0 H
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
         // AB=2, H=1, TB=1, BB=1, PA=3
         // OBP = 2/3 = 0.667
         // SLG = 1/2 = 0.500
@@ -524,11 +525,33 @@ class BattingStatsCalculatorTest {
             atBat(AtBatResult.HOMERUN),                               // 1 * 4 = 4
             atBat(AtBatResult.OUT), atBat(AtBatResult.WALK), atBat(AtBatResult.HIT_BY_PITCH) // 0
         );
-        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of());
+        final BattingStats s = calculator.calculateForPlayer(hung, atBats, List.of(), 0);
 
         final int expectedTB = 1 * s.singles() + 2 * s.doubles() + 3 * s.triples() + 4 * s.homeRuns();
         assertThat(s.totalBases()).isEqualTo(expectedTB);
         assertThat(s.totalBases()).isEqualTo(2 + 2 + 6 + 4);
+    }
+
+    @Test
+    void runsScored_attributedToRunnerWhoCrossedHome() {
+        final Player batter = new Player(); batter.setId(10L); batter.setName("Batter");
+        final Player runner = new Player(); runner.setId(13L); runner.setName("Runner");
+
+        final java.time.Instant t0 = java.time.Instant.parse("2026-06-22T10:00:00Z");
+        final AtBat a1 = new AtBat();
+        a1.setBatter(runner); a1.setResult(AtBatResult.SINGLE); a1.setInning(1);
+        a1.setBaseStateAfter(new BaseState(null, null, 13L)); a1.setRunsScored(0); a1.setCreatedAt(t0);
+        final AtBat a2 = new AtBat();
+        a2.setBatter(batter); a2.setResult(AtBatResult.SINGLE); a2.setInning(1);
+        a2.setBaseStateAfter(new BaseState(10L, null, null)); a2.setRunsScored(1);
+        a2.setCreatedAt(t0.plusSeconds(1));
+
+        final var stats = new BattingStatsCalculator()
+            .calculateForPlayers(List.of(batter, runner), List.of(a1, a2), List.of());
+        final BattingStats runnerStats = stats.stream().filter(s -> s.playerId() == 13L).findFirst().orElseThrow();
+        final BattingStats batterStats = stats.stream().filter(s -> s.playerId() == 10L).findFirst().orElseThrow();
+        assertThat(runnerStats.runs()).isEqualTo(1);
+        assertThat(batterStats.runs()).isZero();
     }
 
     // --- helpers ---

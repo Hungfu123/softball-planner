@@ -23,7 +23,7 @@ class GamedayAwardCalculatorTest {
         return new BattingStats(
             id, name,
             pa, pa,
-            tb - 2 * xbh, 0, xbh, 0, 0,
+            tb - 2 * xbh, 0, xbh, 0, 0, 0,
             bb, 0, 0, 0, 0,
             sb, 0, 0, rbi, tb,
             BigDecimal.ZERO, obpBd, slg, pa >= BattingStatsCalculator.QUALIFIED_MIN_AT_BATS);
@@ -133,7 +133,7 @@ class GamedayAwardCalculatorTest {
     private BattingStats withAvg(long id, String name, int pa, String avg, String obp, String ops) {
         BigDecimal obpBd = new BigDecimal(obp);
         BigDecimal slg = new BigDecimal(ops).subtract(obpBd);
-        return new BattingStats(id, name, pa, pa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        return new BattingStats(id, name, pa, pa, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             new BigDecimal(avg), obpBd, slg, pa >= BattingStatsCalculator.QUALIFIED_MIN_AT_BATS);
     }
 
