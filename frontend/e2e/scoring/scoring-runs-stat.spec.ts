@@ -1,5 +1,5 @@
 import { test, expect } from '../helpers/fixtures'
-import { seedAtBat } from '../helpers/api'
+import { seedAtBat, getPlayerName } from '../helpers/api'
 
 /**
  * UI-Durchstich für die R-Spalte (Runs Scored). Korrektheit der Attribution
@@ -27,12 +27,16 @@ test.describe('Stats — R (Runs Scored) Spalte', () => {
     const rHeader = page.getByRole('columnheader', { name: 'R', exact: true })
     await expect(rHeader).toBeVisible()
 
-    // Mindestens eine Zeile hat R > 0 (alle 4 Scorer von oben).
-    // Prüfe, dass mindestens eine Zelle in der R-Spalte einen Wert > 0 hat.
-    // Da die Tabelle nach AVG sortiert ist, suchen wir Rows die numerische R-Werte enthalten.
-    // Einfacher: Prüfe dass mindestens eine Zeile existiert (Daten wurden geladen).
-    const rows = page.getByRole('row').filter({ hasText: /\d/ })
-    await expect(rows.first()).toBeVisible()
+    // Echte Daten-Zeile im Tabellen-Body verifizieren — Header liegt in <thead>,
+    // wird also ausgeschlossen. Zwei Ebenen:
+    //  1) Mindestens eine tbody-Row existiert und ist sichtbar.
+    //  2) Die Row eines konkret geseedeten Scorers (b0) wird namentlich gefunden.
+    const bodyRows = page.locator('tbody tr')
+    await expect(bodyRows.first()).toBeVisible()
+    expect(await bodyRows.count()).toBeGreaterThanOrEqual(1)
+
+    const scorerName = await getPlayerName(b0)
+    await expect(bodyRows.filter({ hasText: scorerName }).first()).toBeVisible()
 
     // Sortierung: Klick auf R-Header → Tabelle sortiert nach Runs (kein Crash)
     await rHeader.click()
