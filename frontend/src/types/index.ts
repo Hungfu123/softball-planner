@@ -431,6 +431,7 @@ export interface PlayerBattingStatsResponse {
   doubles: number
   triples: number
   homeRuns: number
+  runs: number
   walks: number
   hitByPitch: number
   strikeouts: number

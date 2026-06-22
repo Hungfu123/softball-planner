@@ -17,7 +17,7 @@ interface Props {
 
 type SortKey =
   | 'playerName' | 'atBats' | 'hits' | 'battingAverage' | 'walks' | 'strikeouts'
-  | 'homeRuns' | 'stolenBases' | 'caughtStealing' | 'pickoffs'
+  | 'homeRuns' | 'runs' | 'stolenBases' | 'caughtStealing' | 'pickoffs'
   | 'onBasePct' | 'sluggingPct' | 'ops' | 'runsBattedIn' | 'rbiPerGame'
 type SortDir = 'asc' | 'desc'
 
@@ -165,6 +165,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                 {sortTh('walks', 'Walks')}
                 {sortTh('strikeouts', 'K')}
                 {sortTh('homeRuns', 'HR')}
+                {sortTh('runs', 'R', { title: 'Runs Scored — selbst Home gekreuzt' })}
                 {sortTh('stolenBases', 'SB')}
                 {sortTh('runsBattedIn', 'RBI', { title: 'Runs Batted In — Läufe durch eigenen Schlag ermöglicht' })}
                 {showPerGame && sortTh('rbiPerGame', 'RBI/G', { title: 'RBI pro Spiel (gewichteter Game-Zähler)' })}
@@ -234,6 +235,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                         <span className="inline-flex items-center gap-0.5">{s.homeRuns} <Zap size={11} /></span>
                       ) : '0'}
                     </td>
+                    <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${s.runs > 0 ? 'text-navy-900' : 'text-gray-300'}`}>{s.runs}</td>
                     <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.stolenBases)}`}>{s.stolenBases}</td>
                     {/* RBI — Counting-Stat, immer sichtbar */}
                     <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${dimZero(s.runsBattedIn)}`}>{s.runsBattedIn}</td>
