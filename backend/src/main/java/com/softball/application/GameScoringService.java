@@ -7,6 +7,7 @@ import com.softball.adapter.dto.ScoreboardResponse;
 import com.softball.adapter.dto.StealingEventResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.port.out.*;
+import com.softball.domain.service.BaseRunningReplay;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public class GameScoringService {
     private final BaseRunningEventRepository stealingRepository;
     private final SubstitutionRepository substitutionRepository;
     private final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
+    private final BaseRunningReplay baseRunningReplay = new BaseRunningReplay();
 
     public GameScoringService(final GameRepository gameRepository,
                                final PlayerRepository playerRepository,
@@ -380,7 +382,7 @@ public class GameScoringService {
                 if (e.getCreatedAt() == null || last.getCreatedAt() == null) continue;
                 if (e.getCreatedAt().isBefore(last.getCreatedAt())) continue;
                 if (e.getRunner() == null) continue;
-                state = applyStealingEvent(state, e).state();
+                state = baseRunningReplay.applyStealingEvent(state, e).state();
             }
         }
 
@@ -474,88 +476,13 @@ public class GameScoringService {
         return out;
     }
 
-    /** Ergebnis einer Stealing-Event-Anwendung: neuer Base-State + dabei erzielte Runs. */
-    private record StealApplication(BaseState state, int runs) {}
-
-    /**
-     * Wendet ein einzelnes Stealing-Event auf den Base-State an und liefert den neuen State
-     * plus die dabei erzielten Runs (Steal of Home oder Kaskaden-Scoring). Einzige Quelle der
-     * Steal-Cascade-Logik — genutzt für Anzeige (Base-State) UND Score-Berechnung.
-     */
-    private StealApplication applyStealingEvent(final BaseState state, final BaseRunningEvent e) {
-        if (e.getRunner() == null) return new StealApplication(state, 0);
-        final Long runnerId = e.getRunner().getId();
-        if (e.getType() == BaseRunningEventType.STOLEN_BASE) {
-            if (runnerId.equals(state.first())) {
-                // Runner 1B → 2B. Kaskade wenn 2B besetzt (2B-Runner → 3B, evtl. 3B scort).
-                final Long on2B = state.second();
-                final Long on3B = state.third();
-                Long newThird = on3B;
-                int runs = 0;
-                if (on2B != null) {
-                    if (on3B != null) runs = 1; // 3B-Runner scort Home
-                    newThird = on2B;
-                }
-                return new StealApplication(new BaseState(null, runnerId, newThird), runs);
-            } else if (runnerId.equals(state.second())) {
-                // Runner 2B → 3B. Kaskade wenn 3B besetzt (dieser scort).
-                final int runs = state.third() != null ? 1 : 0;
-                return new StealApplication(new BaseState(state.first(), null, runnerId), runs);
-            } else if (runnerId.equals(state.third())) {
-                // Steal of Home — Runner scort.
-                return new StealApplication(new BaseState(state.first(), state.second(), null), 1);
-            }
-            return new StealApplication(state, 0);
-        }
-        if (e.getType() == BaseRunningEventType.CAUGHT_STEALING
-                || e.getType() == BaseRunningEventType.OUT_ON_PLAY
-                || e.getType() == BaseRunningEventType.PICKOFF) {
-            // Runner verschwindet von Base — keine Punkte.
-            if (runnerId.equals(state.first())) {
-                return new StealApplication(new BaseState(null, state.second(), state.third()), 0);
-            } else if (runnerId.equals(state.second())) {
-                return new StealApplication(new BaseState(state.first(), null, state.third()), 0);
-            } else if (runnerId.equals(state.third())) {
-                return new StealApplication(new BaseState(state.first(), state.second(), null), 0);
-            }
-        }
-        return new StealApplication(state, 0);
-    }
-
     /**
      * Vollständiger chronologischer Replay über AtBats + Stealing-Events. Liefert die Summe
-     * aller durch Steals erzielten Runs (Steal of Home + Kaskade). Diese Runs liegen auf keinem
-     * AtBat — ohne diesen Replay gingen sie verloren sobald ein weiterer AtBat folgt.
-     *
-     * Base-State wird an jedem AtBat auf dessen {@code baseStateAfter} resynchronisiert (das ist
-     * der autoritative Zustand nach dem Schlag inkl. Inning-Reset), Steals dazwischen werden
-     * angewendet. So wird kein AtBat-Run mitgezählt (die liegen separat in runsScored) und kein
-     * Steal-Run doppelt — jeder Steal wird genau einmal verarbeitet.
+     * aller durch Steals erzielten Runs (Steal of Home + Kaskade). Delegiert an
+     * {@link BaseRunningReplay} — einzige Quelle der Steal-Cascade-Logik.
      */
     private int computeStealRuns(final List<AtBat> atBats, final List<BaseRunningEvent> stealingEvents) {
-        if (stealingEvents.isEmpty()) return 0;
-        final List<Object> timeline = new ArrayList<>(atBats.size() + stealingEvents.size());
-        timeline.addAll(atBats);
-        timeline.addAll(stealingEvents);
-        timeline.sort(Comparator
-            .comparing((Object o) -> o instanceof AtBat ab ? ab.getCreatedAt()
-                                                           : ((BaseRunningEvent) o).getCreatedAt(),
-                       Comparator.nullsFirst(Comparator.naturalOrder()))
-            // Gleichstand: AtBat vor Steal (Steal wirkt auf den frisch gesetzten State).
-            .thenComparing(o -> o instanceof AtBat ? 0 : 1));
-
-        int runs = 0;
-        BaseState state = BaseState.empty();
-        for (final Object o : timeline) {
-            if (o instanceof AtBat ab) {
-                state = ab.getBaseStateAfter() != null ? ab.getBaseStateAfter() : BaseState.empty();
-            } else {
-                final StealApplication applied = applyStealingEvent(state, (BaseRunningEvent) o);
-                state = applied.state();
-                runs += applied.runs();
-            }
-        }
-        return runs;
+        return baseRunningReplay.replay(atBats, stealingEvents).totalStealRuns();
     }
 
     private void addRunner(final List<ScoreboardResponse.RunnerOnBase> out,
