@@ -23,6 +23,7 @@ export function StatsGlossarySheet({ open, onClose }: Props) {
               <Row abbr="2B / Double" def="Treffer bis zur 2. Base" />
               <Row abbr="3B / Triple" def="Treffer bis zur 3. Base" />
               <Row abbr="HR / Homerun" def="Treffer übers Feld, alle Runner scoren" />
+              <Row abbr="R / Runs" def="Erzielte Läufe — wie oft du selbst Home gekreuzt hast (inkl. Steal of Home). NICHT zu verwechseln mit RBI (= Runs durch deinen Hit ermöglicht)." />
               <Row abbr="BB / Walk" def="4 Bälle — Batter darf auf die 1B" />
               <Row abbr="HBP" def="Hit-by-Pitch — Batter wurde vom Wurf getroffen" />
               <Row abbr="K / Strikeout" def="3× gestrikt, Batter aus" />
