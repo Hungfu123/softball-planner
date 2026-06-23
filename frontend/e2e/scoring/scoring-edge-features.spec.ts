@@ -54,6 +54,38 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.scoreUs).toBe(0)
   })
 
+  test('Runner-Out auf Hit als 3. Out → Inning-Wechsel-Pille erscheint (deferred-correction reload)', async ({ page, scoringPage }) => {
+    const ids = scoringPage.playerIds
+    // Setup: 2 Outs in Inning 1 + Runner auf 1B.
+    await seedAtBat(scoringPage.gameId, ids[5], 'OUT', 1, { first: null, second: null, third: null })
+    await seedAtBat(scoringPage.gameId, ids[6], 'OUT', 1, { first: null, second: null, third: null })
+    await seedAtBat(scoringPage.gameId, ids[0], 'SINGLE', 1, { first: ids[0], second: null, third: null })
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    let sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.outsInCurrentInning).toBe(2)
+    expect(sb.baseState.first).toBe(ids[0])
+
+    // SINGLE recorden → auto-CorrectionSheet (deferred pendingHit-Path).
+    // Einen Runner als Aus markieren = 3. Out (Batter erreicht Base, Runner geht aus).
+    await page.getByRole('button', { name: 'TREFFER' }).click()
+    await page.getByRole('button', { name: 'Single', exact: true }).click()
+    await page.waitForTimeout(500)
+    await page.getByRole('button', { name: 'Aus?', exact: true }).first().click()
+    await page.waitForTimeout(200)
+    await page.getByRole('button', { name: '✓ Passt', exact: true }).click()
+    await page.waitForTimeout(700)
+
+    // Backend persistiert den Runner-Out korrekt → 3 Outs.
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.outsInCurrentInning).toBe(3)
+
+    // UI muss den 3. Out sehen → Inning-Wechsel-Pille sichtbar.
+    // Bug: deferred-Path lud scoreboard nach dem Runner-Out nicht neu → Pille blieb aus.
+    await expect(page.getByRole('button', { name: /Nächstes Inning starten/i })).toBeVisible()
+  })
+
   test('Stats nach Undo: Player-Stats werden revertet', async ({ page, scoringPage }) => {
     const ids = scoringPage.playerIds
     // Seed 3 ABs für ids[0]: SINGLE, OUT, HOMERUN
