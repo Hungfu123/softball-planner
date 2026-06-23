@@ -105,11 +105,11 @@ export function CollegeSeriesPanel() {
           {/* Desktop: Tabelle + Spielplan nebeneinander, Endrunde darunter */}
           <div className="hidden lg:block lg:px-5 lg:pb-5 lg:pt-4">
             <div className="grid grid-cols-5 gap-6">
-              <div className="col-span-3 border-r border-cream-200 pr-6">
+              <div className="col-span-3 min-w-0 border-r border-cream-200 pr-6">
                 <ColTitle icon={<TrophyIcon size={15} />}>Tabelle</ColTitle>
                 <StandingsTable rows={vorrunde?.rows ?? []} />
               </div>
-              <div className="col-span-2">
+              <div className="col-span-2 min-w-0">
                 <ColTitle icon={<CalendarIcon size={15} />}>Spielplan</ColTitle>
                 <Schedule games={vorrundeGames} />
               </div>
@@ -251,7 +251,10 @@ function Schedule({ games }: { games: CollegeSeriesGame[] }) {
       ) : (
         <>
           {/* Datum-Pills — nur ein Spieltag zur Zeit (kein langes Scrollen) */}
-          <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div
+            className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)' }}
+          >
             {dates.map((d) => (
               <button
                 key={d}
