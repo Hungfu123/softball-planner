@@ -250,11 +250,9 @@ function Schedule({ games }: { games: CollegeSeriesGame[] }) {
         <EmptyState text="Keine Spiele gefunden." />
       ) : (
         <>
-          {/* Datum-Pills — nur ein Spieltag zur Zeit (kein langes Scrollen) */}
-          <div
-            className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)' }}
-          >
+          {/* Datum-Pills — umbrechen statt horizontal scrollen, damit alle
+              Spieltage auch am Desktop (ohne Touch/Scrollbar) erreichbar sind. */}
+          <div className="mb-3 flex flex-wrap gap-2">
             {dates.map((d) => (
               <button
                 key={d}
