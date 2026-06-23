@@ -1109,6 +1109,12 @@ export function ScoringPage() {
                   inning: currentInning,
                 })
               }
+              // Runner-Outs gingen direkt über die API (nicht über den Hook) → Scoreboard
+              // neu laden, sonst sieht das Frontend den 3. Out nicht und der Inning-Wechsel
+              // bleibt aus. (Manual-Path unten macht das via reload() ebenfalls.)
+              if (outsFromRunners.length > 0) {
+                await reload()
+              }
               // Jetzt erst Flashes feuern (User hat bestätigt)
               const hadRunnersAtAB = preAbRunners.length > 0
               fireHitSideEffects(
