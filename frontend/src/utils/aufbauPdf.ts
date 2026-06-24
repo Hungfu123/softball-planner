@@ -109,13 +109,17 @@ export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
     // Leader-Linie zum Gebäude
     const zone = VENUE_ZONES.find(z => z.name === g.name)
     if (zone) {
-      const c = zoneCenter(zone); const pc = project(c.x, c.y, mapX, mapY, scale)
-      // Orthogonale Leader-Linie: horizontal vom Kärtchen, dann vertikal zum Gebäude (Ecke).
+      // Orthogonale Leader-Linie: horizontal vom Kärtchen, dann vertikal hoch/runter
+      // an die NÄCHSTE Raum-Kante (oben oder unten), nicht aufs Wort.
       const sy = cy + 5
+      const cxz = zoneCenter(zone).x
+      const top = project(cxz, zone.y, mapX, mapY, scale)
+      const bot = project(cxz, zone.y + zone.h, mapX, mapY, scale)
+      const tgt = Math.abs(sy - top.y) <= Math.abs(sy - bot.y) ? top : bot
       doc.setDrawColor(...NAVY_LIGHT); doc.setLineWidth(0.3)
-      doc.line(cardX, sy, pc.x, sy)
-      doc.line(pc.x, sy, pc.x, pc.y)
-      doc.setFillColor(...NAVY); doc.circle(pc.x, pc.y, 0.8, 'F')
+      doc.line(cardX, sy, tgt.x, sy)
+      doc.line(tgt.x, sy, tgt.x, tgt.y)
+      doc.setFillColor(...NAVY); doc.circle(tgt.x, tgt.y, 0.8, 'F')
     }
     doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY); doc.setFontSize(9)
     doc.text(g.name.toUpperCase(), cardX + 3, cy + 5.5)
