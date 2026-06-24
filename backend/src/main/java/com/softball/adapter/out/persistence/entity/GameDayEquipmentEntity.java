@@ -1,6 +1,8 @@
 package com.softball.adapter.out.persistence.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "game_day_equipment", uniqueConstraints = {
@@ -14,6 +16,7 @@ public class GameDayEquipmentEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "game_day_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private GameDayEntity gameDay;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

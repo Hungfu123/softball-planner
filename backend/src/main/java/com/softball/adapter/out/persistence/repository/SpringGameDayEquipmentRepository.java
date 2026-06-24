@@ -17,8 +17,9 @@ public interface SpringGameDayEquipmentRepository extends JpaRepository<GameDayE
 
     void deleteByGameDay_IdAndItem_Id(Long gameDayId, Long itemId);
 
-    @Query("SELECT DISTINCT e.gameDay.id FROM GameDayEquipmentEntity e "
+    @Query("SELECT e.gameDay.id FROM GameDayEquipmentEntity e "
         + "WHERE e.gameDay.season.id = :seasonId AND e.gameDay.date < :date "
+        + "GROUP BY e.gameDay.id, e.gameDay.date "
         + "ORDER BY e.gameDay.date DESC")
     List<Long> findGameDayIdsWithUsageBefore(@Param("seasonId") Long seasonId, @Param("date") LocalDate date);
 }
