@@ -6,7 +6,8 @@ import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
 import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, LOCATION_SUGGESTIONS } from './EquipmentItemForm'
 import { VenueMap } from './VenueMap'
-import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones } from '@/icons'
+import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones, ExportDoc } from '@/icons'
+import { generateAufbauPdf } from '@/utils/aufbauPdf'
 import type { EquipmentItem } from '@/types'
 
 export default function EquipmentCatalogPage() {
@@ -80,6 +81,12 @@ export default function EquipmentCatalogPage() {
         <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
           Aufbau Heimspieltag
         </h1>
+        {items.length > 0 && (
+          <button onClick={() => generateAufbauPdf(items)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-navy-700 hover:text-navy-900 hover:bg-cream-100 cursor-pointer transition-colors shrink-0">
+            <ExportDoc size={14} /> PDF
+          </button>
+        )}
       </div>
       <p className="text-sm text-gray-500 -mt-2">Stammliste fürs Heimspieltag-Material — was brauchen wir, wo liegt es.</p>
 
