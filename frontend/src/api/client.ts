@@ -89,6 +89,8 @@ import type {
   InvitationResponse,
   InvitationRequest,
   LineupSetResponse,
+  EquipmentItem,
+  EquipmentInput,
 } from '@/types'
 
 // Players
@@ -608,3 +610,17 @@ export const duplicateInvitation = (id: number) =>
   request<InvitationResponse>(`/invitations/${id}/duplicate`, { method: 'POST' })
 export const deleteInvitation = (id: number) =>
   request<void>(`/invitations/${id}`, { method: 'DELETE' })
+
+// Equipment
+export const getEquipment = (gameDayId: number) =>
+  request<EquipmentItem[]>(`/gamedays/${gameDayId}/equipment`)
+export const createEquipment = (gameDayId: number, input: EquipmentInput) =>
+  request<EquipmentItem>(`/gamedays/${gameDayId}/equipment`, { method: 'POST', body: JSON.stringify(input) })
+export const toggleEquipment = (gameDayId: number, itemId: number, used: boolean) =>
+  request<void>(`/gamedays/${gameDayId}/equipment/${itemId}`, { method: 'PUT', body: JSON.stringify({ used }) })
+export const carryOverEquipment = (gameDayId: number) =>
+  request<EquipmentItem[]>(`/gamedays/${gameDayId}/equipment/carry-over`, { method: 'POST' })
+export const updateEquipment = (itemId: number, input: EquipmentInput) =>
+  request<Omit<EquipmentItem, 'used'>>(`/equipment/${itemId}`, { method: 'PUT', body: JSON.stringify(input) })
+export const deleteEquipment = (itemId: number) =>
+  request<void>(`/equipment/${itemId}`, { method: 'DELETE' })

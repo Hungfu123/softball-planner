@@ -715,3 +715,21 @@ export interface InvitationRequest {
   games: InvitationGame[]
   contacts: InvitationContact[]
 }
+
+export interface EquipmentItem {
+  id: number
+  name: string
+  category: string
+  quantity: number
+  storageLocation: string | null
+  notes: string | null
+  used: boolean
+}
+
+export interface EquipmentInput {
+  name: string
+  category: string
+  quantity: number
+  storageLocation: string | null
+  notes: string | null
+}
