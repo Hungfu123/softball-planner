@@ -113,11 +113,16 @@ export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
       // an die NÄCHSTE Raum-Kante (oben oder unten), nicht aufs Wort.
       const sy = cy + 5
       const cxz = zoneCenter(zone).x
-      // immer an die OBERE Raum-Kante (einheitlich von oben, wie bei Garage)
+      // an die OBERE Raum-Kante, einheitlich SENKRECHT von oben (wie Garage):
+      // Kärtchen → Kanal über dem Gebäude → senkrecht runter in die Kante.
       const tgt = project(cxz, zone.y, mapX, mapY, scale)
+      const chY = tgt.y - 7        // Kanal 7mm über der oberen Kante
+      const busX = cardX - 5       // schmale Spalte zwischen Karte und Kärtchen
       doc.setDrawColor(...NAVY_LIGHT); doc.setLineWidth(0.3)
-      doc.line(cardX, sy, tgt.x, sy)
-      doc.line(tgt.x, sy, tgt.x, tgt.y)
+      doc.line(cardX, sy, busX, sy)        // raus aus dem Kärtchen
+      doc.line(busX, sy, busX, chY)        // hoch/runter zur Kanalhöhe
+      doc.line(busX, chY, tgt.x, chY)      // horizontal über das Gebäude
+      doc.line(tgt.x, chY, tgt.x, tgt.y)   // senkrecht runter in die obere Kante
       doc.setFillColor(...NAVY); doc.circle(tgt.x, tgt.y, 0.8, 'F')
     }
     doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY); doc.setFontSize(9)
