@@ -4,7 +4,7 @@ import { MapPin } from 'lucide-react'
 import { useEquipmentCatalog } from '@/hooks/useEquipmentCatalog'
 import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
-import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT } from './EquipmentItemForm'
+import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, CATEGORY_SUGGESTIONS } from './EquipmentItemForm'
 import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones } from '@/icons'
 import type { EquipmentItem } from '@/types'
 
@@ -29,6 +29,13 @@ export default function EquipmentCatalogPage() {
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], 'de'))
   }, [items, groupMode])
+
+  // Auswählbare Kategorien: Defaults + alle bereits vergebenen (neue entstehen durchs Anlegen).
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>(CATEGORY_SUGGESTIONS)
+    for (const i of items) if (i.category) set.add(i.category)
+    return [...set].sort((a, b) => a.localeCompare(b, 'de'))
+  }, [items])
 
   const handleDelete = async () => {
     if (!deleteItem) return
@@ -84,7 +91,10 @@ export default function EquipmentCatalogPage() {
             description="Leg den Heimspieltag-Aufbau an — baut sich nach und nach auf." />
         ) : groups.map(([groupName, groupItems]) => (
           <div key={groupName}>
-            <div className="px-3 py-2 bg-cream-100/70 border-y border-cream-200 font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700">{groupName}</div>
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-cream-100/70 border-y border-cream-200 border-l-2 border-l-softball-red-500">
+              <span className="font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700">{groupName}</span>
+              <span className="font-display text-[11px] font-bold text-gray-400 tabular-nums">{groupItems.length}</span>
+            </div>
             {groupItems.map(item => (
               <div key={item.id} className="group flex items-center gap-2 min-h-[44px] px-3 border-b border-cream-100 last:border-b-0 hover:bg-cream-100">
                 <div className="flex-1 min-w-0 py-2">
@@ -113,6 +123,7 @@ export default function EquipmentCatalogPage() {
             {editingId != null && groupItems.some(i => i.id === editingId) && (
               <EquipmentItemForm
                 initial={groupItems.find(i => i.id === editingId)!}
+                categories={categoryOptions}
                 onCancel={() => setEditingId(null)}
                 onSubmit={async input => { await edit(editingId, input); setEditingId(null) }}
               />
@@ -122,6 +133,7 @@ export default function EquipmentCatalogPage() {
         {adding && (
           <EquipmentItemForm
             initial={EMPTY_EQUIPMENT_INPUT}
+            categories={categoryOptions}
             onCancel={() => setAdding(false)}
             onSubmit={async input => { await add(input); setAdding(false) }}
           />
