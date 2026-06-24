@@ -3,18 +3,16 @@ package com.softball.domain.model;
 public class EquipmentItem {
     private Long id;
     private String name;
-    private String category;
     private int quantity;
     private String storageLocation;
     private String notes;
 
     public EquipmentItem() {}
 
-    public EquipmentItem(final Long id, final String name, final String category,
+    public EquipmentItem(final Long id, final String name,
                          final int quantity, final String storageLocation, final String notes) {
         this.id = id;
         this.name = name;
-        this.category = category;
         this.quantity = quantity;
         this.storageLocation = storageLocation;
         this.notes = notes;
@@ -24,8 +22,6 @@ public class EquipmentItem {
     public void setId(final Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(final String name) { this.name = name; }
-    public String getCategory() { return category; }
-    public void setCategory(final String category) { this.category = category; }
     public int getQuantity() { return quantity; }
     public void setQuantity(final int quantity) { this.quantity = quantity; }
     public String getStorageLocation() { return storageLocation; }

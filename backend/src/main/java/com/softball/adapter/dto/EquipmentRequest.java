@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 
 public record EquipmentRequest(
     @NotBlank String name,
-    String category,
     @Min(0) int quantity,
     String storageLocation,
     String notes

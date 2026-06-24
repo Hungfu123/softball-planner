@@ -35,7 +35,7 @@ class EquipmentIntegrationTest {
     void catalog_postThenGet_listsItem() throws Exception {
         mockMvc.perform(post("/api/equipment")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"Kalk\",\"category\":\"Spielmaterial\",\"quantity\":2,\"storageLocation\":\"Garage\",\"notes\":\"Linien ziehen\"}"))
+                .content("{\"name\":\"Kalk\",\"quantity\":2,\"storageLocation\":\"Garage\",\"notes\":\"Linien ziehen\"}"))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.name").value("Kalk"))
             .andExpect(jsonPath("$.quantity").value(2));

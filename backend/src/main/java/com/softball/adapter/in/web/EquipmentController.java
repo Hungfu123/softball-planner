@@ -28,14 +28,14 @@ public class EquipmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public EquipmentResponse createCatalogItem(@Valid @RequestBody final EquipmentRequest req) {
         return EquipmentResponse.from(equipmentService.create(
-            req.name(), req.category(), req.quantity(), req.storageLocation(), req.notes()));
+            req.name(), req.quantity(), req.storageLocation(), req.notes()));
     }
 
     @PutMapping("/equipment/{itemId}")
     public EquipmentResponse update(@PathVariable final Long itemId,
                                     @Valid @RequestBody final EquipmentRequest req) {
         return EquipmentResponse.from(equipmentService.update(
-            itemId, req.name(), req.category(), req.quantity(), req.storageLocation(), req.notes()));
+            itemId, req.name(), req.quantity(), req.storageLocation(), req.notes()));
     }
 
     @DeleteMapping("/equipment/{itemId}")

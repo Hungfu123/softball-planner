@@ -16,9 +16,6 @@ public class EquipmentItemEntity {
     private String name;
 
     @Column(nullable = false)
-    private String category = "Sonstiges";
-
-    @Column(nullable = false)
     private int quantity = 1;
 
     @Column(name = "storage_location")
@@ -33,8 +30,6 @@ public class EquipmentItemEntity {
     public void setId(final Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(final String name) { this.name = name; }
-    public String getCategory() { return category; }
-    public void setCategory(final String category) { this.category = category; }
     public int getQuantity() { return quantity; }
     public void setQuantity(final int quantity) { this.quantity = quantity; }
     public String getStorageLocation() { return storageLocation; }
