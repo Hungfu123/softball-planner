@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SpringEquipmentItemRepository extends JpaRepository<EquipmentItemEntity, Long> {
-    List<EquipmentItemEntity> findAllByOrderByCategoryAscNameAsc();
+    List<EquipmentItemEntity> findAllByOrderByNameAsc();
 }

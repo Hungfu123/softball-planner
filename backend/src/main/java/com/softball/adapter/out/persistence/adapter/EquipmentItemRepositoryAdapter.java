@@ -23,7 +23,7 @@ public class EquipmentItemRepositoryAdapter implements EquipmentItemRepository {
 
     @Override
     public List<EquipmentItem> findAllOrdered() {
-        return repo.findAllByOrderByCategoryAscNameAsc().stream().map(mapper::toDomain).toList();
+        return repo.findAllByOrderByNameAsc().stream().map(mapper::toDomain).toList();
     }
 
     @Override

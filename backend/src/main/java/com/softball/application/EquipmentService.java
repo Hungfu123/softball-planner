@@ -27,19 +27,18 @@ public class EquipmentService {
     }
 
     @Transactional
-    public EquipmentItem create(final String name, final String category, final int quantity,
+    public EquipmentItem create(final String name, final int quantity,
                                 final String storageLocation, final String notes) {
-        log.info("Material anlegen: {} ({}, x{})", name, category, quantity);
-        return itemRepository.save(new EquipmentItem(null, name, category, quantity, storageLocation, notes));
+        log.info("Material anlegen: {} (x{})", name, quantity);
+        return itemRepository.save(new EquipmentItem(null, name, quantity, storageLocation, notes));
     }
 
     @Transactional
-    public EquipmentItem update(final Long itemId, final String name, final String category, final int quantity,
+    public EquipmentItem update(final Long itemId, final String name, final int quantity,
                                 final String storageLocation, final String notes) {
         final EquipmentItem item = itemRepository.findById(itemId)
             .orElseThrow(() -> new ResourceNotFoundException("EquipmentItem", itemId));
         item.setName(name);
-        item.setCategory(category);
         item.setQuantity(quantity);
         item.setStorageLocation(storageLocation);
         item.setNotes(notes);
