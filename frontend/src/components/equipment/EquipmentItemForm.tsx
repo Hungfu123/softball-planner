@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from '@/icons'
 import type { EquipmentInput, EquipmentItem } from '@/types'
 
-export const LOCATION_SUGGESTIONS = ['Garage', 'Halle', 'Flur', 'Spint', 'Geräteraum', 'Schrank']
+export { LOCATION_SUGGESTIONS } from './venueLayout'
 export const EMPTY_EQUIPMENT_INPUT: EquipmentInput = {
   name: '', quantity: 1, storageLocation: 'Garage', notes: '',
 }

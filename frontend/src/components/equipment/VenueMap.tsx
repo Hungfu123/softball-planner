@@ -1,3 +1,5 @@
+import { VENUE_ZONES as ZONES, TREES } from './venueLayout'
+
 interface Props {
   /** Anzahl Sachen je Lagerort. */
   counts: Record<string, number>
@@ -5,45 +7,6 @@ interface Props {
   selected: string | null
   onSelect: (location: string | null) => void
 }
-
-/** Klickbare Lager-Zone — Name = kanonischer Lagerort (muss zu storageLocation passen). */
-interface Zone {
-  name: string
-  short?: string
-  x: number; y: number; w: number; h: number
-  /** Label-Anker (sonst Zellmitte). */
-  lx?: number; ly?: number
-  fs?: number
-  /** Verschachtelt (kleiner, dünnere Linie, oben gezeichnet). */
-  inner?: boolean
-  /** Label um 90° gedreht (für hohe schmale Räume). */
-  vertical?: boolean
-}
-
-// Zusammenhängender Grundriss (ungedreht), Kanten geteilt = verbunden.
-// Flur (langer Riegel oben) · darunter links Geräteraum (Raum) mit Spint+Schrank DRIN ·
-// darunter rechts Halle · Garage separat rechts. Komplex wird leicht gedreht (Luftbild).
-const ZONES: Zone[] = [
-  // Geräteraum: Raum NEBEN dem Flur (links im Top-Riegel); Spint+Schrank DRIN.
-  { name: 'Geräteraum', x: 10, y: 40, w: 126, h: 58, lx: 68, ly: 72, fs: 5.5 },
-  // Flur = dünner Rand-Streifen oben über volle Breite (auch über Halle + Garage)
-  { name: 'Flur', x: 136, y: 40, w: 246, h: 28, lx: 214, ly: 54, fs: 11 },
-  { name: 'Halle', x: 136, y: 68, w: 160, h: 108, lx: 216, ly: 124, fs: 13 },
-  // Garage rechts, so hoch wie Halle, große Lücke dazwischen
-  { name: 'Garage', x: 328, y: 68, w: 54, h: 108, lx: 355, ly: 124, fs: 9 },
-  // innen im Geräteraum (x44..136, y40..98): Spint flush obere-linke Ecke,
-  // Schrank vertikal flush an die Unterwand (von unten hoch).
-  { name: 'Spint', x: 46, y: 42, w: 26, h: 15, lx: 59, ly: 50, fs: 4.5, inner: true },
-  { name: 'Schrank', x: 107, y: 62, w: 16, h: 34, lx: 115, ly: 79, fs: 4.5, inner: true, vertical: true },
-]
-
-// Bäume als bewusste Randreihen (Süd-Linie an der Laufbahn + Ost-Saum) statt Streusel.
-const TREES: [number, number, number][] = [
-  // Süd-Reihe (unten, über der Laufbahn)
-  [70, 246, 5], [104, 250, 5], [138, 248, 5], [172, 250, 5], [206, 248, 5],
-  // Ost-Saum (rechts neben Garage)
-  [360, 158, 5], [372, 178, 5], [358, 198, 5],
-]
 
 export function VenueMap({ counts, selected, onSelect }: Props) {
   return (
