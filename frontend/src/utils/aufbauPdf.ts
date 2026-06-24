@@ -113,9 +113,8 @@ export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
       // an die NÄCHSTE Raum-Kante (oben oder unten), nicht aufs Wort.
       const sy = cy + 5
       const cxz = zoneCenter(zone).x
-      const top = project(cxz, zone.y, mapX, mapY, scale)
-      const bot = project(cxz, zone.y + zone.h, mapX, mapY, scale)
-      const tgt = Math.abs(sy - top.y) <= Math.abs(sy - bot.y) ? top : bot
+      // immer an die OBERE Raum-Kante (einheitlich von oben, wie bei Garage)
+      const tgt = project(cxz, zone.y, mapX, mapY, scale)
       doc.setDrawColor(...NAVY_LIGHT); doc.setLineWidth(0.3)
       doc.line(cardX, sy, tgt.x, sy)
       doc.line(tgt.x, sy, tgt.x, tgt.y)
