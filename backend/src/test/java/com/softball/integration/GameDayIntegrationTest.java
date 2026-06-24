@@ -160,7 +160,10 @@ class GameDayIntegrationTest {
                 .content(objectMapper.writeValueAsString(Map.of("playerIds",
                     List.of(player1.getId(), player2.getId())))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.availablePlayers.length()").value(2));
+            .andExpect(jsonPath("$.availablePlayers.length()").value(2))
+            // Regression: zwei JOIN-FETCH-Collections erzeugten ein kartesisches Produkt,
+            // das games je Spieler duplizierte (2 Spieler -> 6 statt 3 Spiele -> doppelte Tabs).
+            .andExpect(jsonPath("$.games.length()").value(3));
     }
 
     @Test

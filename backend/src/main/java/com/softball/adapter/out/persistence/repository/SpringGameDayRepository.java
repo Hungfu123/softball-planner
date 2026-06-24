@@ -19,9 +19,6 @@ public interface SpringGameDayRepository extends JpaRepository<GameDayEntity, Lo
     @Query("SELECT DISTINCT gd FROM GameDayEntity gd LEFT JOIN FETCH gd.games WHERE gd.id = :id")
     Optional<GameDayEntity> findByIdWithGames(Long id);
 
-    @Query("SELECT DISTINCT gd FROM GameDayEntity gd LEFT JOIN FETCH gd.games LEFT JOIN FETCH gd.availablePlayers WHERE gd.id = :id")
-    Optional<GameDayEntity> findByIdWithGamesAndPlayers(@Param("id") Long id);
-
     @Query("SELECT COUNT(gd) > 0 FROM GameDayEntity gd WHERE gd.season.id = :seasonId AND gd.date = :date")
     boolean existsBySeasonAndDate(@Param("seasonId") Long seasonId, @Param("date") LocalDate date);
 }
