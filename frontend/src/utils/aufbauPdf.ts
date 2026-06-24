@@ -44,6 +44,11 @@ function project(x: number, y: number, ox: number, oy: number, scale: number): {
 }
 
 export function generateAufbauPdf(items: EquipmentItem[]): void {
+  buildAufbauDoc(items).save('aufbau-heimspieltag.pdf')
+}
+
+/** Baut das PDF-Dokument (ohne Speichern) — getrennt für Tests/Vorschau. */
+export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
   const W = 297, margin = 12
   const { mapGroups, otherGroups } = partitionByLocation(items)
@@ -138,7 +143,7 @@ export function generateAufbauPdf(items: EquipmentItem[]): void {
     }
   }
 
-  doc.save('aufbau-heimspieltag.pdf')
+  return doc
 }
 
 // Laufbahn-Bögen (Süden), grob wie auf der Screen-Karte.
