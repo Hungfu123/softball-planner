@@ -31,9 +31,10 @@ const ZONES: Zone[] = [
   { name: 'Halle', x: 136, y: 68, w: 160, h: 108, lx: 216, ly: 124, fs: 13 },
   // Garage rechts, so hoch wie Halle, große Lücke dazwischen
   { name: 'Garage', x: 328, y: 68, w: 54, h: 108, lx: 355, ly: 124, fs: 9 },
-  // innen im Geräteraum: Spint oben-links (klein), Schrank rechts klein (Durchgang frei)
-  { name: 'Spint', x: 48, y: 48, w: 24, h: 14, lx: 60, ly: 56, fs: 4.5, inner: true },
-  { name: 'Schrank', x: 108, y: 52, w: 17, h: 32, lx: 116, ly: 68, fs: 4.5, inner: true, vertical: true },
+  // innen im Geräteraum (x44..136, y40..98): Spint flush obere-linke Ecke,
+  // Schrank vertikal flush an die Unterwand (von unten hoch).
+  { name: 'Spint', x: 46, y: 42, w: 26, h: 15, lx: 59, ly: 50, fs: 4.5, inner: true },
+  { name: 'Schrank', x: 107, y: 62, w: 16, h: 34, lx: 115, ly: 79, fs: 4.5, inner: true, vertical: true },
 ]
 
 const TREES: [number, number, number][] = [
