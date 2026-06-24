@@ -596,7 +596,7 @@ export function GameDayPlanner() {
                 label="Liste"
                 onClick={handleExportSignatures}
               />
-              <ToolbarBtn icon={<ClipboardListIcon size={16} />} label="Material" onClick={() => setShowMaterial(true)} />
+              <ToolbarBtn icon={<ClipboardListIcon size={16} />} label="Aufbau" onClick={() => setShowMaterial(true)} />
             </div>
           </div>
 
@@ -670,10 +670,10 @@ export function GameDayPlanner() {
               <button
                 onClick={() => setShowMaterial(true)}
                 className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
-                title="Material / Aufbau"
+                title="Aufbau Heimspieltag"
               >
                 <ClipboardListIcon size={14} />
-                <span>Material</span>
+                <span>Aufbau</span>
               </button>
             </div>
           </div>

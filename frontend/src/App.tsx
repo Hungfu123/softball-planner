@@ -10,9 +10,11 @@ import { setAuth, hasAuth, clearAuth } from '@/api/client'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 import { InvitationListPage } from '@/components/orga/InvitationListPage'
+import { OrgaHome } from '@/components/orga/OrgaHome'
 
 // Lazy-load heavy pages
 const TrainingTodayPage = lazy(() => import('@/components/training/TrainingTodayPage').then(m => ({ default: m.TrainingTodayPage })))
+const EquipmentCatalogPage = lazy(() => import('@/components/equipment/EquipmentCatalogPage'))
 const ScoringPage = lazy(() => import('@/components/scoring/ScoringPage').then(m => ({ default: m.ScoringPage })))
 const StatsPage = lazy(() => import('@/components/stats/StatsPage').then(m => ({ default: m.StatsPage })))
 const CalendarPage = lazy(() => import('@/components/calendar/CalendarPage').then(m => ({ default: m.CalendarPage })))
@@ -63,7 +65,9 @@ const router = createBrowserRouter([
       { path: '/stats', element: <LazyStats />, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen', element: <LazySpielbogenList />, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen/new', element: <LazySpielbogenWizard />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga', element: <OrgaHome />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/einladungen', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/aufbau', element: <Suspense fallback={<LoadingSkeleton />}><EquipmentCatalogPage /></Suspense>, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   { path: '/spielbogen/:id', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },
