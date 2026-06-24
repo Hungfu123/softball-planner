@@ -117,6 +117,31 @@ class EquipmentIntegrationTest {
             .andExpect(jsonPath("$.length()").value(0));
     }
 
+    @Test
+    void catalog_postThenGet_listsItem() throws Exception {
+        mockMvc.perform(post("/api/equipment")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(java.util.Map.of(
+                    "name", "Kalk", "category", "Spielmaterial", "quantity", 2,
+                    "storageLocation", "Garage", "notes", "Linien ziehen"))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.name").value("Kalk"))
+            .andExpect(jsonPath("$.quantity").value(2));
+
+        mockMvc.perform(get("/api/equipment"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].name").value("Kalk"))
+            .andExpect(jsonPath("$[0].storageLocation").value("Garage"));
+    }
+
+    @Test
+    void catalog_getEmptyByDefault() throws Exception {
+        mockMvc.perform(get("/api/equipment"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
     private Long createGameDay(final String date) throws Exception {
         final var result = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
