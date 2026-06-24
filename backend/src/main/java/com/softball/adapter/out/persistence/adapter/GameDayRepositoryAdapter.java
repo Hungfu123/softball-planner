@@ -61,7 +61,17 @@ public class GameDayRepositoryAdapter implements GameDayRepository {
 
     @Override
     public Optional<GameDay> findByIdWithGamesAndPlayers(final Long id) {
-        return repo.findByIdWithGamesAndPlayers(id).map(mapper::toDomainWithGamesAndPlayers);
+        // Zwei Collections in EINEM JOIN FETCH = kartesisches Produkt -> games (List/Bag)
+        // wird je Spieler dupliziert (N Spieler -> N× "Spiel 1"-Tabs). Stattdessen beide
+        // Collections in separaten Queries laden: im selben Persistence-Context liefert
+        // die zweite Query dieselbe managed Entity und initialisiert nur die andere
+        // Collection — kein Cross-Join, keine Duplikate.
+        final Optional<GameDayEntity> withGames = repo.findByIdWithGames(id);
+        if (withGames.isEmpty()) {
+            return Optional.empty();
+        }
+        repo.findByIdWithPlayers(id); // initialisiert availablePlayers auf derselben Entity
+        return withGames.map(mapper::toDomainWithGamesAndPlayers);
     }
 
     @Override
