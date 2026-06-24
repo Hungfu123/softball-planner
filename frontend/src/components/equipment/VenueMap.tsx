@@ -25,14 +25,15 @@ interface Zone {
 // darunter rechts Halle · Garage separat rechts. Komplex wird leicht gedreht (Luftbild).
 const ZONES: Zone[] = [
   // Geräteraum: Raum NEBEN dem Flur (links im Top-Riegel); Spint+Schrank DRIN.
-  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 58, lx: 90, ly: 45, fs: 6 },
-  // Flur läuft lang durch bis zur Garage (Tür/Eingang zwischen Garage und Halle)
-  { name: 'Flur', x: 136, y: 40, w: 196, h: 30, lx: 228, ly: 55, fs: 11 },
-  { name: 'Halle', x: 136, y: 70, w: 170, h: 106, lx: 221, ly: 125, fs: 13 },
-  { name: 'Garage', x: 316, y: 48, w: 66, h: 74, lx: 349, ly: 84, fs: 9 },
-  // innen im Geräteraum: Spint oben links (klein), Schrank rechts (vertikal/hoch)
-  { name: 'Spint', x: 50, y: 52, w: 26, h: 16, lx: 63, ly: 60, fs: 4.5, inner: true },
-  { name: 'Schrank', x: 106, y: 50, w: 22, h: 42, lx: 117, ly: 71, fs: 4.5, inner: true, vertical: true },
+  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 58, lx: 92, ly: 45, fs: 6 },
+  // Flur = dünner Rand-Streifen oben über volle Breite (auch über Halle + Garage)
+  { name: 'Flur', x: 136, y: 40, w: 246, h: 28, lx: 214, ly: 54, fs: 11 },
+  { name: 'Halle', x: 136, y: 68, w: 160, h: 108, lx: 216, ly: 124, fs: 13 },
+  // Garage rechts, so hoch wie Halle, große Lücke dazwischen
+  { name: 'Garage', x: 328, y: 68, w: 54, h: 108, lx: 355, ly: 124, fs: 9 },
+  // innen im Geräteraum: Spint oben-links (klein), Schrank rechts klein (Durchgang frei)
+  { name: 'Spint', x: 48, y: 48, w: 24, h: 14, lx: 60, ly: 56, fs: 4.5, inner: true },
+  { name: 'Schrank', x: 108, y: 52, w: 17, h: 32, lx: 116, ly: 68, fs: 4.5, inner: true, vertical: true },
 ]
 
 const TREES: [number, number, number][] = [
@@ -74,13 +75,13 @@ export function VenueMap({ counts, selected, onSelect }: Props) {
 
         {/* Gebäude-Komplex (zusammenhängend), leicht gedreht */}
         <g transform="rotate(-7 200 110)">
-          {/* Halle-Dach Sägezahn (x136..306, y70..176) */}
+          {/* Halle-Dach Sägezahn (x136..296, y68..176) */}
           <g className="stroke-navy-300" strokeWidth="0.8" opacity="0.7">
-            <line x1="168" y1="70" x2="152" y2="176" />
-            <line x1="200" y1="70" x2="184" y2="176" />
-            <line x1="232" y1="70" x2="216" y2="176" />
-            <line x1="264" y1="70" x2="248" y2="176" />
-            <line x1="296" y1="70" x2="280" y2="176" />
+            <line x1="160" y1="68" x2="146" y2="176" />
+            <line x1="190" y1="68" x2="176" y2="176" />
+            <line x1="220" y1="68" x2="206" y2="176" />
+            <line x1="250" y1="68" x2="236" y2="176" />
+            <line x1="280" y1="68" x2="266" y2="176" />
           </g>
 
           {ZONES.map(z => {
@@ -118,10 +119,10 @@ export function VenueMap({ counts, selected, onSelect }: Props) {
 
           {/* Eingänge (Pfeile): Flur (von Süden) + Garage (von Westen) */}
           <g className="stroke-navy-700 fill-navy-700" strokeWidth="1.6">
-            <line x1="300" y1="84" x2="300" y2="72" />
-            <polygon points="300,67 296,75 304,75" stroke="none" />
-            <line x1="306" y1="102" x2="318" y2="102" />
-            <polygon points="323,102 315,98 315,106" stroke="none" />
+            <line x1="310" y1="92" x2="310" y2="72" />
+            <polygon points="310,66 306,74 314,74" stroke="none" />
+            <line x1="316" y1="118" x2="326" y2="118" />
+            <polygon points="331,118 323,114 323,122" stroke="none" />
           </g>
         </g>
       </svg>
