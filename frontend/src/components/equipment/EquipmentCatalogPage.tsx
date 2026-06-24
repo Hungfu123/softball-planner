@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { MapPin } from 'lucide-react'
 import { useEquipmentCatalog } from '@/hooks/useEquipmentCatalog'
 import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
@@ -37,6 +39,7 @@ export default function EquipmentCatalogPage() {
 
   return (
     <div className="space-y-4">
+      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline">← Zurück zur Orga</Link>
       <div className="flex items-center justify-between gap-2">
         <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
           Aufbau Heimspieltag
@@ -95,7 +98,7 @@ export default function EquipmentCatalogPage() {
                     )}
                   </div>
                   {item.storageLocation && groupMode === 'category' && (
-                    <span className="inline-block mt-0.5 text-[11px] bg-cream-100 text-navy-800 px-1.5 py-0.5 rounded">📍 {item.storageLocation}</span>
+                    <span className="inline-flex items-center gap-1 mt-0.5 text-[11px] bg-cream-100 text-navy-800 px-1.5 py-0.5 rounded"><MapPin size={11} className="shrink-0" /> {item.storageLocation}</span>
                   )}
                   {expandedNote === item.id && item.notes && (
                     <p className="text-xs text-gray-500 mt-1">{item.notes}</p>

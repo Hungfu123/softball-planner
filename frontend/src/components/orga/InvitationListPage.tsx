@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useInvitations } from '@/hooks/useInvitations'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, ExportDoc, ArrowsSwap } from '@/icons'
@@ -103,6 +104,7 @@ export function InvitationListPage() {
 
   return (
     <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
+      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline">← Zurück zur Orga</Link>
       <div className="flex items-baseline justify-between">
         <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
           Einladungen {invitations.length > 0 && <span className="text-navy-500 font-bold">({invitations.length})</span>}
