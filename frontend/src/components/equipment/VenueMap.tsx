@@ -16,6 +16,8 @@ interface Zone {
   fs?: number
   /** Verschachtelt (kleiner, dünnere Linie, oben gezeichnet). */
   inner?: boolean
+  /** Label um 90° gedreht (für hohe schmale Räume). */
+  vertical?: boolean
 }
 
 // Zusammenhängender Grundriss (ungedreht), Kanten geteilt = verbunden.
@@ -23,14 +25,14 @@ interface Zone {
 // darunter rechts Halle · Garage separat rechts. Komplex wird leicht gedreht (Luftbild).
 const ZONES: Zone[] = [
   // Geräteraum: Raum NEBEN dem Flur (links im Top-Riegel); Spint+Schrank DRIN.
-  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 80, lx: 89, ly: 48, fs: 6.5 },
-  // Flur läuft bis zur Halle/Garage durch (Tür zwischen Garage und Halle)
-  { name: 'Flur', x: 136, y: 40, w: 184, h: 30, lx: 224, ly: 55, fs: 11 },
+  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 80, lx: 90, ly: 46, fs: 6 },
+  // Flur läuft lang durch bis zur Garage (Tür/Eingang zwischen Garage und Halle)
+  { name: 'Flur', x: 136, y: 40, w: 196, h: 30, lx: 228, ly: 55, fs: 11 },
   { name: 'Halle', x: 136, y: 70, w: 170, h: 106, lx: 221, ly: 125, fs: 13 },
-  { name: 'Garage', x: 326, y: 56, w: 50, h: 58, lx: 351, ly: 86, fs: 9 },
-  // innen im Geräteraum: Spint oben links (klein), Schrank vorne/unten (horizontal)
-  { name: 'Spint', x: 50, y: 56, w: 34, h: 26, lx: 67, ly: 69, fs: 5.5, inner: true },
-  { name: 'Schrank', x: 50, y: 92, w: 78, h: 20, lx: 89, ly: 102, fs: 5.5, inner: true },
+  { name: 'Garage', x: 316, y: 48, w: 66, h: 74, lx: 349, ly: 84, fs: 9 },
+  // innen im Geräteraum: Spint oben links (klein), Schrank rechts (vertikal/hoch)
+  { name: 'Spint', x: 50, y: 52, w: 28, h: 20, lx: 64, ly: 62, fs: 5, inner: true },
+  { name: 'Schrank', x: 104, y: 50, w: 24, h: 62, lx: 116, ly: 81, fs: 5, inner: true, vertical: true },
 ]
 
 const TREES: [number, number, number][] = [
@@ -100,6 +102,7 @@ export function VenueMap({ counts, selected, onSelect }: Props) {
                       ? 'fill-cream-100 stroke-navy-600 hover:fill-cream-200'
                       : 'fill-white stroke-navy-700 hover:fill-cream-100'}`} />
                 <text x={lx} y={ly} fontSize={z.fs ?? 8} textAnchor="middle" dominantBaseline="middle"
+                  transform={z.vertical ? `rotate(-90 ${lx} ${ly})` : undefined}
                   className={`font-display font-bold uppercase tracking-wider pointer-events-none ${active ? 'fill-white' : 'fill-navy-800'}`}>
                   {z.short ?? z.name}
                 </text>
@@ -112,6 +115,14 @@ export function VenueMap({ counts, selected, onSelect }: Props) {
               </g>
             )
           })}
+
+          {/* Eingänge (Pfeile): Flur (von Süden) + Garage (von Westen) */}
+          <g className="stroke-navy-700 fill-navy-700" strokeWidth="1.6">
+            <line x1="300" y1="84" x2="300" y2="72" />
+            <polygon points="300,67 296,75 304,75" stroke="none" />
+            <line x1="306" y1="102" x2="318" y2="102" />
+            <polygon points="323,102 315,98 315,106" stroke="none" />
+          </g>
         </g>
       </svg>
       <p className="text-[11px] text-gray-400 mt-1">Tipp auf ein Gebäude zeigt was dort liegt.</p>
