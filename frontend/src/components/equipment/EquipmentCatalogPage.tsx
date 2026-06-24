@@ -4,7 +4,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
 import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT } from './EquipmentItemForm'
 import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones } from '@/icons'
-import type { EquipmentCatalogItem } from '@/types'
+import type { EquipmentItem } from '@/types'
 
 type GroupMode = 'category' | 'location'
 
@@ -14,11 +14,11 @@ export default function EquipmentCatalogPage() {
   const [groupMode, setGroupMode] = useState<GroupMode>('category')
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
-  const [deleteItem, setDeleteItem] = useState<EquipmentCatalogItem | null>(null)
+  const [deleteItem, setDeleteItem] = useState<EquipmentItem | null>(null)
   const [expandedNote, setExpandedNote] = useState<number | null>(null)
 
   const groups = useMemo(() => {
-    const map = new Map<string, EquipmentCatalogItem[]>()
+    const map = new Map<string, EquipmentItem[]>()
     for (const i of items) {
       const key = groupMode === 'category' ? (i.category || 'Sonstiges') : (i.storageLocation?.trim() || 'Ohne Ort')
       const arr = map.get(key) ?? []

@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from 'react'
-import type { EquipmentCatalogItem, EquipmentInput } from '@/types'
+import type { EquipmentItem, EquipmentInput } from '@/types'
 import * as api from '@/api/client'
 
 export function useEquipmentCatalog() {
-  const [items, setItems] = useState<EquipmentCatalogItem[]>([])
+  const [items, setItems] = useState<EquipmentItem[]>([])
   const [loading, setLoading] = useState(false)
 
   const reload = useCallback(async () => {

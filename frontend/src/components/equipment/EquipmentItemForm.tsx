@@ -8,7 +8,7 @@ export const EMPTY_EQUIPMENT_INPUT: EquipmentInput = {
 }
 
 interface Props {
-  initial: EquipmentInput | EquipmentItem | Omit<EquipmentItem, 'used'>
+  initial: EquipmentInput | EquipmentItem
   onCancel: () => void
   onSubmit: (input: EquipmentInput) => Promise<void>
 }
