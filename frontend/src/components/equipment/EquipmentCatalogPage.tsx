@@ -5,6 +5,7 @@ import { useEquipmentCatalog } from '@/hooks/useEquipmentCatalog'
 import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
 import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, LOCATION_SUGGESTIONS } from './EquipmentItemForm'
+import { VenueMap } from './VenueMap'
 import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones } from '@/icons'
 import type { EquipmentItem } from '@/types'
 
@@ -15,6 +16,7 @@ export default function EquipmentCatalogPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deleteItem, setDeleteItem] = useState<EquipmentItem | null>(null)
   const [expandedNote, setExpandedNote] = useState<number | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
 
   const groups = useMemo(() => {
     const map = new Map<string, EquipmentItem[]>()
@@ -26,6 +28,19 @@ export default function EquipmentCatalogPage() {
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], 'de'))
   }, [items])
+
+  // Anzahl Sachen je Lagerort (für die Karten-Badges).
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {}
+    for (const i of items) {
+      const key = i.storageLocation?.trim() || 'Ohne Ort'
+      c[key] = (c[key] ?? 0) + 1
+    }
+    return c
+  }, [items])
+
+  // Liste auf gewählten Lagerort filtern (Karte-Klick).
+  const visibleGroups = selected ? groups.filter(([name]) => name === selected) : groups
 
   // Auswählbare Lagerorte: Defaults + alle bereits vergebenen.
   const locationOptions = useMemo(() => {
@@ -50,6 +65,8 @@ export default function EquipmentCatalogPage() {
         </h1>
       </div>
       <p className="text-sm text-gray-500 -mt-2">Stammliste fürs Heimspieltag-Material — was brauchen wir, wo liegt es.</p>
+
+      <VenueMap counts={counts} selected={selected} onSelect={setSelected} />
 
       <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
         {loading ? (
@@ -76,7 +93,9 @@ export default function EquipmentCatalogPage() {
         ) : items.length === 0 ? (
           <EmptyState icon={<CrossBones size={40} />} title="Noch keine Sachen"
             description="Leg den Heimspieltag-Aufbau an — baut sich nach und nach auf." />
-        ) : groups.map(([groupName, groupItems]) => (
+        ) : visibleGroups.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-8">Hier liegt noch nichts. <button onClick={() => setSelected(null)} className="text-navy-700 hover:underline cursor-pointer">Alle anzeigen</button></p>
+        ) : visibleGroups.map(([groupName, groupItems]) => (
           <div key={groupName}>
             <div className="flex items-center justify-between gap-2 px-3 py-2 bg-cream-100/70 border-y border-cream-200 border-l-2 border-l-softball-red-500">
               <span className="font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700 inline-flex items-center gap-1">
