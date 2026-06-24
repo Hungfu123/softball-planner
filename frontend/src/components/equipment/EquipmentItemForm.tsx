@@ -7,18 +7,22 @@ export const EMPTY_EQUIPMENT_INPUT: EquipmentInput = {
   name: '', category: 'Aufbau', quantity: 1, storageLocation: '', notes: '',
 }
 
+const NEW_CATEGORY = '__neu__'
+
 interface Props {
   initial: EquipmentInput | EquipmentItem
+  /** Bereits vorhandene Kategorien (aus dem Katalog) zur Auswahl. */
+  categories: string[]
   onCancel: () => void
   onSubmit: (input: EquipmentInput) => Promise<void>
 }
 
-export function EquipmentItemForm({ initial, onCancel, onSubmit }: Props) {
+export function EquipmentItemForm({ initial, categories, onCancel, onSubmit }: Props) {
   const uid = useId()
-  const catListId = `cat-${uid}`
   const locListId = `loc-${uid}`
   const [name, setName] = useState(initial.name)
   const [category, setCategory] = useState(initial.category || 'Aufbau')
+  const [creatingCategory, setCreatingCategory] = useState(false)
   const [quantity, setQuantity] = useState(initial.quantity || 1)
   const [storageLocation, setStorageLocation] = useState(initial.storageLocation ?? '')
   const [notes, setNotes] = useState(initial.notes ?? '')
@@ -37,12 +41,23 @@ export function EquipmentItemForm({ initial, onCancel, onSubmit }: Props) {
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Name (z.B. Pavillon)" autoFocus
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <div className="flex gap-2">
-        <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Kategorie" list={catListId}
-          className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm" />
+        {creatingCategory ? (
+          <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Neue Kategorie" autoFocus
+            className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm" />
+        ) : (
+          <select value={category}
+            onChange={e => {
+              if (e.target.value === NEW_CATEGORY) { setCreatingCategory(true); setCategory('') }
+              else setCategory(e.target.value)
+            }}
+            className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm bg-white cursor-pointer">
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            <option value={NEW_CATEGORY}>+ Neue Kategorie…</option>
+          </select>
+        )}
         <input type="number" min={0} value={quantity} onChange={e => setQuantity(Math.max(0, Number(e.target.value)))}
           className="w-20 px-2 py-1.5 rounded border border-cream-300 text-sm tabular-nums" />
       </div>
-      <datalist id={catListId}>{CATEGORY_SUGGESTIONS.map(c => <option key={c} value={c} />)}</datalist>
       <input value={storageLocation} onChange={e => setStorageLocation(e.target.value)} placeholder="Lagerort (z.B. Garage)" list={locListId}
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <datalist id={locListId}>{LOCATION_SUGGESTIONS.map(l => <option key={l} value={l} />)}</datalist>
