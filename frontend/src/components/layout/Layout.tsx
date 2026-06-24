@@ -39,8 +39,9 @@ export function Layout() {
   const location = useLocation()
 
   const isSubPage = location.pathname.startsWith('/gameday/')
-  const activeTab = TABS.find(t => t.path === location.pathname)?.path
-    ?? (location.pathname === '/' ? '/' : undefined)
+  const activeTab = TABS.find(t =>
+    t.path === '/' ? location.pathname === '/' : (location.pathname === t.path || location.pathname.startsWith(t.path + '/'))
+  )?.path
 
   return (
     <ToastCtx.Provider value={toast}>
