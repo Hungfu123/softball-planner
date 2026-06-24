@@ -42,17 +42,35 @@ export default function EquipmentCatalogPage() {
   // Liste auf gewählten Lagerort filtern (Karte-Klick).
   const visibleGroups = selected ? groups.filter(([name]) => name === selected) : groups
 
-  // Auswählbare Lagerorte = NUR die Zonen des Lageplans (keine Altdaten-Varianten).
-  const locationOptions = useMemo(
-    () => [...LOCATION_SUGGESTIONS].sort((a, b) => a.localeCompare(b, 'de')),
-    [],
-  )
+  // Auswählbare Lagerorte: Lageplan-Zonen + tatsächlich vergebene (eigene Orte
+  // z.B. "bei Hung" bleiben so erhalten). "+ Neuer Lagerort" legt weitere an.
+  const locationOptions = useMemo(() => {
+    const set = new Set<string>(LOCATION_SUGGESTIONS)
+    for (const i of items) if (i.storageLocation) set.add(i.storageLocation)
+    return [...set].sort((a, b) => a.localeCompare(b, 'de'))
+  }, [items])
 
   const handleDelete = async () => {
     if (!deleteItem) return
     try { await remove(deleteItem.id); toast.show(`„${deleteItem.name}" gelöscht`) }
     catch (e) { toast.show((e as Error).message, 'error') }
     finally { setDeleteItem(null) }
+  }
+
+  // Custom-Lagerort auflösen: seine Sachen auf "kein Ort" setzen (nicht löschen).
+  // Lageplan-Zonen + "Ohne Ort" sind fix, nicht löschbar.
+  const isFixedLocation = (name: string) => name === 'Ohne Ort' || LOCATION_SUGGESTIONS.includes(name)
+  const [deleteLoc, setDeleteLoc] = useState<{ name: string; items: EquipmentItem[] } | null>(null)
+  const handleDeleteLocation = async () => {
+    if (!deleteLoc) return
+    try {
+      for (const it of deleteLoc.items) {
+        await edit(it.id, { name: it.name, quantity: it.quantity, storageLocation: null, notes: it.notes })
+      }
+      if (selected === deleteLoc.name) setSelected(null)
+      toast.show(`Lagerort „${deleteLoc.name}" aufgelöst`)
+    } catch (e) { toast.show((e as Error).message, 'error') }
+    finally { setDeleteLoc(null) }
   }
 
   return (
@@ -100,7 +118,16 @@ export default function EquipmentCatalogPage() {
               <span className="font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700 inline-flex items-center gap-1">
                 <MapPin size={11} className="shrink-0" />{groupName}
               </span>
-              <span className="font-display text-[11px] font-bold text-gray-400 tabular-nums">{groupItems.length}</span>
+              <span className="flex items-center gap-1.5">
+                <span className="font-display text-[11px] font-bold text-gray-400 tabular-nums">{groupItems.length}</span>
+                {!isFixedLocation(groupName) && (
+                  <button onClick={() => setDeleteLoc({ name: groupName, items: groupItems })}
+                    aria-label={`Lagerort ${groupName} auflösen`} title="Lagerort auflösen"
+                    className="p-0.5 text-gray-400 hover:text-softball-red-600 cursor-pointer">
+                    <TrashBin size={13} />
+                  </button>
+                )}
+              </span>
             </div>
             {groupItems.map(item => (
               <div key={item.id} className="group flex items-center gap-2 min-h-[44px] px-3 border-b border-cream-100 last:border-b-0 hover:bg-cream-100">
@@ -156,6 +183,16 @@ export default function EquipmentCatalogPage() {
           confirmLabel="Löschen"
           onConfirm={handleDelete}
           onCancel={() => setDeleteItem(null)}
+        />
+      )}
+
+      {deleteLoc && (
+        <ConfirmModal
+          title="Lagerort auflösen"
+          message={`Lagerort „${deleteLoc.name}" auflösen? Die ${deleteLoc.items.length} Sache(n) dort werden auf „kein Ort" gesetzt (nicht gelöscht).`}
+          confirmLabel="Auflösen"
+          onConfirm={handleDeleteLocation}
+          onCancel={() => setDeleteLoc(null)}
         />
       )}
     </div>
