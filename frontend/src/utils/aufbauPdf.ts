@@ -97,6 +97,7 @@ export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
   const cardX = mapX + VIEWBOX.w * scale + 8
   const cardW = W - margin - cardX
   let cy = mapY
+  let gi = 0
   for (const g of mapGroups) {
     const lines: { text: string; note: boolean }[] = []
     for (const it of g.items) {
@@ -116,7 +117,8 @@ export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
       // an die OBERE Raum-Kante, einheitlich SENKRECHT von oben (wie Garage):
       // Kärtchen → Kanal über dem Gebäude → senkrecht runter in die Kante.
       const tgt = project(cxz, zone.y, mapX, mapY, scale)
-      const chY = tgt.y - 7        // Kanal 7mm über der oberen Kante
+      // Kanäle weit oben im leeren Bereich (gestaffelt), damit sie die Zeichnung nicht kreuzen
+      const chY = mapY + 3 + gi * 3
       const busX = cardX - 5       // schmale Spalte zwischen Karte und Kärtchen
       doc.setDrawColor(...NAVY_LIGHT); doc.setLineWidth(0.3)
       doc.line(cardX, sy, busX, sy)        // raus aus dem Kärtchen
@@ -135,6 +137,7 @@ export function buildAufbauDoc(items: EquipmentItem[]): jsPDF {
       doc.text(ln.text, cardX + 3, ly); ly += 4.4
     }
     cy += cardH + 4
+    gi++
   }
 
   // „Weitere Orte" unten
