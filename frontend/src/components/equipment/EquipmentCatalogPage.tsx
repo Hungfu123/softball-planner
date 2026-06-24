@@ -38,7 +38,7 @@ export default function EquipmentCatalogPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-2xl lg:max-w-3xl mx-auto space-y-4">
       <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline">← Zurück zur Orga</Link>
       <div className="flex items-center justify-between gap-2">
         <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
@@ -55,7 +55,7 @@ export default function EquipmentCatalogPage() {
           </button>
         </div>
       </div>
-      <p className="text-sm text-gray-500 -mt-2">Was brauchen wir, wo liegt es. Abhaken passiert am jeweiligen Spieltag.</p>
+      <p className="text-sm text-gray-500 -mt-2">Stammliste fürs Heimspieltag-Material — was brauchen wir, wo liegt es.</p>
 
       <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
         {loading ? (
@@ -83,23 +83,23 @@ export default function EquipmentCatalogPage() {
           <EmptyState icon={<CrossBones size={40} />} title="Noch keine Sachen"
             description="Leg den Heimspieltag-Aufbau an — baut sich nach und nach auf." />
         ) : groups.map(([groupName, groupItems]) => (
-          <div key={groupName} className="border-b border-cream-200 last:border-b-0">
-            <div className="px-3 pt-3 pb-1 font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-900">{groupName}</div>
+          <div key={groupName}>
+            <div className="px-3 py-2 bg-cream-100/70 border-y border-cream-200 font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700">{groupName}</div>
             {groupItems.map(item => (
-              <div key={item.id} className="group flex items-center gap-2 min-h-[48px] px-3 hover:bg-cream-100">
+              <div key={item.id} className="group flex items-center gap-2 min-h-[44px] px-3 border-b border-cream-100 last:border-b-0 hover:bg-cream-100">
                 <div className="flex-1 min-w-0 py-2">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap">
                     <span className="font-semibold text-navy-900 truncate">{item.name}</span>
-                    <span className="text-xs text-gray-400 tabular-nums shrink-0">×{item.quantity}</span>
+                    {item.quantity > 1 && <span className="text-xs text-gray-400 tabular-nums shrink-0">×{item.quantity}</span>}
+                    {item.storageLocation && groupMode === 'category' && (
+                      <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-500 shrink-0"><MapPin size={11} className="shrink-0" /> {item.storageLocation}</span>
+                    )}
                     {item.notes && (
                       <button onClick={() => setExpandedNote(expandedNote === item.id ? null : item.id)} aria-label="Notiz" className="shrink-0 cursor-pointer">
                         <AlertTriangle size={13} className="text-amber-400" />
                       </button>
                     )}
                   </div>
-                  {item.storageLocation && groupMode === 'category' && (
-                    <span className="inline-flex items-center gap-1 mt-0.5 text-[11px] bg-cream-100 text-navy-800 px-1.5 py-0.5 rounded"><MapPin size={11} className="shrink-0" /> {item.storageLocation}</span>
-                  )}
                   {expandedNote === item.id && item.notes && (
                     <p className="text-xs text-gray-500 mt-1">{item.notes}</p>
                   )}
