@@ -37,11 +37,12 @@ const ZONES: Zone[] = [
   { name: 'Schrank', x: 107, y: 62, w: 16, h: 34, lx: 115, ly: 79, fs: 4.5, inner: true, vertical: true },
 ]
 
+// Bäume als bewusste Randreihen (Süd-Linie an der Laufbahn + Ost-Saum) statt Streusel.
 const TREES: [number, number, number][] = [
-  [18, 116, 7], [12, 136, 5], [26, 150, 5],
-  [28, 232, 7], [50, 246, 5], [14, 250, 4],
-  [364, 150, 7], [378, 170, 5], [356, 186, 5],
-  [150, 250, 5], [184, 256, 4], [118, 252, 4],
+  // Süd-Reihe (unten, über der Laufbahn)
+  [70, 246, 5], [104, 250, 5], [138, 248, 5], [172, 250, 5], [206, 248, 5],
+  // Ost-Saum (rechts neben Garage)
+  [360, 158, 5], [372, 178, 5], [358, 198, 5],
 ]
 
 export function VenueMap({ counts, selected, onSelect }: Props) {
@@ -60,9 +61,9 @@ export function VenueMap({ counts, selected, onSelect }: Props) {
       </div>
       <svg viewBox="0 0 400 270" className="w-full h-auto rounded-lg" role="group" aria-label="Lageplan Gelände">
         {/* Boden (Grün) für Kontrast */}
-        <rect x="0" y="0" width="400" height="270" fill="#e7eedd" />
+        <rect x="0" y="0" width="400" height="270" fill="#eaeede" />
         {TREES.map(([cx, cy, r], i) => (
-          <circle key={i} cx={cx} cy={cy} r={r} fill="#8fae8b" opacity="0.7" />
+          <circle key={i} cx={cx} cy={cy} r={r} fill="#9bb596" opacity="0.55" />
         ))}
         {/* Weg (gestrichelt) */}
         <path d="M 24 258 Q 110 244 196 252" fill="none" stroke="#c2b79c" strokeWidth="2.5" strokeDasharray="3 4" />
