@@ -91,6 +91,7 @@ import type {
   LineupSetResponse,
   EquipmentItem,
   EquipmentInput,
+  EquipmentCatalogItem,
 } from '@/types'
 
 // Players
@@ -624,3 +625,7 @@ export const updateEquipment = (itemId: number, input: EquipmentInput) =>
   request<Omit<EquipmentItem, 'used'>>(`/equipment/${itemId}`, { method: 'PUT', body: JSON.stringify(input) })
 export const deleteEquipment = (itemId: number) =>
   request<void>(`/equipment/${itemId}`, { method: 'DELETE' })
+export const getEquipmentCatalog = () =>
+  request<EquipmentCatalogItem[]>('/equipment')
+export const createEquipmentItem = (input: EquipmentInput) =>
+  request<EquipmentCatalogItem>('/equipment', { method: 'POST', body: JSON.stringify(input) })
