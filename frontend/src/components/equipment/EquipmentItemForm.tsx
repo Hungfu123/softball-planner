@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { EquipmentInput, EquipmentItem } from '@/types'
 
-export const LOCATION_SUGGESTIONS = ['Garage', 'Raum']
+export const LOCATION_SUGGESTIONS = ['Garage', 'Halle', 'Flur', 'Spint', 'Geräteraum', 'Schrank']
 export const EMPTY_EQUIPMENT_INPUT: EquipmentInput = {
   name: '', quantity: 1, storageLocation: 'Garage', notes: '',
 }
