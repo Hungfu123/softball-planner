@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { ChevronDown } from '@/icons'
 import type { EquipmentInput, EquipmentItem } from '@/types'
 
 export const LOCATION_SUGGESTIONS = ['Garage', 'Halle', 'Flur', 'Spint', 'Geräteraum', 'Schrank']
@@ -6,11 +7,9 @@ export const EMPTY_EQUIPMENT_INPUT: EquipmentInput = {
   name: '', quantity: 1, storageLocation: 'Garage', notes: '',
 }
 
-const NEW_LOCATION = '__neu__'
-
 interface Props {
   initial: EquipmentInput | EquipmentItem
-  /** Bereits vorhandene Lagerorte (aus dem Katalog) zur Auswahl. */
+  /** Auswählbare Lagerorte (= Zonen des Lageplans). */
   locations: string[]
   onCancel: () => void
   onSubmit: (input: EquipmentInput) => Promise<void>
@@ -20,9 +19,21 @@ export function EquipmentItemForm({ initial, locations, onCancel, onSubmit }: Pr
   const [name, setName] = useState(initial.name)
   const [storageLocation, setStorageLocation] = useState(initial.storageLocation ?? 'Garage')
   const [creatingLocation, setCreatingLocation] = useState(false)
+  const [locOpen, setLocOpen] = useState(false)
   const [quantity, setQuantity] = useState(initial.quantity || 1)
   const [notes, setNotes] = useState(initial.notes ?? '')
   const [saving, setSaving] = useState(false)
+  const locRef = useRef<HTMLDivElement>(null)
+
+  // Dropdown bei Klick außerhalb schließen.
+  useEffect(() => {
+    if (!locOpen) return
+    const handler = (e: MouseEvent) => {
+      if (!locRef.current?.contains(e.target as Node)) setLocOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [locOpen])
 
   const submit = async () => {
     if (!name.trim() || saving) return
@@ -41,15 +52,29 @@ export function EquipmentItemForm({ initial, locations, onCancel, onSubmit }: Pr
           <input value={storageLocation} onChange={e => setStorageLocation(e.target.value)} placeholder="Neuer Lagerort" autoFocus
             className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm" />
         ) : (
-          <select value={storageLocation}
-            onChange={e => {
-              if (e.target.value === NEW_LOCATION) { setCreatingLocation(true); setStorageLocation('') }
-              else setStorageLocation(e.target.value)
-            }}
-            className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm bg-white cursor-pointer">
-            {locations.map(l => <option key={l} value={l}>{l}</option>)}
-            <option value={NEW_LOCATION}>+ Neuer Lagerort…</option>
-          </select>
+          <div className="relative flex-1" ref={locRef}>
+            <button type="button" onClick={() => setLocOpen(o => !o)}
+              className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded border border-cream-300 bg-white text-sm text-navy-900 cursor-pointer hover:border-navy-400 transition-colors">
+              <span className={storageLocation ? '' : 'text-gray-400'}>{storageLocation || 'Lagerort wählen'}</span>
+              <ChevronDown size={14} className="text-gray-400 shrink-0" />
+            </button>
+            {locOpen && (
+              <div className="absolute z-30 left-0 right-0 mt-1 bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 max-h-56 overflow-auto">
+                {locations.map(loc => (
+                  <button key={loc} type="button"
+                    onClick={() => { setStorageLocation(loc); setLocOpen(false) }}
+                    className={`w-full text-left px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-navy-50 hover:text-navy-700 ${loc === storageLocation ? 'bg-navy-50 text-navy-800 font-semibold' : 'text-navy-900'}`}>
+                    {loc}
+                  </button>
+                ))}
+                <button type="button"
+                  onClick={() => { setCreatingLocation(true); setStorageLocation(''); setLocOpen(false) }}
+                  className="w-full text-left px-3 py-2 text-sm text-navy-600 hover:bg-navy-50 cursor-pointer border-t border-cream-200 transition-colors">
+                  + Neuer Lagerort…
+                </button>
+              </div>
+            )}
+          </div>
         )}
         <input type="number" min={0} value={quantity} onChange={e => setQuantity(Math.max(0, Number(e.target.value)))}
           className="w-20 px-2 py-1.5 rounded border border-cream-300 text-sm tabular-nums" />

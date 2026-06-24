@@ -42,12 +42,11 @@ export default function EquipmentCatalogPage() {
   // Liste auf gewählten Lagerort filtern (Karte-Klick).
   const visibleGroups = selected ? groups.filter(([name]) => name === selected) : groups
 
-  // Auswählbare Lagerorte: Defaults + alle bereits vergebenen.
-  const locationOptions = useMemo(() => {
-    const set = new Set<string>(LOCATION_SUGGESTIONS)
-    for (const i of items) if (i.storageLocation) set.add(i.storageLocation)
-    return [...set].sort((a, b) => a.localeCompare(b, 'de'))
-  }, [items])
+  // Auswählbare Lagerorte = NUR die Zonen des Lageplans (keine Altdaten-Varianten).
+  const locationOptions = useMemo(
+    () => [...LOCATION_SUGGESTIONS].sort((a, b) => a.localeCompare(b, 'de')),
+    [],
+  )
 
   const handleDelete = async () => {
     if (!deleteItem) return
