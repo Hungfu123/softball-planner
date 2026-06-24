@@ -107,6 +107,7 @@ class EquipmentIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(java.util.Map.of(
                     "name", "Bases", "category", "Spielmaterial", "quantity", 4))))
+            .andExpect(status().isCreated())
             .andReturn();
         final Long itemId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
 

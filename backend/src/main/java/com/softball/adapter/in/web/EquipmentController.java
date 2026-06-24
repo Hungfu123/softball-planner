@@ -5,7 +5,6 @@ import com.softball.adapter.dto.EquipmentResponse;
 import com.softball.adapter.dto.GameDayEquipmentResponse;
 import com.softball.adapter.dto.ToggleEquipmentRequest;
 import com.softball.application.EquipmentService;
-import com.softball.domain.model.EquipmentItem;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -35,15 +34,14 @@ public class EquipmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public GameDayEquipmentResponse createForGameDay(@PathVariable final Long gameDayId,
                                                      @Valid @RequestBody final EquipmentRequest req) {
-        final EquipmentItem created = equipmentService.createAndMarkUsed(
-            gameDayId, req.name(), req.category(), req.quantity(), req.storageLocation(), req.notes());
-        return GameDayEquipmentResponse.from(created, true);
+        return GameDayEquipmentResponse.from(equipmentService.createAndMarkUsed(
+            gameDayId, req.name(), req.category(), req.quantity(), req.storageLocation(), req.notes()), true);
     }
 
     @PutMapping("/gamedays/{gameDayId}/equipment/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void toggle(@PathVariable final Long gameDayId, @PathVariable final Long itemId,
-                       @RequestBody final ToggleEquipmentRequest req) {
+                       @Valid @RequestBody final ToggleEquipmentRequest req) {
         equipmentService.setUsed(gameDayId, itemId, req.used());
     }
 
