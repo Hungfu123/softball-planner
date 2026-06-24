@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useId } from 'react'
 import { useEquipment } from '@/hooks/useEquipment'
 import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
@@ -114,7 +114,7 @@ export function MaterialSheet({ gameDayId, gameDayLabel, onClose }: Props) {
                         ? <CheckCircle size={22} className="text-softball-red-600" />
                         : <span className="block w-[22px] h-[22px] rounded-full border-2 border-cream-400" />}
                     </button>
-                    <button onClick={() => handleToggle(item)} className="flex-1 min-w-0 text-left cursor-pointer py-2">
+                    <div role="button" tabIndex={0} onClick={() => handleToggle(item)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleToggle(item) } }} className="flex-1 min-w-0 text-left cursor-pointer py-2">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-navy-900 truncate">{item.name}</span>
                         <span className="text-xs text-gray-400 tabular-nums shrink-0">×{item.quantity}</span>
@@ -131,7 +131,7 @@ export function MaterialSheet({ gameDayId, gameDayLabel, onClose }: Props) {
                       {expandedNote === item.id && item.notes && (
                         <p className="text-xs text-gray-500 mt-1">{item.notes}</p>
                       )}
-                    </button>
+                    </div>
                     <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button onClick={() => setEditingId(item.id)} aria-label="Bearbeiten" className="p-1.5 text-gray-400 hover:text-navy-700 cursor-pointer">
                         <Pencil size={14} />
@@ -191,6 +191,9 @@ interface FormProps {
 }
 
 function ItemForm({ initial, onCancel, onSubmit }: FormProps) {
+  const uid = useId()
+  const catListId = `cat-${uid}`
+  const locListId = `loc-${uid}`
   const [name, setName] = useState(initial.name)
   const [category, setCategory] = useState(initial.category || 'Aufbau')
   const [quantity, setQuantity] = useState(initial.quantity || 1)
@@ -211,15 +214,15 @@ function ItemForm({ initial, onCancel, onSubmit }: FormProps) {
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Name (z.B. Pavillon)" autoFocus
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <div className="flex gap-2">
-        <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Kategorie" list="cat-suggestions"
+        <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Kategorie" list={catListId}
           className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm" />
         <input type="number" min={0} value={quantity} onChange={e => setQuantity(Math.max(0, Number(e.target.value)))}
           className="w-20 px-2 py-1.5 rounded border border-cream-300 text-sm tabular-nums" />
       </div>
-      <datalist id="cat-suggestions">{CATEGORY_SUGGESTIONS.map(c => <option key={c} value={c} />)}</datalist>
-      <input value={storageLocation} onChange={e => setStorageLocation(e.target.value)} placeholder="Lagerort (z.B. Garage)" list="loc-suggestions"
+      <datalist id={catListId}>{CATEGORY_SUGGESTIONS.map(c => <option key={c} value={c} />)}</datalist>
+      <input value={storageLocation} onChange={e => setStorageLocation(e.target.value)} placeholder="Lagerort (z.B. Garage)" list={locListId}
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
-      <datalist id="loc-suggestions">{LOCATION_SUGGESTIONS.map(l => <option key={l} value={l} />)}</datalist>
+      <datalist id={locListId}>{LOCATION_SUGGESTIONS.map(l => <option key={l} value={l} />)}</datalist>
       <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notiz (optional)"
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <div className="flex justify-end gap-2 pt-1">
