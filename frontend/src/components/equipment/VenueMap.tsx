@@ -25,7 +25,7 @@ interface Zone {
 // darunter rechts Halle · Garage separat rechts. Komplex wird leicht gedreht (Luftbild).
 const ZONES: Zone[] = [
   // Geräteraum: Raum NEBEN dem Flur (links im Top-Riegel); Spint+Schrank DRIN.
-  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 58, lx: 92, ly: 45, fs: 6 },
+  { name: 'Geräteraum', x: 10, y: 40, w: 126, h: 58, lx: 30, ly: 50, fs: 5 },
   // Flur = dünner Rand-Streifen oben über volle Breite (auch über Halle + Garage)
   { name: 'Flur', x: 136, y: 40, w: 246, h: 28, lx: 214, ly: 54, fs: 11 },
   { name: 'Halle', x: 136, y: 68, w: 160, h: 108, lx: 216, ly: 124, fs: 13 },
