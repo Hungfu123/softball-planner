@@ -438,6 +438,11 @@ export function GameDayPlanner() {
       // Remove lineup/staff entries for players no longer available (instead of full reload)
       const availableSet = new Set(playerIds)
       lineup.removeUnavailable(availableSet)
+      // Backend cascade cleaned the removed player from ALL games (lineup + staff,
+      // batting orders renumbered). removeUnavailable only fixed the active tab, so
+      // drop the cached snapshots of the other games — sonst zeigt ein Tab-Wechsel
+      // (z.B. auf Spiel 2) den veralteten Stand und man muss neu laden.
+      lineup.invalidateCache()
       if (activeGame) {
         staff.load(activeGame.id)
       }
