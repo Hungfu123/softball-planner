@@ -1,30 +1,26 @@
-import { useState, useId } from 'react'
+import { useState } from 'react'
 import type { EquipmentInput, EquipmentItem } from '@/types'
 
-export const CATEGORY_SUGGESTIONS = ['Aufbau', 'Spielmaterial', 'Catering']
 export const LOCATION_SUGGESTIONS = ['Garage', 'Raum']
 export const EMPTY_EQUIPMENT_INPUT: EquipmentInput = {
-  name: '', category: 'Aufbau', quantity: 1, storageLocation: '', notes: '',
+  name: '', quantity: 1, storageLocation: 'Garage', notes: '',
 }
 
-const NEW_CATEGORY = '__neu__'
+const NEW_LOCATION = '__neu__'
 
 interface Props {
   initial: EquipmentInput | EquipmentItem
-  /** Bereits vorhandene Kategorien (aus dem Katalog) zur Auswahl. */
-  categories: string[]
+  /** Bereits vorhandene Lagerorte (aus dem Katalog) zur Auswahl. */
+  locations: string[]
   onCancel: () => void
   onSubmit: (input: EquipmentInput) => Promise<void>
 }
 
-export function EquipmentItemForm({ initial, categories, onCancel, onSubmit }: Props) {
-  const uid = useId()
-  const locListId = `loc-${uid}`
+export function EquipmentItemForm({ initial, locations, onCancel, onSubmit }: Props) {
   const [name, setName] = useState(initial.name)
-  const [category, setCategory] = useState(initial.category || 'Aufbau')
-  const [creatingCategory, setCreatingCategory] = useState(false)
+  const [storageLocation, setStorageLocation] = useState(initial.storageLocation ?? 'Garage')
+  const [creatingLocation, setCreatingLocation] = useState(false)
   const [quantity, setQuantity] = useState(initial.quantity || 1)
-  const [storageLocation, setStorageLocation] = useState(initial.storageLocation ?? '')
   const [notes, setNotes] = useState(initial.notes ?? '')
   const [saving, setSaving] = useState(false)
 
@@ -32,7 +28,7 @@ export function EquipmentItemForm({ initial, categories, onCancel, onSubmit }: P
     if (!name.trim() || saving) return
     setSaving(true)
     try {
-      await onSubmit({ name: name.trim(), category: category.trim() || 'Sonstiges', quantity, storageLocation: storageLocation.trim() || null, notes: notes.trim() || null })
+      await onSubmit({ name: name.trim(), quantity, storageLocation: storageLocation.trim() || null, notes: notes.trim() || null })
     } finally { setSaving(false) }
   }
 
@@ -41,26 +37,23 @@ export function EquipmentItemForm({ initial, categories, onCancel, onSubmit }: P
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Name (z.B. Pavillon)" autoFocus
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <div className="flex gap-2">
-        {creatingCategory ? (
-          <input value={category} onChange={e => setCategory(e.target.value)} placeholder="Neue Kategorie" autoFocus
+        {creatingLocation ? (
+          <input value={storageLocation} onChange={e => setStorageLocation(e.target.value)} placeholder="Neuer Lagerort" autoFocus
             className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm" />
         ) : (
-          <select value={category}
+          <select value={storageLocation}
             onChange={e => {
-              if (e.target.value === NEW_CATEGORY) { setCreatingCategory(true); setCategory('') }
-              else setCategory(e.target.value)
+              if (e.target.value === NEW_LOCATION) { setCreatingLocation(true); setStorageLocation('') }
+              else setStorageLocation(e.target.value)
             }}
             className="flex-1 px-2 py-1.5 rounded border border-cream-300 text-sm bg-white cursor-pointer">
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-            <option value={NEW_CATEGORY}>+ Neue Kategorie…</option>
+            {locations.map(l => <option key={l} value={l}>{l}</option>)}
+            <option value={NEW_LOCATION}>+ Neuer Lagerort…</option>
           </select>
         )}
         <input type="number" min={0} value={quantity} onChange={e => setQuantity(Math.max(0, Number(e.target.value)))}
           className="w-20 px-2 py-1.5 rounded border border-cream-300 text-sm tabular-nums" />
       </div>
-      <input value={storageLocation} onChange={e => setStorageLocation(e.target.value)} placeholder="Lagerort (z.B. Garage)" list={locListId}
-        className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
-      <datalist id={locListId}>{LOCATION_SUGGESTIONS.map(l => <option key={l} value={l} />)}</datalist>
       <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notiz (optional)"
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <div className="flex justify-end gap-2 pt-1">

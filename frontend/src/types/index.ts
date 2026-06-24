@@ -719,7 +719,6 @@ export interface InvitationRequest {
 export interface EquipmentItem {
   id: number
   name: string
-  category: string
   quantity: number
   storageLocation: string | null
   notes: string | null
@@ -727,7 +726,6 @@ export interface EquipmentItem {
 
 export interface EquipmentInput {
   name: string
-  category: string
   quantity: number
   storageLocation: string | null
   notes: string | null

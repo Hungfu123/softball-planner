@@ -4,16 +4,13 @@ import { MapPin } from 'lucide-react'
 import { useEquipmentCatalog } from '@/hooks/useEquipmentCatalog'
 import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
-import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, CATEGORY_SUGGESTIONS } from './EquipmentItemForm'
+import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, LOCATION_SUGGESTIONS } from './EquipmentItemForm'
 import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones } from '@/icons'
 import type { EquipmentItem } from '@/types'
-
-type GroupMode = 'category' | 'location'
 
 export default function EquipmentCatalogPage() {
   const { items, loading, add, edit, remove } = useEquipmentCatalog()
   const toast = useToastContext()
-  const [groupMode, setGroupMode] = useState<GroupMode>('category')
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deleteItem, setDeleteItem] = useState<EquipmentItem | null>(null)
@@ -22,18 +19,18 @@ export default function EquipmentCatalogPage() {
   const groups = useMemo(() => {
     const map = new Map<string, EquipmentItem[]>()
     for (const i of items) {
-      const key = groupMode === 'category' ? (i.category || 'Sonstiges') : (i.storageLocation?.trim() || 'Ohne Ort')
+      const key = i.storageLocation?.trim() || 'Ohne Ort'
       const arr = map.get(key) ?? []
       arr.push(i)
       map.set(key, arr)
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], 'de'))
-  }, [items, groupMode])
+  }, [items])
 
-  // Auswählbare Kategorien: Defaults + alle bereits vergebenen (neue entstehen durchs Anlegen).
-  const categoryOptions = useMemo(() => {
-    const set = new Set<string>(CATEGORY_SUGGESTIONS)
-    for (const i of items) if (i.category) set.add(i.category)
+  // Auswählbare Lagerorte: Defaults + alle bereits vergebenen.
+  const locationOptions = useMemo(() => {
+    const set = new Set<string>(LOCATION_SUGGESTIONS)
+    for (const i of items) if (i.storageLocation) set.add(i.storageLocation)
     return [...set].sort((a, b) => a.localeCompare(b, 'de'))
   }, [items])
 
@@ -51,16 +48,6 @@ export default function EquipmentCatalogPage() {
         <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
           Aufbau Heimspieltag
         </h1>
-        <div className="flex bg-cream-100 border border-cream-300 rounded-lg p-0.5">
-          <button onClick={() => setGroupMode('category')}
-            className={`px-3 h-8 text-xs font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors ${groupMode === 'category' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}>
-            Kategorie
-          </button>
-          <button onClick={() => setGroupMode('location')}
-            className={`px-3 h-8 text-xs font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors ${groupMode === 'location' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}>
-            Lagerort
-          </button>
-        </div>
       </div>
       <p className="text-sm text-gray-500 -mt-2">Stammliste fürs Heimspieltag-Material — was brauchen wir, wo liegt es.</p>
 
@@ -92,7 +79,9 @@ export default function EquipmentCatalogPage() {
         ) : groups.map(([groupName, groupItems]) => (
           <div key={groupName}>
             <div className="flex items-center justify-between gap-2 px-3 py-2 bg-cream-100/70 border-y border-cream-200 border-l-2 border-l-softball-red-500">
-              <span className="font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700">{groupName}</span>
+              <span className="font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-700 inline-flex items-center gap-1">
+                <MapPin size={11} className="shrink-0" />{groupName}
+              </span>
               <span className="font-display text-[11px] font-bold text-gray-400 tabular-nums">{groupItems.length}</span>
             </div>
             {groupItems.map(item => (
@@ -101,9 +90,6 @@ export default function EquipmentCatalogPage() {
                   <div className="flex items-center gap-x-2 gap-y-0.5 flex-wrap">
                     <span className="font-semibold text-navy-900 truncate">{item.name}</span>
                     {item.quantity > 1 && <span className="text-xs text-gray-400 tabular-nums shrink-0">×{item.quantity}</span>}
-                    {item.storageLocation && groupMode === 'category' && (
-                      <span className="inline-flex items-center gap-0.5 text-[11px] text-gray-500 shrink-0"><MapPin size={11} className="shrink-0" /> {item.storageLocation}</span>
-                    )}
                     {item.notes && (
                       <button onClick={() => setExpandedNote(expandedNote === item.id ? null : item.id)} aria-label="Notiz" className="shrink-0 cursor-pointer">
                         <AlertTriangle size={13} className="text-amber-400" />
@@ -123,7 +109,7 @@ export default function EquipmentCatalogPage() {
             {editingId != null && groupItems.some(i => i.id === editingId) && (
               <EquipmentItemForm
                 initial={groupItems.find(i => i.id === editingId)!}
-                categories={categoryOptions}
+                locations={locationOptions}
                 onCancel={() => setEditingId(null)}
                 onSubmit={async input => { await edit(editingId, input); setEditingId(null) }}
               />
@@ -133,7 +119,7 @@ export default function EquipmentCatalogPage() {
         {adding && (
           <EquipmentItemForm
             initial={EMPTY_EQUIPMENT_INPUT}
-            categories={categoryOptions}
+            locations={locationOptions}
             onCancel={() => setAdding(false)}
             onSubmit={async input => { await add(input); setAdding(false) }}
           />
