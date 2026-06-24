@@ -51,6 +51,18 @@ public class EquipmentController {
         return getForGameDay(gameDayId);
     }
 
+    @GetMapping("/equipment")
+    public List<EquipmentResponse> getCatalog() {
+        return equipmentService.findAll().stream().map(EquipmentResponse::from).toList();
+    }
+
+    @PostMapping("/equipment")
+    @ResponseStatus(HttpStatus.CREATED)
+    public EquipmentResponse createCatalogItem(@Valid @RequestBody final EquipmentRequest req) {
+        return EquipmentResponse.from(equipmentService.create(
+            req.name(), req.category(), req.quantity(), req.storageLocation(), req.notes()));
+    }
+
     @PutMapping("/equipment/{itemId}")
     public EquipmentResponse update(@PathVariable final Long itemId,
                                     @Valid @RequestBody final EquipmentRequest req) {
