@@ -723,7 +723,6 @@ export interface EquipmentItem {
   quantity: number
   storageLocation: string | null
   notes: string | null
-  used: boolean
 }
 
 export interface EquipmentInput {
@@ -733,5 +732,3 @@ export interface EquipmentInput {
   storageLocation: string | null
   notes: string | null
 }
-
-export type EquipmentCatalogItem = Omit<EquipmentItem, 'used'>
