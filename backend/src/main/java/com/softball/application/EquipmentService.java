@@ -73,6 +73,8 @@ public class EquipmentService {
 
     @Transactional
     public void delete(final Long itemId) {
+        itemRepository.findById(itemId)
+            .orElseThrow(() -> new ResourceNotFoundException("EquipmentItem", itemId));
         log.info("Material löschen: {}", itemId);
         itemRepository.deleteById(itemId);
     }
@@ -82,6 +84,7 @@ public class EquipmentService {
         requireGameDay(gameDayId);
         itemRepository.findById(itemId)
             .orElseThrow(() -> new ResourceNotFoundException("EquipmentItem", itemId));
+        log.info("Material {} für Spieltag {}: {}", itemId, gameDayId, used ? "eingepackt" : "ausgepackt");
         if (used) {
             usageRepository.markUsed(gameDayId, itemId);
         } else {
@@ -93,8 +96,11 @@ public class EquipmentService {
     public Set<Long> carryOverFromLast(final Long gameDayId) {
         final GameDay gameDay = requireGameDay(gameDayId);
         usageRepository.findMostRecentGameDayIdWithUsageBefore(gameDay.getSeasonId(), gameDay.getDate())
-            .ifPresent(prevId -> usageRepository.findUsedItemIds(prevId)
-                .forEach(itemId -> usageRepository.markUsed(gameDayId, itemId)));
+            .ifPresent(prevId -> {
+                log.info("Carry-Over für Spieltag {} von Spieltag {}", gameDayId, prevId);
+                usageRepository.findUsedItemIds(prevId)
+                    .forEach(itemId -> usageRepository.markUsed(gameDayId, itemId));
+            });
         return usageRepository.findUsedItemIds(gameDayId);
     }
 
