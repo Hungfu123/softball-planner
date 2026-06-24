@@ -56,9 +56,28 @@ export default function EquipmentCatalogPage() {
 
       <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
         {loading ? (
-          <p className="text-center text-sm text-gray-400 py-10">Lädt…</p>
+          <div className="p-3 space-y-0" role="status" aria-label="Lade Daten">
+            {/* group-header placeholder */}
+            <div className="px-0 pt-3 pb-2">
+              <div className="skeleton-shimmer h-2.5 w-20 rounded-full bg-cream-300" />
+            </div>
+            {[{ w: 'w-2/3' }, { w: 'w-1/2' }, { w: 'w-3/5' }].map((row, i) => (
+              <div key={i} className="flex items-center gap-2 min-h-[48px] px-0 border-b border-cream-200 last:border-b-0">
+                <div className={`skeleton-shimmer h-4 ${row.w} bg-cream-200 rounded-full`} />
+              </div>
+            ))}
+            {/* second group placeholder */}
+            <div className="px-0 pt-3 pb-2 mt-1">
+              <div className="skeleton-shimmer h-2.5 w-16 rounded-full bg-cream-300" />
+            </div>
+            {[{ w: 'w-3/4' }, { w: 'w-2/5' }].map((row, i) => (
+              <div key={i} className="flex items-center gap-2 min-h-[48px] px-0 border-b border-cream-200 last:border-b-0">
+                <div className={`skeleton-shimmer h-4 ${row.w} bg-cream-200 rounded-full`} />
+              </div>
+            ))}
+          </div>
         ) : items.length === 0 ? (
-          <EmptyState icon={<CrossBones size={40} className="opacity-30" />} title="Noch keine Sachen"
+          <EmptyState icon={<CrossBones size={40} />} title="Noch keine Sachen"
             description="Leg den Heimspieltag-Aufbau an — baut sich nach und nach auf." />
         ) : groups.map(([groupName, groupItems]) => (
           <div key={groupName} className="border-b border-cream-200 last:border-b-0">
