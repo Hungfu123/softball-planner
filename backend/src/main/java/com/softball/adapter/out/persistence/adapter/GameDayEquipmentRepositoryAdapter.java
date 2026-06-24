@@ -35,6 +35,7 @@ public class GameDayEquipmentRepositoryAdapter implements GameDayEquipmentReposi
     }
 
     @Override
+    @Transactional
     public void markUsed(final Long gameDayId, final Long itemId) {
         if (repo.existsByGameDay_IdAndItem_Id(gameDayId, itemId)) return;
         repo.save(new GameDayEquipmentEntity(
