@@ -25,14 +25,14 @@ interface Zone {
 // darunter rechts Halle · Garage separat rechts. Komplex wird leicht gedreht (Luftbild).
 const ZONES: Zone[] = [
   // Geräteraum: Raum NEBEN dem Flur (links im Top-Riegel); Spint+Schrank DRIN.
-  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 80, lx: 90, ly: 46, fs: 6 },
+  { name: 'Geräteraum', x: 44, y: 40, w: 92, h: 58, lx: 90, ly: 45, fs: 6 },
   // Flur läuft lang durch bis zur Garage (Tür/Eingang zwischen Garage und Halle)
   { name: 'Flur', x: 136, y: 40, w: 196, h: 30, lx: 228, ly: 55, fs: 11 },
   { name: 'Halle', x: 136, y: 70, w: 170, h: 106, lx: 221, ly: 125, fs: 13 },
   { name: 'Garage', x: 316, y: 48, w: 66, h: 74, lx: 349, ly: 84, fs: 9 },
   // innen im Geräteraum: Spint oben links (klein), Schrank rechts (vertikal/hoch)
-  { name: 'Spint', x: 50, y: 52, w: 28, h: 20, lx: 64, ly: 62, fs: 5, inner: true },
-  { name: 'Schrank', x: 104, y: 50, w: 24, h: 62, lx: 116, ly: 81, fs: 5, inner: true, vertical: true },
+  { name: 'Spint', x: 50, y: 52, w: 26, h: 16, lx: 63, ly: 60, fs: 4.5, inner: true },
+  { name: 'Schrank', x: 106, y: 50, w: 22, h: 42, lx: 117, ly: 71, fs: 4.5, inner: true, vertical: true },
 ]
 
 const TREES: [number, number, number][] = [
