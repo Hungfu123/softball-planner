@@ -13,6 +13,7 @@ import { useLineupSets } from '@/hooks/useLineupSets'
 import { PlayerPool } from './PlayerPool'
 import { FieldView } from './FieldView'
 import { FieldPositionAssignSheet } from './FieldPositionAssignSheet'
+import { MaterialSheet } from './MaterialSheet'
 import { CoachSlots } from './CoachSlots'
 import { BenchDisplay } from './BenchDisplay'
 import { SaveButton } from './SaveButton'
@@ -21,7 +22,7 @@ import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon, ClipboardListIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse } from '@/types'
@@ -58,6 +59,7 @@ export function GameDayPlanner() {
   const [autoSingleLoading, setAutoSingleLoading] = useState(false)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const [showExportConfirm, setShowExportConfirm] = useState(false)
+  const [showMaterial, setShowMaterial] = useState(false)
   const [seasonGameDays, setSeasonGameDays] = useState<GameDayResponse[]>([])
   const [season, setSeason] = useState<Season | null>(null)
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
@@ -594,6 +596,7 @@ export function GameDayPlanner() {
                 label="Liste"
                 onClick={handleExportSignatures}
               />
+              <ToolbarBtn icon={<ClipboardListIcon size={16} />} label="Material" onClick={() => setShowMaterial(true)} />
             </div>
           </div>
 
@@ -663,6 +666,14 @@ export function GameDayPlanner() {
               >
                 <UsersIcon size={14} />
                 <span>Liste</span>
+              </button>
+              <button
+                onClick={() => setShowMaterial(true)}
+                className="font-display px-2.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-gray-600 hover:text-navy-900 hover:bg-cream-100 rounded-lg cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                title="Material / Aufbau"
+              >
+                <ClipboardListIcon size={14} />
+                <span>Material</span>
               </button>
             </div>
           </div>
@@ -1057,6 +1068,14 @@ export function GameDayPlanner() {
           selectedIds={availablePlayers.map(p => p.id)}
           onSave={handleSetAvailablePlayers}
           onClose={() => setShowPlayersModal(false)}
+        />
+      )}
+
+      {showMaterial && (
+        <MaterialSheet
+          gameDayId={gameDayId}
+          gameDayLabel={`${gameDay.label || 'Spieltag'} · ${formatDate(gameDay.date)}`}
+          onClose={() => setShowMaterial(false)}
         />
       )}
 
