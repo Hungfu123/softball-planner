@@ -621,6 +621,22 @@ export function generateSignatureListPdf(
     margin: { left: 20, right: 20 },
   })
 
+  // Unterschriftenfelder für Headcoach und Ausrichter unter der Liste
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let sy = ((doc as any).lastAutoTable?.finalY ?? y) + 16
+  const left = 20
+  const lineStart = left + 32
+  const lineEnd = pageWidth - 20
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(10, 15, 92) // navy-900
+  doc.setDrawColor(120, 120, 120)
+  for (const label of ['Headcoach:', 'Ausrichter:']) {
+    doc.text(label, left, sy)
+    doc.line(lineStart, sy + 1, lineEnd, sy + 1)
+    sy += 16
+  }
+
   const parts = ['Anwesenheit', gameDay.label || 'Spieltag', gameDay.date]
   if (gameDay.location) parts.push(gameDay.location)
   doc.setProperties({ title: parts.join('_') })
