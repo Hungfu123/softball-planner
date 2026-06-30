@@ -206,11 +206,7 @@ public class SpielbogenScoringService {
                  bogenId, side, inning, type, fromBase, toBase);
 
         // Score-Update: Runner erreicht Home via SB/WP/PB (toBase=4) → +1 Run für side.
-        boolean scoresRun = toBase == 4 && (
-            type == StealingEventType.STOLEN_BASE ||
-            type == StealingEventType.WILD_PITCH ||
-            type == StealingEventType.PASSED_BALL
-        );
+        boolean scoresRun = stealingScoresRun(saved);
         if (scoresRun) {
             if (side == BogenSide.HOME) {
                 bogen.setHomeRuns((bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0) + 1);
@@ -269,7 +265,7 @@ public class SpielbogenScoringService {
 
     @Transactional
     public void undoLast(final Long bogenId, final BogenSide side) {
-        Spielbogen bogen = requireLive(bogenId);
+        Spielbogen bogen = requireLiveOrDone(bogenId);
         SpielbogenAtBat last = atBatRepo.findLatestForSide(bogenId, side)
             .orElseThrow(() -> new BusinessValidationException("Kein AtBat zum Rückgängigmachen für Side " + side));
 
@@ -290,45 +286,15 @@ public class SpielbogenScoringService {
         BogenSide undoneSide = last.getSide();
         Integer undoneInning = last.getInning();
 
-        // Stealing-Events die nach dem vorletzten AB (oder seit Start, wenn keiner)
-        // passiert sind, gehören chronologisch zum gerade undone AB → mit löschen.
-        // Sonst hängen WP/PB/SB-Labels stale am State und überschreiben neue Runs.
-        java.time.Instant cutoff = atBatRepo.findByBogenId(bogenId).stream()
-            .filter(ab -> !ab.getId().equals(last.getId()))
-            .map(SpielbogenAtBat::getCreatedAt)
-            .filter(java.util.Objects::nonNull)
-            .max(java.time.Instant::compareTo)
-            .orElse(java.time.Instant.EPOCH);
-        var staleStealing = stealingRepo.findByBogenId(bogenId).stream()
-            .filter(ev -> ev.getCreatedAt() != null && ev.getCreatedAt().isAfter(cutoff))
-            .toList();
-        int staleHomeRuns = 0;
-        int staleAwayRuns = 0;
-        for (var ev : staleStealing) {
-            boolean scoredRun = ev.getToBase() != null && ev.getToBase() == 4 && (
-                ev.getType() == StealingEventType.STOLEN_BASE ||
-                ev.getType() == StealingEventType.WILD_PITCH ||
-                ev.getType() == StealingEventType.PASSED_BALL
-            );
-            if (scoredRun) {
-                if (ev.getSide() == BogenSide.HOME) staleHomeRuns++;
-                else staleAwayRuns++;
-            }
-            stealingRepo.deleteById(ev.getId());
-        }
-        if (!staleStealing.isEmpty()) {
-            log.info("Spielbogen {} Undo: {} Stealing-Events mit-gelöscht (nach cutoff {})",
-                     bogenId, staleStealing.size(), cutoff);
-        }
-
+        // NUR diesen AB löschen. Stealing-Events werden NICHT mit-geräumt — das Frontend
+        // routet Stealing-Undo separat (nach Recency via deleteLastStealingForSide). Früher
+        // wurden hier alle Steals seit dem vorletzten AB mit-gelöscht → "Undo löscht zu viel".
         atBatRepo.deleteById(last.getId());
 
         int abHomeRuns = last.getSide() == BogenSide.HOME ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0;
         int abAwayRuns = last.getSide() == BogenSide.AWAY ? (last.getRunsScored() != null ? last.getRunsScored() : 0) : 0;
-        int homeRuns = bogen.getHomeRuns() - abHomeRuns - staleHomeRuns;
-        int awayRuns = bogen.getAwayRuns() - abAwayRuns - staleAwayRuns;
-        bogen.setHomeRuns(Math.max(0, homeRuns));
-        bogen.setAwayRuns(Math.max(0, awayRuns));
+        bogen.setHomeRuns(Math.max(0, bogen.getHomeRuns() - abHomeRuns));
+        bogen.setAwayRuns(Math.max(0, bogen.getAwayRuns() - abAwayRuns));
 
         // Revert Auto-Switch: wenn der gelöschte AB ein 3rd-Out war (Inning hatte vorher
         // automatisch gewechselt), und die Outs jetzt wieder unter 3 sind, müssen Side und
@@ -343,6 +309,7 @@ public class SpielbogenScoringService {
                      bogenId, undoneSide, undoneInning, outsAfterUndo);
         }
 
+        reopenIfDone(bogen);
         bogenRepo.save(bogen);
         log.info("Spielbogen {} Undo: AtBat id={} gelöscht", bogenId, last.getId());
     }
@@ -460,7 +427,9 @@ public class SpielbogenScoringService {
             }
         }
 
-        // Recompute total runs from all at-bats
+        // Recompute total runs from ALL sources: AtBats + gestohlene Home-Runs (SB/WP/PB toBase=4).
+        // Stealing-Runs liegen NICHT in einem AtBat — wer sie hier vergisst, löscht sie bei jeder
+        // Korrektur aus dem Score (HitAdjustSheet öffnet nach jedem Hit-mit-Runner → häufig).
         var allAtBats = atBatRepo.findByBogenId(bogenId);
         int homeRuns = allAtBats.stream()
             .filter(a -> a.getSide() == BogenSide.HOME)
@@ -470,6 +439,9 @@ public class SpielbogenScoringService {
             .filter(a -> a.getSide() == BogenSide.AWAY)
             .mapToInt(a -> a.getRunsScored() != null ? a.getRunsScored() : 0)
             .sum();
+        var steals = stealingRepo.findByBogenId(bogenId);
+        homeRuns += (int) steals.stream().filter(s -> s.getSide() == BogenSide.HOME && stealingScoresRun(s)).count();
+        awayRuns += (int) steals.stream().filter(s -> s.getSide() == BogenSide.AWAY && stealingScoresRun(s)).count();
         bogen.setHomeRuns(homeRuns);
         bogen.setAwayRuns(awayRuns);
         bogenRepo.save(bogen);
@@ -520,6 +492,16 @@ public class SpielbogenScoringService {
     @Transactional(readOnly = true)
     public List<SpielbogenRunnerAdvance> findRunnerAdvancesForAtBat(final Long atBatId) {
         return runnerAdvanceRepo.findByAtBatId(atBatId);
+    }
+
+    /** Ein Stealing-Event erzielt einen Run, wenn der Runner Home (toBase=4) via SB/WP/PB erreicht.
+     *  CS/OUT_ON_PLAY erzielen nie einen Run. Single source of truth für Score-Buchhaltung. */
+    private static boolean stealingScoresRun(final SpielbogenStealingEvent ev) {
+        return ev.getToBase() != null && ev.getToBase() == 4 && (
+            ev.getType() == StealingEventType.STOLEN_BASE ||
+            ev.getType() == StealingEventType.WILD_PITCH ||
+            ev.getType() == StealingEventType.PASSED_BALL
+        );
     }
 
     private void maybeAutoSwitchSide(final Spielbogen bogen, final BogenSide side, final int inning) {
@@ -644,10 +626,42 @@ public class SpielbogenScoringService {
 
     @Transactional
     public void deleteLastStealingForSide(final Long bogenId, final BogenSide side) {
-        requireLive(bogenId);
+        Spielbogen bogen = requireLiveOrDone(bogenId);
         SpielbogenStealingEvent latest = stealingRepo.findLatestForBogenIdAndSide(bogenId, side)
             .orElseThrow(() -> new BusinessValidationException("Kein Stealing-Event zum Rückgängigmachen für Side " + side));
+
+        BogenSide evSide = latest.getSide();
+        Integer evInning = latest.getInning();
+        boolean scoredRun = stealingScoresRun(latest);
+
         stealingRepo.deleteById(latest.getId());
+
+        // Score zurück: gestohlener Home-Run (SB/WP/PB toBase=4) abziehen. Fehlte früher → Score
+        // blieb nach Stealing-Undo zu hoch ("Undo löscht zu wenig" / falsche Run-Zählung).
+        if (scoredRun) {
+            if (evSide == BogenSide.HOME) {
+                bogen.setHomeRuns(Math.max(0, (bogen.getHomeRuns() != null ? bogen.getHomeRuns() : 0) - 1));
+            } else {
+                bogen.setAwayRuns(Math.max(0, (bogen.getAwayRuns() != null ? bogen.getAwayRuns() : 0) - 1));
+            }
+        }
+
+        // Revert Auto-Switch: war dieses CS/OUT_ON_PLAY der 3. Out (Inning hatte automatisch
+        // gewechselt) und sind die Outs jetzt unter 3, Side+Inning zurücksetzen — symmetrisch zu undoLast.
+        if (evInning != null) {
+            long outsAfterUndo = atBatRepo.countOutsInInning(bogenId, evSide, evInning);
+            boolean sideOrInningChanged = bogen.getCurrentSide() != evSide
+                || !evInning.equals(bogen.getCurrentInning());
+            if (outsAfterUndo < 3 && sideOrInningChanged) {
+                bogen.setCurrentSide(evSide);
+                bogen.setCurrentInning(evInning);
+                log.info("Spielbogen {} Stealing-Undo: side/inning revert auf {}/{} (outs now {})",
+                         bogenId, evSide, evInning, outsAfterUndo);
+            }
+        }
+
+        reopenIfDone(bogen);
+        bogenRepo.save(bogen);
         log.info("Spielbogen {} Stealing-Undo: Event id={} side={} gelöscht", bogenId, latest.getId(), side);
     }
 
@@ -658,6 +672,27 @@ public class SpielbogenScoringService {
             throw new BusinessValidationException("Spielbogen muss im Status LIVE sein (aktuell: " + bogen.getStatus() + ")");
         }
         return bogen;
+    }
+
+    /** Für Undo-Operationen: erlaubt LIVE und DONE (Undo eines Walkoff/Game-End öffnet das Spiel wieder),
+     *  nur DRAFT bleibt verboten. */
+    private Spielbogen requireLiveOrDone(final Long bogenId) {
+        Spielbogen bogen = bogenRepo.findById(bogenId)
+            .orElseThrow(() -> new ResourceNotFoundException("Spielbogen", bogenId));
+        if (bogen.getStatus() != BogenStatus.LIVE && bogen.getStatus() != BogenStatus.DONE) {
+            throw new BusinessValidationException("Undo nur in Status LIVE oder DONE möglich (aktuell: " + bogen.getStatus() + ")");
+        }
+        return bogen;
+    }
+
+    /** Macht ein per Walkoff/Game-End beendetes Spiel wieder LIVE — nach Undo des entscheidenden
+     *  Events. Sonst bliebe der User im DONE-Zustand gefangen und müsste manuell neu öffnen. */
+    private void reopenIfDone(final Spielbogen bogen) {
+        if (bogen.getStatus() == BogenStatus.DONE) {
+            bogen.setStatus(BogenStatus.LIVE);
+            bogen.setEndedAt(null);
+            log.info("Spielbogen {} Undo: Status DONE → LIVE (Spiel wieder geöffnet)", bogen.getId());
+        }
     }
 
     private SpielbogenSlot requireSlotForBogenAndSide(final Long slotId, final Long bogenId, final BogenSide side) {

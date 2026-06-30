@@ -12,8 +12,11 @@ interface Props {
   baseStateBefore: BogenBaseStateDto | null
   /** Vom Hit gezählte Runs (optimistisch). */
   initialRunsScored: number
-  /** Hit-Type für Hint (Single/Double/Triple). */
+  /** Hit-Type für Hint (Single/Double/Triple). Bei Error wird der Batter wie ein Single
+   *  behandelt (erreicht 1B), nur das Label unterscheidet sich (siehe isError). */
   hitResult: 'SINGLE' | 'DOUBLE' | 'TRIPLE'
+  /** True wenn der Reach-on-Error war (Batter safe via Fehler). Steuert nur das Label. */
+  isError?: boolean
   /** Outs im aktuellen Inning VOR diesem Hit. Wird mit outsFromRunners
    *  kombiniert um Force-Play-3rd-Out-Regel zu prüfen. */
   outsBefore: number
@@ -39,7 +42,7 @@ interface Assignment {
   position: Position
 }
 
-export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore, initialRunsScored, hitResult, outsBefore, slots, onConfirm }: Props) {
+export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore, initialRunsScored, hitResult, isError, outsBefore, slots, onConfirm }: Props) {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [scoredCount, setScoredCount] = useState(initialRunsScored)
   const [saving, setSaving] = useState(false)
@@ -229,7 +232,7 @@ export function HitAdjustSheet({ open, onClose, baseStateAfter, baseStateBefore,
     }
   }
 
-  const hitLabel = hitResult === 'SINGLE' ? 'Single' : hitResult === 'DOUBLE' ? 'Double' : 'Triple'
+  const hitLabel = isError ? 'Error' : hitResult === 'SINGLE' ? 'Single' : hitResult === 'DOUBLE' ? 'Double' : 'Triple'
 
   const footer = (
     <div className="flex gap-2">
