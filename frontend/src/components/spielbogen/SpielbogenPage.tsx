@@ -169,7 +169,7 @@ export default function SpielbogenPage() {
   const [showPositionSwapDrawer, setShowPositionSwapDrawer] = useState(false)
   const [subSlotId, setSubSlotId] = useState<number | null>(null)
   const [quickStealingRunner, setQuickStealingRunner] = useState<{ slotId: number; name: string; base: 1 | 2 | 3 } | null>(null)
-  const [showHitAdjust, setShowHitAdjust] = useState<null | { result: 'SINGLE' | 'DOUBLE' | 'TRIPLE'; baseStateBefore: BogenBaseStateDto }>(null)
+  const [showHitAdjust, setShowHitAdjust] = useState<null | { result: 'SINGLE' | 'DOUBLE' | 'TRIPLE'; baseStateBefore: BogenBaseStateDto; isError?: boolean }>(null)
   const [subPlayerInName, setSubPlayerInName] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -488,8 +488,16 @@ export default function SpielbogenPage() {
       ].filter((id): id is number => id != null) : []
       const adjustableRunners = beforeIds.filter(id => afterIds.includes(id))
       const isHit = req.result === 'SINGLE' || req.result === 'DOUBLE' || req.result === 'TRIPLE'
-      if (isHit && hadRunnersBefore && adjustableRunners.length > 0 && projectedOuts < 3) {
-        setShowHitAdjust({ result: req.result as 'SINGLE' | 'DOUBLE' | 'TRIPLE', baseStateBefore: beforeBaseState })
+      // Reach-on-Error: Batter safe via Fehler (result=OUT + isError). Runner-Advance ist
+      // optimistisch — wie beim Single soll der Scorer Runner-Positionen anpassen können.
+      // (Legacy öffnet das CorrectionSheet ebenfalls bei Error mit Runnern.)
+      const isErrorReach = req.result === 'OUT' && req.isError === true
+      if ((isHit || isErrorReach) && hadRunnersBefore && adjustableRunners.length > 0 && projectedOuts < 3) {
+        setShowHitAdjust({
+          result: isHit ? (req.result as 'SINGLE' | 'DOUBLE' | 'TRIPLE') : 'SINGLE',
+          baseStateBefore: beforeBaseState,
+          isError: isErrorReach,
+        })
       }
     } catch (e) {
       toast.show((e as Error).message, 'error')
@@ -1412,6 +1420,7 @@ export default function SpielbogenPage() {
           baseStateBefore={showHitAdjust.baseStateBefore}
           initialRunsScored={lastSideAtBat.runsScored}
           hitResult={showHitAdjust.result}
+          isError={showHitAdjust.isError}
           outsBefore={outs}
           slots={slots}
           onConfirm={async ({ outsFromRunners, runnerAdvances, ...payload }) => {

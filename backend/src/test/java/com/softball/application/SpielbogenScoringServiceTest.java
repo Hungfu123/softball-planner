@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -446,6 +447,143 @@ class SpielbogenScoringServiceTest {
             && list.get(0).getReason() == RunnerAdvanceReason.BB_FORCE
             && list.get(0).getFromBase() == 1
             && list.get(0).getToBase() == 2));
+    }
+
+    // === Score / Undo symmetry regressions (Spielbogen ↔ Legacy parity) ===
+
+    /** BUG A: Korrektur (updateLastAtBatBaseState) darf gestohlene Home-Runs (SB/WP/PB toBase=4)
+     *  nicht aus dem Score löschen. Recompute summierte vorher nur AtBats. */
+    @Test
+    void correctLastAtBat_preservesStealingRuns() {
+        SpielbogenSlot awaySlot = new SpielbogenSlot();
+        awaySlot.setId(60L);
+        awaySlot.setBogen(liveBogen);
+        awaySlot.setSide(BogenSide.AWAY);
+        awaySlot.setName("Runner");
+
+        SpielbogenAtBat last = new SpielbogenAtBat();
+        last.setId(99L);
+        last.setSide(BogenSide.AWAY);
+        last.setInning(1);
+        last.setRunsScored(0);
+
+        // Ein gestohlener Run (toBase=4, STOLEN_BASE) für AWAY existiert.
+        SpielbogenStealingEvent stolenHome = new SpielbogenStealingEvent();
+        stolenHome.setId(7L);
+        stolenHome.setSide(BogenSide.AWAY);
+        stolenHome.setType(StealingEventType.STOLEN_BASE);
+        stolenHome.setToBase(4);
+
+        liveBogen.setCurrentSide(BogenSide.AWAY);
+        liveBogen.setAwayRuns(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.AWAY)).thenReturn(Optional.of(last));
+        when(atBatRepo.findByBogenId(1L)).thenReturn(List.of(last));
+        when(stealingRepo.findByBogenId(1L)).thenReturn(List.of(stolenHome));
+        when(atBatRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.updateLastAtBatBaseState(1L, BogenSide.AWAY, BogenBaseState.empty(), 0);
+
+        // Der gestohlene Run muss erhalten bleiben.
+        assertThat(liveBogen.getAwayRuns()).isEqualTo(1);
+    }
+
+    /** BUG C: AB-Undo darf frühere Stealing-Events NICHT mit-löschen.
+     *  Frontend routet Stealing-Undo separat (nach Recency). */
+    @Test
+    void undoLast_doesNotSweepEarlierStealingEvents() {
+        SpielbogenAtBat last = new SpielbogenAtBat();
+        last.setId(99L);
+        last.setSide(BogenSide.HOME);
+        last.setInning(1);
+        last.setRunsScored(0);
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 1)).thenReturn(0L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.undoLast(1L, BogenSide.HOME);
+
+        verify(atBatRepo).deleteById(99L);
+        verify(stealingRepo, never()).deleteById(any());
+    }
+
+    /** BUG B: Undo nach Walkoff/Game-End (Status DONE) muss das Spiel wieder öffnen. */
+    @Test
+    void undoLast_reopensGameWhenStatusDone() {
+        SpielbogenAtBat last = new SpielbogenAtBat();
+        last.setId(99L);
+        last.setSide(BogenSide.HOME);
+        last.setInning(7);
+        last.setRunsScored(1);
+        liveBogen.setStatus(BogenStatus.DONE);
+        liveBogen.setEndedAt(java.time.Instant.now());
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(7);
+        liveBogen.setHomeRuns(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 7)).thenReturn(0L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.undoLast(1L, BogenSide.HOME);
+
+        verify(atBatRepo).deleteById(99L);
+        assertThat(liveBogen.getStatus()).isEqualTo(BogenStatus.LIVE);
+        assertThat(liveBogen.getEndedAt()).isNull();
+        assertThat(liveBogen.getHomeRuns()).isEqualTo(0);
+    }
+
+    /** BUG E: Stealing-Undo muss den gestohlenen Home-Run vom Score abziehen. */
+    @Test
+    void deleteLastStealing_subtractsScoredRun() {
+        SpielbogenStealingEvent ev = new SpielbogenStealingEvent();
+        ev.setId(7L);
+        ev.setBogen(liveBogen);
+        ev.setSide(BogenSide.AWAY);
+        ev.setInning(1);
+        ev.setType(StealingEventType.WILD_PITCH);
+        ev.setToBase(4);
+        liveBogen.setCurrentSide(BogenSide.AWAY);
+        liveBogen.setCurrentInning(1);
+        liveBogen.setAwayRuns(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.AWAY)).thenReturn(Optional.of(ev));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.AWAY, 1)).thenReturn(0L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.deleteLastStealingForSide(1L, BogenSide.AWAY);
+
+        verify(stealingRepo).deleteById(7L);
+        assertThat(liveBogen.getAwayRuns()).isEqualTo(0);
+    }
+
+    /** BUG F: Undo eines Caught-Stealing das der 3. Out war muss den Auto-Switch zurücknehmen. */
+    @Test
+    void deleteLastStealing_revertsAutoSwitchWhenCaughtStealingWasThirdOut() {
+        // AWAY CS = 3. Out in inning 1 → Auto-Switch zu HOME (gleiche Inning).
+        SpielbogenStealingEvent ev = new SpielbogenStealingEvent();
+        ev.setId(7L);
+        ev.setBogen(liveBogen);
+        ev.setSide(BogenSide.AWAY);
+        ev.setInning(1);
+        ev.setType(StealingEventType.CAUGHT_STEALING);
+        ev.setToBase(2);
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.AWAY)).thenReturn(Optional.of(ev));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.AWAY, 1)).thenReturn(2L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.deleteLastStealingForSide(1L, BogenSide.AWAY);
+
+        verify(stealingRepo).deleteById(7L);
+        assertThat(liveBogen.getCurrentSide()).isEqualTo(BogenSide.AWAY);
+        assertThat(liveBogen.getCurrentInning()).isEqualTo(1);
     }
 
     @Test
