@@ -52,7 +52,7 @@ User arbeitet primär an **Spielbogen** weiter. Beide existieren parallel.
 - **Out-Index** (Roman, oben-links): "I", "II", "III" einzelne Outs. "I-II" für DP, "I-III" für TP. Multi-Event-Cell mit Stealing-3rd-Out: "I·III" (kompakter Separator).
 - **Inning-End-Marker** (kleine Diagonale, unten-rechts am Border): markiert wo das 3. Out fiel. Hilft Scorekeeper für Lineup-Reihenfolge im nächsten Inning bei Wrap-Around.
 - **RBI-Dots** (rote Punkte oben-rechts): max 3 angezeigt (`Math.min(rbi, 3)`).
-- **×N Badge** (rote Pille unten-links): nur wenn `abCount >= 3 && !filled` — bei 3+ ABs in nicht-filled-Cell.
+- **×N Advance-Annotation** (an Base-Seite): RFL-Konvention — `×N` = Batting-Order-Nr des Hitters, der den Runner auf diese Base vorbrachte. Steht an jeder traversierten Base-Seite eines Runner-Advances (`AdvanceLabel.hitter`). Nur wenn Treiber ≠ Runner selbst; am eigenen Reach des Batters bleibt das Result-Label (1B/2B/…). Ersetzt den früheren abCount-Badge (der war Wiederhol-AB-Zähler, semantisch falsch — 4-6× pro Inning unrealistisch). Wiederhol-ABs zeigt weiterhin der Wrap-Around-Slash.
 - **Stealing-Arrows** zwischen Bases (gestrichelt). Farben: STOLEN_BASE=rot `#dc2626`, CS/OUT_ON_PLAY=dunkelrot `#7c2d12`, WP/PB=orange `#f97316` mit Text-Label "WP"/"PB".
 - **Layout responsive:** mobile fix-pixel Breiten, `lg:` table-fixed mit Inning-Cells ohne Width → expanden auf Viewport-Breite.
 

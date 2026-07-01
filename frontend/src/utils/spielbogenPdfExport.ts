@@ -182,7 +182,7 @@ function drawSheet(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
 
-  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [])
+  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [], lineup)
   const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
   const sideChanges = positionChanges.filter(pc => pc.side === side)
   const historyPerSlot = computePositionHistoryPerSlot(
@@ -442,18 +442,6 @@ function drawDiamondCell(
     doc.setTextColor(0, 0, 0)
   }
 
-  // ×N Badge — nur bei 3+ ABs in NICHT-filled (Slash zeigt nur 2 Labels,
-  // Badge gibt Total-Count). Bei filled+multi sind alle Labels inline → Badge redundant.
-  if ((cell?.abCount ?? 0) >= 3 && !filled) {
-    doc.setFillColor(...COLOR_RED)
-    doc.circle(cellX + 2.5, cellY + cellH - 2.2, 1.6, 'F')
-    doc.setFontSize(3.5)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(255, 255, 255)
-    doc.text(`x${cell?.abCount}`, cellX + 2.5, cellY + cellH - 1.6, { align: 'center' })
-    doc.setTextColor(0, 0, 0)
-  }
-
   // Out# unten-links (Roman, navy + bold, klein) — kein Konflikt mit AB-Label
   if (cell?.outIndex) {
     doc.setFontSize(4.5)
@@ -491,7 +479,7 @@ function drawDiamondCell(
     for (const adv of cell.advanceLabels) {
       const cellMid = { x: cellX + cellW * 0.5, y: cellY + cellH * 0.5 }
       const pos = pdfSidePosition(adv.side, cellMid, cellW, cellH)
-      doc.text(adv.label, pos.x, pos.y, { align: 'center' })
+      doc.text(adv.hitter != null ? `x${adv.hitter}` : adv.label, pos.x, pos.y, { align: 'center' })
     }
   }
 
