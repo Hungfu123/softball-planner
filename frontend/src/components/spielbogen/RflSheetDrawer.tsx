@@ -56,7 +56,7 @@ function SideSheet({
 }) {
   const sideKey = side === 'HOME' ? 'home' : 'away'
   const sorted = [...slots].sort((a, b) => a.battingOrder - b.battingOrder)
-  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [])
+  const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [], slots)
   const [editingSlot, setEditingSlot] = useState<SpielbogenSlotResponse | null>(null)
 
   const innings = Array.from({ length: MAX_INNINGS }, (_, i) => i + 1)

@@ -81,6 +81,39 @@ describe('renderCells — inningEnd-Marker', () => {
   })
 })
 
+describe('renderCells — ×N Hitter-Annotation (RFL)', () => {
+  const slots = [
+    { id: 1, battingOrder: 1 },
+    { id: 5, battingOrder: 5 },
+  ]
+
+  it('setzt hitter = Batting-Order des treibenden Batters am Runner-Advance', () => {
+    // Runner slot=1 auf 1B, Batter slot=5 (Order 5) schlägt Single → Runner 1B→2B.
+    const runnerReach = ab({ id: 1, slotId: 1, sequence: 1, inning: 1, result: 'SINGLE' })
+    const batterHit = ab({ id: 2, slotId: 5, sequence: 2, inning: 1, result: 'SINGLE' })
+    const adv = {
+      id: 1, bogenId: 1, atBatId: 2, slotId: 1, side: 'HOME' as const,
+      inning: 1, fromBase: 1, toBase: 2, reason: 'HIT_PUSH' as const, createdAt: '',
+    }
+    const cells = renderCells([runnerReach, batterHit], [], [adv], slots)
+    const runnerCell = cells.get('HOME|1|1')!
+    const seg = runnerCell.advanceLabels.find(l => l.side === '1b-2b')!
+    expect(seg.hitter).toBe(5)
+  })
+
+  it('kein hitter am eigenen Reach des Batters (Treiber = Runner selbst)', () => {
+    const batterHit = ab({ id: 2, slotId: 5, sequence: 1, inning: 1, result: 'SINGLE' })
+    const adv = {
+      id: 1, bogenId: 1, atBatId: 2, slotId: 5, side: 'HOME' as const,
+      inning: 1, fromBase: 0, toBase: 1, reason: 'HIT_PUSH' as const, createdAt: '',
+    }
+    const cells = renderCells([batterHit], [], [adv], slots)
+    const cell = cells.get('HOME|5|1')!
+    const seg = cell.advanceLabels.find(l => l.side === 'home-1b')
+    expect(seg?.hitter).toBeUndefined()
+  })
+})
+
 describe("renderCells — Fielder's Choice", () => {
   it("labels FC + chain, batter on 1B counts as reach=1", () => {
     const fc = ab({

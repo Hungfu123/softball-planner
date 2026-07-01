@@ -160,25 +160,6 @@ export function DiamondCell({ notation, outIndex }: Props) {
           </text>
         )
       )}
-      {/* ×N Badge — nur bei 3+ ABs in NICHT-filled-Cell (Slash zeigt nur 2
-          Labels, Badge gibt Total-Count). Bei filled+multi sind alle Labels
-          inline sichtbar — Badge wäre redundant. */}
-      {abCount >= 3 && !filled && (
-        <g>
-          <circle cx={6} cy={73} r={5} fill="#CC2936" />
-          <text
-            x={6}
-            y={75.5}
-            textAnchor="middle"
-            fontSize="6"
-            fontWeight="700"
-            fill="white"
-            style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
-          >
-            ×{abCount}
-          </text>
-        </g>
-      )}
       {/* Inning-End-Marker — RFL-Konvention: kleine Diagonale am rechten
           Cell-Border markiert wo das 3. Out fiel. Hilft Scorekeeper für
           Lineup-Reihenfolge im nächsten Inning. */}
@@ -219,7 +200,7 @@ export function DiamondCell({ notation, outIndex }: Props) {
             fill="#1f2937"
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
           >
-            {adv.label}
+            {adv.hitter != null ? `×${adv.hitter}` : adv.label}
           </text>
         )
       })}

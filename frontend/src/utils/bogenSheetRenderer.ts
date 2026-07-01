@@ -11,6 +11,10 @@ import type {
 export interface AdvanceLabel {
   side: 'home-1b' | '1b-2b' | '2b-3b' | '3b-home'
   label: string
+  /** RFL-Konvention: Batting-Order-Nr des Hitters, der den Runner auf dieser
+   *  Base-Seite vorbrachte. Nur gesetzt wenn der treibende Batter ≠ der Runner
+   *  selbst (Batter's eigener Reach behält das Result-Label). */
+  hitter?: number
 }
 
 export interface StealingArrow {
@@ -48,9 +52,16 @@ export function renderCells(
   atBats: SpielbogenAtBatResponse[],
   stealings: SpielbogenStealingResponse[],
   runnerAdvances: SpielbogenRunnerAdvanceResponse[] = [],
+  slots: { id: number; battingOrder: number }[] = [],
 ): CellMap {
   const cells: CellMap = new Map()
   const sorted = [...atBats].sort((a, b) => a.sequence - b.sequence)
+  // slotId → Batting-Order-Nr (für ×N Hitter-Annotation an Runner-Advances)
+  const orderBySlotId = new Map<number, number>()
+  for (const s of slots) orderBySlotId.set(s.id, s.battingOrder)
+  // atBatId → treibender Batter-Slot (advance.atBatId zeigt auf den AB der den Runner vorbrachte)
+  const abById = new Map<number, SpielbogenAtBatResponse>()
+  for (const ab of atBats) abById.set(ab.id, ab)
   const scoredSet = computeScoredSet(sorted)
   // Backfill per AB: für ABs ohne Records → synthesize aus baseStateAfter-Diffs.
   // Walk-Chain berücksichtigt ALL ABs für prevAfter, emit nur für AB-IDs ohne Records.
@@ -150,7 +161,13 @@ export function renderCells(
     }
     // Side-annotation: alle traversierten Seiten bekommen Label (Multi-Hop in einer AB → mehrere Labels).
     const sides = fromToTraversedSides(adv.fromBase, adv.toBase)
-    for (const side of sides) cell.advanceLabels.push({ side, label })
+    // ×N: Batting-Order des treibenden Hitters. Nur wenn Treiber ≠ Runner selbst
+    // (Batter's eigener Reach zeigt weiter das Result-Label, kein ×N).
+    const driverSlotId = abById.get(adv.atBatId)?.slotId
+    const hitter = driverSlotId != null && driverSlotId !== adv.slotId
+      ? orderBySlotId.get(driverSlotId)
+      : undefined
+    for (const side of sides) cell.advanceLabels.push({ side, label, hitter })
   }
 
   return cells
