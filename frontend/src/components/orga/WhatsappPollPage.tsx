@@ -580,34 +580,8 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
   )
 
   return (
-    <ResponsiveSheet open onClose={onClose} title="Umfrage" maxWidth="md" footer={footer}>
+    <ResponsiveSheet open onClose={onClose} title={withPoll ? 'Umfrage' : 'Nachricht'} maxWidth="md" footer={footer}>
       <div className="p-5 space-y-5">
-        <div>
-          <label className={labelCls}>Gruppe</label>
-          <select
-            value={form.groupId}
-            onChange={e => setGroup(e.target.value)}
-            disabled={groups.length === 0}
-            className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {groups.length === 0 && <option value="">Keine Gruppen verfügbar</option>}
-            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Wochentag</label>
-            <select value={form.weekday} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
-              {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>Uhrzeit</label>
-            <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
-          </div>
-        </div>
-
         <div>
           <label className={labelCls}>Inhalt</label>
           <div className="inline-flex rounded-lg border border-cream-300 bg-cream-50 p-0.5">
@@ -703,6 +677,32 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
             placeholder={withPoll ? 'Wird vor der Umfrage gesendet — z.B. Event-Details, Ort.' : 'Deine Nachricht an die Gruppe — z.B. Event-Details, Ort, Uhrzeit.'}
             className={inputCls + ' resize-y'}
           />
+        </div>
+
+        <div>
+          <label className={labelCls}>Gruppe</label>
+          <select
+            value={form.groupId}
+            onChange={e => setGroup(e.target.value)}
+            disabled={groups.length === 0}
+            className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {groups.length === 0 && <option value="">Keine Gruppen verfügbar</option>}
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Wochentag</label>
+            <select value={form.weekday} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
+              {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Uhrzeit</label>
+            <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
+          </div>
         </div>
 
         <label className="flex items-start gap-2 cursor-pointer select-none">
