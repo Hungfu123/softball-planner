@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type FocusEvent, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWhatsappPoll } from '@/hooks/useWhatsappPoll'
 import { getWhatsappQr } from '@/api/client'
@@ -389,7 +389,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
   const typeLabel = !hasPoll ? 'Nachricht' : hasMessage ? 'Umfrage + Nachricht' : 'Umfrage'
 
   return (
-    <div className="group relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
+    <div className="group relative overflow-hidden bg-cream-50 border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
       <span className="absolute inset-y-0 left-0 w-1 bg-navy-800" />
       <div className="pl-4 pr-3 py-3.5">
 
@@ -471,7 +471,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
               onClick={onSend}
               disabled={!connected}
               title={connected ? 'Sendet den Poll sofort in die Gruppe' : 'Erst WhatsApp verbinden'}
-              className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-white bg-navy-800 rounded-lg px-3 py-2 hover:bg-navy-900 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2 hover:bg-navy-100 hover:border-navy-200 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <SendIcon size={14} /> Jetzt testen
             </button>
@@ -479,7 +479,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
               type="button"
               onClick={() => setShowSkip(s => !s)}
               aria-expanded={showSkip}
-              className={`inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide rounded-lg px-3 py-2 border transition-colors cursor-pointer ${showSkip ? 'bg-navy-50 text-navy-800 border-navy-200' : 'bg-white text-navy-700 border-cream-300 hover:bg-navy-50 hover:border-navy-200'}`}
+              className={`inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide rounded-lg px-3 py-2 border transition-colors cursor-pointer ${showSkip ? 'bg-navy-100 text-navy-800 border-navy-200' : 'bg-navy-50 text-navy-700 border-navy-100 hover:bg-navy-100 hover:border-navy-200'}`}
             >
               <CalendarIcon size={14} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
             </button>
@@ -487,7 +487,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
 
           {/* Aufklappbar: Absage-Termine (mobil-freundliches Datumsfeld) */}
           {showSkip && (
-            <div className="mt-2.5 rounded-lg bg-cream-50 border border-cream-200 p-3">
+            <div className="mt-2.5 rounded-lg bg-cream-100 border border-cream-200 p-3">
               <p className="font-body text-[11px] text-gray-500 mb-2">An diesen Tagen wird <span className="font-semibold text-navy-700">nicht</span> gesendet — z.B. wenn ein Training ausfällt.</p>
               {poll.skipDates.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2.5">
@@ -555,6 +555,12 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
   const setGroup = (groupId: string) => {
     const group = groups.find(g => g.id === groupId)
     setForm(prev => ({ ...prev, groupId, groupName: group?.name ?? null }))
+  }
+
+  // Mobil: fokussiertes Feld über die Tastatur scrollen (Keyboard braucht ~300ms).
+  const scrollIntoView = (e: FocusEvent<HTMLElement>) => {
+    const el = e.currentTarget
+    setTimeout(() => el.scrollIntoView({ block: 'center' }), 300)
   }
 
   const setOption = (index: number, value: string) => {
@@ -629,6 +635,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
             <input
               value={form.title}
               onChange={e => set('title', e.target.value)}
+              onFocus={scrollIntoView}
               placeholder="z.B. Wer kommt zum Training?"
               className={inputCls}
             />
@@ -655,6 +662,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
                   <input
                     value={option}
                     onChange={e => setOption(i, e.target.value)}
+                    onFocus={scrollIntoView}
                     placeholder={`Option ${i + 1}`}
                     className={inputCls}
                   />
@@ -694,6 +702,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
           <textarea
             value={form.message ?? ''}
             onChange={e => set('message', e.target.value ? e.target.value : null)}
+            onFocus={scrollIntoView}
             rows={withPoll ? 2 : 3}
             placeholder={withPoll ? 'Wird vor der Umfrage gesendet — z.B. Event-Details, Ort.' : 'Deine Nachricht an die Gruppe — z.B. Event-Details, Ort, Uhrzeit.'}
             className={inputCls + ' resize-y'}
