@@ -6,9 +6,12 @@ import com.softball.domain.port.out.WhatsappSender;
 import com.softball.domain.service.PollDueEvaluator;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -59,5 +62,21 @@ class WhatsappPollSchedulerTest {
         doThrow(new RuntimeException("offline")).when(sender).sendPoll(any(), any(), anyList());
         scheduler.tick(tueAt1800);
         verify(repo, never()).save(any());
+    }
+
+    @Test
+    void run_usesBerlinZone_sendsDuePoll() {
+        // Regression fuer JVM-Default-Zone-Bug: run() muss Europe/Berlin nutzen, nicht UTC.
+        final Clock berlinClock = Clock.fixed(
+                ZonedDateTime.of(2026, 7, 14, 18, 0, 0, 0, ZoneId.of("Europe/Berlin")).toInstant(),
+                ZoneId.of("Europe/Berlin"));
+        final WhatsappPollScheduler berlinScheduler =
+                new WhatsappPollScheduler(repo, sender, new PollDueEvaluator(), berlinClock);
+        when(repo.findAll()).thenReturn(List.of(due()));
+
+        berlinScheduler.run();
+
+        verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList());
+        verify(repo).save(argThat(p -> p.getLastSentAt() != null));
     }
 }
