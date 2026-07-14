@@ -41,3 +41,6 @@ CLAUDE.md
 frontend/playwright-report/
 frontend/test-results/
 frontend/blob-report/
+
+# Lokal installierte Agent-Skills (nicht einchecken)
+.agents/
