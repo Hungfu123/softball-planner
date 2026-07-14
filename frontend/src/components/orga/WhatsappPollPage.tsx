@@ -4,7 +4,7 @@ import { useWhatsappPoll } from '@/hooks/useWhatsappPoll'
 import { getWhatsappQr } from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
-import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle } from '@/icons'
+import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon } from '@/icons'
 import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
 
 const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
@@ -48,6 +48,15 @@ const WEEKDAY_JS: Record<WhatsappPollResponse['weekday'], number> = {
   SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
 }
 
+// Liste chronologisch: Mo→So, dann nach Uhrzeit (stabile Wochen-Reihenfolge).
+const WEEKDAY_ORDER: Record<WhatsappPollResponse['weekday'], number> = {
+  MONDAY: 0, TUESDAY: 1, WEDNESDAY: 2, THURSDAY: 3, FRIDAY: 4, SATURDAY: 5, SUNDAY: 6,
+}
+function byWeekdayTime(a: WhatsappPollResponse, b: WhatsappPollResponse): number {
+  const w = WEEKDAY_ORDER[a.weekday] - WEEKDAY_ORDER[b.weekday]
+  return w !== 0 ? w : a.time.localeCompare(b.time)
+}
+
 // Nächster geplanter Versand: nächstes Vorkommen von weekday+time in der Zukunft,
 // überspringt Aussetz-Daten und (falls heute schon gesendet) den heutigen Termin.
 function nextSend(poll: WhatsappPollResponse): Date | null {
@@ -70,10 +79,10 @@ function nextSend(poll: WhatsappPollResponse): Date | null {
 }
 
 function formatNextSend(poll: WhatsappPollResponse): string {
-  if (!poll.enabled) return 'Pausiert — kein automatischer Versand'
+  if (!poll.enabled) return 'Pausiert'
   const d = nextSend(poll)
   if (!d) return 'Kein Versand geplant'
-  return `Nächster Versand: ${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}, ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+  return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
 }
 
 function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
@@ -253,7 +262,7 @@ export function WhatsappPollPage() {
           />
         ) : (
           <div className="space-y-3">
-            {polls.map(poll => (
+            {[...polls].sort(byWeekdayTime).map(poll => (
               <PollCard
                 key={poll.id}
                 poll={poll}
@@ -369,110 +378,21 @@ interface PollCardProps {
 
 function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
+  const [showSkip, setShowSkip] = useState(poll.skipDates.length > 0)
+
   return (
     <div className="group relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
       <span className="absolute inset-y-0 left-0 w-1 bg-navy-800" />
-      <div className="pl-4 pr-2.5 py-3">
-        <div className="flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-display text-base font-extrabold text-navy-900 leading-tight truncate">{poll.title || 'Ohne Titel'}</h3>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="inline-flex items-center gap-1 font-bold tabular-nums text-white bg-navy-900 rounded-full px-2 py-0.5">
-                {weekdayShort(poll.weekday)} · {formatTime(poll.time)}
-              </span>
-              {poll.groupName && <span className="text-navy-500 truncate max-w-[12rem]">{poll.groupName}</span>}
-              <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>
-            </div>
+      <div className="pl-4 pr-3 py-3.5">
 
-            <p className={`mt-1.5 text-[11px] font-semibold ${poll.enabled ? 'text-navy-600' : 'text-gray-400'}`}>{formatNextSend(poll)}</p>
-
-            {poll.options.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {poll.options.map((o, i) => (
-                  <span key={i} className="text-[11px] font-semibold text-navy-700 bg-cream-100 border border-cream-300 rounded-md px-1.5 py-0.5">
-                    {o}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-3">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-navy-500">Absage-Termine</p>
-              <p className="text-[10px] text-gray-400 mb-1">An diesen Tagen wird nicht gesendet (z.B. Training fällt aus).</p>
-              <div className="flex flex-wrap items-center gap-1.5">
-              {poll.skipDates.map(date => (
-                <span
-                  key={date}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-softball-red-700 bg-softball-red-50 border border-softball-red-100 rounded-md pl-1.5 pr-1 py-0.5"
-                >
-                  {formatDate(date)}
-                  <button
-                    type="button"
-                    onClick={() => onRemoveSkip(date)}
-                    aria-label={`Aussetzen am ${formatDate(date)} entfernen`}
-                    className="p-0.5 rounded hover:bg-softball-red-100 cursor-pointer"
-                  >
-                    <XMark size={10} />
-                  </button>
-                </span>
-              ))}
-              <div className="inline-flex items-center gap-1">
-                <input
-                  type="date"
-                  value={skipInput}
-                  onChange={e => onSkipInputChange(e.target.value)}
-                  aria-label="Aussetz-Datum hinzufügen"
-                  className="text-[11px] border border-cream-300 rounded-md px-1.5 py-0.5 bg-cream-50 focus:bg-white focus:border-navy-600 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={onAddSkip}
-                  disabled={!skipInput}
-                  title="Aussetzen hinzufügen"
-                  aria-label="Aussetzen hinzufügen"
-                  className="p-1 rounded-md text-gray-400 hover:text-navy-800 hover:bg-navy-50 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  <PlusCircle size={14} />
-                </button>
-              </div>
-              </div>
-            </div>
-
-            <p className="mt-2 text-[11px] text-gray-400">{formatLastSent(poll.lastSentAt)}</p>
-
-            {sentToday && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">
-                  Heute gesendet — sendet heute nicht erneut
-                </span>
-                <button
-                  type="button"
-                  onClick={onResetSent}
-                  className="text-[11px] font-semibold text-navy-600 underline decoration-dotted underline-offset-2 hover:text-navy-800 cursor-pointer"
-                >
-                  Erneut ermöglichen
-                </button>
-              </div>
-            )}
-
-            <div className="mt-2">
-              <button
-                type="button"
-                onClick={onSend}
-                disabled={!connected}
-                title={connected ? 'Sendet den Poll sofort in die Gruppe' : 'Erst WhatsApp verbinden'}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-navy-700 bg-navy-50 border border-navy-200 rounded-lg px-2.5 py-1 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-navy-50 disabled:hover:text-navy-700"
-              >
-                <SendIcon size={13} /> Jetzt testen
-              </button>
-            </div>
-          </div>
-
+        {/* Kopf: Titel + Bearbeiten/Löschen */}
+        <div className="flex items-start gap-2">
+          <h3 className="flex-1 min-w-0 font-display text-lg font-extrabold uppercase tracking-wide text-navy-900 leading-snug">{poll.title || 'Ohne Titel'}</h3>
           <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button
               onClick={onEdit}
               disabled={!connected}
-              aria-label={`${poll.title} bearbeiten`}
+              aria-label="Bearbeiten"
               title={connected ? 'Bearbeiten' : 'Erst WhatsApp verbinden'}
               className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
@@ -480,13 +400,106 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
             </button>
             <button
               onClick={onDelete}
-              aria-label={`${poll.title} löschen`}
+              aria-label="Löschen"
               title="Löschen"
               className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
             >
               <TrashBin size={16} />
             </button>
           </div>
+        </div>
+
+        {/* Meta: Zeit · Gruppe · Status */}
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="inline-flex items-center gap-1 font-display font-bold tabular-nums text-white bg-navy-900 rounded-md px-2 py-0.5">
+            {weekdayShort(poll.weekday)} · {formatTime(poll.time)}
+          </span>
+          {poll.groupName && <span className="font-body text-navy-500 truncate max-w-[10rem]">{poll.groupName}</span>}
+          <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>
+        </div>
+
+        {/* Nächster Versand — Kern-Info */}
+        <div className="mt-3 flex items-end justify-between gap-3">
+          <div>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">Nächster Versand</p>
+            <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll)}</p>
+          </div>
+          {poll.options.length > 0 && (
+            <div className="flex flex-wrap justify-end gap-1">
+              {poll.options.map((o, i) => (
+                <span key={i} className="font-body text-[11px] font-semibold text-navy-700 bg-cream-100 border border-cream-300 rounded-md px-1.5 py-0.5">{o}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Meta-Fuß + Aktionen */}
+        <div className="mt-3 border-t border-cream-200 pt-2.5">
+          <p className="font-body text-[11px] text-gray-400">
+            {formatLastSent(poll.lastSentAt)}
+            {sentToday && (
+              <>
+                {' · '}<span className="font-semibold text-navy-600">heute gesendet</span>{' · '}
+                <button type="button" onClick={onResetSent} className="font-semibold text-navy-600 underline decoration-dotted underline-offset-2 hover:text-navy-800 cursor-pointer">erneut ermöglichen</button>
+              </>
+            )}
+          </p>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={!connected}
+              title={connected ? 'Sendet den Poll sofort in die Gruppe' : 'Erst WhatsApp verbinden'}
+              className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-white bg-navy-800 rounded-lg px-3 py-2 hover:bg-navy-900 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <SendIcon size={14} /> Jetzt testen
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSkip(s => !s)}
+              aria-expanded={showSkip}
+              className={`inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide rounded-lg px-3 py-2 border transition-colors cursor-pointer ${showSkip ? 'bg-navy-50 text-navy-800 border-navy-200' : 'bg-white text-navy-700 border-cream-300 hover:bg-navy-50 hover:border-navy-200'}`}
+            >
+              <CalendarIcon size={14} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
+            </button>
+          </div>
+
+          {/* Aufklappbar: Absage-Termine (mobil-freundliches Datumsfeld) */}
+          {showSkip && (
+            <div className="mt-2.5 rounded-lg bg-cream-50 border border-cream-200 p-3">
+              <p className="font-body text-[11px] text-gray-500 mb-2">An diesen Tagen wird <span className="font-semibold text-navy-700">nicht</span> gesendet — z.B. wenn ein Training ausfällt.</p>
+              {poll.skipDates.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                  {poll.skipDates.map(date => (
+                    <span key={date} className="inline-flex items-center gap-1 font-body text-xs font-semibold text-softball-red-700 bg-softball-red-50 border border-softball-red-100 rounded-md pl-2 pr-1 py-1">
+                      {formatDate(date)}
+                      <button type="button" onClick={() => onRemoveSkip(date)} aria-label={`${formatDate(date)} entfernen`} className="p-0.5 rounded hover:bg-softball-red-100 cursor-pointer">
+                        <XMark size={11} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={skipInput}
+                  onChange={e => onSkipInputChange(e.target.value)}
+                  aria-label="Absage-Termin wählen"
+                  className="flex-1 min-w-0 font-body text-sm border border-cream-300 rounded-lg px-3 py-2 bg-white focus:border-navy-600 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={onAddSkip}
+                  disabled={!skipInput}
+                  className="shrink-0 inline-flex items-center gap-1 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-white border border-navy-200 rounded-lg px-3 py-2 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-navy-700"
+                >
+                  <PlusCircle size={14} /> Hinzufügen
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
