@@ -496,43 +496,49 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
             )}
           </p>
 
-          {/* Aufklappbar: Absage-Termine (über das ⋮-Menü getoggelt) */}
-          {showSkip && (
-            <div className="mt-2.5 rounded-lg bg-cream-100 border border-cream-200 p-3">
-              <p className="font-body text-[11px] text-gray-500 mb-2">An diesen Tagen wird <span className="font-semibold text-navy-700">nicht</span> gesendet — z.B. wenn ein Training ausfällt.</p>
-              {poll.skipDates.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  {poll.skipDates.map(date => (
-                    <span key={date} className="inline-flex items-center gap-1 font-body text-xs font-semibold text-softball-red-700 bg-softball-red-50 border border-softball-red-100 rounded-md pl-2 pr-1 py-1">
-                      {formatDate(date)}
-                      <button type="button" onClick={() => onRemoveSkip(date)} aria-label={`${formatDate(date)} entfernen`} className="p-0.5 rounded hover:bg-softball-red-100 cursor-pointer">
-                        <XMark size={11} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              {/* Versteckter nativer Input trägt den OS-Picker; sichtbar ist nur der Button.
-                  So kein leeres TT.MM.JJJJ-Feld, aber weiterhin der native (app-konforme) Picker. */}
-              <input
-                ref={dateRef}
-                type="date"
-                onChange={e => { const v = e.target.value; e.target.value = ''; if (v) onPickSkip(v) }}
-                aria-hidden="true"
-                tabIndex={-1}
-                className="sr-only"
-              />
-              <button
-                type="button"
-                onClick={openPicker}
-                className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-white border border-navy-200 rounded-lg px-3 py-2 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
-              >
-                <PlusCircle size={14} /> Termin wählen
-              </button>
-            </div>
+          {poll.skipDates.length > 0 && (
+            <p className="mt-1 font-body text-[11px] text-softball-red-600">
+              Absage: {[...poll.skipDates].sort().slice(0, 2).map(formatDate).join(', ')}{poll.skipDates.length > 2 ? ` +${poll.skipDates.length - 2}` : ''}
+            </p>
           )}
         </div>
       </div>
+
+      {/* Absage-Termine in eigenem Sheet (über das ⋮-Menü geöffnet) — hält die Card kompakt */}
+      <ResponsiveSheet open={showSkip} onClose={() => setShowSkip(false)} title="Absage-Termine" maxWidth="sm">
+        <div className="p-5 space-y-3">
+          <p className="font-body text-sm text-gray-500">An diesen Tagen wird <span className="font-semibold text-navy-700">nicht</span> gesendet — z.B. wenn ein Training ausfällt.</p>
+          {poll.skipDates.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {[...poll.skipDates].sort().map(date => (
+                <span key={date} className="inline-flex items-center gap-1 font-body text-sm font-semibold text-softball-red-700 bg-softball-red-50 border border-softball-red-100 rounded-md pl-2 pr-1 py-1">
+                  {formatDate(date)}
+                  <button type="button" onClick={() => onRemoveSkip(date)} aria-label={`${formatDate(date)} entfernen`} className="p-0.5 rounded hover:bg-softball-red-100 cursor-pointer">
+                    <XMark size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="font-body text-sm text-gray-400">Noch keine Absage-Termine.</p>
+          )}
+          <input
+            ref={dateRef}
+            type="date"
+            onChange={e => { const v = e.target.value; e.target.value = ''; if (v) onPickSkip(v) }}
+            aria-hidden="true"
+            tabIndex={-1}
+            className="sr-only"
+          />
+          <button
+            type="button"
+            onClick={openPicker}
+            className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-white border border-navy-200 rounded-lg px-3 py-2 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
+          >
+            <PlusCircle size={14} /> Termin wählen
+          </button>
+        </div>
+      </ResponsiveSheet>
     </div>
   )
 }
