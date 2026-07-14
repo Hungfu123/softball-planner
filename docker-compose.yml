@@ -10,5 +10,17 @@ services:
     volumes:
       - softball-data:/var/lib/postgresql/data
 
+  whatsapp:
+    build: ./whatsapp-service
+    restart: unless-stopped
+    environment:
+      - WHATSAPP_SERVICE_TOKEN=${WHATSAPP_SERVICE_TOKEN:-devtoken}
+      - SESSION_PATH=/data/session
+    ports:
+      - "3000:3000"
+    volumes:
+      - whatsapp-session:/data/session
+
 volumes:
   softball-data:
+  whatsapp-session:
