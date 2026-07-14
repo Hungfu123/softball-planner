@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWhatsappPoll } from '@/hooks/useWhatsappPoll'
 import { getWhatsappQr } from '@/api/client'
@@ -379,6 +379,10 @@ interface PollCardProps {
 function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
   const [showSkip, setShowSkip] = useState(poll.skipDates.length > 0)
+  const dateRef = useRef<HTMLInputElement>(null)
+  const openPicker = () => {
+    try { dateRef.current?.showPicker?.() } catch { /* Browser ohne showPicker: nativer Fallback greift */ }
+  }
 
   return (
     <div className="group relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
@@ -483,11 +487,14 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
               )}
               <div className="flex gap-2">
                 <input
+                  ref={dateRef}
                   type="date"
                   value={skipInput}
                   onChange={e => onSkipInputChange(e.target.value)}
+                  onClick={openPicker}
+                  onFocus={openPicker}
                   aria-label="Absage-Termin wählen"
-                  className="flex-1 min-w-0 font-body text-sm border border-cream-300 rounded-lg px-3 py-2 bg-white focus:border-navy-600 outline-none"
+                  className="flex-1 min-w-0 font-body text-sm border border-cream-300 rounded-lg px-3 py-2 bg-white focus:border-navy-600 outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 />
                 <button
                   type="button"
