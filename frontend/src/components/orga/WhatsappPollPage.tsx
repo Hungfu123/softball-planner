@@ -527,6 +527,16 @@ interface PollEditorProps {
 function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps) {
   const [form, setForm] = useState<WhatsappPollRequest>(draft)
   const [withPoll, setWithPoll] = useState(draft.options.length >= 2)
+  // Nachricht pro Tab getrennt: beim Umschalten Text des jeweils anderen Tabs merken/tauschen.
+  const [stashedMessage, setStashedMessage] = useState('')
+
+  const switchMode = (poll: boolean) => {
+    if (poll === withPoll) return
+    const current = form.message ?? ''
+    setForm(prev => ({ ...prev, message: stashedMessage || null }))
+    setStashedMessage(current)
+    setWithPoll(poll)
+  }
 
   const set = <K extends keyof WhatsappPollRequest>(key: K, value: WhatsappPollRequest[K]) => {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -588,14 +598,14 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
           <div className="inline-flex rounded-lg border border-cream-300 bg-cream-50 p-0.5">
             <button
               type="button"
-              onClick={() => setWithPoll(true)}
+              onClick={() => switchMode(true)}
               className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors cursor-pointer ${withPoll ? 'bg-navy-800 text-white' : 'text-navy-700 hover:bg-navy-100'}`}
             >
               Umfrage
             </button>
             <button
               type="button"
-              onClick={() => setWithPoll(false)}
+              onClick={() => switchMode(false)}
               className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors cursor-pointer ${!withPoll ? 'bg-navy-800 text-white' : 'text-navy-700 hover:bg-navy-100'}`}
             >
               Nur Nachricht
