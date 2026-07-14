@@ -44,6 +44,38 @@ function isSentToday(iso: string | null): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
 }
 
+const WEEKDAY_JS: Record<WhatsappPollResponse['weekday'], number> = {
+  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
+}
+
+// Nächster geplanter Versand: nächstes Vorkommen von weekday+time in der Zukunft,
+// überspringt Aussetz-Daten und (falls heute schon gesendet) den heutigen Termin.
+function nextSend(poll: WhatsappPollResponse): Date | null {
+  if (!poll.enabled) return null
+  const [h, m] = poll.time.split(':').map(Number)
+  const target = WEEKDAY_JS[poll.weekday]
+  const sentToday = isSentToday(poll.lastSentAt)
+  const skip = new Set(poll.skipDates)
+  const now = new Date()
+  for (let i = 0; i <= 8 * 7; i++) {
+    const cand = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, h, m, 0, 0)
+    if (cand.getDay() !== target) continue
+    if (cand <= now) continue
+    if (i === 0 && sentToday) continue
+    const iso = `${cand.getFullYear()}-${String(cand.getMonth() + 1).padStart(2, '0')}-${String(cand.getDate()).padStart(2, '0')}`
+    if (skip.has(iso)) continue
+    return cand
+  }
+  return null
+}
+
+function formatNextSend(poll: WhatsappPollResponse): string {
+  if (!poll.enabled) return 'Pausiert — kein automatischer Versand'
+  const d = nextSend(poll)
+  if (!d) return 'Kein Versand geplant'
+  return `Nächster Versand: ${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}, ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+}
+
 function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
   return {
     groupId: groups[0]?.id ?? '',
@@ -352,6 +384,8 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
               <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>
             </div>
 
+            <p className={`mt-1.5 text-[11px] font-semibold ${poll.enabled ? 'text-navy-600' : 'text-gray-400'}`}>{formatNextSend(poll)}</p>
+
             {poll.options.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {poll.options.map((o, i) => (
@@ -362,7 +396,10 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
               </div>
             )}
 
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <div className="mt-3">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-navy-500">Absage-Termine</p>
+              <p className="text-[10px] text-gray-400 mb-1">An diesen Tagen wird nicht gesendet (z.B. Training fällt aus).</p>
+              <div className="flex flex-wrap items-center gap-1.5">
               {poll.skipDates.map(date => (
                 <span
                   key={date}
@@ -398,6 +435,7 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
                   <PlusCircle size={14} />
                 </button>
               </div>
+              </div>
             </div>
 
             <p className="mt-2 text-[11px] text-gray-400">{formatLastSent(poll.lastSentAt)}</p>
@@ -416,6 +454,18 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
                 </button>
               </div>
             )}
+
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={onSend}
+                disabled={!connected}
+                title={connected ? 'Sendet den Poll sofort in die Gruppe' : 'Erst WhatsApp verbinden'}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-navy-700 bg-navy-50 border border-navy-200 rounded-lg px-2.5 py-1 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-navy-50 disabled:hover:text-navy-700"
+              >
+                <SendIcon size={13} /> Jetzt testen
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
@@ -427,15 +477,6 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
               className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <Pencil size={16} />
-            </button>
-            <button
-              onClick={onSend}
-              disabled={!connected}
-              aria-label={`${poll.title} jetzt senden`}
-              title={connected ? 'Jetzt testen' : 'Erst WhatsApp verbinden'}
-              className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-            >
-              <SendIcon size={16} />
             </button>
             <button
               onClick={onDelete}
