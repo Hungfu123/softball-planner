@@ -52,8 +52,14 @@ export function useWhatsappPoll() {
     return poll
   }
 
+  const resetSent = async (id: number) => {
+    const poll = await api.resetWhatsappPollSent(id)
+    setPolls(prev => prev.map(p => p.id === id ? poll : p))
+    return poll
+  }
+
   return {
     polls, status, groups, loading, error, reload: load,
-    createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate,
+    createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate, resetSent,
   }
 }

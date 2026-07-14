@@ -3,6 +3,7 @@ package com.softball.application;
 import com.softball.TestcontainersConfig;
 import com.softball.adapter.out.persistence.repository.SpringWhatsappPollRepository;
 import com.softball.domain.model.WhatsappPoll;
+import com.softball.domain.port.out.WhatsappPollRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -27,6 +29,8 @@ class WhatsappPollServiceTest {
     @Autowired WhatsappPollService service;
 
     @Autowired SpringWhatsappPollRepository whatsappPollRepository;
+
+    @Autowired WhatsappPollRepository pollRepository;
 
     @AfterEach
     void tearDown() {
@@ -77,5 +81,18 @@ class WhatsappPollServiceTest {
         final Long id = service.create(sample()).getId();
         service.delete(id);
         assertThat(service.findAll()).noneMatch(p -> p.getId().equals(id));
+    }
+
+    @Test
+    void resetLastSent_clearsTimestamp() {
+        final Long id = service.create(sample()).getId();
+        final WhatsappPoll p = pollRepository.findById(id).orElseThrow();
+        p.setLastSentAt(LocalDateTime.of(2026, 7, 14, 14, 16));
+        pollRepository.save(p);
+        assertThat(service.findById(id).getLastSentAt()).isNotNull();
+
+        service.resetLastSent(id);
+
+        assertThat(service.findById(id).getLastSentAt()).isNull();
     }
 }

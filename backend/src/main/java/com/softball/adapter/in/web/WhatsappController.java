@@ -68,6 +68,11 @@ public class WhatsappController {
         service.sendNow(id);
     }
 
+    @PostMapping("/polls/{id}/reset-sent")
+    public WhatsappPollResponse resetSent(@PathVariable final Long id) {
+        return WhatsappPollResponse.from(service.resetLastSent(id));
+    }
+
     @PostMapping("/polls/{id}/skip-dates")
     public WhatsappPollResponse addSkip(@PathVariable final Long id, @RequestBody final Map<String, String> body) {
         return WhatsappPollResponse.from(service.addSkipDate(id, LocalDate.parse(body.get("date"))));

@@ -94,6 +94,15 @@ public class WhatsappPollService {
         sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions());
     }
 
+    @Transactional
+    public WhatsappPoll resetLastSent(final Long id) {
+        final WhatsappPoll p = findById(id);
+        p.setLastSentAt(null);
+        repository.save(p);
+        log.info("WhatsApp-Poll Sende-Sperre zurückgesetzt: {} ({})", p.getTitle(), id);
+        return findById(id);
+    }
+
     public WhatsappAccountStatus status() { return sender.status(); }
 
     public String qr() { return sender.qr(); }
