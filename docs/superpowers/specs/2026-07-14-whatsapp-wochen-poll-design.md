@@ -94,6 +94,9 @@ JSON/Text-Spalte oder Join-Tabelle (analog bestehender List-Felder im Projekt pr
 - Hook `useWhatsappPoll` — Config laden/speichern, Status/Groups/QR, send-now, skip
 - Konventionen: Modals für Bestätigung ("Jetzt testen wirklich senden?"),
   Dark-Navy-Hover, custom Icons, deutsche Labels
+- **Visuelle Umsetzung mit `frontend-design`-Skill** — Skill bei der Frontend-Task
+  im Implementierungs-Plan ziehen. Aesthetik im Rahmen bestehender App-Konventionen
+  (navy, Card, font-display), aber mit der Design-Sorgfalt des Skills.
 
 ### 4. Deployment
 
