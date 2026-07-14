@@ -9,5 +9,8 @@ RUN mkdir -p /data/session && chown -R pptruser:pptruser /data
 USER pptruser
 ENV SESSION_PATH=/data/session
 COPY server.js ./
+# whatsapp-web.js bringt eine eigene Puppeteer-Version, deren Chrome-Build vom
+# Base-Image abweicht → passendes Chrome explizit in den pptruser-Cache laden.
+RUN npx puppeteer browsers install chrome
 EXPOSE 3000
 CMD ["node", "server.js"]
