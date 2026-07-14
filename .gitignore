@@ -44,3 +44,19 @@ frontend/blob-report/
 
 # Lokal installierte Agent-Skills (nicht einchecken)
 .agents/
+
+# Scratch: Mockups, Screenshots, generierte Guides, Installer (Repo-Root)
+/*.png
+/*.pdf
+/*.html
+/*.deb.1
+/isf.txt
+/skills-lock.json
+/.mcp.json
+.playwright-mcp/
+.claire/
+frontend/*.pdf
+
+# Extern installierte Design-Skills (drill-onboarding bleibt getrackt)
+.claude/skills/*
+!.claude/skills/drill-onboarding/
