@@ -4,7 +4,7 @@ import { useWhatsappPoll } from '@/hooks/useWhatsappPoll'
 import { getWhatsappQr } from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
-import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon } from '@/icons'
+import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
 import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
 
 const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
@@ -378,6 +378,7 @@ interface PollCardProps {
 function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
   const [showSkip, setShowSkip] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const dateRef = useRef<HTMLInputElement>(null)
   const openPicker = () => {
     try { dateRef.current?.showPicker?.() } catch { /* Browser ohne showPicker: nativer Fallback greift */ }
@@ -396,24 +397,54 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
         {/* Kopf: Titel + Bearbeiten/Löschen */}
         <div className="flex items-start gap-2">
           <h3 className="flex-1 min-w-0 font-display text-lg font-extrabold uppercase tracking-wide text-navy-900 leading-snug">{heading}</h3>
-          <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <div className="relative shrink-0">
             <button
-              onClick={onEdit}
-              disabled={!connected}
-              aria-label="Bearbeiten"
-              title={connected ? 'Bearbeiten' : 'Erst WhatsApp verbinden'}
-              className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              onClick={() => setMenuOpen(o => !o)}
+              aria-label="Aktionen"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
             >
-              <Pencil size={16} />
+              <DotsVertical size={18} />
             </button>
-            <button
-              onClick={onDelete}
-              aria-label="Löschen"
-              title="Löschen"
-              className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
-            >
-              <TrashBin size={16} />
-            </button>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                <div role="menu" className="absolute right-0 top-9 z-50 w-52 rounded-xl border border-cream-300 bg-white shadow-lg py-1">
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); onEdit() }}
+                    disabled={!connected}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  >
+                    <Pencil size={15} /> Bearbeiten
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); onSend() }}
+                    disabled={!connected}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  >
+                    <SendIcon size={15} /> Jetzt testen
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); setShowSkip(s => !s) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer"
+                  >
+                    <CalendarIcon size={15} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
+                  </button>
+                  <div className="my-1 border-t border-cream-200" />
+                  <button
+                    role="menuitem"
+                    onClick={() => { setMenuOpen(false); onDelete() }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+                  >
+                    <TrashBin size={15} /> Löschen
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -465,27 +496,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
             )}
           </p>
 
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onSend}
-              disabled={!connected}
-              title={connected ? 'Sendet den Poll sofort in die Gruppe' : 'Erst WhatsApp verbinden'}
-              className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2 hover:bg-navy-100 hover:border-navy-200 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <SendIcon size={14} /> Jetzt testen
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSkip(s => !s)}
-              aria-expanded={showSkip}
-              className={`inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide rounded-lg px-3 py-2 border transition-colors cursor-pointer ${showSkip ? 'bg-navy-100 text-navy-800 border-navy-200' : 'bg-navy-50 text-navy-700 border-navy-100 hover:bg-navy-100 hover:border-navy-200'}`}
-            >
-              <CalendarIcon size={14} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
-            </button>
-          </div>
-
-          {/* Aufklappbar: Absage-Termine (mobil-freundliches Datumsfeld) */}
+          {/* Aufklappbar: Absage-Termine (über das ⋮-Menü getoggelt) */}
           {showSkip && (
             <div className="mt-2.5 rounded-lg bg-cream-100 border border-cream-200 p-3">
               <p className="font-body text-[11px] text-gray-500 mb-2">An diesen Tagen wird <span className="font-semibold text-navy-700">nicht</span> gesendet — z.B. wenn ein Training ausfällt.</p>
