@@ -730,3 +730,39 @@ export interface EquipmentInput {
   storageLocation: string | null
   notes: string | null
 }
+
+export type Weekday = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
+
+export interface WhatsappAccountStatus {
+  connected: boolean
+  number: string | null
+  needsQr: boolean
+}
+
+export interface WhatsappGroup {
+  id: string
+  name: string
+}
+
+export interface WhatsappPollResponse {
+  id: number
+  groupId: string
+  groupName: string | null
+  title: string
+  options: string[]
+  weekday: Weekday
+  time: string // "18:00:00"
+  enabled: boolean
+  skipDates: string[] // ISO-Daten "2026-07-14"
+  lastSentAt: string | null
+}
+
+export interface WhatsappPollRequest {
+  groupId: string
+  groupName: string | null
+  title: string
+  options: string[]
+  weekday: Weekday
+  time: string
+  enabled: boolean
+}
