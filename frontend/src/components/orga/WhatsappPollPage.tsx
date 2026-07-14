@@ -37,6 +37,13 @@ function formatLastSent(iso: string | null): string {
   return `Zuletzt gesendet ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}, ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+function isSentToday(iso: string | null): boolean {
+  if (!iso) return false
+  const d = new Date(iso)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+}
+
 function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
   return {
     groupId: groups[0]?.id ?? '',
@@ -69,7 +76,7 @@ type EditorState =
 export function WhatsappPollPage() {
   const {
     polls, status, groups, loading, error, reload,
-    createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate,
+    createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate, resetSent,
   } = useWhatsappPoll()
   const toast = useToastContext()
 
@@ -166,6 +173,15 @@ export function WhatsappPollPage() {
     }
   }
 
+  const handleResetSent = async (id: number) => {
+    try {
+      await resetSent(id)
+      toast.show('Sende-Sperre zurückgesetzt — sendet heute wieder')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const deletePollTitle = polls.find(p => p.id === deleteId)?.title ?? 'Umfrage'
 
   return (
@@ -217,6 +233,7 @@ export function WhatsappPollPage() {
                 onEdit={() => openEdit(poll)}
                 onDelete={() => setDeleteId(poll.id)}
                 onSend={() => setSendId(poll.id)}
+                onResetSent={() => handleResetSent(poll.id)}
               />
             ))}
           </div>
@@ -315,9 +332,11 @@ interface PollCardProps {
   onEdit: () => void
   onDelete: () => void
   onSend: () => void
+  onResetSent: () => void
 }
 
-function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, onRemoveSkip, onEdit, onDelete, onSend }: PollCardProps) {
+function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
+  const sentToday = isSentToday(poll.lastSentAt)
   return (
     <div className="group relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
       <span className="absolute inset-y-0 left-0 w-1 bg-navy-800" />
@@ -382,6 +401,21 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
             </div>
 
             <p className="mt-2 text-[11px] text-gray-400">{formatLastSent(poll.lastSentAt)}</p>
+
+            {sentToday && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">
+                  Heute gesendet — sendet heute nicht erneut
+                </span>
+                <button
+                  type="button"
+                  onClick={onResetSent}
+                  className="text-[11px] font-semibold text-navy-600 underline decoration-dotted underline-offset-2 hover:text-navy-800 cursor-pointer"
+                >
+                  Erneut ermöglichen
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

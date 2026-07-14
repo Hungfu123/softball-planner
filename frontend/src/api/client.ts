@@ -642,6 +642,8 @@ export const deleteWhatsappPoll = (id: number) =>
   request<void>(`/orga/whatsapp/polls/${id}`, { method: 'DELETE' })
 export const sendWhatsappPollNow = (id: number) =>
   request<void>(`/orga/whatsapp/polls/${id}/send-now`, { method: 'POST' })
+export const resetWhatsappPollSent = (id: number) =>
+  request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/reset-sent`, { method: 'POST' })
 export const addWhatsappPollSkipDate = (id: number, date: string) =>
   request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/skip-dates`, { method: 'POST', body: JSON.stringify({ date }) })
 export const removeWhatsappPollSkipDate = (id: number, date: string) =>
