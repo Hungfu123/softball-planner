@@ -126,7 +126,6 @@ export function WhatsappPollPage() {
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [sendId, setSendId] = useState<number | null>(null)
-  const [skipInputs, setSkipInputs] = useState<Record<number, string>>({})
 
   const connected = status?.connected ?? false
 
@@ -195,12 +194,10 @@ export function WhatsappPollPage() {
     }
   }
 
-  const handleAddSkip = async (id: number) => {
-    const date = skipInputs[id]
+  const handlePickSkip = async (id: number, date: string) => {
     if (!date) return
     try {
       await addSkipDate(id, date)
-      setSkipInputs(prev => ({ ...prev, [id]: '' }))
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -267,9 +264,7 @@ export function WhatsappPollPage() {
                 key={poll.id}
                 poll={poll}
                 connected={connected}
-                skipInput={skipInputs[poll.id] ?? ''}
-                onSkipInputChange={value => setSkipInputs(prev => ({ ...prev, [poll.id]: value }))}
-                onAddSkip={() => handleAddSkip(poll.id)}
+                onPickSkip={date => handlePickSkip(poll.id, date)}
                 onRemoveSkip={date => handleRemoveSkip(poll.id, date)}
                 onEdit={() => openEdit(poll)}
                 onDelete={() => setDeleteId(poll.id)}
@@ -366,9 +361,7 @@ function AccountCard({ connected, status, qr }: { connected: boolean; status: Wh
 interface PollCardProps {
   poll: WhatsappPollResponse
   connected: boolean
-  skipInput: string
-  onSkipInputChange: (value: string) => void
-  onAddSkip: () => void
+  onPickSkip: (date: string) => void
   onRemoveSkip: (date: string) => void
   onEdit: () => void
   onDelete: () => void
@@ -376,7 +369,7 @@ interface PollCardProps {
   onResetSent: () => void
 }
 
-function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
+function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
   const [showSkip, setShowSkip] = useState(poll.skipDates.length > 0)
   const dateRef = useRef<HTMLInputElement>(null)
@@ -485,26 +478,23 @@ function PollCard({ poll, connected, skipInput, onSkipInputChange, onAddSkip, on
                   ))}
                 </div>
               )}
-              <div className="flex gap-2">
-                <input
-                  ref={dateRef}
-                  type="date"
-                  value={skipInput}
-                  onChange={e => onSkipInputChange(e.target.value)}
-                  onClick={openPicker}
-                  onFocus={openPicker}
-                  aria-label="Absage-Termin wählen"
-                  className="flex-1 min-w-0 font-body text-sm border border-cream-300 rounded-lg px-3 py-2 bg-white focus:border-navy-600 outline-none [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                />
-                <button
-                  type="button"
-                  onClick={onAddSkip}
-                  disabled={!skipInput}
-                  className="shrink-0 inline-flex items-center gap-1 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-white border border-navy-200 rounded-lg px-3 py-2 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-navy-700"
-                >
-                  <PlusCircle size={14} /> Hinzufügen
-                </button>
-              </div>
+              {/* Versteckter nativer Input trägt den OS-Picker; sichtbar ist nur der Button.
+                  So kein leeres TT.MM.JJJJ-Feld, aber weiterhin der native (app-konforme) Picker. */}
+              <input
+                ref={dateRef}
+                type="date"
+                onChange={e => { const v = e.target.value; e.target.value = ''; if (v) onPickSkip(v) }}
+                aria-hidden="true"
+                tabIndex={-1}
+                className="sr-only"
+              />
+              <button
+                type="button"
+                onClick={openPicker}
+                className="inline-flex items-center gap-1.5 font-display text-sm font-bold uppercase tracking-wide text-navy-700 bg-white border border-navy-200 rounded-lg px-3 py-2 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer"
+              >
+                <PlusCircle size={14} /> Termin wählen
+              </button>
             </div>
           )}
         </div>
