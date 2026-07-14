@@ -25,8 +25,12 @@ Jede läuft eigenständig wöchentlich auf ihrem Wochentag.
 - **Rücklauf:** Keiner. Nur senden.
 - **Modell:** **Liste** wiederkehrender Polls (nicht eine Single-Config). Jeder Poll
   hat eigenen Wochentag + Uhrzeit, Titel, Optionen, Ziel-Gruppe.
-- **Konto:** Genau ein gekoppeltes Absender-Konto (Rufnummer, per QR) — globales
-  Setup, einmalig. **Einzige harte Voraussetzung** fürs Senden.
+- **Konto:** Genau ein gekoppeltes Absender-Konto — globales Setup, einmalig.
+  **Einzige harte Voraussetzung** fürs Senden.
+- **Kopplung: QR** (kein Pairing-Code). App zeigt QR (`/qr`), User scannt am Handy
+  (WhatsApp → Verknüpfte Geräte). Die **Rufnummer wird NICHT eingetippt** — sie kommt
+  nach dem Scan automatisch aus `/status` und wird nur angezeigt ("verbunden als …").
+  Session persistent im Volume, Restart braucht keine neue Kopplung.
 - **Ziel-Gruppe:** Über stabile `groupId` (chatId `…@g.us`), NICHT über Anzeigenamen
   (fragil). User wählt im Dropdown per Name, App speichert die ID. Gruppe pro Poll
   wählbar (meist dieselbe Team-Gruppe).
@@ -42,8 +46,9 @@ Jede läuft eigenständig wöchentlich auf ihrem Wochentag.
 
 ## Datenmodell — zwei Ebenen
 
-**Ebene 1 — Konto (global, 1 Row):**
-- gekoppelte Rufnummer / Session (verwaltet im Node-Dienst; App zeigt nur Status)
+**Ebene 1 — Konto (global):**
+- Kopplung + Session lebt im Node-Dienst (Volume). App speichert hier nichts —
+  liest nur Status/Nummer über `/status`. Keine Rufnummer-Eingabe.
 
 **Ebene 2 — Polls (Liste):** je Eintrag
 - `groupId` + `groupName` (Ziel)
