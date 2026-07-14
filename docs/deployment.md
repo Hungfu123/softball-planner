@@ -30,6 +30,46 @@ ssh root@178.104.118.46
 ssh root@178.104.118.46 "/opt/softball/deploy.sh"
 ```
 
+## WhatsApp-Sidecar (Umfragen-Polls)
+
+Der Node-Sidecar (`whatsapp-service/`, whatsapp-web.js) läuft in Produktion als eigener Compose-Service im **internen** Netz — kein Port nach außen, nur `backend` erreicht ihn über den Service-Namen.
+
+Ergänzung in `/opt/softball/docker-compose.yml` (nicht Teil dieses Repos):
+
+```yaml
+services:
+  whatsapp:
+    build: ./whatsapp-service
+    restart: unless-stopped
+    environment:
+      - WHATSAPP_SERVICE_TOKEN=${WHATSAPP_SERVICE_TOKEN}
+      - SESSION_PATH=/data/session
+    volumes:
+      - whatsapp-session:/data/session
+    # kein "ports:" — nur intern über den Service-Namen "whatsapp" erreichbar
+
+  backend:
+    environment:
+      # ... bestehende Env-Vars ...
+      - WHATSAPP_SERVICE_URL=http://whatsapp:3000
+      - WHATSAPP_SERVICE_TOKEN=${WHATSAPP_SERVICE_TOKEN}
+
+volumes:
+  whatsapp-session:
+```
+
+**Env-Variablen (VPS, in `/opt/softball/.env` oder direkt im Compose-File gesetzt):**
+
+| Variable | Gesetzt bei | Bedeutung |
+|----------|-------------|-----------|
+| `WHATSAPP_SERVICE_TOKEN` | `whatsapp` + `backend` | Frei gewähltes gemeinsames Geheimnis (Header `X-Service-Token`) — **muss in beiden Services identisch sein**, sonst lehnt der Sidecar Requests vom Backend ab |
+| `WHATSAPP_SERVICE_URL` | `backend` | Interne Compose-DNS-Adresse `http://whatsapp:3000`; lokal (`./mvnw spring-boot:run`) default `http://localhost:3000` (siehe `application.properties`) |
+
+**Erst-Kopplung (einmalig, pro Server-Neuaufsetzung oder Session-Reset):**
+Nach dem ersten Start hat whatsapp-web.js noch keine Session. Über die Orga-UI unter `/orga/whatsapp-umfrage` erscheint ein QR-Code — mit dem Handy (WhatsApp → Verknüpfte Geräte) scannen, danach Status „verbunden". Die Session wird danach im Docker-Volume `whatsapp-session` persistiert und übersteht Container-Neustarts/Deploys; nur bei Volume-Löschung oder Geräte-Abmeldung in WhatsApp selbst ist erneutes Scannen nötig.
+
+**Lokaler Smoke-Test:** Im Repo-`docker-compose.yml` hat der `whatsapp`-Service zusätzlich `ports: ["3000:3000"]` (lokal unkritisch, da kein Internet-Zugriff auf den Compose-Host) — damit erreicht der lokal per `./mvnw spring-boot:run` laufende Backend-Prozess den Container unter `localhost:3000` ganz ohne weitere Konfiguration.
+
 ## Dateien auf dem Server
 | Pfad | Beschreibung |
 |------|-------------|
