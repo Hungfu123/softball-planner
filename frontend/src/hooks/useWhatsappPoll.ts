@@ -9,8 +9,10 @@ export function useWhatsappPoll() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  // silent = Hintergrund-Refresh (Status-Poll, nach Senden) ohne Loading-Skeleton;
+  // nur der erste Ladevorgang zeigt das Skeleton.
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const [s, p] = await Promise.all([api.getWhatsappStatus(), api.getWhatsappPolls()])
       setStatus(s)
@@ -20,9 +22,11 @@ export function useWhatsappPoll() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Laden')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }, [])
+
+  const reload = useCallback(() => load(true), [load])
 
   useEffect(() => { load() }, [load])
 
@@ -59,7 +63,7 @@ export function useWhatsappPoll() {
   }
 
   return {
-    polls, status, groups, loading, error, reload: load,
+    polls, status, groups, loading, error, reload,
     createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate, resetSent,
   }
 }
