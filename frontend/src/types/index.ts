@@ -736,6 +736,7 @@ export type Weekday = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY'
 export interface WhatsappAccountStatus {
   connected: boolean
   number: string | null
+  name: string | null
   needsQr: boolean
 }
 

@@ -35,11 +35,11 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     public WhatsappAccountStatus status() {
         try {
             final StatusDto s = client.get().uri("/status").retrieve().body(StatusDto.class);
-            if (s == null) return new WhatsappAccountStatus(false, null, false, null);
-            return new WhatsappAccountStatus(s.connected(), s.number(), s.needsQr(), null);
+            if (s == null) return new WhatsappAccountStatus(false, null, null, false, null);
+            return new WhatsappAccountStatus(s.connected(), s.number(), s.name(), s.needsQr(), null);
         } catch (final Exception e) {
             log.warn("WhatsApp-Status nicht erreichbar: {}", e.getMessage());
-            return new WhatsappAccountStatus(false, null, false, null);
+            return new WhatsappAccountStatus(false, null, null, false, null);
         }
     }
 
@@ -91,7 +91,7 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
         }
     }
 
-    private record StatusDto(boolean connected, String number, boolean needsQr) {}
+    private record StatusDto(boolean connected, String number, String name, boolean needsQr) {}
     private record QrDto(String qr) {}
     private record GroupsDto(List<GroupDto> groups) {}
     private record GroupDto(String id, String name) {}
