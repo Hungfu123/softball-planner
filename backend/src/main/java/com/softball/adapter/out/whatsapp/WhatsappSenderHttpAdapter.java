@@ -70,10 +70,14 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     public void sendPoll(final String groupId, final String title, final List<String> options,
                          final boolean allowMultipleAnswers, final String message) {
         try {
+            // WhatsApp erlaubt keine doppelten Poll-Optionen → hier defensiv deduplizieren
+            // (deckt auch Alt-Einträge, die noch Duplikate gespeichert haben).
+            final List<String> uniqueOptions = options == null ? List.of()
+                    : options.stream().map(o -> o != null ? o.trim() : "").filter(o -> !o.isEmpty()).distinct().toList();
             final Map<String, Object> body = new HashMap<>();
             body.put("groupId", groupId);
             body.put("title", title);
-            body.put("options", options);
+            body.put("options", uniqueOptions);
             body.put("allowMultiple", allowMultipleAnswers);
             body.put("message", message);
             client.post().uri("/send-poll")

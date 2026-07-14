@@ -14,9 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class WhatsappPollService {
@@ -135,16 +133,6 @@ public class WhatsappPollService {
         }
         if (hasPoll && (p.getTitle() == null || p.getTitle().isBlank())) {
             throw new BusinessValidationException("Umfrage-Frage (Titel) darf nicht leer sein");
-        }
-        if (hasPoll) {
-            final Set<String> seen = new HashSet<>();
-            for (final String o : p.getOptions()) {
-                final String norm = o != null ? o.trim() : "";
-                if (!norm.isEmpty() && !seen.add(norm)) {
-                    throw new BusinessValidationException(
-                        "Antwortoptionen müssen unterschiedlich sein — \"" + norm + "\" kommt doppelt vor");
-                }
-            }
         }
     }
 }

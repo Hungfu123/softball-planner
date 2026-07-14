@@ -89,14 +89,6 @@ class WhatsappPollServiceTest {
     }
 
     @Test
-    void create_rejectsDuplicateOptions() {
-        final WhatsappPoll p = sample();
-        p.setOptions(List.of("Ja", "Nein", "Ja"));
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.create(p))
-            .isInstanceOf(com.softball.shared.exception.BusinessValidationException.class);
-    }
-
-    @Test
     void delete_removes() {
         final Long id = service.create(sample()).getId();
         service.delete(id);

@@ -558,16 +558,16 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
   const addOption = () => set('options', [...form.options, ''])
   const removeOption = (index: number) => set('options', form.options.filter((_, i) => i !== index))
 
-  const trimmedOptions = form.options.map(o => o.trim()).filter(Boolean)
-  const hasDuplicateOptions = new Set(trimmedOptions).size !== trimmedOptions.length
+  // Doppelte Optionen beim Speichern automatisch entfernen (WhatsApp erlaubt keine).
+  const uniqueOptions = Array.from(new Set(form.options.map(o => o.trim()).filter(Boolean)))
   const messageFilled = (form.message ?? '').trim() !== ''
-  const pollValid = form.title.trim() !== '' && trimmedOptions.length >= 2 && !hasDuplicateOptions
+  const pollValid = form.title.trim() !== '' && uniqueOptions.length >= 2
   const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled)
 
   const buildRequest = (): WhatsappPollRequest => ({
     ...form,
     title: withPoll ? form.title.trim() : '',
-    options: withPoll ? form.options.map(o => o.trim()).filter(Boolean) : [],
+    options: withPoll ? uniqueOptions : [],
     allowMultipleAnswers: withPoll ? form.allowMultipleAnswers : false,
     message: messageFilled ? (form.message ?? '').trim() : null,
   })
@@ -663,9 +663,6 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
                 </div>
               ))}
             </div>
-            {hasDuplicateOptions && (
-              <p className="mt-1.5 text-xs font-semibold text-softball-red-600">Antwortoptionen müssen unterschiedlich sein — WhatsApp erlaubt keine doppelten.</p>
-            )}
           </div>
         )}
 
