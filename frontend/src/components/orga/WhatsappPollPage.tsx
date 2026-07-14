@@ -380,8 +380,11 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
   const openPicker = () => {
     try { dateRef.current?.showPicker?.() } catch { /* Browser ohne showPicker: nativer Fallback greift */ }
   }
-  const isMessageOnly = poll.options.length < 2
+  const hasPoll = poll.options.length >= 2
+  const hasMessage = !!poll.message && poll.message.trim() !== ''
+  const isMessageOnly = !hasPoll
   const heading = poll.title || (isMessageOnly ? 'Nachricht' : 'Ohne Titel')
+  const typeLabel = !hasPoll ? 'Nachricht' : hasMessage ? 'Umfrage + Nachricht' : 'Umfrage'
 
   return (
     <div className="group relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
@@ -419,9 +422,8 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
           </span>
           {poll.groupName && <span className="font-body text-navy-500 truncate max-w-[10rem]">{poll.groupName}</span>}
           <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>
-          {isMessageOnly
-            ? <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Nachricht</span>
-            : poll.allowMultipleAnswers && <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Mehrfachauswahl</span>}
+          <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{typeLabel}</span>
+          {hasPoll && poll.allowMultipleAnswers && <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Mehrfach</span>}
         </div>
 
         {/* Nächster Versand — Kern-Info */}
