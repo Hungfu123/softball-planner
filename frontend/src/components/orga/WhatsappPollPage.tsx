@@ -328,8 +328,10 @@ function AccountCard({ connected, status, qr }: { connected: boolean; status: Wh
             <CheckCircle size={20} />
           </span>
           <div>
-            <p className="text-sm font-semibold text-navy-900">Verbunden als {status.number ?? '–'}</p>
-            <p className="text-xs text-gray-500">Umfragen werden automatisch verschickt.</p>
+            <p className="text-sm font-semibold text-navy-900">
+              Verbunden als {status.name ? status.name : status.number ?? '–'}
+            </p>
+            <p className="text-xs text-gray-500">{status.name && status.number ? `${status.number} · ` : ''}Umfragen werden automatisch verschickt.</p>
           </div>
         </div>
       ) : (
@@ -375,7 +377,7 @@ interface PollCardProps {
 
 function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
-  const [showSkip, setShowSkip] = useState(poll.skipDates.length > 0)
+  const [showSkip, setShowSkip] = useState(false)
   const dateRef = useRef<HTMLInputElement>(null)
   const openPicker = () => {
     try { dateRef.current?.showPicker?.() } catch { /* Browser ohne showPicker: nativer Fallback greift */ }
@@ -433,10 +435,16 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
             <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll)}</p>
           </div>
           {poll.options.length > 0 && (
-            <div className="flex flex-wrap justify-end gap-1">
-              {poll.options.map((o, i) => (
-                <span key={i} className="font-body text-[11px] font-semibold text-navy-700 bg-cream-100 border border-cream-300 rounded-md px-1.5 py-0.5">{o}</span>
-              ))}
+            <div className="text-right shrink-0 max-w-[55%]">
+              <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">Antworten</p>
+              <div className="flex flex-wrap justify-end gap-1 mt-0.5">
+                {poll.options.slice(0, 3).map((o, i) => (
+                  <span key={i} className="font-body text-[11px] font-semibold text-navy-700 bg-cream-100 border border-cream-300 rounded-md px-1.5 py-0.5 max-w-[8rem] truncate">{o}</span>
+                ))}
+                {poll.options.length > 3 && (
+                  <span className="font-body text-[11px] font-semibold text-navy-500 px-1 py-0.5">+{poll.options.length - 3}</span>
+                )}
+              </div>
             </div>
           )}
         </div>

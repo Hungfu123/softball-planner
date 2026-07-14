@@ -28,6 +28,7 @@ clearChromeLocks(SESSION_PATH);
 let currentQrDataUrl = null;   // gesetzt solange Kopplung aussteht
 let connected = false;
 let myNumber = null;
+let myName = null;
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
@@ -46,7 +47,8 @@ client.on('ready', () => {
   connected = true;
   currentQrDataUrl = null;
   myNumber = client.info?.wid?.user ? '+' + client.info.wid.user : null;
-  console.log('[wa] verbunden als', myNumber);
+  myName = client.info?.pushname || null;
+  console.log('[wa] verbunden als', myName, myNumber);
 });
 client.on('disconnected', (r) => {
   connected = false;
@@ -66,7 +68,7 @@ app.use((req, res, next) => {
 });
 
 app.get('/status', (_req, res) => {
-  res.json({ connected, number: myNumber, needsQr: !connected && currentQrDataUrl !== null });
+  res.json({ connected, number: myNumber, name: myName, needsQr: !connected && currentQrDataUrl !== null });
 });
 
 app.get('/qr', (_req, res) => {
