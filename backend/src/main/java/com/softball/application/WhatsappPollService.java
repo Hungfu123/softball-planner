@@ -89,7 +89,6 @@ public class WhatsappPollService {
         return findById(id);
     }
 
-    @Transactional
     public void sendNow(final Long id) {
         final WhatsappPoll p = findById(id);
         sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions());
@@ -110,6 +109,9 @@ public class WhatsappPollService {
         }
         if (p.getOptions() == null || p.getOptions().size() < 2) {
             throw new BusinessValidationException("Mindestens 2 Antwortoptionen nötig");
+        }
+        if (p.getOptions().size() > 12) {
+            throw new BusinessValidationException("Maximal 12 Antwortoptionen erlaubt");
         }
         if (p.getWeekday() == null || p.getTime() == null) {
             throw new BusinessValidationException("Wochentag und Uhrzeit müssen gesetzt sein");

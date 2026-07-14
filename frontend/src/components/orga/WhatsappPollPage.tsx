@@ -515,7 +515,9 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
             <button
               type="button"
               onClick={addOption}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer"
+              disabled={form.options.length >= 12}
+              title={form.options.length >= 12 ? 'Maximal 12 Antwortoptionen erlaubt' : undefined}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-navy-700"
             >
               <PlusCircle size={14} /> Option
             </button>

@@ -6,10 +6,13 @@ import com.softball.domain.port.out.WhatsappSender;
 import com.softball.domain.service.PollDueEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Component
 public class WhatsappPollScheduler {
@@ -19,19 +22,29 @@ public class WhatsappPollScheduler {
     private final WhatsappPollRepository repository;
     private final WhatsappSender sender;
     private final PollDueEvaluator evaluator;
+    private final Clock clock;
 
+    @Autowired
     public WhatsappPollScheduler(final WhatsappPollRepository repository,
                                  final WhatsappSender sender,
                                  final PollDueEvaluator evaluator) {
+        this(repository, sender, evaluator, Clock.system(ZoneId.of("Europe/Berlin")));
+    }
+
+    public WhatsappPollScheduler(final WhatsappPollRepository repository,
+                                 final WhatsappSender sender,
+                                 final PollDueEvaluator evaluator,
+                                 final Clock clock) {
         this.repository = repository;
         this.sender = sender;
         this.evaluator = evaluator;
+        this.clock = clock;
     }
 
     // Jede Minute zur Sekunde 0
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "Europe/Berlin")
     public void run() {
-        tick(LocalDateTime.now());
+        tick(LocalDateTime.now(clock));
     }
 
     public void tick(final LocalDateTime now) {
