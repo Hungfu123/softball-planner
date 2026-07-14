@@ -5,7 +5,7 @@ import { getWhatsappQr } from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle } from '@/icons'
-import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday } from '@/types'
+import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
 
 const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
   { value: 'MONDAY', label: 'Montag', short: 'Mo' },
@@ -85,7 +85,7 @@ export function WhatsappPollPage() {
   // Solange nicht verbunden: QR alle 20s neu laden (läuft sonst ab) und Status
   // alle 4s pollen, damit die Seite automatisch umschaltet sobald gescannt wurde.
   useEffect(() => {
-    if (!status || connected) return
+    if (connected) return
     let cancelled = false
     const fetchQr = () => {
       getWhatsappQr().then(r => { if (!cancelled) setQr(r.qr) }).catch(() => {})
@@ -98,7 +98,7 @@ export function WhatsappPollPage() {
       clearInterval(qrTimer)
       clearInterval(statusTimer)
     }
-  }, [status, connected, reload])
+  }, [connected, reload])
 
   const openCreate = () => setEditor({ mode: 'create', draft: blankDraft(groups) })
   const openEdit = (p: WhatsappPollResponse) => setEditor({ mode: 'edit', id: p.id, draft: toRequest(p) })
@@ -194,32 +194,34 @@ export function WhatsappPollPage() {
         </button>
       </div>
 
-      {loading ? (
-        <LoadingSkeleton variant="list" />
-      ) : polls.length === 0 ? (
-        <EmptyState
-          title="Noch keine Umfragen"
-          description="Leg eine wiederkehrende WhatsApp-Umfrage an."
-          icon={<CrossBones size={48} />}
-        />
-      ) : (
-        <div className="space-y-3">
-          {polls.map(poll => (
-            <PollCard
-              key={poll.id}
-              poll={poll}
-              connected={connected}
-              skipInput={skipInputs[poll.id] ?? ''}
-              onSkipInputChange={value => setSkipInputs(prev => ({ ...prev, [poll.id]: value }))}
-              onAddSkip={() => handleAddSkip(poll.id)}
-              onRemoveSkip={date => handleRemoveSkip(poll.id, date)}
-              onEdit={() => openEdit(poll)}
-              onDelete={() => setDeleteId(poll.id)}
-              onSend={() => setSendId(poll.id)}
-            />
-          ))}
-        </div>
-      )}
+      <div className={!connected ? 'opacity-50 pointer-events-none' : ''}>
+        {loading ? (
+          <LoadingSkeleton variant="list" />
+        ) : polls.length === 0 ? (
+          <EmptyState
+            title="Noch keine Umfragen"
+            description="Leg eine wiederkehrende WhatsApp-Umfrage an."
+            icon={<CrossBones size={48} />}
+          />
+        ) : (
+          <div className="space-y-3">
+            {polls.map(poll => (
+              <PollCard
+                key={poll.id}
+                poll={poll}
+                connected={connected}
+                skipInput={skipInputs[poll.id] ?? ''}
+                onSkipInputChange={value => setSkipInputs(prev => ({ ...prev, [poll.id]: value }))}
+                onAddSkip={() => handleAddSkip(poll.id)}
+                onRemoveSkip={date => handleRemoveSkip(poll.id, date)}
+                onEdit={() => openEdit(poll)}
+                onDelete={() => setDeleteId(poll.id)}
+                onSend={() => setSendId(poll.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {editor && (
         <PollEditor
@@ -253,7 +255,7 @@ export function WhatsappPollPage() {
   )
 }
 
-function AccountCard({ connected, status, qr }: { connected: boolean; status: { number: string | null } | null; qr: string | null }) {
+function AccountCard({ connected, status, qr }: { connected: boolean; status: WhatsappAccountStatus | null; qr: string | null }) {
   return (
     <Card padding="lg">
       <div className="flex items-center justify-between mb-3">
@@ -445,7 +447,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
   const addOption = () => set('options', [...form.options, ''])
   const removeOption = (index: number) => set('options', form.options.filter((_, i) => i !== index))
 
-  const canSave = form.title.trim() !== '' && form.groupId !== '' && form.options.some(o => o.trim() !== '')
+  const canSave = form.title.trim() !== '' && form.groupId !== '' && form.options.filter(o => o.trim() !== '').length >= 2
 
   const footer = (
     <div className="flex justify-end gap-2">
@@ -530,7 +532,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
                 <button
                   type="button"
                   onClick={() => removeOption(i)}
-                  disabled={form.options.length <= 1}
+                  disabled={form.options.length <= 2}
                   aria-label="Option entfernen"
                   title="Entfernen"
                   className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
