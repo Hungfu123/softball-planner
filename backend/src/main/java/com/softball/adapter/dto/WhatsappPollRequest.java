@@ -15,7 +15,9 @@ public record WhatsappPollRequest(
         @NotNull List<String> options,
         @NotNull DayOfWeek weekday,
         @NotNull LocalTime time,
-        boolean enabled) {
+        boolean enabled,
+        boolean allowMultipleAnswers,
+        String message) {
 
     public WhatsappPoll toDomain() {
         final WhatsappPoll p = new WhatsappPoll();
@@ -26,6 +28,8 @@ public record WhatsappPollRequest(
         p.setWeekday(weekday);
         p.setTime(time);
         p.setEnabled(enabled);
+        p.setAllowMultipleAnswers(allowMultipleAnswers);
+        p.setMessage(message != null && !message.isBlank() ? message.trim() : null);
         return p;
     }
 }

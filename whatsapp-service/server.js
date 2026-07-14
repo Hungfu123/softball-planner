@@ -66,13 +66,17 @@ app.get('/groups', async (_req, res) => {
 });
 
 app.post('/send-poll', async (req, res) => {
-  const { groupId, title, options } = req.body || {};
+  const { groupId, title, options, allowMultiple, message } = req.body || {};
   if (!connected) return res.status(409).json({ error: 'not_connected' });
   if (!groupId || !title || !Array.isArray(options) || options.length < 2 || options.length > 12) {
     return res.status(400).json({ error: 'invalid_request' });
   }
   try {
-    await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: false }));
+    // Optionale Zusatz-Nachricht zuerst (z.B. Event-Details), dann die Umfrage.
+    if (typeof message === 'string' && message.trim() !== '') {
+      await client.sendMessage(groupId, message.trim());
+    }
+    await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: allowMultiple === true }));
     res.json({ sent: true });
   } catch (e) {
     res.status(500).json({ error: String(e && e.message || e) });

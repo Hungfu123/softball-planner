@@ -91,7 +91,7 @@ public class WhatsappPollService {
 
     public void sendNow(final Long id) {
         final WhatsappPoll p = findById(id);
-        sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions());
+        sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions(), p.isAllowMultipleAnswers(), p.getMessage());
     }
 
     @Transactional

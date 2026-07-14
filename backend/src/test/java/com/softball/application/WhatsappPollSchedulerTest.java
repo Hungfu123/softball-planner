@@ -15,6 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -44,7 +45,7 @@ class WhatsappPollSchedulerTest {
     void tick_sendsDuePoll_andStampsLastSentAt() {
         when(repo.findAll()).thenReturn(List.of(due()));
         scheduler.tick(tueAt1800);
-        verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList());
+        verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList(), anyBoolean(), any());
         verify(repo).save(argThat(p -> p.getLastSentAt() != null));
     }
 
@@ -52,14 +53,14 @@ class WhatsappPollSchedulerTest {
     void tick_skipsNotDuePoll() {
         when(repo.findAll()).thenReturn(List.of(due()));
         scheduler.tick(tueAt1800.plusMinutes(1));  // falsche Minute
-        verify(sender, never()).sendPoll(any(), any(), anyList());
+        verify(sender, never()).sendPoll(any(), any(), anyList(), anyBoolean(), any());
         verify(repo, never()).save(any());
     }
 
     @Test
     void tick_sendFailure_doesNotStampLastSentAt() {
         when(repo.findAll()).thenReturn(List.of(due()));
-        doThrow(new RuntimeException("offline")).when(sender).sendPoll(any(), any(), anyList());
+        doThrow(new RuntimeException("offline")).when(sender).sendPoll(any(), any(), anyList(), anyBoolean(), any());
         scheduler.tick(tueAt1800);
         verify(repo, never()).save(any());
     }
@@ -76,7 +77,7 @@ class WhatsappPollSchedulerTest {
 
         berlinScheduler.run();
 
-        verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList());
+        verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList(), anyBoolean(), any());
         verify(repo).save(argThat(p -> p.getLastSentAt() != null));
     }
 }

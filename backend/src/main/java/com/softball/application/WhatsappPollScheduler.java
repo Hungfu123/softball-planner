@@ -51,7 +51,7 @@ public class WhatsappPollScheduler {
         for (final WhatsappPoll poll : repository.findAll()) {
             if (!evaluator.isDue(poll, now)) continue;
             try {
-                sender.sendPoll(poll.getGroupId(), poll.getTitle(), poll.getOptions());
+                sender.sendPoll(poll.getGroupId(), poll.getTitle(), poll.getOptions(), poll.isAllowMultipleAnswers(), poll.getMessage());
                 poll.setLastSentAt(now);
                 repository.save(poll);
                 log.info("Geplanter WhatsApp-Poll gesendet: {} ({})", poll.getTitle(), poll.getId());

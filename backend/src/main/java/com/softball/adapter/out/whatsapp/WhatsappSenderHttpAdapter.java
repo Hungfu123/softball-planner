@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -66,10 +67,17 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     }
 
     @Override
-    public void sendPoll(final String groupId, final String title, final List<String> options) {
+    public void sendPoll(final String groupId, final String title, final List<String> options,
+                         final boolean allowMultipleAnswers, final String message) {
         try {
+            final Map<String, Object> body = new HashMap<>();
+            body.put("groupId", groupId);
+            body.put("title", title);
+            body.put("options", options);
+            body.put("allowMultiple", allowMultipleAnswers);
+            body.put("message", message);
             client.post().uri("/send-poll")
-                    .body(Map.of("groupId", groupId, "title", title, "options", options))
+                    .body(body)
                     .retrieve()
                     .toBodilessEntity();
             log.info("WhatsApp-Poll gesendet: '{}' -> {}", title, groupId);
