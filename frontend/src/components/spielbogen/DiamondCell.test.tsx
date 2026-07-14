@@ -159,13 +159,13 @@ describe('DiamondCell', () => {
     expect(divider).toBeTruthy()
   })
 
-  it('3+ ABs in same inning: ×N Badge sichtbar', () => {
+  it('Advance-Annotation zeigt ×{hitter} (einbringender Hitter, RFL)', () => {
     const cell: CellNotation = {
       ...empty,
-      primaryLabel: 'K',
-      labels: ['1B', 'BB', 'K'],
-      reachedBase: 1,
-      abCount: 3,
+      primaryLabel: '1B',
+      labels: ['1B'],
+      reachedBase: 2,
+      advanceLabels: [{ side: '2b-3b', label: '1B', hitter: 3 }],
     }
     const { getByText } = render(<DiamondCell notation={cell} />)
     expect(getByText('×3')).toBeTruthy()
