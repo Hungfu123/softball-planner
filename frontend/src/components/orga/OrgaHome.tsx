@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/shared'
-import { ClipboardListIcon } from '@/icons'
+import { ClipboardListIcon, SendIcon } from '@/icons'
 import { Mail } from 'lucide-react'
 
 export function OrgaHome() {
@@ -26,6 +26,17 @@ export function OrgaHome() {
               <div>
                 <div className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-900">Aufbau Heimspieltag</div>
                 <div className="text-xs text-gray-500 mt-0.5">Was brauchen wir, wo liegt es</div>
+              </div>
+            </div>
+          </Card>
+        </Link>
+        <Link to="/orga/whatsapp-umfrage">
+          <Card padding="lg" className="hover:border-navy-400 hover:shadow-md transition-all cursor-pointer h-full">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-navy-800 text-white shrink-0"><SendIcon size={20} /></span>
+              <div>
+                <div className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-900">WhatsApp-Umfragen</div>
+                <div className="text-xs text-gray-500 mt-0.5">Wöchentliche Trainings-Abstimmungen</div>
               </div>
             </div>
           </Card>

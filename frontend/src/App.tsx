@@ -11,6 +11,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 import { InvitationListPage } from '@/components/orga/InvitationListPage'
 import { OrgaHome } from '@/components/orga/OrgaHome'
+import { WhatsappPollPage } from '@/components/orga/WhatsappPollPage'
 
 // Lazy-load heavy pages
 const TrainingTodayPage = lazy(() => import('@/components/training/TrainingTodayPage').then(m => ({ default: m.TrainingTodayPage })))
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
       { path: '/orga', element: <OrgaHome />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/einladungen', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/aufbau', element: <Suspense fallback={<LoadingSkeleton />}><EquipmentCatalogPage /></Suspense>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/whatsapp-umfrage', element: <WhatsappPollPage />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   { path: '/spielbogen/:id', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },
