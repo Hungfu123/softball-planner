@@ -31,6 +31,8 @@ public class WhatsappPollMapper {
         p.setWeekday(e.getWeekday() != null ? DayOfWeek.valueOf(e.getWeekday()) : null);
         p.setTime(e.getSendTime());
         p.setEnabled(e.isEnabled());
+        p.setAllowMultipleAnswers(e.isAllowMultipleAnswers());
+        p.setMessage(e.getMessage());
         p.setSkipDates(readDates(e.getSkipDates()));
         p.setLastSentAt(e.getLastSentAt());
         return p;
@@ -55,6 +57,8 @@ public class WhatsappPollMapper {
         e.setWeekday(p.getWeekday() != null ? p.getWeekday().name() : null);
         e.setSendTime(p.getTime());
         e.setEnabled(p.isEnabled());
+        e.setAllowMultipleAnswers(p.isAllowMultipleAnswers());
+        e.setMessage(p.getMessage());
         e.setSkipDates(write(p.getSkipDates()));
         e.setLastSentAt(p.getLastSentAt());
     }

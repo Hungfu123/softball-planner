@@ -37,6 +37,12 @@ public class WhatsappPollEntity {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "allow_multiple_answers", nullable = false)
+    private boolean allowMultipleAnswers = false;
+
+    @Column(columnDefinition = "text")
+    private String message;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "skip_dates", columnDefinition = "jsonb", nullable = false)
     private String skipDates = "[]";
@@ -60,6 +66,10 @@ public class WhatsappPollEntity {
     public void setSendTime(final LocalTime v) { this.sendTime = v; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(final boolean v) { this.enabled = v; }
+    public boolean isAllowMultipleAnswers() { return allowMultipleAnswers; }
+    public void setAllowMultipleAnswers(final boolean v) { this.allowMultipleAnswers = v; }
+    public String getMessage() { return message; }
+    public void setMessage(final String v) { this.message = v; }
     public String getSkipDates() { return skipDates; }
     public void setSkipDates(final String v) { this.skipDates = v; }
     public LocalDateTime getLastSentAt() { return lastSentAt; }

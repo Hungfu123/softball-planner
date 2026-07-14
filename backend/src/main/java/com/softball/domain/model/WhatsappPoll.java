@@ -16,6 +16,8 @@ public class WhatsappPoll {
     private DayOfWeek weekday;
     private LocalTime time;
     private boolean enabled = true;
+    private boolean allowMultipleAnswers = false;
+    private String message;
     private List<LocalDate> skipDates = new ArrayList<>();
     private LocalDateTime lastSentAt;
 
@@ -37,6 +39,10 @@ public class WhatsappPoll {
     public void setTime(final LocalTime v) { this.time = v; }
     public boolean isEnabled() { return enabled; }
     public void setEnabled(final boolean v) { this.enabled = v; }
+    public boolean isAllowMultipleAnswers() { return allowMultipleAnswers; }
+    public void setAllowMultipleAnswers(final boolean v) { this.allowMultipleAnswers = v; }
+    public String getMessage() { return message; }
+    public void setMessage(final String v) { this.message = v; }
     public List<LocalDate> getSkipDates() { return skipDates; }
     public void setSkipDates(final List<LocalDate> v) { this.skipDates = v != null ? v : new ArrayList<>(); }
     public LocalDateTime getLastSentAt() { return lastSentAt; }

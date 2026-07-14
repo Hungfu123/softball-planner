@@ -753,6 +753,8 @@ export interface WhatsappPollResponse {
   weekday: Weekday
   time: string // "18:00:00"
   enabled: boolean
+  allowMultipleAnswers: boolean
+  message: string | null
   skipDates: string[] // ISO-Daten "2026-07-14"
   lastSentAt: string | null
 }
@@ -765,4 +767,6 @@ export interface WhatsappPollRequest {
   weekday: Weekday
   time: string
   enabled: boolean
+  allowMultipleAnswers: boolean
+  message: string | null
 }

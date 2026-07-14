@@ -8,5 +8,5 @@ public interface WhatsappSender {
     WhatsappAccountStatus status();
     String qr();                         // null wenn verbunden
     List<WhatsappGroup> listGroups();
-    void sendPoll(String groupId, String title, List<String> options);
+    void sendPoll(String groupId, String title, List<String> options, boolean allowMultipleAnswers, String message);
 }

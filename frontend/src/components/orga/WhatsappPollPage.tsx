@@ -94,6 +94,8 @@ function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
     weekday: 'MONDAY',
     time: '18:00',
     enabled: true,
+    allowMultipleAnswers: false,
+    message: null,
   }
 }
 
@@ -106,6 +108,8 @@ function toRequest(p: WhatsappPollResponse): WhatsappPollRequest {
     weekday: p.weekday,
     time: formatTime(p.time),
     enabled: p.enabled,
+    allowMultipleAnswers: p.allowMultipleAnswers,
+    message: p.message,
   }
 }
 
@@ -631,14 +635,41 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
           </div>
         </div>
 
-        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+        <div>
+          <label className={labelCls}>Zusätzliche Nachricht (optional)</label>
+          <textarea
+            value={form.message ?? ''}
+            onChange={e => set('message', e.target.value ? e.target.value : null)}
+            rows={2}
+            placeholder="Wird vor der Umfrage gesendet — z.B. Event-Details, Ort, Uhrzeit."
+            className={inputCls + ' resize-y'}
+          />
+        </div>
+
+        <label className="flex items-start gap-2 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={form.allowMultipleAnswers}
+            onChange={e => set('allowMultipleAnswers', e.target.checked)}
+            className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-navy-800">Mehrfachauswahl erlauben</span>
+            <span className="block text-xs text-gray-500">Teilnehmer können mehrere Antworten ankreuzen (statt nur einer).</span>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={form.enabled}
             onChange={e => set('enabled', e.target.checked)}
-            className="accent-navy-700 w-4 h-4 cursor-pointer"
+            className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
           />
-          <span className="text-sm font-semibold text-navy-800">Aktiv (wird automatisch verschickt)</span>
+          <span>
+            <span className="block text-sm font-semibold text-navy-800">Automatisch jede Woche senden</span>
+            <span className="block text-xs text-gray-500">Geht wöchentlich am Wochentag + Uhrzeit raus. Aus = pausiert.</span>
+          </span>
         </label>
       </div>
     </ResponsiveSheet>
