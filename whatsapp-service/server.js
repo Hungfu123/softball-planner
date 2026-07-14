@@ -33,7 +33,7 @@ client.on('disconnected', (r) => {
   connected = false;
   console.log('[wa] getrennt:', r);
 });
-client.initialize();
+client.initialize().catch((e) => console.error('[wa] init failed:', e));
 
 const app = express();
 app.use(express.json());
@@ -68,7 +68,7 @@ app.get('/groups', async (_req, res) => {
 app.post('/send-poll', async (req, res) => {
   const { groupId, title, options } = req.body || {};
   if (!connected) return res.status(409).json({ error: 'not_connected' });
-  if (!groupId || !title || !Array.isArray(options) || options.length < 2) {
+  if (!groupId || !title || !Array.isArray(options) || options.length < 2 || options.length > 12) {
     return res.status(400).json({ error: 'invalid_request' });
   }
   try {
