@@ -11,7 +11,7 @@ import java.util.List;
 public record WhatsappPollRequest(
         @NotBlank String groupId,
         String groupName,
-        @NotBlank String title,
+        String title,
         @NotNull List<String> options,
         @NotNull DayOfWeek weekday,
         @NotNull LocalTime time,

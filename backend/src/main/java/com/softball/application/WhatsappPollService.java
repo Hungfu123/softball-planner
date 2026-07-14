@@ -110,20 +110,27 @@ public class WhatsappPollService {
     public List<WhatsappGroup> groups() { return sender.listGroups(); }
 
     private void validate(final WhatsappPoll p) {
-        if (p.getTitle() == null || p.getTitle().isBlank()) {
-            throw new BusinessValidationException("Titel darf nicht leer sein");
-        }
         if (p.getGroupId() == null || p.getGroupId().isBlank()) {
             throw new BusinessValidationException("Gruppe muss gewählt sein");
         }
-        if (p.getOptions() == null || p.getOptions().size() < 2) {
-            throw new BusinessValidationException("Mindestens 2 Antwortoptionen nötig");
-        }
-        if (p.getOptions().size() > 12) {
-            throw new BusinessValidationException("Maximal 12 Antwortoptionen erlaubt");
-        }
         if (p.getWeekday() == null || p.getTime() == null) {
             throw new BusinessValidationException("Wochentag und Uhrzeit müssen gesetzt sein");
+        }
+        final int optionCount = p.getOptions() != null ? p.getOptions().size() : 0;
+        final boolean hasPoll = optionCount >= 2;
+        final boolean hasMessage = p.getMessage() != null && !p.getMessage().isBlank();
+        // Ein Eintrag ist entweder eine Umfrage, eine reine Nachricht, oder beides.
+        if (!hasPoll && !hasMessage) {
+            throw new BusinessValidationException("Umfrage (min. 2 Antworten) oder eine Nachricht ist nötig");
+        }
+        if (optionCount == 1) {
+            throw new BusinessValidationException("Eine Umfrage braucht mindestens 2 Antwortoptionen");
+        }
+        if (optionCount > 12) {
+            throw new BusinessValidationException("Maximal 12 Antwortoptionen erlaubt");
+        }
+        if (hasPoll && (p.getTitle() == null || p.getTitle().isBlank())) {
+            throw new BusinessValidationException("Umfrage-Frage (Titel) darf nicht leer sein");
         }
     }
 }
