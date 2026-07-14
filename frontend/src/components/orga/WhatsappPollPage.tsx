@@ -380,6 +380,8 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
   const openPicker = () => {
     try { dateRef.current?.showPicker?.() } catch { /* Browser ohne showPicker: nativer Fallback greift */ }
   }
+  const isMessageOnly = poll.options.length < 2
+  const heading = poll.title || (isMessageOnly ? 'Nachricht' : 'Ohne Titel')
 
   return (
     <div className="group relative overflow-hidden bg-white border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
@@ -388,7 +390,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
 
         {/* Kopf: Titel + Bearbeiten/Löschen */}
         <div className="flex items-start gap-2">
-          <h3 className="flex-1 min-w-0 font-display text-lg font-extrabold uppercase tracking-wide text-navy-900 leading-snug">{poll.title || 'Ohne Titel'}</h3>
+          <h3 className="flex-1 min-w-0 font-display text-lg font-extrabold uppercase tracking-wide text-navy-900 leading-snug">{heading}</h3>
           <div className="flex gap-0.5 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             <button
               onClick={onEdit}
@@ -417,6 +419,9 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
           </span>
           {poll.groupName && <span className="font-body text-navy-500 truncate max-w-[10rem]">{poll.groupName}</span>}
           <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>
+          {isMessageOnly
+            ? <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Nachricht</span>
+            : poll.allowMultipleAnswers && <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Mehrfachauswahl</span>}
         </div>
 
         {/* Nächster Versand — Kern-Info */}
@@ -433,6 +438,10 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
             </div>
           )}
         </div>
+
+        {poll.message && (
+          <p className="mt-2 font-body text-xs text-gray-500 italic line-clamp-2">„{poll.message}"</p>
+        )}
 
         {/* Meta-Fuß + Aktionen */}
         <div className="mt-3 border-t border-cream-200 pt-2.5">
@@ -517,6 +526,7 @@ interface PollEditorProps {
 
 function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps) {
   const [form, setForm] = useState<WhatsappPollRequest>(draft)
+  const [withPoll, setWithPoll] = useState(draft.options.length >= 2)
 
   const set = <K extends keyof WhatsappPollRequest>(key: K, value: WhatsappPollRequest[K]) => {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -536,7 +546,18 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
   const addOption = () => set('options', [...form.options, ''])
   const removeOption = (index: number) => set('options', form.options.filter((_, i) => i !== index))
 
-  const canSave = form.title.trim() !== '' && form.groupId !== '' && form.options.filter(o => o.trim() !== '').length >= 2
+  const trimmedOptionCount = form.options.filter(o => o.trim() !== '').length
+  const messageFilled = (form.message ?? '').trim() !== ''
+  const pollValid = form.title.trim() !== '' && trimmedOptionCount >= 2
+  const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled)
+
+  const buildRequest = (): WhatsappPollRequest => ({
+    ...form,
+    title: withPoll ? form.title.trim() : '',
+    options: withPoll ? form.options.map(o => o.trim()).filter(Boolean) : [],
+    allowMultipleAnswers: withPoll ? form.allowMultipleAnswers : false,
+    message: messageFilled ? (form.message ?? '').trim() : null,
+  })
 
   const footer = (
     <div className="flex justify-end gap-2">
@@ -549,7 +570,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
       </button>
       <button
         type="button"
-        onClick={() => onSave({ ...form, options: form.options.map(o => o.trim()).filter(Boolean) })}
+        onClick={() => onSave(buildRequest())}
         disabled={saving || !canSave}
         className="px-4 py-2 text-sm font-semibold text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
@@ -561,17 +582,6 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
   return (
     <ResponsiveSheet open onClose={onClose} title="Umfrage" maxWidth="md" footer={footer}>
       <div className="p-5 space-y-5">
-        <div>
-          <label className={labelCls}>Titel</label>
-          <input
-            value={form.title}
-            onChange={e => set('title', e.target.value)}
-            placeholder="z.B. Wer kommt zum Training?"
-            className={inputCls}
-            autoFocus
-          />
-        </div>
-
         <div>
           <label className={labelCls}>Gruppe</label>
           <select
@@ -599,65 +609,101 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className={labelCls + ' mb-0'}>Antwortoptionen</label>
+          <label className={labelCls}>Inhalt</label>
+          <div className="inline-flex rounded-lg border border-cream-300 bg-cream-50 p-0.5">
             <button
               type="button"
-              onClick={addOption}
-              disabled={form.options.length >= 12}
-              title={form.options.length >= 12 ? 'Maximal 12 Antwortoptionen erlaubt' : undefined}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-navy-700"
+              onClick={() => setWithPoll(true)}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors cursor-pointer ${withPoll ? 'bg-navy-800 text-white' : 'text-navy-700 hover:bg-navy-100'}`}
             >
-              <PlusCircle size={14} /> Option
+              Umfrage
             </button>
-          </div>
-          <div className="space-y-2">
-            {form.options.map((option, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  value={option}
-                  onChange={e => setOption(i, e.target.value)}
-                  placeholder={`Option ${i + 1}`}
-                  className={inputCls}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeOption(i)}
-                  disabled={form.options.length <= 2}
-                  aria-label="Option entfernen"
-                  title="Entfernen"
-                  className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <XMark size={16} />
-                </button>
-              </div>
-            ))}
+            <button
+              type="button"
+              onClick={() => setWithPoll(false)}
+              className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors cursor-pointer ${!withPoll ? 'bg-navy-800 text-white' : 'text-navy-700 hover:bg-navy-100'}`}
+            >
+              Nur Nachricht
+            </button>
           </div>
         </div>
 
+        {withPoll && (
+          <div>
+            <label className={labelCls}>Frage</label>
+            <input
+              value={form.title}
+              onChange={e => set('title', e.target.value)}
+              placeholder="z.B. Wer kommt zum Training?"
+              className={inputCls}
+            />
+          </div>
+        )}
+
+        {withPoll && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className={labelCls + ' mb-0'}>Antwortoptionen</label>
+              <button
+                type="button"
+                onClick={addOption}
+                disabled={form.options.length >= 12}
+                title={form.options.length >= 12 ? 'Maximal 12 Antwortoptionen erlaubt' : undefined}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-navy-700"
+              >
+                <PlusCircle size={14} /> Option
+              </button>
+            </div>
+            <div className="space-y-2">
+              {form.options.map((option, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={option}
+                    onChange={e => setOption(i, e.target.value)}
+                    placeholder={`Option ${i + 1}`}
+                    className={inputCls}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeOption(i)}
+                    disabled={form.options.length <= 2}
+                    aria-label="Option entfernen"
+                    title="Entfernen"
+                    className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <XMark size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {withPoll && (
+          <label className="flex items-start gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.allowMultipleAnswers}
+              onChange={e => set('allowMultipleAnswers', e.target.checked)}
+              className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-navy-800">Mehrfachauswahl erlauben</span>
+              <span className="block text-xs text-gray-500">Teilnehmer können mehrere Antworten ankreuzen (statt nur einer).</span>
+            </span>
+          </label>
+        )}
+
         <div>
-          <label className={labelCls}>Zusätzliche Nachricht (optional)</label>
+          <label className={labelCls}>{withPoll ? 'Zusätzliche Nachricht (optional)' : 'Nachricht'}</label>
           <textarea
             value={form.message ?? ''}
             onChange={e => set('message', e.target.value ? e.target.value : null)}
-            rows={2}
-            placeholder="Wird vor der Umfrage gesendet — z.B. Event-Details, Ort, Uhrzeit."
+            rows={withPoll ? 2 : 3}
+            placeholder={withPoll ? 'Wird vor der Umfrage gesendet — z.B. Event-Details, Ort.' : 'Deine Nachricht an die Gruppe — z.B. Event-Details, Ort, Uhrzeit.'}
             className={inputCls + ' resize-y'}
           />
         </div>
-
-        <label className="flex items-start gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={form.allowMultipleAnswers}
-            onChange={e => set('allowMultipleAnswers', e.target.checked)}
-            className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-navy-800">Mehrfachauswahl erlauben</span>
-            <span className="block text-xs text-gray-500">Teilnehmer können mehrere Antworten ankreuzen (statt nur einer).</span>
-          </span>
-        </label>
 
         <label className="flex items-start gap-2 cursor-pointer select-none">
           <input
