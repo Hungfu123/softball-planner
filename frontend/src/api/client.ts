@@ -91,6 +91,10 @@ import type {
   LineupSetResponse,
   EquipmentItem,
   EquipmentInput,
+  WhatsappAccountStatus,
+  WhatsappGroup,
+  WhatsappPollResponse,
+  WhatsappPollRequest,
 } from '@/types'
 
 // Players
@@ -620,3 +624,25 @@ export const getEquipmentCatalog = () =>
   request<EquipmentItem[]>('/equipment')
 export const createEquipmentItem = (input: EquipmentInput) =>
   request<EquipmentItem>('/equipment', { method: 'POST', body: JSON.stringify(input) })
+
+// WhatsApp-Umfragen
+export const getWhatsappStatus = () =>
+  request<WhatsappAccountStatus>('/orga/whatsapp/status')
+export const getWhatsappQr = () =>
+  request<{ qr: string | null }>('/orga/whatsapp/qr')
+export const getWhatsappGroups = () =>
+  request<WhatsappGroup[]>('/orga/whatsapp/groups')
+export const getWhatsappPolls = () =>
+  request<WhatsappPollResponse[]>('/orga/whatsapp/polls')
+export const createWhatsappPoll = (data: WhatsappPollRequest) =>
+  request<WhatsappPollResponse>('/orga/whatsapp/polls', { method: 'POST', body: JSON.stringify(data) })
+export const updateWhatsappPoll = (id: number, data: WhatsappPollRequest) =>
+  request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const deleteWhatsappPoll = (id: number) =>
+  request<void>(`/orga/whatsapp/polls/${id}`, { method: 'DELETE' })
+export const sendWhatsappPollNow = (id: number) =>
+  request<void>(`/orga/whatsapp/polls/${id}/send-now`, { method: 'POST' })
+export const addWhatsappPollSkipDate = (id: number, date: string) =>
+  request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/skip-dates`, { method: 'POST', body: JSON.stringify({ date }) })
+export const removeWhatsappPollSkipDate = (id: number, date: string) =>
+  request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/skip-dates/${date}`, { method: 'DELETE' })
