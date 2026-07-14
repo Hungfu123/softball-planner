@@ -1,10 +1,29 @@
 const express = require('express');
 const QRCode = require('qrcode');
+const fs = require('fs');
+const path = require('path');
 const { Client, LocalAuth, Poll } = require('whatsapp-web.js');
 
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.WHATSAPP_SERVICE_TOKEN || '';
 const SESSION_PATH = process.env.SESSION_PATH || '/data/session';
+
+// Beim Start verwaiste Chromium-Singleton-Locks aus der persistenten Session
+// entfernen — sonst startet Chromium nach unsauberem Container-Stop nicht
+// ("profile appears to be in use", Code 21). Session selbst bleibt erhalten.
+function clearChromeLocks(dir) {
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.name.startsWith('Singleton')) {
+      try { fs.unlinkSync(full); console.log('[wa] verwaisten Lock entfernt:', full); } catch { /* egal */ }
+    } else if (e.isDirectory()) {
+      clearChromeLocks(full);
+    }
+  }
+}
+clearChromeLocks(SESSION_PATH);
 
 let currentQrDataUrl = null;   // gesetzt solange Kopplung aussteht
 let connected = false;
