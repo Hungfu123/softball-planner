@@ -55,6 +55,8 @@ public class WhatsappPollService {
         existing.setWeekday(incoming.getWeekday());
         existing.setTime(incoming.getTime());
         existing.setEnabled(incoming.isEnabled());
+        existing.setAllowMultipleAnswers(incoming.isAllowMultipleAnswers());
+        existing.setMessage(incoming.getMessage());
         validate(existing);
         log.info("WhatsApp-Poll aktualisiert: {} ({})", existing.getTitle(), id);
         return repository.save(existing);

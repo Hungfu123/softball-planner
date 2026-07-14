@@ -77,6 +77,18 @@ class WhatsappPollServiceTest {
     }
 
     @Test
+    void update_persistsAllowMultipleAndMessage() {
+        final Long id = service.create(sample()).getId();
+        final WhatsappPoll upd = sample();
+        upd.setAllowMultipleAnswers(true);
+        upd.setMessage("Event am Samstag, Treffen 14 Uhr");
+        service.update(id, upd);
+        final WhatsappPoll saved = service.findById(id);
+        assertThat(saved.isAllowMultipleAnswers()).isTrue();
+        assertThat(saved.getMessage()).isEqualTo("Event am Samstag, Treffen 14 Uhr");
+    }
+
+    @Test
     void delete_removes() {
         final Long id = service.create(sample()).getId();
         service.delete(id);
