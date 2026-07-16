@@ -574,10 +574,12 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
     setForm(prev => ({ ...prev, groupId, groupName: group?.name ?? null }))
   }
 
-  // Mobil: fokussiertes Feld über die Tastatur scrollen (Keyboard braucht ~300ms).
+  // Mobil: fokussiertes Feld nur dann über die Tastatur scrollen, wenn es
+  // verdeckt ist ('nearest' = minimaler Scroll). 'center' würde auch bereits
+  // sichtbare Felder (z.B. Frage oben) unnötig wegscrollen. Keyboard braucht ~300ms.
   const scrollIntoView = (e: FocusEvent<HTMLElement>) => {
     const el = e.currentTarget
-    setTimeout(() => el.scrollIntoView({ block: 'center' }), 300)
+    setTimeout(() => el.scrollIntoView({ block: 'nearest' }), 300)
   }
 
   const setOption = (index: number, value: string) => {
