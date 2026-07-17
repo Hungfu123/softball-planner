@@ -111,9 +111,9 @@ public class PollVoteSyncService {
             final List<TrainingAttendance> toBook = new ArrayList<>();
 
             for (final WhatsappVote vote : votes) {
+                if (vote.voterName() == null || vote.voterName().isBlank()) continue;
                 final boolean present = evaluator.isPresent(vote.options());
-                final Player player = vote.voterName() == null ? null
-                    : byName.get(vote.voterName().trim().toLowerCase());
+                final Player player = byName.get(vote.voterName().trim().toLowerCase());
                 final Long playerId = player != null ? player.getId() : null;
                 upsertVote(training.getId(), vote.voterName(), playerId, present);
                 written++;

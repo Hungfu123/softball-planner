@@ -132,6 +132,24 @@ class PollVoteSyncServiceTest {
     }
 
     @Test
+    void nullOrBlankVoterNameIsSkipped() {
+        final Player max = new Player(5L, "Max", true, null); max.setWhatsappName("Max ⚾");
+        when(playerRepo.findAll()).thenReturn(List.of(max));
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(
+                new WhatsappVote(null, List.of("Ja")),
+                new WhatsappVote("  ", List.of("Ja")),
+                new WhatsappVote("Max ⚾", List.of("Ja"))));
+
+        final int written = service.syncAll(now);
+
+        assertThat(written).isEqualTo(1);
+        verify(voteRepo, times(1)).save(any());
+        verify(voteRepo).save(argThat(v -> v.getPlayerId() != null && v.getPlayerId() == 5L && v.isPresent()));
+        verify(attendanceRepo).saveAll(argThat((List<TrainingAttendance> l) ->
+            l.size() == 1 && l.get(0).getPlayer().getId() == 5L && l.get(0).isPresent()));
+    }
+
+    @Test
     void existingFalseAttendanceIsUpgradedToTrueSameId() {
         final Player max = new Player(5L, "Max", true, null); max.setWhatsappName("Max ⚾");
         when(playerRepo.findAll()).thenReturn(List.of(max));
