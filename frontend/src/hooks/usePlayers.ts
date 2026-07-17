@@ -41,5 +41,11 @@ export function usePlayers() {
     return updated
   }
 
-  return { players, loading, create, update, remove, reorderBattingOrder, reload: load }
+  const setWhatsappName = async (id: number, whatsappName: string) => {
+    const p = await api.setPlayerWhatsappName(id, whatsappName)
+    setPlayers(prev => prev.map(x => x.id === id ? p : x).sort((a, b) => a.name.localeCompare(b.name)))
+    return p
+  }
+
+  return { players, loading, create, update, remove, reorderBattingOrder, setWhatsappName, reload: load }
 }

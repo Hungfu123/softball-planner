@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   closestCenter,
@@ -19,6 +20,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
 import { EmptyState, ConfirmModal } from '@/components/shared'
 import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
+import { WhatsappVotersTab } from './WhatsappVotersTab'
 import type { Player } from '@/types'
 
 function SortablePlayerRow({ player, index }: { player: Player; index: number }) {
@@ -62,8 +64,18 @@ export function PlayerManager() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState('')
   const [deletePlayerId, setDeletePlayerId] = useState<number | null>(null)
-  const [tab, setTab] = useState<'spieler' | 'batting'>('spieler')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<'spieler' | 'batting' | 'whatsapp'>(() => {
+    const t = searchParams.get('tab')
+    return t === 'whatsapp' || t === 'batting' ? t : 'spieler'
+  })
   const [search, setSearch] = useState('')
+
+  // Deep-Link Support (z.B. von Training-Badge "unbekannte Wähler" → ?tab=whatsapp)
+  useEffect(() => {
+    const t = searchParams.get('tab')
+    if (t === 'spieler' || t === 'batting' || t === 'whatsapp') setTab(t)
+  }, [searchParams])
 
   // Local batting-order state (für Save/Cancel-Pattern)
   const [localBattingOrder, setLocalBattingOrder] = useState<number[]>([])
@@ -211,9 +223,19 @@ export function PlayerManager() {
           >
             Batting-Reihenfolge
           </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'whatsapp'}
+            onClick={() => { setTab('whatsapp'); setEditingId(null) }}
+            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors ${tab === 'whatsapp' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
+          >
+            WhatsApp
+          </button>
         </div>
 
-        {!orderMode && (
+        {tab === 'whatsapp' && <WhatsappVotersTab />}
+
+        {tab !== 'whatsapp' && !orderMode && (
           <div className="space-y-3">
             <div className="flex gap-2">
               <input
@@ -243,7 +265,7 @@ export function PlayerManager() {
           </div>
         )}
 
-        {players.length === 0 ? (
+        {tab === 'whatsapp' ? null : players.length === 0 ? (
           <EmptyState
             title="Noch keine Spieler angelegt"
             description="Leg los!"

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Badge } from '@/components/shared/Badge'
 
 type Training = { id: number; date: string; cancelled?: boolean }
 
@@ -10,6 +12,8 @@ type Props = {
   trainings: Training[]
   selectedId: number | null
   onSelect: (id: number) => void
+  /** trainingId → Anzahl unbekannter WhatsApp-Wähler */
+  unknownVoterCounts?: Map<number, number>
 }
 
 function formatDate(iso: string): string {
@@ -24,10 +28,10 @@ function todayLocalISO(): string {
 
 type Tab = 'upcoming' | 'past'
 
-export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onSelect }: Props) {
+export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onSelect, unknownVoterCounts }: Props) {
   const [todayStr] = useState(() => todayLocalISO())
   const [tab, setTab] = useState<Tab>('upcoming')
-  const activeRef = useRef<HTMLButtonElement>(null)
+  const activeRef = useRef<HTMLDivElement>(null)
 
   const grouped = useMemo(() => {
     const sorted = [...trainings].sort((a, b) => b.date.localeCompare(a.date))
@@ -81,7 +85,7 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
               grouped.upcoming.length > 0 ? (
                 <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                   {grouped.upcoming.map(t => (
-                    <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} ref={t.id === selectedId ? activeRef : undefined} />
+                    <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} unknownVoterCount={unknownVoterCounts?.get(t.id) ?? 0} ref={t.id === selectedId ? activeRef : undefined} />
                   ))}
                 </div>
               ) : (
@@ -93,7 +97,7 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
               grouped.past.length > 0 ? (
                 <div className="bg-white border border-cream-300 rounded-xl overflow-hidden">
                   {grouped.past.map(t => (
-                    <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} muted ref={t.id === selectedId ? activeRef : undefined} />
+                    <TrainingRow key={t.id} training={t} selected={t.id === selectedId} onSelect={handleSelect} unknownVoterCount={unknownVoterCounts?.get(t.id) ?? 0} muted ref={t.id === selectedId ? activeRef : undefined} />
                   ))}
                 </div>
               ) : (
@@ -107,12 +111,21 @@ export function TrainingPickerDrawer({ open, onClose, trainings, selectedId, onS
   )
 }
 
-function TrainingRow({ training, selected, onSelect, muted = false, ref }: { training: Training; selected: boolean; onSelect: (id: number) => void; muted?: boolean; ref?: React.Ref<HTMLButtonElement> }) {
+function TrainingRow({ training, selected, onSelect, unknownVoterCount = 0, muted = false, ref }: { training: Training; selected: boolean; onSelect: (id: number) => void; unknownVoterCount?: number; muted?: boolean; ref?: React.Ref<HTMLDivElement> }) {
+  const navigate = useNavigate()
+
   return (
-    <button
-      type="button"
+    <div
       ref={ref}
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(training.id)}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onSelect(training.id)
+        }
+      }}
       className={`w-full flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 cursor-pointer hover:bg-cream-50 active:bg-cream-100 transition-colors text-left ${selected ? 'bg-navy-50' : ''}`}
     >
       <span
@@ -122,7 +135,17 @@ function TrainingRow({ training, selected, onSelect, muted = false, ref }: { tra
         {formatDate(training.date)}
         {training.cancelled && <span className="ml-2 text-[10px] uppercase tracking-wider text-softball-red-600 font-bold">Abgesagt</span>}
       </span>
+      {unknownVoterCount > 0 && (
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); navigate('/players?tab=whatsapp') }}
+          title="Unbekannte WhatsApp-Wähler zuordnen"
+          className="cursor-pointer"
+        >
+          <Badge color="red" size="sm">⚠️ {unknownVoterCount} unbekannte Wähler</Badge>
+        </button>
+      )}
       {selected && <Check size={16} className="text-navy-700" />}
-    </button>
+    </div>
   )
 }

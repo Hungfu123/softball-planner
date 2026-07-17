@@ -54,6 +54,29 @@ client.on('disconnected', (r) => {
   connected = false;
   console.log('[wa] getrennt:', r);
 });
+
+// pollMsgId -> Map(voterWid -> { name, options: [] }); letzter Stand je Wähler
+const pollVotes = new Map();
+
+client.on('vote_update', async (vote) => {
+  try {
+    const msgId = vote.parentMessage?.id?._serialized;
+    if (!msgId) return;
+    const voterWid = vote.voter;
+    let name = voterWid;
+    try {
+      const contact = await client.getContactById(voterWid);
+      name = contact.pushname || contact.name || contact.number || voterWid;
+    } catch (_) { /* Name nicht auflösbar → Wid als Fallback */ }
+    const options = (vote.selectedOptions || []).map((o) => o.name);
+    if (!pollVotes.has(msgId)) pollVotes.set(msgId, new Map());
+    pollVotes.get(msgId).set(voterWid, { name, options });
+    console.log('[wa] vote_update', msgId, name, options);
+  } catch (e) {
+    console.warn('[wa] vote_update Fehler:', e && e.message || e);
+  }
+});
+
 client.initialize().catch((e) => console.error('[wa] init failed:', e));
 
 const app = express();
@@ -102,13 +125,21 @@ app.post('/send-poll', async (req, res) => {
     if (hasMessage) {
       await client.sendMessage(groupId, message.trim());
     }
+    let pollMessageId = null;
     if (hasPoll) {
-      await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: allowMultiple === true }));
+      const sent = await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: allowMultiple === true }));
+      pollMessageId = sent?.id?._serialized ?? null;
     }
-    res.json({ sent: true });
+    res.json({ sent: true, pollMessageId });
   } catch (e) {
     res.status(500).json({ error: String(e && e.message || e) });
   }
+});
+
+app.get('/poll-votes/:msgId', (req, res) => {
+  const voters = pollVotes.get(req.params.msgId);
+  if (!voters) return res.json([]);
+  res.json(Array.from(voters.values()).map((v) => ({ voterName: v.name, options: v.options })));
 });
 
 app.listen(PORT, () => console.log('[wa] HTTP auf :' + PORT));
