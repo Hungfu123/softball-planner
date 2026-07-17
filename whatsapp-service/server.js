@@ -251,12 +251,24 @@ app.get('/debug/poll-store', async (req, res) => {
 
       // Abruf mit echtem Key-Objekt
       result.byParentKeyObj = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey([key]))) : 'kein key';
-      // getByMsgKey auf die Poll-Nachricht selbst (Sanity: parst der Key?)
-      result.selfByMsgKey = key ? await safe(() => tm.getByMsgKey(key)) : 'kein key';
 
-      // tm-Interna: gibt es eine iterierbare Datenstruktur mit allen Votes?
-      result.tmOwnProps = await safe(async () => Object.getOwnPropertyNames(tm).filter((p) => typeof tm[p] !== 'function'));
-      result.tmProtoFns = await safe(async () => Object.getOwnPropertyNames(Object.getPrototypeOf(tm) || {}));
+      // Echtes Wid-Objekt bauen und ALLE Gruppen-Votes dumpen (um Struktur + Parent-Key-Format zu sehen)
+      let widObj = null;
+      result.widBuild = await safe(async () => {
+        const WF = rq('WAWebWidFactory') || (window.Store && window.Store.WidFactory);
+        const F = WF && (WF.default || WF);
+        if (!F || !F.createWid) return 'no WidFactory.createWid';
+        widObj = F.createWid(chatWid);
+        return { serialized: widObj && (widObj._serialized || String(widObj)) };
+      });
+      result.byChatWidObj = widObj ? mapVotes(await safe(() => tm.bulkGetByChatWid([widObj]))) : 'kein wid';
+
+      // IndexedDB model-storage: welche Object-Stores gibt es (Poll-Votes-Tabelle finden)?
+      result.idbStores = await safe(() => new Promise((resolve) => {
+        const r = indexedDB.open('model-storage');
+        r.onsuccess = () => { const db = r.result; const names = Array.from(db.objectStoreNames); db.close(); resolve(names.filter((n) => /poll|vote/i.test(n))); };
+        r.onerror = () => resolve('open err');
+      }));
       return result;
     }, msgId);
     res.json(out);
