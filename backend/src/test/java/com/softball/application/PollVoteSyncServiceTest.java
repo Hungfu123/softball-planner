@@ -166,4 +166,28 @@ class PollVoteSyncServiceTest {
             l.size() == 1 && l.get(0).getId() != null && l.get(0).getId() == 42L
                 && l.get(0).getPlayer().getId() == 5L && l.get(0).isPresent()));
     }
+
+    @Test
+    void autoSyncRunsOncePerSend() {
+        when(playerRepo.findAll()).thenReturn(List.of());
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(new WhatsappVote("Gast", List.of("Ja"))));
+
+        service.syncAll(now);                    // 1. Lauf: synct + markiert Versand als gesynct
+        service.syncAll(now.plusMinutes(1));     // 2. Lauf: übersprungen (selber Versand)
+
+        verify(sender, times(1)).fetchVotes("msg-1");
+        assertThat(poll.getLastSyncedMessageId()).isEqualTo("msg-1");
+    }
+
+    @Test
+    void buttonSyncIgnoresOncePerSendGuard() {
+        poll.setLastSyncedMessageId("msg-1");    // Versand bereits vom Auto-Lauf gesynct
+        when(playerRepo.findAll()).thenReturn(List.of());
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(new WhatsappVote("Gast", List.of("Ja"))));
+
+        service.syncNow();                       // Button ignoriert den Guard
+
+        verify(sender).fetchVotes("msg-1");
+        verify(voteRepo).save(any());
+    }
 }

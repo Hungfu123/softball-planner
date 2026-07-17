@@ -53,6 +53,9 @@ public class WhatsappPollEntity {
     @Column(name = "last_sent_message_id", length = 255)
     private String lastSentMessageId;
 
+    @Column(name = "last_synced_message_id", length = 255)
+    private String lastSyncedMessageId;
+
     public Long getId() { return id; }
     public void setId(final Long id) { this.id = id; }
     public String getGroupId() { return groupId; }
@@ -79,4 +82,6 @@ public class WhatsappPollEntity {
     public void setLastSentAt(final LocalDateTime v) { this.lastSentAt = v; }
     public String getLastSentMessageId() { return lastSentMessageId; }
     public void setLastSentMessageId(final String v) { this.lastSentMessageId = v; }
+    public String getLastSyncedMessageId() { return lastSyncedMessageId; }
+    public void setLastSyncedMessageId(final String v) { this.lastSyncedMessageId = v; }
 }

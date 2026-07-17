@@ -96,10 +96,13 @@ public class PollVoteSyncService {
 
         for (final WhatsappPoll poll : polls) {
             if (!poll.isEnabled() || poll.getLastSentMessageId() == null || poll.getLastSentAt() == null) continue;
-            final Optional<Training> target = resolver.resolve(trainings, poll.getLastSentAt().toLocalDate());
+            final Optional<Training> target = resolver.resolve(trainings, poll.getLastSentAt());
             if (target.isEmpty()) continue;
             final Training training = target.get();
             if (enforceGate && !evaluator.gateOpen(training.getTime(), now, training.getDate())) continue;
+            // Auto-Lauf: pro Versand nur EINMAL syncen (dieser Versand schon gebucht → skip).
+            // Der Button (enforceGate=false) ignoriert das und zieht jederzeit erneut.
+            if (enforceGate && poll.getLastSentMessageId().equals(poll.getLastSyncedMessageId())) continue;
 
             final List<WhatsappVote> votes = sender.fetchVotes(poll.getLastSentMessageId());
             if (votes.isEmpty()) continue;
@@ -135,6 +138,12 @@ public class PollVoteSyncService {
             if (!toBook.isEmpty()) attendanceRepo.saveAll(toBook);
             log.info("Poll {} → Training {}: {} Stimmen gesynct, {} neu anwesend",
                 poll.getId(), training.getId(), votes.size(), toBook.size());
+            // Auto-Lauf: diesen Versand als gesynct markieren → feuert nicht erneut.
+            // Button (enforceGate=false) markiert NICHT → bleibt beliebig oft wiederholbar.
+            if (enforceGate) {
+                poll.setLastSyncedMessageId(poll.getLastSentMessageId());
+                pollRepo.save(poll);
+            }
         }
         return written;
     }
