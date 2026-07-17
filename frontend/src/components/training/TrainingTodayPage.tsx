@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 import { ChevronDown, Calendar, Ban, Droplets } from 'lucide-react'
 import { weatherIcon } from '@/components/dashboard/weatherIcon'
 import { WeatherDayBreakdown } from '@/components/dashboard/WeatherDayBreakdown'
@@ -9,8 +10,9 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
 import { pickDefaultTrainingId } from '@/utils/defaultTraining'
 import * as api from '@/api/client'
-import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse, WeatherResponse } from '@/types'
+import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse, UnknownVoter, WeatherResponse } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { Badge } from '@/components/shared/Badge'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
 import { StatsDrawer } from './StatsDrawer'
@@ -47,6 +49,7 @@ export function TrainingTodayPage() {
   const [attendanceSort, setAttendanceSort] = useState<AttendanceSort>('frequency')
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null)
   const [drills, setDrills] = useState<DrillResponse[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +58,24 @@ export function TrainingTodayPage() {
       .catch(() => { if (!cancelled) setDrills([]) })
     return () => { cancelled = true }
   }, [])
+
+  // Unbekannte WhatsApp-Wähler — einmalig laden, pro Training gruppieren (Badge-Count)
+  const [unknownVoters, setUnknownVoters] = useState<UnknownVoter[]>([])
+  useEffect(() => {
+    let cancelled = false
+    api.getUnknownVoters()
+      .then(v => { if (!cancelled) setUnknownVoters(v) })
+      .catch(() => { if (!cancelled) setUnknownVoters([]) })
+    return () => { cancelled = true }
+  }, [])
+
+  const unknownVoterCounts = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const v of unknownVoters) {
+      map.set(v.trainingId, (map.get(v.trainingId) ?? 0) + 1)
+    }
+    return map
+  }, [unknownVoters])
 
   const defaultTrainingId = useMemo(
     () => pickDefaultTrainingId(trainings, new Date().toISOString().slice(0, 10)),
@@ -327,6 +348,16 @@ export function TrainingTodayPage() {
               {new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
               <ChevronDown size={14} className="text-navy-400" />
             </button>
+            {(unknownVoterCounts.get(currentTraining.id) ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => navigate('/players?tab=whatsapp')}
+                title="Unbekannte WhatsApp-Wähler zuordnen"
+                className="cursor-pointer"
+              >
+                <Badge color="red" size="sm">⚠️ {unknownVoterCounts.get(currentTraining.id)} unbekannte Wähler</Badge>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setPeriodManagerOpen(true)}
@@ -497,6 +528,7 @@ export function TrainingTodayPage() {
           trainings={trainings}
           selectedId={currentTrainingId}
           onSelect={setSelectedTrainingId}
+          unknownVoterCounts={unknownVoterCounts}
         />
 
         <PeriodManagerDrawer
