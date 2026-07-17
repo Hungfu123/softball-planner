@@ -60,15 +60,27 @@ const pollVotes = new Map();
 
 client.on('vote_update', async (vote) => {
   try {
-    const msgId = vote.parentMessage?.id?._serialized;
-    if (!msgId) return;
+    // Diagnose ganz oben (vor jedem return): zeigt ob das Event überhaupt feuert + die Struktur.
+    console.log('[wa] vote-RAW:', JSON.stringify({
+      hasVote: !!vote,
+      voter: vote && vote.voter,
+      parentIdType: typeof (vote && vote.parentMessage && vote.parentMessage.id),
+      parentId: vote && vote.parentMessage && vote.parentMessage.id,
+      selected: vote && vote.selectedOptions,
+      keys: vote ? Object.keys(vote).slice(0, 20) : null,
+    }));
+    const pm = vote && vote.parentMessage;
+    const msgId = extractMsgId(pm) || (pm && pm.id && pm.id._serialized) || null;
+    if (!msgId) { console.warn('[wa] vote_update: keine parentMessage-id — übersprungen'); return; }
     const voterWid = vote.voter;
     let name = voterWid;
     try {
       const contact = await client.getContactById(voterWid);
       name = contact.pushname || contact.name || contact.number || voterWid;
     } catch (_) { /* Name nicht auflösbar → Wid als Fallback */ }
-    const options = (vote.selectedOptions || []).map((o) => o.name);
+    const options = (vote.selectedOptions || [])
+      .map((o) => (typeof o === 'string' ? o : (o && (o.name || o.localId)) || ''))
+      .filter(Boolean);
     if (!pollVotes.has(msgId)) pollVotes.set(msgId, new Map());
     pollVotes.get(msgId).set(voterWid, { name, options });
     console.log('[wa] vote_update', msgId, name, options);
