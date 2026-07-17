@@ -218,7 +218,7 @@ app.get('/poll-votes/:msgId', (req, res) => {
 // Klärt: liegen nach dem Abstimmen echte Stimmen drin, obwohl vote_update nicht feuert?
 app.get('/debug/poll-store', async (req, res) => {
   if (!connected) return res.status(409).json({ error: 'not_connected' });
-  const msgId = req.query.msgId || null;
+  const msgId = req.query.msgId ? String(req.query.msgId).trim() : null;
   try {
     const out = await client.pupPage.evaluate(async (msgId) => {
       const result = {};
@@ -249,25 +249,24 @@ app.get('/debug/poll-store', async (req, res) => {
         keys: Object.keys(v).slice(0, 20),
       })) : arr);
 
+      const chatWid = typeof msgId === 'string' ? msgId.split('_')[1] : null;
+
       // Abruf mit echtem Key-Objekt
       result.byParentKeyObj = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey([key]))) : 'kein key';
 
-      // Echtes Wid-Objekt bauen und ALLE Gruppen-Votes dumpen (um Struktur + Parent-Key-Format zu sehen)
-      let widObj = null;
-      result.widBuild = await safe(async () => {
-        const WF = rq('WAWebWidFactory') || (window.Store && window.Store.WidFactory);
-        const F = WF && (WF.default || WF);
-        if (!F || !F.createWid) return 'no WidFactory.createWid';
-        widObj = F.createWid(chatWid);
-        return { serialized: widObj && (widObj._serialized || String(widObj)) };
-      });
-      result.byChatWidObj = widObj ? mapVotes(await safe(() => tm.bulkGetByChatWid([widObj]))) : 'kein wid';
-
-      // IndexedDB model-storage: welche Object-Stores gibt es (Poll-Votes-Tabelle finden)?
-      result.idbStores = await safe(() => new Promise((resolve) => {
+      // 🎯 poll-votes-Tabelle direkt aus IndexedDB lesen (model-storage) — ALLE Roh-Votes
+      result.idbPollVotes = await safe(() => new Promise((resolve) => {
         const r = indexedDB.open('model-storage');
-        r.onsuccess = () => { const db = r.result; const names = Array.from(db.objectStoreNames); db.close(); resolve(names.filter((n) => /poll|vote/i.test(n))); };
         r.onerror = () => resolve('open err');
+        r.onsuccess = () => {
+          const db = r.result;
+          try {
+            const store = db.transaction('poll-votes', 'readonly').objectStore('poll-votes');
+            const g = store.getAll();
+            g.onsuccess = () => { resolve((g.result || []).slice(0, 30)); db.close(); };
+            g.onerror = () => { resolve('getAll err'); db.close(); };
+          } catch (e) { resolve('tx err: ' + (e && e.message || e)); try { db.close(); } catch (_) {} }
+        };
       }));
       return result;
     }, msgId);
