@@ -127,6 +127,39 @@ function extractMsgId(msg) {
   return null;
 }
 
+// Fängt die eigene, gerade gesendete Poll-Nachricht über message_create ab und liefert ihre id.
+// Nötig, weil sendMessage(Poll) in der gepinnten whatsapp-web.js-Version undefined zurückgibt.
+// VOR dem Senden aufrufen (Listener muss aktiv sein, bevor das Event feuert).
+function waitForSentPollId(groupId, title, timeoutMs = 10000) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (val) => {
+      if (settled) return;
+      settled = true;
+      client.removeListener('message_create', handler);
+      resolve(val);
+    };
+    const handler = (msg) => {
+      try {
+        if (!msg || !msg.fromMe) return;
+        const chat = msg.to || (msg.id && msg.id.remote);
+        if (chat !== groupId) return;
+        console.log('[wa] msg_create-DEBUG:', JSON.stringify({
+          type: msg.type, pollName: msg.pollName, hasPollOptions: msg.pollOptions != null,
+          bodyLen: msg.body ? msg.body.length : 0, id: extractMsgId(msg),
+        }));
+        const type = String(msg.type || '');
+        const isPoll = type.includes('poll') || msg.pollName != null || (msg.pollOptions != null);
+        // Falls Typ nicht als Poll erkennbar: über den Titel abgleichen (Poll-Frage steht im body/pollName).
+        const matchesTitle = (msg.pollName && msg.pollName === title) || (msg.body && msg.body === title);
+        if (isPoll || matchesTitle) finish(extractMsgId(msg));
+      } catch (_) { /* ignore */ }
+    };
+    client.on('message_create', handler);
+    setTimeout(() => finish(null), timeoutMs);
+  });
+}
+
 app.post('/send-poll', async (req, res) => {
   const { groupId, title, options, allowMultiple, message } = req.body || {};
   if (!connected) return res.status(409).json({ error: 'not_connected' });
@@ -142,19 +175,12 @@ app.post('/send-poll', async (req, res) => {
     }
     let pollMessageId = null;
     if (hasPoll) {
+      // Diese whatsapp-web.js-Version gibt bei sendMessage(Poll) nichts zurück (undefined).
+      // Deshalb die eigene gesendete Poll-Nachricht über message_create abfangen und deren id nehmen.
+      const waitForPoll = waitForSentPollId(groupId, title);
       const sent = await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: allowMultiple === true }));
-      pollMessageId = extractMsgId(sent);
-      // Diagnose: zeigt die tatsächliche Rückgabeform, falls die ID-Extraktion mal nicht greift.
-      if (!pollMessageId) {
-        console.log('[wa] send-poll id-DEBUG:', JSON.stringify({
-          hasSent: !!sent,
-          idType: typeof (sent && sent.id),
-          id: sent && sent.id,
-          topKeys: sent ? Object.keys(sent).slice(0, 30) : null,
-        }));
-      } else {
-        console.log('[wa] send-poll pollMessageId =', pollMessageId);
-      }
+      pollMessageId = extractMsgId(sent) || await waitForPoll;
+      console.log('[wa] send-poll pollMessageId =', pollMessageId);
     }
     res.json({ sent: true, pollMessageId });
   } catch (e) {
