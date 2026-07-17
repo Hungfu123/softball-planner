@@ -214,58 +214,43 @@ app.get('/poll-votes/:msgId', (req, res) => {
   res.json(Array.from(voters.values()).map((v) => ({ voterName: v.name, options: v.options })));
 });
 
-// DEBUG-Sonde: liest den WhatsApp-Web-internen Poll-Vote-Speicher direkt aus (per pupPage.evaluate),
-// unabhängig vom vote_update-Event. Klärt: landen Stimmen im Store, auch wenn das Event nicht feuert?
-app.get('/debug/poll-store', async (_req, res) => {
+// DEBUG-Sonde: fragt die Poll-Vote-Tabelle aktiv ab (bulkGetByParentMsgKey) für ?msgId=<pollId>.
+// Klärt: liegen nach dem Abstimmen echte Stimmen drin, obwohl vote_update nicht feuert?
+app.get('/debug/poll-store', async (req, res) => {
   if (!connected) return res.status(409).json({ error: 'not_connected' });
+  const msgId = req.query.msgId || null;
   try {
-    const out = await client.pupPage.evaluate(async () => {
+    const out = await client.pupPage.evaluate(async (msgId) => {
       const result = {};
-      const safe = (fn) => { try { return fn(); } catch (e) { return 'ERR: ' + (e && e.message || e); } };
+      const safe = async (fn) => { try { return await fn(); } catch (e) { return 'ERR: ' + (e && e.message || e); } };
+      const rq = window.require || (window.mR && window.mR.require);
+      result.hasRequire = !!rq;
+      const tm = await safe(() => rq('WAWebAddonPollVoteTableMode').pollVoteTableMode);
+      result.tableSize = await safe(() => tm.getTableSize());
 
-      // 1) Welche Store-Module erwähnen poll/vote?
-      result.storeKeys = safe(() => Object.keys(window.Store || {}).filter((k) => /poll|vote/i.test(k)));
-
-      // 2) Bekannte Collections durchsuchen und Vote-artige Modelle sampeln
-      const dumpColl = (coll) => safe(() => {
-        if (!coll) return null;
-        const arr = (coll.getModelsArray && coll.getModelsArray()) || coll._models || [];
-        return arr.slice(0, 20).map((m) => safe(() => ({
-          keys: Object.keys(m).slice(0, 20),
-          id: m.id && (m.id._serialized || m.id),
-          parent: m.pollUpdateParentKey || m.parentMsgKey,
-          selected: m.selectedOptionLocalIds || m.selectedOptions,
-          sender: m.sender && (m.sender._serialized || m.sender),
-        })));
-      });
-      result.collections = {};
-      for (const k of (result.storeKeys || [])) {
-        result.collections[k] = dumpColl(window.Store[k]);
-      }
-
-      // 3) Direkter Modulzugriff auf die Poll-Vote-Tabelle (dorthin injiziert wwebjs den Hook)
-      result.tableMode = safe(() => {
-        const req = window.require || (window.mR && window.mR.require);
-        if (!req) return 'no require';
-        const mod = req('WAWebAddonPollVoteTableMode');
-        if (!mod) return 'no module';
-        const tm = mod.pollVoteTableMode;
-        const keys = tm ? Object.keys(tm) : Object.keys(mod);
-        // Versuche eine getAll/dump-Methode
-        const all = safe(() => (tm && tm.getAllVotes && tm.getAllVotes()) || null);
-        return { keys, all };
+      // Store-Msg-Modul finden (für den echten MsgKey der Poll-Nachricht)
+      result.msgStoreKeys = safe(() => Object.keys(window.Store || {}).filter((k) => /^Msg$|Msg/.test(k)).slice(0, 10));
+      let key = null;
+      result.foundMsg = await safe(async () => {
+        const MsgStore = window.Store && window.Store.Msg;
+        if (!MsgStore || !MsgStore.get || !msgId) return 'no MsgStore/msgId';
+        const m = MsgStore.get(msgId);
+        if (m && m.id) { key = m.id; return true; }
+        return false;
       });
 
-      // 4) IndexedDB-Tabelle WAWebPollsVotes* auflisten (best effort, async)
-      result.idb = await (async () => {
-        try {
-          const dbs = (indexedDB.databases && await indexedDB.databases()) || [];
-          return dbs.map((d) => d.name);
-        } catch (e) { return 'ERR: ' + (e && e.message || e); }
-      })();
+      const mapVotes = (arr) => (Array.isArray(arr) ? arr.slice(0, 30).map((v) => ({
+        sender: v.sender && (v.sender._serialized || v.sender),
+        parent: v.pollUpdateParentKey && (v.pollUpdateParentKey._serialized || v.pollUpdateParentKey),
+        selected: v.selectedOptionLocalIds || v.selectedOptions,
+        keys: Object.keys(v).slice(0, 15),
+      })) : arr);
 
+      // Abruf per echtem MsgKey, per serialisierter String, und Tabellengröße-Fallback
+      result.byParentKey = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey(key))) : 'kein key';
+      result.byParentString = await safe(() => mapVotes(await tm.bulkGetByParentMsgKey(msgId)));
       return result;
-    });
+    }, msgId);
     res.json(out);
   } catch (e) {
     res.status(500).json({ error: String(e && e.stack || e) });
