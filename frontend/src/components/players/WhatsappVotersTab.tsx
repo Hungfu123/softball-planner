@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
-import { getUnknownVoters, syncWhatsappVotes, assignVoter, assignNewVoter } from '@/api/client'
+import { getUnknownVoters, assignVoter, assignNewVoter } from '@/api/client'
 import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
-import { RefreshIcon, PlusCircle, CrossBones } from '@/icons'
+import { PlusCircle, CrossBones } from '@/icons'
 import type { UnknownVoter, Player } from '@/types'
 
 const inputCls =
@@ -24,7 +24,6 @@ export function WhatsappVotersTab() {
 
   const [voters, setVoters] = useState<UnknownVoter[]>([])
   const [votersLoading, setVotersLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState<Record<string, string>>({})
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [newPlayerVoter, setNewPlayerVoter] = useState<UnknownVoter | null>(null)
@@ -42,19 +41,6 @@ export function WhatsappVotersTab() {
   }, [toast])
 
   useEffect(() => { loadVoters() }, [loadVoters])
-
-  const handleSync = async () => {
-    setSyncing(true)
-    try {
-      const result = await syncWhatsappVotes()
-      toast.show(`${result.synced} Stimmen gesynct`)
-      await loadVoters()
-    } catch (e: unknown) {
-      toast.show((e as Error).message, 'error')
-    } finally {
-      setSyncing(false)
-    }
-  }
 
   const handleAssign = async (voter: UnknownVoter) => {
     const key = voterKey(voter)
@@ -93,23 +79,6 @@ export function WhatsappVotersTab() {
 
   return (
     <div className="space-y-4">
-      {/* Test-Sync */}
-      <Card padding="md">
-        <SectionHeader title="Test-Sync" />
-        <p className="text-sm text-gray-500 mb-3">
-          Umfrage-Stimmen manuell mit der Trainings-Anwesenheit abgleichen — normalerweise läuft das automatisch.
-        </p>
-        <button
-          type="button"
-          onClick={handleSync}
-          disabled={syncing}
-          className="inline-flex items-center gap-1.5 bg-navy-800 hover:bg-navy-900 text-white font-bold px-4 py-2.5 rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshIcon size={16} className={syncing ? 'animate-spin' : ''} />
-          {syncing ? 'Syncen…' : 'Jetzt syncen'}
-        </button>
-      </Card>
-
       {/* Unbekannte Wähler */}
       <Card padding="md">
         <SectionHeader title={<>Unbekannte Wähler {voters.length > 0 && <span className="text-navy-500 font-bold">({voters.length})</span>}</>} />
