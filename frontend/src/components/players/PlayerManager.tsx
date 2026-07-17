@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   closestCenter,
@@ -63,8 +64,18 @@ export function PlayerManager() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState('')
   const [deletePlayerId, setDeletePlayerId] = useState<number | null>(null)
-  const [tab, setTab] = useState<'spieler' | 'batting' | 'whatsapp'>('spieler')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<'spieler' | 'batting' | 'whatsapp'>(() => {
+    const t = searchParams.get('tab')
+    return t === 'whatsapp' || t === 'batting' ? t : 'spieler'
+  })
   const [search, setSearch] = useState('')
+
+  // Deep-Link Support (z.B. von Training-Badge "unbekannte Wähler" → ?tab=whatsapp)
+  useEffect(() => {
+    const t = searchParams.get('tab')
+    if (t === 'spieler' || t === 'batting' || t === 'whatsapp') setTab(t)
+  }, [searchParams])
 
   // Local batting-order state (für Save/Cancel-Pattern)
   const [localBattingOrder, setLocalBattingOrder] = useState<number[]>([])
