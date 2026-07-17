@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,9 +93,17 @@ public class WhatsappPollService {
         return findById(id);
     }
 
+    @Transactional
     public void sendNow(final Long id) {
         final WhatsappPoll p = findById(id);
-        sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions(), p.isAllowMultipleAnswers(), p.getMessage());
+        final String messageId = sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions(),
+                p.isAllowMultipleAnswers(), p.getMessage());
+        // Sende-Metadaten stempeln, sonst findet der Vote-Sync den Poll nicht
+        // (braucht lastSentMessageId zum Abfragen + lastSentAt zur Trainings-Auflösung).
+        p.setLastSentAt(LocalDateTime.now(ZoneId.of("Europe/Berlin")));
+        p.setLastSentMessageId(messageId);
+        repository.save(p);
+        log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}", p.getTitle(), id, messageId);
     }
 
     @Transactional
