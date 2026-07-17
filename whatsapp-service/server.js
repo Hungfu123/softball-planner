@@ -214,4 +214,62 @@ app.get('/poll-votes/:msgId', (req, res) => {
   res.json(Array.from(voters.values()).map((v) => ({ voterName: v.name, options: v.options })));
 });
 
+// DEBUG-Sonde: liest den WhatsApp-Web-internen Poll-Vote-Speicher direkt aus (per pupPage.evaluate),
+// unabhängig vom vote_update-Event. Klärt: landen Stimmen im Store, auch wenn das Event nicht feuert?
+app.get('/debug/poll-store', async (_req, res) => {
+  if (!connected) return res.status(409).json({ error: 'not_connected' });
+  try {
+    const out = await client.pupPage.evaluate(async () => {
+      const result = {};
+      const safe = (fn) => { try { return fn(); } catch (e) { return 'ERR: ' + (e && e.message || e); } };
+
+      // 1) Welche Store-Module erwähnen poll/vote?
+      result.storeKeys = safe(() => Object.keys(window.Store || {}).filter((k) => /poll|vote/i.test(k)));
+
+      // 2) Bekannte Collections durchsuchen und Vote-artige Modelle sampeln
+      const dumpColl = (coll) => safe(() => {
+        if (!coll) return null;
+        const arr = (coll.getModelsArray && coll.getModelsArray()) || coll._models || [];
+        return arr.slice(0, 20).map((m) => safe(() => ({
+          keys: Object.keys(m).slice(0, 20),
+          id: m.id && (m.id._serialized || m.id),
+          parent: m.pollUpdateParentKey || m.parentMsgKey,
+          selected: m.selectedOptionLocalIds || m.selectedOptions,
+          sender: m.sender && (m.sender._serialized || m.sender),
+        })));
+      });
+      result.collections = {};
+      for (const k of (result.storeKeys || [])) {
+        result.collections[k] = dumpColl(window.Store[k]);
+      }
+
+      // 3) Direkter Modulzugriff auf die Poll-Vote-Tabelle (dorthin injiziert wwebjs den Hook)
+      result.tableMode = safe(() => {
+        const req = window.require || (window.mR && window.mR.require);
+        if (!req) return 'no require';
+        const mod = req('WAWebAddonPollVoteTableMode');
+        if (!mod) return 'no module';
+        const tm = mod.pollVoteTableMode;
+        const keys = tm ? Object.keys(tm) : Object.keys(mod);
+        // Versuche eine getAll/dump-Methode
+        const all = safe(() => (tm && tm.getAllVotes && tm.getAllVotes()) || null);
+        return { keys, all };
+      });
+
+      // 4) IndexedDB-Tabelle WAWebPollsVotes* auflisten (best effort, async)
+      result.idb = await (async () => {
+        try {
+          const dbs = (indexedDB.databases && await indexedDB.databases()) || [];
+          return dbs.map((d) => d.name);
+        } catch (e) { return 'ERR: ' + (e && e.message || e); }
+      })();
+
+      return result;
+    });
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ error: String(e && e.stack || e) });
+  }
+});
+
 app.listen(PORT, () => console.log('[wa] HTTP auf :' + PORT));
