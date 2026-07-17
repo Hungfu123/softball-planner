@@ -38,6 +38,14 @@ const client = new Client({
   },
 });
 
+// TEMP-Diagnose: loggt jeden Event-Namen den der Client emittiert — um zu sehen, welches
+// Event beim Abstimmen feuert (vote_update triggert in dieser Lib-Version nicht).
+const _origEmit = client.emit.bind(client);
+client.emit = (event, ...args) => {
+  console.log('[wa] EVENT:', event);
+  return _origEmit(event, ...args);
+};
+
 client.on('qr', async (qr) => {
   currentQrDataUrl = await QRCode.toDataURL(qr);
   connected = false;
