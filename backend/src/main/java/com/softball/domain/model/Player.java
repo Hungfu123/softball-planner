@@ -5,6 +5,7 @@ public class Player {
     private String name;
     private boolean regular;
     private Integer defaultBattingOrder;
+    private String whatsappName;
 
     public Player() {}
 
@@ -33,4 +34,6 @@ public class Player {
     public void setRegular(final boolean regular) { this.regular = regular; }
     public Integer getDefaultBattingOrder() { return defaultBattingOrder; }
     public void setDefaultBattingOrder(final Integer defaultBattingOrder) { this.defaultBattingOrder = defaultBattingOrder; }
+    public String getWhatsappName() { return whatsappName; }
+    public void setWhatsappName(final String whatsappName) { this.whatsappName = whatsappName; }
 }

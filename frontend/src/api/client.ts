@@ -95,6 +95,7 @@ import type {
   WhatsappGroup,
   WhatsappPollResponse,
   WhatsappPollRequest,
+  UnknownVoter,
 } from '@/types'
 
 // Players
@@ -107,6 +108,8 @@ export const deletePlayer = (id: number) =>
   request<void>(`/players/${id}`, { method: 'DELETE' })
 export const updateBattingOrder = (orderedPlayerIds: number[]) =>
   request<Player[]>('/players/batting-order', { method: 'PUT', body: JSON.stringify(orderedPlayerIds) })
+export const setPlayerWhatsappName = (id: number, whatsappName: string) =>
+  request<Player>(`/players/${id}/whatsapp-name`, { method: 'PUT', body: JSON.stringify({ whatsappName }) })
 
 // Seasons
 export const getSeasons = () => request<Season[]>('/seasons')
@@ -648,3 +651,11 @@ export const addWhatsappPollSkipDate = (id: number, date: string) =>
   request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/skip-dates`, { method: 'POST', body: JSON.stringify({ date }) })
 export const removeWhatsappPollSkipDate = (id: number, date: string) =>
   request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/skip-dates/${date}`, { method: 'DELETE' })
+export const getUnknownVoters = () =>
+  request<UnknownVoter[]>('/orga/whatsapp/unknown-voters')
+export const syncWhatsappVotes = () =>
+  request<{ synced: number }>('/orga/whatsapp/sync', { method: 'POST' })
+export const assignVoter = (voterName: string, playerId: number) =>
+  request<Player>('/orga/whatsapp/assign', { method: 'POST', body: JSON.stringify({ voterName, playerId }) })
+export const assignNewVoter = (voterName: string, playerName: string) =>
+  request<Player>('/orga/whatsapp/assign-new', { method: 'POST', body: JSON.stringify({ voterName, playerName }) })

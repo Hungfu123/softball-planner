@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 import { ChevronDown, Calendar, Ban, Droplets } from 'lucide-react'
 import { weatherIcon } from '@/components/dashboard/weatherIcon'
 import { WeatherDayBreakdown } from '@/components/dashboard/WeatherDayBreakdown'
@@ -9,8 +10,10 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { computeAttendanceStats, type PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
 import { pickDefaultTrainingId } from '@/utils/defaultTraining'
 import * as api from '@/api/client'
-import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse, WeatherResponse } from '@/types'
+import type { DrillResponse, InfieldPosition, PlanKind, TrainingPlanResponse, UnknownVoter, WeatherResponse } from '@/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { Badge } from '@/components/shared/Badge'
+import { DotsVertical, RefreshIcon, ClipboardListIcon } from '@/icons'
 import { AttendanceList } from './AttendanceList'
 import { AttendanceCounter } from './AttendanceCounter'
 import { StatsDrawer } from './StatsDrawer'
@@ -39,6 +42,8 @@ export function TrainingTodayPage() {
   const [shareOpen, setShareOpen] = useState(false)
   const [addBeginnerOpen, setAddBeginnerOpen] = useState(false)
   const [periodManagerOpen, setPeriodManagerOpen] = useState(false)
+  const [toolbarMenuOpen, setToolbarMenuOpen] = useState(false)
+  const [testSyncing, setTestSyncing] = useState(false)
   const [plans, setPlans] = useState<TrainingPlanResponse[]>([])
   const [planLoading, setPlanLoading] = useState(true)
   const [activePlanKind, setActivePlanKind] = useState<PlanKind>('MAIN')
@@ -47,6 +52,7 @@ export function TrainingTodayPage() {
   const [attendanceSort, setAttendanceSort] = useState<AttendanceSort>('frequency')
   const [selectedTrainingId, setSelectedTrainingId] = useState<number | null>(null)
   const [drills, setDrills] = useState<DrillResponse[]>([])
+  const navigate = useNavigate()
 
   useEffect(() => {
     let cancelled = false
@@ -55,6 +61,28 @@ export function TrainingTodayPage() {
       .catch(() => { if (!cancelled) setDrills([]) })
     return () => { cancelled = true }
   }, [])
+
+  // Unbekannte WhatsApp-Wähler — laden (initial + nach Test-Sync), pro Training gruppieren (Badge-Count)
+  const [unknownVoters, setUnknownVoters] = useState<UnknownVoter[]>([])
+  const refreshUnknownVoters = useCallback(async () => {
+    try {
+      const v = await api.getUnknownVoters()
+      setUnknownVoters(v)
+    } catch {
+      setUnknownVoters([])
+    }
+  }, [])
+  useEffect(() => {
+    refreshUnknownVoters()
+  }, [refreshUnknownVoters])
+
+  const unknownVoterCounts = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const v of unknownVoters) {
+      map.set(v.trainingId, (map.get(v.trainingId) ?? 0) + 1)
+    }
+    return map
+  }, [unknownVoters])
 
   const defaultTrainingId = useMemo(
     () => pickDefaultTrainingId(trainings, new Date().toISOString().slice(0, 10)),
@@ -209,6 +237,19 @@ export function TrainingTodayPage() {
     }
   }
 
+  const handleTestSync = async () => {
+    setTestSyncing(true)
+    try {
+      const result = await api.syncWhatsappVotes()
+      toast.success(`${result.synced} Stimmen gesynct`)
+      await refreshUnknownVoters()
+    } catch (e) {
+      toast.error((e as Error).message)
+    } finally {
+      setTestSyncing(false)
+    }
+  }
+
   const handleGenerate = async (data: { playerCount: number; focus: string; durationMinutes: number; infieldPositions?: InfieldPosition[]; withBeginnerGroup?: boolean; beginnerCount?: number; beginnerFocus?: string; kind?: PlanKind }) => {
     if (!currentTraining) return
     const kind: PlanKind = data.kind ?? 'MAIN'
@@ -327,24 +368,64 @@ export function TrainingTodayPage() {
               {new Date(currentTraining.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
               <ChevronDown size={14} className="text-navy-400" />
             </button>
-            <button
-              type="button"
-              onClick={() => setPeriodManagerOpen(true)}
-              className="text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer underline underline-offset-2"
-            >
-              Perioden verwalten
-            </button>
-            {!currentTraining.cancelled && (
+            {(unknownVoterCounts.get(currentTraining.id) ?? 0) > 0 && (
               <button
                 type="button"
-                onClick={() => setCancelConfirmOpen(true)}
-                aria-label="Training absagen"
-                title="Training absagen"
-                className="p-1.5 rounded-lg bg-white border border-cream-300 hover:border-softball-red-400 hover:bg-softball-red-50 text-navy-600 hover:text-softball-red-700 cursor-pointer"
+                onClick={() => navigate('/players?tab=whatsapp')}
+                title="Unbekannte WhatsApp-Wähler zuordnen"
+                className="cursor-pointer"
               >
-                <Ban size={14} />
+                <Badge color="red" size="sm">⚠️ {unknownVoterCounts.get(currentTraining.id)} unbekannte Wähler</Badge>
               </button>
             )}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setToolbarMenuOpen(o => !o)}
+                aria-label="Weitere Aktionen"
+                aria-haspopup="menu"
+                aria-expanded={toolbarMenuOpen}
+                title="Weitere Aktionen"
+                className="p-1.5 rounded-lg bg-white border border-cream-300 hover:border-navy-400 hover:bg-cream-50 text-navy-600 hover:text-navy-900 cursor-pointer"
+              >
+                <DotsVertical size={16} />
+              </button>
+              {toolbarMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setToolbarMenuOpen(false)} />
+                  <div role="menu" className="absolute right-0 top-9 z-50 w-56 rounded-xl border border-cream-300 bg-white shadow-lg py-1">
+                    <button
+                      role="menuitem"
+                      type="button"
+                      onClick={() => { setToolbarMenuOpen(false); setPeriodManagerOpen(true) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer"
+                    >
+                      <ClipboardListIcon size={15} /> Perioden verwalten
+                    </button>
+                    {!currentTraining.cancelled && (
+                      <button
+                        role="menuitem"
+                        type="button"
+                        onClick={() => { setToolbarMenuOpen(false); setCancelConfirmOpen(true) }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+                      >
+                        <Ban size={15} /> Training absagen
+                      </button>
+                    )}
+                    <div className="my-1 border-t border-cream-200" />
+                    <button
+                      role="menuitem"
+                      type="button"
+                      onClick={() => { setToolbarMenuOpen(false); handleTestSync() }}
+                      disabled={testSyncing}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-500 hover:bg-navy-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <RefreshIcon size={15} className={testSyncing ? 'animate-spin' : ''} /> Sync testen
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
             {currentTraining.cancelled && (
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-softball-red-100 text-softball-red-700">
                 Abgesagt
@@ -497,6 +578,7 @@ export function TrainingTodayPage() {
           trainings={trainings}
           selectedId={currentTrainingId}
           onSelect={setSelectedTrainingId}
+          unknownVoterCounts={unknownVoterCounts}
         />
 
         <PeriodManagerDrawer

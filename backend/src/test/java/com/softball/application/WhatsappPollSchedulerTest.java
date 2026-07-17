@@ -14,6 +14,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -63,6 +64,18 @@ class WhatsappPollSchedulerTest {
         doThrow(new RuntimeException("offline")).when(sender).sendPoll(any(), any(), anyList(), anyBoolean(), any());
         scheduler.tick(tueAt1800);
         verify(repo, never()).save(any());
+    }
+
+    @Test
+    void tick_stampsLastSentMessageId() {
+        final WhatsappPoll poll = due();
+        when(repo.findAll()).thenReturn(List.of(poll));
+        when(sender.sendPoll(any(), any(), anyList(), anyBoolean(), any())).thenReturn("msg-123");
+
+        scheduler.tick(tueAt1800);
+
+        assertThat(poll.getLastSentMessageId()).isEqualTo("msg-123");
+        verify(repo).save(poll);
     }
 
     @Test

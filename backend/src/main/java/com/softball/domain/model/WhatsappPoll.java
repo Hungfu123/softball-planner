@@ -20,6 +20,7 @@ public class WhatsappPoll {
     private String message;
     private List<LocalDate> skipDates = new ArrayList<>();
     private LocalDateTime lastSentAt;
+    private String lastSentMessageId;
 
     public WhatsappPoll() {}
 
@@ -47,4 +48,6 @@ public class WhatsappPoll {
     public void setSkipDates(final List<LocalDate> v) { this.skipDates = v != null ? v : new ArrayList<>(); }
     public LocalDateTime getLastSentAt() { return lastSentAt; }
     public void setLastSentAt(final LocalDateTime v) { this.lastSentAt = v; }
+    public String getLastSentMessageId() { return lastSentMessageId; }
+    public void setLastSentMessageId(final String v) { this.lastSentMessageId = v; }
 }

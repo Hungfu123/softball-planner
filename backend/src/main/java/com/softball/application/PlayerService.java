@@ -52,6 +52,15 @@ public class PlayerService {
     }
 
     @Transactional
+    public Player setWhatsappName(final Long id, final String whatsappName) {
+        final Player player = playerRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Player", id));
+        final String normalized = (whatsappName == null || whatsappName.isBlank()) ? null : whatsappName.trim();
+        player.setWhatsappName(normalized);
+        return playerRepository.save(player);
+    }
+
+    @Transactional
     public List<Player> updateBattingOrder(final List<Long> orderedPlayerIds) {
         final List<Player> allPlayers = playerRepository.findAll();
 

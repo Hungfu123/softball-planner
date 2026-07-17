@@ -2,6 +2,7 @@ package com.softball.adapter.out.whatsapp;
 
 import com.softball.domain.model.WhatsappAccountStatus;
 import com.softball.domain.model.WhatsappGroup;
+import com.softball.domain.model.WhatsappVote;
 import com.softball.domain.port.out.WhatsappSender;
 import com.softball.shared.exception.BusinessValidationException;
 import org.slf4j.Logger;
@@ -67,8 +68,8 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     }
 
     @Override
-    public void sendPoll(final String groupId, final String title, final List<String> options,
-                         final boolean allowMultipleAnswers, final String message) {
+    public String sendPoll(final String groupId, final String title, final List<String> options,
+                           final boolean allowMultipleAnswers, final String message) {
         try {
             // WhatsApp erlaubt keine doppelten Poll-Optionen → hier defensiv deduplizieren
             // (deckt auch Alt-Einträge, die noch Duplikate gespeichert haben).
@@ -80,14 +81,30 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
             body.put("options", uniqueOptions);
             body.put("allowMultiple", allowMultipleAnswers);
             body.put("message", message);
-            client.post().uri("/send-poll")
+            final SendResultDto result = client.post().uri("/send-poll")
                     .body(body)
                     .retrieve()
-                    .toBodilessEntity();
+                    .body(SendResultDto.class);
             log.info("WhatsApp-Poll gesendet: '{}' -> {}", title, groupId);
+            return result != null ? result.pollMessageId() : null;
         } catch (final Exception e) {
             log.warn("WhatsApp-Poll senden fehlgeschlagen ({} -> {}): {}", title, groupId, e.getMessage());
             throw new BusinessValidationException("WhatsApp-Poll konnte nicht gesendet werden: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<WhatsappVote> fetchVotes(final String msgId) {
+        try {
+            final VoteDto[] votes = client.get().uri("/poll-votes/{id}", msgId)
+                    .retrieve().body(VoteDto[].class);
+            if (votes == null) return List.of();
+            return java.util.Arrays.stream(votes)
+                    .map(v -> new WhatsappVote(v.voterName(), v.options() != null ? v.options() : List.of()))
+                    .toList();
+        } catch (final Exception e) {
+            log.warn("WhatsApp-Stimmen nicht abrufbar ({}): {}", msgId, e.getMessage());
+            return List.of();
         }
     }
 
@@ -95,4 +112,6 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     private record QrDto(String qr) {}
     private record GroupsDto(List<GroupDto> groups) {}
     private record GroupDto(String id, String name) {}
+    private record SendResultDto(boolean sent, String pollMessageId) {}
+    private record VoteDto(String voterName, List<String> options) {}
 }
