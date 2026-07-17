@@ -2,6 +2,7 @@ package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.CreatePlayerRequest;
 import com.softball.adapter.dto.PlayerResponse;
+import com.softball.adapter.dto.SetWhatsappNameRequest;
 import com.softball.adapter.dto.UpdatePlayerRequest;
 import com.softball.application.PlayerService;
 import jakarta.validation.Valid;
@@ -40,6 +41,12 @@ public class PlayerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable final Long id) {
         playerService.delete(id);
+    }
+
+    @PutMapping("/{id}/whatsapp-name")
+    public PlayerResponse setWhatsappName(@PathVariable final Long id,
+                                          @RequestBody final SetWhatsappNameRequest request) {
+        return PlayerResponse.from(playerService.setWhatsappName(id, request.whatsappName()));
     }
 
     @PutMapping("/batting-order")
