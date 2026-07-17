@@ -248,7 +248,7 @@ app.get('/debug/poll-store', async (req, res) => {
 
       // Abruf per echtem MsgKey, per serialisierter String, und Tabellengröße-Fallback
       result.byParentKey = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey(key))) : 'kein key';
-      result.byParentString = await safe(() => mapVotes(await tm.bulkGetByParentMsgKey(msgId)));
+      result.byParentString = mapVotes(await safe(() => tm.bulkGetByParentMsgKey(msgId)));
       return result;
     }, msgId);
     res.json(out);
