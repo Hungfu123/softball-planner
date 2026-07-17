@@ -228,15 +228,17 @@ app.get('/debug/poll-store', async (req, res) => {
       const tm = await safe(() => rq('WAWebAddonPollVoteTableMode').pollVoteTableMode);
       result.tableSize = await safe(() => tm.getTableSize());
 
-      // Store-Msg-Modul finden (für den echten MsgKey der Poll-Nachricht)
-      result.msgStoreKeys = safe(() => Object.keys(window.Store || {}).filter((k) => /^Msg$|Msg/.test(k)).slice(0, 10));
+      // Relevante Store-Module auflisten (Key/Wid/Msg)
+      result.storeModKeys = await safe(async () => Object.keys(window.Store || {}).filter((k) => /key|wid|^msg/i.test(k)).slice(0, 30));
+
+      // Echten MsgKey aus dem serialisierten String bauen (Tabelle keyed nach Objekt, nicht String)
       let key = null;
-      result.foundMsg = await safe(async () => {
-        const MsgStore = window.Store && window.Store.Msg;
-        if (!MsgStore || !MsgStore.get || !msgId) return 'no MsgStore/msgId';
-        const m = MsgStore.get(msgId);
-        if (m && m.id) { key = m.id; return true; }
-        return false;
+      result.keyBuild = await safe(async () => {
+        const MK = (window.Store && window.Store.MsgKey) || rq('WAWebMsgKey');
+        const K = MK && (MK.default || MK);
+        if (!K) return 'no MsgKey class';
+        if (K.fromString) { key = K.fromString(msgId); return { via: 'fromString', serialized: key && (key._serialized || String(key)) }; }
+        return { via: 'none', classKeys: Object.keys(K).slice(0, 15) };
       });
 
       const mapVotes = (arr) => (Array.isArray(arr) ? arr.slice(0, 30).map((v) => ({
@@ -247,11 +249,14 @@ app.get('/debug/poll-store', async (req, res) => {
         keys: Object.keys(v).slice(0, 20),
       })) : arr);
 
-      // bulk*-Methoden erwarten ARRAYS. Chat-Wid aus der Poll-ID (true_<chat>_<id>).
-      const chatWid = typeof msgId === 'string' ? msgId.split('_')[1] : null;
-      result.chatWid = chatWid;
-      result.byParentArr = mapVotes(await safe(() => tm.bulkGetByParentMsgKey([msgId])));
-      result.byChatWid = mapVotes(await safe(() => tm.bulkGetByChatWid([chatWid])));
+      // Abruf mit echtem Key-Objekt
+      result.byParentKeyObj = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey([key]))) : 'kein key';
+      // getByMsgKey auf die Poll-Nachricht selbst (Sanity: parst der Key?)
+      result.selfByMsgKey = key ? await safe(() => tm.getByMsgKey(key)) : 'kein key';
+
+      // tm-Interna: gibt es eine iterierbare Datenstruktur mit allen Votes?
+      result.tmOwnProps = await safe(async () => Object.getOwnPropertyNames(tm).filter((p) => typeof tm[p] !== 'function'));
+      result.tmProtoFns = await safe(async () => Object.getOwnPropertyNames(Object.getPrototypeOf(tm) || {}));
       return result;
     }, msgId);
     res.json(out);
