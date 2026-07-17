@@ -254,20 +254,30 @@ app.get('/debug/poll-store', async (req, res) => {
       // Abruf mit echtem Key-Objekt
       result.byParentKeyObj = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey([key]))) : 'kein key';
 
-      // 🎯 poll-votes-Tabelle direkt aus IndexedDB lesen (model-storage) — ALLE Roh-Votes
-      result.idbPollVotes = await safe(() => new Promise((resolve) => {
-        const r = indexedDB.open('model-storage');
-        r.onerror = () => resolve('open err');
-        r.onsuccess = () => {
-          const db = r.result;
-          try {
-            const store = db.transaction('poll-votes', 'readonly').objectStore('poll-votes');
-            const g = store.getAll();
-            g.onsuccess = () => { resolve((g.result || []).slice(0, 30)); db.close(); };
-            g.onerror = () => { resolve('getAll err'); db.close(); };
-          } catch (e) { resolve('tx err: ' + (e && e.message || e)); try { db.close(); } catch (_) {} }
+      // 🎯 Poll-Nachricht laden und ENTSCHLÜSSELTE pollUpdates/Aggregation dumpen (was die Web-UI anzeigt)
+      result.pollMsg = await safe(async () => {
+        let msg = null;
+        // mehrere Wege die Nachricht zu bekommen
+        const tryGetters = [
+          () => window.Store && window.Store.Msg && window.Store.Msg.get(msgId),
+          () => { const M = rq('WAWebMsgCollection'); return (M.MsgCollection || M.default || M).get(msgId); },
+        ];
+        for (const g of tryGetters) { try { const m = g(); if (m) { msg = m; break; } } catch (_) {} }
+        if (!msg) return 'msg not found';
+        const mapUpd = (u) => (u || []).slice(0, 30).map((x) => ({
+          sender: x.sender && (x.sender._serialized || x.sender),
+          selectedOptions: x.selectedOptions,
+          selectedOptionLocalIds: x.selectedOptionLocalIds,
+          ts: x.senderTimestampMs,
+        }));
+        return {
+          keys: Object.keys(msg).filter((k) => /poll/i.test(k)),
+          type: msg.type,
+          pollOptions: msg.pollOptions,
+          pollUpdates: mapUpd(msg.pollUpdates),
+          pollVotes: mapUpd(msg.pollVotes),
         };
-      }));
+      });
       return result;
     }, msgId);
     res.json(out);
