@@ -112,6 +112,21 @@ app.get('/groups', async (_req, res) => {
   }
 });
 
+// Message-ID aus dem sendMessage-Rückgabewert ziehen — je nach whatsapp-web.js-Version
+// unterschiedlich verschachtelt (Objekt mit _serialized, roher String, oder Rohbestandteile).
+function extractMsgId(msg) {
+  if (!msg) return null;
+  const id = msg.id;
+  if (!id) return null;
+  if (typeof id === 'string') return id;
+  if (id._serialized) return id._serialized;
+  if (id.id) {
+    const remote = id.remote || msg.to || '';
+    return remote ? `${id.fromMe ? 'true' : 'false'}_${remote}_${id.id}` : id.id;
+  }
+  return null;
+}
+
 app.post('/send-poll', async (req, res) => {
   const { groupId, title, options, allowMultiple, message } = req.body || {};
   if (!connected) return res.status(409).json({ error: 'not_connected' });
@@ -128,7 +143,18 @@ app.post('/send-poll', async (req, res) => {
     let pollMessageId = null;
     if (hasPoll) {
       const sent = await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: allowMultiple === true }));
-      pollMessageId = sent?.id?._serialized ?? null;
+      pollMessageId = extractMsgId(sent);
+      // Diagnose: zeigt die tatsächliche Rückgabeform, falls die ID-Extraktion mal nicht greift.
+      if (!pollMessageId) {
+        console.log('[wa] send-poll id-DEBUG:', JSON.stringify({
+          hasSent: !!sent,
+          idType: typeof (sent && sent.id),
+          id: sent && sent.id,
+          topKeys: sent ? Object.keys(sent).slice(0, 30) : null,
+        }));
+      } else {
+        console.log('[wa] send-poll pollMessageId =', pollMessageId);
+      }
     }
     res.json({ sent: true, pollMessageId });
   } catch (e) {
