@@ -35,6 +35,7 @@ public class WhatsappPollMapper {
         p.setMessage(e.getMessage());
         p.setSkipDates(readDates(e.getSkipDates()));
         p.setLastSentAt(e.getLastSentAt());
+        p.setLastSentMessageId(e.getLastSentMessageId());
         return p;
     }
 
@@ -61,6 +62,7 @@ public class WhatsappPollMapper {
         e.setMessage(p.getMessage());
         e.setSkipDates(write(p.getSkipDates()));
         e.setLastSentAt(p.getLastSentAt());
+        e.setLastSentMessageId(p.getLastSentMessageId());
     }
 
     private List<String> readStrings(final String json) {
