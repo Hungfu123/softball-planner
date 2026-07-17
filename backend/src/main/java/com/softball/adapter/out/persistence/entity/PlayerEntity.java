@@ -21,6 +21,9 @@ public class PlayerEntity {
     @Column(name = "default_batting_order")
     private Integer defaultBattingOrder;
 
+    @Column(name = "whatsapp_name")
+    private String whatsappName;
+
     public PlayerEntity() {}
 
     public PlayerEntity(String name) {
@@ -35,4 +38,6 @@ public class PlayerEntity {
     public void setRegular(boolean regular) { this.regular = regular; }
     public Integer getDefaultBattingOrder() { return defaultBattingOrder; }
     public void setDefaultBattingOrder(Integer defaultBattingOrder) { this.defaultBattingOrder = defaultBattingOrder; }
+    public String getWhatsappName() { return whatsappName; }
+    public void setWhatsappName(String whatsappName) { this.whatsappName = whatsappName; }
 }

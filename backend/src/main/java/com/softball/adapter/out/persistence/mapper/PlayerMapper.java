@@ -9,7 +9,9 @@ public class PlayerMapper {
 
     public Player toDomain(final PlayerEntity entity) {
         if (entity == null) return null;
-        return new Player(entity.getId(), entity.getName(), entity.isRegular(), entity.getDefaultBattingOrder());
+        final Player player = new Player(entity.getId(), entity.getName(), entity.isRegular(), entity.getDefaultBattingOrder());
+        player.setWhatsappName(entity.getWhatsappName());
+        return player;
     }
 
     public PlayerEntity toEntity(final Player domain) {
@@ -19,6 +21,7 @@ public class PlayerMapper {
         entity.setName(domain.getName());
         entity.setRegular(domain.isRegular());
         entity.setDefaultBattingOrder(domain.getDefaultBattingOrder());
+        entity.setWhatsappName(domain.getWhatsappName());
         return entity;
     }
 
@@ -26,5 +29,6 @@ public class PlayerMapper {
         entity.setName(domain.getName());
         entity.setRegular(domain.isRegular());
         entity.setDefaultBattingOrder(domain.getDefaultBattingOrder());
+        entity.setWhatsappName(domain.getWhatsappName());
     }
 }
