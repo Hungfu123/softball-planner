@@ -112,6 +112,39 @@ app.get('/groups', async (_req, res) => {
   }
 });
 
+// TEMP-DEBUG: instrumentiert getChatModel Schritt-für-Schritt im WA-Page-Kontext.
+// Zeigt, warum /groups leer ist (0 Chats? welcher Model-Schritt wirft?). Wieder entfernen.
+app.get('/debug-chats', async (_req, res) => {
+  if (!connected) return res.status(409).json({ error: 'not_connected' });
+  try {
+    const out = await client.pupPage.evaluate(async () => {
+      const r = { collections: {}, steps: {} };
+      const C = window.require('WAWebCollections');
+      r.collections.hasChat = !!(C && C.Chat);
+      r.collections.hasGroupMetadata = !!(C && C.GroupMetadata);
+      r.collections.hasGroupMetadataColl = !!(C && C.WAWebGroupMetadataCollection);
+      const chats = C.Chat.getModelsArray();
+      r.chatCount = chats.length;
+      const groups = chats.filter((c) => c.groupMetadata);
+      r.groupCount = groups.length;
+      r.sample = chats.slice(0, 3).map((c) => ({ id: c.id && c.id._serialized, name: c.name || c.formattedTitle, isGroup: !!c.groupMetadata }));
+      const g = groups[0];
+      if (g) {
+        const S = r.steps;
+        try { S.serialize = !!g.serialize(); } catch (e) { S.serializeErr = String(e && e.message || e); }
+        try { S.wid = !!window.require('WAWebWidFactory').createWid(g.id._serialized); } catch (e) { S.widErr = String(e && e.message || e); }
+        try { S.gmSerialize = !!g.groupMetadata.serialize(); } catch (e) { S.gmSerializeErr = String(e && e.message || e); }
+        try { S.hasToPn = typeof window.require('WAWebLidMigrationUtils').toPn; } catch (e) { S.toPnErr = String(e && e.message || e); }
+        try { S.getChatModel = !!(await window.WWebJS.getChatModel(g)); } catch (e) { S.getChatModelErr = String(e && e.stack || e && e.message || e); }
+      }
+      return r;
+    });
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ error: String(e && e.stack || e && e.message || e) });
+  }
+});
+
 app.post('/send-poll', async (req, res) => {
   const { groupId, title, options, allowMultiple, message } = req.body || {};
   if (!connected) return res.status(409).json({ error: 'not_connected' });
