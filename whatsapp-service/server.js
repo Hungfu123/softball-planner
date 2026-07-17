@@ -242,13 +242,16 @@ app.get('/debug/poll-store', async (req, res) => {
       const mapVotes = (arr) => (Array.isArray(arr) ? arr.slice(0, 30).map((v) => ({
         sender: v.sender && (v.sender._serialized || v.sender),
         parent: v.pollUpdateParentKey && (v.pollUpdateParentKey._serialized || v.pollUpdateParentKey),
-        selected: v.selectedOptionLocalIds || v.selectedOptions,
-        keys: Object.keys(v).slice(0, 15),
+        selectedLocalIds: v.selectedOptionLocalIds,
+        selected: v.selectedOptions,
+        keys: Object.keys(v).slice(0, 20),
       })) : arr);
 
-      // Abruf per echtem MsgKey, per serialisierter String, und Tabellengröße-Fallback
-      result.byParentKey = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey(key))) : 'kein key';
-      result.byParentString = mapVotes(await safe(() => tm.bulkGetByParentMsgKey(msgId)));
+      // bulk*-Methoden erwarten ARRAYS. Chat-Wid aus der Poll-ID (true_<chat>_<id>).
+      const chatWid = typeof msgId === 'string' ? msgId.split('_')[1] : null;
+      result.chatWid = chatWid;
+      result.byParentArr = mapVotes(await safe(() => tm.bulkGetByParentMsgKey([msgId])));
+      result.byChatWid = mapVotes(await safe(() => tm.bulkGetByChatWid([chatWid])));
       return result;
     }, msgId);
     res.json(out);
