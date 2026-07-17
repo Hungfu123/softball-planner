@@ -96,7 +96,7 @@ public class PollVoteSyncService {
 
         for (final WhatsappPoll poll : polls) {
             if (!poll.isEnabled() || poll.getLastSentMessageId() == null || poll.getLastSentAt() == null) continue;
-            final Optional<Training> target = resolver.resolve(trainings, poll.getLastSentAt().toLocalDate());
+            final Optional<Training> target = resolver.resolve(trainings, poll.getLastSentAt());
             if (target.isEmpty()) continue;
             final Training training = target.get();
             if (enforceGate && !evaluator.gateOpen(training.getTime(), now, training.getDate())) continue;
