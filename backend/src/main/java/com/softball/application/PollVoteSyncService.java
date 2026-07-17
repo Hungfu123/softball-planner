@@ -105,9 +105,9 @@ public class PollVoteSyncService {
             if (votes.isEmpty()) continue;
 
             final List<TrainingAttendance> existing = attendanceRepo.findByTrainingId(training.getId());
-            final Set<Long> presentPlayerIds = existing.stream()
-                .filter(TrainingAttendance::isPresent)
-                .map(a -> a.getPlayer().getId()).collect(Collectors.toSet());
+            final Map<Long, TrainingAttendance> existingByPlayerId = existing.stream()
+                .collect(Collectors.toMap(a -> a.getPlayer().getId(), a -> a, (a, b) -> a));
+            final Set<Long> bookedPlayerIds = new HashSet<>();
             final List<TrainingAttendance> toBook = new ArrayList<>();
 
             for (final WhatsappVote vote : votes) {
@@ -117,9 +117,19 @@ public class PollVoteSyncService {
                 final Long playerId = player != null ? player.getId() : null;
                 upsertVote(training.getId(), vote.voterName(), playerId, present);
                 written++;
-                if (player != null && present && !presentPlayerIds.contains(playerId)) {
-                    toBook.add(new TrainingAttendance(training, player, true));
-                    presentPlayerIds.add(playerId);
+                if (player != null && present && !bookedPlayerIds.contains(playerId)) {
+                    final TrainingAttendance existingRow = existingByPlayerId.get(playerId);
+                    if (existingRow == null) {
+                        // keine Buchung vorhanden -> neue Anwesenheit anlegen
+                        toBook.add(new TrainingAttendance(training, player, true));
+                        bookedPlayerIds.add(playerId);
+                    } else if (!existingRow.isPresent()) {
+                        // vorhandene Buchung false -> auf true hochstufen (id bleibt erhalten, kein Insert-Konflikt)
+                        existingRow.setPresent(true);
+                        toBook.add(existingRow);
+                        bookedPlayerIds.add(playerId);
+                    }
+                    // existingRow bereits present=true -> nichts zu tun, kein Duplikat
                 }
             }
             if (!toBook.isEmpty()) attendanceRepo.saveAll(toBook);
