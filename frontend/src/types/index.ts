@@ -3,6 +3,7 @@ export interface Player {
   name: string
   regular: boolean
   defaultBattingOrder: number | null
+  whatsappName?: string | null
 }
 
 export interface Season {
@@ -770,4 +771,10 @@ export interface WhatsappPollRequest {
   enabled: boolean
   allowMultipleAnswers: boolean
   message: string | null
+}
+
+export interface UnknownVoter {
+  voterName: string
+  trainingId: number
+  trainingDate: string
 }
