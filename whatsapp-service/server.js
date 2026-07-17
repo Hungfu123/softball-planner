@@ -82,6 +82,9 @@ app.get('/groups', async (_req, res) => {
     const groups = chats.filter((c) => c.isGroup).map((c) => ({ id: c.id._serialized, name: c.name }));
     res.json({ groups });
   } catch (e) {
+    // Vollen Stack loggen — getChats bricht bei WhatsApp-Web-Updates gern mit
+    // minifizierter Message ("r"), die allein nichts aussagt.
+    console.error('[wa] /groups getChats FAILED:', e && e.stack ? e.stack : e);
     res.status(500).json({ error: String(e && e.message || e) });
   }
 });
