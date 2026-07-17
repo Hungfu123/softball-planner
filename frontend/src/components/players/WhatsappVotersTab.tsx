@@ -19,7 +19,7 @@ function voterKey(v: UnknownVoter): string {
 }
 
 export function WhatsappVotersTab() {
-  const { players, setWhatsappName } = usePlayers()
+  const { players, setWhatsappName, reload: reloadPlayers } = usePlayers()
   const toast = useToastContext()
 
   const [voters, setVoters] = useState<UnknownVoter[]>([])
@@ -64,7 +64,7 @@ export function WhatsappVotersTab() {
     try {
       await assignVoter(voter.voterName, playerId)
       toast.show(`„${voter.voterName}" zugewiesen`)
-      await loadVoters()
+      await Promise.all([loadVoters(), reloadPlayers()])
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     } finally {
@@ -81,7 +81,7 @@ export function WhatsappVotersTab() {
       await assignNewVoter(voter.voterName, playerName)
       toast.show(`${playerName} angelegt und zugewiesen`)
       setNewPlayerVoter(null)
-      await loadVoters()
+      await Promise.all([loadVoters(), reloadPlayers()])
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     } finally {
