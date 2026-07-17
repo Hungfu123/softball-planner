@@ -130,4 +130,22 @@ class PollVoteSyncServiceTest {
         verify(attendanceRepo, never()).saveAll(any());
         verify(voteRepo).save(argThat(v -> v.getPlayerId() != null && !v.isPresent()));
     }
+
+    @Test
+    void existingFalseAttendanceIsUpgradedToTrueSameId() {
+        final Player max = new Player(5L, "Max", true, null); max.setWhatsappName("Max ⚾");
+        when(playerRepo.findAll()).thenReturn(List.of(max));
+        // Spieler hat bereits eine Buchung mit present=false (z.B. manuell abgemeldet)
+        final TrainingAttendance existingRow = new TrainingAttendance(training, max, false);
+        existingRow.setId(42L);
+        when(attendanceRepo.findByTrainingId(10L)).thenReturn(List.of(existingRow));
+        // Stimme sagt jetzt "Ja" -> bestehende Zeile muss auf true hochgestuft werden (gleiche id -> Update, kein Insert)
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(new WhatsappVote("Max ⚾", List.of("Ja"))));
+
+        service.syncAll(now);
+
+        verify(attendanceRepo).saveAll(argThat((List<TrainingAttendance> l) ->
+            l.size() == 1 && l.get(0).getId() != null && l.get(0).getId() == 42L
+                && l.get(0).getPlayer().getId() == 5L && l.get(0).isPresent()));
+    }
 }
