@@ -3,7 +3,7 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { getUnknownVoters, assignVoter, assignNewVoter, unassignVoter } from '@/api/client'
 import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
-import { PlusCircle, CrossBones, TrashBin } from '@/icons'
+import { PlusCircle, CrossBones, XMark } from '@/icons'
 import type { UnknownVoter, Player } from '@/types'
 
 const inputCls =
@@ -27,6 +27,7 @@ export function WhatsappVotersTab() {
   const [selectedPlayer, setSelectedPlayer] = useState<Record<string, string>>({})
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [newPlayerVoter, setNewPlayerVoter] = useState<UnknownVoter | null>(null)
+  const [assigningId, setAssigningId] = useState<number | null>(null)
 
   const loadVoters = useCallback(async () => {
     setVotersLoading(true)
@@ -86,6 +87,8 @@ export function WhatsappVotersTab() {
   }
 
   const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name))
+  const withAlias = sortedPlayers.filter(p => p.whatsappName)
+  const withoutAlias = sortedPlayers.filter(p => !p.whatsappName)
 
   return (
     <div className="space-y-4">
@@ -149,15 +152,56 @@ export function WhatsappVotersTab() {
       <Card padding="md">
         <SectionHeader title="Alias-Pflege" />
         <p className="text-sm text-gray-500 mb-3">
-          WhatsApp-Anzeigename je Spieler hinterlegen — wird für die automatische Zuordnung der Umfrage-Stimmen genutzt.
+          WhatsApp-Anzeigename je Spieler — für die automatische Zuordnung der Umfrage-Stimmen.
         </p>
         {sortedPlayers.length === 0 ? (
           <EmptyState title="Noch keine Spieler angelegt" icon={<CrossBones size={40} />} />
         ) : (
-          <div className="divide-y divide-cream-200 border border-cream-300 rounded-lg overflow-hidden">
-            {sortedPlayers.map(p => (
-              <AliasRow key={p.id} player={p} onSave={setWhatsappName} onDelete={handleDeleteAlias} />
-            ))}
+          <div className="space-y-4">
+            {withAlias.length > 0 && (
+              <div>
+                <p className={labelCls}>Zugeordnet ({withAlias.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {withAlias.map(p => (
+                    <span key={p.id} className="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full bg-navy-50 border border-navy-100 text-sm">
+                      <span className="font-semibold text-navy-900">{p.name}</span>
+                      <span className="text-navy-600/40">·</span>
+                      <span className="text-navy-700 truncate max-w-[10rem]">{p.whatsappName}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAlias(p.id)}
+                        title="Alias löschen — zugeordnete Stimmen werden wieder unbekannt"
+                        aria-label={`Alias von ${p.name} löschen`}
+                        className="ml-0.5 p-1 text-gray-400 hover:text-softball-red-600 rounded-full hover:bg-white cursor-pointer"
+                      >
+                        <XMark size={13} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {withoutAlias.length > 0 && (
+              <div>
+                <p className={labelCls}>Ohne Alias ({withoutAlias.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {withoutAlias.map(p => assigningId === p.id ? (
+                    <AliasInlineInput key={p.id} player={p} onSave={setWhatsappName} onDone={() => setAssigningId(null)} />
+                  ) : (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setAssigningId(p.id)}
+                      title={`WhatsApp-Alias für ${p.name} setzen`}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-cream-100 border border-cream-300 text-sm text-navy-700 hover:border-navy-600 hover:bg-white cursor-pointer transition-colors"
+                    >
+                      {p.name}
+                      <PlusCircle size={13} className="text-navy-600/50" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>
@@ -173,63 +217,44 @@ export function WhatsappVotersTab() {
   )
 }
 
-function AliasRow({ player, onSave, onDelete }: { player: Player; onSave: (id: number, whatsappName: string) => Promise<Player>; onDelete: (id: number) => Promise<void> }) {
-  const [value, setValue] = useState(player.whatsappName ?? '')
+// Inline-Chip zum Setzen eines Alias für EINEN Spieler (on-demand, statt Dauerfeld je Zeile).
+function AliasInlineInput({ player, onSave, onDone }: { player: Player; onSave: (id: number, whatsappName: string) => Promise<Player>; onDone: () => void }) {
+  const [value, setValue] = useState('')
   const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const toast = useToastContext()
 
-  useEffect(() => { setValue(player.whatsappName ?? '') }, [player.whatsappName])
-
-  const handleBlur = async () => {
+  const commit = async () => {
     const trimmed = value.trim()
-    if (trimmed === (player.whatsappName ?? '')) return
+    if (!trimmed) { onDone(); return }
     setSaving(true)
     try {
       await onSave(player.id, trimmed)
-      toast.show('Alias gespeichert')
+      toast.show(`Alias für ${player.name} gespeichert`)
+      onDone()
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
-      setValue(player.whatsappName ?? '')
-    } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async () => {
-    setDeleting(true)
-    try {
-      await onDelete(player.id)
-    } finally {
-      setDeleting(false)
-    }
-  }
-
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 bg-white">
-      <span className="flex-1 text-sm font-medium text-navy-900 truncate">{player.name}</span>
+    <span className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1 rounded-full bg-white border border-navy-600 text-sm">
+      <span className="font-semibold text-navy-900">{player.name}</span>
+      <span className="text-navy-600/40">·</span>
       <input
+        autoFocus
         value={value}
         onChange={e => setValue(e.target.value)}
-        onBlur={handleBlur}
-        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === 'Enter') { e.preventDefault(); commit() }
+          if (e.key === 'Escape') onDone()
+        }}
         placeholder="WhatsApp-Name…"
-        disabled={saving || deleting}
-        className="cursor-pencil w-44 sm:w-56 border border-cream-300 rounded-lg px-3 py-1.5 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none disabled:opacity-60 shrink-0"
+        disabled={saving}
+        className="w-32 bg-transparent text-navy-700 outline-none placeholder:text-navy-600/40 disabled:opacity-60"
       />
-      {player.whatsappName && (
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={saving || deleting}
-          title="Alias löschen — zugeordnete Stimmen werden wieder unbekannt"
-          aria-label={`Alias von ${player.name} löschen`}
-          className="shrink-0 p-1.5 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-cream-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <TrashBin size={16} />
-        </button>
-      )}
-    </div>
+    </span>
   )
 }
 
