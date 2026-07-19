@@ -2,102 +2,128 @@ const express = require('express');
 const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
-const { Client, LocalAuth, Poll } = require('whatsapp-web.js');
+const crypto = require('crypto');
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  fetchLatestBaileysVersion,
+  decryptPollVote,
+  getKeyAuthor,
+  jidNormalizedUser,
+  DisconnectReason,
+} = require('baileys');
 
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.WHATSAPP_SERVICE_TOKEN || '';
 const SESSION_PATH = process.env.SESSION_PATH || '/data/session';
+const STORE_FILE = path.join(SESSION_PATH, 'poll-store.json');
 
-// Beim Start verwaiste Chromium-Singleton-Locks aus der persistenten Session
-// entfernen — sonst startet Chromium nach unsauberem Container-Stop nicht
-// ("profile appears to be in use", Code 21). Session selbst bleibt erhalten.
-function clearChromeLocks(dir) {
-  let entries;
-  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
-  for (const e of entries) {
-    const full = path.join(dir, e.name);
-    if (e.name.startsWith('Singleton')) {
-      try { fs.unlinkSync(full); console.log('[wa] verwaisten Lock entfernt:', full); } catch { /* egal */ }
-    } else if (e.isDirectory()) {
-      clearChromeLocks(full);
-    }
-  }
-}
-clearChromeLocks(SESSION_PATH);
-
-let currentQrDataUrl = null;   // gesetzt solange Kopplung aussteht
+let sock = null;
 let connected = false;
 let myNumber = null;
 let myName = null;
+let currentQrDataUrl = null;   // gesetzt solange Kopplung aussteht
 
-const client = new Client({
-  authStrategy: new LocalAuth({ dataPath: SESSION_PATH }),
-  puppeteer: {
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-  },
-});
-
-// TEMP-Diagnose: loggt jeden Event-Namen den der Client emittiert — um zu sehen, welches
-// Event beim Abstimmen feuert (vote_update triggert in dieser Lib-Version nicht).
-const _origEmit = client.emit.bind(client);
-client.emit = (event, ...args) => {
-  console.log('[wa] EVENT:', event);
-  return _origEmit(event, ...args);
-};
-
-client.on('qr', async (qr) => {
-  currentQrDataUrl = await QRCode.toDataURL(qr);
-  connected = false;
-  console.log('[wa] QR bereit — koppeln nötig');
-});
-client.on('ready', () => {
-  connected = true;
-  currentQrDataUrl = null;
-  myNumber = client.info?.wid?.user ? '+' + client.info.wid.user : null;
-  myName = client.info?.pushname || null;
-  console.log('[wa] verbunden als', myName, myNumber);
-});
-client.on('disconnected', (r) => {
-  connected = false;
-  console.log('[wa] getrennt:', r);
-});
-
-// pollMsgId -> Map(voterWid -> { name, options: [] }); letzter Stand je Wähler
-const pollVotes = new Map();
-
-client.on('vote_update', async (vote) => {
+// Persistenter Poll-Store — überlebt Container-Neustart, sonst geht der messageSecret
+// (zum Entschlüsseln der Votes) verloren und schon abgegebene Stimmen wären futsch.
+//   polls[msgId] = { title, options:[...], groupId, secret(base64), votes: { voterJid: {name, options:[...]} } }
+let store = { polls: {} };
+function loadStore() {
+  try { store = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8')); } catch { store = { polls: {} }; }
+}
+function saveStore() {
   try {
-    // Diagnose ganz oben (vor jedem return): zeigt ob das Event überhaupt feuert + die Struktur.
-    console.log('[wa] vote-RAW:', JSON.stringify({
-      hasVote: !!vote,
-      voter: vote && vote.voter,
-      parentIdType: typeof (vote && vote.parentMessage && vote.parentMessage.id),
-      parentId: vote && vote.parentMessage && vote.parentMessage.id,
-      selected: vote && vote.selectedOptions,
-      keys: vote ? Object.keys(vote).slice(0, 20) : null,
-    }));
-    const pm = vote && vote.parentMessage;
-    const msgId = extractMsgId(pm) || (pm && pm.id && pm.id._serialized) || null;
-    if (!msgId) { console.warn('[wa] vote_update: keine parentMessage-id — übersprungen'); return; }
-    const voterWid = vote.voter;
-    let name = voterWid;
-    try {
-      const contact = await client.getContactById(voterWid);
-      name = contact.pushname || contact.name || contact.number || voterWid;
-    } catch (_) { /* Name nicht auflösbar → Wid als Fallback */ }
-    const options = (vote.selectedOptions || [])
-      .map((o) => (typeof o === 'string' ? o : (o && (o.name || o.localId)) || ''))
-      .filter(Boolean);
-    if (!pollVotes.has(msgId)) pollVotes.set(msgId, new Map());
-    pollVotes.get(msgId).set(voterWid, { name, options });
-    console.log('[wa] vote_update', msgId, name, options);
-  } catch (e) {
-    console.warn('[wa] vote_update Fehler:', e && e.message || e);
-  }
-});
+    fs.mkdirSync(SESSION_PATH, { recursive: true });
+    fs.writeFileSync(STORE_FILE, JSON.stringify(store));
+  } catch (e) { console.error('[wa] store save failed:', e && e.message || e); }
+}
+loadStore();
 
-client.initialize().catch((e) => console.error('[wa] init failed:', e));
+const sha256hex = (s) => crypto.createHash('sha256').update(Buffer.from(s)).digest('hex');
+
+async function startSock() {
+  const { state, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
+  const { version } = await fetchLatestBaileysVersion();
+  console.log('[wa] Baileys WA-Version:', version.join('.'));
+
+  sock = makeWASocket({ version, auth: state, printQRInTerminal: false });
+  sock.ev.on('creds.update', saveCreds);
+
+  sock.ev.on('connection.update', async (u) => {
+    const { connection, lastDisconnect, qr } = u;
+    if (qr) {
+      currentQrDataUrl = await QRCode.toDataURL(qr);
+      connected = false;
+      console.log('[wa] QR bereit — koppeln nötig');
+    }
+    if (connection === 'open') {
+      connected = true;
+      currentQrDataUrl = null;
+      const pn = sock.user?.id ? jidNormalizedUser(sock.user.id).split('@')[0] : null;
+      myNumber = pn ? '+' + pn : null;
+      myName = sock.user?.name || null;
+      console.log('[wa] verbunden als', myName, myNumber, '| LID', sock.user?.lid);
+    }
+    if (connection === 'close') {
+      connected = false;
+      const code = lastDisconnect?.error?.output?.statusCode;
+      if (code === DisconnectReason.loggedOut) {
+        console.log('[wa] ausgeloggt — Session löschen und neu koppeln.');
+      } else {
+        console.log('[wa] getrennt (code', code + '), reconnect…');
+        startSock();
+      }
+    }
+  });
+
+  // Poll-Votes kommen hier als pollUpdateMessage rein (Absender im LID-Format).
+  sock.ev.on('messages.upsert', ({ messages }) => {
+    for (const m of messages) {
+      const pu = m.message?.pollUpdateMessage || m.message?.deviceSentMessage?.message?.pollUpdateMessage;
+      if (pu) handleVote(m, pu);
+    }
+  });
+}
+
+// Entschlüsselt einen Vote und speichert je Wähler den LETZTEN Stand.
+// Baileys 7-rc hat den Auto-Handler auskommentiert → wir rufen decryptPollVote selbst auf.
+// Für Gruppen ist die passende JID-Kombi creator=eigenes LID / voter=voter-LID.
+function handleVote(voteM, pu) {
+  const msgId = pu.pollCreationMessageKey?.id;
+  if (!msgId) return;
+  const poll = store.polls[msgId];
+  if (!poll) { console.log('[wa] Vote für unbekannte Poll', msgId, '— ignoriert'); return; }
+  if (!poll.secret) { console.log('[wa] Poll', msgId, 'ohne secret — nicht entschlüsselbar'); return; }
+
+  const secret = Buffer.from(poll.secret, 'base64');
+  const meId = jidNormalizedUser(sock.user.id);
+  const meLid = sock.user.lid ? jidNormalizedUser(sock.user.lid) : null;
+  const voterDefault = getKeyAuthor(voteM.key, meId);
+  const voterLid = voteM.key.participant ? jidNormalizedUser(voteM.key.participant) : voterDefault;
+
+  const creators = [meLid, meId].filter(Boolean);
+  const voters = [voterLid, voterDefault].filter((v, i, a) => v && a.indexOf(v) === i);
+
+  for (const cj of creators) {
+    for (const vj of voters) {
+      try {
+        const res = decryptPollVote(pu.vote, { pollEncKey: secret, pollCreatorJid: cj, pollMsgId: msgId, voterJid: vj });
+        const chosen = (res.selectedOptions || [])
+          .map((h) => { const hx = Buffer.from(h).toString('hex'); return poll.options.find((o) => sha256hex(o) === hx) || null; })
+          .filter(Boolean);
+        const voterKey = voterLid || voterDefault;
+        const name = voteM.pushName || (poll.votes[voterKey] && poll.votes[voterKey].name) || voterKey;
+        poll.votes[voterKey] = { name, options: chosen };
+        saveStore();
+        console.log('[wa] Vote', msgId, name, '→', chosen.join(', ') || '(leer)');
+        return;
+      } catch (_) { /* GCM-Auth fehlgeschlagen → nächste JID-Kombi */ }
+    }
+  }
+  console.log('[wa] Vote nicht entschlüsselbar', msgId, voteM.key.participant || voteM.key.remoteJid);
+}
+
+startSock().catch((e) => console.error('[wa] init failed:', e));
 
 const app = express();
 app.use(express.json());
@@ -121,64 +147,14 @@ app.get('/qr', (_req, res) => {
 app.get('/groups', async (_req, res) => {
   if (!connected) return res.status(409).json({ error: 'not_connected' });
   try {
-    const chats = await client.getChats();
-    const groups = chats.filter((c) => c.isGroup).map((c) => ({ id: c.id._serialized, name: c.name }));
+    const gs = await sock.groupFetchAllParticipating();
+    const groups = Object.values(gs).map((g) => ({ id: g.id, name: g.subject }));
     res.json({ groups });
   } catch (e) {
-    // Vollen Stack loggen — getChats bricht bei WhatsApp-Web-Updates gern mit
-    // minifizierter Message ("r"), die allein nichts aussagt.
-    console.error('[wa] /groups getChats FAILED:', e && e.stack ? e.stack : e);
+    console.error('[wa] /groups failed:', e && e.stack ? e.stack : e);
     res.status(500).json({ error: String(e && e.message || e) });
   }
 });
-
-// Message-ID aus dem sendMessage-Rückgabewert ziehen — je nach whatsapp-web.js-Version
-// unterschiedlich verschachtelt (Objekt mit _serialized, roher String, oder Rohbestandteile).
-function extractMsgId(msg) {
-  if (!msg) return null;
-  const id = msg.id;
-  if (!id) return null;
-  if (typeof id === 'string') return id;
-  if (id._serialized) return id._serialized;
-  if (id.id) {
-    const remote = id.remote || msg.to || '';
-    return remote ? `${id.fromMe ? 'true' : 'false'}_${remote}_${id.id}` : id.id;
-  }
-  return null;
-}
-
-// Fängt die eigene, gerade gesendete Poll-Nachricht über message_create ab und liefert ihre id.
-// Nötig, weil sendMessage(Poll) in der gepinnten whatsapp-web.js-Version undefined zurückgibt.
-// VOR dem Senden aufrufen (Listener muss aktiv sein, bevor das Event feuert).
-function waitForSentPollId(groupId, title, timeoutMs = 10000) {
-  return new Promise((resolve) => {
-    let settled = false;
-    const finish = (val) => {
-      if (settled) return;
-      settled = true;
-      client.removeListener('message_create', handler);
-      resolve(val);
-    };
-    const handler = (msg) => {
-      try {
-        if (!msg || !msg.fromMe) return;
-        const chat = msg.to || (msg.id && msg.id.remote);
-        if (chat !== groupId) return;
-        console.log('[wa] msg_create-DEBUG:', JSON.stringify({
-          type: msg.type, pollName: msg.pollName, hasPollOptions: msg.pollOptions != null,
-          bodyLen: msg.body ? msg.body.length : 0, id: extractMsgId(msg),
-        }));
-        const type = String(msg.type || '');
-        const isPoll = type.includes('poll') || msg.pollName != null || (msg.pollOptions != null);
-        // Falls Typ nicht als Poll erkennbar: über den Titel abgleichen (Poll-Frage steht im body/pollName).
-        const matchesTitle = (msg.pollName && msg.pollName === title) || (msg.body && msg.body === title);
-        if (isPoll || matchesTitle) finish(extractMsgId(msg));
-      } catch (_) { /* ignore */ }
-    };
-    client.on('message_create', handler);
-    setTimeout(() => finish(null), timeoutMs);
-  });
-}
 
 app.post('/send-poll', async (req, res) => {
   const { groupId, title, options, allowMultiple, message } = req.body || {};
@@ -191,16 +167,24 @@ app.post('/send-poll', async (req, res) => {
   try {
     // Optionale Nachricht zuerst (z.B. Event-Details), dann ggf. die Umfrage.
     if (hasMessage) {
-      await client.sendMessage(groupId, message.trim());
+      await sock.sendMessage(groupId, { text: message.trim() });
     }
     let pollMessageId = null;
     if (hasPoll) {
-      // Diese whatsapp-web.js-Version gibt bei sendMessage(Poll) nichts zurück (undefined).
-      // Deshalb die eigene gesendete Poll-Nachricht über message_create abfangen und deren id nehmen.
-      const waitForPoll = waitForSentPollId(groupId, title);
-      const sent = await client.sendMessage(groupId, new Poll(title, options, { allowMultipleAnswers: allowMultiple === true }));
-      pollMessageId = extractMsgId(sent) || await waitForPoll;
-      console.log('[wa] send-poll pollMessageId =', pollMessageId);
+      const sent = await sock.sendMessage(groupId, {
+        poll: { name: title, values: options, selectableCount: allowMultiple === true ? options.length : 1 },
+      });
+      pollMessageId = sent.key.id;
+      const secret = sent.message?.messageContextInfo?.messageSecret;
+      store.polls[pollMessageId] = {
+        title,
+        options,
+        groupId,
+        secret: secret ? Buffer.from(secret).toString('base64') : null,
+        votes: {},
+      };
+      saveStore();
+      console.log('[wa] Poll gesendet', pollMessageId, '| secret vorhanden:', !!secret);
     }
     res.json({ sent: true, pollMessageId });
   } catch (e) {
@@ -208,82 +192,11 @@ app.post('/send-poll', async (req, res) => {
   }
 });
 
+// Liefert den aktuellen Abstimmungs-Stand je Wähler (letzter Stand). Format wie vom Backend erwartet.
 app.get('/poll-votes/:msgId', (req, res) => {
-  const voters = pollVotes.get(req.params.msgId);
-  if (!voters) return res.json([]);
-  res.json(Array.from(voters.values()).map((v) => ({ voterName: v.name, options: v.options })));
-});
-
-// DEBUG-Sonde: fragt die Poll-Vote-Tabelle aktiv ab (bulkGetByParentMsgKey) für ?msgId=<pollId>.
-// Klärt: liegen nach dem Abstimmen echte Stimmen drin, obwohl vote_update nicht feuert?
-app.get('/debug/poll-store', async (req, res) => {
-  if (!connected) return res.status(409).json({ error: 'not_connected' });
-  const msgId = req.query.msgId ? String(req.query.msgId).trim() : null;
-  try {
-    const out = await client.pupPage.evaluate(async (msgId) => {
-      const result = {};
-      const safe = async (fn) => { try { return await fn(); } catch (e) { return 'ERR: ' + (e && e.message || e); } };
-      const rq = window.require || (window.mR && window.mR.require);
-      result.hasRequire = !!rq;
-      const tm = await safe(() => rq('WAWebAddonPollVoteTableMode').pollVoteTableMode);
-      result.tableSize = await safe(() => tm.getTableSize());
-
-      // Relevante Store-Module auflisten (Key/Wid/Msg)
-      result.storeModKeys = await safe(async () => Object.keys(window.Store || {}).filter((k) => /key|wid|^msg/i.test(k)).slice(0, 30));
-
-      // Echten MsgKey aus dem serialisierten String bauen (Tabelle keyed nach Objekt, nicht String)
-      let key = null;
-      result.keyBuild = await safe(async () => {
-        const MK = (window.Store && window.Store.MsgKey) || rq('WAWebMsgKey');
-        const K = MK && (MK.default || MK);
-        if (!K) return 'no MsgKey class';
-        if (K.fromString) { key = K.fromString(msgId); return { via: 'fromString', serialized: key && (key._serialized || String(key)) }; }
-        return { via: 'none', classKeys: Object.keys(K).slice(0, 15) };
-      });
-
-      const mapVotes = (arr) => (Array.isArray(arr) ? arr.slice(0, 30).map((v) => ({
-        sender: v.sender && (v.sender._serialized || v.sender),
-        parent: v.pollUpdateParentKey && (v.pollUpdateParentKey._serialized || v.pollUpdateParentKey),
-        selectedLocalIds: v.selectedOptionLocalIds,
-        selected: v.selectedOptions,
-        keys: Object.keys(v).slice(0, 20),
-      })) : arr);
-
-      const chatWid = typeof msgId === 'string' ? msgId.split('_')[1] : null;
-
-      // Abruf mit echtem Key-Objekt
-      result.byParentKeyObj = key ? mapVotes(await safe(() => tm.bulkGetByParentMsgKey([key]))) : 'kein key';
-
-      // 🎯 Poll-Nachricht laden und ENTSCHLÜSSELTE pollUpdates/Aggregation dumpen (was die Web-UI anzeigt)
-      result.pollMsg = await safe(async () => {
-        let msg = null;
-        // mehrere Wege die Nachricht zu bekommen
-        const tryGetters = [
-          () => window.Store && window.Store.Msg && window.Store.Msg.get(msgId),
-          () => { const M = rq('WAWebMsgCollection'); return (M.MsgCollection || M.default || M).get(msgId); },
-        ];
-        for (const g of tryGetters) { try { const m = g(); if (m) { msg = m; break; } } catch (_) {} }
-        if (!msg) return 'msg not found';
-        const mapUpd = (u) => (u || []).slice(0, 30).map((x) => ({
-          sender: x.sender && (x.sender._serialized || x.sender),
-          selectedOptions: x.selectedOptions,
-          selectedOptionLocalIds: x.selectedOptionLocalIds,
-          ts: x.senderTimestampMs,
-        }));
-        return {
-          keys: Object.keys(msg).filter((k) => /poll/i.test(k)),
-          type: msg.type,
-          pollOptions: msg.pollOptions,
-          pollUpdates: mapUpd(msg.pollUpdates),
-          pollVotes: mapUpd(msg.pollVotes),
-        };
-      });
-      return result;
-    }, msgId);
-    res.json(out);
-  } catch (e) {
-    res.status(500).json({ error: String(e && e.stack || e) });
-  }
+  const poll = store.polls[req.params.msgId];
+  if (!poll) return res.json([]);
+  res.json(Object.values(poll.votes).map((v) => ({ voterName: v.name, options: v.options })));
 });
 
 app.listen(PORT, () => console.log('[wa] HTTP auf :' + PORT));
