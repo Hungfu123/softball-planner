@@ -13,6 +13,11 @@ frontend/dist/
 whatsapp-service/node_modules/
 whatsapp-service/package-lock.json
 
+# Baileys Poll-Vote PoC (wegwerfbar; auth/ = WhatsApp-Session)
+baileys-poc/node_modules/
+baileys-poc/package-lock.json
+baileys-poc/auth/
+
 # Vite build cache (top-level + backend dir from accidental cwd)
 .vite/
 backend/.vite/
