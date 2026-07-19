@@ -3,6 +3,7 @@ package com.softball.adapter.in.web;
 import com.softball.adapter.dto.AssignNewVoterRequest;
 import com.softball.adapter.dto.AssignVoterRequest;
 import com.softball.adapter.dto.PlayerResponse;
+import com.softball.adapter.dto.UnassignVoterRequest;
 import com.softball.adapter.dto.UnknownVoterResponse;
 import com.softball.application.PollVoteSyncService;
 import com.softball.application.VoterAssignmentService;
@@ -43,5 +44,12 @@ public class WhatsappVoteController {
     @PostMapping("/assign-new")
     public PlayerResponse assignNew(@Valid @RequestBody final AssignNewVoterRequest req) {
         return PlayerResponse.from(assignmentService.assignNew(req.voterName(), req.playerName()));
+    }
+
+    // Alias eines Spielers löschen: whatsappName -> null und seine zugeordneten Stimmen
+    // wieder auf "unbekannt" setzen (zum erneuten Zuordnen / Testen).
+    @PostMapping("/unassign")
+    public PlayerResponse unassign(@Valid @RequestBody final UnassignVoterRequest req) {
+        return PlayerResponse.from(assignmentService.unassign(req.playerId()));
     }
 }

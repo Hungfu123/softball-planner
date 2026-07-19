@@ -150,6 +150,28 @@ class VoterAssignmentServiceTest {
         assertThat(result.get(0).trainingDate()).isEqualTo(LocalDate.of(2026, 4, 14));
     }
 
+    @Test
+    void unassign_clearsWhatsappNameAndResetsVotesToUnknown() {
+        player.setWhatsappName("Max ⚾");
+        when(playerRepo.findById(5L)).thenReturn(Optional.of(player));
+        final SyncedVote vote = new SyncedVote(10L, "Max ⚾", 5L, true);
+        when(voteRepo.findByPlayerId(5L)).thenReturn(List.of(vote));
+
+        service.unassign(5L);
+
+        // Alias entfernt
+        verify(playerRepo).save(org.mockito.ArgumentMatchers.argThat(p -> p.getWhatsappName() == null));
+        // zugeordnete Stimme wieder unbekannt (player_id -> null)
+        verify(voteRepo).save(org.mockito.ArgumentMatchers.argThat(v -> v.getPlayerId() == null));
+    }
+
+    @Test
+    void unassign_unknownPlayerThrows() {
+        when(playerRepo.findById(99L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.unassign(99L)).isInstanceOf(ResourceNotFoundException.class);
+        verify(voteRepo, never()).save(any());
+    }
+
     // kleine Hilfsmethode, um argThat mit generischem List<TrainingAttendance> lesbar zu halten
     private static List<TrainingAttendance> argThatList(final java.util.function.Predicate<List<TrainingAttendance>> predicate) {
         return org.mockito.ArgumentMatchers.argThat(predicate::test);

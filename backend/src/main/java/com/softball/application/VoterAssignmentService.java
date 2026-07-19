@@ -74,6 +74,25 @@ public class VoterAssignmentService {
         return saved;
     }
 
+    /**
+     * Hebt die Alias-Zuordnung eines Spielers auf: löscht seinen {@code whatsappName} und setzt
+     * alle bereits ihm zugeordneten Stimmen zurück auf "unbekannt" ({@code playerId = null}),
+     * sodass sie erneut zugeordnet werden können. Die gebuchte Anwesenheit bleibt unberührt
+     * (die wird bei Bedarf manuell in der Anwesenheitsliste geändert).
+     */
+    @Transactional
+    public Player unassign(final Long playerId) {
+        final Player player = playerRepo.findById(playerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Spieler", playerId));
+        player.setWhatsappName(null);
+        final Player saved = playerRepo.save(player);
+        for (final SyncedVote vote : voteRepo.findByPlayerId(playerId)) {
+            vote.setPlayerId(null);
+            voteRepo.save(vote);
+        }
+        return saved;
+    }
+
     private void rematch(final String voterName, final Player player) {
         final List<SyncedVote> open = voteRepo.findByVoterNameAndPlayerIdIsNull(voterName);
         for (final SyncedVote vote : open) {

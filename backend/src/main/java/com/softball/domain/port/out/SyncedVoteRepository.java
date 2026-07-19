@@ -10,5 +10,6 @@ public interface SyncedVoteRepository {
     List<SyncedVote> findByTrainingId(Long trainingId);
     List<SyncedVote> findByVoterNameAndPlayerIdIsNull(String voterName);
     List<SyncedVote> findByPlayerIdIsNull();
+    List<SyncedVote> findByPlayerId(Long playerId);
     SyncedVote save(SyncedVote vote);
 }

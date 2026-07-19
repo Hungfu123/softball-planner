@@ -659,3 +659,5 @@ export const assignVoter = (voterName: string, playerId: number) =>
   request<Player>('/orga/whatsapp/assign', { method: 'POST', body: JSON.stringify({ voterName, playerId }) })
 export const assignNewVoter = (voterName: string, playerName: string) =>
   request<Player>('/orga/whatsapp/assign-new', { method: 'POST', body: JSON.stringify({ voterName, playerName }) })
+export const unassignVoter = (playerId: number) =>
+  request<Player>('/orga/whatsapp/unassign', { method: 'POST', body: JSON.stringify({ playerId }) })

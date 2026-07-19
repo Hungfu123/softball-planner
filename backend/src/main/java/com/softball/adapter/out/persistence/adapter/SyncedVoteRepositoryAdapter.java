@@ -41,6 +41,11 @@ public class SyncedVoteRepositoryAdapter implements SyncedVoteRepository {
     }
 
     @Override
+    public List<SyncedVote> findByPlayerId(final Long playerId) {
+        return repo.findByPlayerId(playerId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public SyncedVote save(final SyncedVote vote) {
         if (vote.getId() != null) {
             final var existing = repo.findById(vote.getId()).orElse(null);

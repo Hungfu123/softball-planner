@@ -132,6 +132,39 @@ class PollVoteSyncServiceTest {
     }
 
     @Test
+    void syncNowMirrorsAndRemovesAttendanceWhenVoteChangedToNo() {
+        final Player max = new Player(5L, "Max", true, null); max.setWhatsappName("Max ⚾");
+        when(playerRepo.findAll()).thenReturn(List.of(max));
+        // bereits anwesend gebucht (z.B. voriger Ja-Sync)
+        final TrainingAttendance existingRow = new TrainingAttendance(training, max, true);
+        existingRow.setId(42L);
+        when(attendanceRepo.findByTrainingId(10L)).thenReturn(List.of(existingRow));
+        // Stimme jetzt "Nein" -> manueller Sync spiegelt -> Haken zurücknehmen (gleiche id -> Update)
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(new WhatsappVote("Max ⚾", List.of("Nein"))));
+
+        service.syncNow();
+
+        verify(attendanceRepo).saveAll(argThat((List<TrainingAttendance> l) ->
+            l.size() == 1 && l.get(0).getId() != null && l.get(0).getId() == 42L
+                && l.get(0).getPlayer().getId() == 5L && !l.get(0).isPresent()));
+    }
+
+    @Test
+    void syncNowMirrorLeavesNonVotersUntouched() {
+        final Player max = new Player(5L, "Max", true, null); max.setWhatsappName("Max ⚾");
+        final Player eva = new Player(7L, "Eva", true, null); eva.setWhatsappName("Eva");
+        when(playerRepo.findAll()).thenReturn(List.of(max, eva));
+        // Eva ist anwesend (manuell), stimmt aber NICHT ab -> darf beim Spiegeln nicht angefasst werden
+        when(attendanceRepo.findByTrainingId(10L)).thenReturn(List.of(new TrainingAttendance(training, eva, true)));
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(new WhatsappVote("Max ⚾", List.of("Nein"))));
+
+        service.syncNow();
+
+        // Max: keine Buchung vorhanden + Nein -> nichts zu tun; Eva: nicht abgestimmt -> unberührt
+        verify(attendanceRepo, never()).saveAll(any());
+    }
+
+    @Test
     void nullOrBlankVoterNameIsSkipped() {
         final Player max = new Player(5L, "Max", true, null); max.setWhatsappName("Max ⚾");
         when(playerRepo.findAll()).thenReturn(List.of(max));

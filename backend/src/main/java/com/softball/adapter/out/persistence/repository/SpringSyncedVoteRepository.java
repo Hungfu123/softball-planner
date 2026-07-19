@@ -11,4 +11,5 @@ public interface SpringSyncedVoteRepository extends JpaRepository<SyncedVoteEnti
     List<SyncedVoteEntity> findByTrainingId(Long trainingId);
     List<SyncedVoteEntity> findByVoterNameAndPlayerIdIsNull(String voterName);
     List<SyncedVoteEntity> findByPlayerIdIsNull();
+    List<SyncedVoteEntity> findByPlayerId(Long playerId);
 }
