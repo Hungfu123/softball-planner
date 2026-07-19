@@ -9,6 +9,10 @@ frontend/node_modules/
 frontend/node/
 frontend/dist/
 
+# WhatsApp-Service (lokale npm-Artefakte; Docker-Build nutzt nur package.json)
+whatsapp-service/node_modules/
+whatsapp-service/package-lock.json
+
 # Vite build cache (top-level + backend dir from accidental cwd)
 .vite/
 backend/.vite/
