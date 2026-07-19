@@ -1,9 +1,11 @@
-FROM eclipse-temurin:21-jdk AS build
+# Maven-Basisimage: mvn ist vorinstalliert → kein ./mvnw-Wrapper-Download je Build
+# (der schlug bei Netzwerk-Blips fehl und ließ Deploys scheitern).
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY backend/ backend/
 COPY frontend/ frontend/
 WORKDIR /app/backend
-RUN ./mvnw package -DskipTests
+RUN mvn package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
