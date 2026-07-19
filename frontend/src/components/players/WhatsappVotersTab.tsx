@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { getUnknownVoters, assignVoter, assignNewVoter, unassignVoter } from '@/api/client'
-import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
+import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton, ConfirmModal } from '@/components/shared'
 import { PlusCircle, CrossBones, XMark } from '@/icons'
 import type { UnknownVoter, Player } from '@/types'
 
@@ -28,6 +28,7 @@ export function WhatsappVotersTab() {
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const [newPlayerVoter, setNewPlayerVoter] = useState<UnknownVoter | null>(null)
   const [assigningId, setAssigningId] = useState<number | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Player | null>(null)
 
   const loadVoters = useCallback(async () => {
     setVotersLoading(true)
@@ -169,7 +170,7 @@ export function WhatsappVotersTab() {
                       <span className="text-navy-700 truncate max-w-[10rem]">{p.whatsappName}</span>
                       <button
                         type="button"
-                        onClick={() => handleDeleteAlias(p.id)}
+                        onClick={() => setPendingDelete(p)}
                         title="Alias löschen — zugeordnete Stimmen werden wieder unbekannt"
                         aria-label={`Alias von ${p.name} löschen`}
                         className="ml-0.5 p-1 text-gray-400 hover:text-softball-red-600 rounded-full hover:bg-white cursor-pointer"
@@ -211,6 +212,16 @@ export function WhatsappVotersTab() {
           voterName={newPlayerVoter.voterName}
           onCancel={() => setNewPlayerVoter(null)}
           onConfirm={handleAssignNew}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          title="Alias löschen?"
+          message={`Der Alias „${pendingDelete.whatsappName}" von ${pendingDelete.name} wird entfernt. Bereits zugeordnete Umfrage-Stimmen werden wieder als „unbekannt" gelistet. Die Anwesenheit bleibt unberührt.`}
+          confirmLabel="Alias löschen"
+          onConfirm={() => { const id = pendingDelete.id; setPendingDelete(null); handleDeleteAlias(id) }}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
     </div>
