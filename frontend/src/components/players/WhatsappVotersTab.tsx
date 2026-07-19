@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
-import { getUnknownVoters, assignVoter, assignNewVoter } from '@/api/client'
+import { getUnknownVoters, assignVoter, assignNewVoter, unassignVoter } from '@/api/client'
 import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
-import { PlusCircle, CrossBones } from '@/icons'
+import { PlusCircle, CrossBones, TrashBin } from '@/icons'
 import type { UnknownVoter, Player } from '@/types'
 
 const inputCls =
@@ -72,6 +72,16 @@ export function WhatsappVotersTab() {
       toast.show((e as Error).message, 'error')
     } finally {
       setBusyKey(null)
+    }
+  }
+
+  const handleDeleteAlias = async (playerId: number) => {
+    try {
+      await unassignVoter(playerId)
+      toast.show('Alias gelöscht — Stimmen wieder unbekannt')
+      await Promise.all([loadVoters(), reloadPlayers()])
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
     }
   }
 
@@ -146,7 +156,7 @@ export function WhatsappVotersTab() {
         ) : (
           <div className="divide-y divide-cream-200 border border-cream-300 rounded-lg overflow-hidden">
             {sortedPlayers.map(p => (
-              <AliasRow key={p.id} player={p} onSave={setWhatsappName} />
+              <AliasRow key={p.id} player={p} onSave={setWhatsappName} onDelete={handleDeleteAlias} />
             ))}
           </div>
         )}
@@ -163,9 +173,10 @@ export function WhatsappVotersTab() {
   )
 }
 
-function AliasRow({ player, onSave }: { player: Player; onSave: (id: number, whatsappName: string) => Promise<Player> }) {
+function AliasRow({ player, onSave, onDelete }: { player: Player; onSave: (id: number, whatsappName: string) => Promise<Player>; onDelete: (id: number) => Promise<void> }) {
   const [value, setValue] = useState(player.whatsappName ?? '')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const toast = useToastContext()
 
   useEffect(() => { setValue(player.whatsappName ?? '') }, [player.whatsappName])
@@ -185,6 +196,15 @@ function AliasRow({ player, onSave }: { player: Player; onSave: (id: number, wha
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await onDelete(player.id)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 bg-white">
       <span className="flex-1 text-sm font-medium text-navy-900 truncate">{player.name}</span>
@@ -194,9 +214,21 @@ function AliasRow({ player, onSave }: { player: Player; onSave: (id: number, wha
         onBlur={handleBlur}
         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
         placeholder="WhatsApp-Name…"
-        disabled={saving}
+        disabled={saving || deleting}
         className="cursor-pencil w-44 sm:w-56 border border-cream-300 rounded-lg px-3 py-1.5 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none disabled:opacity-60 shrink-0"
       />
+      {player.whatsappName && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={saving || deleting}
+          title="Alias löschen — zugeordnete Stimmen werden wieder unbekannt"
+          aria-label={`Alias von ${player.name} löschen`}
+          className="shrink-0 p-1.5 text-gray-400 hover:text-softball-red-600 rounded-lg hover:bg-cream-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <TrashBin size={16} />
+        </button>
+      )}
     </div>
   )
 }

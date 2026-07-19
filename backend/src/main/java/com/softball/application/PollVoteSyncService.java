@@ -19,8 +19,15 @@ import java.util.stream.Collectors;
 
 /**
  * Zieht Stimmen aus versendeten WhatsApp-Umfragen ("Trainings-Poll") und bucht sie als
- * Trainings-Anwesenheit. Bucht ausschließlich {@code present=true} — bestehende Anwesenheit
- * wird nie zurückgenommen (kein deleteByTrainingId hier, anders als {@link TrainingAttendanceService}).
+ * Trainings-Anwesenheit.
+ * <ul>
+ *   <li>Auto-Sync (Scheduler, {@link #syncAll}): additiv — bucht nur {@code present=true},
+ *       nimmt bestehende Anwesenheit nie zurück (schützt manuelle Korrekturen nach dem Training).</li>
+ *   <li>Manueller Sync ({@link #syncNow}, "Jetzt syncen"-Button): spiegelt den aktuellen
+ *       Voter-Stand — nimmt Anwesenheit von Wählern zurück, die nicht mehr "Ja" gestimmt haben.
+ *       Nicht-Wähler bleiben in beiden Fällen unberührt.</li>
+ * </ul>
+ * Kein pauschales deleteByTrainingId (anders als {@link TrainingAttendanceService}).
  */
 @Service
 public class PollVoteSyncService {
@@ -74,20 +81,24 @@ public class PollVoteSyncService {
 
     @Transactional
     public int syncAll(final LocalDateTime now) {
-        return sync(pollRepo.findAll(), now, true);
+        // Automatischer Scheduler-Lauf: additiv (nie zurücknehmen), damit späte Vote-Änderungen
+        // und manuelle Korrekturen nach dem Training nicht überschrieben werden.
+        return sync(pollRepo.findAll(), now, true, false);
     }
 
     @Transactional
     public int syncNow() {
-        return sync(pollRepo.findAll(), LocalDateTime.now(clock), false);
+        // Manueller "Jetzt syncen"-Button: spiegelt den aktuellen Voter-Stand (Ja -> anwesend,
+        // von Ja weg -> Haken zurücknehmen). Nicht-Wähler bleiben unberührt.
+        return sync(pollRepo.findAll(), LocalDateTime.now(clock), false, true);
     }
 
     // package-private für Test
     int syncAllUngated(final List<WhatsappPoll> polls) {
-        return sync(polls, LocalDateTime.now(clock), false);
+        return sync(polls, LocalDateTime.now(clock), false, false);
     }
 
-    private int sync(final List<WhatsappPoll> polls, final LocalDateTime now, final boolean enforceGate) {
+    private int sync(final List<WhatsappPoll> polls, final LocalDateTime now, final boolean enforceGate, final boolean mirror) {
         int written = 0;
         final List<Training> trainings = trainingRepo.findAllByOrderByDateDesc();
         final Map<String, Player> byName = playerRepo.findAll().stream()
@@ -117,19 +128,27 @@ public class PollVoteSyncService {
                 final Long playerId = player != null ? player.getId() : null;
                 upsertVote(training.getId(), vote.voterName(), playerId, present);
                 written++;
-                if (player != null && present && !bookedPlayerIds.contains(playerId)) {
+                if (player != null && !bookedPlayerIds.contains(playerId)) {
                     final TrainingAttendance existingRow = existingByPlayerId.get(playerId);
-                    if (existingRow == null) {
-                        // keine Buchung vorhanden -> neue Anwesenheit anlegen
-                        toBook.add(new TrainingAttendance(training, player, true));
-                        bookedPlayerIds.add(playerId);
-                    } else if (!existingRow.isPresent()) {
-                        // vorhandene Buchung false -> auf true hochstufen (id bleibt erhalten, kein Insert-Konflikt)
-                        existingRow.setPresent(true);
+                    if (present) {
+                        if (existingRow == null) {
+                            // keine Buchung vorhanden -> neue Anwesenheit anlegen
+                            toBook.add(new TrainingAttendance(training, player, true));
+                            bookedPlayerIds.add(playerId);
+                        } else if (!existingRow.isPresent()) {
+                            // vorhandene Buchung false -> auf true hochstufen (id bleibt erhalten, kein Insert-Konflikt)
+                            existingRow.setPresent(true);
+                            toBook.add(existingRow);
+                            bookedPlayerIds.add(playerId);
+                        }
+                        // existingRow bereits present=true -> nichts zu tun, kein Duplikat
+                    } else if (mirror && existingRow != null && existingRow.isPresent()) {
+                        // Manueller Sync spiegelt den aktuellen Stand: Vote ist nicht mehr "Ja"
+                        // -> zuvor gebuchte Anwesenheit dieses Wählers zurücknehmen.
+                        existingRow.setPresent(false);
                         toBook.add(existingRow);
                         bookedPlayerIds.add(playerId);
                     }
-                    // existingRow bereits present=true -> nichts zu tun, kein Duplikat
                 }
             }
             if (!toBook.isEmpty()) attendanceRepo.saveAll(toBook);
