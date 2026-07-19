@@ -31,7 +31,7 @@ type AttendanceSort = 'alpha' | 'frequency' | 'decided'
 
 export function TrainingTodayPage() {
   const { trainings, attendance, toggleAttendance, cancelTraining, loading: trainingsLoading,
-    periods, activePeriodId, selectPeriod, createBulk, updatePeriod, deletePeriod } = useTraining()
+    periods, activePeriodId, selectPeriod, createBulk, updatePeriod, deletePeriod, loadAll } = useTraining()
   const { players } = usePlayers()
   const [statsOpen, setStatsOpen] = useState(false)
   const [planEditOpen, setPlanEditOpen] = useState(false)
@@ -242,7 +242,9 @@ export function TrainingTodayPage() {
     try {
       const result = await api.syncWhatsappVotes()
       toast.success(`${result.synced} Stimmen gesynct`)
-      await refreshUnknownVoters()
+      // Anwesenheit + unbekannte Wähler neu laden, damit gebuchte/zurückgenommene Haken
+      // sofort sichtbar sind (kein manuelles Reload nötig).
+      await Promise.all([refreshUnknownVoters(), loadAll(activePeriodId)])
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
