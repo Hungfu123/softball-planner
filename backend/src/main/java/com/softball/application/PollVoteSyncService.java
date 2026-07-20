@@ -2,7 +2,6 @@ package com.softball.application;
 
 import com.softball.domain.model.*;
 import com.softball.domain.port.out.*;
-import com.softball.domain.service.TargetTrainingResolver;
 import com.softball.domain.service.VotePresenceEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,26 +39,25 @@ public class PollVoteSyncService {
     private final PlayerRepository playerRepo;
     private final SyncedVoteRepository voteRepo;
     private final TrainingAttendanceRepository attendanceRepo;
-    private final TargetTrainingResolver resolver;
     private final VotePresenceEvaluator evaluator;
     private final Clock clock;
 
-    // Spring-Konstruktor: TargetTrainingResolver/VotePresenceEvaluator sind reine Domain-Klassen
-    // (kein @Component, siehe Onion-Architektur) und werden hier wie in LineupService per `new` gebildet.
+    // Spring-Konstruktor: VotePresenceEvaluator ist eine reine Domain-Klasse
+    // (kein @Component, siehe Onion-Architektur) und wird hier wie in LineupService per `new` gebildet.
     @Autowired
     public PollVoteSyncService(final WhatsappPollRepository pollRepo, final WhatsappSender sender,
                                final TrainingRepository trainingRepo, final PlayerRepository playerRepo,
                                final SyncedVoteRepository voteRepo, final TrainingAttendanceRepository attendanceRepo) {
         this(pollRepo, sender, trainingRepo, playerRepo, voteRepo, attendanceRepo,
-             new TargetTrainingResolver(), new VotePresenceEvaluator(), Clock.system(ZoneId.of("Europe/Berlin")));
+             new VotePresenceEvaluator(), Clock.system(ZoneId.of("Europe/Berlin")));
     }
 
-    // für Tests: expliziter Resolver/Evaluator, Standard-Clock
+    // für Tests: expliziter Evaluator, Standard-Clock
     public PollVoteSyncService(final WhatsappPollRepository pollRepo, final WhatsappSender sender,
                                final TrainingRepository trainingRepo, final PlayerRepository playerRepo,
                                final SyncedVoteRepository voteRepo, final TrainingAttendanceRepository attendanceRepo,
-                               final TargetTrainingResolver resolver, final VotePresenceEvaluator evaluator) {
-        this(pollRepo, sender, trainingRepo, playerRepo, voteRepo, attendanceRepo, resolver, evaluator,
+                               final VotePresenceEvaluator evaluator) {
+        this(pollRepo, sender, trainingRepo, playerRepo, voteRepo, attendanceRepo, evaluator,
              Clock.system(ZoneId.of("Europe/Berlin")));
     }
 
@@ -67,11 +65,10 @@ public class PollVoteSyncService {
     public PollVoteSyncService(final WhatsappPollRepository pollRepo, final WhatsappSender sender,
                                final TrainingRepository trainingRepo, final PlayerRepository playerRepo,
                                final SyncedVoteRepository voteRepo, final TrainingAttendanceRepository attendanceRepo,
-                               final TargetTrainingResolver resolver, final VotePresenceEvaluator evaluator,
-                               final Clock clock) {
+                               final VotePresenceEvaluator evaluator, final Clock clock) {
         this.pollRepo = pollRepo; this.sender = sender; this.trainingRepo = trainingRepo;
         this.playerRepo = playerRepo; this.voteRepo = voteRepo; this.attendanceRepo = attendanceRepo;
-        this.resolver = resolver; this.evaluator = evaluator; this.clock = clock;
+        this.evaluator = evaluator; this.clock = clock;
     }
 
     @Scheduled(cron = "0 * * * * *", zone = "Europe/Berlin")
@@ -100,17 +97,15 @@ public class PollVoteSyncService {
 
     private int sync(final List<WhatsappPoll> polls, final LocalDateTime now, final boolean enforceGate, final boolean mirror) {
         int written = 0;
-        final List<Training> trainings = trainingRepo.findAllByOrderByDateDesc();
         final Map<String, Player> byName = playerRepo.findAll().stream()
             .filter(p -> p.getWhatsappName() != null && !p.getWhatsappName().isBlank())
             .collect(Collectors.toMap(p -> p.getWhatsappName().trim().toLowerCase(), p -> p, (a, b) -> a));
 
         for (final WhatsappPoll poll : polls) {
-            if (!poll.isEnabled() || poll.getLastSentMessageId() == null || poll.getLastSentAt() == null) continue;
-            final Optional<Training> target = resolver.resolve(trainings, poll.getLastSentAt().toLocalDate());
-            if (target.isEmpty()) continue;
-            final Training training = target.get();
-            if (enforceGate && !evaluator.gateOpen(training.getTime(), now, training.getDate())) continue;
+            if (!poll.isEnabled() || poll.getLastSentMessageId() == null || poll.getLastSentTrainingId() == null) continue;
+            final Training training = trainingRepo.findById(poll.getLastSentTrainingId()).orElse(null);
+            if (training == null || training.isCancelled()) continue;
+            if (enforceGate && !evaluator.gateOpen(training.getTime(), now, training.getDate(), 1)) continue;
 
             final List<WhatsappVote> votes = sender.fetchVotes(poll.getLastSentMessageId());
             if (votes.isEmpty()) continue;

@@ -42,4 +42,14 @@ class VotePresenceEvaluatorTest {
         assertThat(ev.gateOpen("kaputt", LocalDateTime.of(2026, 4, 14, 6, 0), day)).isTrue();
         assertThat(ev.gateOpen(null, LocalDateTime.of(2026, 4, 14, 6, 0), day)).isTrue();
     }
+
+    @Test
+    void gateClosedBeforeOffsetTrainingTime() {
+        assertThat(ev.gateOpen("20:00", LocalDateTime.of(2026, 4, 14, 20, 30), day, 1)).isFalse();
+    }
+
+    @Test
+    void gateOpenAtOrAfterOffsetTrainingTime() {
+        assertThat(ev.gateOpen("20:00", LocalDateTime.of(2026, 4, 14, 21, 0), day, 1)).isTrue();
+    }
 }

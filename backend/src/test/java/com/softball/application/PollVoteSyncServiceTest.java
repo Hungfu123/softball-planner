@@ -2,7 +2,6 @@ package com.softball.application;
 
 import com.softball.domain.model.*;
 import com.softball.domain.port.out.*;
-import com.softball.domain.service.TargetTrainingResolver;
 import com.softball.domain.service.VotePresenceEvaluator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,21 +24,23 @@ class PollVoteSyncServiceTest {
     private final TrainingAttendanceRepository attendanceRepo = mock(TrainingAttendanceRepository.class);
     private PollVoteSyncService service;
 
-    private final LocalDateTime now = LocalDateTime.of(2026, 4, 14, 20, 0); // Di 20:00
+    // Training ist 20:00, Gate öffnet erst ab Trainingsstart + 1h (21:00).
+    private final LocalDateTime now = LocalDateTime.of(2026, 4, 14, 21, 0); // Di 21:00
     private Training training;
     private WhatsappPoll poll;
 
     @BeforeEach
     void setup() {
         service = new PollVoteSyncService(pollRepo, sender, trainingRepo, playerRepo, voteRepo,
-                attendanceRepo, new TargetTrainingResolver(), new VotePresenceEvaluator());
+                attendanceRepo, new VotePresenceEvaluator());
         training = new Training(10L, LocalDate.of(2026, 4, 14), "20:00", "Park");
         poll = new WhatsappPoll();
         poll.setId(1L); poll.setEnabled(true);
         poll.setLastSentMessageId("msg-1");
         poll.setLastSentAt(LocalDateTime.of(2026, 4, 13, 20, 0)); // Mo
+        poll.setLastSentTrainingId(10L);
         when(pollRepo.findAll()).thenReturn(List.of(poll));
-        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(training));
+        when(trainingRepo.findById(10L)).thenReturn(Optional.of(training));
         when(voteRepo.findByTrainingIdAndVoterName(anyLong(), anyString())).thenReturn(Optional.empty());
         when(voteRepo.save(any())).thenAnswer(i -> i.getArgument(0));
         when(attendanceRepo.findByTrainingId(10L)).thenReturn(List.of());
@@ -85,7 +86,8 @@ class PollVoteSyncServiceTest {
     @Test
     void gateClosedDoesNothing() {
         when(sender.fetchVotes(any())).thenReturn(List.of(new WhatsappVote("Max ⚾", List.of("Ja"))));
-        final int written = service.syncAll(LocalDateTime.of(2026, 4, 14, 19, 0)); // vor 20:00
+        // Training ist 20:00, Gate öffnet erst ab 21:00 (Start + 1h) -> 20:30 ist noch zu.
+        final int written = service.syncAll(LocalDateTime.of(2026, 4, 14, 20, 30));
         assertThat(written).isZero();
         verify(voteRepo, never()).save(any());
         verify(attendanceRepo, never()).saveAll(any());
@@ -106,7 +108,7 @@ class PollVoteSyncServiceTest {
 
     @Test
     void noTargetTrainingSkips() {
-        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of());
+        when(trainingRepo.findById(10L)).thenReturn(Optional.empty());
         when(playerRepo.findAll()).thenReturn(List.of());
 
         final int written = service.syncAll(now);
@@ -114,6 +116,19 @@ class PollVoteSyncServiceTest {
         assertThat(written).isZero();
         verify(sender, never()).fetchVotes(any());
         verify(voteRepo, never()).save(any());
+    }
+
+    @Test
+    void cancelledTargetTrainingSkips() {
+        training.setCancelled(true);
+        when(playerRepo.findAll()).thenReturn(List.of());
+
+        final int written = service.syncAll(now);
+
+        assertThat(written).isZero();
+        verify(sender, never()).fetchVotes(any());
+        verify(voteRepo, never()).save(any());
+        verify(attendanceRepo, never()).saveAll(any());
     }
 
     @Test
