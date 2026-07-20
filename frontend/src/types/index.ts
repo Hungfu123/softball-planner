@@ -175,6 +175,7 @@ export interface TrainingPeriodResponse {
   endDate: string
   weekdays: number[]
   time: string | null
+  weekdayTimes: Record<number, string>
   location: string | null
 }
 

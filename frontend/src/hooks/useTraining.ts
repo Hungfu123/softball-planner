@@ -145,7 +145,7 @@ export function useTraining() {
     })
   }
 
-  const createBulk = async (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string }) => {
+  const createBulk = async (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string }) => {
     await api.createBulkTrainings(data)
     // Reload periods since a new one may have been created
     const newPeriods = await loadPeriods()
@@ -176,7 +176,7 @@ export function useTraining() {
 
   const updatePeriod = async (
     periodId: number,
-    data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; location?: string | null },
+    data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; weekdayTimes: Record<number, string>; location?: string | null },
   ) => {
     await api.updateTrainingPeriod(periodId, data)
     await loadPeriods()
