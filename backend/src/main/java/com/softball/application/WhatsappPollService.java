@@ -120,7 +120,7 @@ public class WhatsappPollService {
                 p.isAllowMultipleAnswers(), p.getMessage());
         // Sende-Metadaten stempeln, sonst findet der Vote-Sync den Poll nicht
         // (braucht lastSentMessageId zum Abfragen + lastSentAt zur Trainings-Auflösung).
-        p.setLastSentAt(LocalDateTime.now(ZoneId.of("Europe/Berlin")));
+        p.setLastSentAt(LocalDateTime.now(clock));
         p.setLastSentMessageId(messageId);
         // An nächstes gültiges Training koppeln, wie es der Scheduler auch tut (für Vote-Sync-Zuordnung).
         final LocalDate today = LocalDate.now(clock);
