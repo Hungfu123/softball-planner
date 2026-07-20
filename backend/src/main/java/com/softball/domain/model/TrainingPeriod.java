@@ -2,7 +2,9 @@ package com.softball.domain.model;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TrainingPeriod {
     private Long id;
@@ -12,6 +14,7 @@ public class TrainingPeriod {
     private List<Integer> weekdays = new ArrayList<>();
     private String time;
     private String location;
+    private Map<Integer, String> weekdayTimes = new LinkedHashMap<>();
 
     public TrainingPeriod() {}
 
@@ -43,4 +46,7 @@ public class TrainingPeriod {
     public void setTime(final String time) { this.time = time; }
     public String getLocation() { return location; }
     public void setLocation(final String location) { this.location = location; }
+
+    public Map<Integer, String> getWeekdayTimes() { return weekdayTimes; }
+    public void setWeekdayTimes(final Map<Integer, String> weekdayTimes) { this.weekdayTimes = weekdayTimes != null ? weekdayTimes : new LinkedHashMap<>(); }
 }
