@@ -70,6 +70,7 @@ public class TrainingService {
     @Transactional
     public List<TrainingResponse> createBulk(final List<Integer> weekdays, final LocalDate startDate,
                                               final LocalDate endDate, final String time,
+                                              final Map<Integer, String> weekdayTimes,
                                               final String location, final String periodName,
                                               final String type) {
         if (startDate.isAfter(endDate)) {
@@ -85,12 +86,20 @@ public class TrainingService {
             .map(DayOfWeek::of)
             .collect(Collectors.toSet());
 
+        for (final Integer d : weekdays) {
+            final String t = weekdayTimes != null ? weekdayTimes.get(d) : null;
+            if (t == null || !t.matches("^\\d{2}:\\d{2}$")) {
+                throw new IllegalArgumentException("Für jeden Trainingstag muss eine Uhrzeit (HH:mm) gesetzt sein");
+            }
+        }
+
         TrainingPeriod period = null;
         if (periodName != null && !periodName.isBlank()) {
             period = periodRepository.findByNameIgnoreCase(periodName.trim())
                 .orElseGet(() -> periodRepository.save(new TrainingPeriod(periodName.trim(), startDate, endDate)));
             period.setWeekdays(new java.util.ArrayList<>(weekdays));
             period.setTime(time);
+            period.setWeekdayTimes(weekdayTimes);
             period.setLocation(location);
             period = periodRepository.save(period);
         }
@@ -108,15 +117,16 @@ public class TrainingService {
 
         final List<TrainingResponse> results = new ArrayList<>();
         for (final LocalDate d : candidateDates) {
+            final String dayTime = weekdayTimes.get(d.getDayOfWeek().getValue());
             final Training existing = existingByDate.get(d);
             if (existing != null) {
-                if (time != null) existing.setTime(time);
+                existing.setTime(dayTime);
                 if (location != null) existing.setLocation(location);
                 if (type != null) existing.setType(type);
                 if (period != null) existing.setPeriod(period);
                 results.add(TrainingResponse.from(trainingRepository.save(existing)));
             } else {
-                Training training = new Training(d, time, location);
+                Training training = new Training(d, dayTime, location);
                 if (type != null) training.setType(type);
                 training.setPeriod(period);
                 training = trainingRepository.save(training);

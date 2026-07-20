@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public record CreateBulkTrainingRequest(
     @NotEmpty(message = "Wochentage dürfen nicht leer sein")
@@ -17,6 +18,9 @@ public record CreateBulkTrainingRequest(
     LocalDate endDate,
 
     String time,
+
+    @NotNull(message = "Uhrzeiten je Wochentag sind erforderlich")
+    Map<Integer, String> weekdayTimes,
 
     String location,
 
