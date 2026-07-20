@@ -18,11 +18,11 @@ type FormState = {
   startDate: string
   endDate: string
   weekdays: number[]
-  time: string
+  weekdayTimes: Record<number, string>
   location: string
 }
 
-const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], time: '', location: '' }
+const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, location: '' }
 
 type Props = {
   open: boolean
@@ -30,8 +30,8 @@ type Props = {
   periods: TrainingPeriodResponse[]
   activePeriodId: number | null
   onSelect: (id: number | null) => void
-  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string }) => Promise<void>
-  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; location?: string | null }) => Promise<void>
+  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string }) => Promise<void>
+  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null }) => Promise<void>
   onDelete: (id: number) => Promise<void>
 }
 
@@ -42,26 +42,45 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
   const [deleteTarget, setDeleteTarget] = useState<TrainingPeriodResponse | null>(null)
 
   const startEdit = (p: TrainingPeriodResponse) => {
-    setForm({ id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], time: p.time ?? '', location: p.location ?? '' })
+    const weekdayTimes: Record<number, string> = {}
+    p.weekdays.forEach(w => { weekdayTimes[w] = p.weekdayTimes?.[w] ?? p.time ?? '18:00' })
+    setForm({ id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], weekdayTimes, location: p.location ?? '' })
     setEditing(true)
   }
   const startCreate = () => { setForm(EMPTY_FORM); setEditing(true) }
   const cancelEdit = () => { setForm(EMPTY_FORM); setEditing(false) }
 
   const toggleWeekday = (value: number) => {
-    setForm(f => ({ ...f, weekdays: f.weekdays.includes(value) ? f.weekdays.filter(w => w !== value) : [...f.weekdays, value].sort((a, b) => a - b) }))
+    setForm(f => {
+      if (f.weekdays.includes(value)) {
+        const weekdayTimes = { ...f.weekdayTimes }
+        delete weekdayTimes[value]
+        return { ...f, weekdays: f.weekdays.filter(w => w !== value), weekdayTimes }
+      }
+      const defaultTime = Object.values(f.weekdayTimes)[0] ?? '18:00'
+      return {
+        ...f,
+        weekdays: [...f.weekdays, value].sort((a, b) => a - b),
+        weekdayTimes: { ...f.weekdayTimes, [value]: defaultTime },
+      }
+    })
   }
 
-  const canSave = form.name.trim() !== '' && form.startDate !== '' && form.endDate !== '' && form.weekdays.length > 0 && form.startDate <= form.endDate
+  const setWeekdayTime = (value: number, time: string) => {
+    setForm(f => ({ ...f, weekdayTimes: { ...f.weekdayTimes, [value]: time } }))
+  }
+
+  const canSave = form.name.trim() !== '' && form.startDate !== '' && form.endDate !== '' && form.weekdays.length > 0
+    && form.startDate <= form.endDate && form.weekdays.every(w => !!form.weekdayTimes[w])
 
   const handleSave = async () => {
     if (!canSave) return
     setSaving(true)
     try {
       if (form.id == null) {
-        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, time: form.time || undefined, location: form.location || undefined, periodName: form.name.trim() })
+        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, periodName: form.name.trim() })
       } else {
-        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, time: form.time || null, location: form.location || null })
+        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null })
       }
       cancelEdit()
     } finally {
@@ -133,16 +152,28 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="block">
-                  <span className="text-[11px] text-navy-500 uppercase tracking-wide">Zeit</span>
-                  <input value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-cream-300 text-sm" placeholder="18:00" />
-                </label>
-                <label className="block">
-                  <span className="text-[11px] text-navy-500 uppercase tracking-wide">Ort</span>
-                  <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-cream-300 text-sm" placeholder="Park" />
-                </label>
-              </div>
+              {form.weekdays.length > 0 && (
+                <div>
+                  <span className="text-[11px] text-navy-500 uppercase tracking-wide">Uhrzeit je Wochentag</span>
+                  <div className="space-y-1.5 mt-1">
+                    {WEEKDAYS.filter(w => form.weekdays.includes(w.value)).map(w => (
+                      <div key={w.value} className="flex items-center gap-2">
+                        <span className="w-8 text-xs font-bold text-navy-700">{w.label}</span>
+                        <input
+                          type="time"
+                          value={form.weekdayTimes[w.value] ?? ''}
+                          onChange={e => setWeekdayTime(w.value, e.target.value)}
+                          className="flex-1 h-10 px-3 rounded-lg border border-cream-300 text-sm"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <label className="block">
+                <span className="text-[11px] text-navy-500 uppercase tracking-wide">Ort</span>
+                <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-cream-300 text-sm" placeholder="Park" />
+              </label>
               {form.id != null && (
                 <p className="text-[11px] text-navy-500">Beim Speichern werden zukünftige Termine an den Rhythmus angepasst. Vergangene Termine bleiben unverändert.</p>
               )}

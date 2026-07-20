@@ -320,7 +320,7 @@ export const getAllAttendance = (periodId?: number) =>
   request<Record<string, TrainingAttendanceResponse[]>>(periodId ? `/trainings/attendance/all?periodId=${periodId}` : '/trainings/attendance/all')
 export const setAttendance = (trainingId: number, entries: { playerId: number; present: boolean }[]) =>
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
-export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; location?: string; periodName?: string; type?: string }) =>
+export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; type?: string }) =>
   request<TrainingResponse[]>('/trainings/bulk', { method: 'POST', body: JSON.stringify(data) })
 export const getTrainingStats = (periodId?: number, since?: string, until?: string) => {
   const params = new URLSearchParams()
@@ -341,7 +341,7 @@ export const getTrainingPeriods = () =>
   request<TrainingPeriodResponse[]>('/trainings/periods')
 export const updateTrainingPeriod = (
   id: number,
-  data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; location?: string | null },
+  data: { name: string; startDate: string; endDate: string; weekdays: number[]; time?: string | null; weekdayTimes: Record<number, string>; location?: string | null },
 ) => request<TrainingPeriodResponse>(`/trainings/periods/${id}`, { method: 'PUT', body: JSON.stringify(data) })
 export const deleteTrainingPeriod = (id: number) =>
   request<void>(`/trainings/periods/${id}`, { method: 'DELETE' })
