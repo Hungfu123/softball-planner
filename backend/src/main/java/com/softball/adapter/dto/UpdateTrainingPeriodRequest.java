@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public record UpdateTrainingPeriodRequest(
     @NotBlank(message = "Name ist erforderlich")
@@ -19,6 +20,9 @@ public record UpdateTrainingPeriodRequest(
     List<Integer> weekdays,
 
     String time,
+
+    @NotNull(message = "Uhrzeiten je Wochentag sind erforderlich")
+    Map<Integer, String> weekdayTimes,
 
     String location
 ) {}

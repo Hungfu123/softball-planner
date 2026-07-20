@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -67,7 +68,8 @@ public class TrainingPeriodService {
     @Transactional
     public TrainingPeriodResponse update(final Long periodId, final String name, final LocalDate startDate,
                                           final LocalDate endDate, final List<Integer> weekdays,
-                                          final String time, final String location) {
+                                          final String time, final Map<Integer, String> weekdayTimes,
+                                          final String location) {
         final TrainingPeriod period = periodRepository.findById(periodId)
             .orElseThrow(() -> new ResourceNotFoundException("TrainingPeriod", periodId));
         if (name == null || name.isBlank()) {
@@ -82,30 +84,50 @@ public class TrainingPeriodService {
                 throw new IllegalArgumentException("Wochentag muss zwischen 1 (Montag) und 7 (Sonntag) liegen");
             }
         }
+        for (final Integer d : safeWeekdays) {
+            final String t = weekdayTimes != null ? weekdayTimes.get(d) : null;
+            if (t == null || !t.matches("^\\d{2}:\\d{2}$")) {
+                throw new IllegalArgumentException("Für jeden Trainingstag muss eine Uhrzeit (HH:mm) gesetzt sein");
+            }
+        }
 
         period.setName(name.trim());
         period.setStartDate(startDate);
         period.setEndDate(endDate);
         period.setWeekdays(safeWeekdays);
         period.setTime(time);
+        period.setWeekdayTimes(weekdayTimes);
         period.setLocation(location);
         final TrainingPeriod saved = periodRepository.save(period);
 
+        final LocalDate today = LocalDate.now();
         final List<Training> existing = trainingRepository.findByPeriodIdOrderByDateDesc(periodId);
         final PeriodRhythmSync.SyncPlan plan = rhythmSync.computeFuture(
-            safeWeekdays, startDate, endDate, LocalDate.now(), existing);
+            safeWeekdays, startDate, endDate, today, existing);
 
         for (final LocalDate date : plan.datesToCreate()) {
-            Training training = new Training(date, time, location);
+            Training training = new Training(date, weekdayTimes.get(date.getDayOfWeek().getValue()), location);
             training.setPeriod(saved);
             training = trainingRepository.save(training);
             autoFiller.autoFill(training);
         }
 
-        if (!plan.trainingIdsToDelete().isEmpty()) {
-            final Set<Long> ids = Set.copyOf(plan.trainingIdsToDelete());
-            final List<Training> toDelete = existing.stream().filter(t -> ids.contains(t.getId())).toList();
+        final Set<Long> idsToDelete = Set.copyOf(plan.trainingIdsToDelete());
+        if (!idsToDelete.isEmpty()) {
+            final List<Training> toDelete = existing.stream().filter(t -> idsToDelete.contains(t.getId())).toList();
             deleteTrainingsCascade(toDelete);
+        }
+
+        // Beibehaltene zukünftige Trainings: Zeit an die (evtl. geänderte) Wochentags-Zeit angleichen.
+        for (final Training t : existing) {
+            if (idsToDelete.contains(t.getId()) || t.getDate().isBefore(today)) {
+                continue;
+            }
+            final String expected = weekdayTimes.get(t.getDate().getDayOfWeek().getValue());
+            if (expected != null && !expected.equals(t.getTime())) {
+                t.setTime(expected);
+                trainingRepository.save(t);
+            }
         }
 
         return TrainingPeriodResponse.from(saved);

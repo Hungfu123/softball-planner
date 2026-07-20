@@ -521,6 +521,7 @@ class TrainingIntegrationTest {
                     "weekdays", List.of(1),
                     "startDate", "2026-03-09",
                     "endDate", "2026-03-23",
+                    "weekdayTimes", Map.of("1", "18:00"),
                     "type", "PITCHER_CATCHER"))))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.length()").value(3)); // 3 Mondays: 09, 16, 23

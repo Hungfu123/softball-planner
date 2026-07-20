@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -187,7 +188,7 @@ class TrainingServiceTest {
         void startAfterEnd_throws() {
             assertThatThrownBy(() -> service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 30), LocalDate.of(2025, 6, 1),
-                "18:00", "Feld", null, null))
+                "18:00", Map.of(1, "18:00"), "Feld", null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Startdatum");
         }
@@ -196,9 +197,18 @@ class TrainingServiceTest {
         void invalidWeekday_throws() {
             assertThatThrownBy(() -> service.createBulk(
                 List.of(8), LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 30),
-                "18:00", "Feld", null, null))
+                "18:00", Map.of(), "Feld", null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Wochentag");
+        }
+
+        @Test
+        void missingTimeForWeekday_throws() {
+            assertThatThrownBy(() -> service.createBulk(
+                List.of(1, 4), LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 30),
+                "18:00", Map.of(1, "18:00"), "Feld", null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Uhrzeit");
         }
 
         @Test
@@ -213,9 +223,30 @@ class TrainingServiceTest {
 
             final List<TrainingResponse> result = service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", "Feld", null, null);
+                "18:00", Map.of(1, "18:00"), "Feld", null, null);
 
             assertThat(result).hasSize(1); // nur Montag
+        }
+
+        @Test
+        void setsTimePerWeekday() {
+            // 2025-06-02 (Mo) bis 2025-06-08 (So): Mo -> 18:00, Do (2025-06-05) -> 19:00
+            when(trainingRepository.findByDateIn(any())).thenReturn(List.of());
+            when(trainingRepository.save(any())).thenAnswer(inv -> {
+                final Training t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+
+            final List<TrainingResponse> result = service.createBulk(
+                List.of(1, 4), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
+                "18:00", Map.of(1, "18:00", 4, "19:00"), "Feld", null, null);
+
+            assertThat(result).hasSize(2);
+            assertThat(result).allSatisfy(r -> {
+                final int dow = r.date().getDayOfWeek().getValue();
+                assertThat(r.time()).isEqualTo(dow == 1 ? "18:00" : "19:00");
+            });
         }
 
         @Test
@@ -234,7 +265,7 @@ class TrainingServiceTest {
             });
 
             service.createBulk(List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", "Feld", "Sommer", null);
+                "18:00", Map.of(1, "18:00"), "Feld", "Sommer", null);
 
             verify(periodRepository, atLeastOnce()).save(any(TrainingPeriod.class));
         }
@@ -248,7 +279,7 @@ class TrainingServiceTest {
 
             final List<TrainingResponse> result = service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", "Feld", null, null);
+                "18:00", Map.of(1, "18:00"), "Feld", null, null);
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst().time()).isEqualTo("18:00"); // updated
