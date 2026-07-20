@@ -743,13 +743,13 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>Wochentag</label>
+            <label className={labelCls}>Trainingstag</label>
             <select value={form.weekday} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
               {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
           </div>
           <div>
-            <label className={labelCls}>Uhrzeit</label>
+            <label className={labelCls}>Sende-Uhrzeit (am Vortag)</label>
             <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
           </div>
         </div>
@@ -762,8 +762,8 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
             className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
           />
           <span>
-            <span className="block text-sm font-semibold text-navy-800">Automatisch jede Woche senden</span>
-            <span className="block text-xs text-gray-500">Geht wöchentlich am Wochentag + Uhrzeit raus. Aus = pausiert.</span>
+            <span className="block text-sm font-semibold text-navy-800">Automatisch senden — an den Trainingstag gekoppelt</span>
+            <span className="block text-xs text-gray-500">Sendet 1 Tag vor dem nächsten Training und bucht die Anwesenheit am Trainingstag. Kein Training an diesem Wochentag in der Periode → pausiert automatisch.</span>
           </span>
         </label>
       </div>
