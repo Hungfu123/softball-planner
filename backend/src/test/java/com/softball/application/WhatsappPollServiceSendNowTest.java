@@ -1,11 +1,19 @@
 package com.softball.application;
 
+import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
+import com.softball.domain.port.out.TrainingRepository;
 import com.softball.domain.port.out.WhatsappPollRepository;
 import com.softball.domain.port.out.WhatsappSender;
+import com.softball.domain.service.CoupledPollTargetResolver;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,9 +27,14 @@ import static org.mockito.Mockito.when;
 
 class WhatsappPollServiceSendNowTest {
 
+    private static final ZoneId BERLIN = ZoneId.of("Europe/Berlin");
+
     private final WhatsappPollRepository repository = mock(WhatsappPollRepository.class);
     private final WhatsappSender sender = mock(WhatsappSender.class);
-    private final WhatsappPollService service = new WhatsappPollService(repository, sender);
+    private final TrainingRepository trainingRepo = mock(TrainingRepository.class);
+    private final Clock clock = Clock.fixed(Instant.parse("2026-07-20T10:00:00Z"), BERLIN);
+    private final WhatsappPollService service =
+            new WhatsappPollService(repository, sender, trainingRepo, new CoupledPollTargetResolver(), clock);
 
     private WhatsappPoll poll() {
         final WhatsappPoll p = new WhatsappPoll();
@@ -29,6 +42,7 @@ class WhatsappPollServiceSendNowTest {
         p.setGroupId("123@g.us");
         p.setTitle("Wer kommt zum Training?");
         p.setOptions(List.of("Ja", "Nein"));
+        p.setWeekday(DayOfWeek.MONDAY);
         return p;
     }
 
@@ -37,6 +51,7 @@ class WhatsappPollServiceSendNowTest {
         final WhatsappPoll p = poll();
         when(repository.findById(1L)).thenReturn(Optional.of(p));
         when(sender.sendPoll(any(), any(), any(), anyBoolean(), any())).thenReturn("msg-42");
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of());
         when(repository.save(any(WhatsappPoll.class))).thenAnswer(i -> i.getArgument(0));
 
         service.sendNow(1L);
@@ -50,5 +65,24 @@ class WhatsappPollServiceSendNowTest {
     void sendNow_throwsWhenPollMissing() {
         when(repository.findById(9L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.sendNow(9L)).isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void sendNow_setsLastSentTrainingId() {
+        final WhatsappPoll p = poll();
+        final Training training = mock(Training.class);
+        when(training.getId()).thenReturn(7L);
+        when(training.getDate()).thenReturn(LocalDate.of(2026, 7, 20)); // Monday, matches poll weekday & clock's "today"
+        when(training.isCancelled()).thenReturn(false);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(p));
+        when(sender.sendPoll(any(), any(), any(), anyBoolean(), any())).thenReturn("msg-42");
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(training));
+        when(repository.save(any(WhatsappPoll.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.sendNow(1L);
+
+        assertThat(p.getLastSentTrainingId()).isEqualTo(7L);
+        verify(repository).save(p);
     }
 }

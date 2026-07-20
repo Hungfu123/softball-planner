@@ -1,22 +1,28 @@
 package com.softball.application;
 
+import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappAccountStatus;
 import com.softball.domain.model.WhatsappGroup;
 import com.softball.domain.model.WhatsappPoll;
+import com.softball.domain.port.out.TrainingRepository;
 import com.softball.domain.port.out.WhatsappPollRepository;
 import com.softball.domain.port.out.WhatsappSender;
+import com.softball.domain.service.CoupledPollTargetResolver;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class WhatsappPollService {
@@ -25,10 +31,24 @@ public class WhatsappPollService {
 
     private final WhatsappPollRepository repository;
     private final WhatsappSender sender;
+    private final TrainingRepository trainingRepo;
+    private final CoupledPollTargetResolver resolver;
+    private final Clock clock;
 
-    public WhatsappPollService(final WhatsappPollRepository repository, final WhatsappSender sender) {
+    @Autowired
+    public WhatsappPollService(final WhatsappPollRepository repository, final WhatsappSender sender,
+                               final TrainingRepository trainingRepo) {
+        this(repository, sender, trainingRepo, new CoupledPollTargetResolver(), Clock.system(ZoneId.of("Europe/Berlin")));
+    }
+
+    public WhatsappPollService(final WhatsappPollRepository repository, final WhatsappSender sender,
+                               final TrainingRepository trainingRepo, final CoupledPollTargetResolver resolver,
+                               final Clock clock) {
         this.repository = repository;
         this.sender = sender;
+        this.trainingRepo = trainingRepo;
+        this.resolver = resolver;
+        this.clock = clock;
     }
 
     @Transactional(readOnly = true)
@@ -102,6 +122,11 @@ public class WhatsappPollService {
         // (braucht lastSentMessageId zum Abfragen + lastSentAt zur Trainings-Auflösung).
         p.setLastSentAt(LocalDateTime.now(ZoneId.of("Europe/Berlin")));
         p.setLastSentMessageId(messageId);
+        // An nächstes gültiges Training koppeln, wie es der Scheduler auch tut (für Vote-Sync-Zuordnung).
+        final LocalDate today = LocalDate.now(clock);
+        final Optional<Training> target = resolver.resolve(trainingRepo.findAllByOrderByDateDesc(),
+                p.getWeekday(), p.getSkipDates(), today);
+        target.ifPresent(t -> p.setLastSentTrainingId(t.getId()));
         repository.save(p);
         log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}", p.getTitle(), id, messageId);
     }
