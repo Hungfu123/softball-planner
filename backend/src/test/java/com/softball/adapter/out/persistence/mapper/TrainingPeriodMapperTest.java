@@ -35,4 +35,21 @@ class TrainingPeriodMapperTest {
         final TrainingPeriod back = mapper.toDomain(entity);
         assertThat(back.getWeekdays()).isEmpty();
     }
+
+    @Test
+    void weekdayTimesRoundTrip() {
+        final TrainingPeriod p = new TrainingPeriod(1L, "P", LocalDate.now(), LocalDate.now().plusDays(30));
+        p.setWeekdays(List.of(1, 4, 6));
+        p.setWeekdayTimes(new java.util.LinkedHashMap<>(java.util.Map.of(1, "18:00", 4, "19:00", 6, "10:00")));
+        final var back = mapper.toDomain(mapper.toEntity(p));
+        assertThat(back.getWeekdayTimes())
+            .containsEntry(1, "18:00").containsEntry(4, "19:00").containsEntry(6, "10:00");
+    }
+
+    @Test
+    void toDomain_nullWeekdayTimes_yieldsEmptyMap() {
+        final TrainingPeriodEntity entity = new TrainingPeriodEntity("X", LocalDate.of(2026, 1, 1), LocalDate.of(2026, 2, 1));
+        final TrainingPeriod back = mapper.toDomain(entity);
+        assertThat(back.getWeekdayTimes()).isEmpty();
+    }
 }

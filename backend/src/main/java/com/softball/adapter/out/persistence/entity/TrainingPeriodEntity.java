@@ -33,6 +33,9 @@ public class TrainingPeriodEntity {
     @Column(name = "location")
     private String location;
 
+    @Column(name = "weekday_times")
+    private String weekdayTimes;
+
     public TrainingPeriodEntity() {}
 
     public TrainingPeriodEntity(final String name, final LocalDate startDate, final LocalDate endDate) {
@@ -56,4 +59,7 @@ public class TrainingPeriodEntity {
     public void setTime(final String time) { this.time = time; }
     public String getLocation() { return location; }
     public void setLocation(final String location) { this.location = location; }
+
+    public String getWeekdayTimes() { return weekdayTimes; }
+    public void setWeekdayTimes(final String weekdayTimes) { this.weekdayTimes = weekdayTimes; }
 }

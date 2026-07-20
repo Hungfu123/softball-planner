@@ -6,7 +6,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -18,6 +20,7 @@ public class TrainingPeriodMapper {
         domain.setWeekdays(fromCsv(entity.getWeekdays()));
         domain.setTime(entity.getTime());
         domain.setLocation(entity.getLocation());
+        domain.setWeekdayTimes(timesFromCsv(entity.getWeekdayTimes()));
         return domain;
     }
 
@@ -27,6 +30,7 @@ public class TrainingPeriodMapper {
         entity.setWeekdays(toCsv(domain.getWeekdays()));
         entity.setTime(domain.getTime());
         entity.setLocation(domain.getLocation());
+        entity.setWeekdayTimes(timesToCsv(domain.getWeekdayTimes()));
         return entity;
     }
 
@@ -37,6 +41,7 @@ public class TrainingPeriodMapper {
         entity.setWeekdays(toCsv(domain.getWeekdays()));
         entity.setTime(domain.getTime());
         entity.setLocation(domain.getLocation());
+        entity.setWeekdayTimes(timesToCsv(domain.getWeekdayTimes()));
     }
 
     private String toCsv(final List<Integer> weekdays) {
@@ -51,5 +56,22 @@ public class TrainingPeriodMapper {
             .filter(s -> !s.isEmpty())
             .map(Integer::valueOf)
             .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private String timesToCsv(final Map<Integer, String> weekdayTimes) {
+        if (weekdayTimes == null || weekdayTimes.isEmpty()) return null;
+        return weekdayTimes.entrySet().stream().sorted(Map.Entry.comparingByKey())
+            .map(e -> e.getKey() + "=" + e.getValue())
+            .collect(Collectors.joining(","));
+    }
+
+    private Map<Integer, String> timesFromCsv(final String csv) {
+        final Map<Integer, String> out = new LinkedHashMap<>();
+        if (csv == null || csv.isBlank()) return out;
+        for (final String part : csv.split(",")) {
+            final String[] kv = part.split("=", 2);
+            if (kv.length == 2 && !kv[0].isBlank()) out.put(Integer.valueOf(kv[0].trim()), kv[1].trim());
+        }
+        return out;
     }
 }
