@@ -1,13 +1,17 @@
 package com.softball.application;
 
+import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
+import com.softball.domain.port.out.TrainingRepository;
 import com.softball.domain.port.out.WhatsappPollRepository;
 import com.softball.domain.port.out.WhatsappSender;
+import com.softball.domain.service.CoupledPollTargetResolver;
 import com.softball.domain.service.PollDueEvaluator;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -25,8 +29,10 @@ class WhatsappPollSchedulerTest {
 
     private final WhatsappPollRepository repo = mock(WhatsappPollRepository.class);
     private final WhatsappSender sender = mock(WhatsappSender.class);
+    private final TrainingRepository trainingRepo = mock(TrainingRepository.class);
     private final WhatsappPollScheduler scheduler =
-            new WhatsappPollScheduler(repo, sender, new PollDueEvaluator());
+            new WhatsappPollScheduler(repo, sender, new PollDueEvaluator(), trainingRepo,
+                    new CoupledPollTargetResolver(), Clock.systemDefaultZone());
 
     private WhatsappPoll due() {
         final WhatsappPoll p = new WhatsappPoll();
@@ -40,20 +46,43 @@ class WhatsappPollSchedulerTest {
         return p;
     }
 
-    private final LocalDateTime tueAt1800 = LocalDateTime.of(2026, 7, 14, 18, 0);
+    // Zieltraining: Dienstag 2026-07-14
+    private Training targetTraining() {
+        return new Training(42L, LocalDate.of(2026, 7, 14), "20:00", "Park");
+    }
+
+    // Vortag (Montag) 18:00 — Versandzeitpunkt fuer das Zieltraining am Dienstag
+    private final LocalDateTime monAt1800 = LocalDateTime.of(2026, 7, 13, 18, 0);
 
     @Test
-    void tick_sendsDuePoll_andStampsLastSentAt() {
+    void tick_sendsDuePoll_andStampsLastSentAtAndTrainingId() {
         when(repo.findAll()).thenReturn(List.of(due()));
-        scheduler.tick(tueAt1800);
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
+
+        scheduler.tick(monAt1800);
+
         verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList(), anyBoolean(), any());
-        verify(repo).save(argThat(p -> p.getLastSentAt() != null));
+        verify(repo).save(argThat(p -> p.getLastSentAt() != null && Long.valueOf(42L).equals(p.getLastSentTrainingId())));
     }
 
     @Test
     void tick_skipsNotDuePoll() {
         when(repo.findAll()).thenReturn(List.of(due()));
-        scheduler.tick(tueAt1800.plusMinutes(1));  // falsche Minute
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
+
+        scheduler.tick(monAt1800.plusMinutes(1));  // falsche Minute
+
+        verify(sender, never()).sendPoll(any(), any(), anyList(), anyBoolean(), any());
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    void tick_skipsWhenNoTargetTrainingFound() {
+        when(repo.findAll()).thenReturn(List.of(due()));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of());  // kein Zieltraining
+
+        scheduler.tick(monAt1800);
+
         verify(sender, never()).sendPoll(any(), any(), anyList(), anyBoolean(), any());
         verify(repo, never()).save(any());
     }
@@ -61,8 +90,11 @@ class WhatsappPollSchedulerTest {
     @Test
     void tick_sendFailure_doesNotStampLastSentAt() {
         when(repo.findAll()).thenReturn(List.of(due()));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
         doThrow(new RuntimeException("offline")).when(sender).sendPoll(any(), any(), anyList(), anyBoolean(), any());
-        scheduler.tick(tueAt1800);
+
+        scheduler.tick(monAt1800);
+
         verify(repo, never()).save(any());
     }
 
@@ -70,11 +102,13 @@ class WhatsappPollSchedulerTest {
     void tick_stampsLastSentMessageId() {
         final WhatsappPoll poll = due();
         when(repo.findAll()).thenReturn(List.of(poll));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
         when(sender.sendPoll(any(), any(), anyList(), anyBoolean(), any())).thenReturn("msg-123");
 
-        scheduler.tick(tueAt1800);
+        scheduler.tick(monAt1800);
 
         assertThat(poll.getLastSentMessageId()).isEqualTo("msg-123");
+        assertThat(poll.getLastSentTrainingId()).isEqualTo(42L);
         verify(repo).save(poll);
     }
 
@@ -82,11 +116,13 @@ class WhatsappPollSchedulerTest {
     void run_usesBerlinZone_sendsDuePoll() {
         // Regression fuer JVM-Default-Zone-Bug: run() muss Europe/Berlin nutzen, nicht UTC.
         final Clock berlinClock = Clock.fixed(
-                ZonedDateTime.of(2026, 7, 14, 18, 0, 0, 0, ZoneId.of("Europe/Berlin")).toInstant(),
+                ZonedDateTime.of(2026, 7, 13, 18, 0, 0, 0, ZoneId.of("Europe/Berlin")).toInstant(),
                 ZoneId.of("Europe/Berlin"));
         final WhatsappPollScheduler berlinScheduler =
-                new WhatsappPollScheduler(repo, sender, new PollDueEvaluator(), berlinClock);
+                new WhatsappPollScheduler(repo, sender, new PollDueEvaluator(), trainingRepo,
+                        new CoupledPollTargetResolver(), berlinClock);
         when(repo.findAll()).thenReturn(List.of(due()));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
 
         berlinScheduler.run();
 
