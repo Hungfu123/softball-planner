@@ -1,8 +1,11 @@
 package com.softball.application;
 
+import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
+import com.softball.domain.port.out.TrainingRepository;
 import com.softball.domain.port.out.WhatsappPollRepository;
 import com.softball.domain.port.out.WhatsappSender;
+import com.softball.domain.service.CoupledPollTargetResolver;
 import com.softball.domain.service.PollDueEvaluator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
 
 @Component
 public class WhatsappPollScheduler {
@@ -22,22 +27,30 @@ public class WhatsappPollScheduler {
     private final WhatsappPollRepository repository;
     private final WhatsappSender sender;
     private final PollDueEvaluator evaluator;
+    private final TrainingRepository trainingRepo;
+    private final CoupledPollTargetResolver resolver;
     private final Clock clock;
 
     @Autowired
     public WhatsappPollScheduler(final WhatsappPollRepository repository,
                                  final WhatsappSender sender,
-                                 final PollDueEvaluator evaluator) {
-        this(repository, sender, evaluator, Clock.system(ZoneId.of("Europe/Berlin")));
+                                 final PollDueEvaluator evaluator,
+                                 final TrainingRepository trainingRepo) {
+        this(repository, sender, evaluator, trainingRepo, new CoupledPollTargetResolver(),
+                Clock.system(ZoneId.of("Europe/Berlin")));
     }
 
     public WhatsappPollScheduler(final WhatsappPollRepository repository,
                                  final WhatsappSender sender,
                                  final PollDueEvaluator evaluator,
+                                 final TrainingRepository trainingRepo,
+                                 final CoupledPollTargetResolver resolver,
                                  final Clock clock) {
         this.repository = repository;
         this.sender = sender;
         this.evaluator = evaluator;
+        this.trainingRepo = trainingRepo;
+        this.resolver = resolver;
         this.clock = clock;
     }
 
@@ -48,17 +61,19 @@ public class WhatsappPollScheduler {
     }
 
     public void tick(final LocalDateTime now) {
+        final List<Training> trainings = trainingRepo.findAllByOrderByDateDesc();
         for (final WhatsappPoll poll : repository.findAll()) {
-            if (!evaluator.isDue(poll, now)) continue;
+            final Optional<Training> target = resolver.resolve(trainings, poll.getWeekday(), poll.getSkipDates(), now.toLocalDate());
+            if (target.isEmpty() || !evaluator.isDue(poll, target.get(), now)) continue;
             try {
                 final String messageId = sender.sendPoll(poll.getGroupId(), poll.getTitle(), poll.getOptions(), poll.isAllowMultipleAnswers(), poll.getMessage());
                 poll.setLastSentAt(now);
                 poll.setLastSentMessageId(messageId);
+                poll.setLastSentTrainingId(target.get().getId());
                 repository.save(poll);
-                log.info("Geplanter WhatsApp-Poll gesendet: {} ({})", poll.getTitle(), poll.getId());
+                log.info("Gekoppelter WhatsApp-Poll gesendet: {} ({}) -> Training {}", poll.getTitle(), poll.getId(), target.get().getId());
             } catch (final Exception e) {
-                log.warn("Geplanter WhatsApp-Poll fehlgeschlagen: {} ({}): {}",
-                        poll.getTitle(), poll.getId(), e.getMessage());
+                log.warn("WhatsApp-Poll fehlgeschlagen: {} ({}): {}", poll.getTitle(), poll.getId(), e.getMessage());
                 // lastSentAt NICHT stempeln → nächster Tick im selben Minutenfenster kann erneut versuchen
             }
         }
