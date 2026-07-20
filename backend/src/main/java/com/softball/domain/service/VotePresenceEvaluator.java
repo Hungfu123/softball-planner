@@ -16,11 +16,16 @@ public class VotePresenceEvaluator {
     }
 
     public boolean gateOpen(final String trainingTime, final LocalDateTime now, final LocalDate trainingDate) {
+        return gateOpen(trainingTime, now, trainingDate, 0);
+    }
+
+    public boolean gateOpen(final String trainingTime, final LocalDateTime now, final LocalDate trainingDate,
+                             final long offsetHours) {
         if (now == null || trainingDate == null) return false;
         if (!now.toLocalDate().equals(trainingDate)) return false;
         final LocalTime start = parse(trainingTime);
         if (start == null) return true; // unparsebar → ganztägig syncen statt crashen
-        return !now.toLocalTime().isBefore(start);
+        return !now.toLocalTime().isBefore(start.plusHours(offsetHours));
     }
 
     private LocalTime parse(final String time) {
