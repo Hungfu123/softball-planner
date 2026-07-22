@@ -30,6 +30,7 @@ class GameScoringServiceTest {
     @Mock private BaseRunningEventRepository stealingRepository;
     @Mock private SubstitutionRepository substitutionRepository;
     @Mock private com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
+    @Mock private com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository;
 
     @InjectMocks
     private GameScoringService service;
