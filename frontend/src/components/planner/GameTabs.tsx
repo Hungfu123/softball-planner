@@ -106,7 +106,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           onClick={() => !prevDisabled && onSelect(activeIndex - 1)}
           disabled={prevDisabled}
           aria-label="Vorheriges Spiel"
-          className="p-2 text-navy-700 disabled:opacity-30 cursor-pointer disabled:cursor-default rounded-md hover:bg-cream-100"
+          className="p-2 text-navy-700 disabled:opacity-50 cursor-pointer disabled:cursor-default rounded-md hover:bg-cream-100"
         >
           <ChevronLeft size={20} />
         </button>
@@ -136,7 +136,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           onClick={() => !nextDisabled && onSelect(activeIndex + 1)}
           disabled={nextDisabled}
           aria-label="Nächstes Spiel"
-          className="p-2 text-navy-700 disabled:opacity-30 cursor-pointer disabled:cursor-default rounded-md hover:bg-cream-100"
+          className="p-2 text-navy-700 disabled:opacity-50 cursor-pointer disabled:cursor-default rounded-md hover:bg-cream-100"
         >
           <ChevronRight size={20} />
         </button>

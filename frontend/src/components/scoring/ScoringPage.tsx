@@ -665,7 +665,7 @@ export function ScoringPage() {
             <button
               onClick={() => setShowEndGameConfirm(true)}
               disabled={atBats.length === 0 || gameOver}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title="Spiel beenden und Stats zeigen"
               aria-label="Spiel beenden"
             >
@@ -675,7 +675,7 @@ export function ScoringPage() {
               onClick={() => setShowDeleteInningConfirm(true)}
               disabled={atBats.filter(a => a.inning === currentInning).length === 0
                 && stealingEvents.filter(s => s.inning === currentInning).length === 0}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title={`Inning ${currentInning} löschen`}
               aria-label={`Inning ${currentInning} löschen`}
             >
@@ -684,7 +684,7 @@ export function ScoringPage() {
             <button
               onClick={() => setShowResetConfirm(true)}
               disabled={atBats.length === 0}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title="Scoring zurücksetzen"
               aria-label="Scoring zurücksetzen"
             >
@@ -1003,14 +1003,14 @@ export function ScoringPage() {
           <button
             onClick={handleUndo}
             disabled={(atBats.length === 0 && stealingEvents.length === 0 && substitutions.length === 0) || submitting}
-            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Undo2 size={14} /> Rückgängig
           </button>
           <button
             onClick={() => { setRecentlyScored([]); setShowCorrection(true) }}
             disabled={submitting}
-            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
+            className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white text-gray-700 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
           >
             <SquarePen size={14} /> Korrigieren
           </button>
@@ -1018,7 +1018,7 @@ export function ScoringPage() {
             <button
               onClick={handleOverthrow}
               disabled={submitting || atBats.length === 0}
-              className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white hover:border-navy-500 text-navy-800 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-40 cursor-pointer"
+              className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white hover:border-navy-500 text-navy-800 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
               title="Dead Ball / Overthrow: alle Runner rücken eine Base weiter"
             >
               <BoltIcon size={14} />

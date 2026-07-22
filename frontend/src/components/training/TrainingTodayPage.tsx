@@ -425,7 +425,7 @@ export function TrainingTodayPage() {
                       type="button"
                       onClick={() => { setToolbarMenuOpen(false); handleTestSync() }}
                       disabled={testSyncing}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-500 hover:bg-navy-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-500 hover:bg-navy-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <RefreshIcon size={15} className={testSyncing ? 'animate-spin' : ''} /> Sync testen
                     </button>

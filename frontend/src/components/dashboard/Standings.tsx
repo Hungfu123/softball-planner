@@ -183,7 +183,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
           <button
             onClick={handleCreateTeam}
             disabled={creating || !newTeamName.trim()}
-            className="px-3 py-2 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-40 cursor-pointer transition-colors"
+            className="px-3 py-2 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-50 cursor-pointer transition-colors"
           >
             + Hinzufügen
           </button>
@@ -390,7 +390,7 @@ function AddLeagueResult({ seasonId, teams, onAdded }: {
         onTeamCreated={() => onAdded()}
       />
       <button onClick={handleAdd} disabled={!canSave || saving}
-        className="px-3 py-1.5 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-30 cursor-pointer transition-colors">
+        className="px-3 py-1.5 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-50 cursor-pointer transition-colors">
         + Eintragen
       </button>
     </div>

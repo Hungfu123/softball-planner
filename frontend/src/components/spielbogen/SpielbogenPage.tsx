@@ -667,7 +667,7 @@ export default function SpielbogenPage() {
                 <button
                   onClick={() => setShowResetConfirm(true)}
                   disabled={submitting}
-                  className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                  className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
                   title="Scoring zurücksetzen"
                 >
                   <RotateCcw size={14} /> Reset
@@ -675,7 +675,7 @@ export default function SpielbogenPage() {
                 <button
                   onClick={() => setShowEndConfirm(true)}
                   disabled={submitting}
-                  className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                  className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
                   title="Spiel beenden"
                 >
                   <Flag size={14} /> Beenden
@@ -686,7 +686,7 @@ export default function SpielbogenPage() {
               <button
                 onClick={handleReopenGame}
                 disabled={submitting}
-                className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-30 cursor-pointer inline-flex items-center gap-1"
+                className="p-1.5 hover:bg-navy-700 rounded-lg text-white/80 hover:text-white text-sm font-medium disabled:opacity-50 cursor-pointer inline-flex items-center gap-1"
                 title="Spiel wieder öffnen"
               >
                 <RotateCcw size={14} /> Reopen

@@ -134,7 +134,7 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
             <button
               onClick={handleAdd}
               disabled={!playerOutId || !playerInId}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-navy-700 rounded-lg hover:bg-navy-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-navy-700 rounded-lg hover:bg-navy-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               Hinzufügen
             </button>

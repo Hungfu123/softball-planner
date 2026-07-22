@@ -21,6 +21,7 @@ import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { EmptyState } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -720,18 +721,20 @@ export function GameDayPlanner() {
       </div>
 
       {availablePlayers.length === 0 ? (
-        /* Empty state: no players assigned yet */
-        <div className="text-center py-16 border-2 border-dashed border-cream-300 rounded-xl">
-          <CrossBones size={48} className="mx-auto mb-4 opacity-30" />
-          <p className="text-gray-500 mb-1">Noch keine Spieler für diesen Spieltag ausgewählt.</p>
-          <p className="text-sm text-gray-400 mb-6">Wähle zuerst aus, wer am Spieltag dabei ist.</p>
-          <button
-            onClick={() => setShowPlayersModal(true)}
-            className="px-5 py-3 text-sm font-semibold text-white bg-softball-red-600 rounded-xl hover:bg-softball-red-500 shadow-lg shadow-softball-red-600/20"
-          >
-            Spieler auswählen
-          </button>
-        </div>
+        <EmptyState
+          dashed
+          icon={<CrossBones size={48} />}
+          title="Noch keine Spieler für diesen Spieltag ausgewählt."
+          description="Wähle zuerst aus, wer am Spieltag dabei ist."
+          action={(
+            <button
+              onClick={() => setShowPlayersModal(true)}
+              className="px-5 py-3 text-sm font-semibold text-white bg-softball-red-600 rounded-xl hover:bg-softball-red-500 shadow-lg shadow-softball-red-600/20"
+            >
+              Spieler auswählen
+            </button>
+          )}
+        />
       ) : (
         <>
           {/* Lineup-Sets — gespeicherte Aufstellungs-Varianten */}
@@ -1221,7 +1224,7 @@ function ToolbarBtn({ icon, label, onClick, active, disabled }: ToolbarBtnProps)
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-md cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-md cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
         active
           ? 'text-navy-700 bg-navy-50'
           : 'text-navy-600 hover:bg-cream-100 active:bg-cream-200'
