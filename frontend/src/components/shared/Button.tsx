@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { twMerge } from 'tailwind-merge'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'navy' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,12 +14,17 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 /*
  * Button-Varianten (60/30/10-konsistent):
  *   primary   → Softball-Red CTA (10% — Hauptaktion)
+ *   navy      → Navy-Fill (Submit/Bestätigen in Modals & Formularen)
  *   secondary → Navy-Rand mit Dark-Hover (30% — normale Aktionen)
  *   ghost     → Gray Transparent (60% — Tertiäraktionen)
  *   danger    → Red Warning (Destruktive Aktionen, selten)
+ *
+ * className wird via twMerge gemerged → Overrides (rounded-*, px-*, w-full …)
+ * gewinnen zuverlässig gegen die Preset-Klassen.
  */
 const VARIANTS: Record<Variant, string> = {
   primary:   'bg-softball-red-600 text-white hover:bg-softball-red-500 shadow-sm disabled:opacity-50',
+  navy:      'bg-navy-800 text-white hover:bg-navy-900 shadow-sm disabled:opacity-50',
   secondary: 'border border-cream-300 text-gray-700 bg-white hover:bg-navy-800 hover:text-white hover:border-navy-800 disabled:opacity-50',
   ghost:     'text-gray-600 hover:bg-cream-200 hover:text-gray-900 disabled:opacity-50',
   danger:    'bg-white border border-softball-red-300 text-softball-red-700 hover:bg-softball-red-50 disabled:opacity-50',
@@ -43,7 +49,12 @@ export function Button({
     <button
       {...rest}
       disabled={disabled}
-      className={`inline-flex items-center justify-center font-medium transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
+      className={twMerge(
+        'inline-flex items-center justify-center font-medium transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap',
+        VARIANTS[variant],
+        SIZES[size],
+        className,
+      )}
     >
       {icon}
       {children}
