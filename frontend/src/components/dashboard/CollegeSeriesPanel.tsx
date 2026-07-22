@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useCollegeSeries } from '@/hooks/useCollegeSeries'
 import type { CollegeSeriesGame, CollegeSeriesRow, StageStanding } from '@/api/collegeSeries'
 import { teamColorHex, teamLogoUrl } from '@/api/collegeSeries'
-import { TrophyIcon, CalendarIcon, AlertTriangle, CrossBones, RefreshIcon, HomeStadiumIcon } from '@/icons'
+import { TrophyIcon, CalendarIcon, AlertCircle, CrossBones, RefreshIcon, HomeStadiumIcon } from '@/icons'
 
 type Tab = 'tabelle' | 'spielplan' | 'endrunde'
 
@@ -622,7 +622,7 @@ function LoadingState() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-3 py-8 text-center">
-      <AlertTriangle size={32} className="text-softball-red-500" />
+      <AlertCircle size={32} className="text-softball-red-500" />
       <p className="text-sm text-navy-900/80">{message}</p>
       <button
         type="button"

@@ -4,6 +4,7 @@ export interface Toast {
   id: number
   message: string
   type: 'success' | 'error'
+  duration: number
   action?: { label: string; onClick: () => void }
 }
 
@@ -29,7 +30,7 @@ export function useToast() {
     }
 
     const duration = opts.duration ?? (type === 'error' ? 5000 : 2000)
-    setToasts(prev => [...prev.slice(-2), { id, message, type, action: opts.action }])
+    setToasts(prev => [...prev.slice(-2), { id, message, type, duration, action: opts.action }])
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id))
     }, duration)

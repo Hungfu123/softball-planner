@@ -6,7 +6,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { ConfirmModal, EmptyState } from '@/components/shared'
 import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, LOCATION_SUGGESTIONS } from './EquipmentItemForm'
 import { VenueMap } from './VenueMap'
-import { PlusCircle, Pencil, TrashBin, AlertTriangle, CrossBones, ExportDoc } from '@/icons'
+import { PlusCircle, Pencil, TrashBin, AlertCircle, CrossBones, ExportDoc } from '@/icons'
 import { generateAufbauPdf } from '@/utils/aufbauPdf'
 import type { EquipmentItem } from '@/types'
 
@@ -144,7 +144,7 @@ export default function EquipmentCatalogPage() {
                     {item.quantity > 1 && <span className="text-xs text-gray-400 tabular-nums shrink-0">×{item.quantity}</span>}
                     {item.notes && (
                       <button onClick={() => setExpandedNote(expandedNote === item.id ? null : item.id)} aria-label="Notiz" className="shrink-0 cursor-pointer">
-                        <AlertTriangle size={13} className="text-amber-400" />
+                        <AlertCircle size={13} className="text-amber-400" />
                       </button>
                     )}
                   </div>

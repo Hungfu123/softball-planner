@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { XMark, AlertTriangle } from '@/icons'
+import { XMark, AlertCircle } from '@/icons'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
 interface Props {
@@ -56,7 +56,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancel
         </div>
 
         <div className="px-4 py-5 flex items-start gap-3">
-          <AlertTriangle size={24} className="text-softball-red-500 flex-shrink-0 mt-0.5" />
+          <AlertCircle size={24} className="text-softball-red-500 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-gray-600">{message}</p>
         </div>
 
