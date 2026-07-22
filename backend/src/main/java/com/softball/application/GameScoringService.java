@@ -214,6 +214,63 @@ public class GameScoringService {
     }
 
     /**
+     * Bucht ein automatisches Aus im aktuellen Inning (z.B. Batter erscheint nicht,
+     * Regel-Verstoß) — rotiert NICHT die Batting-Order, zählt aber in
+     * {@link #getScoreboard}'s {@code outsInCurrentInning} mit. Wirft, wenn das aktuelle
+     * Inning bereits 3 Outs hat.
+     */
+    @Transactional
+    public void recordAutomaticOut(final Long gameId) {
+        final Game game = findGame(gameId);
+
+        final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
+        final List<BaseRunningEvent> stealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
+        final List<AutomaticOutEvent> autoOuts = automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+
+        final int lastABInning = atBats.stream()
+            .mapToInt(a -> a.getInning() != null ? a.getInning() : 1)
+            .max().orElse(1);
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
+
+        if (outsInInning(atBats, stealings, autoOuts, currentInning) >= 3) {
+            throw new com.softball.shared.exception.BusinessValidationException(
+                "Inning hat bereits 3 Outs — kein automatisches Aus möglich");
+        }
+
+        final AutomaticOutEvent event = new AutomaticOutEvent(game, currentInning, currentUser());
+        automaticOutEventRepository.save(event);
+        log.info("Automatisches Aus gebucht für Game {} in Inning {}", gameId, currentInning);
+    }
+
+    /**
+     * Zählt alle Outs (AtBat-Outs + Runner-Outs + automatische Outs) für ein gegebenes Inning.
+     * Gemeinsamer Helper für {@link #getScoreboard} und {@link #recordAutomaticOut}, damit die
+     * Out-Zähllogik nicht dupliziert wird.
+     */
+    private int outsInInning(final List<AtBat> atBats,
+                             final List<BaseRunningEvent> stealingEvents,
+                             final List<AutomaticOutEvent> autoOuts,
+                             final int inning) {
+        final int abOuts = (int) atBats.stream()
+            .filter(a -> a.getInning() != null && a.getInning() == inning)
+            .filter(a -> a.getResult() != null && a.getResult().isOut())
+            .count();
+        final int runnerOuts = (int) stealingEvents.stream()
+            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING
+                      || e.getType() == BaseRunningEventType.OUT_ON_PLAY
+                      || e.getType() == BaseRunningEventType.PICKOFF)
+            .filter(e -> e.getInning() != null && e.getInning() == inning)
+            .count();
+        final int autoOutCount = (int) autoOuts.stream()
+            .filter(e -> e.getInning() != null && e.getInning() == inning)
+            .count();
+        return abOuts + runnerOuts + autoOutCount;
+    }
+
+    /**
      * Löscht alle AtBats + Stealing-Events vom AKTUELLEN Inning. Vorherige Innings bleiben
      * unangetastet. scoreUs wird aus den verbleibenden AtBats neu berechnet. scoreThem
      * (Gegner-Runs aus InningAdvance-Events) bleibt unangetastet.
@@ -357,21 +414,10 @@ public class GameScoringService {
             .max().orElse(1);
         final int currentInning = Math.max(lastABInning, lastEventInning);
 
-        final int atBatOuts = (int) atBats.stream()
-            .filter(a -> a.getInning() != null && a.getInning() == currentInning)
-            .filter(a -> a.getResult() != null && a.getResult().isOut())
-            .count();
-        // Runner-Outs zählen für den Inning-Counter:
-        //   CAUGHT_STEALING → beim Klau-Versuch erwischt
-        //   OUT_ON_PLAY     → bei Grounder/Fly-Out ausgespielt (z.B. Double-Play, Force-Out)
-        //   PICKOFF         → ohne Steal-Versuch vom Pitcher/Catcher getagt
-        final int runnerOuts = (int) stealingEvents.stream()
-            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING
-                      || e.getType() == BaseRunningEventType.OUT_ON_PLAY
-                      || e.getType() == BaseRunningEventType.PICKOFF)
-            .filter(e -> e.getInning() != null && e.getInning() == currentInning)
-            .count();
-        final int outsInCurrent = atBatOuts + runnerOuts;
+        // Out-Zählung (AtBat-Outs + Runner-Outs + automatische Outs) für das aktuelle Inning —
+        // gemeinsame Logik mit recordAutomaticOut lebt in outsInInning(...).
+        final List<AutomaticOutEvent> autoOutEvents = automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+        final int outsInCurrent = outsInInning(atBats, stealingEvents, autoOutEvents, currentInning);
 
         BaseState state = last != null && last.getBaseStateAfter() != null
             ? last.getBaseStateAfter()
