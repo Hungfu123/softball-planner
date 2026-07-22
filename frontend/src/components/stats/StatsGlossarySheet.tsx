@@ -1,4 +1,5 @@
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Button } from '@/components/shared'
 
 interface Props {
   open: boolean
@@ -7,12 +8,13 @@ interface Props {
 
 export function StatsGlossarySheet({ open, onClose }: Props) {
   const footer = (
-    <button
+    <Button
+      variant="navy"
       onClick={onClose}
-      className="w-full h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-semibold cursor-pointer"
+      className="w-full h-11 rounded-lg font-semibold"
     >
       Verstanden
-    </button>
+    </Button>
   )
 
   return (

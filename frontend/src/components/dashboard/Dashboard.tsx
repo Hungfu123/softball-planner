@@ -175,15 +175,17 @@ export function Dashboard() {
           <p className="text-sm text-gray-600 mb-5 leading-relaxed">
             Saison gruppiert Spieltage, Lineups + Stats. Tap unten um zu starten.
           </p>
-          <button
+          <Button
+            variant="primary"
             onClick={() => {
               const yr = new Date().getFullYear()
               createSeason(`Saison ${yr}`, yr).then(s => setSelectedSeasonId(s.id))
             }}
-            className="font-display w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-softball-red-600 text-white rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
+            icon={<PlusCircle size={16} />}
+            className="font-display w-full py-3 gap-2 rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-softball-red-600/20"
           >
-            <PlusCircle size={16} /> Saison {new Date().getFullYear()} erstellen
-          </button>
+            Saison {new Date().getFullYear()} erstellen
+          </Button>
           <p className="text-[11px] text-gray-400 mt-3">Name + Jahr später änderbar.</p>
         </div>
       </div>
@@ -241,12 +243,14 @@ export function Dashboard() {
           <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto leading-relaxed">
             Lege einen Spieltag mit Datum + Anzahl Spielen an. Danach Spieler-Anwesenheit setzen und Lineups vorbereiten.
           </p>
-          <button
+          <Button
+            variant="primary"
             onClick={() => setShowNewGameDay(true)}
-            className="font-display inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-softball-red-600 text-white rounded-xl text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer"
+            icon={<PlusCircle size={14} />}
+            className="font-display py-2.5 gap-2 rounded-xl text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-softball-red-600/20"
           >
-            <PlusCircle size={14} /> Ersten Spieltag erstellen
-          </button>
+            Ersten Spieltag erstellen
+          </Button>
         </div>
       )}
 
@@ -619,12 +623,13 @@ export function Dashboard() {
                 </div>
               )}
 
-              <button
+              <Button
+                variant="navy"
                 onClick={() => setOpenSheet('stats')}
-                className="font-display w-full h-10 rounded-lg bg-navy-900 hover:bg-navy-800 text-white font-extrabold text-[11px] tracking-widest uppercase transition-colors cursor-pointer"
+                className="font-display w-full h-10 rounded-lg font-extrabold text-[11px] tracking-widest uppercase"
               >
                 Volle Statistik
-              </button>
+              </Button>
             </div>
           </DetailSheet>
         </>

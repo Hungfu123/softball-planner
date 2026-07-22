@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { Button } from '@/components/shared'
 
 interface Props {
   open: boolean
@@ -56,19 +57,21 @@ export function SaveSetModal({ open, title, initialName = '', onCancel, onConfir
           className="w-full text-sm border border-cream-300 rounded-lg px-3 py-2 outline-none focus:border-navy-600 focus:ring-2 focus:ring-cream-200 mb-4"
         />
         <div className="flex justify-end gap-2">
-          <button
+          <Button
+            variant="ghost"
             onClick={onCancel}
-            className="font-display px-3 py-2 text-xs font-bold tracking-widest uppercase rounded-lg text-gray-600 hover:bg-navy-800 hover:text-white transition-colors cursor-pointer"
+            className="font-display px-3 py-2 text-xs font-bold tracking-widest uppercase hover:bg-navy-800 hover:text-white"
           >
             Abbrechen
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="navy"
             onClick={submit}
             disabled={!name.trim()}
-            className="font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase rounded-lg bg-navy-900 text-white hover:bg-navy-800 disabled:opacity-50 transition-colors cursor-pointer"
+            className="font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase"
           >
             Speichern
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Player } from '@/types'
 import { CheckCircle } from '@/icons'
-import { ResponsiveSheet } from '@/components/shared'
+import { ResponsiveSheet, Button } from '@/components/shared'
 
 interface Props {
   allPlayers: Player[]
@@ -36,19 +36,21 @@ export function AvailablePlayersModal({ allPlayers, selectedIds, onSave, onClose
     <div className="flex items-center justify-between gap-2">
       <span className="font-display text-[11px] tracking-widest uppercase font-bold text-gray-500">{selected.size} ausgewählt</span>
       <div className="flex gap-2">
-        <button
+        <Button
+          variant="secondary"
           onClick={onClose}
-          className="font-display px-4 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
+          className="font-display px-4 py-2 text-xs font-bold tracking-widest uppercase"
         >
           Abbrechen
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="navy"
           onClick={handleSave}
           disabled={saving}
-          className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase text-white bg-navy-800 rounded-lg hover:bg-navy-900 disabled:opacity-50 cursor-pointer"
+          className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase"
         >
           {saving ? 'Speichern…' : 'Speichern'}
-        </button>
+        </Button>
       </div>
     </div>
   )

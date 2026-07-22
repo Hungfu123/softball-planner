@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { LocalSubstitution, LocalLineupEntry, Player, GameStaffResponse } from '@/types'
 import { XMark } from '@/icons'
+import { Button } from '@/components/shared'
 
 interface Props {
   substitutions: LocalSubstitution[]
@@ -125,19 +126,21 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
             </select>
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button
+            <Button
+              variant="ghost"
               onClick={() => { setAdding(false); setPlayerOutId(''); setPlayerInId('') }}
-              className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 cursor-pointer"
+              className="px-3 py-1.5 text-xs"
             >
               Abbrechen
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="navy"
               onClick={handleAdd}
               disabled={!playerOutId || !playerInId}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-navy-700 rounded-lg hover:bg-navy-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="px-3 py-1.5 text-xs font-medium"
             >
               Hinzufügen
-            </button>
+            </Button>
           </div>
         </div>
       )}

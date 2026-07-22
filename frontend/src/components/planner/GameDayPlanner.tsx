@@ -21,7 +21,7 @@ import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { EmptyState } from '@/components/shared'
+import { EmptyState, Button } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -727,12 +727,13 @@ export function GameDayPlanner() {
           title="Noch keine Spieler für diesen Spieltag ausgewählt."
           description="Wähle zuerst aus, wer am Spieltag dabei ist."
           action={(
-            <button
+            <Button
+              variant="primary"
               onClick={() => setShowPlayersModal(true)}
-              className="px-5 py-3 text-sm font-semibold text-white bg-softball-red-600 rounded-xl hover:bg-softball-red-500 shadow-lg shadow-softball-red-600/20"
+              className="px-5 py-3 text-sm font-semibold rounded-xl shadow-lg shadow-softball-red-600/20"
             >
               Spieler auswählen
-            </button>
+            </Button>
           )}
         />
       ) : (

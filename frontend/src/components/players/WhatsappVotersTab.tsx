@@ -125,14 +125,15 @@ export function WhatsappVotersTab() {
                       <option value="">Spieler wählen…</option>
                       {sortedPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
-                    <button
+                    <Button
                       type="button"
+                      variant="primary"
                       onClick={() => handleAssign(voter)}
                       disabled={!selectedPlayer[key] || busy}
-                      className="px-3 py-1.5 text-sm font-semibold text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                      className="px-3 py-1.5 font-semibold"
                     >
                       Zuweisen
-                    </button>
+                    </Button>
                     <button
                       type="button"
                       onClick={() => setNewPlayerVoter(voter)}
