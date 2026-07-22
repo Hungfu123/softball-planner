@@ -107,7 +107,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
 
   if (stats.length === 0) {
     return (
-      <div className="bg-cream-50 border border-cream-300 rounded-xl p-12 text-center text-gray-500">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl p-12 text-center text-gray-500">
         <p className="mb-2">Noch keine Schlag-Daten in diesem Zeitraum.</p>
         <p className="text-xs">Scort ein paar At-Bats in einem Spiel um Stats zu sehen.</p>
       </div>
@@ -159,7 +159,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
       </div>
 
       {/* Table — 60/30/10: White 60% / Navy 30% / Softball-Red 10% */}
-      <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

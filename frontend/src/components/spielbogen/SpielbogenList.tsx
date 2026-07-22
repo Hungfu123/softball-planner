@@ -82,7 +82,7 @@ function BogenTile({ bogen, onDelete, onEdit }: { bogen: SpielbogenResponse; onD
   const score = bogen.status === 'DONE' ? `${bogen.homeRuns}:${bogen.awayRuns}` : null
 
   return (
-    <div className="group bg-cream-50 border border-cream-300 rounded-xl p-3 hover:border-navy-400 hover:bg-white transition-colors">
+    <div className="group bg-cream-50 border border-cream-300 rounded-2xl p-3 hover:border-navy-400 hover:bg-white transition-colors">
       <div className="flex items-start justify-between gap-3">
         <Link to={`/spielbogen/${bogen.id}`} className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

@@ -60,7 +60,7 @@ export function HelpPopover({ title, body }: Props) {
                 exit={{ opacity: 0, y: 4, scale: 0.95 }}
                 transition={{ duration: 0.12 }}
                 style={{ position: 'fixed', top: coords.top, right: coords.right, zIndex: 1001 }}
-                className="w-72 max-w-[calc(100vw-2rem)] bg-cream-50 border border-cream-300 rounded-xl shadow-xl p-3"
+                className="w-72 max-w-[calc(100vw-2rem)] bg-cream-50 border border-cream-300 rounded-2xl shadow-xl p-3"
               >
                 <div id={`${popoverId}-title`} className="font-display text-xs font-extrabold tracking-widest uppercase text-navy-900 mb-1.5">
                   {title}

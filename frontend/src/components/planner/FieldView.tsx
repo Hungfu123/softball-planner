@@ -35,7 +35,7 @@ export function FieldView({ entries, onPositionClick }: Props) {
           </span>
         )}
       </h2>
-      <div className="relative bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden" style={{ paddingBottom: '85%', touchAction: 'pan-y' }}>
+      <div className="relative bg-cream-50 border border-cream-300 rounded-2xl shadow-sm overflow-hidden" style={{ paddingBottom: '85%', touchAction: 'pan-y' }}>
         <svg viewBox="0 0 100 95" className="absolute inset-0 w-full h-full" style={{ pointerEvents: onPositionClick ? 'auto' : 'none' }}>
           {/* Baselines */}
           <polygon

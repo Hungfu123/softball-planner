@@ -10,7 +10,7 @@ interface Props {
 
 export function VenueMap({ counts, selected, onSelect }: Props) {
   return (
-    <div className="bg-cream-50 border border-cream-300 rounded-xl p-3">
+    <div className="bg-cream-50 border border-cream-300 rounded-2xl p-3">
       <div className="flex items-center justify-between mb-2">
         <span className="font-display text-[11px] font-extrabold uppercase tracking-widest text-navy-900 inline-flex items-center gap-1.5">
           <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" /> Lageplan

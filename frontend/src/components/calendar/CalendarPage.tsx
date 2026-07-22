@@ -246,14 +246,14 @@ export function CalendarPage() {
       <div className="space-y-2">
         <h2 className="font-display text-[12px] font-extrabold tracking-widest uppercase text-gray-700 px-1">Im {monthLabel}</h2>
         {monthEntries.filter(e => e.gds.length > 0).length === 0 ? (
-          <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm shadow-navy-900/5 p-4 text-center text-sm text-gray-500">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm shadow-navy-900/5 p-4 text-center text-sm text-gray-500">
             Keine Spieltage in diesem Monat.
           </div>
         ) : monthEntries.filter(e => e.gds.length > 0).map(entry => {
           const d = new Date(cursor.y, cursor.m, entry.day)
           const wd = d.toLocaleDateString('de-DE', { weekday: 'short' })
           return (
-            <div key={entry.key} className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm shadow-navy-900/5 p-3 flex gap-3">
+            <div key={entry.key} className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm shadow-navy-900/5 p-3 flex gap-3">
               <div className="shrink-0 w-11 text-center">
                 <div className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-400">{wd}</div>
                 <div className="font-display text-xl font-extrabold text-navy-900 leading-none tabular-nums">{entry.day}</div>

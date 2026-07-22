@@ -16,14 +16,14 @@ export function GamesStatsTable({ stats }: Props) {
 
   if (stats.length === 0) {
     return (
-      <div className="bg-cream-50 border border-cream-300 rounded-xl p-12 text-center text-gray-500">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl p-12 text-center text-gray-500">
         Keine Einsatz-Daten in diesem Zeitraum.
       </div>
     )
   }
 
   return (
-    <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+    <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

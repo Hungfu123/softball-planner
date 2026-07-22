@@ -62,7 +62,7 @@ export function GameDayPlannerSkeleton() {
           </div>
 
           {/* Lineup-Zeilen: Nummer + Name + Position */}
-          <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
             {Array.from({ length: 9 }).map((_, i) => (
               <div
                 key={i}
@@ -115,7 +115,7 @@ export function GameDayPlannerSkeleton() {
         {/* Col 3: Coach-Slots + Training (lg, hidden on mobile) */}
         <div className="hidden lg:block space-y-4">
           {/* Coach-Slots */}
-          <div className="bg-cream-50 border border-cream-300 rounded-xl p-3 space-y-2">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl p-3 space-y-2">
             <div className="skeleton-shimmer h-3.5 w-28 rounded-full bg-cream-300 mb-3" />
             {[0, 1].map(i => (
               <div key={i} className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function GameDayPlannerSkeleton() {
           {/* Training-Stats */}
           <div className="space-y-2">
             <div className="skeleton-shimmer h-3.5 w-20 rounded-full bg-cream-300" />
-            <div className="bg-cream-50 border border-cream-300 rounded-xl p-3 space-y-1.5">
+            <div className="bg-cream-50 border border-cream-300 rounded-2xl p-3 space-y-1.5">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="skeleton-shimmer h-2.5 w-14 rounded-full bg-cream-200" />

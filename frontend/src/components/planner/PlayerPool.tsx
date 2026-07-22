@@ -170,7 +170,7 @@ export function PlayerPool({
       </div>
 
       {tab === 'pool' ? (
-        <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm overflow-hidden">
           {/* Free players — prominent, clickable */}
           {freePlayers.map(player => {
             const st = statsMap.get(player.id)
@@ -261,7 +261,7 @@ export function PlayerPool({
             .map(b => Number(b.battingAverage))
           const topAvg = avgValues.length > 0 ? Math.max(...avgValues) : null
           return (
-        <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
           {/* Scope-Toggle: AVG über Saison oder ganzes Jahr */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cream-50 border-b border-cream-200 text-[10px]">
             <span className="text-gray-500 mr-1">AVG:</span>
@@ -329,7 +329,7 @@ export function PlayerPool({
           )
         })()
       ) : (
-        <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden p-3 space-y-1.5">
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 space-y-1.5">
           <div className="flex items-center gap-1 mb-1 flex-wrap">
             <select
               value={selectedPeriodId ?? ''}
