@@ -24,7 +24,7 @@ export function CalendarPageSkeleton() {
       {/* Agenda */}
       <div className="space-y-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm shadow-navy-900/5 p-3 flex items-center gap-3">
+          <div key={i} className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm shadow-navy-900/5 p-3 flex items-center gap-3">
             <div className="skeleton-shimmer h-10 w-12 rounded-md bg-cream-200 shrink-0" />
             <div className="flex-1 space-y-1.5">
               <div className="skeleton-shimmer h-3 w-24 rounded-full bg-cream-300" />

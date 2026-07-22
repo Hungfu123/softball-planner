@@ -136,7 +136,7 @@ export function LineupEditor({
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map(e => e.player.id)} strategy={verticalListSortingStrategy}>
-            <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
+            <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
               {entries.map((entry, index) => {
                 const isFieldPos = !!entry.position && FIELD_POS_SET.has(entry.position)
 

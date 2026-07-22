@@ -86,7 +86,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
           Liga-Tabelle
         </h2>
         {standings.length > 0 && (
-          <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+          <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -195,7 +195,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
         <div className="space-y-4">
           {/* Our games */}
           {gamesWithOpponent.length > 0 && (
-            <div className="bg-cream-50 border border-cream-300 rounded-xl divide-y divide-cream-200">
+            <div className="bg-cream-50 border border-cream-300 rounded-2xl divide-y divide-cream-200">
               {gameDays.filter(gd => gd.games.some(g => g.opponentTeam)).map(gd => (
                 <div key={gd.id} className="px-4 py-3">
                   <div className="font-display text-[10px] font-extrabold tracking-widest uppercase text-gray-500 mb-2">
@@ -217,7 +217,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
 
           {/* League results (other teams) */}
           {leagueResults.length > 0 && (
-            <div className="bg-cream-50 border border-cream-300 rounded-xl px-4 py-3">
+            <div className="bg-cream-50 border border-cream-300 rounded-2xl px-4 py-3">
               <div className="font-display text-[10px] font-extrabold tracking-widest uppercase text-gray-500 mb-2">
                 Andere Ergebnisse
               </div>

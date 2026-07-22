@@ -919,7 +919,7 @@ export function GameDayPlanner() {
                       Letzte 3 Monate
                     </span>
                   </div>
-                  <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden p-3 space-y-1.5">
+                  <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 space-y-1.5">
                     {(() => {
                       const availableIds = new Set(availablePlayers.map(p => p.id))
                       const filtered = trainingStats
@@ -991,7 +991,7 @@ export function GameDayPlanner() {
                     Letzte 3 Monate
                   </span>
                 </div>
-                <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden p-3 space-y-1.5">
+                <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 space-y-1.5">
                   {(() => {
                     const availableIds = new Set(availablePlayers.map(p => p.id))
                     const filtered = trainingStats

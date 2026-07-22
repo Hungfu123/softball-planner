@@ -38,7 +38,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
   const runsConceded = playedGames.reduce((s, g) => s + (g.scoreThem ?? 0), 0)
   const runDiff = runsScored - runsConceded
 
-  const tileBase = 'text-left bg-cream-50 border border-cream-300 rounded-xl p-2.5 sm:p-3 md:p-4 flex flex-col shadow-sm shadow-navy-900/5 hover:border-navy-400 hover:shadow-md hover:shadow-navy-900/10 transition-all active:scale-[0.98] cursor-pointer'
+  const tileBase = 'text-left bg-cream-50 border border-cream-300 rounded-2xl p-2.5 sm:p-3 md:p-4 flex flex-col shadow-sm shadow-navy-900/5 hover:border-navy-400 hover:shadow-md hover:shadow-navy-900/10 transition-all active:scale-[0.98] cursor-pointer'
   const iconHeader = 'flex items-center gap-1.5 mb-1'
   const labelCls = 'font-display text-[9px] sm:text-[10px] tracking-widest font-bold text-gray-500 uppercase'
   const bigCls = 'font-display text-lg sm:text-xl md:text-2xl font-extrabold text-navy-900 leading-none mt-0.5'

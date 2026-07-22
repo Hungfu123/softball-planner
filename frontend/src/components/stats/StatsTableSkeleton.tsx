@@ -11,7 +11,7 @@ export function StatsTableSkeleton() {
     <div role="status" aria-busy="true" aria-live="polite">
       <span className="sr-only">Statistiken werden geladen…</span>
 
-      <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             {/* Header-Reihe */}

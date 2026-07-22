@@ -17,7 +17,7 @@ export function SpielbogenListSkeleton() {
       {/* BogenTile-Silhouetten */}
       <div className="space-y-2">
         {[0, 1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="bg-cream-50 border border-cream-300 rounded-xl p-3">
+          <div key={i} className="bg-cream-50 border border-cream-300 rounded-2xl p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0 space-y-2">
                 {/* Status-Pill + Datum */}

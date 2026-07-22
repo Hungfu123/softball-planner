@@ -92,7 +92,7 @@ export default function EquipmentCatalogPage() {
 
       <VenueMap counts={counts} selected={selected} onSelect={setSelected} />
 
-      <div className="bg-cream-50 border border-cream-300 rounded-xl overflow-hidden">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-3 space-y-0" role="status" aria-label="Lade Daten">
             {/* group-header placeholder */}

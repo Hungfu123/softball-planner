@@ -64,7 +64,7 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
       </div>
 
       {substitutions.length > 0 && (
-        <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100 mb-2">
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100 mb-2">
           {substitutions.map((sub, index) => (
             <div key={index} className="group/sub flex items-center gap-2 px-3 py-2 text-sm">
               <span className="text-navy-600 text-xs font-semibold shrink-0">

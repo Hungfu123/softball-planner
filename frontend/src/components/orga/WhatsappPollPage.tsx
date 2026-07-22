@@ -390,7 +390,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
   const typeLabel = !hasPoll ? 'Nachricht' : hasMessage ? 'Umfrage + Nachricht' : 'Umfrage'
 
   return (
-    <div className="group relative overflow-hidden bg-cream-50 border border-cream-300 rounded-xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
+    <div className="group relative overflow-hidden bg-cream-50 border border-cream-300 rounded-2xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
       <span className="absolute inset-y-0 left-0 w-1 bg-navy-800" />
       <div className="pl-4 pr-3 py-3.5">
 

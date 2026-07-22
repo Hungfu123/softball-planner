@@ -13,7 +13,7 @@ export function BenchDisplay({ players }: Props) {
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Bank <span className="font-display font-bold text-gray-400 text-[11px]">{players.length}</span>
       </h2>
-      <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm divide-y divide-cream-200">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm divide-y divide-cream-200">
         {players.map((p, i) => (
           <div key={p.id} className="flex items-center gap-2.5 px-3 py-2">
             <span className="font-display text-[11px] font-extrabold text-gray-400 w-5 text-right tabular-nums">{i + 1}</span>

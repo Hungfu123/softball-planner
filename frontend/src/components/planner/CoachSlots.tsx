@@ -69,7 +69,7 @@ export function CoachSlots({ staff, availablePlayers, lineup, game, loading, onS
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Coaches
       </h2>
-      <div className="bg-cream-50 border border-cream-300 rounded-xl shadow-sm p-3 space-y-4">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm p-3 space-y-4">
         {loading ? (
           [0, 1].map(i => (
             <div key={i}>
@@ -167,7 +167,7 @@ function RotationPicker({ lineup, currentValue, currentReversed, onPick }: Rotat
           )
         })}
       </div>
-      <div className="relative bg-cream-50 border border-cream-300 rounded-xl p-2 overflow-hidden">
+      <div className="relative bg-cream-50 border border-cream-300 rounded-2xl p-2 overflow-hidden">
         {/* Score-Card Hairline-Eyebrow */}
         <div className="flex items-center gap-2 mb-1.5">
           <span className="font-mono text-[8px] tracking-[0.3em] uppercase font-bold text-softball-red-600 shrink-0">
