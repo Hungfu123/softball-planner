@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import { useScoring } from '@/hooks/useScoring'
@@ -32,8 +32,6 @@ export function ScoringPage() {
   const [showSubSheet, setShowSubSheet] = useState(false)
   const [subPlayerOut, setSubPlayerOut] = useState<Player | null>(null)
   const [subPlayerIn, setSubPlayerIn] = useState<Player | null>(null)
-  // Extra-Outs pro Inning (für Double-Play o.Ä.): lokaler Override
-  const [extraOuts, setExtraOuts] = useState(0)
   const [showCorrection, setShowCorrection] = useState(false)
   // Snapshot der Runner-Positionen VOR dem letzten AB — fuer CorrectionSheet,
   // damit Cycle bis zur urspruenglichen Base zurueck kann (User korrigiert
@@ -59,6 +57,7 @@ export function ScoringPage() {
   const [pendingHit, setPendingHit] = useState<PendingHit | null>(null)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showDeleteInningConfirm, setShowDeleteInningConfirm] = useState(false)
+  const [showAutoOutConfirm, setShowAutoOutConfirm] = useState(false)
   const [editingScoreThem, setEditingScoreThem] = useState(false)
   const [scoreThemInput, setScoreThemInput] = useState('')
   const [undoAnimSkip, setUndoAnimSkip] = useState(false)
@@ -101,7 +100,7 @@ export function ScoringPage() {
   const currentGame = gameDay?.games[gameIndex] ?? null
   const opponentName = currentGame?.opponentTeam?.name ?? 'Gegner'
 
-  const { atBats, stealingEvents, scoreboard, reload, recordAtBat, undo, recordStealingEvent } = useScoring(currentGame?.id ?? null)
+  const { atBats, stealingEvents, scoreboard, reload, recordAtBat, undo, recordStealingEvent, recordAutomaticOut } = useScoring(currentGame?.id ?? null)
 
   // Lineup laden für Batter-Preview (nächste 2-3 + Full-Lineup-Sheet)
   useEffect(() => {
@@ -165,15 +164,6 @@ export function ScoringPage() {
     && (scoreboard?.scoreUs ?? 0) > (scoreboard?.scoreThem ?? 0)
     && (scoreboard?.totalAtBats ?? 0) > 0
   const gameOver = manualGameOver || (regulationOver && !isTied) || walkoff
-
-  // extraOuts zurücksetzen bei Inning-Wechsel — Server-Inning-Diff detection
-  const prevInningRef = useRef(serverInning)
-  useEffect(() => {
-    if (serverInning !== prevInningRef.current) {
-      setExtraOuts(0)
-      prevInningRef.current = serverInning
-    }
-  }, [serverInning])
 
   // Batting-Side + Game-Over kommen ausschließlich vom Backend.
   useEffect(() => {
@@ -447,6 +437,7 @@ export function ScoringPage() {
         result.type === 'STEALING' ? 'Letztes Stealing-Event rückgängig gemacht' :
         result.type === 'SUBSTITUTION' ? 'Letzte Substitution rückgängig gemacht' :
         result.type === 'INNING_ADVANCE' ? 'Letzter Inning-Wechsel rückgängig gemacht' :
+        result.type === 'AUTOMATIC_OUT' ? 'Letztes automatisches Aus rückgängig gemacht' :
         'Nichts zum Rückgängigmachen'
       toast.show(message, result.type === 'NONE' ? 'error' : 'success')
     } catch (e) {
@@ -600,16 +591,25 @@ export function ScoringPage() {
 
   const scoreUs = scoreboard?.scoreUs ?? 0
   const scoreThem = scoreboard?.scoreThem ?? 0
-  const totalOuts = Math.min(3, displayOuts + extraOuts)
+  const totalOuts = Math.min(3, displayOuts)
 
   const handleDeleteCurrentInning = async () => {
     if (!currentGame) return
     setShowDeleteInningConfirm(false)
     try {
       await api.deleteCurrentInning(currentGame.id)
-      setExtraOuts(0)
       await reload()
       toast.show(`Inning ${currentInning} gelöscht · Bases frei`, 'success')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleAutomaticOut = async () => {
+    setShowAutoOutConfirm(false)
+    try {
+      await recordAutomaticOut()
+      toast.show('Automatisches Aus gebucht', 'success')
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
@@ -622,7 +622,6 @@ export function ScoringPage() {
       await api.resetScoring(currentGame.id)
       // Falls Backend `endedAt` gesetzt ist, auch reopen — sonst bleibt Game als FERTIG markiert
       try { await api.reopenGame(currentGame.id) } catch { /* ignore: vor Backend-Deploy */ }
-      setExtraOuts(0)
       setManualGameOver(false)
       // Cleanup ALLER scoring-localStorage-Keys für dieses Game (auch Override-Geist).
       localStorage.removeItem(`scoring-side-${currentGame.id}`)
@@ -711,10 +710,11 @@ export function ScoringPage() {
           )}
         </div>
         <button
-          onClick={() => setExtraOuts(x => (totalOuts < 3 ? x + 1 : 0))}
-          className="flex items-center gap-2 cursor-pointer group"
-          title="Tap = +1 Out (Double Play). Bei 3 Aus: Reset."
-          aria-label="Outs +1"
+          onClick={() => { if (!halfInningOver) setShowAutoOutConfirm(true) }}
+          disabled={halfInningOver}
+          className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
+          title="Automatisches Aus buchen (fehlende Spielerin) — zählt als Aus im Inning"
+          aria-label="Automatisches Aus"
         >
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white">Outs</span>
           <span className="flex items-center gap-1.5">
@@ -2507,6 +2507,17 @@ export function ScoringPage() {
           confirmLabel="Ja, alles löschen"
           onConfirm={handleReset}
           onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
+
+      {/* Automatisches Aus Confirmation */}
+      {showAutoOutConfirm && (
+        <ConfirmModal
+          title="Automatisches Aus?"
+          message="Wird als Aus im aktuellen Inning gezählt (nicht dem Batter zugerechnet). Beim 3. Aus endet das Half-Inning."
+          confirmLabel="Ja, Aus buchen"
+          onConfirm={handleAutomaticOut}
+          onCancel={() => setShowAutoOutConfirm(false)}
         />
       )}
 

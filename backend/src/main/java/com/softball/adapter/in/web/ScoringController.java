@@ -68,6 +68,12 @@ public class ScoringController {
         return scoringService.advanceInning(gameId, req.opponentRuns());
     }
 
+    @PostMapping("/{gameId}/scoring/automatic-out")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void recordAutomaticOut(@PathVariable final Long gameId) {
+        scoringService.recordAutomaticOut(gameId);
+    }
+
     @PutMapping("/{gameId}/atbats/last/base-state")
     public AtBatResponse updateLastBaseState(@PathVariable final Long gameId,
                                               @RequestBody final UpdateBaseStateRequest req) {
