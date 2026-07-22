@@ -197,7 +197,7 @@ export function PlayerManager() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-50">
+    <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
         <div className="flex items-baseline justify-between">
           <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">

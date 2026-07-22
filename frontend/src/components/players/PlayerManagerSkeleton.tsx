@@ -5,7 +5,7 @@
  */
 export function PlayerManagerSkeleton() {
   return (
-    <div className="min-h-screen bg-cream-50">
+    <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
         <div role="status" aria-busy="true" aria-live="polite" className="space-y-4">
           <span className="sr-only">Spieler werden geladen…</span>
