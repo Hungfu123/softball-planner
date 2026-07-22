@@ -35,6 +35,7 @@ public class GameScoringService {
     private final BaseRunningEventRepository stealingRepository;
     private final SubstitutionRepository substitutionRepository;
     private final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
+    private final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository;
     private final BaseRunningReplay baseRunningReplay = new BaseRunningReplay();
 
     public GameScoringService(final GameRepository gameRepository,
@@ -43,7 +44,8 @@ public class GameScoringService {
                                final AtBatRepository atBatRepository,
                                final BaseRunningEventRepository stealingRepository,
                                final SubstitutionRepository substitutionRepository,
-                               final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository) {
+                               final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository,
+                               final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
@@ -51,6 +53,7 @@ public class GameScoringService {
         this.stealingRepository = stealingRepository;
         this.substitutionRepository = substitutionRepository;
         this.inningAdvanceEventRepository = inningAdvanceEventRepository;
+        this.automaticOutEventRepository = automaticOutEventRepository;
     }
 
     @Transactional(readOnly = true)
