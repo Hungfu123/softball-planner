@@ -437,7 +437,7 @@ export function ScoringPage() {
         result.type === 'STEALING' ? 'Letztes Stealing-Event rückgängig gemacht' :
         result.type === 'SUBSTITUTION' ? 'Letzte Substitution rückgängig gemacht' :
         result.type === 'INNING_ADVANCE' ? 'Letzter Inning-Wechsel rückgängig gemacht' :
-        result.type === 'AUTOMATIC_OUT' ? 'Letztes automatisches Aus rückgängig gemacht' :
+        result.type === 'AUTOMATIC_OUT' ? 'Letztes automatisches Out rückgängig gemacht' :
         'Nichts zum Rückgängigmachen'
       toast.show(message, result.type === 'NONE' ? 'error' : 'success')
     } catch (e) {
@@ -609,7 +609,7 @@ export function ScoringPage() {
     setShowAutoOutConfirm(false)
     try {
       await recordAutomaticOut()
-      toast.show('Automatisches Aus gebucht', 'success')
+      toast.show('Automatisches Out gebucht', 'success')
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
@@ -713,8 +713,8 @@ export function ScoringPage() {
           onClick={() => { if (!halfInningOver) setShowAutoOutConfirm(true) }}
           disabled={halfInningOver}
           className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
-          title="Automatisches Aus buchen (fehlende Spielerin) — zählt als Aus im Inning"
-          aria-label="Automatisches Aus"
+          title="Automatisches Out buchen (fehlende Spielerin) — zählt als Out im Inning"
+          aria-label="Automatisches Out"
         >
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white">Outs</span>
           <span className="flex items-center gap-1.5">
@@ -2514,13 +2514,13 @@ export function ScoringPage() {
       {showAutoOutConfirm && (() => {
         const nextOut = displayOuts + 1
         const message = nextOut >= 3
-          ? `Sicher? Das wäre das 3. Aus in Inning ${currentInning} — danach ist das Half-Inning vorbei.`
-          : `Sicher? Das wäre das ${nextOut}. Aus in Inning ${currentInning} (nicht dem Batter zugerechnet).`
+          ? `Sicher? Das wäre das 3. Out in Inning ${currentInning} — danach ist das Half-Inning vorbei.`
+          : `Sicher? Das wäre das ${nextOut}. Out in Inning ${currentInning} (nicht dem Batter zugerechnet).`
         return (
           <ConfirmModal
-            title="Automatisches Aus?"
+            title="Automatisches Out?"
             message={message}
-            confirmLabel="Ja, Aus buchen"
+            confirmLabel="Ja, Out buchen"
             onConfirm={handleAutomaticOut}
             onCancel={() => setShowAutoOutConfirm(false)}
           />
