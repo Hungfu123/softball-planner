@@ -5,10 +5,10 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { motion, AnimatePresence } from 'motion/react'
 import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDown, Boxes, SquarePen } from 'lucide-react'
-import { toast } from 'sonner'
 import { BatIcon } from '@/icons'
 import * as api from '@/api/client'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { useToastContext } from '@/components/layout/Layout'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 import { DrillPickerModal } from './DrillPickerModal'
 
@@ -248,6 +248,8 @@ function SortableSection({
 }
 
 export function PlanEditDrawer({ open, onClose, planContent, planId, onSave }: Props) {
+  const _toast = useToastContext()
+  const toast = { error: (m: string) => _toast.show(m, 'error') }
   const [sections, setSections] = useState<TrainingPlanSectionResponse[]>([])
   const [overallNotes, setOverallNotes] = useState<string>('')
   const [saving, setSaving] = useState(false)
