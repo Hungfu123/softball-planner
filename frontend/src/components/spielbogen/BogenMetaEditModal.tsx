@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { XMark } from '@/icons'
+import { Button } from '@/components/shared'
 import type { SpielbogenResponse, CreateSpielbogenRequest } from '@/types'
 
 interface Props {
@@ -128,19 +129,12 @@ export function BogenMetaEditModal({ open, onClose, meta, onSubmit }: Props) {
         </div>
 
         <div className="px-4 py-3 border-t border-cream-300 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Abbrechen
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="px-4 py-2 text-sm font-medium text-white bg-navy-800 rounded-lg hover:bg-navy-900 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          </Button>
+          <Button variant="navy" onClick={handleSubmit} disabled={!canSubmit}>
             {submitting ? 'Speichere…' : 'Speichern'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

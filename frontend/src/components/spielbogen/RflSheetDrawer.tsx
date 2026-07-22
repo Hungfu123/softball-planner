@@ -13,6 +13,7 @@ import { renderCells, cellKey } from '@/utils/bogenSheetRenderer'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import { DiamondCell } from './DiamondCell'
 import { BogenSlotEditModal } from './BogenSlotEditModal'
+import { Button } from '@/components/shared'
 import { Pencil } from '@/icons'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
@@ -173,37 +174,41 @@ export function RflSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, 
   const footer = (isLive || isDone) ? (
     <div className="flex flex-wrap gap-2">
       {isLive && onEndGame && (
-        <button
+        <Button
+          variant="primary"
           onClick={() => { onClose(); onEndGame() }}
-          className="flex-1 h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer"
+          className="flex-1 h-11 font-bold"
         >
           Spiel beenden
-        </button>
+        </Button>
       )}
       {isDone && onReopenGame && (
-        <button
+        <Button
+          variant="secondary"
           onClick={() => { onClose(); onReopenGame() }}
-          className="flex-1 h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
+          className="flex-1 h-11"
         >
           Spiel wieder öffnen
-        </button>
+        </Button>
       )}
       {isDone && (
-        <button
+        <Button
+          variant="secondary"
           onClick={handlePdfExport}
-          className="flex-1 h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
+          className="flex-1 h-11"
         >
           Als PDF exportieren
-        </button>
+        </Button>
       )}
       {canSendToLiga && (
-        <button
+        <Button
+          variant="navy"
           onClick={handleLigaSenden}
           disabled={ligaLoading}
-          className="flex-1 h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 h-11 font-bold"
         >
           {ligaLoading ? 'Sende…' : 'An Liga senden'}
-        </button>
+        </Button>
       )}
     </div>
   ) : undefined

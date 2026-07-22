@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Button } from '@/components/shared'
 import type { BogenSide, SpielbogenSlotResponse, PositionSwapEntry } from '@/types'
 
 const POSITION_OPTIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH', 'DH']
@@ -58,19 +59,12 @@ export function PositionSwapDrawer({ open, onClose, side, slots, currentInning, 
 
   const footer = (
     <div className="grid grid-cols-2 gap-2">
-      <button
-        onClick={onClose}
-        className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
-      >
+      <Button variant="secondary" onClick={onClose} className="h-11">
         Abbrechen
-      </button>
-      <button
-        onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      </Button>
+      <Button variant="navy" onClick={handleSubmit} disabled={!canSubmit} className="h-11 font-bold">
         {submitting ? 'Speichere…' : `Tauschen (${changes.length})`}
-      </button>
+      </Button>
     </div>
   )
 
