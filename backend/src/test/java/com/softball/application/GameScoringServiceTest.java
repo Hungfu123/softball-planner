@@ -3,9 +3,11 @@ package com.softball.application;
 import com.softball.adapter.dto.ScoreboardResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.port.out.*;
+import com.softball.shared.exception.BusinessValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -1202,5 +1205,60 @@ class GameScoringServiceTest {
     @SuppressWarnings("unused")
     private static List<Long> anyIds() {
         return new ArrayList<>();
+    }
+
+    private AutomaticOutEvent autoOut(final Long id, final int inning) {
+        final AutomaticOutEvent e = new AutomaticOutEvent(game, inning, "test");
+        e.setId(id);
+        e.setCreatedAt(Instant.now());
+        return e;
+    }
+
+    @Test
+    void automaticOut_incrementsOutsWithoutRotatingBatter() {
+        mockGame();
+        final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(ab));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(1L)).thenReturn(List.of());
+        when(automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(1L))
+            .thenReturn(List.of(autoOut(1L, 1)));
+
+        final ScoreboardResponse sb = service.getScoreboard(1L);
+
+        assertThat(sb.outsInCurrentInning()).isEqualTo(1);
+    }
+
+    @Test
+    void automaticOut_recordsEventInCurrentInning() {
+        mockGame();
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+        when(automaticOutEventRepository.save(org.mockito.ArgumentMatchers.any()))
+            .thenAnswer(i -> i.getArgument(0));
+
+        service.recordAutomaticOut(1L);
+
+        final ArgumentCaptor<AutomaticOutEvent> captor = ArgumentCaptor.forClass(AutomaticOutEvent.class);
+        org.mockito.Mockito.verify(automaticOutEventRepository).save(captor.capture());
+        assertThat(captor.getValue().getInning()).isEqualTo(1);
+    }
+
+    @Test
+    void automaticOut_rejectedWhenThreeOutsAlready() {
+        mockGame();
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of(
+            atBat(1, 1, hung, AtBatResult.STRIKEOUT, BaseState.empty()),
+            atBat(2, 1, anne, AtBatResult.STRIKEOUT, BaseState.empty()),
+            atBat(3, 1, khang, AtBatResult.STRIKEOUT, BaseState.empty())
+        ));
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.recordAutomaticOut(1L))
+            .isInstanceOf(BusinessValidationException.class);
+        org.mockito.Mockito.verify(automaticOutEventRepository, org.mockito.Mockito.never())
+            .save(org.mockito.ArgumentMatchers.any());
     }
 }
