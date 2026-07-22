@@ -63,6 +63,12 @@ export function useScoring(gameId: number | null) {
     return created
   }, [gameId, reload])
 
+  const recordAutomaticOut = useCallback(async () => {
+    if (gameId == null) throw new Error('Kein Spiel aktiv')
+    await api.recordAutomaticOut(gameId)
+    await reload()
+  }, [gameId, reload])
+
   const deleteStealingEvent = useCallback(async (eventId: number) => {
     if (gameId == null) return
     await api.deleteStealingEvent(gameId, eventId)
@@ -79,6 +85,7 @@ export function useScoring(gameId: number | null) {
     recordAtBat,
     undo,
     recordStealingEvent,
+    recordAutomaticOut,
     deleteStealingEvent,
   }
 }

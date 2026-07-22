@@ -309,7 +309,7 @@ export interface GeneratePlanRequest {
 }
 
 // Live-Scoring
-export type UndoResultType = 'AT_BAT' | 'STEALING' | 'SUBSTITUTION' | 'INNING_ADVANCE' | 'NONE'
+export type UndoResultType = 'AT_BAT' | 'STEALING' | 'SUBSTITUTION' | 'INNING_ADVANCE' | 'AUTOMATIC_OUT' | 'NONE'
 
 export interface InningAdvanceEventResponse {
   id: number
