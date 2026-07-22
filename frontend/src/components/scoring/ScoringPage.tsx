@@ -2511,15 +2511,21 @@ export function ScoringPage() {
       )}
 
       {/* Automatisches Aus Confirmation */}
-      {showAutoOutConfirm && (
-        <ConfirmModal
-          title="Automatisches Aus?"
-          message="Wird als Aus im aktuellen Inning gezählt (nicht dem Batter zugerechnet). Beim 3. Aus endet das Half-Inning."
-          confirmLabel="Ja, Aus buchen"
-          onConfirm={handleAutomaticOut}
-          onCancel={() => setShowAutoOutConfirm(false)}
-        />
-      )}
+      {showAutoOutConfirm && (() => {
+        const nextOut = displayOuts + 1
+        const message = nextOut >= 3
+          ? `Sicher? Das wäre das 3. Aus in Inning ${currentInning} — danach ist das Half-Inning vorbei.`
+          : `Sicher? Das wäre das ${nextOut}. Aus in Inning ${currentInning} (nicht dem Batter zugerechnet).`
+        return (
+          <ConfirmModal
+            title="Automatisches Aus?"
+            message={message}
+            confirmLabel="Ja, Aus buchen"
+            onConfirm={handleAutomaticOut}
+            onCancel={() => setShowAutoOutConfirm(false)}
+          />
+        )
+      })()}
 
       {/* Delete-Current-Inning Confirmation */}
       {showDeleteInningConfirm && (() => {
