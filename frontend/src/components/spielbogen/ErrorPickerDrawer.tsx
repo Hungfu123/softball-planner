@@ -48,7 +48,7 @@ export function ErrorPickerDrawer({ open, onClose, onPick }: Props) {
       <button
         onClick={handleConfirm}
         disabled={selected == null}
-        className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Bestätigen
       </button>

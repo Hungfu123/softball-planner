@@ -263,7 +263,7 @@ function AliasInlineInput({ player, onSave, onDone }: { player: Player; onSave: 
         }}
         placeholder="WhatsApp-Name…"
         disabled={saving}
-        className="w-32 bg-transparent text-navy-700 outline-none placeholder:text-navy-600/40 disabled:opacity-60"
+        className="w-32 bg-transparent text-navy-700 outline-none placeholder:text-navy-600/40 disabled:opacity-50"
       />
     </span>
   )

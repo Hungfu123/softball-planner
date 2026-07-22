@@ -246,7 +246,7 @@ export function WhatsappPollPage() {
           onClick={openCreate}
           disabled={!connected}
           title={connected ? undefined : 'Erst WhatsApp verbinden'}
-          className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-2.5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-softball-red-600"
+          className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-2.5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-softball-red-600"
         >
           <PlusCircle size={16} /> Neue Umfrage
         </button>
@@ -415,7 +415,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
                     role="menuitem"
                     onClick={() => { setMenuOpen(false); onEdit() }}
                     disabled={!connected}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   >
                     <Pencil size={15} /> Bearbeiten
                   </button>
@@ -423,7 +423,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
                     role="menuitem"
                     onClick={() => { setMenuOpen(false); onSend() }}
                     disabled={!connected}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                   >
                     <SendIcon size={15} /> Jetzt testen
                   </button>
@@ -670,7 +670,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
                 onClick={addOption}
                 disabled={form.options.length >= 12}
                 title={form.options.length >= 12 ? 'Maximal 12 Antwortoptionen erlaubt' : undefined}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-navy-700"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-navy-700"
               >
                 <PlusCircle size={14} /> Option
               </button>
@@ -691,7 +691,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
                     disabled={form.options.length <= 2}
                     aria-label="Option entfernen"
                     title="Entfernen"
-                    className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <XMark size={16} />
                   </button>

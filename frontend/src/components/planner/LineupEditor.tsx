@@ -17,6 +17,7 @@ import { LineupRowSwapSheet } from './LineupRowSwapSheet'
 import type { CoachRotationPair, LocalLineupEntry, Player } from '@/types'
 import { POSITIONS, FIELD_POSITIONS } from '@/types'
 import { CrossBones, TrashBin, DiceIcon } from '@/icons'
+import { EmptyState } from '@/components/shared'
 
 interface Props {
   entries: LocalLineupEntry[]
@@ -100,7 +101,7 @@ export function LineupEditor({
             <button
               onClick={onAutoGenerate}
               disabled={autoGenerateLoading}
-              className="p-1 rounded text-gray-300 hover:text-navy-700 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-1 rounded text-gray-300 hover:text-navy-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               title="Positionen zufällig befüllen — für alle Spiele gleichzeitig 'Alle aufstellen' nutzen"
             >
               <DiceIcon size={14} />
@@ -119,18 +120,19 @@ export function LineupEditor({
       </div>
 
       {entries.length === 0 ? (
-        <div className="text-center py-8 text-gray-400 border-2 border-dashed border-cream-300 rounded-xl">
-          <CrossBones size={32} className="mx-auto mb-2 opacity-40" />
-          <p className="text-sm">Tippe Spieler im Pool an</p>
-          {onCopyOtherGame && (
+        <EmptyState
+          dashed
+          icon={<CrossBones size={32} />}
+          title="Tippe Spieler im Pool an"
+          action={onCopyOtherGame && (
             <button
               onClick={onCopyOtherGame}
-              className="mt-3 px-4 py-2 text-xs font-medium text-navy-700 bg-navy-50 rounded-lg hover:bg-navy-100 hover:text-navy-900 transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-navy-700 bg-navy-50 rounded-lg hover:bg-navy-100 hover:text-navy-900 transition-colors cursor-pointer"
             >
               Lineup kopieren
             </button>
           )}
-        </div>
+        />
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map(e => e.player.id)} strategy={verticalListSortingStrategy}>
