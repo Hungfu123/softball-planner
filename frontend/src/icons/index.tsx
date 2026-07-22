@@ -14,7 +14,7 @@ import {
   ChevronDown as LucideChevronDown,
   GripVertical,
   CheckCircle2,
-  TriangleAlert,
+  CircleAlert,
   Upload,
   FileText,
   Car,
@@ -52,7 +52,7 @@ export const ChevronUp = (p: IconProps) => <LucideChevronUp size={p.size ?? 16} 
 export const ChevronDown = (p: IconProps) => <LucideChevronDown size={p.size ?? 16} className={p.className} />
 export const GripHandle = (p: IconProps) => <GripVertical size={p.size ?? 20} className={p.className} />
 export const CheckCircle = (p: IconProps) => <CheckCircle2 size={p.size ?? 20} className={p.className} />
-export const AlertTriangle = (p: IconProps) => <TriangleAlert size={p.size ?? 20} className={p.className} />
+export const AlertCircle = (p: IconProps) => <CircleAlert size={p.size ?? 20} className={p.className} />
 export const UploadIcon = (p: IconProps) => <Upload size={p.size ?? 20} className={p.className} />
 export const ExportDoc = (p: IconProps) => <FileText size={p.size ?? 20} className={p.className} />
 export const CarIcon = (p: IconProps) => <Car size={p.size ?? 20} className={p.className} />
