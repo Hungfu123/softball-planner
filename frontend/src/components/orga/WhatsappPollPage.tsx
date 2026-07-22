@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useWhatsappPoll } from '@/hooks/useWhatsappPoll'
 import { getWhatsappQr } from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
-import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton } from '@/components/shared'
+import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton, Button } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
 import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
 
@@ -241,15 +241,16 @@ export function WhatsappPollPage() {
         <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-700">
           Umfragen {polls.length > 0 && <span className="text-navy-500 font-bold">({polls.length})</span>}
         </h2>
-        <button
+        <Button
           type="button"
+          variant="primary"
           onClick={openCreate}
           disabled={!connected}
           title={connected ? undefined : 'Erst WhatsApp verbinden'}
-          className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-2.5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-softball-red-600"
+          icon={<PlusCircle size={16} />}
         >
-          <PlusCircle size={16} /> Neue Umfrage
-        </button>
+          Neue Umfrage
+        </Button>
       </div>
 
       <div className={!connected ? 'opacity-50 pointer-events-none' : ''}>
@@ -607,21 +608,12 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
 
   const footer = (
     <div className="flex justify-end gap-2">
-      <button
-        type="button"
-        onClick={onClose}
-        className="px-4 py-2 text-sm font-semibold text-navy-700 bg-white border border-cream-300 rounded-lg hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
-      >
+      <Button type="button" variant="secondary" onClick={onClose}>
         Abbrechen
-      </button>
-      <button
-        type="button"
-        onClick={() => onSave(buildRequest())}
-        disabled={saving || !canSave}
-        className="px-4 py-2 text-sm font-semibold text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-      >
+      </Button>
+      <Button type="button" variant="primary" onClick={() => onSave(buildRequest())} disabled={saving || !canSave}>
         {saving ? 'Speichern…' : 'Speichern'}
-      </button>
+      </Button>
     </div>
   )
 

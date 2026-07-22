@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { UserPlus } from 'lucide-react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Button } from '@/components/shared'
 import type { TrainingFocus } from '@/types'
 
 type Props = {
@@ -46,13 +47,9 @@ export function AddBeginnerGroupDrawer({ open, onClose, onSubmit }: Props) {
 
   const footer = (
     <div className="grid grid-cols-2 gap-2">
-      <button
-        onClick={onClose}
-        disabled={submitting}
-        className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer disabled:opacity-50"
-      >
+      <Button variant="secondary" onClick={onClose} disabled={submitting} className="h-11 w-full">
         Abbrechen
-      </button>
+      </Button>
       <button
         onClick={submit}
         disabled={submitting || beginnerCount < 2}

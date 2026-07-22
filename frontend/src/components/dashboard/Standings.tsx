@@ -3,7 +3,7 @@ import type { StandingEntry, GameDayResponse, GameResponse, LeagueTeamResponse, 
 import { Pencil, TrashBin, XMark } from '@/icons'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
-import { TeamCombobox } from '@/components/shared'
+import { TeamCombobox, Button } from '@/components/shared'
 import * as api from '@/api/client'
 
 interface Props {
@@ -180,13 +180,13 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
             placeholder="Neues Team..."
             className="border border-cream-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-navy-600 focus:ring-1 focus:ring-navy-100 w-48"
           />
-          <button
+          <Button
+            variant="secondary"
             onClick={handleCreateTeam}
             disabled={creating || !newTeamName.trim()}
-            className="px-3 py-2 text-sm font-medium text-navy-700 border border-cream-300 hover:bg-navy-800 hover:text-white hover:border-navy-800 rounded-lg disabled:opacity-50 cursor-pointer transition-colors"
           >
             + Hinzufügen
-          </button>
+          </Button>
         </div>
       </div>
 

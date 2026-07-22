@@ -8,6 +8,7 @@ import { Flame, Target, Coffee, Trophy, Circle, GripVertical, X, Plus, ChevronDo
 import { BatIcon } from '@/icons'
 import * as api from '@/api/client'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Button } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
 import type { TrainingPlanContentResponse, TrainingPlanSectionResponse, DrillResponse } from '@/types'
 import { DrillPickerModal } from './DrillPickerModal'
@@ -420,19 +421,12 @@ export function PlanEditDrawer({ open, onClose, planContent, planId, onSave }: P
 
   const footer = (
     <div className="grid grid-cols-2 gap-2">
-      <button
-        onClick={onClose}
-        className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
-      >
+      <Button variant="secondary" onClick={onClose} className="h-11 w-full">
         Abbrechen
-      </button>
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="h-11 rounded-lg bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-      >
+      </Button>
+      <Button variant="primary" onClick={handleSave} disabled={saving} className="h-11 w-full font-bold">
         {saving ? 'Speichere…' : 'Speichern'}
-      </button>
+      </Button>
     </div>
   )
 
