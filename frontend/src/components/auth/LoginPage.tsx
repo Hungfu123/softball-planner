@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Button } from '@/components/shared'
 
 interface LoginPageProps {
   onLogin: (password: string) => void
@@ -72,12 +73,13 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
             </p>
           )}
 
-          <button
+          <Button
             type="submit"
-            className="font-display w-full bg-softball-red-600 text-white py-3 rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 cursor-pointer transition-colors"
+            variant="primary"
+            className="font-display w-full py-3 rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20"
           >
             Ready Up
-          </button>
+          </Button>
         </div>
       </form>
     </div>

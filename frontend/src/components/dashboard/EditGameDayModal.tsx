@@ -106,13 +106,13 @@ export function EditGameDayModal({ gameDay, onSaved, onClose }: Props) {
           <Button variant="ghost" onClick={onClose}>
             Abbrechen
           </Button>
-          <button
+          <Button
+            variant="navy"
             onClick={handleSave}
             disabled={saving || !date}
-            className="px-4 py-2 text-sm font-medium text-white bg-navy-800 rounded-lg hover:bg-navy-700 disabled:opacity-50"
           >
             {saving ? 'Speichern...' : 'Speichern'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

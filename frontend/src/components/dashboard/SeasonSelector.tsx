@@ -3,7 +3,7 @@ import type { Season } from '@/types'
 import { PlusCircle, Pencil, TrashBin } from '@/icons'
 import { ChevronDown } from 'lucide-react'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { ResponsiveSheet } from '@/components/shared'
+import { ResponsiveSheet, Button } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
 
 interface Props {
@@ -139,13 +139,14 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
               >
                 Abbrechen
               </button>
-              <button
+              <Button
+                variant="primary"
                 onClick={handleCreate}
                 disabled={!name.trim()}
-                className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-700 disabled:opacity-50 cursor-pointer"
+                className="font-display text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700"
               >
                 Erstellen
-              </button>
+              </Button>
             </div>
           }
         >
@@ -189,7 +190,8 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
               >
                 Abbrechen
               </button>
-              <button
+              <Button
+                variant="navy"
                 onClick={async () => {
                   if (!name.trim()) return
                   try {
@@ -201,10 +203,10 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                   }
                 }}
                 disabled={!name.trim()}
-                className="font-display px-4 py-2 text-xs font-extrabold tracking-widest uppercase text-white bg-navy-800 rounded-lg hover:bg-navy-900 disabled:opacity-50 cursor-pointer"
+                className="font-display text-xs font-extrabold tracking-widest uppercase"
               >
                 Speichern
-              </button>
+              </Button>
             </div>
           }
         >

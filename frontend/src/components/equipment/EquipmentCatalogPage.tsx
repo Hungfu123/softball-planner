@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import { useEquipmentCatalog } from '@/hooks/useEquipmentCatalog'
 import { useToastContext } from '@/components/layout/Layout'
-import { ConfirmModal, EmptyState } from '@/components/shared'
+import { Button, ConfirmModal, EmptyState } from '@/components/shared'
 import { EquipmentItemForm, EMPTY_EQUIPMENT_INPUT, LOCATION_SUGGESTIONS } from './EquipmentItemForm'
 import { VenueMap } from './VenueMap'
 import { PlusCircle, Pencil, TrashBin, AlertCircle, CrossBones, ExportDoc } from '@/icons'
@@ -178,10 +178,10 @@ export default function EquipmentCatalogPage() {
         )}
       </div>
 
-      <button onClick={() => setAdding(true)}
-        className="w-full sm:w-auto flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-navy-800 text-white font-bold text-sm hover:bg-navy-900 cursor-pointer">
-        <PlusCircle size={18} /> Sache hinzufügen
-      </button>
+      <Button variant="navy" onClick={() => setAdding(true)} icon={<PlusCircle size={18} />}
+        className="w-full sm:w-auto py-3 px-5 rounded-xl font-bold text-sm gap-2">
+        Sache hinzufügen
+      </Button>
 
       {deleteItem && (
         <ConfirmModal

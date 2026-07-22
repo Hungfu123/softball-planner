@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from '@/icons'
+import { Button } from '@/components/shared'
 import type { EquipmentInput, EquipmentItem } from '@/types'
 
 export { LOCATION_SUGGESTIONS } from './venueLayout'
@@ -82,9 +83,9 @@ export function EquipmentItemForm({ initial, locations, onCancel, onSubmit }: Pr
       <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notiz (optional)"
         className="w-full px-2 py-1.5 rounded border border-cream-300 text-sm" />
       <div className="flex justify-end gap-2 pt-1">
-        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-cream-200 rounded cursor-pointer">Abbrechen</button>
-        <button onClick={submit} disabled={!name.trim() || saving}
-          className="px-3 py-1.5 text-sm font-bold text-white bg-navy-800 hover:bg-navy-900 rounded cursor-pointer disabled:opacity-50">Speichern</button>
+        <Button variant="ghost" onClick={onCancel} className="px-3 py-1.5 text-sm rounded">Abbrechen</Button>
+        <Button variant="navy" onClick={submit} disabled={!name.trim() || saving}
+          className="px-3 py-1.5 text-sm font-bold rounded">Speichern</Button>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Button } from '@/components/shared'
 import type { Player, LocalLineupEntry } from '@/types'
 
 interface Props {
@@ -41,19 +42,21 @@ export function FieldPositionAssignSheet({ open, position, entries, poolPlayers,
       footer={
         <div className="grid grid-cols-2 gap-2">
           {currentOnPosition ? (
-            <button
+            <Button
+              variant="secondary"
               onClick={handleClear}
-              className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium hover:bg-cream-100 cursor-pointer"
+              className="h-11 w-full font-medium"
             >
               Position leeren
-            </button>
+            </Button>
           ) : <span />}
-          <button
+          <Button
+            variant="navy"
             onClick={onClose}
-            className="h-11 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold cursor-pointer"
+            className="h-11 w-full font-bold"
           >
             Schließen
-          </button>
+          </Button>
         </div>
       }
     >

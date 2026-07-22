@@ -95,13 +95,14 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
         <div className="px-4 py-4 space-y-4">
           {!editing && (
             <>
-              <button
+              <Button
                 type="button"
+                variant="navy"
                 onClick={startCreate}
-                className="w-full h-11 rounded-lg bg-navy-800 text-white font-bold cursor-pointer hover:bg-navy-900 transition-colors"
+                className="w-full h-11 font-bold"
               >
                 + Neue Periode
-              </button>
+              </Button>
               {periods.length === 0 ? (
                 <p className="text-sm text-navy-500 italic">Noch keine Perioden.</p>
               ) : (
@@ -180,7 +181,7 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
               )}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button type="button" variant="secondary" onClick={cancelEdit} className="h-11 w-full">Abbrechen</Button>
-                <button type="button" onClick={handleSave} disabled={!canSave || saving} className="h-11 rounded-lg bg-navy-800 text-white font-bold cursor-pointer hover:bg-navy-900 disabled:opacity-50 disabled:cursor-not-allowed">{saving ? 'Speichern…' : 'Speichern'}</button>
+                <Button type="button" variant="navy" onClick={handleSave} disabled={!canSave || saving} className="h-11 w-full font-bold">{saving ? 'Speichern…' : 'Speichern'}</Button>
               </div>
             </div>
           )}

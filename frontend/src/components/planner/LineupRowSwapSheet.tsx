@@ -1,4 +1,5 @@
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { Button } from '@/components/shared'
 import type { Player, LocalLineupEntry } from '@/types'
 
 interface Props {
@@ -45,12 +46,13 @@ export function LineupRowSwapSheet({
       title="Spieler tauschen"
       maxWidth="md"
       footer={
-        <button
+        <Button
+          variant="navy"
           onClick={onClose}
-          className="h-11 w-full rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold cursor-pointer"
+          className="h-11 w-full font-bold"
         >
           Abbrechen
-        </button>
+        </Button>
       }
     >
       <div className="px-4 py-4 space-y-4">

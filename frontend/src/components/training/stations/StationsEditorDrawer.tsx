@@ -107,7 +107,7 @@ export function StationsEditorDrawer({ open, stations, onClose, onSave }: Props)
 
         <div className="sticky bottom-0 bg-cream-50 border-t border-cream-300 p-4 flex gap-2">
           <Button variant="secondary" onClick={onClose} className="flex-1 font-bold">Abbrechen</Button>
-          <button onClick={() => onSave(draft)} className="flex-1 rounded-lg bg-navy-900 px-4 py-2 text-sm font-bold text-white hover:bg-navy-800 cursor-pointer">Speichern</button>
+          <Button variant="navy" onClick={() => onSave(draft)} className="flex-1 font-bold">Speichern</Button>
         </div>
       </div>
     </div>

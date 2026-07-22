@@ -338,13 +338,14 @@ export function PlayerManager() {
             >
               Abbrechen
             </button>
-            <button
+            <Button
+              variant="primary"
               onClick={handleBattingSave}
               disabled={battingSaving}
-              className="py-3 text-sm font-semibold text-white bg-softball-red-600 rounded-xl hover:bg-softball-red-500 disabled:opacity-50 shadow-lg shadow-softball-red-600/20 cursor-pointer"
+              className="py-3 rounded-xl font-semibold shadow-lg shadow-softball-red-600/20"
             >
               {battingSaving ? 'Speichern…' : 'Reihenfolge speichern'}
-            </button>
+            </Button>
           </div>
         )}
 

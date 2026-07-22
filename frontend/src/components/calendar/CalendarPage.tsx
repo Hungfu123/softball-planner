@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Download, MapPin, Dumbbell } from 'lucide-re
 import * as api from '@/api/client'
 import type { GameDayResponse, Season, TrainingResponse } from '@/types'
 import { useToastContext } from '@/components/layout/Layout'
+import { Button } from '@/components/shared'
 import { CalendarPageSkeleton } from './CalendarPageSkeleton'
 
 // Season-Farb-Palette (Brand-Rot bewusst ausgespart — das ist Akzent, nicht Kategorie)
@@ -134,14 +135,16 @@ export function CalendarPage() {
           >
             Heute
           </button>
-          <button
+          <Button
+            variant="navy"
             onClick={exportIcs}
             disabled={exporting}
-            className="font-display inline-flex items-center gap-1.5 text-[11px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-lg bg-navy-900 text-white hover:bg-navy-800 disabled:opacity-50 cursor-pointer transition-colors"
+            icon={<Download size={13} />}
+            className="font-display text-[11px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-lg"
             title="Als .ics exportieren / abonnieren"
           >
-            <Download size={13} /> ICS
-          </button>
+            ICS
+          </Button>
         </div>
       </div>
 
