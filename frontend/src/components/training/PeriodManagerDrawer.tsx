@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { Button } from '@/components/shared'
 import type { TrainingPeriodResponse } from '@/types'
 
 const WEEKDAYS: { value: number; label: string }[] = [
@@ -178,7 +179,7 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                 <p className="text-[11px] text-navy-500">Beim Speichern werden zukünftige Termine an den Rhythmus angepasst. Vergangene Termine bleiben unverändert.</p>
               )}
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <button type="button" onClick={cancelEdit} className="h-11 rounded-lg border border-cream-300 text-navy-700 font-medium cursor-pointer hover:bg-cream-100">Abbrechen</button>
+                <Button type="button" variant="secondary" onClick={cancelEdit} className="h-11 w-full">Abbrechen</Button>
                 <button type="button" onClick={handleSave} disabled={!canSave || saving} className="h-11 rounded-lg bg-navy-800 text-white font-bold cursor-pointer hover:bg-navy-900 disabled:opacity-50 disabled:cursor-not-allowed">{saving ? 'Speichern…' : 'Speichern'}</button>
               </div>
             </div>

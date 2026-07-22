@@ -18,7 +18,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
-import { EmptyState, ConfirmModal } from '@/components/shared'
+import { EmptyState, ConfirmModal, Button } from '@/components/shared'
 import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
 import { WhatsappVotersTab } from './WhatsappVotersTab'
 import type { Player } from '@/types'
@@ -245,14 +245,15 @@ export function PlayerManager() {
                 placeholder="Neuer Spieler…"
                 className="flex-1 border border-cream-300 rounded-lg px-4 py-2.5 text-sm text-navy-900 bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
               />
-              <button
+              <Button
                 type="button"
                 onClick={handleCreate}
                 disabled={!newName.trim()}
-                className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-2.5 rounded-lg flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                icon={<PlusCircle size={16} />}
+                className="py-2.5"
               >
-                <PlusCircle size={16} /> Hinzufügen
-              </button>
+                Hinzufügen
+              </Button>
             </div>
             {players.length > 6 && (
               <input

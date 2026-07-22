@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useInvitations } from '@/hooks/useInvitations'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, ExportDoc, ArrowsSwap } from '@/icons'
-import { EmptyState, ConfirmModal, LoadingSkeleton } from '@/components/shared'
+import { EmptyState, ConfirmModal, LoadingSkeleton, Button } from '@/components/shared'
 import { InvitationEditor } from './InvitationEditor'
 import { generateInvitationPdf } from '@/utils/invitationPdf'
 import type { InvitationRequest, InvitationResponse } from '@/types'
@@ -109,13 +109,9 @@ export function InvitationListPage() {
         <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
           Einladungen {invitations.length > 0 && <span className="text-navy-500 font-bold">({invitations.length})</span>}
         </h1>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="bg-softball-red-600 hover:bg-softball-red-700 text-white font-bold px-4 py-2.5 rounded-lg flex items-center gap-1.5 cursor-pointer"
-        >
-          <PlusCircle size={16} /> Neu
-        </button>
+        <Button type="button" variant="primary" onClick={openCreate} icon={<PlusCircle size={16} />}>
+          Neu
+        </Button>
       </div>
 
       {loading ? (

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { getUnknownVoters, assignVoter, assignNewVoter, unassignVoter } from '@/api/client'
-import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton, ConfirmModal } from '@/components/shared'
+import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton, ConfirmModal, Button } from '@/components/shared'
 import { PlusCircle, CrossBones, XMark } from '@/icons'
 import type { UnknownVoter, Player } from '@/types'
 
@@ -274,21 +274,16 @@ function NewPlayerModal({ voterName, onCancel, onConfirm }: { voterName: string;
 
   const footer = (
     <div className="flex justify-end gap-2">
-      <button
-        type="button"
-        onClick={onCancel}
-        className="px-4 py-2 text-sm font-semibold text-navy-700 bg-white border border-cream-300 rounded-lg hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
-      >
+      <Button type="button" variant="secondary" onClick={onCancel}>
         Abbrechen
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         onClick={() => onConfirm(name.trim())}
         disabled={!name.trim()}
-        className="px-4 py-2 text-sm font-semibold text-white bg-softball-red-600 rounded-lg hover:bg-softball-red-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         Anlegen
-      </button>
+      </Button>
     </div>
   )
 

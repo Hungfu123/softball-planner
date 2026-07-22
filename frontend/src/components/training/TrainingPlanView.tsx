@@ -7,6 +7,7 @@ import { TrainingPlanSkeleton } from './TrainingPlanSkeleton'
 import { resolveStations, toDiagramStations, DEFAULT_STATIONS } from './stations/deriveStations'
 import { StationsDiagram } from './stations/StationsDiagram'
 import { StationsEditorDrawer } from './stations/StationsEditorDrawer'
+import { Button } from '@/components/shared'
 
 type Props = {
   plans: TrainingPlanResponse[]
@@ -633,12 +634,13 @@ export function TrainingPlanView({ plans, loading = false, activePlanKind, onSwi
             {onSaveStations && (
               <div className="flex justify-end gap-2 mt-3">
                 <button onClick={() => setStationsFull(false)} className="rounded-lg border border-cream-300/40 px-4 py-2 text-sm font-bold text-cream-100 hover:bg-white/10 cursor-pointer">Abbrechen</button>
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => { onSaveStations(arrangeDraft); setStationsFull(false) }}
-                  className="rounded-lg bg-softball-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-softball-red-700 cursor-pointer"
+                  className="font-bold"
                 >
                   Anordnung speichern
-                </button>
+                </Button>
               </div>
             )}
           </div>

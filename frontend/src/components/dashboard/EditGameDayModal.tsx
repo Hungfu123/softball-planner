@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { GameDayResponse } from '@/types'
 import { XMark } from '@/icons'
+import { Button } from '@/components/shared'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 
@@ -102,12 +103,9 @@ export function EditGameDayModal({ gameDay, onSaved, onClose }: Props) {
           </div>
         </div>
         <div className="px-5 py-4 border-t border-cream-200 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-cream-200"
-          >
+          <Button variant="ghost" onClick={onClose}>
             Abbrechen
-          </button>
+          </Button>
           <button
             onClick={handleSave}
             disabled={saving || !date}

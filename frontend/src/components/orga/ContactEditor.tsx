@@ -1,4 +1,5 @@
 import { PlusCircle, TrashBin } from '@/icons'
+import { Button } from '@/components/shared'
 import type { InvitationContact } from '@/types'
 
 interface Props {
@@ -26,13 +27,9 @@ export function ContactEditor({ contacts, onChange }: Props) {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-sm font-bold uppercase tracking-wide text-navy-700">Kontakt</h3>
-        <button
-          type="button"
-          onClick={addContact}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-navy-700 bg-white border border-cream-300 rounded-lg hover:bg-navy-800 hover:text-white hover:border-navy-800 cursor-pointer transition-colors"
-        >
-          <PlusCircle size={16} /> Kontakt
-        </button>
+        <Button type="button" variant="secondary" onClick={addContact} icon={<PlusCircle size={16} />}>
+          Kontakt
+        </Button>
       </div>
 
       {contacts.length === 0 ? (
