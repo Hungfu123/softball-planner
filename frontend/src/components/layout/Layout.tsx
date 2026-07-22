@@ -1,5 +1,4 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Toaster } from 'sonner'
 import { ChevronLeft } from '@/icons'
 import { Home, CalendarDays, Dumbbell, Users, BarChart3, ClipboardList, Mail, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
@@ -83,7 +82,6 @@ export function Layout() {
         </main>
 
         <Toast toasts={toast.toasts} onDismiss={toast.dismiss} />
-        <Toaster position="top-center" richColors closeButton />
       </div>
     </ToastCtx.Provider>
   )

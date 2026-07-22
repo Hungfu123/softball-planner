@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown, Calendar, Ban, Droplets } from 'lucide-react'
 import { weatherIcon } from '@/components/dashboard/weatherIcon'
@@ -25,11 +24,17 @@ import { GeneratePlanDrawer } from './GeneratePlanDrawer'
 import { SharePlanDrawer } from './SharePlanDrawer'
 import { AddBeginnerGroupDrawer } from './AddBeginnerGroupDrawer'
 import { PeriodManagerDrawer } from './PeriodManagerDrawer'
+import { useToastContext } from '@/components/layout/Layout'
 
 type MobileTab = 'anwesenheit' | 'plan'
 type AttendanceSort = 'alpha' | 'frequency' | 'decided'
 
 export function TrainingTodayPage() {
+  const _toast = useToastContext()
+  const toast = {
+    success: (m: string) => _toast.show(m, 'success'),
+    error: (m: string) => _toast.show(m, 'error'),
+  }
   const { trainings, attendance, toggleAttendance, cancelTraining, loading: trainingsLoading,
     periods, activePeriodId, selectPeriod, createBulk, updatePeriod, deletePeriod, loadAll } = useTraining()
   const { players } = usePlayers()
