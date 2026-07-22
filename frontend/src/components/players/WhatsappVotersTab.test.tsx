@@ -128,14 +128,17 @@ describe('WhatsappVotersTab', () => {
   it('speichert den WhatsApp-Alias eines Spielers bei Blur', async () => {
     render(<WhatsappVotersTab />)
 
-    // Alias-Zeilen sind alphabetisch sortiert: Anna Beispiel zuerst (whatsappName: null → leer)
-    const aliasInput = screen.getAllByPlaceholderText('WhatsApp-Name…')[0] as HTMLInputElement
+    // Alias wird on-demand gesetzt: erst den Trigger-Chip des Spielers ohne Alias
+    // anklicken (Anna Beispiel, whatsappName: null), dann erscheint das Eingabefeld.
+    fireEvent.click(await screen.findByTitle('WhatsApp-Alias für Anna Beispiel setzen'))
+
+    const aliasInput = screen.getByPlaceholderText('WhatsApp-Name…') as HTMLInputElement
     expect(aliasInput.value).toBe('')
 
     fireEvent.change(aliasInput, { target: { value: 'AnnaB' } })
     fireEvent.blur(aliasInput)
 
     await waitFor(() => expect(mockSetWhatsappName).toHaveBeenCalledWith(1, 'AnnaB'))
-    await waitFor(() => expect(mockShow).toHaveBeenCalledWith('Alias gespeichert'))
+    await waitFor(() => expect(mockShow).toHaveBeenCalledWith('Alias für Anna Beispiel gespeichert'))
   })
 })
