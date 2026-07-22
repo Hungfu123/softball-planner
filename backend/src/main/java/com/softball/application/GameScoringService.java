@@ -35,6 +35,7 @@ public class GameScoringService {
     private final BaseRunningEventRepository stealingRepository;
     private final SubstitutionRepository substitutionRepository;
     private final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
+    private final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository;
     private final BaseRunningReplay baseRunningReplay = new BaseRunningReplay();
 
     public GameScoringService(final GameRepository gameRepository,
@@ -43,7 +44,8 @@ public class GameScoringService {
                                final AtBatRepository atBatRepository,
                                final BaseRunningEventRepository stealingRepository,
                                final SubstitutionRepository substitutionRepository,
-                               final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository) {
+                               final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository,
+                               final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
@@ -51,6 +53,7 @@ public class GameScoringService {
         this.stealingRepository = stealingRepository;
         this.substitutionRepository = substitutionRepository;
         this.inningAdvanceEventRepository = inningAdvanceEventRepository;
+        this.automaticOutEventRepository = automaticOutEventRepository;
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +110,7 @@ public class GameScoringService {
         final java.util.List<BaseRunningEvent> allStealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         final java.util.List<Substitution> allSubs = substitutionRepository.findByGameId(gameId);
         final java.util.List<InningAdvanceEvent> allInningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+        final java.util.List<AutomaticOutEvent> allAutoOuts = automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
 
         final java.time.Instant newestAB = lastABOpt.map(AtBat::getCreatedAt).orElse(null);
         final java.time.Instant newestStealing = allStealings.stream()
@@ -124,15 +128,22 @@ public class GameScoringService {
             .filter(java.util.Objects::nonNull)
             .max(java.time.Instant::compareTo)
             .orElse(null);
+        final java.time.Instant newestAutoOut = allAutoOuts.stream()
+            .map(AutomaticOutEvent::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(null);
 
-        if (newestAB == null && newestStealing == null && newestSub == null && newestEvent == null) {
+        if (newestAB == null && newestStealing == null && newestSub == null
+                && newestEvent == null && newestAutoOut == null) {
             return com.softball.adapter.dto.UndoResultResponse.none();
         }
 
         final boolean abIsNewest = newestAB != null
             && (newestStealing == null || !newestStealing.isAfter(newestAB))
             && (newestSub == null || !newestSub.isAfter(newestAB))
-            && (newestEvent == null || !newestEvent.isAfter(newestAB));
+            && (newestEvent == null || !newestEvent.isAfter(newestAB))
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestAB));
 
         if (abIsNewest) {
             final AtBat lastAB = lastABOpt.get();
@@ -142,7 +153,8 @@ public class GameScoringService {
 
         final boolean stealingIsNewest = newestStealing != null
             && (newestSub == null || !newestSub.isAfter(newestStealing))
-            && (newestEvent == null || !newestEvent.isAfter(newestStealing));
+            && (newestEvent == null || !newestEvent.isAfter(newestStealing))
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestStealing));
 
         if (stealingIsNewest) {
             final BaseRunningEvent latest = allStealings.stream()
@@ -154,7 +166,8 @@ public class GameScoringService {
         }
 
         final boolean subIsNewest = newestSub != null
-            && (newestEvent == null || !newestEvent.isAfter(newestSub));
+            && (newestEvent == null || !newestEvent.isAfter(newestSub))
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestSub));
 
         if (subIsNewest) {
             final Substitution latest = allSubs.stream()
@@ -165,7 +178,9 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.substitution(latest.getId());
         }
 
-        if (newestEvent != null) {
+        final boolean eventIsNewest = newestEvent != null
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestEvent));
+        if (eventIsNewest) {
             final InningAdvanceEvent latest = allInningEvents.stream()
                 .filter(e -> e.getCreatedAt() != null)
                 .max(java.util.Comparator.comparing(InningAdvanceEvent::getCreatedAt))
@@ -179,6 +194,15 @@ public class GameScoringService {
             }
             inningAdvanceEventRepository.deleteById(latest.getId());
             return com.softball.adapter.dto.UndoResultResponse.inningAdvance(latest.getId());
+        }
+
+        if (newestAutoOut != null) {
+            final AutomaticOutEvent latest = allAutoOuts.stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(AutomaticOutEvent::getCreatedAt))
+                .orElseThrow();
+            automaticOutEventRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.automaticOut(latest.getId());
         }
 
         return com.softball.adapter.dto.UndoResultResponse.none();
@@ -208,6 +232,63 @@ public class GameScoringService {
         gameRepository.save(game);
 
         return com.softball.adapter.dto.InningAdvanceEventResponse.from(saved);
+    }
+
+    /**
+     * Bucht ein automatisches Aus im aktuellen Inning (z.B. Batter erscheint nicht,
+     * Regel-Verstoß) — rotiert NICHT die Batting-Order, zählt aber in
+     * {@link #getScoreboard}'s {@code outsInCurrentInning} mit. Wirft, wenn das aktuelle
+     * Inning bereits 3 Outs hat.
+     */
+    @Transactional
+    public void recordAutomaticOut(final Long gameId) {
+        final Game game = findGame(gameId);
+
+        final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
+        final List<BaseRunningEvent> stealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
+        final List<AutomaticOutEvent> autoOuts = automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+
+        final int lastABInning = atBats.stream()
+            .mapToInt(a -> a.getInning() != null ? a.getInning() : 1)
+            .max().orElse(1);
+        final int lastEventInning = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId).stream()
+            .mapToInt(e -> e.getToInning() != null ? e.getToInning() : 1)
+            .max().orElse(1);
+        final int currentInning = Math.max(lastABInning, lastEventInning);
+
+        if (outsInInning(atBats, stealings, autoOuts, currentInning) >= 3) {
+            throw new com.softball.shared.exception.BusinessValidationException(
+                "Inning hat bereits 3 Outs — kein automatisches Aus möglich");
+        }
+
+        final AutomaticOutEvent event = new AutomaticOutEvent(game, currentInning, currentUser());
+        automaticOutEventRepository.save(event);
+        log.info("Automatisches Aus gebucht für Game {} in Inning {}", gameId, currentInning);
+    }
+
+    /**
+     * Zählt alle Outs (AtBat-Outs + Runner-Outs + automatische Outs) für ein gegebenes Inning.
+     * Gemeinsamer Helper für {@link #getScoreboard} und {@link #recordAutomaticOut}, damit die
+     * Out-Zähllogik nicht dupliziert wird.
+     */
+    private int outsInInning(final List<AtBat> atBats,
+                             final List<BaseRunningEvent> stealingEvents,
+                             final List<AutomaticOutEvent> autoOuts,
+                             final int inning) {
+        final int abOuts = (int) atBats.stream()
+            .filter(a -> a.getInning() != null && a.getInning() == inning)
+            .filter(a -> a.getResult() != null && a.getResult().isOut())
+            .count();
+        final int runnerOuts = (int) stealingEvents.stream()
+            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING
+                      || e.getType() == BaseRunningEventType.OUT_ON_PLAY
+                      || e.getType() == BaseRunningEventType.PICKOFF)
+            .filter(e -> e.getInning() != null && e.getInning() == inning)
+            .count();
+        final int autoOutCount = (int) autoOuts.stream()
+            .filter(e -> e.getInning() != null && e.getInning() == inning)
+            .count();
+        return abOuts + runnerOuts + autoOutCount;
     }
 
     /**
@@ -249,6 +330,12 @@ public class GameScoringService {
             }
         }
 
+        for (final AutomaticOutEvent e : automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId)) {
+            if (e.getInning() != null && e.getInning() == currentInning) {
+                automaticOutEventRepository.deleteById(e.getId());
+            }
+        }
+
         // scoreUs aus verbleibenden ABs neu berechnen
         final int newScoreUs = allAtBats.stream()
             .filter(a -> a.getInning() == null || a.getInning() != currentInning)
@@ -271,6 +358,9 @@ public class GameScoringService {
         for (final BaseRunningEvent e : events) stealingRepository.deleteById(e.getId());
         final java.util.List<InningAdvanceEvent> inningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
         for (final InningAdvanceEvent ev : inningEvents) inningAdvanceEventRepository.deleteById(ev.getId());
+        for (final AutomaticOutEvent e : automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId)) {
+            automaticOutEventRepository.deleteById(e.getId());
+        }
         substitutionRepository.deleteByGameId(gameId);
         // Score auch zurücksetzen (damit die im Scoreboard korrekt bei 0 startet)
         game.setScoreUs(0);
@@ -354,21 +444,10 @@ public class GameScoringService {
             .max().orElse(1);
         final int currentInning = Math.max(lastABInning, lastEventInning);
 
-        final int atBatOuts = (int) atBats.stream()
-            .filter(a -> a.getInning() != null && a.getInning() == currentInning)
-            .filter(a -> a.getResult() != null && a.getResult().isOut())
-            .count();
-        // Runner-Outs zählen für den Inning-Counter:
-        //   CAUGHT_STEALING → beim Klau-Versuch erwischt
-        //   OUT_ON_PLAY     → bei Grounder/Fly-Out ausgespielt (z.B. Double-Play, Force-Out)
-        //   PICKOFF         → ohne Steal-Versuch vom Pitcher/Catcher getagt
-        final int runnerOuts = (int) stealingEvents.stream()
-            .filter(e -> e.getType() == BaseRunningEventType.CAUGHT_STEALING
-                      || e.getType() == BaseRunningEventType.OUT_ON_PLAY
-                      || e.getType() == BaseRunningEventType.PICKOFF)
-            .filter(e -> e.getInning() != null && e.getInning() == currentInning)
-            .count();
-        final int outsInCurrent = atBatOuts + runnerOuts;
+        // Out-Zählung (AtBat-Outs + Runner-Outs + automatische Outs) für das aktuelle Inning —
+        // gemeinsame Logik mit recordAutomaticOut lebt in outsInInning(...).
+        final List<AutomaticOutEvent> autoOutEvents = automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+        final int outsInCurrent = outsInInning(atBats, stealingEvents, autoOutEvents, currentInning);
 
         BaseState state = last != null && last.getBaseStateAfter() != null
             ? last.getBaseStateAfter()
