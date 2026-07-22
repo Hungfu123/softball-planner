@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -1027,6 +1028,27 @@ class GameScoringServiceTest {
             org.mockito.Mockito.verify(atBatRepository).deleteById(102L);
             org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(200L);
             org.mockito.Mockito.verify(stealingRepository, org.mockito.Mockito.never()).deleteById(201L);
+        }
+
+        @Test
+        void undo_removesNewestAutomaticOut() {
+            mockGame();
+            final AtBat ab = atBat(1, 1, hung, AtBatResult.SINGLE, new BaseState(hung.getId(), null, null));
+            ab.setCreatedAt(Instant.parse("2026-07-22T10:00:00Z"));
+            final AutomaticOutEvent auto = autoOut(5L, 1);
+            auto.setCreatedAt(Instant.parse("2026-07-22T10:05:00Z")); // jünger als AB
+
+            when(atBatRepository.findLastByGameId(1L)).thenReturn(java.util.Optional.of(ab));
+            when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(substitutionRepository.findByGameId(1L)).thenReturn(List.of());
+            when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+            when(automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of(auto));
+
+            final com.softball.adapter.dto.UndoResultResponse result = service.undoLastAction(1L);
+
+            assertThat(result.type()).isEqualTo(com.softball.adapter.dto.UndoResultResponse.UndoType.AUTOMATIC_OUT);
+            assertThat(result.removedId()).isEqualTo(5L);
+            verify(automaticOutEventRepository).deleteById(5L);
         }
     }
 

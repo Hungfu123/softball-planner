@@ -110,6 +110,7 @@ public class GameScoringService {
         final java.util.List<BaseRunningEvent> allStealings = stealingRepository.findByGameIdOrderByIdAsc(gameId);
         final java.util.List<Substitution> allSubs = substitutionRepository.findByGameId(gameId);
         final java.util.List<InningAdvanceEvent> allInningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
+        final java.util.List<AutomaticOutEvent> allAutoOuts = automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
 
         final java.time.Instant newestAB = lastABOpt.map(AtBat::getCreatedAt).orElse(null);
         final java.time.Instant newestStealing = allStealings.stream()
@@ -127,15 +128,22 @@ public class GameScoringService {
             .filter(java.util.Objects::nonNull)
             .max(java.time.Instant::compareTo)
             .orElse(null);
+        final java.time.Instant newestAutoOut = allAutoOuts.stream()
+            .map(AutomaticOutEvent::getCreatedAt)
+            .filter(java.util.Objects::nonNull)
+            .max(java.time.Instant::compareTo)
+            .orElse(null);
 
-        if (newestAB == null && newestStealing == null && newestSub == null && newestEvent == null) {
+        if (newestAB == null && newestStealing == null && newestSub == null
+                && newestEvent == null && newestAutoOut == null) {
             return com.softball.adapter.dto.UndoResultResponse.none();
         }
 
         final boolean abIsNewest = newestAB != null
             && (newestStealing == null || !newestStealing.isAfter(newestAB))
             && (newestSub == null || !newestSub.isAfter(newestAB))
-            && (newestEvent == null || !newestEvent.isAfter(newestAB));
+            && (newestEvent == null || !newestEvent.isAfter(newestAB))
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestAB));
 
         if (abIsNewest) {
             final AtBat lastAB = lastABOpt.get();
@@ -145,7 +153,8 @@ public class GameScoringService {
 
         final boolean stealingIsNewest = newestStealing != null
             && (newestSub == null || !newestSub.isAfter(newestStealing))
-            && (newestEvent == null || !newestEvent.isAfter(newestStealing));
+            && (newestEvent == null || !newestEvent.isAfter(newestStealing))
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestStealing));
 
         if (stealingIsNewest) {
             final BaseRunningEvent latest = allStealings.stream()
@@ -157,7 +166,8 @@ public class GameScoringService {
         }
 
         final boolean subIsNewest = newestSub != null
-            && (newestEvent == null || !newestEvent.isAfter(newestSub));
+            && (newestEvent == null || !newestEvent.isAfter(newestSub))
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestSub));
 
         if (subIsNewest) {
             final Substitution latest = allSubs.stream()
@@ -168,7 +178,9 @@ public class GameScoringService {
             return com.softball.adapter.dto.UndoResultResponse.substitution(latest.getId());
         }
 
-        if (newestEvent != null) {
+        final boolean eventIsNewest = newestEvent != null
+            && (newestAutoOut == null || !newestAutoOut.isAfter(newestEvent));
+        if (eventIsNewest) {
             final InningAdvanceEvent latest = allInningEvents.stream()
                 .filter(e -> e.getCreatedAt() != null)
                 .max(java.util.Comparator.comparing(InningAdvanceEvent::getCreatedAt))
@@ -182,6 +194,15 @@ public class GameScoringService {
             }
             inningAdvanceEventRepository.deleteById(latest.getId());
             return com.softball.adapter.dto.UndoResultResponse.inningAdvance(latest.getId());
+        }
+
+        if (newestAutoOut != null) {
+            final AutomaticOutEvent latest = allAutoOuts.stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .max(java.util.Comparator.comparing(AutomaticOutEvent::getCreatedAt))
+                .orElseThrow();
+            automaticOutEventRepository.deleteById(latest.getId());
+            return com.softball.adapter.dto.UndoResultResponse.automaticOut(latest.getId());
         }
 
         return com.softball.adapter.dto.UndoResultResponse.none();
@@ -309,6 +330,12 @@ public class GameScoringService {
             }
         }
 
+        for (final AutomaticOutEvent e : automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId)) {
+            if (e.getInning() != null && e.getInning() == currentInning) {
+                automaticOutEventRepository.deleteById(e.getId());
+            }
+        }
+
         // scoreUs aus verbleibenden ABs neu berechnen
         final int newScoreUs = allAtBats.stream()
             .filter(a -> a.getInning() == null || a.getInning() != currentInning)
@@ -331,6 +358,9 @@ public class GameScoringService {
         for (final BaseRunningEvent e : events) stealingRepository.deleteById(e.getId());
         final java.util.List<InningAdvanceEvent> inningEvents = inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(gameId);
         for (final InningAdvanceEvent ev : inningEvents) inningAdvanceEventRepository.deleteById(ev.getId());
+        for (final AutomaticOutEvent e : automaticOutEventRepository.findByGameIdOrderByCreatedAtAsc(gameId)) {
+            automaticOutEventRepository.deleteById(e.getId());
+        }
         substitutionRepository.deleteByGameId(gameId);
         // Score auch zurücksetzen (damit die im Scoreboard korrekt bei 0 startet)
         game.setScoreUs(0);
