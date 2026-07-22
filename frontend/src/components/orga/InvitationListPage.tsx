@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useInvitations } from '@/hooks/useInvitations'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, ExportDoc, ArrowsSwap } from '@/icons'
-import { EmptyState, ConfirmModal } from '@/components/shared'
+import { EmptyState, ConfirmModal, LoadingSkeleton } from '@/components/shared'
 import { InvitationEditor } from './InvitationEditor'
 import { generateInvitationPdf } from '@/utils/invitationPdf'
 import type { InvitationRequest, InvitationResponse } from '@/types'
@@ -119,7 +119,7 @@ export function InvitationListPage() {
       </div>
 
       {loading ? (
-        <p className="text-center text-sm text-navy-400 italic py-8">Lädt…</p>
+        <LoadingSkeleton variant="list" />
       ) : invitations.length === 0 ? (
         <EmptyState
           title="Noch keine Einladungen"
