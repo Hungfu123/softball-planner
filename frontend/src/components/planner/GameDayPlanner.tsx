@@ -175,10 +175,16 @@ export function GameDayPlanner() {
   const doApplySet = async (set: LineupSetResponse) => {
     const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
-      // 0. Verfügbare Spieler aus dem Set setzen (Cascade räumt Fremde aus allen Spielen)
-      if (set.availablePlayerIds && set.availablePlayerIds.length > 0) {
-        await setAvailablePlayers(set.availablePlayerIds)
-      }
+      // 0. Verfügbare Spieler aus dem Set setzen (Cascade räumt Fremde aus allen Spielen).
+      // Ältere Sets (vor diesem Feature) haben leere availablePlayerIds — dann Roster
+      // aus den Set-Einträgen ableiten (Feldspieler + DH-Batter), sonst würden Set-Spieler,
+      // die heute nicht im Roster stehen, beim setLineup mit 400 abgelehnt werden.
+      const roster = (set.availablePlayerIds && set.availablePlayerIds.length > 0)
+        ? set.availablePlayerIds
+        : Array.from(new Set(
+            set.entries.flatMap(e => [e.player.id, e.dhBatterPlayer?.id]).filter((x): x is number => x != null)
+          ))
+      if (roster.length > 0) await setAvailablePlayers(roster)
       // 1-3. pro Spiel: Coaches leeren → Lineup → Set-Coaches (in applySet)
       const skipped = await lineup.applySet(set.entries, set.staff, games)
       setActiveSetId(set.id)
