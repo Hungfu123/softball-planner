@@ -607,9 +607,14 @@ export function ScoringPage() {
 
   const handleAutomaticOut = async () => {
     setShowAutoOutConfirm(false)
+    const bookedOut = displayOuts + 1
+    const remaining = 3 - bookedOut
+    const msg = bookedOut >= 3
+      ? `3. Out gebucht · Half-Inning vorbei`
+      : `${bookedOut}. Out gebucht · noch ${remaining} bis Inning-Ende`
     try {
       await recordAutomaticOut()
-      toast.show('Automatisches Out gebucht', 'success')
+      toast.show(msg, 'success')
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
