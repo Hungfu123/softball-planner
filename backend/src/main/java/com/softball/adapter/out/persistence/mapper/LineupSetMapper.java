@@ -1,10 +1,13 @@
 package com.softball.adapter.out.persistence.mapper;
 
+import com.softball.adapter.out.persistence.entity.LineupSetAvailablePlayerEntity;
 import com.softball.adapter.out.persistence.entity.LineupSetEntity;
 import com.softball.adapter.out.persistence.entity.LineupSetEntryEntity;
+import com.softball.adapter.out.persistence.entity.LineupSetStaffEntity;
 import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
 import com.softball.domain.model.LineupSet;
 import com.softball.domain.model.LineupSetEntry;
+import com.softball.domain.model.LineupSetStaffEntry;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,6 +32,17 @@ public class LineupSetMapper {
                 return g != 0 ? g : Integer.compare(a.getBattingOrder(), b.getBattingOrder());
             })
             .map(this::toDomainEntry)
+            .toList());
+        set.setStaffEntries(entity.getStaff().stream()
+            .map(s -> {
+                final LineupSetStaffEntry e = new LineupSetStaffEntry(
+                    s.getGameNumber(), playerMapper.toDomain(s.getPlayer()), s.getRole());
+                e.setId(s.getId());
+                return e;
+            })
+            .toList());
+        set.setAvailablePlayerIds(entity.getAvailablePlayers().stream()
+            .map(a -> a.getPlayer().getId())
             .toList());
         return set;
     }
@@ -63,6 +77,20 @@ public class LineupSetMapper {
                 e.setDhBatterPlayer(playerRepo.getReferenceById(d.getDhBatterPlayer().getId()));
             }
             return e;
+        }).toList());
+        entity.setStaff(domain.getStaffEntries().stream().map(d -> {
+            final LineupSetStaffEntity e = new LineupSetStaffEntity();
+            e.setLineupSet(entity);
+            e.setGameNumber(d.getGameNumber());
+            e.setPlayer(playerRepo.getReferenceById(d.getPlayer().getId()));
+            e.setRole(d.getRole());
+            return e;
+        }).toList());
+        entity.setAvailablePlayers(domain.getAvailablePlayerIds().stream().map(pid -> {
+            final LineupSetAvailablePlayerEntity a = new LineupSetAvailablePlayerEntity();
+            a.setLineupSet(entity);
+            a.setPlayer(playerRepo.getReferenceById(pid));
+            return a;
         }).toList());
         return entity;
     }
