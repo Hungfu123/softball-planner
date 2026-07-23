@@ -11,6 +11,8 @@ public class LineupSet {
     private Instant createdAt;
     private int sortOrder;
     private List<LineupSetEntry> entries = new ArrayList<>();
+    private List<LineupSetStaffEntry> staffEntries = new ArrayList<>();
+    private List<Long> availablePlayerIds = new ArrayList<>();
 
     public LineupSet() {}
 
@@ -32,4 +34,8 @@ public class LineupSet {
     public void setSortOrder(final int sortOrder) { this.sortOrder = sortOrder; }
     public List<LineupSetEntry> getEntries() { return entries; }
     public void setEntries(final List<LineupSetEntry> entries) { this.entries = entries; }
+    public List<LineupSetStaffEntry> getStaffEntries() { return staffEntries; }
+    public void setStaffEntries(final List<LineupSetStaffEntry> staffEntries) { this.staffEntries = staffEntries; }
+    public List<Long> getAvailablePlayerIds() { return availablePlayerIds; }
+    public void setAvailablePlayerIds(final List<Long> availablePlayerIds) { this.availablePlayerIds = availablePlayerIds; }
 }
