@@ -28,6 +28,12 @@ public class LineupSetEntity {
     @OneToMany(mappedBy = "lineupSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<LineupSetEntryEntity> entries = new ArrayList<>();
 
+    @OneToMany(mappedBy = "lineupSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<LineupSetStaffEntity> staff = new ArrayList<>();
+
+    @OneToMany(mappedBy = "lineupSet", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<LineupSetAvailablePlayerEntity> availablePlayers = new ArrayList<>();
+
     public LineupSetEntity() {}
 
     public Long getId() { return id; }
@@ -42,4 +48,8 @@ public class LineupSetEntity {
     public void setSortOrder(final int sortOrder) { this.sortOrder = sortOrder; }
     public List<LineupSetEntryEntity> getEntries() { return entries; }
     public void setEntries(final List<LineupSetEntryEntity> entries) { this.entries = entries; }
+    public List<LineupSetStaffEntity> getStaff() { return staff; }
+    public void setStaff(final List<LineupSetStaffEntity> staff) { this.staff = staff; }
+    public List<LineupSetAvailablePlayerEntity> getAvailablePlayers() { return availablePlayers; }
+    public void setAvailablePlayers(final List<LineupSetAvailablePlayerEntity> availablePlayers) { this.availablePlayers = availablePlayers; }
 }
