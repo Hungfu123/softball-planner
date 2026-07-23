@@ -11,10 +11,10 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
       {toasts.map(t => (
         <div
           key={t.id}
-          className="relative overflow-hidden flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border border-cream-300 bg-cream-50 text-navy-900 text-sm animate-[slideUp_300ms_ease]"
+          className="relative overflow-hidden flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border border-cream-300 bg-white text-navy-900 text-sm animate-[slideUp_300ms_ease]"
         >
-          <span className={t.type === 'success' ? 'text-navy-700' : 'text-softball-red-600'}>
-            {t.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+          <span className={`shrink-0 ${t.type === 'success' ? 'text-navy-700' : 'text-softball-red-600'}`}>
+            {t.type === 'success' ? <CheckCircle size={22} /> : <AlertCircle size={22} />}
           </span>
           <span className="flex-1 font-semibold">{t.message}</span>
           {t.action && (
