@@ -4,7 +4,11 @@ import com.softball.domain.model.Game;
 import com.softball.domain.model.LineupEntry;
 import com.softball.domain.model.LineupSet;
 import com.softball.domain.model.LineupSetEntry;
+import com.softball.domain.model.LineupSetStaffEntry;
+import com.softball.domain.model.Player;
+import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.GameRepository;
+import com.softball.domain.port.out.GameStaffRepository;
 import com.softball.domain.port.out.LineupEntryRepository;
 import com.softball.domain.port.out.LineupSetRepository;
 import com.softball.shared.exception.BusinessValidationException;
@@ -14,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,13 +32,19 @@ public class LineupSetService {
     private final LineupSetRepository lineupSetRepository;
     private final GameRepository gameRepository;
     private final LineupEntryRepository lineupEntryRepository;
+    private final GameStaffRepository gameStaffRepository;
+    private final GameDayRepository gameDayRepository;
 
     public LineupSetService(final LineupSetRepository lineupSetRepository,
                             final GameRepository gameRepository,
-                            final LineupEntryRepository lineupEntryRepository) {
+                            final LineupEntryRepository lineupEntryRepository,
+                            final GameStaffRepository gameStaffRepository,
+                            final GameDayRepository gameDayRepository) {
         this.lineupSetRepository = lineupSetRepository;
         this.gameRepository = gameRepository;
         this.lineupEntryRepository = lineupEntryRepository;
+        this.gameStaffRepository = gameStaffRepository;
+        this.gameDayRepository = gameDayRepository;
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +75,29 @@ public class LineupSetService {
             e.getBattingOrder(),
             e.getDhBatterPlayer()
         )).toList());
+
+        // Base-Coaches je Spiel
+        set.setStaffEntries(gameStaffRepository.findByGameIdIn(gameIds).stream()
+            .map(s -> new LineupSetStaffEntry(
+                gameNumberById.get(s.getGame().getId()),
+                s.getPlayer(),
+                s.getRole()))
+            .toList());
+
+        // Verfügbare Spieler des Gamedays (Fallback: Vereinigung der Lineup-/DH-Spieler)
+        final List<Long> availableIds = gameDayRepository.findByIdWithPlayers(gameDayId)
+            .map(gd -> gd.getAvailablePlayers().stream().map(Player::getId).toList())
+            .orElse(List.of());
+        if (availableIds.isEmpty()) {
+            final LinkedHashSet<Long> fallback = new LinkedHashSet<>();
+            for (final LineupSetEntry e : set.getEntries()) {
+                if (e.getPlayer() != null) fallback.add(e.getPlayer().getId());
+                if (e.getDhBatterPlayer() != null) fallback.add(e.getDhBatterPlayer().getId());
+            }
+            set.setAvailablePlayerIds(new ArrayList<>(fallback));
+        } else {
+            set.setAvailablePlayerIds(new ArrayList<>(availableIds));
+        }
 
         final LineupSet saved = lineupSetRepository.save(set);
         log.info("Lineup-Set '{}' fuer GameDay {} mit {} Eintraegen gespeichert", name, gameDayId, saved.getEntries().size());
