@@ -98,11 +98,19 @@ export interface LineupSetEntryResponse {
   dhBatterPlayer: Player | null
 }
 
+export interface LineupSetStaffEntryResponse {
+  gameNumber: number
+  player: Player
+  role: string
+}
+
 export interface LineupSetResponse {
   id: number
   gameDayId: number
   name: string
   entries: LineupSetEntryResponse[]
+  staff: LineupSetStaffEntryResponse[]
+  availablePlayerIds: number[]
 }
 
 export interface SubstitutionResponse {
