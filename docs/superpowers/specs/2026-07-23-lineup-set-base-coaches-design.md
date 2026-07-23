@@ -1,66 +1,76 @@
-# Base-Coaches in Lineup-Sets
+# Lineup-Set = voller Gameday-Snapshot (verfügbare Spieler + Lineup + Base-Coaches)
 
 **Datum:** 2026-07-23
 **Scope:** Lineup-Sets (Gameday-Planner) — Snapshot + Anwenden
 
 ## Problem
 
-Lineup-Sets speichern nur die Lineup-Entries (Spieler, Position, Batting-Order, DH),
-**nicht** die Base-Coaches. Base-Coaches sind `GameStaff` (separates Modell, Rollen
-`BASE_COACH_1ST` / `BASE_COACH_3RD`).
+Lineup-Sets speichern nur die Lineup-Entries (Spieler, Position, Batting-Order, DH) je
+Spiel — **nicht** die Base-Coaches und **nicht** die verfügbaren Spieler (Tag-Roster).
 
-Beim Anwenden eines Sets schreibt das Frontend die Lineups pro Spiel via `setLineup`.
-Backend-Validierung (`LineupValidator.validateNoConflictWithStaff`) wirft, wenn ein
-Lineup-Spieler noch als Base-Coach eingetragen ist:
-„Spieler X ist bereits als Base Coach eingeteilt". `GameStaffService.validate` prüft
-zusätzlich die Gegenrichtung („Coach ist bereits im Lineup"). Dadurch scheitert das
-Set-Anwenden reproduzierbar, sobald ein Base-Coach gesetzt ist und das Set denselben
-Spieler ins Batting-Lineup nimmt.
+Zwei Folgen:
+1. **Base-Coach-Konflikt:** Beim Anwenden schreibt das Frontend Lineups via `setLineup`.
+   `LineupValidator.validateNoConflictWithStaff` wirft, wenn ein Lineup-Spieler noch als
+   Base-Coach eingetragen ist: „Spieler X ist bereits als Base Coach eingeteilt".
+   `GameStaffService.validate` prüft die Gegenrichtung. → Set-Anwenden scheitert
+   reproduzierbar, sobald ein Base-Coach gesetzt ist und das Set denselben Spieler ins
+   Batting-Lineup nimmt.
+2. **Skip:** Ist ein Set-Spieler am Gameday nicht als verfügbar eingetragen, scheitert
+   `validatePlayerAvailability` — das Spiel bleibt unpersistierter Draft mit Lücke
+   („Skip", `applySet` → `skipped[]`).
 
 ## Ziel
 
-1. Beim **Speichern** eines Sets die Base-Coaches je Spiel mit-snapshotten.
-2. Beim **Anwenden** eines Sets Lineup **und** Base-Coaches aller Spiele überschreiben
-   (konfliktfrei), mit **Confirm-Dialog** davor.
+Ein Set ist der **komplette Tag-Zustand**. Speichern snapshottet, Anwenden überschreibt:
+- verfügbare Spieler des Gamedays (Roster-Auswahl)
+- Lineup je Spiel (bereits vorhanden)
+- Base-Coaches je Spiel (neu)
+
+Anwenden **ersetzt** alles (kein Merge), mit **Confirm-Dialog** davor. Weil das Set beim
+Anwenden zuerst die verfügbaren Spieler setzt, sind danach alle Set-Spieler verfügbar →
+**keine Skips mehr**, und der Base-Coach-Konflikt ist durch die Apply-Reihenfolge gelöst.
 
 ## Verhalten
 
 - **Confirm immer:** Jedes Set-Anwenden zeigt vorher einen ConfirmModal:
-  „Set anwenden? Lineup und Base-Coaches aller Spiele werden überschrieben."
-  (Heute nur bei ungespeicherter Arbeit — neu: immer.)
-- **Überschreiben:** Set = vollständiger Snapshot. Anwenden setzt Lineup + Base-Coaches
-  je Spiel auf den Set-Stand. Alte Sets ohne gespeicherte Coaches → Base-Coaches werden
-  **geleert** (konsistent mit „Set überschreibt"; der Confirm warnt).
-- **Abwesende Spieler (Skip):** unverändert — Spiele mit Lücken bleiben unpersistierter
-  Draft (bestehende Logik). Für solche Spiele werden die Base-Coaches trotzdem
-  überschrieben (siehe Apply-Reihenfolge), damit der spätere manuelle Lineup-Save nicht
-  am alten Coach scheitert.
+  „Set anwenden? Verfügbare Spieler, Lineups und Base-Coaches des ganzen Spieltags werden
+  überschrieben."
+- **Überschreiben (ersetzen):**
+  - Verfügbare Spieler → auf die Set-Liste gesetzt. Aktuell zusätzlich verfügbare Spieler
+    fallen raus; deren Lineup/Staff/DH werden per bestehender Cascade
+    (`AvailabilityService.setAvailablePlayers`) entfernt.
+  - Lineup + Base-Coaches je Spiel → auf den Set-Stand gesetzt.
+- **Alte Sets** (ohne gespeicherte Coaches / ohne verfügbare-Spieler-Liste): Coaches
+  werden geleert; als verfügbare Spieler wird die Vereinigung aller im Set verwendeten
+  Spieler (Lineup + DH) genommen (siehe Snapshot-Fallback), damit das Anwenden nicht
+  fehlschlägt.
 
-## Apply-Reihenfolge (löst Henne-Ei-Konflikt)
+## Apply-Reihenfolge (löst Konflikt + Skip)
 
-Frontend-orchestriert (wie heute). Pro Spiel des Sets:
+Frontend-orchestriert (wie heute). Einmalig für den Gameday, dann pro Spiel:
+
+0. `setAvailablePlayers(gameDayId, set.availablePlayerIds)` — Roster setzen. Cascade räumt
+   entfernte Spieler aus allen Spielen (Lineup/Staff/DH). Danach sind alle Set-Spieler
+   verfügbar.
+Pro Spiel des Sets:
 1. `setStaff(gameId, [])` — Base-Coaches leeren
-2. `setLineup(gameId, …)` — jetzt konfliktfrei (keine Staff vorhanden)
-3. `setStaff(gameId, set-Coaches)` — konfliktfrei (Set-Lineup schließt die Coaches aus,
-   da der Snapshot in sich konsistent ist)
+2. `setLineup(gameId, …)` — konfliktfrei (keine Staff, alle Spieler verfügbar)
+3. `setStaff(gameId, set-Coaches)` — konfliktfrei (Set-Lineup schließt die Coaches aus)
 
-Für Skip-Spiele (Draft, kein `setLineup`): Schritt 1 + 3 trotzdem ausführen
-(Coaches leeren, dann Set-Coaches setzen) — Schritt 3 validiert gegen das aktuelle
-(persistierte) Lineup; da die Set-Coaches im Set-Lineup nicht batten und das aktuelle
-Lineup entweder leer/alt ist, im Zweifel Schritt 3 für Skip-Spiele überspringen und nur
-leeren. **Entscheidung:** für Skip-Spiele nur Schritt 1 (leeren); Set-Coaches werden beim
-späteren manuellen Save nicht automatisch gesetzt — der User füllt Lücken + Coaches
-manuell. (Vermeidet Validierungs-Edgecases gegen ein noch nicht persistiertes Lineup.)
+Weil Schritt 0 alle Set-Spieler verfügbar macht, entfällt die Skip-Sonderbehandlung —
+Lineups persistieren vollständig. Der bestehende Skip-Pfad bleibt als Sicherheitsnetz
+(falls ein Set-Spieler global gelöscht wurde).
 
-Nicht atomar (3 Calls/Spiel), aber recoverbar: schlägt Schritt 3 fehl, ist Lineup gesetzt
-+ Coaches leer → User setzt Coaches neu. Akzeptiert.
+Nicht atomar (mehrere Calls), aber recoverbar. Reihenfolge 0→1→2→3 ist zwingend.
 
 ## Backend
 
 ### Model / Persistence
 - `domain/model/LineupSetStaffEntry` — `{ Integer gameNumber, Player player, StaffRole role }`
-- `LineupSet` bekommt `List<LineupSetStaffEntry> staffEntries`
-- Migration `V51__lineup_set_staff.sql`:
+- `LineupSet` bekommt:
+  - `List<LineupSetStaffEntry> staffEntries`
+  - `List<Long> availablePlayerIds` (Snapshot der Gameday-Verfügbaren)
+- Migration `V51__lineup_set_staff_and_available.sql`:
   ```sql
   CREATE TABLE lineup_set_staff (
       id            BIGSERIAL PRIMARY KEY,
@@ -70,44 +80,55 @@ Nicht atomar (3 Calls/Spiel), aber recoverbar: schlägt Schritt 3 fehl, ist Line
       role          VARCHAR(32) NOT NULL
   );
   CREATE INDEX idx_lineup_set_staff_set ON lineup_set_staff(lineup_set_id);
+
+  CREATE TABLE lineup_set_available_player (
+      id            BIGSERIAL PRIMARY KEY,
+      lineup_set_id BIGINT NOT NULL REFERENCES lineup_set(id) ON DELETE CASCADE,
+      player_id     BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE
+  );
+  CREATE INDEX idx_lineup_set_avail_set ON lineup_set_available_player(lineup_set_id);
   ```
-- Entity `LineupSetStaffEntity` + Mapper-Erweiterung + Spring-Repo-Anpassung
-  (Set lädt/speichert Staff-Entries analog zu `lineup_set_entry`).
+- Entities `LineupSetStaffEntity` + `LineupSetAvailablePlayerEntity`, Mapper-Erweiterung,
+  Spring-Repo/Adapter laden+speichern die neuen Kind-Listen analog `lineup_set_entry`.
 
 ### Service
-- `LineupSetService.snapshot(...)`: zusätzlich `GameStaff` je Spiel laden
-  (`GameStaffRepository` injizieren) und als `LineupSetStaffEntry` mit `gameNumber`
-  speichern.
+- `LineupSetService.snapshot(...)`:
+  - zusätzlich `GameStaff` je Spiel laden (`GameStaffRepository` injizieren) → StaffEntries
+  - `availablePlayerIds` = `GameDay.availablePlayers` (via `GameDayRepository`/vorhandene
+    Quelle). Fallback (leer) = Vereinigung aller Lineup-/DH-Spieler des Snapshots.
 
 ### DTO
 - `LineupSetStaffEntryResponse { gameNumber, playerId, playerName, role }`
-- `LineupSetResponse` um `List<LineupSetStaffEntryResponse> staff` erweitern.
+- `LineupSetResponse` erweitern:
+  - `List<LineupSetStaffEntryResponse> staff`
+  - `List<Long> availablePlayerIds` (oder Liste mit id+name für Anzeige)
 
 ## Frontend
 
-- `types`: `LineupSetStaffEntryResponse`; `LineupSetResponse.staff`.
-- `useStaff` / API: `setStaff(gameId, [])` zum Leeren nutzbar (existiert).
+- `types`: `LineupSetStaffEntryResponse`; `LineupSetResponse.staff` + `.availablePlayerIds`.
+- `GameDayPlanner.doApplySet`:
+  1. `gameDay.setAvailablePlayers(set.availablePlayerIds)` (löst Cascade + reload)
+  2. `lineup.applySet(set.entries, set.staff, games, availablePlayers)` mit neuer
+     Reihenfolge clear→lineup→coaches je Spiel
+  3. aktives Spiel: `staff.load(activeGame.id)` neu laden
+- `GameDayPlanner.handleApplySet`: **immer** Confirm (`pendingApplySet` setzen), auch ohne
+  ungespeicherte Arbeit.
 - `useLineup.applySet(...)`: Signatur um `staffEntries` erweitern; pro Spiel
-  Reihenfolge clear→lineup→(set-coaches) implementieren; Skip-Spiele nur leeren.
-- `GameDayPlanner.handleApplySet`: **immer** `pendingApplySet` setzen (Confirm), auch ohne
-  ungespeicherte Arbeit. `doApplySet` übergibt `set.staff` an `applySet`.
-- `ConfirmModal`-Text auf Lineup+Coaches-Überschreiben anpassen.
-- Nach Apply: Staff des aktiven Spiels neu laden (`staff.load(activeGame.id)`), damit
-  die CoachSlots-Anzeige stimmt.
+  clear→lineup→set-coaches. (Available-Players-Schritt liegt im Planner davor.)
+- `ConfirmModal`-Text: „Verfügbare Spieler, Lineups und Base-Coaches des ganzen Spieltags
+  werden überschrieben."
 
 ## Tests
 
-- Backend: `LineupSetServiceTest` — snapshot erfasst GameStaff je Spiel; Response enthält
-  Staff. (Falls kein Test existiert: neuer Mockito-Test.)
-- Backend-Integration (falls vorhanden): Set mit Coaches speichern + laden round-trip.
-- Frontend: manueller/E2E-Check des Apply-Flows nicht zwingend automatisiert (Planner hat
-  keine E2E-Pflicht wie Scoring), aber Build + Lint grün. Optional Vitest für
-  `applySet`-Reihenfolge, falls sinnvoll.
+- Backend: `LineupSetServiceTest` — snapshot erfasst GameStaff + availablePlayerIds je
+  Gameday; Response enthält beides. Round-trip (save+load) der neuen Kind-Listen.
+- Frontend: Build + Lint grün. Optional Vitest für `applySet`-Reihenfolge.
+- Manuell: Set mit Coaches + Teil-Roster speichern, Roster ändern, Set anwenden →
+  Roster + Lineup + Coaches wiederhergestellt, kein Konflikt, keine Skips.
 
 ## Nicht-Ziele (YAGNI)
 
 - Kein Backend-Apply-Endpoint (Frontend-Orchestrierung bleibt).
 - Keine atomare Transaktion übers ganze Set (recoverbar akzeptiert).
-- Keine Migration/Backfill alter Sets (alte Sets → Coaches leeren beim Anwenden).
-- DH-Host/DH-Batter-Coach-Regeln bleiben unverändert (bereits im Snapshot über
-  Lineup-Entries + Staff korrekt abgebildet).
+- Kein Backfill alter Sets (Fallback beim Anwenden greift).
+- DH-Host/DH-Batter-Coach-Regeln unverändert.
