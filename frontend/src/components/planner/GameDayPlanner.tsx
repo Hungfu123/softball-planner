@@ -175,14 +175,21 @@ export function GameDayPlanner() {
   const doApplySet = async (set: LineupSetResponse) => {
     const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
-      const skipped = await lineup.applySet(set.entries, games, availablePlayers)
+      // 0. Verfügbare Spieler aus dem Set setzen (Cascade räumt Fremde aus allen Spielen)
+      if (set.availablePlayerIds && set.availablePlayerIds.length > 0) {
+        await setAvailablePlayers(set.availablePlayerIds)
+      }
+      // 1-3. pro Spiel: Coaches leeren → Lineup → Set-Coaches (in applySet)
+      const skipped = await lineup.applySet(set.entries, set.staff, games)
       setActiveSetId(set.id)
+      // Staff des aktiven Spiels neu laden, damit CoachSlots stimmen
+      if (activeGame) await staff.load(activeGame.id)
       await refreshStats()
       if (skipped.length === 0) {
         toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')
       } else {
         toast.show(
-          `Set „${set.name}" angewendet. Spiel ${skipped.join(', ')}: freie Slots (Abwesende) — bitte füllen & speichern`,
+          `Set „${set.name}" angewendet. Spiel ${skipped.join(', ')}: freie Slots — bitte füllen & speichern`,
         )
       }
     } catch (e: unknown) {
@@ -191,13 +198,7 @@ export function GameDayPlanner() {
   }
 
   const handleApplySet = (set: LineupSetResponse) => {
-    const gameIds = (gameDay?.games ?? []).map(g => g.id)
-    // Hinweis, falls ungespeicherte Änderungen überschrieben würden
-    if (lineup.hasUnsavedWork(gameIds)) {
-      setPendingApplySet(set)
-      return
-    }
-    doApplySet(set)
+    setPendingApplySet(set)
   }
 
   // "Als Set speichern" = ganzer Spieltag: speichert ZUERST alle Game-Lineups
@@ -1130,9 +1131,9 @@ export function GameDayPlanner() {
       )}
       {pendingApplySet && (
         <ConfirmModal
-          title="Set laden"
-          message={`Es gibt ungespeicherte Änderungen. Set „${pendingApplySet.name}" trotzdem laden? Nicht gespeicherte Änderungen gehen verloren.`}
-          confirmLabel="Set laden"
+          title="Set anwenden?"
+          message="Verfügbare Spieler, Lineups und Base-Coaches des ganzen Spieltags werden mit dem Set überschrieben."
+          confirmLabel="Ja, anwenden"
           onConfirm={() => { doApplySet(pendingApplySet); setPendingApplySet(null) }}
           onCancel={() => setPendingApplySet(null)}
         />

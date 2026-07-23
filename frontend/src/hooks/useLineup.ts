@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse } from '@/types'
+import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse, LineupSetStaffEntryResponse } from '@/types'
 import * as api from '@/api/client'
 
 let emptySlotSeq = 0
@@ -379,10 +379,23 @@ export function useLineup() {
   // Returns the gameNumbers that were left unsaved (had gaps).
   const applySet = useCallback(async (
     setItems: LineupSetEntryResponse[],
+    staffItems: LineupSetStaffEntryResponse[],
     games: { id: number; gameNumber: number }[],
-    availablePlayers: Player[],
   ): Promise<number[]> => {
-    const availableById = new Map(availablePlayers.map(p => [p.id, p]))
+    // Spieler-Map direkt aus den Set-Daten (Field-Player + DH-Batter) — jeder
+    // Set-Spieler ist damit auflösbar; die verfügbaren Spieler wurden vom Planner
+    // vorher passend gesetzt.
+    const availableById = new Map<number, Player>()
+    for (const e of setItems) {
+      availableById.set(e.player.id, e.player)
+      if (e.dhBatterPlayer) availableById.set(e.dhBatterPlayer.id, e.dhBatterPlayer)
+    }
+    const staffByGameNumber = new Map<number, { playerId: number; role: string }[]>()
+    for (const s of staffItems) {
+      const arr = staffByGameNumber.get(s.gameNumber) ?? []
+      arr.push({ playerId: s.player.id, role: s.role })
+      staffByGameNumber.set(s.gameNumber, arr)
+    }
     const byGameNumber = new Map<number, LineupSetEntryResponse[]>()
     for (const e of setItems) {
       const arr = byGameNumber.get(e.gameNumber) ?? []
@@ -420,7 +433,8 @@ export function useLineup() {
         return
       }
 
-      // Complete lineup — persist immediately.
+      // Complete lineup — persist. Reihenfolge: Coaches leeren → Lineup → Set-Coaches.
+      await api.setStaff(g.id, [])
       const payload = draft.map((e, i) => ({
         playerId: e.player.id,
         position: e.position ?? null,
@@ -428,6 +442,8 @@ export function useLineup() {
         dhBatterPlayerId: e.dhBatterId,
       }))
       const saved = await api.setLineup(g.id, payload)
+      const setCoaches = staffByGameNumber.get(g.gameNumber) ?? []
+      if (setCoaches.length > 0) await api.setStaff(g.id, setCoaches)
       const base = await baselineFor(g.id)
       cache.current.set(g.id, {
         entries: draft,
