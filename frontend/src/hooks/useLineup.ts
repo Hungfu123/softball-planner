@@ -423,7 +423,10 @@ export function useLineup() {
 
       if (draft.some(e => e.isEmptySlot)) {
         // Has a gap (absent player) — cannot persist; leave as an unsaved draft.
+        // Coaches trotzdem leeren, sonst bleiben alte Base-Coaches inkonsistent
+        // stehen ("Set anwenden" überschreibt Coaches immer, auch bei Skip-Spielen).
         skipped.push(g.gameNumber)
+        await api.setStaff(g.id, [])
         const base = await baselineFor(g.id)
         if (g.id === activeId) {
           setEntries(draft)
