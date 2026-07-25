@@ -6,6 +6,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton, Button } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
 import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
+import { coupledSendDate, type TrainingLite } from './pollSchedule'
 
 const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
   { value: 'MONDAY', label: 'Montag', short: 'Mo' },
@@ -44,10 +45,6 @@ function isSentToday(iso: string | null): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
 }
 
-const WEEKDAY_JS: Record<Weekday, number> = {
-  SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
-}
-
 // Liste chronologisch: Mo→So, dann nach Uhrzeit (stabile Wochen-Reihenfolge).
 // null (einmalige/trainingsgekoppelte Polls ohne festen Wochentag) sortiert ans Ende.
 const WEEKDAY_ORDER: Record<Weekday, number> = {
@@ -60,31 +57,18 @@ function byWeekdayTime(a: WhatsappPollResponse, b: WhatsappPollResponse): number
   return w !== 0 ? w : a.time.localeCompare(b.time)
 }
 
-// Nächster geplanter Versand: nächstes Vorkommen von weekday+time in der Zukunft,
-// überspringt Aussetz-Daten und (falls heute schon gesendet) den heutigen Termin.
-function nextSend(poll: WhatsappPollResponse): Date | null {
-  if (!poll.enabled || !poll.weekday) return null
-  const [h, m] = poll.time.split(':').map(Number)
-  const target = WEEKDAY_JS[poll.weekday]
-  const sentToday = isSentToday(poll.lastSentAt)
-  const skip = new Set(poll.skipDates)
-  const now = new Date()
-  for (let i = 0; i <= 8 * 7; i++) {
-    const cand = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, h, m, 0, 0)
-    if (cand.getDay() !== target) continue
-    if (cand <= now) continue
-    if (i === 0 && sentToday) continue
-    const iso = `${cand.getFullYear()}-${String(cand.getMonth() + 1).padStart(2, '0')}-${String(cand.getDate()).padStart(2, '0')}`
-    if (skip.has(iso)) continue
-    return cand
+function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): string {
+  if (poll.trainingCoupled) {
+    if (!poll.enabled) return 'Pausiert'
+    if (!poll.weekday) return 'Kein Trainingstag'
+    const d = coupledSendDate(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, new Date())
+    if (!d) return 'Pausiert — kein Training'
+    return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
   }
-  return null
-}
-
-function formatNextSend(poll: WhatsappPollResponse): string {
-  if (!poll.enabled) return 'Pausiert'
-  const d = nextSend(poll)
-  if (!d) return 'Kein Versand geplant'
+  // Einmalig
+  if (poll.lastSentAt) return 'Gesendet'
+  if (!poll.sendDate) return 'Kein Datum'
+  const d = new Date(poll.sendDate + 'T' + formatTime(poll.time))
   return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
 }
 
@@ -127,7 +111,7 @@ type EditorState =
 
 export function WhatsappPollPage() {
   const {
-    polls, status, groups, loading, error, reload,
+    polls, status, groups, trainings, loading, error, reload,
     createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate, resetSent,
   } = useWhatsappPoll()
   const toast = useToastContext()
@@ -275,6 +259,7 @@ export function WhatsappPollPage() {
               <PollCard
                 key={poll.id}
                 poll={poll}
+                trainings={trainings}
                 connected={connected}
                 onPickSkip={date => handlePickSkip(poll.id, date)}
                 onRemoveSkip={date => handleRemoveSkip(poll.id, date)}
@@ -374,6 +359,7 @@ function AccountCard({ connected, status, qr }: { connected: boolean; status: Wh
 
 interface PollCardProps {
   poll: WhatsappPollResponse
+  trainings: TrainingLite[]
   connected: boolean
   onPickSkip: (date: string) => void
   onRemoveSkip: (date: string) => void
@@ -383,7 +369,7 @@ interface PollCardProps {
   onResetSent: () => void
 }
 
-function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
+function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
   const [showSkip, setShowSkip] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -471,7 +457,7 @@ function PollCard({ poll, connected, onPickSkip, onRemoveSkip, onEdit, onDelete,
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
             <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">Nächster Versand</p>
-            <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll)}</p>
+            <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll, trainings)}</p>
           </div>
           {poll.options.length > 0 && (
             <div className="text-right shrink-0 max-w-[55%]">
