@@ -26,6 +26,9 @@ public class PollDueEvaluator {
         if (poll == null || !poll.isEnabled() || poll.getSendDate() == null || poll.getTime() == null) return false;
         if (poll.getLastSentAt() != null) return false;
         if (!now.toLocalDate().equals(poll.getSendDate())) return false;
-        return now.getHour() == poll.getTime().getHour() && now.getMinute() == poll.getTime().getMinute();
+        // Same-Day-Catch-up: fällig ab der Sendezeit (nicht nur exakt zur Minute), damit eine
+        // verpasste Scheduler-Minute (Deploy/Neustart) den einmaligen Versand nicht dauerhaft
+        // verliert. lastSentAt-Guard oben stellt sicher, dass trotzdem nur 1× gesendet wird.
+        return !now.toLocalTime().isBefore(poll.getTime());
     }
 }

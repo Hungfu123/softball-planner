@@ -85,13 +85,33 @@ class PollDueEvaluatorTest {
     }
 
     @Test
-    void oneOff_notDueWrongMinute() {
+    void oneOff_notDueBeforeSendTime() {
         final PollDueEvaluator ev = new PollDueEvaluator();
+        final WhatsappPoll p = oneOff();
+        assertThat(ev.isDueOneOff(p, java.time.LocalDateTime.of(2026, 8, 5, 10, 24))).isFalse();
+    }
+
+    @Test
+    void oneOff_catchUpAfterSendTimeSameDay() {
+        // Verpasste Minute (Deploy/Neustart) → später am selben Tag trotzdem fällig.
+        final PollDueEvaluator ev = new PollDueEvaluator();
+        final WhatsappPoll p = oneOff();
+        assertThat(ev.isDueOneOff(p, java.time.LocalDateTime.of(2026, 8, 5, 14, 0))).isTrue();
+    }
+
+    @Test
+    void oneOff_notDueDifferentDay() {
+        final PollDueEvaluator ev = new PollDueEvaluator();
+        final WhatsappPoll p = oneOff();
+        assertThat(ev.isDueOneOff(p, java.time.LocalDateTime.of(2026, 8, 6, 10, 25))).isFalse();
+    }
+
+    private WhatsappPoll oneOff() {
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
         p.setTrainingCoupled(false);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
-        assertThat(ev.isDueOneOff(p, java.time.LocalDateTime.of(2026, 8, 5, 10, 26))).isFalse();
+        return p;
     }
 }

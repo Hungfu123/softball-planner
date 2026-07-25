@@ -72,14 +72,26 @@ function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): 
   // Einmalig
   if (poll.lastSentAt) return 'Gesendet'
   if (!poll.sendDate) return 'Kein Datum'
+  if (poll.sendDate < todayIso()) return 'Verpasst'
   const d = new Date(poll.sendDate + 'T' + formatTime(poll.time))
   return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+// Lokales Datum als ISO (YYYY-MM-DD) — bewusst nicht toISOString() (UTC → Off-by-one nahe Mitternacht).
+function isoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function todayIso(): string {
+  return isoDate(new Date())
+}
+function tomorrowIso(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return isoDate(d)
+}
+
 function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const iso = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
+  const iso = tomorrowIso()
   return {
     groupId: groups[0]?.id ?? '',
     groupName: groups[0]?.name ?? null,
@@ -622,7 +634,9 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
   const uniqueOptions = Array.from(new Set(form.options.map(o => o.trim()).filter(Boolean)))
   const messageFilled = (form.message ?? '').trim() !== ''
   const pollValid = form.title.trim() !== '' && uniqueOptions.length >= 2
-  const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled)
+  // Einmalig braucht ein Datum (sonst Backend-400). Coupled hat immer einen Trainingstag (Prefill).
+  const scheduleValid = form.trainingCoupled || !!form.sendDate
+  const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled) && scheduleValid
 
   const buildRequest = (): WhatsappPollRequest => ({
     ...form,
@@ -768,13 +782,15 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
               setForm(prev => {
                 if (on && !prev.weekday) {
                   // beim Anschalten sinnvollen Trainingstag vorbelegen (frühestes kommendes Training)
-                  const now = new Date()
-                  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
                   const upcoming = [...trainings]
-                    .filter(t => !t.cancelled && t.date >= todayIso)
+                    .filter(t => !t.cancelled && t.date >= todayIso())
                     .sort((a, b) => a.date.localeCompare(b.date))[0]
                   const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
                   return { ...prev, trainingCoupled: true, weekday: wd }
+                }
+                if (!on && !prev.sendDate) {
+                  // beim Umschalten auf einmalig ein Datum vorbelegen (morgen), damit das Feld nicht leer ist
+                  return { ...prev, trainingCoupled: false, sendDate: tomorrowIso() }
                 }
                 return { ...prev, trainingCoupled: on }
               })

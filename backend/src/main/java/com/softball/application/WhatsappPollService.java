@@ -69,6 +69,7 @@ public class WhatsappPollService {
     @Transactional
     public WhatsappPoll update(final Long id, final WhatsappPoll incoming) {
         final WhatsappPoll existing = findById(id);
+        final boolean wasCoupled = existing.isTrainingCoupled();
         existing.setGroupId(incoming.getGroupId());
         existing.setGroupName(incoming.getGroupName());
         existing.setTitle(incoming.getTitle());
@@ -80,6 +81,13 @@ public class WhatsappPollService {
         existing.setMessage(incoming.getMessage());
         existing.setTrainingCoupled(incoming.isTrainingCoupled());
         existing.setSendDate(incoming.getSendDate());
+        // Wechsel coupled -> einmalig: alte Trainings-Kopplung + Sendehistorie verwerfen, sonst
+        // würde der Vote-Sync auf dem alten Training weiterbuchen und der Poll gälte als "gesendet".
+        if (wasCoupled && !existing.isTrainingCoupled()) {
+            existing.setLastSentAt(null);
+            existing.setLastSentMessageId(null);
+            existing.setLastSentTrainingId(null);
+        }
         validate(existing);
         log.info("WhatsApp-Poll aktualisiert: {} ({})", existing.getTitle(), id);
         return repository.save(existing);
