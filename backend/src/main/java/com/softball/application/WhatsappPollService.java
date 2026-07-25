@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class WhatsappPollService {
@@ -79,6 +78,8 @@ public class WhatsappPollService {
         existing.setEnabled(incoming.isEnabled());
         existing.setAllowMultipleAnswers(incoming.isAllowMultipleAnswers());
         existing.setMessage(incoming.getMessage());
+        existing.setTrainingCoupled(incoming.isTrainingCoupled());
+        existing.setSendDate(incoming.getSendDate());
         validate(existing);
         log.info("WhatsApp-Poll aktualisiert: {} ({})", existing.getTitle(), id);
         return repository.save(existing);
@@ -122,11 +123,12 @@ public class WhatsappPollService {
         // (braucht lastSentMessageId zum Abfragen + lastSentAt zur Trainings-Auflösung).
         p.setLastSentAt(LocalDateTime.now(clock));
         p.setLastSentMessageId(messageId);
-        // An nächstes gültiges Training koppeln, wie es der Scheduler auch tut (für Vote-Sync-Zuordnung).
-        final LocalDate today = LocalDate.now(clock);
-        final Optional<Training> target = resolver.resolve(trainingRepo.findAllByOrderByDateDesc(),
-                p.getWeekday(), p.getSkipDates(), today);
-        target.ifPresent(t -> p.setLastSentTrainingId(t.getId()));
+        // Nur Trainingsumfragen ans nächste Training koppeln (für Vote-Sync-Zuordnung).
+        if (p.isTrainingCoupled()) {
+            final LocalDate today = LocalDate.now(clock);
+            resolver.resolve(trainingRepo.findAllByOrderByDateDesc(), p.getWeekday(), p.getSkipDates(), today)
+                    .ifPresent(t -> p.setLastSentTrainingId(t.getId()));
+        }
         repository.save(p);
         log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}", p.getTitle(), id, messageId);
     }
@@ -150,8 +152,19 @@ public class WhatsappPollService {
         if (p.getGroupId() == null || p.getGroupId().isBlank()) {
             throw new BusinessValidationException("Gruppe muss gewählt sein");
         }
-        if (p.getWeekday() == null || p.getTime() == null) {
-            throw new BusinessValidationException("Wochentag und Uhrzeit müssen gesetzt sein");
+        if (p.getTime() == null) {
+            throw new BusinessValidationException("Uhrzeit muss gesetzt sein");
+        }
+        if (p.isTrainingCoupled()) {
+            if (p.getWeekday() == null) {
+                throw new BusinessValidationException("Trainingstag muss gesetzt sein");
+            }
+            p.setSendDate(null);
+        } else {
+            if (p.getSendDate() == null) {
+                throw new BusinessValidationException("Datum muss gesetzt sein");
+            }
+            p.setWeekday(null);
         }
         final int optionCount = p.getOptions() != null ? p.getOptions().size() : 0;
         final boolean hasPoll = optionCount >= 2;

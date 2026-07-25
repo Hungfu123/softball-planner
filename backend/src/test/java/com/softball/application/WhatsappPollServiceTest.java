@@ -4,6 +4,7 @@ import com.softball.TestcontainersConfig;
 import com.softball.adapter.out.persistence.repository.SpringWhatsappPollRepository;
 import com.softball.domain.model.WhatsappPoll;
 import com.softball.domain.port.out.WhatsappPollRepository;
+import com.softball.shared.exception.BusinessValidationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -43,6 +45,7 @@ class WhatsappPollServiceTest {
         p.setGroupName("Dead Sox Team");
         p.setTitle("Wer kommt zum Training morgen?");
         p.setOptions(List.of("Ja", "Nein", "Vielleicht"));
+        p.setTrainingCoupled(true);
         p.setWeekday(DayOfWeek.TUESDAY);
         p.setTime(LocalTime.of(18, 0));
         p.setEnabled(true);
@@ -86,6 +89,32 @@ class WhatsappPollServiceTest {
         final WhatsappPoll saved = service.findById(id);
         assertThat(saved.isAllowMultipleAnswers()).isTrue();
         assertThat(saved.getMessage()).isEqualTo("Event am Samstag, Treffen 14 Uhr");
+    }
+
+    @Test
+    void create_coupledWithoutWeekday_throws() {
+        final WhatsappPoll p = sample();
+        p.setTrainingCoupled(true);
+        p.setWeekday(null);
+        assertThrows(BusinessValidationException.class, () -> service.create(p));
+    }
+
+    @Test
+    void create_oneOffWithoutSendDate_throws() {
+        final WhatsappPoll p = sample();
+        p.setTrainingCoupled(false);
+        p.setSendDate(null);
+        assertThrows(BusinessValidationException.class, () -> service.create(p));
+    }
+
+    @Test
+    void create_oneOff_clearsWeekday() {
+        final WhatsappPoll p = sample();
+        p.setTrainingCoupled(false);
+        p.setSendDate(LocalDate.of(2026, 8, 5));
+        p.setWeekday(DayOfWeek.MONDAY);
+        final WhatsappPoll saved = service.create(p);
+        assertThat(saved.getWeekday()).isNull();
     }
 
     @Test
