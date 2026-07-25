@@ -768,8 +768,10 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
               setForm(prev => {
                 if (on && !prev.weekday) {
                   // beim Anschalten sinnvollen Trainingstag vorbelegen (frühestes kommendes Training)
+                  const now = new Date()
+                  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
                   const upcoming = [...trainings]
-                    .filter(t => !t.cancelled && t.date >= new Date().toISOString().slice(0, 10))
+                    .filter(t => !t.cancelled && t.date >= todayIso)
                     .sort((a, b) => a.date.localeCompare(b.date))[0]
                   const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
                   return { ...prev, trainingCoupled: true, weekday: wd }
