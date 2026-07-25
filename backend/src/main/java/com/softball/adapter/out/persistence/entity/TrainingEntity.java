@@ -28,7 +28,13 @@ public class TrainingEntity {
     @Column(nullable = false)
     private String type = "REGULAR";
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // EAGER: TrainingMapper.toDomain dereferenziert period bei JEDEM Mapping. Bei LAZY warf das
+    // Mapping außerhalb einer offenen Session (z.B. WhatsappPollScheduler-Thread, kein OSIV) eine
+    // LazyInitializationException. period ist ein kleines ToOne → Eager-Join ist billig.
+    // EAGER: TrainingMapper.toDomain dereferenziert period bei JEDEM Mapping. Bei LAZY warf das
+    // Mapping außerhalb einer offenen Session (z.B. WhatsappPollScheduler-Thread, kein OSIV) eine
+    // LazyInitializationException. period ist ein kleines ToOne → Eager-Join ist billig.
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "period_id")
     private TrainingPeriodEntity period;
 
