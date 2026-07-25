@@ -27,4 +27,17 @@ describe('PollEditor', () => {
     fireEvent.click(screen.getByLabelText(/Trainingsumfrage/i))
     expect(screen.getByText('Trainingstag')).toBeTruthy()
   })
+
+  it('einmalig ohne Datum -> Speichern deaktiviert', () => {
+    const noDate = { ...draft, sendDate: null }
+    render(<PollEditor draft={noDate} groups={groups} trainings={trainings} saving={false} onSave={vi.fn()} onClose={vi.fn()} />)
+    const save = screen.getByRole('button', { name: 'Speichern' }) as HTMLButtonElement
+    expect(save.disabled).toBe(true)
+  })
+
+  it('einmalig mit Datum -> Speichern aktiv', () => {
+    render(<PollEditor draft={draft} groups={groups} trainings={trainings} saving={false} onSave={vi.fn()} onClose={vi.fn()} />)
+    const save = screen.getByRole('button', { name: 'Speichern' }) as HTMLButtonElement
+    expect(save.disabled).toBe(false)
+  })
 })

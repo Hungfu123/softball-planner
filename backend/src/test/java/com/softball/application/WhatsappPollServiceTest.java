@@ -80,6 +80,29 @@ class WhatsappPollServiceTest {
     }
 
     @Test
+    void update_coupledToOneOff_clearsSendHistory() {
+        // C1: ein bereits gesendeter, gekoppelter Poll wird auf einmalig umgestellt.
+        // Alte lastSent*-Werte müssen weg, sonst bucht der Vote-Sync aufs alte Training weiter.
+        final WhatsappPoll saved = service.create(sample());
+        saved.setLastSentTrainingId(99L);
+        saved.setLastSentMessageId("old-msg");
+        saved.setLastSentAt(LocalDateTime.of(2026, 4, 13, 20, 0));
+        pollRepository.save(saved);
+
+        final WhatsappPoll toOneOff = sample();
+        toOneOff.setTrainingCoupled(false);
+        toOneOff.setSendDate(LocalDate.of(2026, 8, 5));
+        service.update(saved.getId(), toOneOff);
+
+        final WhatsappPoll after = service.findById(saved.getId());
+        assertThat(after.isTrainingCoupled()).isFalse();
+        assertThat(after.getWeekday()).isNull();
+        assertThat(after.getLastSentTrainingId()).isNull();
+        assertThat(after.getLastSentMessageId()).isNull();
+        assertThat(after.getLastSentAt()).isNull();
+    }
+
+    @Test
     void update_persistsAllowMultipleAndMessage() {
         final Long id = service.create(sample()).getId();
         final WhatsappPoll upd = sample();
