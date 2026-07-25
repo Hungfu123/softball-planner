@@ -61,6 +61,13 @@ function byWeekdayTime(a: WhatsappPollResponse, b: WhatsappPollResponse): number
   return w !== 0 ? w : a.time.localeCompare(b.time)
 }
 
+// Einmalige Polls chronologisch nach Datum (ohne Datum ans Ende), dann Uhrzeit.
+function byOneOffDate(a: WhatsappPollResponse, b: WhatsappPollResponse): number {
+  const da = a.sendDate ?? '9999-12-31'
+  const db = b.sendDate ?? '9999-12-31'
+  return da !== db ? da.localeCompare(db) : a.time.localeCompare(b.time)
+}
+
 function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): string {
   if (poll.trainingCoupled) {
     if (!poll.enabled) return 'Pausiert'
@@ -282,8 +289,8 @@ export function WhatsappPollPage() {
             icon={<CrossBones size={48} />}
           />
         ) : (
-          <div className="space-y-3">
-            {[...polls].sort(byWeekdayTime).map(poll => (
+          (() => {
+            const renderCard = (poll: WhatsappPollResponse) => (
               <PollCard
                 key={poll.id}
                 poll={poll}
@@ -297,8 +304,27 @@ export function WhatsappPollPage() {
                 onResetSent={() => handleResetSent(poll.id)}
                 onTogglePause={() => handleTogglePause(poll)}
               />
-            ))}
-          </div>
+            )
+            const coupled = polls.filter(p => p.trainingCoupled).sort(byWeekdayTime)
+            const oneOff = polls.filter(p => !p.trainingCoupled).sort(byOneOffDate)
+            const headCls = 'font-display text-xs font-extrabold uppercase tracking-widest text-navy-500'
+            return (
+              <div className="space-y-6">
+                {coupled.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className={headCls}>Trainingsumfragen <span className="text-navy-400">({coupled.length})</span></h3>
+                    {coupled.map(renderCard)}
+                  </section>
+                )}
+                {oneOff.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className={headCls}>Einmalig &amp; Nachrichten <span className="text-navy-400">({oneOff.length})</span></h3>
+                    {oneOff.map(renderCard)}
+                  </section>
+                )}
+              </div>
+            )
+          })()
         )}
       </div>
 
