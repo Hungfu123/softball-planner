@@ -761,8 +761,10 @@ export interface WhatsappPollResponse {
   groupName: string | null
   title: string
   options: string[]
-  weekday: Weekday
+  weekday: Weekday | null
   time: string // "18:00:00"
+  trainingCoupled: boolean
+  sendDate: string | null // ISO "2026-08-05" oder null (nur einmalig)
   enabled: boolean
   allowMultipleAnswers: boolean
   message: string | null
@@ -775,8 +777,10 @@ export interface WhatsappPollRequest {
   groupName: string | null
   title: string
   options: string[]
-  weekday: Weekday
+  weekday: Weekday | null
   time: string
+  trainingCoupled: boolean
+  sendDate: string | null
   enabled: boolean
   allowMultipleAnswers: boolean
   message: string | null
