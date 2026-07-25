@@ -70,6 +70,7 @@ public class WhatsappPollService {
     public WhatsappPoll update(final Long id, final WhatsappPoll incoming) {
         final WhatsappPoll existing = findById(id);
         final boolean wasCoupled = existing.isTrainingCoupled();
+        final LocalDate oldSendDate = existing.getSendDate();
         existing.setGroupId(incoming.getGroupId());
         existing.setGroupName(incoming.getGroupName());
         existing.setTitle(incoming.getTitle());
@@ -87,6 +88,14 @@ public class WhatsappPollService {
             existing.setLastSentAt(null);
             existing.setLastSentMessageId(null);
             existing.setLastSentTrainingId(null);
+        } else if (!existing.isTrainingCoupled()
+                && !java.util.Objects.equals(oldSendDate, existing.getSendDate())
+                && existing.getSendDate() != null
+                && !existing.getSendDate().isBefore(LocalDate.now(clock))) {
+            // Einmalig auf ein neues, nicht-vergangenes Datum umgeplant → erneut scharf schalten,
+            // damit ein bereits gesendeter Poll zum neuen Termin wieder feuert.
+            existing.setLastSentAt(null);
+            existing.setLastSentMessageId(null);
         }
         validate(existing);
         log.info("WhatsApp-Poll aktualisiert: {} ({})", existing.getTitle(), id);
@@ -127,24 +136,28 @@ public class WhatsappPollService {
         final WhatsappPoll p = findById(id);
         final String messageId = sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions(),
                 p.isAllowMultipleAnswers(), p.getMessage());
-        // Sende-Metadaten stempeln, sonst findet der Vote-Sync den Poll nicht
-        // (braucht lastSentMessageId zum Abfragen + lastSentAt zur Trainings-Auflösung).
-        p.setLastSentAt(LocalDateTime.now(clock));
-        p.setLastSentMessageId(messageId);
-        // Nur Trainingsumfragen ans nächste Training koppeln (für Vote-Sync-Zuordnung).
         if (p.isTrainingCoupled()) {
+            // Trainingsumfrage: Test stempelt Sende-Metadaten (sonst findet der Vote-Sync den Poll
+            // nicht) + koppelt ans nächste Training für die Voter-Zuordnung.
+            p.setLastSentAt(LocalDateTime.now(clock));
+            p.setLastSentMessageId(messageId);
             final LocalDate today = LocalDate.now(clock);
             resolver.resolve(trainingRepo.findAllByOrderByDateDesc(), p.getWeekday(), p.getSkipDates(), today)
                     .ifPresent(t -> p.setLastSentTrainingId(t.getId()));
+            repository.save(p);
         }
-        repository.save(p);
-        log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}", p.getTitle(), id, messageId);
+        // Einmalig: echter Test — Nachricht ist raus, aber lastSentAt bewusst NICHT setzen, damit
+        // der geplante Einmal-Versand (isDueOneOff) danach trotzdem noch feuert. Nichts zu speichern.
+        log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}, coupled={}",
+                p.getTitle(), id, messageId, p.isTrainingCoupled());
     }
 
     @Transactional
     public WhatsappPoll resetLastSent(final Long id) {
         final WhatsappPoll p = findById(id);
         p.setLastSentAt(null);
+        // Auch die Trainings-Kopplung lösen, sonst blockt isDue eine gekoppelte Umfrage weiter.
+        p.setLastSentTrainingId(null);
         repository.save(p);
         log.info("WhatsApp-Poll Sende-Sperre zurückgesetzt: {} ({})", p.getTitle(), id);
         return findById(id);

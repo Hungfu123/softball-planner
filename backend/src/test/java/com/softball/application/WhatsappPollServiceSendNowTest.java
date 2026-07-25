@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -69,7 +70,9 @@ class WhatsappPollServiceSendNowTest {
     }
 
     @Test
-    void sendNow_oneOff_doesNotSetLastSentTrainingId() {
+    void sendNow_oneOff_isTrueTest_doesNotConsumeSchedule() {
+        // Einmalig: "Jetzt testen" schickt die Nachricht, verbraucht aber den geplanten
+        // Einmal-Versand NICHT (lastSentAt bleibt null → isDueOneOff feuert später trotzdem).
         final WhatsappPoll p = new WhatsappPoll();
         p.setId(2L);
         p.setGroupId("123@g.us");
@@ -82,13 +85,14 @@ class WhatsappPollServiceSendNowTest {
 
         when(repository.findById(2L)).thenReturn(Optional.of(p));
         when(sender.sendPoll(any(), any(), any(), anyBoolean(), any())).thenReturn("msg-99");
-        when(repository.save(any(WhatsappPoll.class))).thenAnswer(i -> i.getArgument(0));
 
         service.sendNow(2L);
 
+        verify(sender).sendPoll(any(), any(), any(), anyBoolean(), any());
+        assertThat(p.getLastSentAt()).isNull();
+        assertThat(p.getLastSentMessageId()).isNull();
         assertThat(p.getLastSentTrainingId()).isNull();
-        assertThat(p.getLastSentMessageId()).isEqualTo("msg-99");
-        verify(repository).save(p);
+        verify(repository, never()).save(any());
     }
 
     @Test
