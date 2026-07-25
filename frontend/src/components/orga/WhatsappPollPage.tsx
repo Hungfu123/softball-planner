@@ -222,6 +222,15 @@ export function WhatsappPollPage() {
     }
   }
 
+  const handleTogglePause = async (poll: WhatsappPollResponse) => {
+    try {
+      await updatePoll(poll.id, { ...toRequest(poll), enabled: !poll.enabled })
+      toast.show(poll.enabled ? 'Umfrage pausiert' : 'Umfrage fortgesetzt')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const deletePollTitle = polls.find(p => p.id === deleteId)?.title ?? 'Umfrage'
 
   return (
@@ -274,6 +283,7 @@ export function WhatsappPollPage() {
                 onDelete={() => setDeleteId(poll.id)}
                 onSend={() => setSendId(poll.id)}
                 onResetSent={() => handleResetSent(poll.id)}
+                onTogglePause={() => handleTogglePause(poll)}
               />
             ))}
           </div>
@@ -375,9 +385,10 @@ interface PollCardProps {
   onDelete: () => void
   onSend: () => void
   onResetSent: () => void
+  onTogglePause: () => void
 }
 
-function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent }: PollCardProps) {
+function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent, onTogglePause }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
   const [showSkip, setShowSkip] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -436,6 +447,15 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
                   >
                     <CalendarIcon size={15} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
                   </button>
+                  {poll.trainingCoupled && (
+                    <button
+                      role="menuitem"
+                      onClick={() => { setMenuOpen(false); onTogglePause() }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer"
+                    >
+                      <CalendarIcon size={15} /> {poll.enabled ? 'Pausieren' : 'Fortsetzen'}
+                    </button>
+                  )}
                   <div className="my-1 border-t border-cream-200" />
                   <button
                     role="menuitem"
@@ -453,10 +473,14 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
         {/* Meta: Zeit · Gruppe · Status */}
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="inline-flex items-center gap-1 font-display font-bold tabular-nums text-white bg-navy-900 rounded-md px-2 py-0.5">
-            {weekdayShort(poll.weekday)} · {formatTime(poll.time)}
+            {poll.trainingCoupled
+              ? `${weekdayShort(poll.weekday)} · ${formatTime(poll.time)}`
+              : (poll.sendDate ? `${formatDate(poll.sendDate)} · ${formatTime(poll.time)}` : formatTime(poll.time))}
           </span>
           {poll.groupName && <span className="font-body text-navy-500 truncate max-w-[10rem]">{poll.groupName}</span>}
-          <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>
+          <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{poll.trainingCoupled ? 'Training' : 'Einmalig'}</span>
+          {poll.trainingCoupled && <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>}
+          {!poll.trainingCoupled && poll.lastSentAt && <Badge color="gray" size="sm">Gesendet</Badge>}
           <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{typeLabel}</span>
           {hasPoll && poll.allowMultipleAnswers && <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Mehrfach</span>}
         </div>
@@ -464,7 +488,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
         {/* Nächster Versand — Kern-Info */}
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">Nächster Versand</p>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{poll.trainingCoupled ? 'Nächster Versand' : (poll.lastSentAt ? 'Status' : 'Geplant')}</p>
             <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll, trainings)}</p>
           </div>
           {poll.options.length > 0 && (
