@@ -5,7 +5,7 @@ import { getWhatsappQr } from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton, Button } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
-import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
+import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus, TrainingResponse } from '@/types'
 import { coupledSendDate, type TrainingLite } from './pollSchedule'
 
 const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
@@ -19,6 +19,10 @@ const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
 ]
 
 const weekdayShort = (w: Weekday | null) => (w ? WEEKDAYS.find(d => d.value === w)?.short ?? w : '')
+
+const JS_TO_WEEKDAY: Record<number, Weekday> = {
+  0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
+}
 
 const inputCls =
   'w-full border border-cream-300 rounded-lg px-3 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
@@ -73,18 +77,21 @@ function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): 
 }
 
 function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const iso = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`
   return {
     groupId: groups[0]?.id ?? '',
     groupName: groups[0]?.name ?? null,
     title: '',
     options: ['Ja', 'Nein', 'Vielleicht'],
-    weekday: 'MONDAY',
+    weekday: null,
     time: '18:00',
-    trainingCoupled: false,
-    sendDate: null,
     enabled: true,
     allowMultipleAnswers: false,
     message: null,
+    trainingCoupled: false,
+    sendDate: iso,
   }
 }
 
@@ -277,6 +284,7 @@ export function WhatsappPollPage() {
         <PollEditor
           draft={editor.draft}
           groups={groups}
+          trainings={trainings}
           saving={saving}
           onSave={handleSave}
           onClose={() => setEditor(null)}
@@ -537,15 +545,16 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
   )
 }
 
-interface PollEditorProps {
+export interface PollEditorProps {
   draft: WhatsappPollRequest
   groups: WhatsappGroup[]
+  trainings: TrainingResponse[]
   saving: boolean
   onSave: (request: WhatsappPollRequest) => void
   onClose: () => void
 }
 
-function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps) {
+export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }: PollEditorProps) {
   const [form, setForm] = useState<WhatsappPollRequest>(draft)
   const [withPoll, setWithPoll] = useState(draft.options.length >= 2)
   // Nachricht pro Tab getrennt: beim Umschalten Text des jeweils anderen Tabs merken/tauschen.
@@ -726,32 +735,80 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
           </select>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Trainingstag</label>
-            <select value={form.weekday ?? ''} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
-              {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>Sende-Uhrzeit (am Vortag)</label>
-            <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
-          </div>
-        </div>
-
         <label className="flex items-start gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
-            checked={form.enabled}
-            onChange={e => set('enabled', e.target.checked)}
+            checked={form.trainingCoupled}
+            onChange={e => {
+              const on = e.target.checked
+              setForm(prev => {
+                if (on && !prev.weekday) {
+                  // beim Anschalten sinnvollen Trainingstag vorbelegen (frühestes kommendes Training)
+                  const upcoming = [...trainings]
+                    .filter(t => !t.cancelled && t.date >= new Date().toISOString().slice(0, 10))
+                    .sort((a, b) => a.date.localeCompare(b.date))[0]
+                  const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
+                  return { ...prev, trainingCoupled: true, weekday: wd }
+                }
+                return { ...prev, trainingCoupled: on }
+              })
+            }}
             className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
           />
           <span>
-            <span className="block text-sm font-semibold text-navy-800">Automatisch senden — an den Trainingstag gekoppelt</span>
-            <span className="block text-xs text-gray-500">Sendet 1 Tag vor dem nächsten Training und bucht die Anwesenheit am Trainingstag. Kein Training an diesem Wochentag in der Periode → pausiert automatisch.</span>
+            <span className="block text-sm font-semibold text-navy-800">Trainingsumfrage</span>
+            <span className="block text-xs text-gray-500">An den Trainingstag gekoppelt: sendet automatisch 1 Tag vor jedem Training und bucht die Anwesenheit. Aus = einmalig zu einem festen Zeitpunkt.</span>
           </span>
         </label>
+
+        {form.trainingCoupled ? (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Trainingstag</label>
+              <select value={form.weekday ?? 'MONDAY'} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
+                {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>Sende-Uhrzeit (am Vortag)</label>
+              <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls} htmlFor="poll-send-date">Datum</label>
+              <input id="poll-send-date" type="date" value={form.sendDate ?? ''} onChange={e => set('sendDate', e.target.value || null)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Uhrzeit</label>
+              <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
+            </div>
+          </div>
+        )}
+
+        <SendPreview form={form} trainings={trainings} />
       </div>
     </ResponsiveSheet>
   )
+}
+
+function SendPreview({ form, trainings }: { form: WhatsappPollRequest; trainings: TrainingResponse[] }) {
+  const t: TrainingLite[] = trainings.map(x => ({ date: x.date, cancelled: x.cancelled }))
+  if (form.trainingCoupled) {
+    if (!form.weekday) return null
+    const d = coupledSendDate(form.weekday, form.time, t, [], new Date())
+    const wdLabel = WEEKDAYS.find(w => w.value === form.weekday)?.label ?? ''
+    if (!d) {
+      return <p className="text-xs font-semibold text-softball-red-600 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">⚠ Kein {wdLabel}-Training in der Saison — die Umfrage wird nie automatisch gesendet.</p>
+    }
+    return <p className="text-xs font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2">→ Wird {d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })} um {d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} gesendet (Vortag des Trainings).</p>
+  }
+  if (!form.sendDate) return null
+  const d = new Date(form.sendDate + 'T' + form.time)
+  const past = d.getTime() < new Date().getTime()
+  if (past) {
+    return <p className="text-xs font-semibold text-softball-red-600 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">⚠ Zeitpunkt liegt in der Vergangenheit — es wird nicht gesendet.</p>
+  }
+  return <p className="text-xs font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2">→ Wird am {d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })} um {d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} einmalig gesendet.</p>
 }
