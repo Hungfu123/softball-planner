@@ -52,6 +52,16 @@ public class VoterAssignmentService {
             .toList();
     }
 
+    /** Spieler-IDs, die für dieses Training per WhatsApp abgestimmt haben (gemappte Wähler). */
+    @Transactional(readOnly = true)
+    public List<Long> votedPlayerIds(final Long trainingId) {
+        return voteRepo.findByTrainingId(trainingId).stream()
+            .map(SyncedVote::getPlayerId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .toList();
+    }
+
     @Transactional
     public Player assignExisting(final String voterName, final Long playerId) {
         final Player player = playerRepo.findById(playerId)

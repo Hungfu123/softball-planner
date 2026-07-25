@@ -47,6 +47,16 @@ class VoterAssignmentServiceTest {
     }
 
     @Test
+    void votedPlayerIds_returnsDistinctMappedPlayersOnly() {
+        when(voteRepo.findByTrainingId(10L)).thenReturn(List.of(
+            new SyncedVote(10L, "Max", 5L, true),
+            new SyncedVote(10L, "Max Alias", 5L, false), // gleicher Spieler -> distinct
+            new SyncedVote(10L, "Gast", null, true),     // unbekannt -> raus
+            new SyncedVote(10L, "Lisa", 8L, false)));    // Nein zählt auch als abgestimmt
+        assertThat(service.votedPlayerIds(10L)).containsExactlyInAnyOrder(5L, 8L);
+    }
+
+    @Test
     void assignExisting_setsWhatsappNameAndBooksOpenYesVote() {
         when(playerRepo.findById(5L)).thenReturn(Optional.of(player));
         final SyncedVote openVote = new SyncedVote(10L, "Gast", null, true);

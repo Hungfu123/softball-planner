@@ -448,8 +448,8 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
   const typeLabel = !hasPoll ? 'Nachricht' : hasMessage ? 'Umfrage + Nachricht' : 'Umfrage'
 
   return (
-    <div className="group relative overflow-hidden bg-cream-50 border border-cream-300 rounded-2xl shadow-sm hover:shadow-md hover:border-navy-300 transition-all">
-      <span className="absolute inset-y-0 left-0 w-1 bg-navy-800" />
+    <div className="group relative bg-cream-50 border border-cream-300 border-l-4 border-l-navy-800 rounded-2xl shadow-sm hover:shadow-md hover:border-navy-300 hover:border-l-navy-800 transition-all">
+      {/* Linker Akzent als Border (nicht overflow-hidden-Span) — sonst würde das ⋮-Menü geklippt. */}
       <div className="pl-4 pr-3 py-3.5">
 
         {/* Kopf: Titel + Bearbeiten/Löschen */}
@@ -842,7 +842,7 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
         </label>
 
         {form.trainingCoupled ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 items-end">
             <div>
               <label className={labelCls}>Trainingstag</label>
               <select value={form.weekday ?? 'MONDAY'} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>

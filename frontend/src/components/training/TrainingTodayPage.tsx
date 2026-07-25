@@ -128,11 +128,20 @@ export function TrainingTodayPage() {
 
   const totalTrainings = useMemo(() => trainings.filter(t => !t.cancelled).length, [trainings])
 
-  const decidedIds = useMemo(() => {
-    if (!currentTraining) return new Set<number>()
-    const map = attendance.get(currentTraining.id) ?? new Map<number, boolean>()
-    return new Set(map.keys())
-  }, [attendance, currentTraining])
+  // WhatsApp-Abstimmung: welche Spieler haben für DIESES Training tatsächlich abgestimmt
+  // (gemappte Wähler). "Abgestimmt"-Sortierung basiert darauf, NICHT auf Anwesenheits-Records
+  // (die entstehen auch manuell → ein nie-abstimmender Spieler stand sonst fälschlich oben).
+  const [votedIds, setVotedIds] = useState<Set<number>>(new Set())
+  const refreshVotedIds = useCallback(async () => {
+    if (!currentTraining) { setVotedIds(new Set()); return }
+    try {
+      const ids = await api.getVotedPlayerIds(currentTraining.id)
+      setVotedIds(new Set(ids))
+    } catch {
+      setVotedIds(new Set())
+    }
+  }, [currentTraining])
+  useEffect(() => { refreshVotedIds() }, [refreshVotedIds])
 
   const sortedPlayers = useMemo(() => {
     const base = [...players]
@@ -146,14 +155,14 @@ export function TrainingTodayPage() {
     }
     if (attendanceSort === 'decided') {
       return base.sort((a, b) => {
-        const aDec = decidedIds.has(a.id)
-        const bDec = decidedIds.has(b.id)
-        if (aDec !== bDec) return aDec ? -1 : 1
+        const aV = votedIds.has(a.id)
+        const bV = votedIds.has(b.id)
+        if (aV !== bV) return aV ? -1 : 1
         return a.name.localeCompare(b.name)
       })
     }
     return base.sort((a, b) => a.name.localeCompare(b.name))
-  }, [players, stats, attendanceSort, decidedIds])
+  }, [players, stats, attendanceSort, votedIds])
 
   const activePlan = useMemo(
     () => plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null,
@@ -249,7 +258,7 @@ export function TrainingTodayPage() {
       toast.success(`${result.synced} Stimmen gesynct`)
       // Anwesenheit + unbekannte Wähler neu laden, damit gebuchte/zurückgenommene Haken
       // sofort sichtbar sind (kein manuelles Reload nötig).
-      await Promise.all([refreshUnknownVoters(), loadAll(activePeriodId)])
+      await Promise.all([refreshUnknownVoters(), refreshVotedIds(), loadAll(activePeriodId)])
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
