@@ -128,6 +128,26 @@ class WhatsappPollServiceTest {
     }
 
     @Test
+    void update_oneOffToCoupled_switchesFieldsAndNullsSendDate() {
+        // Rückrichtung: einmalig -> Trainingsumfrage. validate koppelt (weekday nötig) + nullt sendDate.
+        final WhatsappPoll p = sample();
+        p.setTrainingCoupled(false);
+        p.setWeekday(null);
+        p.setSendDate(LocalDate.now().plusDays(5));
+        final WhatsappPoll saved = service.create(p);
+        assertThat(saved.isTrainingCoupled()).isFalse();
+        assertThat(saved.getSendDate()).isNotNull();
+
+        final WhatsappPoll toCoupled = sample(); // sample() ist gekoppelt mit weekday TUESDAY
+        service.update(saved.getId(), toCoupled);
+
+        final WhatsappPoll after = service.findById(saved.getId());
+        assertThat(after.isTrainingCoupled()).isTrue();
+        assertThat(after.getWeekday()).isEqualTo(DayOfWeek.TUESDAY);
+        assertThat(after.getSendDate()).isNull();
+    }
+
+    @Test
     void resetLastSent_clearsTrainingId() {
         // I3: reset muss auch die Trainings-Kopplung lösen, sonst blockt isDue weiter.
         final WhatsappPoll saved = service.create(sample());
