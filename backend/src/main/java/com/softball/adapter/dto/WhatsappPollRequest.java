@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -13,11 +14,13 @@ public record WhatsappPollRequest(
         String groupName,
         String title,
         @NotNull List<String> options,
-        @NotNull DayOfWeek weekday,
+        DayOfWeek weekday,
         @NotNull LocalTime time,
         boolean enabled,
         boolean allowMultipleAnswers,
-        String message) {
+        String message,
+        boolean trainingCoupled,
+        LocalDate sendDate) {
 
     public WhatsappPoll toDomain() {
         final WhatsappPoll p = new WhatsappPoll();
@@ -30,6 +33,8 @@ public record WhatsappPollRequest(
         p.setEnabled(enabled);
         p.setAllowMultipleAnswers(allowMultipleAnswers);
         p.setMessage(message != null && !message.isBlank() ? message.trim() : null);
+        p.setTrainingCoupled(trainingCoupled);
+        p.setSendDate(sendDate);
         return p;
     }
 }

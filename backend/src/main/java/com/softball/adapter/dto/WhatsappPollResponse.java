@@ -20,11 +20,14 @@ public record WhatsappPollResponse(
         boolean allowMultipleAnswers,
         String message,
         List<LocalDate> skipDates,
-        LocalDateTime lastSentAt) {
+        LocalDateTime lastSentAt,
+        boolean trainingCoupled,
+        LocalDate sendDate) {
 
     public static WhatsappPollResponse from(final WhatsappPoll p) {
         return new WhatsappPollResponse(p.getId(), p.getGroupId(), p.getGroupName(), p.getTitle(),
                 p.getOptions(), p.getWeekday(), p.getTime(), p.isEnabled(),
-                p.isAllowMultipleAnswers(), p.getMessage(), p.getSkipDates(), p.getLastSentAt());
+                p.isAllowMultipleAnswers(), p.getMessage(), p.getSkipDates(), p.getLastSentAt(),
+                p.isTrainingCoupled(), p.getSendDate());
     }
 }
