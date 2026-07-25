@@ -42,6 +42,7 @@ class WhatsappPollServiceSendNowTest {
         p.setGroupId("123@g.us");
         p.setTitle("Wer kommt zum Training?");
         p.setOptions(List.of("Ja", "Nein"));
+        p.setTrainingCoupled(true);
         p.setWeekday(DayOfWeek.MONDAY);
         return p;
     }
