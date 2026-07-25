@@ -278,7 +278,7 @@ export function WhatsappPollPage() {
         ) : polls.length === 0 ? (
           <EmptyState
             title="Noch keine Umfragen"
-            description="Leg eine wiederkehrende WhatsApp-Umfrage an."
+            description="Leg eine WhatsApp-Umfrage oder Nachricht an — einmalig oder an ein Training gekoppelt."
             icon={<CrossBones size={48} />}
           />
         ) : (
@@ -509,7 +509,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
         {/* Nächster Versand — Kern-Info */}
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{poll.trainingCoupled ? 'Nächster Versand' : (poll.lastSentAt ? 'Status' : 'Geplant')}</p>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{poll.trainingCoupled ? 'Nächster Versand' : ((poll.lastSentAt || (poll.sendDate && poll.sendDate < todayIso())) ? 'Status' : 'Geplant')}</p>
             <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll, trainings)}</p>
           </div>
           {poll.options.length > 0 && (
