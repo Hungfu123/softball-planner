@@ -103,6 +103,46 @@ class WhatsappPollServiceTest {
     }
 
     @Test
+    void update_oneOffRescheduledToFuture_reArms() {
+        // C2: ein bereits gesendeter einmaliger Poll wird auf ein neues Zukunftsdatum umgeplant
+        // → lastSentAt muss weg, sonst feuert isDueOneOff nie wieder.
+        final WhatsappPoll p = sample();
+        p.setTrainingCoupled(false);
+        p.setWeekday(null);
+        p.setSendDate(LocalDate.now().plusDays(3));
+        final WhatsappPoll saved = service.create(p);
+        saved.setLastSentAt(LocalDateTime.now().minusDays(1));
+        saved.setLastSentMessageId("sent-msg");
+        pollRepository.save(saved);
+
+        final WhatsappPoll upd = sample();
+        upd.setTrainingCoupled(false);
+        upd.setWeekday(null);
+        upd.setSendDate(LocalDate.now().plusDays(10));
+        service.update(saved.getId(), upd);
+
+        final WhatsappPoll after = service.findById(saved.getId());
+        assertThat(after.getSendDate()).isEqualTo(LocalDate.now().plusDays(10));
+        assertThat(after.getLastSentAt()).isNull();
+        assertThat(after.getLastSentMessageId()).isNull();
+    }
+
+    @Test
+    void resetLastSent_clearsTrainingId() {
+        // I3: reset muss auch die Trainings-Kopplung lösen, sonst blockt isDue weiter.
+        final WhatsappPoll saved = service.create(sample());
+        saved.setLastSentAt(LocalDateTime.now());
+        saved.setLastSentTrainingId(55L);
+        pollRepository.save(saved);
+
+        service.resetLastSent(saved.getId());
+
+        final WhatsappPoll after = service.findById(saved.getId());
+        assertThat(after.getLastSentAt()).isNull();
+        assertThat(after.getLastSentTrainingId()).isNull();
+    }
+
+    @Test
     void update_persistsAllowMultipleAndMessage() {
         final Long id = service.create(sample()).getId();
         final WhatsappPoll upd = sample();

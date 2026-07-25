@@ -66,7 +66,7 @@ function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): 
     if (!poll.enabled) return 'Pausiert'
     if (!poll.weekday) return 'Kein Trainingstag'
     const d = coupledSendDate(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, new Date())
-    if (!d) return 'Pausiert — kein Training'
+    if (!d) return 'Kein Training geplant'
     return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
   }
   // Einmalig
@@ -322,15 +322,22 @@ export function WhatsappPollPage() {
         />
       )}
 
-      {sendId != null && (
-        <ConfirmModal
-          title="Umfrage jetzt senden"
-          message="Poll jetzt wirklich senden?"
-          confirmLabel="Senden"
-          onConfirm={confirmSend}
-          onCancel={() => setSendId(null)}
-        />
-      )}
+      {sendId != null && (() => {
+        const sp = polls.find(p => p.id === sendId)
+        const oneOff = sp && !sp.trainingCoupled
+        const message = oneOff
+          ? `Schickt die Umfrage jetzt zum Testen an die Gruppe. Der geplante Versand${sp?.sendDate ? ` am ${formatDate(sp.sendDate)}` : ''} bleibt bestehen — die Gruppe erhält sie dann ggf. zweimal.`
+          : 'Schickt die Umfrage jetzt zum Testen an die Gruppe.'
+        return (
+          <ConfirmModal
+            title="Umfrage jetzt testen"
+            message={message}
+            confirmLabel="Jetzt testen"
+            onConfirm={confirmSend}
+            onCancel={() => setSendId(null)}
+          />
+        )
+      })()}
     </div>
   )
 }
@@ -452,13 +459,15 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
                   >
                     <SendIcon size={15} /> Jetzt testen
                   </button>
-                  <button
-                    role="menuitem"
-                    onClick={() => { setMenuOpen(false); setShowSkip(s => !s) }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer"
-                  >
-                    <CalendarIcon size={15} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
-                  </button>
+                  {poll.trainingCoupled && (
+                    <button
+                      role="menuitem"
+                      onClick={() => { setMenuOpen(false); setShowSkip(s => !s) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left text-navy-800 hover:bg-navy-50 cursor-pointer"
+                    >
+                      <CalendarIcon size={15} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
+                    </button>
+                  )}
                   {poll.trainingCoupled && (
                     <button
                       role="menuitem"
@@ -534,7 +543,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
             )}
           </p>
 
-          {poll.skipDates.length > 0 && (
+          {poll.trainingCoupled && poll.skipDates.length > 0 && (
             <p className="mt-1 font-body text-[11px] text-softball-red-600">
               Absage: {[...poll.skipDates].sort().slice(0, 2).map(formatDate).join(', ')}{poll.skipDates.length > 2 ? ` +${poll.skipDates.length - 2}` : ''}
             </p>
@@ -634,8 +643,11 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
   const uniqueOptions = Array.from(new Set(form.options.map(o => o.trim()).filter(Boolean)))
   const messageFilled = (form.message ?? '').trim() !== ''
   const pollValid = form.title.trim() !== '' && uniqueOptions.length >= 2
-  // Einmalig braucht ein Datum (sonst Backend-400). Coupled hat immer einen Trainingstag (Prefill).
-  const scheduleValid = form.trainingCoupled || !!form.sendDate
+  // Einmalig braucht ein Datum in der Zukunft (sonst Backend-400 bzw. toter Poll der nie sendet).
+  // Coupled hat immer einen Trainingstag (Prefill).
+  const oneOffFuture = !!form.sendDate
+    && new Date(form.sendDate + 'T' + form.time).getTime() >= new Date().getTime()
+  const scheduleValid = form.trainingCoupled || oneOffFuture
   const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled) && scheduleValid
 
   const buildRequest = (): WhatsappPollRequest => ({
