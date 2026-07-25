@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { WhatsappPollResponse, WhatsappAccountStatus, WhatsappGroup, WhatsappPollRequest } from '@/types'
+import type { WhatsappPollResponse, WhatsappAccountStatus, WhatsappGroup, WhatsappPollRequest, TrainingResponse } from '@/types'
 import * as api from '@/api/client'
 
 export function useWhatsappPoll() {
   const [polls, setPolls] = useState<WhatsappPollResponse[]>([])
   const [status, setStatus] = useState<WhatsappAccountStatus | null>(null)
   const [groups, setGroups] = useState<WhatsappGroup[]>([])
+  const [trainings, setTrainings] = useState<TrainingResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -14,9 +15,10 @@ export function useWhatsappPoll() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true)
     try {
-      const [s, p] = await Promise.all([api.getWhatsappStatus(), api.getWhatsappPolls()])
+      const [s, p, t] = await Promise.all([api.getWhatsappStatus(), api.getWhatsappPolls(), api.getTrainings()])
       setStatus(s)
       setPolls(p)
+      setTrainings(t)
       setGroups(s.connected ? await api.getWhatsappGroups() : [])
       setError(null)
     } catch (e) {
@@ -63,7 +65,7 @@ export function useWhatsappPoll() {
   }
 
   return {
-    polls, status, groups, loading, error, reload,
+    polls, status, groups, trainings, loading, error, reload,
     createPoll, updatePoll, deletePoll, sendNow, addSkipDate, removeSkipDate, resetSent,
   }
 }

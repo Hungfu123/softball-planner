@@ -17,7 +17,7 @@ const WEEKDAYS: { value: Weekday; label: string; short: string }[] = [
   { value: 'SUNDAY', label: 'Sonntag', short: 'So' },
 ]
 
-const weekdayShort = (w: Weekday) => WEEKDAYS.find(d => d.value === w)?.short ?? w
+const weekdayShort = (w: Weekday | null) => (w ? WEEKDAYS.find(d => d.value === w)?.short ?? w : '')
 
 const inputCls =
   'w-full border border-cream-300 rounded-lg px-3 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
@@ -44,23 +44,26 @@ function isSentToday(iso: string | null): boolean {
   return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
 }
 
-const WEEKDAY_JS: Record<WhatsappPollResponse['weekday'], number> = {
+const WEEKDAY_JS: Record<Weekday, number> = {
   SUNDAY: 0, MONDAY: 1, TUESDAY: 2, WEDNESDAY: 3, THURSDAY: 4, FRIDAY: 5, SATURDAY: 6,
 }
 
 // Liste chronologisch: Mo→So, dann nach Uhrzeit (stabile Wochen-Reihenfolge).
-const WEEKDAY_ORDER: Record<WhatsappPollResponse['weekday'], number> = {
+// null (einmalige/trainingsgekoppelte Polls ohne festen Wochentag) sortiert ans Ende.
+const WEEKDAY_ORDER: Record<Weekday, number> = {
   MONDAY: 0, TUESDAY: 1, WEDNESDAY: 2, THURSDAY: 3, FRIDAY: 4, SATURDAY: 5, SUNDAY: 6,
 }
 function byWeekdayTime(a: WhatsappPollResponse, b: WhatsappPollResponse): number {
-  const w = WEEKDAY_ORDER[a.weekday] - WEEKDAY_ORDER[b.weekday]
+  const wa = a.weekday ? WEEKDAY_ORDER[a.weekday] : 7
+  const wb = b.weekday ? WEEKDAY_ORDER[b.weekday] : 7
+  const w = wa - wb
   return w !== 0 ? w : a.time.localeCompare(b.time)
 }
 
 // Nächster geplanter Versand: nächstes Vorkommen von weekday+time in der Zukunft,
 // überspringt Aussetz-Daten und (falls heute schon gesendet) den heutigen Termin.
 function nextSend(poll: WhatsappPollResponse): Date | null {
-  if (!poll.enabled) return null
+  if (!poll.enabled || !poll.weekday) return null
   const [h, m] = poll.time.split(':').map(Number)
   const target = WEEKDAY_JS[poll.weekday]
   const sentToday = isSentToday(poll.lastSentAt)
@@ -93,6 +96,8 @@ function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
     options: ['Ja', 'Nein', 'Vielleicht'],
     weekday: 'MONDAY',
     time: '18:00',
+    trainingCoupled: false,
+    sendDate: null,
     enabled: true,
     allowMultipleAnswers: false,
     message: null,
@@ -107,6 +112,8 @@ function toRequest(p: WhatsappPollResponse): WhatsappPollRequest {
     options: [...p.options],
     weekday: p.weekday,
     time: formatTime(p.time),
+    trainingCoupled: p.trainingCoupled,
+    sendDate: p.sendDate,
     enabled: p.enabled,
     allowMultipleAnswers: p.allowMultipleAnswers,
     message: p.message,
@@ -736,7 +743,7 @@ function PollEditor({ draft, groups, saving, onSave, onClose }: PollEditorProps)
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Trainingstag</label>
-            <select value={form.weekday} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
+            <select value={form.weekday ?? ''} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
               {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
             </select>
           </div>
