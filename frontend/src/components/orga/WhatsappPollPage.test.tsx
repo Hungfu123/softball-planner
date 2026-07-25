@@ -30,7 +30,6 @@ vi.mock('@/components/layout/Layout', () => ({
 }))
 vi.mock('@/api/client', () => ({ getWhatsappQr: vi.fn().mockResolvedValue({ qr: null }) }))
 
-// eslint-disable-next-line import/first
 import { WhatsappPollPage } from './WhatsappPollPage'
 
 describe('WhatsappPollPage Gruppierung', () => {
