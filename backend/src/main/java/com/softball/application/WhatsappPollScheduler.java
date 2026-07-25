@@ -63,19 +63,30 @@ public class WhatsappPollScheduler {
     public void tick(final LocalDateTime now) {
         final List<Training> trainings = trainingRepo.findAllByOrderByDateDesc();
         for (final WhatsappPoll poll : repository.findAll()) {
-            final Optional<Training> target = resolver.resolve(trainings, poll.getWeekday(), poll.getSkipDates(), now.toLocalDate());
-            if (target.isEmpty() || !evaluator.isDue(poll, target.get(), now)) continue;
-            try {
-                final String messageId = sender.sendPoll(poll.getGroupId(), poll.getTitle(), poll.getOptions(), poll.isAllowMultipleAnswers(), poll.getMessage());
-                poll.setLastSentAt(now);
-                poll.setLastSentMessageId(messageId);
-                poll.setLastSentTrainingId(target.get().getId());
-                repository.save(poll);
-                log.info("Gekoppelter WhatsApp-Poll gesendet: {} ({}) -> Training {}", poll.getTitle(), poll.getId(), target.get().getId());
-            } catch (final Exception e) {
-                log.warn("WhatsApp-Poll fehlgeschlagen: {} ({}): {}", poll.getTitle(), poll.getId(), e.getMessage());
-                // lastSentAt NICHT stempeln → nächster Tick im selben Minutenfenster kann erneut versuchen
+            if (poll.isTrainingCoupled()) {
+                final Optional<Training> target = resolver.resolve(trainings, poll.getWeekday(), poll.getSkipDates(), now.toLocalDate());
+                if (target.isEmpty() || !evaluator.isDue(poll, target.get(), now)) continue;
+                send(poll, now, target.get().getId());
+            } else {
+                if (!evaluator.isDueOneOff(poll, now)) continue;
+                send(poll, now, null);
             }
+        }
+    }
+
+    private void send(final WhatsappPoll poll, final LocalDateTime now, final Long trainingId) {
+        try {
+            final String messageId = sender.sendPoll(poll.getGroupId(), poll.getTitle(), poll.getOptions(),
+                    poll.isAllowMultipleAnswers(), poll.getMessage());
+            poll.setLastSentAt(now);
+            poll.setLastSentMessageId(messageId);
+            poll.setLastSentTrainingId(trainingId);
+            repository.save(poll);
+            log.info("WhatsApp-Poll gesendet: {} ({}) -> {}", poll.getTitle(), poll.getId(),
+                    trainingId != null ? "Training " + trainingId : "einmalig");
+        } catch (final Exception e) {
+            log.warn("WhatsApp-Poll fehlgeschlagen: {} ({}): {}", poll.getTitle(), poll.getId(), e.getMessage());
+            // lastSentAt NICHT stempeln → nächster Tick im selben Minutenfenster kann erneut versuchen
         }
     }
 }

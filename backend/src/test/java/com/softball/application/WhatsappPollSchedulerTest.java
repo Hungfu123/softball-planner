@@ -40,6 +40,7 @@ class WhatsappPollSchedulerTest {
         p.setGroupId("g@g.us");
         p.setTitle("Training?");
         p.setOptions(List.of("Ja", "Nein"));
+        p.setTrainingCoupled(true);
         p.setWeekday(DayOfWeek.TUESDAY);
         p.setTime(LocalTime.of(18, 0));
         p.setEnabled(true);
@@ -110,6 +111,45 @@ class WhatsappPollSchedulerTest {
         assertThat(poll.getLastSentMessageId()).isEqualTo("msg-123");
         assertThat(poll.getLastSentTrainingId()).isEqualTo(42L);
         verify(repo).save(poll);
+    }
+
+    private WhatsappPoll oneOffDue() {
+        final WhatsappPoll p = new WhatsappPoll();
+        p.setId(9L);
+        p.setGroupId("g@g.us");
+        p.setTitle("Einmalig");
+        p.setOptions(List.of("Ja", "Nein"));
+        p.setTrainingCoupled(false);
+        p.setSendDate(LocalDate.of(2026, 8, 5));
+        p.setTime(LocalTime.of(10, 25));
+        p.setEnabled(true);
+        return p;
+    }
+
+    @Test
+    void tick_sendsDueOneOff_withoutTrainingId() {
+        final WhatsappPoll poll = oneOffDue();
+        when(repo.findAll()).thenReturn(List.of(poll));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of());
+        when(sender.sendPoll(any(), any(), anyList(), anyBoolean(), any())).thenReturn("msg-1");
+
+        scheduler.tick(LocalDateTime.of(2026, 8, 5, 10, 25));
+
+        verify(sender).sendPoll(eq("g@g.us"), eq("Einmalig"), anyList(), anyBoolean(), any());
+        assertThat(poll.getLastSentMessageId()).isEqualTo("msg-1");
+        assertThat(poll.getLastSentTrainingId()).isNull();
+    }
+
+    @Test
+    void tick_oneOffNotResentAfterSent() {
+        final WhatsappPoll poll = oneOffDue();
+        poll.setLastSentAt(LocalDateTime.of(2026, 8, 5, 10, 25));
+        when(repo.findAll()).thenReturn(List.of(poll));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of());
+
+        scheduler.tick(LocalDateTime.of(2026, 8, 5, 10, 25));
+
+        verify(sender, never()).sendPoll(any(), any(), anyList(), anyBoolean(), any());
     }
 
     @Test
