@@ -28,7 +28,7 @@ public class WhatsappPollEntity {
     @Column(columnDefinition = "jsonb", nullable = false)
     private String options = "[]";
 
-    @Column(nullable = false, length = 10)
+    @Column(length = 10)
     private String weekday;
 
     @Column(name = "send_time", nullable = false)
@@ -55,6 +55,12 @@ public class WhatsappPollEntity {
 
     @Column(name = "last_sent_training_id")
     private Long lastSentTrainingId;
+
+    @Column(name = "training_coupled", nullable = false)
+    private boolean trainingCoupled = false;
+
+    @Column(name = "send_date")
+    private java.time.LocalDate sendDate;
 
     public Long getId() { return id; }
     public void setId(final Long id) { this.id = id; }
@@ -84,4 +90,8 @@ public class WhatsappPollEntity {
     public void setLastSentMessageId(final String v) { this.lastSentMessageId = v; }
     public Long getLastSentTrainingId() { return lastSentTrainingId; }
     public void setLastSentTrainingId(final Long v) { this.lastSentTrainingId = v; }
+    public boolean isTrainingCoupled() { return trainingCoupled; }
+    public void setTrainingCoupled(final boolean v) { this.trainingCoupled = v; }
+    public java.time.LocalDate getSendDate() { return sendDate; }
+    public void setSendDate(final java.time.LocalDate v) { this.sendDate = v; }
 }
