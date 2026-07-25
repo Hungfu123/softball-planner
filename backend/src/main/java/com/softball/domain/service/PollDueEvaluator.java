@@ -20,4 +20,12 @@ public class PollDueEvaluator {
         if (poll.getLastSentTrainingId() != null && poll.getLastSentTrainingId().equals(targetTraining.getId())) return false;
         return true;
     }
+
+    /** Einmalig: genau am sendDate zur Uhrzeit fällig, solange noch nie gesendet. */
+    public boolean isDueOneOff(final WhatsappPoll poll, final LocalDateTime now) {
+        if (poll == null || !poll.isEnabled() || poll.getSendDate() == null || poll.getTime() == null) return false;
+        if (poll.getLastSentAt() != null) return false;
+        if (!now.toLocalDate().equals(poll.getSendDate())) return false;
+        return now.getHour() == poll.getTime().getHour() && now.getMinute() == poll.getTime().getMinute();
+    }
 }
