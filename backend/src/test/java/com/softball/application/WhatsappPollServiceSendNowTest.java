@@ -69,6 +69,29 @@ class WhatsappPollServiceSendNowTest {
     }
 
     @Test
+    void sendNow_oneOff_doesNotSetLastSentTrainingId() {
+        final WhatsappPoll p = new WhatsappPoll();
+        p.setId(2L);
+        p.setGroupId("123@g.us");
+        p.setTitle("Grillabend am Samstag?");
+        p.setOptions(List.of("Ja", "Nein"));
+        p.setTrainingCoupled(false);
+        p.setSendDate(LocalDate.of(2026, 7, 25));
+        p.setWeekday(null);
+        p.setTime(java.time.LocalTime.of(18, 0));
+
+        when(repository.findById(2L)).thenReturn(Optional.of(p));
+        when(sender.sendPoll(any(), any(), any(), anyBoolean(), any())).thenReturn("msg-99");
+        when(repository.save(any(WhatsappPoll.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.sendNow(2L);
+
+        assertThat(p.getLastSentTrainingId()).isNull();
+        assertThat(p.getLastSentMessageId()).isEqualTo("msg-99");
+        verify(repository).save(p);
+    }
+
+    @Test
     void sendNow_setsLastSentTrainingId() {
         final WhatsappPoll p = poll();
         final Training training = mock(Training.class);

@@ -165,6 +165,9 @@ public class WhatsappPollService {
                 throw new BusinessValidationException("Datum muss gesetzt sein");
             }
             p.setWeekday(null);
+            // Einmalige Polls kennen kein Pausieren — ohne UI zum Reaktivieren würde ein
+            // deaktivierter One-off sonst nie mehr gesendet (isDueOneOff verlangt enabled).
+            p.setEnabled(true);
         }
         final int optionCount = p.getOptions() != null ? p.getOptions().size() : 0;
         final boolean hasPoll = optionCount >= 2;
