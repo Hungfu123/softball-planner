@@ -36,11 +36,6 @@ public class WhatsappVoteController {
         return assignmentService.unknownVoters().stream().map(UnknownVoterResponse::from).toList();
     }
 
-    @GetMapping("/voted-players/{trainingId}")
-    public List<Long> votedPlayers(@PathVariable final Long trainingId) {
-        return assignmentService.votedPlayerIds(trainingId);
-    }
-
     @PostMapping("/assign")
     public PlayerResponse assign(@Valid @RequestBody final AssignVoterRequest req) {
         return PlayerResponse.from(assignmentService.assignExisting(req.voterName(), req.playerId()));

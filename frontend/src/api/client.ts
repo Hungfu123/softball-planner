@@ -655,8 +655,6 @@ export const removeWhatsappPollSkipDate = (id: number, date: string) =>
   request<WhatsappPollResponse>(`/orga/whatsapp/polls/${id}/skip-dates/${date}`, { method: 'DELETE' })
 export const getUnknownVoters = () =>
   request<UnknownVoter[]>('/orga/whatsapp/unknown-voters')
-export const getVotedPlayerIds = (trainingId: number) =>
-  request<number[]>(`/orga/whatsapp/voted-players/${trainingId}`)
 export const syncWhatsappVotes = () =>
   request<{ synced: number }>('/orga/whatsapp/sync', { method: 'POST' })
 export const assignVoter = (voterName: string, playerId: number) =>
