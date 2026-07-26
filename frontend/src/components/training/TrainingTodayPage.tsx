@@ -128,21 +128,6 @@ export function TrainingTodayPage() {
 
   const totalTrainings = useMemo(() => trainings.filter(t => !t.cancelled).length, [trainings])
 
-  // WhatsApp-Abstimmung: welche Spieler haben für DIESES Training tatsächlich abgestimmt
-  // (gemappte Wähler). "Abgestimmt"-Sortierung basiert darauf, NICHT auf Anwesenheits-Records
-  // (die entstehen auch manuell → ein nie-abstimmender Spieler stand sonst fälschlich oben).
-  const [votedIds, setVotedIds] = useState<Set<number>>(new Set())
-  const refreshVotedIds = useCallback(async () => {
-    if (!currentTraining) { setVotedIds(new Set()); return }
-    try {
-      const ids = await api.getVotedPlayerIds(currentTraining.id)
-      setVotedIds(new Set(ids))
-    } catch {
-      setVotedIds(new Set())
-    }
-  }, [currentTraining])
-  useEffect(() => { refreshVotedIds() }, [refreshVotedIds])
-
   const sortedPlayers = useMemo(() => {
     const base = [...players]
     if (attendanceSort === 'frequency') {
@@ -155,14 +140,14 @@ export function TrainingTodayPage() {
     }
     if (attendanceSort === 'decided') {
       return base.sort((a, b) => {
-        const aV = votedIds.has(a.id)
-        const bV = votedIds.has(b.id)
-        if (aV !== bV) return aV ? -1 : 1
+        const aP = presentIds.has(a.id)
+        const bP = presentIds.has(b.id)
+        if (aP !== bP) return aP ? -1 : 1
         return a.name.localeCompare(b.name)
       })
     }
     return base.sort((a, b) => a.name.localeCompare(b.name))
-  }, [players, stats, attendanceSort, votedIds])
+  }, [players, stats, attendanceSort, presentIds])
 
   const activePlan = useMemo(
     () => plans.find(p => p.kind === activePlanKind) ?? plans[0] ?? null,
@@ -258,7 +243,7 @@ export function TrainingTodayPage() {
       toast.success(`${result.synced} Stimmen gesynct`)
       // Anwesenheit + unbekannte Wähler neu laden, damit gebuchte/zurückgenommene Haken
       // sofort sichtbar sind (kein manuelles Reload nötig).
-      await Promise.all([refreshUnknownVoters(), refreshVotedIds(), loadAll(activePeriodId)])
+      await Promise.all([refreshUnknownVoters(), loadAll(activePeriodId)])
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
@@ -486,7 +471,7 @@ export function TrainingTodayPage() {
                   type="button"
                   onClick={() => setAttendanceSort('decided')}
                   className={`px-2.5 py-1 text-xs rounded-md font-semibold cursor-pointer transition-colors ${attendanceSort === 'decided' ? 'bg-navy-700 text-white' : 'text-navy-700'}`}
-                  title="Bereits abgestimmte Spieler zuerst"
+                  title="Zugesagte (Häkchen) zuerst"
                 >
                   ✓ Abgestimmt
                 </button>
