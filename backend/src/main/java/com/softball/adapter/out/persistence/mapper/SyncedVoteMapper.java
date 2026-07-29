@@ -14,6 +14,7 @@ public class SyncedVoteMapper {
         final SyncedVote vote = new SyncedVote(
             entity.getTrainingId(), entity.getVoterName(), entity.getPlayerId(), entity.isPresent());
         vote.setId(entity.getId());
+        vote.setGameDayId(entity.getGameDayId());
         return vote;
     }
 
@@ -24,6 +25,7 @@ public class SyncedVoteMapper {
         final SyncedVoteEntity entity = new SyncedVoteEntity();
         entity.setId(domain.getId());
         entity.setTrainingId(domain.getTrainingId());
+        entity.setGameDayId(domain.getGameDayId());
         entity.setVoterName(domain.getVoterName());
         entity.setPlayerId(domain.getPlayerId());
         entity.setPresent(domain.isPresent());
@@ -32,6 +34,7 @@ public class SyncedVoteMapper {
 
     public void updateEntity(final SyncedVoteEntity entity, final SyncedVote domain) {
         entity.setTrainingId(domain.getTrainingId());
+        entity.setGameDayId(domain.getGameDayId());
         entity.setVoterName(domain.getVoterName());
         entity.setPlayerId(domain.getPlayerId());
         entity.setPresent(domain.isPresent());

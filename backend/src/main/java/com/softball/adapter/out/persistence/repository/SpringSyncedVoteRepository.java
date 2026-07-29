@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface SpringSyncedVoteRepository extends JpaRepository<SyncedVoteEntity, Long> {
     Optional<SyncedVoteEntity> findByTrainingIdAndVoterName(Long trainingId, String voterName);
     List<SyncedVoteEntity> findByTrainingId(Long trainingId);
+    Optional<SyncedVoteEntity> findByGameDayIdAndVoterName(Long gameDayId, String voterName);
+    List<SyncedVoteEntity> findByGameDayId(Long gameDayId);
     List<SyncedVoteEntity> findByVoterNameAndPlayerIdIsNull(String voterName);
     List<SyncedVoteEntity> findByPlayerIdIsNull();
     List<SyncedVoteEntity> findByPlayerId(Long playerId);

@@ -755,6 +755,8 @@ export interface WhatsappGroup {
   name: string
 }
 
+export type PollMode = 'TRAINING' | 'ONE_OFF' | 'GAME_DAY'
+
 export interface WhatsappPollResponse {
   id: number
   groupId: string
@@ -763,7 +765,8 @@ export interface WhatsappPollResponse {
   options: string[]
   weekday: Weekday | null
   time: string // "18:00:00"
-  trainingCoupled: boolean
+  mode: PollMode
+  gameDayId: number | null
   sendDate: string | null // ISO "2026-08-05" oder null (nur einmalig)
   enabled: boolean
   allowMultipleAnswers: boolean
@@ -779,7 +782,8 @@ export interface WhatsappPollRequest {
   options: string[]
   weekday: Weekday | null
   time: string
-  trainingCoupled: boolean
+  mode: PollMode
+  gameDayId: number | null
   sendDate: string | null
   enabled: boolean
   allowMultipleAnswers: boolean
@@ -788,6 +792,18 @@ export interface WhatsappPollRequest {
 
 export interface UnknownVoter {
   voterName: string
-  trainingId: number
-  trainingDate: string
+  source: 'TRAINING' | 'GAME_DAY'
+  targetId: number
+  date: string | null
+}
+
+export interface GameDayVotePreview {
+  pollExists: boolean
+  sent: boolean
+  toAdd: { id: number; name: string }[]
+  toRemove: { playerId: number; playerName: string; warnings: string[] }[]
+  optionVoters: { option: string; voters: string[] }[]
+  unknownVoters: string[]
+  voteCount: number
+  yesCount: number
 }

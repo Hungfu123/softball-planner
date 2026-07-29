@@ -48,7 +48,7 @@ const PLAYERS: Player[] = [
   { id: 2, name: 'Bert Muster', regular: true, defaultBattingOrder: 2, whatsappName: 'Bertman' },
 ]
 
-const VOTER: UnknownVoter = { voterName: 'Chris Wähler', trainingId: 5, trainingDate: '2026-07-10' }
+const VOTER: UnknownVoter = { voterName: 'Chris Wähler', source: 'TRAINING', targetId: 5, date: '2026-07-10' }
 
 const PLAYER_FROM_ASSIGN: Player = { id: 1, name: 'Anna Beispiel', regular: true, defaultBattingOrder: 1, whatsappName: 'Chris Wähler' }
 const PLAYER_FROM_NEW: Player = { id: 3, name: 'Chris Wähler', regular: false, defaultBattingOrder: null, whatsappName: 'Chris Wähler' }
@@ -67,7 +67,7 @@ describe('WhatsappVotersTab', () => {
     render(<WhatsappVotersTab />)
 
     expect(await screen.findByText('Chris Wähler')).toBeInTheDocument()
-    expect(screen.getByText('10.07.2026')).toBeInTheDocument()
+    expect(screen.getByText('Training 10.07.2026')).toBeInTheDocument()
   })
 
   it('zeigt Empty-State wenn keine unbekannten Wähler vorhanden sind', async () => {

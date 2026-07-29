@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
 import com.softball.domain.port.out.TrainingRepository;
@@ -43,7 +44,7 @@ class WhatsappPollServiceSendNowTest {
         p.setGroupId("123@g.us");
         p.setTitle("Wer kommt zum Training?");
         p.setOptions(List.of("Ja", "Nein"));
-        p.setTrainingCoupled(true);
+        p.setMode(PollMode.TRAINING);
         p.setWeekday(DayOfWeek.MONDAY);
         return p;
     }
@@ -78,7 +79,7 @@ class WhatsappPollServiceSendNowTest {
         p.setGroupId("123@g.us");
         p.setTitle("Grillabend am Samstag?");
         p.setOptions(List.of("Ja", "Nein"));
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(LocalDate.of(2026, 7, 25));
         p.setWeekday(null);
         p.setTime(java.time.LocalTime.of(18, 0));
@@ -93,6 +94,33 @@ class WhatsappPollServiceSendNowTest {
         assertThat(p.getLastSentMessageId()).isNull();
         assertThat(p.getLastSentTrainingId()).isNull();
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void sendNow_gameDay_stampsMessageIdOnly() {
+        // Spieltag: Testversand stempelt nur die Message-ID, lastSentAt bleibt leer, damit der
+        // geplante Versand (isDueOneOff) am sendDate trotzdem noch feuert (Task 5 liest die
+        // Message-ID bereits nach einem Testversand).
+        final WhatsappPoll p = new WhatsappPoll();
+        p.setId(3L);
+        p.setGroupId("123@g.us");
+        p.setTitle("CoSe Spieltag in Aachen dabei?");
+        p.setOptions(List.of("Ja", "Nein"));
+        p.setMode(PollMode.GAME_DAY);
+        p.setGameDayId(42L);
+        p.setSendDate(LocalDate.of(2026, 8, 2));
+        p.setTime(java.time.LocalTime.of(18, 0));
+
+        when(repository.findById(3L)).thenReturn(Optional.of(p));
+        when(sender.sendPoll(any(), any(), any(), anyBoolean(), any())).thenReturn("msg-77");
+        when(repository.save(any(WhatsappPoll.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.sendNow(3L);
+
+        assertThat(p.getLastSentMessageId()).isEqualTo("msg-77");
+        assertThat(p.getLastSentAt()).isNull();
+        assertThat(p.getLastSentTrainingId()).isNull();
+        verify(repository).save(p);
     }
 
     @Test

@@ -10,4 +10,5 @@ public interface WhatsappPollRepository {
     WhatsappPoll save(WhatsappPoll poll);
     void deleteById(Long id);
     boolean existsById(Long id);
+    Optional<WhatsappPoll> findByGameDayId(Long gameDayId);
 }

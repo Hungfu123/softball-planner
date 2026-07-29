@@ -44,6 +44,11 @@ public class WhatsappPollRepositoryAdapter implements WhatsappPollRepository {
     }
 
     @Override
+    public Optional<WhatsappPoll> findByGameDayId(final Long gameDayId) {
+        return repo.findByGameDayId(gameDayId).map(mapper::toDomain);
+    }
+
+    @Override
     public void deleteById(final Long id) { repo.deleteById(id); }
 
     @Override

@@ -1,9 +1,11 @@
 package com.softball.application;
 
+import com.softball.domain.model.GameDay;
 import com.softball.domain.model.Player;
 import com.softball.domain.model.SyncedVote;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.TrainingAttendance;
+import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.PlayerRepository;
 import com.softball.domain.port.out.SyncedVoteRepository;
 import com.softball.domain.port.out.TrainingAttendanceRepository;
@@ -27,28 +29,34 @@ import java.util.stream.Collectors;
 @Service
 public class VoterAssignmentService {
 
-    public record UnknownVoter(String voterName, Long trainingId, LocalDate trainingDate) {}
+    public record UnknownVoter(String voterName, String source, Long targetId, LocalDate date) {}
 
     private final PlayerRepository playerRepo;
     private final SyncedVoteRepository voteRepo;
     private final TrainingRepository trainingRepo;
     private final TrainingAttendanceRepository attendanceRepo;
+    private final GameDayRepository gameDayRepo;
 
     public VoterAssignmentService(final PlayerRepository playerRepo, final SyncedVoteRepository voteRepo,
-                                  final TrainingRepository trainingRepo, final TrainingAttendanceRepository attendanceRepo) {
+                                  final TrainingRepository trainingRepo, final TrainingAttendanceRepository attendanceRepo,
+                                  final GameDayRepository gameDayRepo) {
         this.playerRepo = playerRepo;
         this.voteRepo = voteRepo;
         this.trainingRepo = trainingRepo;
         this.attendanceRepo = attendanceRepo;
+        this.gameDayRepo = gameDayRepo;
     }
 
     @Transactional(readOnly = true)
     public List<UnknownVoter> unknownVoters() {
-        final List<SyncedVote> open = voteRepo.findByPlayerIdIsNull();
-        final Map<Long, LocalDate> dates = trainingRepo.findAllByOrderByDateDesc().stream()
+        final Map<Long, LocalDate> trainingDates = trainingRepo.findAllByOrderByDateDesc().stream()
             .collect(Collectors.toMap(Training::getId, Training::getDate, (a, b) -> a));
-        return open.stream()
-            .map(v -> new UnknownVoter(v.getVoterName(), v.getTrainingId(), dates.get(v.getTrainingId())))
+        final Map<Long, LocalDate> gameDayDates = gameDayRepo.findAll().stream()
+            .collect(Collectors.toMap(GameDay::getId, GameDay::getDate, (a, b) -> a));
+        return voteRepo.findByPlayerIdIsNull().stream()
+            .map(v -> v.getGameDayId() != null
+                ? new UnknownVoter(v.getVoterName(), "GAME_DAY", v.getGameDayId(), gameDayDates.get(v.getGameDayId()))
+                : new UnknownVoter(v.getVoterName(), "TRAINING", v.getTrainingId(), trainingDates.get(v.getTrainingId())))
             .toList();
     }
 
@@ -98,7 +106,9 @@ public class VoterAssignmentService {
         for (final SyncedVote vote : open) {
             vote.setPlayerId(player.getId());
             voteRepo.save(vote);
-            if (vote.isPresent()) {
+            // Spieltag-Stimmen werden hier NICHT gebucht: das Setzen der Anwesenheit loest die
+            // destruktive Kaskade aus und passiert nur bewusst ueber das Vorschau-Modal.
+            if (vote.isPresent() && vote.getTrainingId() != null) {
                 bookAttendance(vote.getTrainingId(), player);
             }
         }

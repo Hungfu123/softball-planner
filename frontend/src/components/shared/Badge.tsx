@@ -9,6 +9,7 @@ interface Props {
   size?: Size
   className?: string
   title?: string
+  ariaLabel?: string
 }
 
 const COLORS: Record<Color, string> = {
@@ -29,10 +30,11 @@ const SIZES: Record<Size, string> = {
  * Badge / Pill für Status, Counts, Labels.
  * Farben sind bewusst auf Navy/Red/Gray + Status (emerald/amber) beschränkt.
  */
-export function Badge({ children, color = 'gray', size = 'md', className = '', title }: Props) {
+export function Badge({ children, color = 'gray', size = 'md', className = '', title, ariaLabel }: Props) {
   return (
     <span
       title={title}
+      aria-label={ariaLabel}
       className={`inline-flex items-center font-semibold tabular-nums rounded-full ${COLORS[color]} ${SIZES[size]} ${className}`}
     >
       {children}

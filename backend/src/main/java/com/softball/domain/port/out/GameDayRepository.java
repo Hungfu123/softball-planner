@@ -15,4 +15,5 @@ public interface GameDayRepository {
     void deleteById(Long id);
     boolean existsBySeasonAndDate(Long seasonId, LocalDate date);
     boolean existsById(Long id);
+    List<GameDay> findAll();
 }

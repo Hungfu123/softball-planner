@@ -36,6 +36,8 @@ import {
   RotateCw,
   House,
   Building2,
+  Plus,
+  Minus,
 } from 'lucide-react'
 
 interface IconProps {
@@ -76,6 +78,8 @@ export const ArrowsSwap = (p: IconProps) => <LucideArrowLeftRight size={p.size ?
 export const RefreshIcon = (p: IconProps) => <RotateCw size={p.size ?? 16} className={p.className} />
 export const HomeStadiumIcon = (p: IconProps) => <House size={p.size ?? 16} className={p.className} />
 export const AwayIcon = (p: IconProps) => <Building2 size={p.size ?? 16} className={p.className} />
+export const PlusMark = (p: IconProps) => <Plus size={p.size ?? 16} className={p.className} />
+export const MinusMark = (p: IconProps) => <Minus size={p.size ?? 16} className={p.className} />
 
 // Custom SVGs — keine Lucide-Equivalente passen (Brand/Baseball-spezifisch)
 export function CrossBones({ size = 24, className }: IconProps) {

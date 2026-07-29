@@ -21,7 +21,7 @@ public class PollDueEvaluator {
         return true;
     }
 
-    /** Einmalig: genau am sendDate zur Uhrzeit fällig, solange noch nie gesendet. */
+    /** Einmalig (ONE_OFF und GAME_DAY): genau am sendDate zur Uhrzeit fällig, solange noch nie gesendet. */
     public boolean isDueOneOff(final WhatsappPoll poll, final LocalDateTime now) {
         if (poll == null || !poll.isEnabled() || poll.getSendDate() == null || poll.getTime() == null) return false;
         if (poll.getLastSentAt() != null) return false;

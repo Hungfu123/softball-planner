@@ -5,6 +5,7 @@ import com.softball.domain.model.GameDay;
 import com.softball.domain.model.GameStaff;
 import com.softball.domain.model.LineupEntry;
 import com.softball.application.GameDayService;
+import com.softball.application.GameDayVoteSyncService;
 import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
 import com.softball.application.LineupSuggestionService;
@@ -26,17 +27,20 @@ public class GameDayController {
     private final GameStaffService gameStaffService;
     private final LineupSuggestionService lineupSuggestionService;
     private final SubstitutionService substitutionService;
+    private final GameDayVoteSyncService voteSyncService;
 
     public GameDayController(final GameDayService gameDayService,
                              final LineupService lineupService,
                              final GameStaffService gameStaffService,
                              final LineupSuggestionService lineupSuggestionService,
-                             final SubstitutionService substitutionService) {
+                             final SubstitutionService substitutionService,
+                             final GameDayVoteSyncService voteSyncService) {
         this.gameDayService = gameDayService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
         this.lineupSuggestionService = lineupSuggestionService;
         this.substitutionService = substitutionService;
+        this.voteSyncService = voteSyncService;
     }
 
     @GetMapping("/seasons/{seasonId}/gamedays")
@@ -105,5 +109,24 @@ public class GameDayController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable final Long id) {
         gameDayService.delete(id);
+    }
+
+    @PostMapping("/gamedays/{id}/poll-votes/fetch")
+    public GameDayVotePreviewResponse fetchPollVotes(@PathVariable final Long id) {
+        return GameDayVotePreviewResponse.from(voteSyncService.fetchAndPreview(id));
+    }
+
+    @GetMapping("/gamedays/{id}/poll-votes")
+    public GameDayVotePreviewResponse storedPollVotes(@PathVariable final Long id) {
+        return GameDayVotePreviewResponse.from(voteSyncService.stored(id));
+    }
+
+    @PostMapping("/gamedays/{id}/poll-votes/apply")
+    public GameDayResponse applyPollVotes(@PathVariable final Long id,
+                                          @Valid @RequestBody final ApplyGameDayVotesRequest req) {
+        voteSyncService.apply(id, req.add(), req.remove());
+        // findByIdAsDto statt GameDayResponse.from(...): baut die Antwort inkl. echter
+        // At-Bat-Counts/Live-Scores auf, genau wie der Schwester-Endpoint setAvailablePlayers.
+        return gameDayService.findByIdAsDto(id);
     }
 }
