@@ -133,6 +133,39 @@ class GameDayVoteSyncServiceTest {
     }
 
     @Test
+    void shouldThrowWhenOptionsChangedAfterSendAndNoVoteMatchesAnyOption() {
+        // Options wurden nach dem Versand editiert (Tippfehler-Korrektur o.ä.) — die abgerufenen
+        // Stimmen tragen noch den alten Optionstext und matchen keine der aktuellen Optionen.
+        givenPoll();
+        givenConnected();
+        givenGameDayWithAvailable(max, ben);
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(
+            new WhatsappVote("Max M.", List.of("Jaaa ich will spielen")),
+            new WhatsappVote("Ben B.", List.of("Jaaa ich will spielen"))));
+
+        assertThatThrownBy(() -> service.fetchAndPreview(7L))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("Antwortoptionen passen nicht zu den abgegebenen Stimmen");
+        // Darf bei diesem Fehlerfall auch nichts (falsch) persistieren.
+        verify(voteRepo, never()).save(any());
+    }
+
+    @Test
+    void shouldNotThrowWhenNobodyVotedYet() {
+        // Legitimer Fall: Umfrage ist raus, aber noch niemand hat abgestimmt (voteCount == 0).
+        givenPoll();
+        givenConnected();
+        givenGameDayWithAvailable(ben);
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of());
+
+        final var preview = service.fetchAndPreview(7L);
+
+        assertThat(preview.voteCount()).isZero();
+        assertThat(preview.toAdd()).isEmpty();
+        assertThat(preview.toRemove()).isEmpty();
+    }
+
+    @Test
     void shouldReturnStoredVotesWithoutFetching() {
         givenPoll();
         when(voteRepo.findByGameDayId(7L)).thenReturn(List.of(

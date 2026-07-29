@@ -67,6 +67,14 @@ public class GameDayVoteSyncService {
         final Set<Long> available = gameDay.getAvailablePlayers().stream().map(Player::getId).collect(Collectors.toSet());
 
         final GameDayVoteMirror.Result result = mirror.compute(poll.getOptions(), votes, available, byName);
+        // Wenn Stimmen da sind, aber keine einzige zu einer der aktuellen Optionen passt, wurden die
+        // Optionstexte vermutlich nach dem Versand geändert — sonst würde jeder bekannte, aktuell
+        // anwesende Voter fälschlich als "abgesagt" (toRemove) erscheinen und die Kaskade auslösen.
+        final int matchedVotes = result.optionVoters().stream().mapToInt(ov -> ov.voterNames().size()).sum();
+        if (result.voteCount() > 0 && matchedVotes == 0) {
+            throw new BusinessValidationException(
+                "Die Antwortoptionen passen nicht zu den abgegebenen Stimmen — wurden sie nach dem Versand geändert?");
+        }
         persist(gameDayId, votes, byName, poll.getOptions());
         log.info("Spieltag {}: {} Stimmen abgerufen, +{} / -{}", gameDayId, result.voteCount(),
                 result.toAdd().size(), result.toRemove().size());
