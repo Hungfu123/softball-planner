@@ -97,6 +97,33 @@ class WhatsappPollServiceSendNowTest {
     }
 
     @Test
+    void sendNow_gameDay_stampsMessageIdOnly() {
+        // Spieltag: Testversand stempelt nur die Message-ID, lastSentAt bleibt leer, damit der
+        // geplante Versand (isDueOneOff) am sendDate trotzdem noch feuert (Task 5 liest die
+        // Message-ID bereits nach einem Testversand).
+        final WhatsappPoll p = new WhatsappPoll();
+        p.setId(3L);
+        p.setGroupId("123@g.us");
+        p.setTitle("CoSe Spieltag in Aachen dabei?");
+        p.setOptions(List.of("Ja", "Nein"));
+        p.setMode(PollMode.GAME_DAY);
+        p.setGameDayId(42L);
+        p.setSendDate(LocalDate.of(2026, 8, 2));
+        p.setTime(java.time.LocalTime.of(18, 0));
+
+        when(repository.findById(3L)).thenReturn(Optional.of(p));
+        when(sender.sendPoll(any(), any(), any(), anyBoolean(), any())).thenReturn("msg-77");
+        when(repository.save(any(WhatsappPoll.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.sendNow(3L);
+
+        assertThat(p.getLastSentMessageId()).isEqualTo("msg-77");
+        assertThat(p.getLastSentAt()).isNull();
+        assertThat(p.getLastSentTrainingId()).isNull();
+        verify(repository).save(p);
+    }
+
+    @Test
     void sendNow_setsLastSentTrainingId() {
         final WhatsappPoll p = poll();
         final Training training = mock(Training.class);
