@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
-class SyncedVoteGameDayIT {
+class SyncedVoteGameDayIntegrationTest {
 
     @Autowired
     private SyncedVoteRepository voteRepo;
