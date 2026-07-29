@@ -25,7 +25,8 @@ public class GameDayVoteMirror {
     public record OptionVoters(String option, List<String> voterNames) {}
 
     public record Result(List<Long> toAdd, List<Long> toRemove, List<String> unknownVoters,
-                         List<OptionVoters> optionVoters, int voteCount, int yesCount) {}
+                         List<OptionVoters> optionVoters, int voteCount, int yesCount,
+                         List<String> unmatchedVoters) {}
 
     public Result compute(final List<String> pollOptions, final List<WhatsappVote> votes,
                           final Set<Long> currentlyAvailableIds, final Map<String, Player> byWhatsappName) {
@@ -36,6 +37,7 @@ public class GameDayVoteMirror {
 
         final Map<Long, Boolean> yesByPlayer = new LinkedHashMap<>();
         final Set<String> unknown = new LinkedHashSet<>();
+        final Set<String> unmatched = new LinkedHashSet<>();
         final Map<String, List<String>> votersByOption = new LinkedHashMap<>();
         for (final String option : options) votersByOption.put(option, new ArrayList<>());
 
@@ -52,6 +54,7 @@ public class GameDayVoteMirror {
             for (final String option : options) {
                 if (contains(vote, option)) votersByOption.get(option).add(voterName);
             }
+            if (hasUnmatchedOption(vote, options)) unmatched.add(voterName);
 
             final Player player = players.get(voterName.toLowerCase());
             if (player == null) {
@@ -73,7 +76,18 @@ public class GameDayVoteMirror {
         votersByOption.forEach((option, voters) -> optionVoters.add(new OptionVoters(option, List.copyOf(voters))));
 
         return new Result(List.copyOf(toAdd), List.copyOf(toRemove), List.copyOf(unknown),
-                List.copyOf(optionVoters), voteCount, yesCount);
+                List.copyOf(optionVoters), voteCount, yesCount, List.copyOf(unmatched));
+    }
+
+    /**
+     * Eine Stimme gilt als "Options-Drift" (Antworttexte nach Versand geaendert), wenn sie
+     * mindestens eine gewaehlte Option nennt, die zu KEINER aktuellen Antwortoption passt.
+     * Eine leere Optionsliste (Stimme zurueckgezogen) ist dagegen legitim und zaehlt nicht.
+     */
+    private boolean hasUnmatchedOption(final WhatsappVote vote, final List<String> options) {
+        if (vote.options() == null || vote.options().isEmpty()) return false;
+        final Set<String> normalizedOptions = options.stream().map(this::normalize).collect(java.util.stream.Collectors.toSet());
+        return vote.options().stream().anyMatch(o -> o != null && !normalizedOptions.contains(normalize(o)));
     }
 
     private boolean pickedYes(final WhatsappVote vote, final String yesOption) {

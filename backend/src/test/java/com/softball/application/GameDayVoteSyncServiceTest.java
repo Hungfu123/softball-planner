@@ -151,6 +151,58 @@ class GameDayVoteSyncServiceTest {
     }
 
     @Test
+    void shouldThrowWhenOnlyOneOptionTextDriftedEvenIfAnotherVoteStillMatches() {
+        // Live reproduzierter Fall: nur "Ja"-Option umformuliert, "Nein" blieb unveraendert.
+        // Der alte Guard (matchedVotes == 0) schlief hier, weil die Nein-Stimme noch matchte —
+        // waehrend die beiden Ja-Stimmen (alter Text) faelschlich als Absage erschienen waeren.
+        poll = new WhatsappPoll();
+        poll.setId(1L);
+        poll.setMode(PollMode.GAME_DAY);
+        poll.setGameDayId(7L);
+        poll.setLastSentMessageId("msg-1");
+        poll.setOptions(List.of("Ja, ich will spielen!", "Ich habe ein Auto", "Nein"));
+        when(pollRepo.findByGameDayId(7L)).thenReturn(Optional.of(poll));
+        givenConnected();
+        givenGameDayWithAvailable(max, ben);
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(
+            new WhatsappVote("Max M.", List.of("Ja ich will spielen")),   // alter Text der Ja-Option
+            new WhatsappVote("Ben B.", List.of("Ja ich will spielen")),  // alter Text der Ja-Option
+            new WhatsappVote("Sandra W.", List.of("Nein"))));            // Nein-Option unveraendert
+
+        assertThatThrownBy(() -> service.fetchAndPreview(7L))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("Antwortoptionen passen nicht zu den abgegebenen Stimmen");
+        verify(voteRepo, never()).save(any());
+    }
+
+    @Test
+    void shouldNotThrowWhenAllVotesMatchCurrentOptions() {
+        givenPoll();
+        givenConnected();
+        givenGameDayWithAvailable(ben);
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(
+            new WhatsappVote("Max M.", List.of("Ja ich will spielen")),
+            new WhatsappVote("Ben B.", List.of("Nein"))));
+
+        final var preview = service.fetchAndPreview(7L);
+
+        assertThat(preview.toAdd()).extracting(GameDayVoteSyncService.PlayerRef::name).containsExactly("Max");
+    }
+
+    @Test
+    void shouldNotThrowWhenVoterWithdrewAllOptions() {
+        // Leere Optionsliste ist eine legitime Stimmruecknahme, kein Options-Drift.
+        givenPoll();
+        givenConnected();
+        givenGameDayWithAvailable(ben);
+        when(sender.fetchVotes("msg-1")).thenReturn(List.of(new WhatsappVote("Ben B.", List.of())));
+
+        final var preview = service.fetchAndPreview(7L);
+
+        assertThat(preview.toRemove()).extracting(GameDayVoteSyncService.Removal::playerName).containsExactly("Ben");
+    }
+
+    @Test
     void shouldNotThrowWhenNobodyVotedYet() {
         // Legitimer Fall: Umfrage ist raus, aber noch niemand hat abgestimmt (voteCount == 0).
         givenPoll();
