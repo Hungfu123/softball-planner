@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-type Color = 'navy' | 'red' | 'gray' | 'emerald' | 'amber' | 'blue' | 'green'
+type Color = 'navy' | 'red' | 'gray' | 'emerald' | 'amber' | 'blue'
 type Size = 'sm' | 'md'
 
 interface Props {
@@ -19,7 +19,6 @@ const COLORS: Record<Color, string> = {
   emerald: 'bg-emerald-100 text-emerald-700',
   amber: 'bg-amber-100 text-amber-700',
   blue: 'bg-blue-100 text-blue-700',
-  green: 'bg-green-100 text-green-700',
 }
 
 const SIZES: Record<Size, string> = {

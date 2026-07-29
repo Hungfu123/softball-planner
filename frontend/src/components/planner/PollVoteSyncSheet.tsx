@@ -119,7 +119,7 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
               <LoadingSkeleton variant="list" rows={2} />
             ) : preview && (
               <div className="flex flex-wrap gap-2">
-                <Badge color="green" ariaLabel={`${preview.yesCount} Spieler spielen`}>
+                <Badge color="emerald" ariaLabel={`${preview.yesCount} Spieler spielen`}>
                   {preview.yesCount} Spieler spielen
                 </Badge>
                 {preview.optionVoters.slice(1).map(o => (
@@ -152,9 +152,9 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
                         {preview.toAdd.map(p => (
                           <div
                             key={p.id}
-                            className="flex flex-wrap items-baseline gap-x-2 border-l-4 border-green-500 bg-green-50/50 rounded-r-lg px-3 py-2"
+                            className="flex flex-wrap items-baseline gap-x-2 border-l-4 border-emerald-500 bg-emerald-50/50 rounded-r-lg px-3 py-2"
                           >
-                            <PlusMark size={14} className="text-green-600 shrink-0" />
+                            <PlusMark size={14} className="text-emerald-600 shrink-0" />
                             <span className="text-sm font-semibold text-navy-900">{p.name}</span>
                           </div>
                         ))}
