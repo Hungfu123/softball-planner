@@ -72,16 +72,17 @@ CREATE UNIQUE INDEX uq_synced_vote_gameday ON whatsapp_synced_vote (game_day_id,
 Die bestehende `uq_synced_vote (training_id, voter_name)` bleibt; Postgres behandelt
 NULL-Werte in Unique-Constraints als verschieden, Spieltag-Zeilen kollidieren also nicht.
 
-**Nur Ja-Stimmen werden gespeichert.** Für Spieltage landet pro Ja-Voter eine Zeile mit
-`present = true` in der Tabelle; Auto-, Helfer- und Nein-Stimmen werden nicht persistiert.
-Der Abruf ersetzt den Stand für den Spieltag: Zeilen von Wählern, die nicht mehr Ja
-gewählt haben, werden gelöscht — sonst würde ein zurückgezogener unbekannter Voter das
-Badge „unbekannte Wähler" dauerhaft stehen lassen.
+**Gespeichert wird jede Stimme, genau wie beim Training** — pro Voter eine Zeile mit
+`present` = „hat die erste Option gewählt". Der Abruf macht Upsert (bestehende
+`upsertVote`-Logik, nur mit `gameDayId` statt `trainingId`), kein Löschen. Damit braucht es
+keinen neuen Löschpfad, und unbekannte WhatsApp-Namen werden auch von Nein-Wählern gelernt:
+Alias einmal zuordnen, gilt für alle künftigen Umfragen.
+
+Nicht gespeichert werden die **einzelnen gewählten Optionen** — „Fährt"/„Hilft" kommt live
+aus dem Fetch ins Vorschau-Modal, dafür braucht es keine Spalte.
 
 Zweck der Persistenz ist allein die Zuordnung unbekannter WhatsApp-Namen. Die
-Mirror-Berechnung arbeitet immer auf dem **Live-Fetch**, nie auf der DB — ein Wähler, der
-von Ja weggeht, erscheint im Fetch als Nicht-Ja und wird deshalb entfernt, auch wenn seine
-Zeile schon weg ist.
+Mirror-Berechnung arbeitet immer auf dem **Live-Fetch**, nie auf der DB.
 
 ### Domain
 
@@ -131,11 +132,10 @@ Kein automatischer Sync. Die Kaskade in `setAvailablePlayers` löscht Lineup-Ein
 Base-Coach-Zuweisungen — das darf nur nach Bestätigung passieren. Daher zwei Endpoints:
 
 - `POST /api/gamedays/{id}/poll-votes/fetch` — holt Stimmen via
-  `sender.fetchVotes(poll.lastSentMessageId)`, schreibt die Ja-Voter in
-  `whatsapp_synced_vote` (und löscht dort weggefallene) und liefert die Vorschau
-  einschließlich der nur-live vorhandenen Fährt-/Hilft-/Nein-Listen. Schreibt **nicht** in
-  `availablePlayers`. POST statt GET, weil der Abruf persistiert.
-- `GET /api/gamedays/{id}/poll-votes` — liest nur die gespeicherten Ja-Stimmen (für das
+  `sender.fetchVotes(poll.lastSentMessageId)`, macht Upsert in `whatsapp_synced_vote` und
+  liefert die Vorschau einschließlich der nur-live vorhandenen Fährt-/Hilft-Listen.
+  Schreibt **nicht** in `availablePlayers`. POST statt GET, weil der Abruf persistiert.
+- `GET /api/gamedays/{id}/poll-votes` — liest nur die gespeicherten Stimmen (für das
   Badge „unbekannte Wähler" ohne WhatsApp-Abfrage).
 - `POST /api/gamedays/{id}/poll-votes/apply` — nimmt das Delta aus der Vorschau
   (`{ add: [playerId], remove: [playerId] }`), rechnet es auf die **aktuelle**
@@ -268,8 +268,8 @@ Backend:
 - `GameDayVoteSyncServiceTest`: Vorschau schreibt nicht in `availablePlayers`, Apply
   rechnet das Delta auf den aktuellen Stand (parallel hinzugefügter Spieler bleibt drin),
   Apply geht über `AvailabilityService`, Warnungen für betroffene Lineup-/Staff-Einträge,
-  Abruf bei nicht verbundenem Sidecar wirft statt leere Vorschau zu liefern, weggefallene
-  Ja-Stimmen werden aus `whatsapp_synced_vote` gelöscht.
+  Abruf bei nicht verbundenem Sidecar wirft statt leere Vorschau zu liefern, Upsert setzt
+  `present` bei Stimmwechsel von true auf false.
 - `PollDueEvaluatorTest`: `GAME_DAY` verhält sich wie `ONE_OFF`.
 - `WhatsappPollServiceTest`: Validierung `GAME_DAY`, Modus-Wechsel verwirft `gameDayId` +
   Sendehistorie, „Jetzt senden" stempelt Message-ID.
