@@ -1,5 +1,5 @@
-import type { GameDayResponse, WhatsappPollRequest } from '@/types'
-import { isoDate } from './pollSchedule'
+import type { GameDayResponse, WhatsappPollRequest, Weekday } from '@/types'
+import { isoDate, WEEKDAYS } from './pollSchedule'
 
 type TemplateFields = Pick<WhatsappPollRequest, 'title' | 'message' | 'options' | 'allowMultipleAnswers'>
 
@@ -40,6 +40,24 @@ export function homeTemplate(gameDay: GameDayResponse): TemplateFields {
   }
 }
 
+/**
+ * Trainingsumfrage: nur zwei Optionen. WICHTIG — die erste Option muss wörtlich "Ja" lauten:
+ * `VotePresenceEvaluator.isPresent` bucht Anwesenheit nur, wenn `"ja".equalsIgnoreCase(option.trim())`
+ * gilt (Groß-/Kleinschreibung und umgebende Leerzeichen egal, sonst nichts). Eine Formulierung wie
+ * "Ja, ich komme" würde vom Backend NICHT mehr als Zusage erkannt — bitte nicht "schöner"
+ * umformulieren, ohne `VotePresenceEvaluator` entsprechend anzupassen. (Zur Abgrenzung: beim
+ * Spieltag-Poll gilt eine andere Regel — dort zählt die erste Option unabhängig vom Text.)
+ */
+export function trainingTemplate(weekday: Weekday): TemplateFields {
+  const label = WEEKDAYS.find(w => w.value === weekday)?.label ?? weekday
+  return {
+    title: `Wer kommt am ${label} zum Training?`,
+    message: null,
+    options: ['Ja', 'Nein'],
+    allowMultipleAnswers: false,
+  }
+}
+
 /** 7 Tage vor dem Spieltag, aber nie in der Vergangenheit (Backend lehnt das ab). */
 export function defaultSendDate(gameDayDate: string, todayIso: string): string {
   const d = new Date(gameDayDate + 'T00:00:00')
@@ -49,9 +67,13 @@ export function defaultSendDate(gameDayDate: string, todayIso: string): string {
   return iso < todayIso ? todayIso : iso
 }
 
-export type TemplateKind = 'AWAY' | 'HOME'
+/** Vorlagen, die an einem Spieltag hängen (Kontext = GameDayResponse). */
+export type GameDayTemplateKind = 'AWAY' | 'HOME'
+/** Alle Vorlagen-Arten — TRAINING hängt am Wochentag, nicht an einem Spieltag, und hat daher
+ * eigene Pendants zu den folgenden Funktionen (siehe isTrainingTemplateUnmodified etc.). */
+export type TemplateKind = GameDayTemplateKind | 'TRAINING'
 
-const TEMPLATE_FNS: Record<TemplateKind, (gameDay: GameDayResponse) => TemplateFields> = {
+const TEMPLATE_FNS: Record<GameDayTemplateKind, (gameDay: GameDayResponse) => TemplateFields> = {
   AWAY: awayTemplate,
   HOME: homeTemplate,
 }
@@ -69,13 +91,13 @@ function templateFieldsEqual(a: TemplateFields, b: TemplateFields): boolean {
  * Wird gebraucht, um bei einem bereits gespeicherten Spieltag-Poll ohne eigenen Merker
  * abzuleiten, ob er vorlagen-verwaltet ist (siehe PollEditor).
  */
-export function matchingTemplateKind(fields: TemplateFields, gameDay: GameDayResponse): TemplateKind | null {
-  return (Object.keys(TEMPLATE_FNS) as TemplateKind[]).find(kind => templateFieldsEqual(fields, TEMPLATE_FNS[kind](gameDay))) ?? null
+export function matchingTemplateKind(fields: TemplateFields, gameDay: GameDayResponse): GameDayTemplateKind | null {
+  return (Object.keys(TEMPLATE_FNS) as GameDayTemplateKind[]).find(kind => templateFieldsEqual(fields, TEMPLATE_FNS[kind](gameDay))) ?? null
 }
 
 /** true, wenn Frage/Antworten/Nachricht/Mehrfachauswahl noch exakt der `kind`-Vorlage für
  * `gameDay` entsprechen — der Nutzer hat also nichts editiert. */
-export function isTemplateUnmodified(kind: TemplateKind, fields: TemplateFields, gameDay: GameDayResponse): boolean {
+export function isTemplateUnmodified(kind: GameDayTemplateKind, fields: TemplateFields, gameDay: GameDayResponse): boolean {
   return templateFieldsEqual(fields, TEMPLATE_FNS[kind](gameDay))
 }
 
@@ -85,7 +107,7 @@ export function isTemplateUnmodified(kind: TemplateKind, fields: TemplateFields,
  * gewählten Spieltag). Individuell editierte Felder bleiben unangetastet — Prüfung pro Feld.
  */
 export function refreshTemplateDateFields(
-  kind: TemplateKind,
+  kind: GameDayTemplateKind,
   current: Pick<WhatsappPollRequest, 'title' | 'message'>,
   oldGameDay: GameDayResponse,
   newGameDay: GameDayResponse,
@@ -96,6 +118,24 @@ export function refreshTemplateDateFields(
     title: current.title === oldFields.title ? newFields.title : current.title,
     message: current.message === oldFields.message ? newFields.message : current.message,
   }
+}
+
+/** true, wenn Frage/Antworten/Nachricht/Mehrfachauswahl noch exakt der Trainings-Vorlage für
+ * `weekday` entsprechen — Pendant zu isTemplateUnmodified für den Spieltag. Wird auch genutzt,
+ * um bei einem bereits gespeicherten Trainings-Poll ohne eigenen Merker abzuleiten, ob er
+ * vorlagen-verwaltet ist (siehe PollEditor). */
+export function isTrainingTemplateUnmodified(fields: TemplateFields, weekday: Weekday): boolean {
+  return templateFieldsEqual(fields, trainingTemplate(weekday))
+}
+
+/**
+ * Bei einem Trainingstag-Wechsel: Frage, die noch unverändert vom Trainings-Vorlagentext für
+ * `oldWeekday` stammt, für `newWeekday` neu erzeugen (Wochentag in der Frage folgt) — Pendant zu
+ * refreshTemplateDateFields für den Spieltag. Die Trainings-Vorlage hat keine Nachricht, daher
+ * genügt hier der Titel.
+ */
+export function refreshTrainingTemplateTitle(currentTitle: string, oldWeekday: Weekday, newWeekday: Weekday): string {
+  return currentTitle === trainingTemplate(oldWeekday).title ? trainingTemplate(newWeekday).title : currentTitle
 }
 
 /** Neutraler Ausgangszustand für Frage/Antworten/Nachricht/Mehrfachauswahl — wie ein frischer

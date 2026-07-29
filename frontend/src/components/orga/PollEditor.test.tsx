@@ -239,4 +239,66 @@ describe('PollEditor', () => {
 
     expect(screen.getByDisplayValue('Freihand-Titel')).toBeInTheDocument()
   })
+
+  it('Trainingsumfrage-Vorlage erscheint nur im Trainings-Modus', async () => {
+    render(<PollEditor {...props} />)
+    expect(screen.queryByRole('button', { name: 'Trainingsumfrage' })).toBeNull() // Einmalig
+
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+    expect(screen.queryByRole('button', { name: 'Trainingsumfrage' })).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
+    expect(screen.getByRole('button', { name: 'Trainingsumfrage' })).toBeInTheDocument()
+  })
+
+  it('Trainingsumfrage-Vorlage füllt Frage und die zwei Optionen Ja/Nein', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
+    await userEvent.selectOptions(screen.getByLabelText('Trainingstag'), 'TUESDAY')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Trainingsumfrage' }))
+
+    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt am Dienstag zum Training?')
+    expect(screen.getByDisplayValue('Ja')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Nein')).toBeInTheDocument()
+    expect(screen.getByLabelText(/Mehrfachauswahl/)).not.toBeChecked()
+  })
+
+  it('Trainingsumfrage-Vorlage angewandt, dann Trainingstag gewechselt: Frage nennt den neuen Tag', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
+    await userEvent.selectOptions(screen.getByLabelText('Trainingstag'), 'TUESDAY')
+    await userEvent.click(screen.getByRole('button', { name: 'Trainingsumfrage' }))
+    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt am Dienstag zum Training?')
+
+    await userEvent.selectOptions(screen.getByLabelText('Trainingstag'), 'FRIDAY')
+
+    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt am Freitag zum Training?')
+  })
+
+  it('Trainingsumfrage-Vorlage angewandt, dann Modus auf Einmalig: unveränderter Inhalt wird neutral zurückgesetzt', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Trainingsumfrage' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Einmalig' }))
+
+    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('')
+    expect(screen.getByDisplayValue('Ja')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Nein')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Vielleicht')).toBeInTheDocument()
+  })
+
+  it('Trainingsumfrage-Vorlage angewandt, Frage selbst umgeschrieben, dann Modus auf Einmalig: eigener Text bleibt stehen', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Trainingsumfrage' }))
+    const titleField = screen.getByPlaceholderText('z.B. Wer kommt zum Training?')
+    await userEvent.clear(titleField)
+    await userEvent.type(titleField, 'Mein eigener Titel')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Einmalig' }))
+
+    expect(screen.getByDisplayValue('Mein eigener Titel')).toBeInTheDocument()
+  })
 })
