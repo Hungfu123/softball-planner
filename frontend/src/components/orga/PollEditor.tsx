@@ -4,14 +4,22 @@ import { PlusCircle, XMark } from '@/icons'
 import type { WhatsappPollRequest, WhatsappGroup, Weekday, TrainingResponse, GameDayResponse, PollMode } from '@/types'
 import { coupledSendDate, WEEKDAYS, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
 import {
-  awayTemplate, homeTemplate, defaultSendDate,
+  awayTemplate, homeTemplate, trainingTemplate, defaultSendDate,
   matchingTemplateKind, isTemplateUnmodified, refreshTemplateDateFields, NEUTRAL_TEMPLATE_FIELDS,
-  type TemplateKind,
+  isTrainingTemplateUnmodified, refreshTrainingTemplateTitle,
+  type GameDayTemplateKind,
 } from './pollTemplates'
 
 const JS_TO_WEEKDAY: Record<number, Weekday> = {
   0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
 }
+
+/** Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat — und für welchen
+ * Bezug: Spieltag-Vorlagen hängen an einem Spieltag (gameDayId), die Trainings-Vorlage an einem
+ * Wochentag (weekday). Siehe templateOrigin in PollEditor. */
+type TemplateOrigin =
+  | { kind: GameDayTemplateKind; gameDayId: number }
+  | { kind: 'TRAINING'; weekday: Weekday }
 
 const inputCls =
   'w-full border border-cream-300 rounded-lg px-3 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
@@ -39,17 +47,22 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
   // Spieltag-Wechsel die Vorbelegung nicht mehr.
   const [dateTouched, setDateTouched] = useState(false)
   // Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat und für welchen
-  // Spieltag — damit ein Spieltag- oder Modus-Wechsel weiß, ob der Text noch "unverändert" ist
-  // (dann darf er nachziehen bzw. zurückgesetzt werden) oder vom Nutzer bereits editiert wurde
-  // (dann bleibt er unangetastet). Bei einem bereits gespeicherten Spieltag-Poll gibt es keinen
-  // Merker aus einer vorherigen Sitzung — hier wird abgeleitet, ob Frage+Nachricht (noch) exakt
-  // einer der beiden Vorlagen für seinen Spieltag entsprechen.
-  const [templateOrigin, setTemplateOrigin] = useState<{ kind: TemplateKind; gameDayId: number } | null>(() => {
-    if (draft.mode !== 'GAME_DAY' || draft.gameDayId == null) return null
-    const gd = gameDays.find(g => g.id === draft.gameDayId)
-    if (!gd) return null
-    const kind = matchingTemplateKind(draft, gd)
-    return kind ? { kind, gameDayId: draft.gameDayId } : null
+  // Spieltag bzw. Trainingstag — damit ein Spieltag-, Trainingstag- oder Modus-Wechsel weiß, ob
+  // der Text noch "unverändert" ist (dann darf er nachziehen bzw. zurückgesetzt werden) oder vom
+  // Nutzer bereits editiert wurde (dann bleibt er unangetastet). Bei einem bereits gespeicherten
+  // Poll gibt es keinen Merker aus einer vorherigen Sitzung — hier wird abgeleitet, ob
+  // Frage+Nachricht (noch) exakt einer der Vorlagen für seinen Spieltag/Trainingstag entsprechen.
+  const [templateOrigin, setTemplateOrigin] = useState<TemplateOrigin | null>(() => {
+    if (draft.mode === 'GAME_DAY' && draft.gameDayId != null) {
+      const gd = gameDays.find(g => g.id === draft.gameDayId)
+      if (!gd) return null
+      const kind = matchingTemplateKind(draft, gd)
+      return kind ? { kind, gameDayId: draft.gameDayId } : null
+    }
+    if (draft.mode === 'TRAINING' && draft.weekday) {
+      return isTrainingTemplateUnmodified(draft, draft.weekday) ? { kind: 'TRAINING', weekday: draft.weekday } : null
+    }
+    return null
   })
 
   const switchMode = (poll: boolean) => {
@@ -77,13 +90,18 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
     // Spieltagwechsel.
     setDateTouched(false)
 
-    // Befund 1: Vorlagen-Inhalt gehört nur zum Spieltag-Modus. Beim Verlassen auf den
-    // neutralen Ausgangszustand zurücksetzen — aber nur, wenn Frage/Antworten/Nachricht/
-    // Mehrfachauswahl noch exakt der Vorlage entsprechen. Hat der Nutzer etwas davon editiert,
-    // bleibt alles stehen (Datenverlust wäre schlimmer als inhaltlich unpassender Text).
-    const leavingUnmodifiedTemplate = form.mode === 'GAME_DAY' && mode !== 'GAME_DAY'
-      && !!templateOrigin && !!selectedGameDay
+    // Befund 1: Vorlagen-Inhalt gehört nur zu seinem eigenen Modus (Spieltag- bzw. Trainings-
+    // Vorlage). Beim Verlassen des Modus auf den neutralen Ausgangszustand zurücksetzen — aber
+    // nur, wenn Frage/Antworten/Nachricht/Mehrfachauswahl noch exakt der Vorlage entsprechen. Hat
+    // der Nutzer etwas davon editiert, bleibt alles stehen (Datenverlust wäre schlimmer als
+    // inhaltlich unpassender Text).
+    const leavingUnmodifiedGameDayTemplate = form.mode === 'GAME_DAY' && mode !== 'GAME_DAY'
+      && !!templateOrigin && templateOrigin.kind !== 'TRAINING' && !!selectedGameDay
       && isTemplateUnmodified(templateOrigin.kind, form, selectedGameDay)
+    const leavingUnmodifiedTrainingTemplate = form.mode === 'TRAINING' && mode !== 'TRAINING'
+      && !!templateOrigin && templateOrigin.kind === 'TRAINING'
+      && isTrainingTemplateUnmodified(form, templateOrigin.weekday)
+    const leavingUnmodifiedTemplate = leavingUnmodifiedGameDayTemplate || leavingUnmodifiedTrainingTemplate
     if (leavingUnmodifiedTemplate) setTemplateOrigin(null)
 
     setForm(prev => {
@@ -127,13 +145,25 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
       // Befund 2: Frage/Nachricht, die noch unverändert von der zuletzt angewandten Vorlage
       // stammen, für den neu gewählten Spieltag neu erzeugen (Datum/Wochentag/Ort folgen).
       // Individuell editierte Felder bleiben unangetastet — Prüfung pro Feld.
-      if (templateOrigin && gd) {
+      if (templateOrigin && templateOrigin.kind !== 'TRAINING' && gd) {
         const oldGameDay = gameDays.find(g => g.id === templateOrigin.gameDayId)
         if (oldGameDay) return { ...next, ...refreshTemplateDateFields(templateOrigin.kind, next, oldGameDay, gd) }
       }
       return next
     })
-    if (templateOrigin && gd) setTemplateOrigin({ kind: templateOrigin.kind, gameDayId: gd.id })
+    if (templateOrigin && templateOrigin.kind !== 'TRAINING' && gd) setTemplateOrigin({ kind: templateOrigin.kind, gameDayId: gd.id })
+  }
+
+  /** Trainingstag-Wechsel: analog zu pickGameDay — Frage, die noch unverändert von der
+   * Trainings-Vorlage stammt, für den neuen Wochentag neu erzeugen. Individuell editierter Text
+   * bleibt unangetastet. */
+  const pickWeekday = (weekday: Weekday) => {
+    setForm(prev => (
+      templateOrigin?.kind === 'TRAINING'
+        ? { ...prev, weekday, title: refreshTrainingTemplateTitle(prev.title, templateOrigin.weekday, weekday) }
+        : { ...prev, weekday }
+    ))
+    if (templateOrigin?.kind === 'TRAINING') setTemplateOrigin({ kind: 'TRAINING', weekday })
   }
 
   const selectedGameDay = gameDays.find(g => g.id === form.gameDayId) ?? null
@@ -164,11 +194,20 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
     draft.mode === 'GAME_DAY' && form.mode === 'GAME_DAY' && form.gameDayId !== draft.gameDayId
   const willLoseSendHistory = !!lastSentAt && (modeLeavesCoupling || gameDayChangedWithinMode)
 
-  const applyTemplate = (kind: TemplateKind) => {
+  const applyTemplate = (kind: GameDayTemplateKind) => {
     if (!selectedGameDay) return
     const template = kind === 'AWAY' ? awayTemplate : homeTemplate
     setForm(prev => ({ ...prev, ...template(selectedGameDay) }))
     setTemplateOrigin({ kind, gameDayId: selectedGameDay.id })
+    // Vorlage füllt Frage + Antwortoptionen — ohne den Umfrage-Tab würde buildRequest() das
+    // wieder verwerfen (withPoll === false) und der Klick wäre wirkungslos.
+    setWithPoll(true)
+  }
+
+  const applyTrainingTemplate = () => {
+    const weekday = form.weekday ?? 'MONDAY'
+    setForm(prev => ({ ...prev, ...trainingTemplate(weekday) }))
+    setTemplateOrigin({ kind: 'TRAINING', weekday })
     // Vorlage füllt Frage + Antwortoptionen — ohne den Umfrage-Tab würde buildRequest() das
     // wieder verwerfen (withPoll === false) und der Klick wäre wirkungslos.
     setWithPoll(true)
@@ -387,18 +426,29 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
         </div>
 
         {form.mode === 'TRAINING' ? (
-          <div className="grid grid-cols-2 gap-3 items-end">
-            <div>
-              <label className={labelCls}>Trainingstag</label>
-              <select value={form.weekday ?? 'MONDAY'} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
-                {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
+          <>
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <div>
+                <label className={labelCls} htmlFor="poll-weekday">Trainingstag</label>
+                <select id="poll-weekday" value={form.weekday ?? 'MONDAY'} onChange={e => pickWeekday(e.target.value as Weekday)} className={inputCls}>
+                  {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Sende-Uhrzeit (am Vortag)</label>
+                <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
+              </div>
             </div>
             <div>
-              <label className={labelCls}>Sende-Uhrzeit (am Vortag)</label>
-              <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
+              <label className={labelCls}>Vorlage</label>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={applyTrainingTemplate}>
+                  Trainingsumfrage
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Füllt Frage und Antworten (Ja/Nein) für den gewählten Trainingstag — danach frei editierbar.</p>
             </div>
-          </div>
+          </>
         ) : (
           <>
             {form.mode === 'GAME_DAY' && (
