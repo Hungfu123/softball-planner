@@ -26,9 +26,14 @@ export function UnknownVoterRow({ voterName, subline, players, busy = false, onA
     onAssign(playerId)
   }
 
-  const handleCreate = (name: string) => {
-    setCreatingPlayer(false)
-    onCreate(name)
+  const handleCreate = async (name: string) => {
+    try {
+      await onCreate(name)
+      setCreatingPlayer(false)
+    } catch {
+      // Fehler wurde bereits vom Aufrufer angezeigt (Toast) — Modal bleibt offen,
+      // damit der eingetippte Name für einen Retry erhalten bleibt.
+    }
   }
 
   return (
