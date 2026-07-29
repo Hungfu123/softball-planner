@@ -39,7 +39,7 @@ export function GameDayPlanner() {
   const lineup = useLineup()
   const lineupSets = useLineupSets(gameDayId)
   const staff = useStaff()
-  const { players } = usePlayers()
+  const { players, reload: reloadPlayers } = usePlayers()
   const toast = useToastContext()
   const [searchParams] = useSearchParams()
   const initialTab = Math.max(0, Number(searchParams.get('game') ?? 0))
@@ -454,21 +454,28 @@ export function GameDayPlanner() {
     }
   }
 
+  // Gemeinsamer Nachlauf für jeden Weg, der die Anwesenheitsliste ändert (manuelles
+  // Anwesend-Modal UND WhatsApp-Stimmen-Übernahme): lokales Lineup/Staff auf den neuen
+  // Anwesenheitsstand bringen, sonst zeigt das Grid für die aktive Ansicht veraltete
+  // Einträge (Spieler steht noch im Lineup, obwohl die DB ihn bereits entfernt hat).
+  const syncAfterAvailabilityChange = async (availablePlayerIds: number[]) => {
+    const availableSet = new Set(availablePlayerIds)
+    lineup.removeUnavailable(availableSet)
+    // Backend cascade cleaned the removed player from ALL games (lineup + staff,
+    // batting orders renumbered). removeUnavailable only fixed the active tab, so
+    // drop the cached snapshots of the other games — sonst zeigt ein Tab-Wechsel
+    // (z.B. auf Spiel 2) den veralteten Stand und man muss neu laden.
+    lineup.invalidateCache()
+    if (activeGame) {
+      staff.load(activeGame.id)
+    }
+    await refreshStats()
+  }
+
   const handleSetAvailablePlayers = async (playerIds: number[]) => {
     try {
       await setAvailablePlayers(playerIds)
-      // Remove lineup/staff entries for players no longer available (instead of full reload)
-      const availableSet = new Set(playerIds)
-      lineup.removeUnavailable(availableSet)
-      // Backend cascade cleaned the removed player from ALL games (lineup + staff,
-      // batting orders renumbered). removeUnavailable only fixed the active tab, so
-      // drop the cached snapshots of the other games — sonst zeigt ein Tab-Wechsel
-      // (z.B. auf Spiel 2) den veralteten Stand und man muss neu laden.
-      lineup.invalidateCache()
-      if (activeGame) {
-        staff.load(activeGame.id)
-      }
-      await refreshStats()
+      await syncAfterAvailabilityChange(playerIds)
       setShowPlayersModal(false)
       toast.show('Spieler aktualisiert')
     } catch (e: unknown) {
@@ -1092,9 +1099,14 @@ export function GameDayPlanner() {
         <PollVoteSyncSheet
           target={{ type: 'GAME_DAY', id: gameDay.id }}
           players={players}
+          onPlayerCreated={reloadPlayers}
           onApplied={async () => {
             const updated = await api.getGameDay(gameDay.id)
             setGameDay(updated)
+            // Backend hat die Anwesenheit bereits geschrieben (inkl. Kaskade) — lokales
+            // Lineup/Staff muss denselben Nachlauf wie beim manuellen Anwesend-Modal fahren,
+            // sonst zeigt das Grid Spieler weiter an, die die Umfrage-Übernahme entfernt hat.
+            await syncAfterAvailabilityChange(updated.availablePlayers.map(p => p.id))
             setPollStatus(await api.getGameDayPollVotes(gameDay.id).catch(() => null))
           }}
           onClose={() => setShowPollSync(false)}
