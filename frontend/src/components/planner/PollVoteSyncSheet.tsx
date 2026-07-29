@@ -25,6 +25,10 @@ interface PollVoteSyncSheetProps {
   players: Player[]
   onApplied: () => void | Promise<void>
   onClose: () => void
+  /** Nach dem Anlegen eines neuen Spielers über die Unbekannt-Zuordnung — Aufrufer lädt
+   * damit z.B. die Spieler-Liste des Planners neu, sonst kennen andere unbekannte Wähler
+   * den frisch angelegten Spieler erst nach einem Reload. */
+  onPlayerCreated?: () => void | Promise<void>
 }
 
 /**
@@ -33,7 +37,7 @@ interface PollVoteSyncSheetProps {
  * inline zuordnen. Schreibt erst auf Knopfdruck (Übernehmen) — nie automatisch, weil
  * AvailabilityService.setAvailablePlayers beim Entfernen kaskadierend aufräumt.
  */
-export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollVoteSyncSheetProps) {
+export function PollVoteSyncSheet({ target, players, onApplied, onClose, onPlayerCreated }: PollVoteSyncSheetProps) {
   const { preview, loading, applying, error, reload, apply } = useGameDayPollSync(target.id)
   const toast = useToastContext()
   const navigate = useNavigate()
@@ -59,6 +63,7 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
     try {
       await assignVoter(voterName, playerId)
       await reload()
+      toast.show(`„${voterName}" zugeordnet`)
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     } finally {
@@ -71,6 +76,11 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
     try {
       await assignNewVoter(voterName, playerName)
       await reload()
+      // Neuer Spieler existiert jetzt serverseitig — der Planner kennt ihn erst nach
+      // einem Reload seiner eigenen Spieler-Liste (sonst fehlt er in den übrigen
+      // Zuordnungs-Dropdowns bis zum nächsten Reload der Seite).
+      await onPlayerCreated?.()
+      toast.show(`„${playerName}" angelegt und „${voterName}" zugeordnet`)
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
       throw e
@@ -127,7 +137,10 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
                   {preview.yesCount} Spieler spielen
                 </Badge>
                 {preview.optionVoters.slice(1).map(o => (
-                  <Badge key={o.option} color="gray">{o.option}: {o.voters.length}</Badge>
+                  <Badge key={o.option} color="gray" className="max-w-full" title={o.option}>
+                    <span className="truncate min-w-0 max-w-[9rem] sm:max-w-[16rem]">{o.option}</span>
+                    <span className="shrink-0 ml-1">: {o.voters.length}</span>
+                  </Badge>
                 ))}
               </div>
             )}
@@ -143,6 +156,18 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
                     description="Die Umfrage wurde gesendet, aber niemand hat abgestimmt."
                     icon={<CrossBones size={40} />}
                   />
+                ) : preview.yesCount === 0 ? (
+                  <EmptyState
+                    title="Niemand hat zugesagt"
+                    description="Es gibt Stimmen zu dieser Umfrage, aber niemand hat mit Ja geantwortet — die Anwesenheit bleibt unverändert."
+                    icon={<CrossBones size={40} />}
+                  />
+                ) : !hasDelta && preview.unknownVoters.length > 0 ? (
+                  <EmptyState
+                    title="Ja-Stimmen ohne Zuordnung"
+                    description="Es gibt zugesagte Wähler, die noch keinem Spieler zugeordnet sind. Ordne sie unten zu, um sie in die Anwesenheit zu übernehmen."
+                    icon={<CrossBones size={40} />}
+                  />
                 ) : !hasDelta ? (
                   <EmptyState
                     title="Anwesenheit ist aktuell"
@@ -153,12 +178,14 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
                   <>
                     {preview.toAdd.length > 0 && (
                       <div className="space-y-1">
+                        <SectionHeader title={`Neu anwesend (${preview.toAdd.length})`} size="sm" />
                         {preview.toAdd.map(p => (
                           <div
                             key={p.id}
                             className="flex flex-wrap items-baseline gap-x-2 border-l-4 border-emerald-500 bg-emerald-50/50 rounded-r-lg px-3 py-2"
                           >
-                            <PlusMark size={14} className="text-emerald-600 shrink-0" />
+                            <span aria-hidden="true"><PlusMark size={14} className="text-emerald-600 shrink-0" /></span>
+                            <span className="sr-only">Neu dabei:</span>
                             <span className="text-sm font-semibold text-navy-900">{p.name}</span>
                           </div>
                         ))}
@@ -166,13 +193,15 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
                     )}
                     {preview.toRemove.length > 0 && (
                       <div className="space-y-1">
+                        <SectionHeader title={`Nicht mehr dabei (${preview.toRemove.length})`} size="sm" />
                         {preview.toRemove.map(p => (
                           <div
                             key={p.playerId}
                             className="border-l-4 border-softball-red-500 bg-softball-red-50/50 rounded-r-lg px-3 py-2"
                           >
                             <div className="flex flex-wrap items-baseline gap-x-2">
-                              <MinusMark size={14} className="text-softball-red-600 shrink-0" />
+                              <span aria-hidden="true"><MinusMark size={14} className="text-softball-red-600 shrink-0" /></span>
+                              <span className="sr-only">Nicht mehr dabei:</span>
                               <span className="text-sm font-semibold text-navy-900">{p.playerName}</span>
                             </div>
                             {p.warnings.map((w, i) => (
@@ -206,11 +235,14 @@ export function PollVoteSyncSheet({ target, players, onApplied, onClose }: PollV
                       />
                     ))}
                   </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Zuordnungen gelten sofort und für alle Umfragen — änderbar unter Spieler → WhatsApp.
+                  </p>
                 </section>
               )}
 
               {/* 4. Optionen */}
-              <CollapsibleSection title="Wer hat was gewählt">
+              <CollapsibleSection title="Wer hat was gewählt" defaultOpen count={preview.voteCount}>
                 <div className="space-y-4">
                   {preview.optionVoters.map((o, i) => (
                     <div key={o.option}>
