@@ -103,8 +103,8 @@ function toRequest(p: WhatsappPollResponse): WhatsappPollRequest {
 }
 
 type EditorState =
-  | { mode: 'create'; draft: WhatsappPollRequest }
-  | { mode: 'edit'; id: number; draft: WhatsappPollRequest }
+  | { mode: 'create'; draft: WhatsappPollRequest; lastSentAt: string | null }
+  | { mode: 'edit'; id: number; draft: WhatsappPollRequest; lastSentAt: string | null }
   | null
 
 export function WhatsappPollPage() {
@@ -145,8 +145,8 @@ export function WhatsappPollPage() {
     }
   }, [connected, reload])
 
-  const openCreate = () => setEditor({ mode: 'create', draft: blankDraft(groups) })
-  const openEdit = (p: WhatsappPollResponse) => setEditor({ mode: 'edit', id: p.id, draft: toRequest(p) })
+  const openCreate = () => setEditor({ mode: 'create', draft: blankDraft(groups), lastSentAt: null })
+  const openEdit = (p: WhatsappPollResponse) => setEditor({ mode: 'edit', id: p.id, draft: toRequest(p), lastSentAt: p.lastSentAt })
 
   const handleSave = async (request: WhatsappPollRequest) => {
     if (!editor) return
@@ -316,6 +316,7 @@ export function WhatsappPollPage() {
       {editor && (
         <PollEditor
           draft={editor.draft}
+          lastSentAt={editor.lastSentAt}
           groups={groups}
           trainings={trainings}
           gameDays={gameDays}

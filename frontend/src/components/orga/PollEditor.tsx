@@ -15,6 +15,9 @@ const labelCls = 'block text-xs font-bold uppercase tracking-wide text-navy-500 
 
 export interface PollEditorProps {
   draft: WhatsappPollRequest
+  /** Zeitpunkt des letzten echten Versands — null = noch nie gesendet. Steuert die Warnungen
+   * vor Optionsänderungen (Punkt 2) und Modus-/Spieltag-Wechsel (Punkt 3). */
+  lastSentAt: string | null
   groups: WhatsappGroup[]
   trainings: TrainingResponse[]
   gameDays: GameDayResponse[]
@@ -23,7 +26,7 @@ export interface PollEditorProps {
   onClose: () => void
 }
 
-export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave, onClose }: PollEditorProps) {
+export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, saving, onSave, onClose }: PollEditorProps) {
   const [form, setForm] = useState<WhatsappPollRequest>(draft)
   const [withPoll, setWithPoll] = useState(draft.options.length >= 2)
   // Nachricht pro Tab getrennt: beim Umschalten Text des jeweils anderen Tabs merken/tauschen.
@@ -95,6 +98,32 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
   }
 
   const selectedGameDay = gameDays.find(g => g.id === form.gameDayId) ?? null
+
+  // Punkt 5: nur kommende Spieltage anbieten (aufsteigend, mit Jahr) — sonst stehen nach ein
+  // paar Saisons Dutzende Einträge mit identischem Kurzlabel ("Sa, 12.04.") in der Liste.
+  // Zeigt ein bereits gespeicherter Poll auf einen inzwischen vergangenen Spieltag, muss der
+  // trotzdem auswählbar bleiben, sonst lässt sich der Poll im Editor nicht mehr speichern.
+  const selectableGameDays = [...gameDays]
+    .filter(gd => gd.date >= todayIso() || gd.id === form.gameDayId)
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  // Punkt 2: Optionstexte sind nach dem Versand die einzige Zuordnung zu abgegebenen Stimmen
+  // (Backend matched über den Text, nicht über eine ID) — ändert man sie danach, laufen
+  // bereits abgegebene Stimmen ins Leere. Nur warnen, nicht sperren (siehe Report): das Backend
+  // bricht einen späteren Stimmen-Abruf bei Drift ohnehin kontrolliert mit Fehlermeldung ab,
+  // und ein Sperren bräuchte einen eigenen Entsperr-Weg im Editor, den es noch nicht gibt.
+  const alreadySentGameDayPoll = form.mode === 'GAME_DAY' && !!lastSentAt
+
+  // Punkt 3: das Backend nullt lastSentAt/lastSentMessageId, wenn ein gesendeter Poll den
+  // Modus verlässt (TRAINING/GAME_DAY -> etwas anderes) oder — bei GAME_DAY — den Spieltag
+  // wechselt (siehe WhatsappPollService.update). Damit sind bereits abgegebene Stimmen nicht
+  // mehr abrufbar; der Editor soll das vorher erklären, nicht nur der leere Button danach.
+  const modeLeavesCoupling =
+    (draft.mode === 'TRAINING' && form.mode !== 'TRAINING') ||
+    (draft.mode === 'GAME_DAY' && form.mode !== 'GAME_DAY')
+  const gameDayChangedWithinMode =
+    draft.mode === 'GAME_DAY' && form.mode === 'GAME_DAY' && form.gameDayId !== draft.gameDayId
+  const willLoseSendHistory = !!lastSentAt && (modeLeavesCoupling || gameDayChangedWithinMode)
 
   const applyTemplate = (template: (gameDay: GameDayResponse) => Pick<WhatsappPollRequest, 'title' | 'message' | 'options' | 'allowMultipleAnswers'>) => {
     if (!selectedGameDay) return
@@ -202,6 +231,13 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
                 <PlusCircle size={14} /> Option
               </button>
             </div>
+            {alreadySentGameDayPoll && (
+              <p className="mb-2 text-xs font-semibold text-softball-red-600 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">
+                ⚠ Diese Umfrage wurde bereits gesendet — die Stimmen-Zuordnung läuft über den Optionstext.
+                Änderst du eine Option, passen bereits abgegebene Stimmen nicht mehr dazu. Für eine korrigierte
+                Umfrage: Sende-Sperre zurücksetzen und neu senden.
+              </p>
+            )}
             <div className="space-y-2">
               {form.options.map((option, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -296,6 +332,12 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
                 ? 'Sendet einmalig zum gewählten Zeitpunkt.'
                 : 'Sendet einmalig 7 Tage vor dem Spieltag. Die Stimmen lassen sich am Spieltag in die Anwesenheit übernehmen.'}
           </p>
+          {willLoseSendHistory && (
+            <p className="mt-1 text-xs font-semibold text-softball-red-600 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">
+              ⚠ Diese Umfrage wurde bereits gesendet. Speicherst du den Modus- oder Spieltag-Wechsel,
+              gehen die abgegebenen Stimmen dafür verloren — sie lassen sich danach nicht mehr abrufen.
+            </p>
+          )}
         </div>
 
         {form.mode === 'TRAINING' ? (
@@ -324,9 +366,9 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
                     className={inputCls}
                   >
                     <option value="">Spieltag wählen…</option>
-                    {gameDays.map(gd => (
+                    {selectableGameDays.map(gd => (
                       <option key={gd.id} value={gd.id}>
-                        {new Date(gd.date + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                        {new Date(gd.date + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}
                         {gd.label ? ` · ${gd.label}` : ''}{gd.location ? ` · ${gd.location}` : ''}
                       </option>
                     ))}
@@ -348,7 +390,9 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
             )}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className={labelCls} htmlFor="poll-send-date">Datum</label>
+                <label className={labelCls} htmlFor="poll-send-date">
+                  {form.mode === 'GAME_DAY' ? 'Sendedatum' : 'Datum'}
+                </label>
                 <input
                   id="poll-send-date"
                   type="date"
@@ -358,20 +402,20 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
                 />
               </div>
               <div>
-                <label className={labelCls}>Uhrzeit</label>
+                <label className={labelCls}>{form.mode === 'GAME_DAY' ? 'Sende-Uhrzeit' : 'Uhrzeit'}</label>
                 <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
               </div>
             </div>
           </>
         )}
 
-        <SendPreview form={form} trainings={trainings} />
+        <SendPreview form={form} trainings={trainings} gameDay={selectedGameDay} />
       </div>
     </ResponsiveSheet>
   )
 }
 
-function SendPreview({ form, trainings }: { form: WhatsappPollRequest; trainings: TrainingResponse[] }) {
+function SendPreview({ form, trainings, gameDay }: { form: WhatsappPollRequest; trainings: TrainingResponse[]; gameDay: GameDayResponse | null }) {
   const t: TrainingLite[] = trainings.map(x => ({ date: x.date, cancelled: x.cancelled }))
   if (form.mode === 'TRAINING') {
     if (!form.weekday) return null
@@ -388,10 +432,27 @@ function SendPreview({ form, trainings }: { form: WhatsappPollRequest; trainings
   if (past) {
     return <p className="text-xs font-semibold text-softball-red-600 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">⚠ Zeitpunkt liegt in der Vergangenheit — es wird nicht gesendet.</p>
   }
+  // Punkt 8: die Klammer "(7 Tage vor dem Spieltag)" stimmt nur, wenn wirklich 7 Tage
+  // dazwischen liegen — defaultSendDate klemmt bei einem zu nahen Spieltag auf heute, dann
+  // log die Klammer aber trotzdem "7 Tage" behauptet. Stattdessen die tatsächliche Differenz
+  // zeigen bzw. erklären, dass der Spieltag dafür zu nah ist.
+  let gameDaySuffix = ''
+  if (form.mode === 'GAME_DAY' && gameDay) {
+    const gameDayMidnight = new Date(gameDay.date + 'T00:00:00').getTime()
+    const sendDateMidnight = new Date(form.sendDate + 'T00:00:00').getTime()
+    const diffDays = Math.round((gameDayMidnight - sendDateMidnight) / 86400000)
+    if (diffDays === 7) {
+      gameDaySuffix = ' (7 Tage vor dem Spieltag)'
+    } else if (diffDays < 7) {
+      gameDaySuffix = ` (Spieltag ist zu nah für 7 Tage Vorlauf — nur ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tage'} vorher)`
+    } else {
+      gameDaySuffix = ` (${diffDays} Tage vor dem Spieltag)`
+    }
+  }
   return (
     <p className="text-xs font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2">
       → Wird am {d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })} um {d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} einmalig gesendet
-      {form.mode === 'GAME_DAY' ? ' (7 Tage vor dem Spieltag)' : ''}.
+      {gameDaySuffix}.
     </p>
   )
 }
