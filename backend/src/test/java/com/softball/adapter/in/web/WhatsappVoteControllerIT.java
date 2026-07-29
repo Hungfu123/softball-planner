@@ -77,8 +77,9 @@ class WhatsappVoteControllerIT {
         mockMvc.perform(get("/api/orga/whatsapp/unknown-voters"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[?(@.voterName == 'Layla')]").exists())
-            .andExpect(jsonPath("$[?(@.voterName == 'Layla')].trainingId").value(training.getId().intValue()))
-            .andExpect(jsonPath("$[?(@.voterName == 'Layla')].trainingDate").value("2026-07-20"));
+            .andExpect(jsonPath("$[?(@.voterName == 'Layla')].source").value("TRAINING"))
+            .andExpect(jsonPath("$[?(@.voterName == 'Layla')].targetId").value(training.getId().intValue()))
+            .andExpect(jsonPath("$[?(@.voterName == 'Layla')].date").value("2026-07-20"));
     }
 
     @Test
