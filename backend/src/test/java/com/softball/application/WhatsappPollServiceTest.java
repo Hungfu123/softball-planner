@@ -2,6 +2,7 @@ package com.softball.application;
 
 import com.softball.TestcontainersConfig;
 import com.softball.adapter.out.persistence.repository.SpringWhatsappPollRepository;
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.WhatsappPoll;
 import com.softball.domain.port.out.WhatsappPollRepository;
 import com.softball.shared.exception.BusinessValidationException;
@@ -45,7 +46,7 @@ class WhatsappPollServiceTest {
         p.setGroupName("Dead Sox Team");
         p.setTitle("Wer kommt zum Training morgen?");
         p.setOptions(List.of("Ja", "Nein", "Vielleicht"));
-        p.setTrainingCoupled(true);
+        p.setMode(PollMode.TRAINING);
         p.setWeekday(DayOfWeek.TUESDAY);
         p.setTime(LocalTime.of(18, 0));
         p.setEnabled(true);
@@ -90,12 +91,12 @@ class WhatsappPollServiceTest {
         pollRepository.save(saved);
 
         final WhatsappPoll toOneOff = sample();
-        toOneOff.setTrainingCoupled(false);
+        toOneOff.setMode(PollMode.ONE_OFF);
         toOneOff.setSendDate(LocalDate.of(2026, 8, 5));
         service.update(saved.getId(), toOneOff);
 
         final WhatsappPoll after = service.findById(saved.getId());
-        assertThat(after.isTrainingCoupled()).isFalse();
+        assertThat(after.getMode()).isEqualTo(PollMode.ONE_OFF);
         assertThat(after.getWeekday()).isNull();
         assertThat(after.getLastSentTrainingId()).isNull();
         assertThat(after.getLastSentMessageId()).isNull();
@@ -107,7 +108,7 @@ class WhatsappPollServiceTest {
         // C2: ein bereits gesendeter einmaliger Poll wird auf ein neues Zukunftsdatum umgeplant
         // → lastSentAt muss weg, sonst feuert isDueOneOff nie wieder.
         final WhatsappPoll p = sample();
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setWeekday(null);
         p.setSendDate(LocalDate.now().plusDays(3));
         final WhatsappPoll saved = service.create(p);
@@ -116,7 +117,7 @@ class WhatsappPollServiceTest {
         pollRepository.save(saved);
 
         final WhatsappPoll upd = sample();
-        upd.setTrainingCoupled(false);
+        upd.setMode(PollMode.ONE_OFF);
         upd.setWeekday(null);
         upd.setSendDate(LocalDate.now().plusDays(10));
         service.update(saved.getId(), upd);
@@ -131,18 +132,18 @@ class WhatsappPollServiceTest {
     void update_oneOffToCoupled_switchesFieldsAndNullsSendDate() {
         // Rückrichtung: einmalig -> Trainingsumfrage. validate koppelt (weekday nötig) + nullt sendDate.
         final WhatsappPoll p = sample();
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setWeekday(null);
         p.setSendDate(LocalDate.now().plusDays(5));
         final WhatsappPoll saved = service.create(p);
-        assertThat(saved.isTrainingCoupled()).isFalse();
+        assertThat(saved.getMode()).isEqualTo(PollMode.ONE_OFF);
         assertThat(saved.getSendDate()).isNotNull();
 
         final WhatsappPoll toCoupled = sample(); // sample() ist gekoppelt mit weekday TUESDAY
         service.update(saved.getId(), toCoupled);
 
         final WhatsappPoll after = service.findById(saved.getId());
-        assertThat(after.isTrainingCoupled()).isTrue();
+        assertThat(after.getMode()).isEqualTo(PollMode.TRAINING);
         assertThat(after.getWeekday()).isEqualTo(DayOfWeek.TUESDAY);
         assertThat(after.getSendDate()).isNull();
     }
@@ -177,7 +178,7 @@ class WhatsappPollServiceTest {
     @Test
     void create_coupledWithoutWeekday_throws() {
         final WhatsappPoll p = sample();
-        p.setTrainingCoupled(true);
+        p.setMode(PollMode.TRAINING);
         p.setWeekday(null);
         assertThrows(BusinessValidationException.class, () -> service.create(p));
     }
@@ -185,7 +186,7 @@ class WhatsappPollServiceTest {
     @Test
     void create_oneOffWithoutSendDate_throws() {
         final WhatsappPoll p = sample();
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(null);
         assertThrows(BusinessValidationException.class, () -> service.create(p));
     }
@@ -193,7 +194,7 @@ class WhatsappPollServiceTest {
     @Test
     void create_oneOff_clearsWeekday() {
         final WhatsappPoll p = sample();
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(LocalDate.of(2026, 8, 5));
         p.setWeekday(DayOfWeek.MONDAY);
         final WhatsappPoll saved = service.create(p);

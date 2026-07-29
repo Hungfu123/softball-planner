@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappAccountStatus;
 import com.softball.domain.model.WhatsappGroup;
@@ -69,7 +70,7 @@ public class WhatsappPollService {
     @Transactional
     public WhatsappPoll update(final Long id, final WhatsappPoll incoming) {
         final WhatsappPoll existing = findById(id);
-        final boolean wasCoupled = existing.isTrainingCoupled();
+        final boolean wasCoupled = existing.getMode() == PollMode.TRAINING;
         final LocalDate oldSendDate = existing.getSendDate();
         existing.setGroupId(incoming.getGroupId());
         existing.setGroupName(incoming.getGroupName());
@@ -80,15 +81,16 @@ public class WhatsappPollService {
         existing.setEnabled(incoming.isEnabled());
         existing.setAllowMultipleAnswers(incoming.isAllowMultipleAnswers());
         existing.setMessage(incoming.getMessage());
-        existing.setTrainingCoupled(incoming.isTrainingCoupled());
+        existing.setMode(incoming.getMode());
+        existing.setGameDayId(incoming.getGameDayId());
         existing.setSendDate(incoming.getSendDate());
         // Wechsel coupled -> einmalig: alte Trainings-Kopplung + Sendehistorie verwerfen, sonst
         // würde der Vote-Sync auf dem alten Training weiterbuchen und der Poll gälte als "gesendet".
-        if (wasCoupled && !existing.isTrainingCoupled()) {
+        if (wasCoupled && existing.getMode() != PollMode.TRAINING) {
             existing.setLastSentAt(null);
             existing.setLastSentMessageId(null);
             existing.setLastSentTrainingId(null);
-        } else if (!existing.isTrainingCoupled()
+        } else if (existing.getMode() != PollMode.TRAINING
                 && !java.util.Objects.equals(oldSendDate, existing.getSendDate())
                 && existing.getSendDate() != null
                 && !existing.getSendDate().isBefore(LocalDate.now(clock))) {
@@ -136,7 +138,7 @@ public class WhatsappPollService {
         final WhatsappPoll p = findById(id);
         final String messageId = sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions(),
                 p.isAllowMultipleAnswers(), p.getMessage());
-        if (p.isTrainingCoupled()) {
+        if (p.getMode() == PollMode.TRAINING) {
             // Trainingsumfrage: Test stempelt Sende-Metadaten (sonst findet der Vote-Sync den Poll
             // nicht) + koppelt ans nächste Training für die Voter-Zuordnung.
             p.setLastSentAt(LocalDateTime.now(clock));
@@ -149,7 +151,7 @@ public class WhatsappPollService {
         // Einmalig: echter Test — Nachricht ist raus, aber lastSentAt bewusst NICHT setzen, damit
         // der geplante Einmal-Versand (isDueOneOff) danach trotzdem noch feuert. Nichts zu speichern.
         log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}, coupled={}",
-                p.getTitle(), id, messageId, p.isTrainingCoupled());
+                p.getTitle(), id, messageId, p.getMode() == PollMode.TRAINING);
     }
 
     @Transactional
@@ -176,7 +178,7 @@ public class WhatsappPollService {
         if (p.getTime() == null) {
             throw new BusinessValidationException("Uhrzeit muss gesetzt sein");
         }
-        if (p.isTrainingCoupled()) {
+        if (p.getMode() == PollMode.TRAINING) {
             if (p.getWeekday() == null) {
                 throw new BusinessValidationException("Trainingstag muss gesetzt sein");
             }

@@ -22,7 +22,8 @@ public class WhatsappPoll {
     private LocalDateTime lastSentAt;
     private String lastSentMessageId;
     private Long lastSentTrainingId;
-    private boolean trainingCoupled = false;
+    private PollMode mode = PollMode.TRAINING;
+    private Long gameDayId;
     private LocalDate sendDate;
 
     public WhatsappPoll() {}
@@ -55,8 +56,10 @@ public class WhatsappPoll {
     public void setLastSentMessageId(final String v) { this.lastSentMessageId = v; }
     public Long getLastSentTrainingId() { return lastSentTrainingId; }
     public void setLastSentTrainingId(final Long v) { this.lastSentTrainingId = v; }
-    public boolean isTrainingCoupled() { return trainingCoupled; }
-    public void setTrainingCoupled(final boolean v) { this.trainingCoupled = v; }
+    public PollMode getMode() { return mode; }
+    public void setMode(final PollMode v) { this.mode = v != null ? v : PollMode.TRAINING; }
+    public Long getGameDayId() { return gameDayId; }
+    public void setGameDayId(final Long v) { this.gameDayId = v; }
     public LocalDate getSendDate() { return sendDate; }
     public void setSendDate(final LocalDate v) { this.sendDate = v; }
 }

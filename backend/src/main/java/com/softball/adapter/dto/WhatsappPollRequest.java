@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.WhatsappPoll;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -19,7 +20,8 @@ public record WhatsappPollRequest(
         boolean enabled,
         boolean allowMultipleAnswers,
         String message,
-        boolean trainingCoupled,
+        @NotNull PollMode mode,
+        Long gameDayId,
         LocalDate sendDate) {
 
     public WhatsappPoll toDomain() {
@@ -33,7 +35,8 @@ public record WhatsappPollRequest(
         p.setEnabled(enabled);
         p.setAllowMultipleAnswers(allowMultipleAnswers);
         p.setMessage(message != null && !message.isBlank() ? message.trim() : null);
-        p.setTrainingCoupled(trainingCoupled);
+        p.setMode(mode);
+        p.setGameDayId(gameDayId);
         p.setSendDate(sendDate);
         return p;
     }

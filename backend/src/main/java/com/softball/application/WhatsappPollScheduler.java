@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
 import com.softball.domain.port.out.TrainingRepository;
@@ -63,7 +64,7 @@ public class WhatsappPollScheduler {
     public void tick(final LocalDateTime now) {
         final List<Training> trainings = trainingRepo.findAllByOrderByDateDesc();
         for (final WhatsappPoll poll : repository.findAll()) {
-            if (poll.isTrainingCoupled()) {
+            if (poll.getMode() == PollMode.TRAINING) {
                 final Optional<Training> target = resolver.resolve(trainings, poll.getWeekday(), poll.getSkipDates(), now.toLocalDate());
                 if (target.isEmpty() || !evaluator.isDue(poll, target.get(), now)) continue;
                 send(poll, now, target.get().getId());
