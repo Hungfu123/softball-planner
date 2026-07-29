@@ -48,3 +48,62 @@ export function defaultSendDate(gameDayDate: string, todayIso: string): string {
   const iso = isoDate(d)
   return iso < todayIso ? todayIso : iso
 }
+
+export type TemplateKind = 'AWAY' | 'HOME'
+
+const TEMPLATE_FNS: Record<TemplateKind, (gameDay: GameDayResponse) => TemplateFields> = {
+  AWAY: awayTemplate,
+  HOME: homeTemplate,
+}
+
+function templateFieldsEqual(a: TemplateFields, b: TemplateFields): boolean {
+  return a.title === b.title
+    && a.message === b.message
+    && a.allowMultipleAnswers === b.allowMultipleAnswers
+    && a.options.length === b.options.length
+    && a.options.every((o, i) => o === b.options[i])
+}
+
+/**
+ * Ordnet Felder einer der beiden Vorlagen für den Spieltag zu (oder null, wenn keine passt).
+ * Wird gebraucht, um bei einem bereits gespeicherten Spieltag-Poll ohne eigenen Merker
+ * abzuleiten, ob er vorlagen-verwaltet ist (siehe PollEditor).
+ */
+export function matchingTemplateKind(fields: TemplateFields, gameDay: GameDayResponse): TemplateKind | null {
+  return (Object.keys(TEMPLATE_FNS) as TemplateKind[]).find(kind => templateFieldsEqual(fields, TEMPLATE_FNS[kind](gameDay))) ?? null
+}
+
+/** true, wenn Frage/Antworten/Nachricht/Mehrfachauswahl noch exakt der `kind`-Vorlage für
+ * `gameDay` entsprechen — der Nutzer hat also nichts editiert. */
+export function isTemplateUnmodified(kind: TemplateKind, fields: TemplateFields, gameDay: GameDayResponse): boolean {
+  return templateFieldsEqual(fields, TEMPLATE_FNS[kind](gameDay))
+}
+
+/**
+ * Bei einem Spieltagwechsel: Frage/Nachricht, die noch unverändert vom `kind`-Vorlagentext für
+ * `oldGameDay` stammen, für `newGameDay` neu erzeugen (Datum/Wochentag/Ort folgen dem neu
+ * gewählten Spieltag). Individuell editierte Felder bleiben unangetastet — Prüfung pro Feld.
+ */
+export function refreshTemplateDateFields(
+  kind: TemplateKind,
+  current: Pick<WhatsappPollRequest, 'title' | 'message'>,
+  oldGameDay: GameDayResponse,
+  newGameDay: GameDayResponse,
+): Pick<WhatsappPollRequest, 'title' | 'message'> {
+  const oldFields = TEMPLATE_FNS[kind](oldGameDay)
+  const newFields = TEMPLATE_FNS[kind](newGameDay)
+  return {
+    title: current.title === oldFields.title ? newFields.title : current.title,
+    message: current.message === oldFields.message ? newFields.message : current.message,
+  }
+}
+
+/** Neutraler Ausgangszustand für Frage/Antworten/Nachricht/Mehrfachauswahl — wie ein frischer
+ * Editor sie hätte (siehe blankDraft in WhatsappPollPage). Genutzt, wenn der Spieltag-Modus mit
+ * unverändertem Vorlagen-Inhalt verlassen wird (der Inhalt passt in anderen Modi nicht mehr). */
+export const NEUTRAL_TEMPLATE_FIELDS: TemplateFields = {
+  title: '',
+  options: ['Ja', 'Nein', 'Vielleicht'],
+  allowMultipleAnswers: false,
+  message: null,
+}
