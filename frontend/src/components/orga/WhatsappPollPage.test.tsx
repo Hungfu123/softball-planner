@@ -28,7 +28,10 @@ vi.mock('@/hooks/useWhatsappPoll', () => ({
 vi.mock('@/components/layout/Layout', () => ({
   useToastContext: () => ({ show: vi.fn(), dismiss: vi.fn() }),
 }))
-vi.mock('@/api/client', () => ({ getWhatsappQr: vi.fn().mockResolvedValue({ qr: null }) }))
+vi.mock('@/api/client', () => ({
+  getWhatsappQr: vi.fn().mockResolvedValue({ qr: null }),
+  getAllGameDays: vi.fn().mockResolvedValue([]),
+}))
 
 import { WhatsappPollPage } from './WhatsappPollPage'
 

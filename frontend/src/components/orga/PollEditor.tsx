@@ -1,8 +1,9 @@
 import { type FocusEvent, useState } from 'react'
 import { Button, ResponsiveSheet } from '@/components/shared'
 import { PlusCircle, XMark } from '@/icons'
-import type { WhatsappPollRequest, WhatsappGroup, Weekday, TrainingResponse } from '@/types'
+import type { WhatsappPollRequest, WhatsappGroup, Weekday, TrainingResponse, GameDayResponse, PollMode } from '@/types'
 import { coupledSendDate, WEEKDAYS, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
+import { awayTemplate, homeTemplate, defaultSendDate } from './pollTemplates'
 
 const JS_TO_WEEKDAY: Record<number, Weekday> = {
   0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
@@ -16,16 +17,20 @@ export interface PollEditorProps {
   draft: WhatsappPollRequest
   groups: WhatsappGroup[]
   trainings: TrainingResponse[]
+  gameDays: GameDayResponse[]
   saving: boolean
   onSave: (request: WhatsappPollRequest) => void
   onClose: () => void
 }
 
-export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }: PollEditorProps) {
+export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave, onClose }: PollEditorProps) {
   const [form, setForm] = useState<WhatsappPollRequest>(draft)
   const [withPoll, setWithPoll] = useState(draft.options.length >= 2)
   // Nachricht pro Tab getrennt: beim Umschalten Text des jeweils anderen Tabs merken/tauschen.
   const [stashedMessage, setStashedMessage] = useState('')
+  // Merkt, ob der Nutzer das Datum selbst geändert hat — dann überschreibt ein
+  // Spieltag-Wechsel die Vorbelegung nicht mehr.
+  const [dateTouched, setDateTouched] = useState(false)
 
   const switchMode = (poll: boolean) => {
     if (poll === withPoll) return
@@ -42,6 +47,53 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
   const setGroup = (groupId: string) => {
     const group = groups.find(g => g.id === groupId)
     setForm(prev => ({ ...prev, groupId, groupName: group?.name ?? null }))
+  }
+
+  // Modus-Wechsel: sinnvolle Defaults setzen, ohne bereits gewählte Werte zu überschreiben.
+  const switchSchedule = (mode: PollMode) => {
+    if (mode === form.mode) return
+    setForm(prev => {
+      if (mode === 'TRAINING') {
+        if (prev.weekday) return { ...prev, mode }
+        // beim Anschalten sinnvollen Trainingstag vorbelegen (frühestes kommendes Training)
+        const upcoming = [...trainings]
+          .filter(t => !t.cancelled && t.date >= todayIso())
+          .sort((a, b) => a.date.localeCompare(b.date))[0]
+        const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
+        return { ...prev, mode, weekday: wd }
+      }
+      if (mode === 'ONE_OFF') {
+        // Datum vorbelegen (morgen), damit das Feld nicht leer ist
+        return { ...prev, mode, sendDate: prev.sendDate ?? tomorrowIso() }
+      }
+      // GAME_DAY: nächsten kommenden Spieltag vorbelegen + Sendedatum 7 Tage vorher
+      if (prev.gameDayId != null) return { ...prev, mode }
+      const upcoming = [...gameDays]
+        .filter(gd => gd.date >= todayIso())
+        .sort((a, b) => a.date.localeCompare(b.date))[0]
+      return {
+        ...prev,
+        mode,
+        gameDayId: upcoming?.id ?? null,
+        sendDate: !dateTouched && upcoming ? defaultSendDate(upcoming.date, todayIso()) : prev.sendDate,
+      }
+    })
+  }
+
+  const pickGameDay = (gameDayId: number | null) => {
+    const gd = gameDayId != null ? gameDays.find(g => g.id === gameDayId) : undefined
+    setForm(prev => ({
+      ...prev,
+      gameDayId,
+      sendDate: !dateTouched && gd ? defaultSendDate(gd.date, todayIso()) : prev.sendDate,
+    }))
+  }
+
+  const selectedGameDay = gameDays.find(g => g.id === form.gameDayId) ?? null
+
+  const applyTemplate = (template: (gameDay: GameDayResponse) => Pick<WhatsappPollRequest, 'title' | 'message' | 'options' | 'allowMultipleAnswers'>) => {
+    if (!selectedGameDay) return
+    setForm(prev => ({ ...prev, ...template(selectedGameDay) }))
   }
 
   // Mobil: fokussiertes Feld nur dann über die Tastatur scrollen, wenn es
@@ -71,6 +123,7 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
     && new Date(form.sendDate + 'T' + form.time).getTime() >= new Date().getTime()
   const scheduleValid = form.mode === 'TRAINING' || oneOffFuture
   const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled) && scheduleValid
+    && (form.mode !== 'GAME_DAY' || form.gameDayId !== null)
 
   const buildRequest = (): WhatsappPollRequest => ({
     ...form,
@@ -151,6 +204,11 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
                     placeholder={`Option ${i + 1}`}
                     className={inputCls}
                   />
+                  {i === 0 && form.mode === 'GAME_DAY' && (
+                    <span className="shrink-0 font-display text-[10px] tracking-widest uppercase font-bold text-navy-600">
+                      zählt als anwesend
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeOption(i)}
@@ -207,35 +265,30 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
           </select>
         </div>
 
-        <label className="flex items-start gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={form.mode === 'TRAINING'}
-            onChange={e => {
-              const on = e.target.checked
-              setForm(prev => {
-                if (on && !prev.weekday) {
-                  // beim Anschalten sinnvollen Trainingstag vorbelegen (frühestes kommendes Training)
-                  const upcoming = [...trainings]
-                    .filter(t => !t.cancelled && t.date >= todayIso())
-                    .sort((a, b) => a.date.localeCompare(b.date))[0]
-                  const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
-                  return { ...prev, mode: 'TRAINING', weekday: wd }
-                }
-                if (!on && !prev.sendDate) {
-                  // beim Umschalten auf einmalig ein Datum vorbelegen (morgen), damit das Feld nicht leer ist
-                  return { ...prev, mode: 'ONE_OFF', sendDate: tomorrowIso() }
-                }
-                return { ...prev, mode: on ? 'TRAINING' : 'ONE_OFF' }
-              })
-            }}
-            className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-navy-800">Trainingsumfrage</span>
-            <span className="block text-xs text-gray-500">An den Trainingstag gekoppelt: sendet automatisch 1 Tag vor jedem Training und bucht die Anwesenheit. Aus = einmalig zu einem festen Zeitpunkt.</span>
-          </span>
-        </label>
+        <div>
+          <label className={labelCls}>Wann senden</label>
+          <div className="inline-flex rounded-lg border border-cream-300 bg-cream-50 p-0.5">
+            {(['TRAINING', 'ONE_OFF', 'GAME_DAY'] as PollMode[]).map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => switchSchedule(m)}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors cursor-pointer ${
+                  form.mode === m ? 'bg-navy-800 text-white' : 'text-navy-700 hover:bg-navy-100'
+                }`}
+              >
+                {m === 'TRAINING' ? 'Training' : m === 'ONE_OFF' ? 'Einmalig' : 'Spieltag'}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            {form.mode === 'TRAINING'
+              ? 'Sendet automatisch 1 Tag vor jedem Training und bucht die Anwesenheit.'
+              : form.mode === 'ONE_OFF'
+                ? 'Sendet einmalig zum gewählten Zeitpunkt.'
+                : 'Sendet einmalig 7 Tage vor dem Spieltag. Die Stimmen lassen sich am Spieltag in die Anwesenheit übernehmen.'}
+          </p>
+        </div>
 
         {form.mode === 'TRAINING' ? (
           <div className="grid grid-cols-2 gap-3 items-end">
@@ -251,16 +304,57 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls} htmlFor="poll-send-date">Datum</label>
-              <input id="poll-send-date" type="date" value={form.sendDate ?? ''} onChange={e => set('sendDate', e.target.value || null)} className={inputCls} />
+          <>
+            {form.mode === 'GAME_DAY' && (
+              <>
+                <div>
+                  <label className={labelCls} htmlFor="poll-game-day">Spieltag</label>
+                  <select
+                    id="poll-game-day"
+                    value={form.gameDayId ?? ''}
+                    onChange={e => pickGameDay(e.target.value ? Number(e.target.value) : null)}
+                    className={inputCls}
+                  >
+                    <option value="">Spieltag wählen…</option>
+                    {gameDays.map(gd => (
+                      <option key={gd.id} value={gd.id}>
+                        {new Date(gd.date + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                        {gd.label ? ` · ${gd.label}` : ''}{gd.location ? ` · ${gd.location}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Vorlage</label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="secondary" disabled={!selectedGameDay} onClick={() => applyTemplate(awayTemplate)}>
+                      Auswärtsspiel
+                    </Button>
+                    <Button type="button" variant="secondary" disabled={!selectedGameDay} onClick={() => applyTemplate(homeTemplate)}>
+                      Heimspieltag
+                    </Button>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Füllt Frage, Nachricht und Antworten aus dem Spieltag — danach frei editierbar.</p>
+                </div>
+              </>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls} htmlFor="poll-send-date">Datum</label>
+                <input
+                  id="poll-send-date"
+                  type="date"
+                  value={form.sendDate ?? ''}
+                  onChange={e => { setDateTouched(true); set('sendDate', e.target.value || null) }}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Uhrzeit</label>
+                <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
+              </div>
             </div>
-            <div>
-              <label className={labelCls}>Uhrzeit</label>
-              <input type="time" value={form.time} onChange={e => set('time', e.target.value)} className={inputCls} />
-            </div>
-          </div>
+          </>
         )}
 
         <SendPreview form={form} trainings={trainings} />
@@ -286,5 +380,10 @@ function SendPreview({ form, trainings }: { form: WhatsappPollRequest; trainings
   if (past) {
     return <p className="text-xs font-semibold text-softball-red-600 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">⚠ Zeitpunkt liegt in der Vergangenheit — es wird nicht gesendet.</p>
   }
-  return <p className="text-xs font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2">→ Wird am {d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })} um {d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} einmalig gesendet.</p>
+  return (
+    <p className="text-xs font-semibold text-navy-700 bg-navy-50 border border-navy-100 rounded-lg px-3 py-2">
+      → Wird am {d.toLocaleDateString('de-DE', { weekday: 'long', day: '2-digit', month: '2-digit' })} um {d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} einmalig gesendet
+      {form.mode === 'GAME_DAY' ? ' (7 Tage vor dem Spieltag)' : ''}.
+    </p>
+  )
 }
