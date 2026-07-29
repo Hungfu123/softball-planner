@@ -10,7 +10,7 @@ const trainings: TrainingResponse[] = [
 const draft: WhatsappPollRequest = {
   groupId: 'g@g.us', groupName: 'Gruppe', title: 'T', options: ['Ja', 'Nein'],
   weekday: null, time: '18:00', enabled: true, allowMultipleAnswers: false,
-  message: null, trainingCoupled: false, sendDate: '2026-08-05',
+  message: null, mode: 'ONE_OFF', gameDayId: null, sendDate: '2026-08-05',
 }
 
 describe('PollEditor', () => {

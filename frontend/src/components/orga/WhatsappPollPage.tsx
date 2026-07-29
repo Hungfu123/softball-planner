@@ -69,7 +69,7 @@ function byOneOffDate(a: WhatsappPollResponse, b: WhatsappPollResponse): number 
 }
 
 function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): string {
-  if (poll.trainingCoupled) {
+  if (poll.mode === 'TRAINING') {
     if (!poll.enabled) return 'Pausiert'
     if (!poll.weekday) return 'Kein Trainingstag'
     const d = coupledSendDate(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, new Date())
@@ -109,7 +109,8 @@ function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
     enabled: true,
     allowMultipleAnswers: false,
     message: null,
-    trainingCoupled: false,
+    mode: 'ONE_OFF',
+    gameDayId: null,
     sendDate: iso,
   }
 }
@@ -122,7 +123,8 @@ function toRequest(p: WhatsappPollResponse): WhatsappPollRequest {
     options: [...p.options],
     weekday: p.weekday,
     time: formatTime(p.time),
-    trainingCoupled: p.trainingCoupled,
+    mode: p.mode,
+    gameDayId: p.gameDayId,
     sendDate: p.sendDate,
     enabled: p.enabled,
     allowMultipleAnswers: p.allowMultipleAnswers,
@@ -305,8 +307,8 @@ export function WhatsappPollPage() {
                 onTogglePause={() => handleTogglePause(poll)}
               />
             )
-            const coupled = polls.filter(p => p.trainingCoupled).sort(byWeekdayTime)
-            const oneOff = polls.filter(p => !p.trainingCoupled).sort(byOneOffDate)
+            const coupled = polls.filter(p => p.mode === 'TRAINING').sort(byWeekdayTime)
+            const oneOff = polls.filter(p => p.mode !== 'TRAINING').sort(byOneOffDate)
             const headCls = 'font-display text-xs font-extrabold uppercase tracking-widest text-navy-500'
             return (
               <div className="space-y-6">
@@ -350,7 +352,7 @@ export function WhatsappPollPage() {
 
       {sendId != null && (() => {
         const sp = polls.find(p => p.id === sendId)
-        const oneOff = sp && !sp.trainingCoupled
+        const oneOff = sp && sp.mode !== 'TRAINING'
         const message = oneOff
           ? `Schickt die Umfrage jetzt zum Testen an die Gruppe. Der geplante Versand${sp?.sendDate ? ` am ${formatDate(sp.sendDate)}` : ''} bleibt bestehen — die Gruppe erhält sie dann ggf. zweimal.`
           : 'Schickt die Umfrage jetzt zum Testen an die Gruppe.'
@@ -485,7 +487,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
                   >
                     <SendIcon size={15} /> Jetzt testen
                   </button>
-                  {poll.trainingCoupled && (
+                  {poll.mode === 'TRAINING' && (
                     <button
                       role="menuitem"
                       onClick={() => { setMenuOpen(false); setShowSkip(s => !s) }}
@@ -494,7 +496,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
                       <CalendarIcon size={15} /> Absage-Termine{poll.skipDates.length > 0 ? ` (${poll.skipDates.length})` : ''}
                     </button>
                   )}
-                  {poll.trainingCoupled && (
+                  {poll.mode === 'TRAINING' && (
                     <button
                       role="menuitem"
                       onClick={() => { setMenuOpen(false); onTogglePause() }}
@@ -520,14 +522,14 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
         {/* Meta: Zeit · Gruppe · Status */}
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="inline-flex items-center gap-1 font-display font-bold tabular-nums text-white bg-navy-900 rounded-md px-2 py-0.5">
-            {poll.trainingCoupled
+            {poll.mode === 'TRAINING'
               ? `${weekdayShort(poll.weekday)} · ${formatTime(poll.time)}`
               : (poll.sendDate ? `${formatDate(poll.sendDate)} · ${formatTime(poll.time)}` : formatTime(poll.time))}
           </span>
           {poll.groupName && <span className="font-body text-navy-500 truncate max-w-[10rem]">{poll.groupName}</span>}
-          <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{poll.trainingCoupled ? 'Training' : 'Einmalig'}</span>
-          {poll.trainingCoupled && <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>}
-          {!poll.trainingCoupled && poll.lastSentAt && <Badge color="gray" size="sm">Gesendet</Badge>}
+          <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{poll.mode === 'TRAINING' ? 'Training' : 'Einmalig'}</span>
+          {poll.mode === 'TRAINING' && <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>}
+          {poll.mode !== 'TRAINING' && poll.lastSentAt && <Badge color="gray" size="sm">Gesendet</Badge>}
           <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{typeLabel}</span>
           {hasPoll && poll.allowMultipleAnswers && <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Mehrfach</span>}
         </div>
@@ -535,7 +537,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
         {/* Nächster Versand — Kern-Info */}
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{poll.trainingCoupled ? 'Nächster Versand' : ((poll.lastSentAt || (poll.sendDate && poll.sendDate < todayIso())) ? 'Status' : 'Geplant')}</p>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{poll.mode === 'TRAINING' ? 'Nächster Versand' : ((poll.lastSentAt || (poll.sendDate && poll.sendDate < todayIso())) ? 'Status' : 'Geplant')}</p>
             <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll, trainings)}</p>
           </div>
           {poll.options.length > 0 && (
@@ -569,7 +571,7 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
             )}
           </p>
 
-          {poll.trainingCoupled && poll.skipDates.length > 0 && (
+          {poll.mode === 'TRAINING' && poll.skipDates.length > 0 && (
             <p className="mt-1 font-body text-[11px] text-softball-red-600">
               Absage: {[...poll.skipDates].sort().slice(0, 2).map(formatDate).join(', ')}{poll.skipDates.length > 2 ? ` +${poll.skipDates.length - 2}` : ''}
             </p>
@@ -673,7 +675,7 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
   // Coupled hat immer einen Trainingstag (Prefill).
   const oneOffFuture = !!form.sendDate
     && new Date(form.sendDate + 'T' + form.time).getTime() >= new Date().getTime()
-  const scheduleValid = form.trainingCoupled || oneOffFuture
+  const scheduleValid = form.mode === 'TRAINING' || oneOffFuture
   const canSave = form.groupId !== '' && (withPoll ? pollValid : messageFilled) && scheduleValid
 
   const buildRequest = (): WhatsappPollRequest => ({
@@ -814,7 +816,7 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
         <label className="flex items-start gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
-            checked={form.trainingCoupled}
+            checked={form.mode === 'TRAINING'}
             onChange={e => {
               const on = e.target.checked
               setForm(prev => {
@@ -824,13 +826,13 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
                     .filter(t => !t.cancelled && t.date >= todayIso())
                     .sort((a, b) => a.date.localeCompare(b.date))[0]
                   const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
-                  return { ...prev, trainingCoupled: true, weekday: wd }
+                  return { ...prev, mode: 'TRAINING', weekday: wd }
                 }
                 if (!on && !prev.sendDate) {
                   // beim Umschalten auf einmalig ein Datum vorbelegen (morgen), damit das Feld nicht leer ist
-                  return { ...prev, trainingCoupled: false, sendDate: tomorrowIso() }
+                  return { ...prev, mode: 'ONE_OFF', sendDate: tomorrowIso() }
                 }
-                return { ...prev, trainingCoupled: on }
+                return { ...prev, mode: on ? 'TRAINING' : 'ONE_OFF' }
               })
             }}
             className="accent-navy-700 w-4 h-4 mt-0.5 cursor-pointer"
@@ -841,7 +843,7 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
           </span>
         </label>
 
-        {form.trainingCoupled ? (
+        {form.mode === 'TRAINING' ? (
           <div className="grid grid-cols-2 gap-3 items-end">
             <div>
               <label className={labelCls}>Trainingstag</label>
@@ -875,7 +877,7 @@ export function PollEditor({ draft, groups, trainings, saving, onSave, onClose }
 
 function SendPreview({ form, trainings }: { form: WhatsappPollRequest; trainings: TrainingResponse[] }) {
   const t: TrainingLite[] = trainings.map(x => ({ date: x.date, cancelled: x.cancelled }))
-  if (form.trainingCoupled) {
+  if (form.mode === 'TRAINING') {
     if (!form.weekday) return null
     const d = coupledSendDate(form.weekday, form.time, t, [], new Date())
     const wdLabel = WEEKDAYS.find(w => w.value === form.weekday)?.label ?? ''
