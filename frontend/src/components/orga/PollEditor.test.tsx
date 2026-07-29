@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { PollEditor } from './WhatsappPollPage'
+import { PollEditor } from './PollEditor'
 import type { WhatsappPollRequest, TrainingResponse } from '@/types'
 
 const groups = [{ id: 'g@g.us', name: 'Gruppe' }]
