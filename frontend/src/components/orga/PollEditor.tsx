@@ -6,7 +6,7 @@ import { coupledSendDate, WEEKDAYS, todayIso, tomorrowIso, type TrainingLite } f
 import {
   awayTemplate, homeTemplate, trainingTemplate, defaultSendDate,
   matchingTemplateKind, isTemplateUnmodified, refreshTemplateDateFields, NEUTRAL_TEMPLATE_FIELDS,
-  isTrainingTemplateUnmodified, refreshTrainingTemplateTitle,
+  isTrainingTemplateUnmodified,
   type GameDayTemplateKind,
 } from './pollTemplates'
 
@@ -14,12 +14,13 @@ const JS_TO_WEEKDAY: Record<number, Weekday> = {
   0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
 }
 
-/** Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat — und für welchen
- * Bezug: Spieltag-Vorlagen hängen an einem Spieltag (gameDayId), die Trainings-Vorlage an einem
- * Wochentag (weekday). Siehe templateOrigin in PollEditor. */
+/** Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat. Spieltag-Vorlagen
+ * hängen an einem Spieltag (gameDayId) — bei einem Spieltagwechsel muss der Text nachgezogen
+ * werden. Die Trainings-Vorlage ist statisch (siehe pollTemplates.trainingTemplate), braucht also
+ * keinen Kontext. Siehe templateOrigin in PollEditor. */
 type TemplateOrigin =
   | { kind: GameDayTemplateKind; gameDayId: number }
-  | { kind: 'TRAINING'; weekday: Weekday }
+  | { kind: 'TRAINING' }
 
 const inputCls =
   'w-full border border-cream-300 rounded-lg px-3 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
@@ -46,12 +47,12 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
   // Merkt, ob der Nutzer das Datum selbst geändert hat — dann überschreibt ein
   // Spieltag-Wechsel die Vorbelegung nicht mehr.
   const [dateTouched, setDateTouched] = useState(false)
-  // Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat und für welchen
-  // Spieltag bzw. Trainingstag — damit ein Spieltag-, Trainingstag- oder Modus-Wechsel weiß, ob
-  // der Text noch "unverändert" ist (dann darf er nachziehen bzw. zurückgesetzt werden) oder vom
+  // Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat und — bei
+  // Spieltag-Vorlagen — für welchen Spieltag, damit ein Spieltag- oder Modus-Wechsel weiß, ob der
+  // Text noch "unverändert" ist (dann darf er nachziehen bzw. zurückgesetzt werden) oder vom
   // Nutzer bereits editiert wurde (dann bleibt er unangetastet). Bei einem bereits gespeicherten
   // Poll gibt es keinen Merker aus einer vorherigen Sitzung — hier wird abgeleitet, ob
-  // Frage+Nachricht (noch) exakt einer der Vorlagen für seinen Spieltag/Trainingstag entsprechen.
+  // Frage+Nachricht (noch) exakt einer der Vorlagen entsprechen.
   const [templateOrigin, setTemplateOrigin] = useState<TemplateOrigin | null>(() => {
     if (draft.mode === 'GAME_DAY' && draft.gameDayId != null) {
       const gd = gameDays.find(g => g.id === draft.gameDayId)
@@ -59,8 +60,8 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
       const kind = matchingTemplateKind(draft, gd)
       return kind ? { kind, gameDayId: draft.gameDayId } : null
     }
-    if (draft.mode === 'TRAINING' && draft.weekday) {
-      return isTrainingTemplateUnmodified(draft, draft.weekday) ? { kind: 'TRAINING', weekday: draft.weekday } : null
+    if (draft.mode === 'TRAINING') {
+      return isTrainingTemplateUnmodified(draft) ? { kind: 'TRAINING' } : null
     }
     return null
   })
@@ -100,7 +101,7 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
       && isTemplateUnmodified(templateOrigin.kind, form, selectedGameDay)
     const leavingUnmodifiedTrainingTemplate = form.mode === 'TRAINING' && mode !== 'TRAINING'
       && !!templateOrigin && templateOrigin.kind === 'TRAINING'
-      && isTrainingTemplateUnmodified(form, templateOrigin.weekday)
+      && isTrainingTemplateUnmodified(form)
     const leavingUnmodifiedTemplate = leavingUnmodifiedGameDayTemplate || leavingUnmodifiedTrainingTemplate
     if (leavingUnmodifiedTemplate) setTemplateOrigin(null)
 
@@ -154,18 +155,6 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
     if (templateOrigin && templateOrigin.kind !== 'TRAINING' && gd) setTemplateOrigin({ kind: templateOrigin.kind, gameDayId: gd.id })
   }
 
-  /** Trainingstag-Wechsel: analog zu pickGameDay — Frage, die noch unverändert von der
-   * Trainings-Vorlage stammt, für den neuen Wochentag neu erzeugen. Individuell editierter Text
-   * bleibt unangetastet. */
-  const pickWeekday = (weekday: Weekday) => {
-    setForm(prev => (
-      templateOrigin?.kind === 'TRAINING'
-        ? { ...prev, weekday, title: refreshTrainingTemplateTitle(prev.title, templateOrigin.weekday, weekday) }
-        : { ...prev, weekday }
-    ))
-    if (templateOrigin?.kind === 'TRAINING') setTemplateOrigin({ kind: 'TRAINING', weekday })
-  }
-
   const selectedGameDay = gameDays.find(g => g.id === form.gameDayId) ?? null
 
   // Punkt 5: nur kommende Spieltage anbieten (aufsteigend, mit Jahr) — sonst stehen nach ein
@@ -205,9 +194,8 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
   }
 
   const applyTrainingTemplate = () => {
-    const weekday = form.weekday ?? 'MONDAY'
-    setForm(prev => ({ ...prev, ...trainingTemplate(weekday) }))
-    setTemplateOrigin({ kind: 'TRAINING', weekday })
+    setForm(prev => ({ ...prev, ...trainingTemplate() }))
+    setTemplateOrigin({ kind: 'TRAINING' })
     // Vorlage füllt Frage + Antwortoptionen — ohne den Umfrage-Tab würde buildRequest() das
     // wieder verwerfen (withPoll === false) und der Klick wäre wirkungslos.
     setWithPoll(true)
@@ -430,7 +418,7 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
             <div className="grid grid-cols-2 gap-3 items-end">
               <div>
                 <label className={labelCls} htmlFor="poll-weekday">Trainingstag</label>
-                <select id="poll-weekday" value={form.weekday ?? 'MONDAY'} onChange={e => pickWeekday(e.target.value as Weekday)} className={inputCls}>
+                <select id="poll-weekday" value={form.weekday ?? 'MONDAY'} onChange={e => set('weekday', e.target.value as Weekday)} className={inputCls}>
                   {WEEKDAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
               </div>
@@ -446,7 +434,7 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
                   Trainingsumfrage
                 </Button>
               </div>
-              <p className="mt-1 text-xs text-gray-500">Füllt Frage und Antworten (Ja/Nein) für den gewählten Trainingstag — danach frei editierbar.</p>
+              <p className="mt-1 text-xs text-gray-500">Füllt Frage ("Wer kommt morgen zum Training?") und Antworten (Ja/Nein) — danach frei editierbar.</p>
             </div>
           </>
         ) : (
