@@ -31,6 +31,16 @@ public class SyncedVoteRepositoryAdapter implements SyncedVoteRepository {
     }
 
     @Override
+    public Optional<SyncedVote> findByGameDayIdAndVoterName(final Long gameDayId, final String voterName) {
+        return repo.findByGameDayIdAndVoterName(gameDayId, voterName).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<SyncedVote> findByGameDayId(final Long gameDayId) {
+        return repo.findByGameDayId(gameDayId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<SyncedVote> findByVoterNameAndPlayerIdIsNull(final String voterName) {
         return repo.findByVoterNameAndPlayerIdIsNull(voterName).stream().map(mapper::toDomain).toList();
     }
