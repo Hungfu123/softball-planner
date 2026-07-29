@@ -17,7 +17,11 @@ import { PlusMark, MinusMark, AlertCircle, CrossBones } from '@/icons'
 import type { Player } from '@/types'
 
 interface PollVoteSyncSheetProps {
-  target: { type: 'GAME_DAY' | 'TRAINING'; id: number }
+  // Aktuell nur Spieltag — der Hook ruft intern immer die Spieltag-Endpoints (useGameDayPollSync
+  // ignoriert target.type). 'TRAINING' kommt bewusst erst als eigener Folgeschritt, wenn der Hook
+  // zwischen Spieltag- und Trainings-Endpoints unterscheiden kann; bis dahin verhindert die enge
+  // Union hier einen stillen Fehlgebrauch (Trainings-ID würde sonst gegen /gamedays/... gehen).
+  target: { type: 'GAME_DAY'; id: number }
   players: Player[]
   onApplied: () => void | Promise<void>
   onClose: () => void
