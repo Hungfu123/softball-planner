@@ -63,6 +63,8 @@ export function WhatsappVotersTab() {
       await Promise.all([loadVoters(), reloadPlayers()])
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
+      // Rethrow: UnknownVoterRow hält das NewPlayerModal bei Fehlschlag offen (Retry ohne erneutes Tippen).
+      throw e
     } finally {
       setBusyKey(null)
     }

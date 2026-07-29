@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { UnknownVoterRow } from './UnknownVoterRow'
@@ -33,5 +33,18 @@ describe('UnknownVoterRow', () => {
     await userEvent.click(screen.getByRole('button', { name: /Anlegen/ }))
 
     expect(onCreate).toHaveBeenCalledWith('Sandra W.')
+  })
+
+  it('lässt das Modal bei fehlschlagendem onCreate offen, Name bleibt erhalten', async () => {
+    const onCreate = vi.fn().mockRejectedValue(new Error('boom'))
+    render(<UnknownVoterRow voterName="Sandra W." players={players} onAssign={vi.fn()} onCreate={onCreate} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Neuer Spieler' }))
+    await userEvent.click(screen.getByRole('button', { name: /Anlegen/ }))
+
+    await waitFor(() => expect(onCreate).toHaveBeenCalledWith('Sandra W.'))
+
+    expect(screen.getByRole('heading', { name: 'Neuer Spieler' })).toBeInTheDocument()
+    expect((screen.getByRole('textbox') as HTMLInputElement).value).toBe('Sandra W.')
   })
 })
