@@ -149,4 +149,9 @@ public class GameDayRepositoryAdapter implements GameDayRepository {
     public boolean existsById(final Long id) {
         return repo.existsById(id);
     }
+
+    @Override
+    public List<GameDay> findAll() {
+        return repo.findAll().stream().map(mapper::toDomain).toList();
+    }
 }

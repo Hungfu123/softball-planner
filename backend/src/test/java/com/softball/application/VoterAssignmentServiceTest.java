@@ -1,9 +1,11 @@
 package com.softball.application;
 
+import com.softball.domain.model.GameDay;
 import com.softball.domain.model.Player;
 import com.softball.domain.model.SyncedVote;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.TrainingAttendance;
+import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.PlayerRepository;
 import com.softball.domain.port.out.SyncedVoteRepository;
 import com.softball.domain.port.out.TrainingAttendanceRepository;
@@ -32,6 +34,7 @@ class VoterAssignmentServiceTest {
     private final SyncedVoteRepository voteRepo = mock(SyncedVoteRepository.class);
     private final TrainingRepository trainingRepo = mock(TrainingRepository.class);
     private final TrainingAttendanceRepository attendanceRepo = mock(TrainingAttendanceRepository.class);
+    private final GameDayRepository gameDayRepo = mock(GameDayRepository.class);
     private VoterAssignmentService service;
 
     private Training training;
@@ -39,7 +42,7 @@ class VoterAssignmentServiceTest {
 
     @BeforeEach
     void setup() {
-        service = new VoterAssignmentService(playerRepo, voteRepo, trainingRepo, attendanceRepo);
+        service = new VoterAssignmentService(playerRepo, voteRepo, trainingRepo, attendanceRepo, gameDayRepo);
         training = new Training(10L, LocalDate.of(2026, 4, 14), "20:00", "Park");
         player = new Player(5L, "Max", true, null);
         when(voteRepo.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -125,6 +128,19 @@ class VoterAssignmentServiceTest {
     }
 
     @Test
+    void assignExisting_gameDayVoteAmongOpenVotes_doesNotBookAttendanceOrCrash() {
+        when(playerRepo.findById(5L)).thenReturn(Optional.of(player));
+        final SyncedVote gameDayVote = SyncedVote.forGameDay(7L, "Gast", null, true);
+        when(voteRepo.findByVoterNameAndPlayerIdIsNull("Gast")).thenReturn(List.of(gameDayVote));
+
+        service.assignExisting("Gast", 5L);
+
+        assertThat(gameDayVote.getPlayerId()).isEqualTo(5L);
+        verify(attendanceRepo, never()).saveAll(any());
+        verify(trainingRepo, never()).findById(any());
+    }
+
+    @Test
     void assignExisting_openVotePresentFalse_doesNotBookAttendance() {
         when(playerRepo.findById(5L)).thenReturn(Optional.of(player));
         final SyncedVote openVote = new SyncedVote(10L, "Gast", null, false);
@@ -141,13 +157,36 @@ class VoterAssignmentServiceTest {
         final SyncedVote openVote = new SyncedVote(10L, "Gast", null, true);
         when(voteRepo.findByPlayerIdIsNull()).thenReturn(List.of(openVote));
         when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(training));
+        when(gameDayRepo.findAll()).thenReturn(List.of());
 
         final List<VoterAssignmentService.UnknownVoter> result = service.unknownVoters();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).voterName()).isEqualTo("Gast");
-        assertThat(result.get(0).trainingId()).isEqualTo(10L);
-        assertThat(result.get(0).trainingDate()).isEqualTo(LocalDate.of(2026, 4, 14));
+        assertThat(result.get(0).source()).isEqualTo("TRAINING");
+        assertThat(result.get(0).targetId()).isEqualTo(10L);
+        assertThat(result.get(0).date()).isEqualTo(LocalDate.of(2026, 4, 14));
+    }
+
+    @Test
+    void shouldReportGameDayVotersWithSourceAndDate() {
+        when(voteRepo.findByPlayerIdIsNull()).thenReturn(List.of(
+                SyncedVote.forGameDay(7L, "Sandra W.", null, true)));
+        when(gameDayRepo.findAll()).thenReturn(List.of(gameDay(7L, LocalDate.of(2026, 8, 9))));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of());
+
+        final var voters = service.unknownVoters();
+
+        assertThat(voters).singleElement().satisfies(v -> {
+            assertThat(v.voterName()).isEqualTo("Sandra W.");
+            assertThat(v.source()).isEqualTo("GAME_DAY");
+            assertThat(v.targetId()).isEqualTo(7L);
+            assertThat(v.date()).isEqualTo(LocalDate.of(2026, 8, 9));
+        });
+    }
+
+    private static GameDay gameDay(final Long id, final LocalDate date) {
+        return new GameDay(id, date, null, null);
     }
 
     @Test
