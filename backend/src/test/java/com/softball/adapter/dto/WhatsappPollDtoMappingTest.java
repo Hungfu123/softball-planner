@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.WhatsappPoll;
 import org.junit.jupiter.api.Test;
 
@@ -17,9 +18,9 @@ class WhatsappPollDtoMappingTest {
         final WhatsappPollRequest req = new WhatsappPollRequest(
                 "g@g.us", "Gruppe", "Titel", List.of("Ja", "Nein"),
                 null, LocalTime.of(18, 0), true, false, null,
-                false, LocalDate.of(2026, 8, 5));
+                PollMode.ONE_OFF, null, LocalDate.of(2026, 8, 5));
         final WhatsappPoll p = req.toDomain();
-        assertThat(p.isTrainingCoupled()).isFalse();
+        assertThat(p.getMode()).isEqualTo(PollMode.ONE_OFF);
         assertThat(p.getSendDate()).isEqualTo(LocalDate.of(2026, 8, 5));
         assertThat(p.getWeekday()).isNull();
     }
@@ -27,11 +28,11 @@ class WhatsappPollDtoMappingTest {
     @Test
     void response_from_exposesCoupledFields() {
         final WhatsappPoll p = new WhatsappPoll();
-        p.setTrainingCoupled(true);
+        p.setMode(PollMode.TRAINING);
         p.setWeekday(DayOfWeek.MONDAY);
         p.setTime(LocalTime.of(9, 0));
         final WhatsappPollResponse r = WhatsappPollResponse.from(p);
-        assertThat(r.trainingCoupled()).isTrue();
+        assertThat(r.mode()).isEqualTo(PollMode.TRAINING);
         assertThat(r.sendDate()).isNull();
         assertThat(r.weekday()).isEqualTo(DayOfWeek.MONDAY);
     }

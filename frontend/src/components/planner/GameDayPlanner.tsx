@@ -19,13 +19,15 @@ import { SaveButton } from './SaveButton'
 import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
+import { PollVoteSyncSheet } from './PollVoteSyncSheet'
+import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { EmptyState, Button } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse, GameDayVotePreview } from '@/types'
 import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
 import * as api from '@/api/client'
@@ -37,7 +39,7 @@ export function GameDayPlanner() {
   const lineup = useLineup()
   const lineupSets = useLineupSets(gameDayId)
   const staff = useStaff()
-  const { players } = usePlayers()
+  const { players, reload: reloadPlayers } = usePlayers()
   const toast = useToastContext()
   const [searchParams] = useSearchParams()
   const initialTab = Math.max(0, Number(searchParams.get('game') ?? 0))
@@ -68,6 +70,8 @@ export function GameDayPlanner() {
   const [selectedPeriodId] = useState<number | null>(null)
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const [assignPosition, setAssignPosition] = useState<string | null>(null)
+  const [pollStatus, setPollStatus] = useState<GameDayVotePreview | null>(null)
+  const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -121,6 +125,16 @@ export function GameDayPlanner() {
   useEffect(() => {
     api.getTrainingPeriods().then(setTrainingPeriods)
   }, [])
+
+  // Poll-Status für den WhatsApp-Stimmen-Button: nur gespeicherte Stimmen (kein Live-Abruf
+  // bei WhatsApp), fehlertolerant — schlägt der Call fehl (kein Poll, Backend-Problem),
+  // bleibt der Button einfach versteckt statt den Planner zu brechen.
+  useEffect(() => {
+    if (!gameDay?.id) return
+    api.getGameDayPollVotes(gameDay.id)
+      .then(setPollStatus)
+      .catch(() => setPollStatus(null))
+  }, [gameDay?.id])
 
   // Fetch training stats — by period or last 12 weeks
   useEffect(() => {
@@ -440,21 +454,28 @@ export function GameDayPlanner() {
     }
   }
 
+  // Gemeinsamer Nachlauf für jeden Weg, der die Anwesenheitsliste ändert (manuelles
+  // Anwesend-Modal UND WhatsApp-Stimmen-Übernahme): lokales Lineup/Staff auf den neuen
+  // Anwesenheitsstand bringen, sonst zeigt das Grid für die aktive Ansicht veraltete
+  // Einträge (Spieler steht noch im Lineup, obwohl die DB ihn bereits entfernt hat).
+  const syncAfterAvailabilityChange = async (availablePlayerIds: number[]) => {
+    const availableSet = new Set(availablePlayerIds)
+    lineup.removeUnavailable(availableSet)
+    // Backend cascade cleaned the removed player from ALL games (lineup + staff,
+    // batting orders renumbered). removeUnavailable only fixed the active tab, so
+    // drop the cached snapshots of the other games — sonst zeigt ein Tab-Wechsel
+    // (z.B. auf Spiel 2) den veralteten Stand und man muss neu laden.
+    lineup.invalidateCache()
+    if (activeGame) {
+      staff.load(activeGame.id)
+    }
+    await refreshStats()
+  }
+
   const handleSetAvailablePlayers = async (playerIds: number[]) => {
     try {
       await setAvailablePlayers(playerIds)
-      // Remove lineup/staff entries for players no longer available (instead of full reload)
-      const availableSet = new Set(playerIds)
-      lineup.removeUnavailable(availableSet)
-      // Backend cascade cleaned the removed player from ALL games (lineup + staff,
-      // batting orders renumbered). removeUnavailable only fixed the active tab, so
-      // drop the cached snapshots of the other games — sonst zeigt ein Tab-Wechsel
-      // (z.B. auf Spiel 2) den veralteten Stand und man muss neu laden.
-      lineup.invalidateCache()
-      if (activeGame) {
-        staff.load(activeGame.id)
-      }
-      await refreshStats()
+      await syncAfterAvailabilityChange(playerIds)
       setShowPlayersModal(false)
       toast.show('Spieler aktualisiert')
     } catch (e: unknown) {
@@ -577,6 +598,8 @@ export function GameDayPlanner() {
               )}
             </div>
 
+            <PollSyncToolbarButton variant="mobile" pollStatus={pollStatus} onClick={() => setShowPollSync(true)} />
+
             {/* Secondary — Toolbar-Strip ohne einzelne Boxen */}
             <div className="flex items-center justify-between gap-0 border-t border-cream-200 pt-2">
               {availablePlayers.length > 0 && (
@@ -634,6 +657,7 @@ export function GameDayPlanner() {
                   <span>Live scoren</span>
                 </Link>
               )}
+              <PollSyncToolbarButton variant="desktop" pollStatus={pollStatus} onClick={() => setShowPollSync(true)} />
             </div>
             {/* Toolbar-Strip: Tertiary-Aktionen (Icon + Label) */}
             <div className="flex items-center gap-1 border-t border-cream-200 pt-1.5">
@@ -1071,6 +1095,23 @@ export function GameDayPlanner() {
         />
       )}
 
+      {showPollSync && (
+        <PollVoteSyncSheet
+          target={{ type: 'GAME_DAY', id: gameDay.id }}
+          players={players}
+          onPlayerCreated={reloadPlayers}
+          onApplied={async () => {
+            const updated = await api.getGameDay(gameDay.id)
+            setGameDay(updated)
+            // Backend hat die Anwesenheit bereits geschrieben (inkl. Kaskade) — lokales
+            // Lineup/Staff muss denselben Nachlauf wie beim manuellen Anwesend-Modal fahren,
+            // sonst zeigt das Grid Spieler weiter an, die die Umfrage-Übernahme entfernt hat.
+            await syncAfterAvailabilityChange(updated.availablePlayers.map(p => p.id))
+            setPollStatus(await api.getGameDayPollVotes(gameDay.id).catch(() => null))
+          }}
+          onClose={() => setShowPollSync(false)}
+        />
+      )}
 
       {showEditModal && (
         <EditGameDayModal

@@ -12,8 +12,11 @@ public class SyncedVoteEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "training_id", nullable = false)
+    @Column(name = "training_id")
     private Long trainingId;
+
+    @Column(name = "game_day_id")
+    private Long gameDayId;
 
     @Column(name = "voter_name", nullable = false)
     private String voterName;
@@ -30,6 +33,8 @@ public class SyncedVoteEntity {
     public void setId(final Long id) { this.id = id; }
     public Long getTrainingId() { return trainingId; }
     public void setTrainingId(final Long trainingId) { this.trainingId = trainingId; }
+    public Long getGameDayId() { return gameDayId; }
+    public void setGameDayId(final Long gameDayId) { this.gameDayId = gameDayId; }
     public String getVoterName() { return voterName; }
     public void setVoterName(final String voterName) { this.voterName = voterName; }
     public Long getPlayerId() { return playerId; }

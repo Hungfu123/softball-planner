@@ -2,12 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { getUnknownVoters, assignVoter, assignNewVoter, unassignVoter } from '@/api/client'
-import { Card, SectionHeader, EmptyState, ResponsiveSheet, LoadingSkeleton, ConfirmModal, Button } from '@/components/shared'
+import { Card, SectionHeader, EmptyState, LoadingSkeleton, ConfirmModal, UnknownVoterRow } from '@/components/shared'
 import { PlusCircle, CrossBones, XMark } from '@/icons'
 import type { UnknownVoter, Player } from '@/types'
 
-const inputCls =
-  'w-full border border-cream-300 rounded-lg px-3 py-2 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
 const labelCls = 'block text-xs font-bold uppercase tracking-wide text-navy-500 mb-1'
 
 function formatDate(iso: string): string {
@@ -15,7 +13,7 @@ function formatDate(iso: string): string {
 }
 
 function voterKey(v: UnknownVoter): string {
-  return `${v.trainingId}:${v.voterName}`
+  return `${v.targetId}:${v.voterName}`
 }
 
 export function WhatsappVotersTab() {
@@ -24,9 +22,7 @@ export function WhatsappVotersTab() {
 
   const [voters, setVoters] = useState<UnknownVoter[]>([])
   const [votersLoading, setVotersLoading] = useState(true)
-  const [selectedPlayer, setSelectedPlayer] = useState<Record<string, string>>({})
   const [busyKey, setBusyKey] = useState<string | null>(null)
-  const [newPlayerVoter, setNewPlayerVoter] = useState<UnknownVoter | null>(null)
   const [assigningId, setAssigningId] = useState<number | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Player | null>(null)
 
@@ -44,10 +40,8 @@ export function WhatsappVotersTab() {
 
   useEffect(() => { loadVoters() }, [loadVoters])
 
-  const handleAssign = async (voter: UnknownVoter) => {
+  const handleAssign = async (voter: UnknownVoter, playerId: number) => {
     const key = voterKey(voter)
-    const playerId = Number(selectedPlayer[key])
-    if (!playerId) return
     setBusyKey(key)
     try {
       await assignVoter(voter.voterName, playerId)
@@ -60,18 +54,17 @@ export function WhatsappVotersTab() {
     }
   }
 
-  const handleAssignNew = async (playerName: string) => {
-    if (!newPlayerVoter) return
-    const voter = newPlayerVoter
+  const handleAssignNew = async (voter: UnknownVoter, playerName: string) => {
     const key = voterKey(voter)
     setBusyKey(key)
     try {
       await assignNewVoter(voter.voterName, playerName)
       toast.show(`${playerName} angelegt und zugewiesen`)
-      setNewPlayerVoter(null)
       await Promise.all([loadVoters(), reloadPlayers()])
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
+      // Rethrow: UnknownVoterRow hält das NewPlayerModal bei Fehlschlag offen (Retry ohne erneutes Tippen).
+      throw e
     } finally {
       setBusyKey(null)
     }
@@ -108,42 +101,18 @@ export function WhatsappVotersTab() {
           <div className="space-y-2">
             {voters.map(voter => {
               const key = voterKey(voter)
-              const busy = busyKey === key
+              const prefix = voter.source === 'GAME_DAY' ? 'Spieltag' : 'Training'
+              const subline = voter.date ? `${prefix} ${formatDate(voter.date)}` : undefined
               return (
-                <div key={key} className="flex items-center gap-2 px-3 py-2 border border-cream-300 rounded-lg bg-cream-50">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-navy-900 truncate leading-tight">{voter.voterName}</p>
-                    <p className="text-[11px] text-gray-500 leading-tight">{formatDate(voter.trainingDate)}</p>
-                  </div>
-                  <select
-                    value={selectedPlayer[key] ?? ''}
-                    onChange={e => setSelectedPlayer(prev => ({ ...prev, [key]: e.target.value }))}
-                    disabled={busy}
-                    className="w-28 sm:w-40 shrink-0 border border-cream-300 rounded-lg px-2 py-1.5 text-sm text-navy-900 bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none disabled:opacity-50"
-                  >
-                    <option value="">Spieler wählen…</option>
-                    {sortedPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                  <Button
-                    type="button"
-                    variant="primary"
-                    onClick={() => handleAssign(voter)}
-                    disabled={!selectedPlayer[key] || busy}
-                    className="shrink-0 px-2.5 py-1.5 text-sm font-semibold"
-                  >
-                    Zuweisen
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => setNewPlayerVoter(voter)}
-                    disabled={busy}
-                    title="Neuer Spieler"
-                    aria-label="Neuer Spieler"
-                    className="shrink-0 inline-flex items-center justify-center p-2 text-navy-700 bg-white border border-navy-200 rounded-lg hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <PlusCircle size={16} />
-                  </button>
-                </div>
+                <UnknownVoterRow
+                  key={key}
+                  voterName={voter.voterName}
+                  subline={subline}
+                  players={sortedPlayers}
+                  busy={busyKey === key}
+                  onAssign={playerId => handleAssign(voter, playerId)}
+                  onCreate={playerName => handleAssignNew(voter, playerName)}
+                />
               )
             })}
           </div>
@@ -208,14 +177,6 @@ export function WhatsappVotersTab() {
         )}
       </Card>
 
-      {newPlayerVoter && (
-        <NewPlayerModal
-          voterName={newPlayerVoter.voterName}
-          onCancel={() => setNewPlayerVoter(null)}
-          onConfirm={handleAssignNew}
-        />
-      )}
-
       {pendingDelete && (
         <ConfirmModal
           title="Alias löschen?"
@@ -267,38 +228,5 @@ function AliasInlineInput({ player, onSave, onDone }: { player: Player; onSave: 
         className="w-32 bg-transparent text-navy-700 outline-none placeholder:text-navy-600/40 disabled:opacity-50"
       />
     </span>
-  )
-}
-
-function NewPlayerModal({ voterName, onCancel, onConfirm }: { voterName: string; onCancel: () => void; onConfirm: (name: string) => void }) {
-  const [name, setName] = useState(voterName)
-
-  const footer = (
-    <div className="flex justify-end gap-2">
-      <Button type="button" variant="secondary" onClick={onCancel}>
-        Abbrechen
-      </Button>
-      <Button
-        type="button"
-        onClick={() => onConfirm(name.trim())}
-        disabled={!name.trim()}
-      >
-        Anlegen
-      </Button>
-    </div>
-  )
-
-  return (
-    <ResponsiveSheet open onClose={onCancel} title="Neuer Spieler" maxWidth="sm" footer={footer}>
-      <div className="p-5 space-y-3">
-        <p className="text-sm text-gray-500">
-          Legt einen neuen Spieler an und ordnet den WhatsApp-Wähler „{voterName}" zu.
-        </p>
-        <div>
-          <label className={labelCls}>Name</label>
-          <input value={name} onChange={e => setName(e.target.value)} autoFocus className={inputCls} />
-        </div>
-      </div>
-    </ResponsiveSheet>
   )
 }

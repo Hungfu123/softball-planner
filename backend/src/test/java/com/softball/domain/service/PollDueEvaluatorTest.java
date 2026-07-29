@@ -1,5 +1,6 @@
 package com.softball.domain.service;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ class PollDueEvaluatorTest {
         final PollDueEvaluator ev = new PollDueEvaluator();
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
         assertThat(ev.isDueOneOff(p, java.time.LocalDateTime.of(2026, 8, 5, 10, 25))).isTrue();
@@ -77,7 +78,7 @@ class PollDueEvaluatorTest {
         final PollDueEvaluator ev = new PollDueEvaluator();
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
         p.setLastSentAt(java.time.LocalDateTime.of(2026, 8, 5, 10, 25));
@@ -109,9 +110,25 @@ class PollDueEvaluatorTest {
     private WhatsappPoll oneOff() {
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
         return p;
+    }
+
+    @Test
+    void shouldTreatGameDayPollLikeOneOff() {
+        final WhatsappPoll poll = new WhatsappPoll();
+        poll.setMode(PollMode.GAME_DAY);
+        poll.setGameDayId(42L);
+        poll.setTime(LocalTime.of(18, 0));
+        poll.setSendDate(LocalDate.of(2026, 8, 2));
+
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 2, 18, 0))).isTrue();
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 2, 17, 59))).isFalse();
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 3, 18, 0))).isFalse();
+
+        poll.setLastSentAt(LocalDateTime.of(2026, 8, 2, 18, 0));
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 2, 18, 5))).isFalse();
     }
 }

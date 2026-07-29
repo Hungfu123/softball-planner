@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappAccountStatus;
 import com.softball.domain.model.WhatsappGroup;
@@ -69,7 +70,9 @@ public class WhatsappPollService {
     @Transactional
     public WhatsappPoll update(final Long id, final WhatsappPoll incoming) {
         final WhatsappPoll existing = findById(id);
-        final boolean wasCoupled = existing.isTrainingCoupled();
+        final boolean wasCoupled = existing.getMode() == PollMode.TRAINING;
+        final boolean wasGameDay = existing.getMode() == PollMode.GAME_DAY;
+        final Long oldGameDayId = existing.getGameDayId();
         final LocalDate oldSendDate = existing.getSendDate();
         existing.setGroupId(incoming.getGroupId());
         existing.setGroupName(incoming.getGroupName());
@@ -80,15 +83,26 @@ public class WhatsappPollService {
         existing.setEnabled(incoming.isEnabled());
         existing.setAllowMultipleAnswers(incoming.isAllowMultipleAnswers());
         existing.setMessage(incoming.getMessage());
-        existing.setTrainingCoupled(incoming.isTrainingCoupled());
+        existing.setMode(incoming.getMode());
+        existing.setGameDayId(incoming.getGameDayId());
         existing.setSendDate(incoming.getSendDate());
-        // Wechsel coupled -> einmalig: alte Trainings-Kopplung + Sendehistorie verwerfen, sonst
-        // würde der Vote-Sync auf dem alten Training weiterbuchen und der Poll gälte als "gesendet".
-        if (wasCoupled && !existing.isTrainingCoupled()) {
+        // Wechsel coupled -> einmalig (oder Spieltag -> anderer Modus): alte Trainings-Kopplung
+        // bzw. Spieltag-Kopplung + Sendehistorie verwerfen, sonst würde der Vote-Sync auf dem
+        // alten Training/Spieltag weiterbuchen und der Poll gälte fälschlich als "gesendet".
+        if ((wasCoupled && existing.getMode() != PollMode.TRAINING)
+                || (wasGameDay && existing.getMode() != PollMode.GAME_DAY)) {
             existing.setLastSentAt(null);
             existing.setLastSentMessageId(null);
             existing.setLastSentTrainingId(null);
-        } else if (!existing.isTrainingCoupled()
+            if (existing.getMode() != PollMode.GAME_DAY) existing.setGameDayId(null);
+        } else if (wasGameDay && existing.getMode() == PollMode.GAME_DAY
+                && !java.util.Objects.equals(oldGameDayId, existing.getGameDayId())) {
+            // Spieltag gewechselt, Modus bleibt GAME_DAY: die alte Sendehistorie gehört zum alten
+            // Spieltag — sonst würde der Stimmen-Abruf die Stimmen des alten auf den neuen Spieltag ziehen.
+            existing.setLastSentAt(null);
+            existing.setLastSentMessageId(null);
+            existing.setLastSentTrainingId(null);
+        } else if (existing.getMode() != PollMode.TRAINING
                 && !java.util.Objects.equals(oldSendDate, existing.getSendDate())
                 && existing.getSendDate() != null
                 && !existing.getSendDate().isBefore(LocalDate.now(clock))) {
@@ -136,7 +150,7 @@ public class WhatsappPollService {
         final WhatsappPoll p = findById(id);
         final String messageId = sender.sendPoll(p.getGroupId(), p.getTitle(), p.getOptions(),
                 p.isAllowMultipleAnswers(), p.getMessage());
-        if (p.isTrainingCoupled()) {
+        if (p.getMode() == PollMode.TRAINING) {
             // Trainingsumfrage: Test stempelt Sende-Metadaten (sonst findet der Vote-Sync den Poll
             // nicht) + koppelt ans nächste Training für die Voter-Zuordnung.
             p.setLastSentAt(LocalDateTime.now(clock));
@@ -146,10 +160,16 @@ public class WhatsappPollService {
                     .ifPresent(t -> p.setLastSentTrainingId(t.getId()));
             repository.save(p);
         }
+        if (p.getMode() == PollMode.GAME_DAY) {
+            // Message-ID stempeln, damit der Stimmen-Abruf einen Testversand schon findet.
+            // lastSentAt bleibt leer, damit der geplante Versand danach noch feuert.
+            p.setLastSentMessageId(messageId);
+            repository.save(p);
+        }
         // Einmalig: echter Test — Nachricht ist raus, aber lastSentAt bewusst NICHT setzen, damit
         // der geplante Einmal-Versand (isDueOneOff) danach trotzdem noch feuert. Nichts zu speichern.
         log.info("WhatsApp-Poll manuell gesendet: {} ({}), messageId={}, coupled={}",
-                p.getTitle(), id, messageId, p.isTrainingCoupled());
+                p.getTitle(), id, messageId, p.getMode() == PollMode.TRAINING);
     }
 
     @Transactional
@@ -176,11 +196,12 @@ public class WhatsappPollService {
         if (p.getTime() == null) {
             throw new BusinessValidationException("Uhrzeit muss gesetzt sein");
         }
-        if (p.isTrainingCoupled()) {
+        if (p.getMode() == PollMode.TRAINING) {
             if (p.getWeekday() == null) {
                 throw new BusinessValidationException("Trainingstag muss gesetzt sein");
             }
             p.setSendDate(null);
+            p.setGameDayId(null);
         } else {
             if (p.getSendDate() == null) {
                 throw new BusinessValidationException("Datum muss gesetzt sein");
@@ -189,6 +210,26 @@ public class WhatsappPollService {
             // Einmalige Polls kennen kein Pausieren — ohne UI zum Reaktivieren würde ein
             // deaktivierter One-off sonst nie mehr gesendet (isDueOneOff verlangt enabled).
             p.setEnabled(true);
+            if (p.getMode() == PollMode.GAME_DAY) {
+                if (p.getGameDayId() == null) {
+                    throw new BusinessValidationException("Spieltag muss gewählt sein");
+                }
+                if (p.getSendDate().isBefore(LocalDate.now(clock))) {
+                    // isDueOneOff feuert nur genau am sendDate — ein vergangenes Datum würde
+                    // stillschweigend nie senden.
+                    throw new BusinessValidationException("Sendedatum liegt in der Vergangenheit");
+                }
+                // uq_poll_game_day greift erst beim Speichern (DataIntegrityViolationException -> 500)
+                // — hier vorher fachlich prüfen, damit der Editor eine verständliche Meldung zeigt.
+                // Beim Update zählt der eigene Poll (gleiche ID) nicht als Kollision.
+                repository.findByGameDayId(p.getGameDayId())
+                    .filter(other -> !other.getId().equals(p.getId()))
+                    .ifPresent(other -> {
+                        throw new BusinessValidationException("Für diesen Spieltag gibt es schon eine Umfrage");
+                    });
+            } else {
+                p.setGameDayId(null);
+            }
         }
         final int optionCount = p.getOptions() != null ? p.getOptions().size() : 0;
         final boolean hasPoll = optionCount >= 2;
