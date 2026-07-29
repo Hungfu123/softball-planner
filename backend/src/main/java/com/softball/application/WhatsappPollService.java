@@ -219,6 +219,14 @@ public class WhatsappPollService {
                     // stillschweigend nie senden.
                     throw new BusinessValidationException("Sendedatum liegt in der Vergangenheit");
                 }
+                // uq_poll_game_day greift erst beim Speichern (DataIntegrityViolationException -> 500)
+                // — hier vorher fachlich prüfen, damit der Editor eine verständliche Meldung zeigt.
+                // Beim Update zählt der eigene Poll (gleiche ID) nicht als Kollision.
+                repository.findByGameDayId(p.getGameDayId())
+                    .filter(other -> !other.getId().equals(p.getId()))
+                    .ifPresent(other -> {
+                        throw new BusinessValidationException("Für diesen Spieltag gibt es schon eine Umfrage");
+                    });
             } else {
                 p.setGameDayId(null);
             }
