@@ -3,7 +3,11 @@ import { Button, ResponsiveSheet } from '@/components/shared'
 import { PlusCircle, XMark } from '@/icons'
 import type { WhatsappPollRequest, WhatsappGroup, Weekday, TrainingResponse, GameDayResponse, PollMode } from '@/types'
 import { coupledSendDate, WEEKDAYS, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
-import { awayTemplate, homeTemplate, defaultSendDate } from './pollTemplates'
+import {
+  awayTemplate, homeTemplate, defaultSendDate,
+  matchingTemplateKind, isTemplateUnmodified, refreshTemplateDateFields, NEUTRAL_TEMPLATE_FIELDS,
+  type TemplateKind,
+} from './pollTemplates'
 
 const JS_TO_WEEKDAY: Record<number, Weekday> = {
   0: 'SUNDAY', 1: 'MONDAY', 2: 'TUESDAY', 3: 'WEDNESDAY', 4: 'THURSDAY', 5: 'FRIDAY', 6: 'SATURDAY',
@@ -34,6 +38,19 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
   // Merkt, ob der Nutzer das Datum selbst geändert hat — dann überschreibt ein
   // Spieltag-Wechsel die Vorbelegung nicht mehr.
   const [dateTouched, setDateTouched] = useState(false)
+  // Merkt, welche Vorlage (falls überhaupt) Frage/Nachricht zuletzt erzeugt hat und für welchen
+  // Spieltag — damit ein Spieltag- oder Modus-Wechsel weiß, ob der Text noch "unverändert" ist
+  // (dann darf er nachziehen bzw. zurückgesetzt werden) oder vom Nutzer bereits editiert wurde
+  // (dann bleibt er unangetastet). Bei einem bereits gespeicherten Spieltag-Poll gibt es keinen
+  // Merker aus einer vorherigen Sitzung — hier wird abgeleitet, ob Frage+Nachricht (noch) exakt
+  // einer der beiden Vorlagen für seinen Spieltag entsprechen.
+  const [templateOrigin, setTemplateOrigin] = useState<{ kind: TemplateKind; gameDayId: number } | null>(() => {
+    if (draft.mode !== 'GAME_DAY' || draft.gameDayId == null) return null
+    const gd = gameDays.find(g => g.id === draft.gameDayId)
+    if (!gd) return null
+    const kind = matchingTemplateKind(draft, gd)
+    return kind ? { kind, gameDayId: draft.gameDayId } : null
+  })
 
   const switchMode = (poll: boolean) => {
     if (poll === withPoll) return
@@ -59,42 +76,64 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
     // Spieltag-Vorbelegung (Spieltag − 7 Tage) nie mehr, auch nicht bei einem späteren
     // Spieltagwechsel.
     setDateTouched(false)
+
+    // Befund 1: Vorlagen-Inhalt gehört nur zum Spieltag-Modus. Beim Verlassen auf den
+    // neutralen Ausgangszustand zurücksetzen — aber nur, wenn Frage/Antworten/Nachricht/
+    // Mehrfachauswahl noch exakt der Vorlage entsprechen. Hat der Nutzer etwas davon editiert,
+    // bleibt alles stehen (Datenverlust wäre schlimmer als inhaltlich unpassender Text).
+    const leavingUnmodifiedTemplate = form.mode === 'GAME_DAY' && mode !== 'GAME_DAY'
+      && !!templateOrigin && !!selectedGameDay
+      && isTemplateUnmodified(templateOrigin.kind, form, selectedGameDay)
+    if (leavingUnmodifiedTemplate) setTemplateOrigin(null)
+
     setForm(prev => {
+      const base = leavingUnmodifiedTemplate ? { ...prev, ...NEUTRAL_TEMPLATE_FIELDS } : prev
       if (mode === 'TRAINING') {
-        if (prev.weekday) return { ...prev, mode }
+        if (base.weekday) return { ...base, mode }
         // beim Anschalten sinnvollen Trainingstag vorbelegen (frühestes kommendes Training)
         const upcoming = [...trainings]
           .filter(t => !t.cancelled && t.date >= todayIso())
           .sort((a, b) => a.date.localeCompare(b.date))[0]
         const wd = upcoming ? JS_TO_WEEKDAY[new Date(upcoming.date + 'T00:00:00').getDay()] : 'MONDAY'
-        return { ...prev, mode, weekday: wd }
+        return { ...base, mode, weekday: wd }
       }
       if (mode === 'ONE_OFF') {
         // Datum vorbelegen (morgen), damit das Feld nicht leer ist
-        return { ...prev, mode, sendDate: prev.sendDate ?? tomorrowIso() }
+        return { ...base, mode, sendDate: base.sendDate ?? tomorrowIso() }
       }
       // GAME_DAY: bereits gewählten oder nächsten kommenden Spieltag vorbelegen + Sendedatum
       // 7 Tage vorher — dateTouched ist gerade zurückgesetzt, die Vorbelegung greift also immer.
-      const gameDayId = prev.gameDayId ?? [...gameDays]
+      const gameDayId = base.gameDayId ?? [...gameDays]
         .filter(gd => gd.date >= todayIso())
         .sort((a, b) => a.date.localeCompare(b.date))[0]?.id ?? null
       const gd = gameDayId != null ? gameDays.find(g => g.id === gameDayId) : undefined
       return {
-        ...prev,
+        ...base,
         mode,
         gameDayId,
-        sendDate: gd ? defaultSendDate(gd.date, todayIso()) : prev.sendDate,
+        sendDate: gd ? defaultSendDate(gd.date, todayIso()) : base.sendDate,
       }
     })
   }
 
   const pickGameDay = (gameDayId: number | null) => {
     const gd = gameDayId != null ? gameDays.find(g => g.id === gameDayId) : undefined
-    setForm(prev => ({
-      ...prev,
-      gameDayId,
-      sendDate: !dateTouched && gd ? defaultSendDate(gd.date, todayIso()) : prev.sendDate,
-    }))
+    setForm(prev => {
+      const next = {
+        ...prev,
+        gameDayId,
+        sendDate: !dateTouched && gd ? defaultSendDate(gd.date, todayIso()) : prev.sendDate,
+      }
+      // Befund 2: Frage/Nachricht, die noch unverändert von der zuletzt angewandten Vorlage
+      // stammen, für den neu gewählten Spieltag neu erzeugen (Datum/Wochentag/Ort folgen).
+      // Individuell editierte Felder bleiben unangetastet — Prüfung pro Feld.
+      if (templateOrigin && gd) {
+        const oldGameDay = gameDays.find(g => g.id === templateOrigin.gameDayId)
+        if (oldGameDay) return { ...next, ...refreshTemplateDateFields(templateOrigin.kind, next, oldGameDay, gd) }
+      }
+      return next
+    })
+    if (templateOrigin && gd) setTemplateOrigin({ kind: templateOrigin.kind, gameDayId: gd.id })
   }
 
   const selectedGameDay = gameDays.find(g => g.id === form.gameDayId) ?? null
@@ -125,9 +164,11 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
     draft.mode === 'GAME_DAY' && form.mode === 'GAME_DAY' && form.gameDayId !== draft.gameDayId
   const willLoseSendHistory = !!lastSentAt && (modeLeavesCoupling || gameDayChangedWithinMode)
 
-  const applyTemplate = (template: (gameDay: GameDayResponse) => Pick<WhatsappPollRequest, 'title' | 'message' | 'options' | 'allowMultipleAnswers'>) => {
+  const applyTemplate = (kind: TemplateKind) => {
     if (!selectedGameDay) return
+    const template = kind === 'AWAY' ? awayTemplate : homeTemplate
     setForm(prev => ({ ...prev, ...template(selectedGameDay) }))
+    setTemplateOrigin({ kind, gameDayId: selectedGameDay.id })
     // Vorlage füllt Frage + Antwortoptionen — ohne den Umfrage-Tab würde buildRequest() das
     // wieder verwerfen (withPoll === false) und der Klick wäre wirkungslos.
     setWithPoll(true)
@@ -294,6 +335,11 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
             placeholder={withPoll ? 'Wird vor der Umfrage gesendet — z.B. Event-Details, Ort.' : 'Deine Nachricht an die Gruppe — z.B. Event-Details, Ort, Uhrzeit.'}
             className={inputCls + ' resize-y'}
           />
+          {form.mode === 'GAME_DAY' && (
+            <p className="mt-1 text-xs text-gray-500">
+              Datum, Wochentag und Ort in Frage und Nachricht folgen automatisch dem gewählten Spieltag, solange der Text aus der Vorlage stammt.
+            </p>
+          )}
         </div>
 
         <div>
@@ -377,10 +423,10 @@ export function PollEditor({ draft, lastSentAt, groups, trainings, gameDays, sav
                 <div>
                   <label className={labelCls}>Vorlage</label>
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" variant="secondary" disabled={!selectedGameDay} onClick={() => applyTemplate(awayTemplate)}>
+                    <Button type="button" variant="secondary" disabled={!selectedGameDay} onClick={() => applyTemplate('AWAY')}>
                       Auswärtsspiel
                     </Button>
-                    <Button type="button" variant="secondary" disabled={!selectedGameDay} onClick={() => applyTemplate(homeTemplate)}>
+                    <Button type="button" variant="secondary" disabled={!selectedGameDay} onClick={() => applyTemplate('HOME')}>
                       Heimspieltag
                     </Button>
                   </div>

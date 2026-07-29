@@ -165,4 +165,78 @@ describe('PollEditor', () => {
     expect(screen.queryByText(/bereits gesendet/)).toBeNull()
     expect(screen.queryByText(/gehen die abgegebenen Stimmen/)).toBeNull()
   })
+
+  // Heim-Vorlage genutzt, weil Titel UND Nachricht dort das Datum enthalten (Auswärts-Titel
+  // enthält nur den Ort) — so lässt sich das Nachziehen an beiden Feldern zeigen.
+  it('Vorlage angewandt, dann Spieltag gewechselt: Frage und Nachricht tragen das neue Datum', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
+    await userEvent.click(screen.getByRole('button', { name: /Heimspieltag/ }))
+    const titleField = screen.getByPlaceholderText('z.B. Wer kommt zum Training?')
+    const messageField = screen.getByPlaceholderText(/Wird vor der Umfrage gesendet/)
+    expect((titleField as HTMLInputElement).value).toContain('09.08.')
+    expect((messageField as HTMLTextAreaElement).value).toContain('09.08.')
+
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '43')
+
+    expect((titleField as HTMLInputElement).value).toContain('16.08.')
+    expect((messageField as HTMLTextAreaElement).value).toContain('16.08.')
+  })
+
+  it('Vorlage angewandt, Nachricht selbst umgeschrieben, dann Spieltag gewechselt: eigene Nachricht bleibt, Frage zieht nach', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
+    await userEvent.click(screen.getByRole('button', { name: /Heimspieltag/ }))
+
+    const messageField = screen.getByPlaceholderText(/Wird vor der Umfrage gesendet/)
+    await userEvent.clear(messageField)
+    await userEvent.type(messageField, 'Meine eigene Nachricht')
+    const titleField = screen.getByPlaceholderText('z.B. Wer kommt zum Training?')
+
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '43')
+
+    expect(messageField).toHaveValue('Meine eigene Nachricht')
+    expect((titleField as HTMLInputElement).value).toContain('16.08.')
+  })
+
+  it('Vorlage angewandt, dann Modus auf Training: Frage/Antworten/Nachricht neutral zurückgesetzt', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
+    await userEvent.click(screen.getByRole('button', { name: /Auswärtsspiel/ }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
+
+    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('')
+    expect(screen.getByDisplayValue('Ja')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Nein')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Vielleicht')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Wird vor der Umfrage gesendet/)).toHaveValue('')
+  })
+
+  it('Vorlage angewandt, Frage selbst umgeschrieben, dann Modus auf Einmalig: eigener Text bleibt stehen', async () => {
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
+    await userEvent.click(screen.getByRole('button', { name: /Auswärtsspiel/ }))
+
+    const titleField = screen.getByPlaceholderText('z.B. Wer kommt zum Training?')
+    await userEvent.clear(titleField)
+    await userEvent.type(titleField, 'Mein eigener Titel')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Einmalig' }))
+
+    expect(screen.getByDisplayValue('Mein eigener Titel')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Ja ich will spielen')).toBeInTheDocument()
+  })
+
+  it('ohne Vorlage getippter Inhalt im Spieltag-Modus bleibt bei Spieltagwechsel unverändert', async () => {
+    render(<PollEditor {...props} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: 42, title: 'Freihand-Titel' }} />)
+
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '43')
+
+    expect(screen.getByDisplayValue('Freihand-Titel')).toBeInTheDocument()
+  })
 })
