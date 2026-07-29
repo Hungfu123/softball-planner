@@ -169,10 +169,11 @@ iteriert über die gefetchten Stimmen, ohne Stimmen gibt es nichts zu ändern.
   möglich. Widersprüchliche Stimmen werden nicht reihenfolgeabhängig aufgelöst: **ein Ja
   gewinnt** — sobald irgendeine Stimme dieses Spielers die erste Option enthält, ist er
   anwesend.
-- Unbekannte WhatsApp-Namen (`player_id IS NULL`) erscheinen in der Vorschau und im
-  bestehenden WhatsApp-Tab zur Zuordnung. Nach der Zuordnung öffnet man die Vorschau
-  erneut — Spieltag-Stimmen werden **nicht** automatisch gebucht, damit kein stiller
-  Kaskaden-Schreibvorgang entsteht (Trainings-Stimmen werden wie bisher re-gematcht).
+- Unbekannte WhatsApp-Namen (`player_id IS NULL`) werden **direkt im Vorschau-Modal**
+  zugeordnet (Spieler-Dropdown oder „neuer Spieler"), keine Weiterleitung. Nach der
+  Zuordnung lädt die Vorschau neu, der Wähler rutscht in „Neu anwesend". Gebucht wird erst
+  mit „Anwesenheit übernehmen" — kein stiller Kaskaden-Schreibvorgang (Trainings-Stimmen
+  werden wie bisher direkt re-gematcht).
 
 ### Neue Klassen
 
@@ -231,12 +232,11 @@ Im Anwesend-Block:
 
 ```
 Anwesend (11)   [WhatsApp-Stimmen holen]   ⚠️ 2 unbekannte Wähler
-                                            └→ /players?tab=whatsapp
 ```
 
 - Button nur sichtbar, wenn für diesen Spieltag ein Poll existiert und gesendet wurde.
-- Badge nur bei `game_day_id`-Stimmen mit `player_id IS NULL`; Klick navigiert in den
-  WhatsApp-Tab — identisch zum Muster in `TrainingTodayPage.tsx:372`.
+- Badge nur bei `game_day_id`-Stimmen mit `player_id IS NULL`, aus dem lesenden
+  `GET`-Endpoint. Klick öffnet dasselbe Vorschau-Modal (keine Navigation).
 - Klick auf den Button öffnet das Vorschau-Modal:
 
 ```
@@ -244,18 +244,28 @@ Stimmen abgeholt (11 Ja, 3 Auto, 2 Nein)
 
 + Neu anwesend: Max, Tim, Jana
 - Nicht mehr:   Ben   ⚠ Lineup Spiel 2 (#4, SS) wird gelöscht
-? Unbekannt:    "Sandra W." → zuordnen
+
+Unbekannt (1)
+  "Sandra W."   [Spieler wählen… ▾]  [Zuweisen]  [+]
 
 Fährt: Ben, Lisa, Tom     Hilft: Anne
 
 [Abbrechen]  [Anwesenheit übernehmen]
 ```
 
+Die Zuordnungs-Zeile ist dieselbe Komponente wie im WhatsApp-Tab: das Markup aus
+`WhatsappVotersTab.tsx` (Name + Datum, Spieler-Dropdown, „Zuweisen", Plus-Button für neuen
+Spieler) wird als `UnknownVoterRow` extrahiert und von beiden Stellen benutzt. Sie ruft die
+bestehenden Endpoints `POST /api/orga/whatsapp/assign` bzw. `/assign-new`; danach lädt das
+Modal die Vorschau neu.
+
 ### Unbekannte-Voter-Tab
 
 `UnknownVoterResponse` kennt heute nur `trainingId`/`trainingDate`. Neu: `source`
 (`TRAINING` | `GAME_DAY`), `targetId`, `date`. `WhatsappVotersTab` zeigt entsprechend
-„Training 20.06." bzw. „Spieltag 09.08.".
+„Training 20.06." bzw. „Spieltag 09.08." und nutzt für die Zeilen `UnknownVoterRow`. Der
+Tab bleibt als globale Alias-Pflege bestehen — die Zuordnung im Spieltag-Fluss braucht ihn
+aber nicht mehr.
 
 ## Tests
 
@@ -280,7 +290,11 @@ Frontend:
 
 - `PollEditor.test.tsx`: Vorlage-Buttons füllen Optionen/Mehrfachauswahl, Spieltag-Wahl
   setzt `sendDate` auf −7 Tage, manuelles Datum wird nicht überschrieben, Modus-Wechsel.
-- Sync-Modal: Diff-Anzeige, Warnung bei Lineup-Verlust, Abbrechen schreibt nichts.
+- Sync-Modal: Diff-Anzeige, Warnung bei Lineup-Verlust, Abbrechen schreibt nichts,
+  Inline-Zuordnung eines unbekannten Wählers lädt die Vorschau neu und verschiebt ihn nach
+  „Neu anwesend".
+- `UnknownVoterRow`: in `WhatsappVotersTab` und Modal identisches Verhalten (Zuweisen,
+  neuer Spieler).
 - `WhatsappPollPage.test.tsx`: Spieltag-Gruppe in der Übersicht.
 
 ## Explizit nicht Teil dieser Änderung
