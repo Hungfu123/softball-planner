@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-type Color = 'navy' | 'red' | 'gray' | 'emerald' | 'amber' | 'blue'
+type Color = 'navy' | 'red' | 'gray' | 'emerald' | 'amber' | 'blue' | 'green'
 type Size = 'sm' | 'md'
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   size?: Size
   className?: string
   title?: string
+  ariaLabel?: string
 }
 
 const COLORS: Record<Color, string> = {
@@ -18,6 +19,7 @@ const COLORS: Record<Color, string> = {
   emerald: 'bg-emerald-100 text-emerald-700',
   amber: 'bg-amber-100 text-amber-700',
   blue: 'bg-blue-100 text-blue-700',
+  green: 'bg-green-100 text-green-700',
 }
 
 const SIZES: Record<Size, string> = {
@@ -29,10 +31,11 @@ const SIZES: Record<Size, string> = {
  * Badge / Pill für Status, Counts, Labels.
  * Farben sind bewusst auf Navy/Red/Gray + Status (emerald/amber) beschränkt.
  */
-export function Badge({ children, color = 'gray', size = 'md', className = '', title }: Props) {
+export function Badge({ children, color = 'gray', size = 'md', className = '', title, ariaLabel }: Props) {
   return (
     <span
       title={title}
+      aria-label={ariaLabel}
       className={`inline-flex items-center font-semibold tabular-nums rounded-full ${COLORS[color]} ${SIZES[size]} ${className}`}
     >
       {children}
