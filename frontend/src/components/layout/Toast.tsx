@@ -1,13 +1,18 @@
+import { createPortal } from 'react-dom'
 import { CheckCircle, AlertCircle, XMark } from '@/icons'
 import type { Toast as ToastType } from '@/hooks/useToast'
 
 export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
 
-  return (
+  // Portal an document.body + höherer z-Index als die ResponsiveSheet-Bottom-Sheets (vaul
+  // Drawer/CenterModal, beide z-50): Toast rendert sonst im Layout-Baum und liegt hinter jedem
+  // offenen Sheet — Fehlermeldungen während eines Sheets (z.B. Apply-Fehler im Sync-Sheet)
+  // wirkten dann wie ein Klick ohne Reaktion.
+  return createPortal(
     // Mobile: oben mittig (zentriert, unter Header) — Bottom-ActionBars (Scoring)
     // verdeckten Toasts sonst. Desktop: rechts unten.
-    <div className="fixed z-50 flex flex-col gap-2 top-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm sm:top-auto sm:bottom-4 sm:right-4 sm:left-auto sm:translate-x-0 sm:w-96 sm:max-w-none">
+    <div className="fixed z-[60] flex flex-col gap-2 top-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm sm:top-auto sm:bottom-4 sm:right-4 sm:left-auto sm:translate-x-0 sm:w-96 sm:max-w-none">
       {toasts.map(t => (
         <div
           key={t.id}
@@ -40,6 +45,7 @@ export function Toast({ toasts, onDismiss }: { toasts: ToastType[]; onDismiss: (
           />
         </div>
       ))}
-    </div>
+    </div>,
+    document.body,
   )
 }
