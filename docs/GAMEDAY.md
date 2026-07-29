@@ -27,7 +27,9 @@ Ein **GameDay** = ein Spieltag mit 1-3 (max ~10 nach V25) Games (Doubleheader/Tr
 
 ## WhatsApp-Spieltag-Umfrage
 
-Ein `WhatsappPoll` im Modus `GAME_DAY` ist per `game_day_id` an genau einen Spieltag gekoppelt (Unique-Index `uq_poll_game_day` — **max. eine Umfrage pro Spieltag**, sonst wäre unklar, wessen `lastSentMessageId` beim Stimmen-Abruf gilt).
+Ein `WhatsappPoll` im Modus `GAME_DAY` ist per `game_day_id` an genau einen Spieltag gekoppelt (Unique-Index `uq_poll_game_day` — **max. eine Umfrage pro Spieltag**, sonst wäre unklar, wessen `lastSentMessageId` beim Stimmen-Abruf gilt; `WhatsappPollService` prüft das bei `create`/`update` vorab fachlich, damit statt einer 500er der Editor eine verständliche Meldung zeigt).
+
+**Antwortoptionen nach dem Versand nicht mehr ändern**: Die Stimmen-Zuordnung läuft über den Optionstext (siehe unten), nicht über eine ID. Wer Optionstexte editiert, nachdem die Umfrage raus ist, entkoppelt bereits abgegebene Stimmen von den aktuellen Optionen — ein Abruf bricht dann bewusst mit einer Fehlermeldung ab, statt eine falsche Vorschau (z.B. "alle haben abgesagt") anzuzeigen.
 
 - **Versand:** einmalig, über denselben Pfad wie `ONE_OFF` (`PollDueEvaluator.isDueOneOff`) am `sendDate`. Vorbelegung im Editor: Spieltag − 7 Tage, auf heute geklemmt (Backend lehnt ein `sendDate` in der Vergangenheit ab). Nach dem Versand kein erneuter Versand (`lastSentAt`-Guard).
 - **Position-1-Regel:** die **erste** Antwortoption der Vorlage zählt als „anwesend" — rein positionsbasiert, keine Textheuristik (`domain/service/GameDayVoteMirror`). Beide mitgelieferten Vorlagen (Auswärtsspiel: Mehrfachauswahl mit Auto-Option; Heimspieltag: Einzelauswahl mit Aufbau/Catering-Option) legen die Ja-Option deshalb bewusst auf Position 1. Stimmt ein Spieler unter zwei WhatsApp-Namen ab (Alias-Konflikt), gewinnt ein Ja.
