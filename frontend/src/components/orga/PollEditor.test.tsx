@@ -17,7 +17,7 @@ const draft: WhatsappPollRequest = {
   weekday: null, time: '18:00', enabled: true, allowMultipleAnswers: false,
   message: null, mode: 'ONE_OFF', gameDayId: null, sendDate: '2026-08-05',
 }
-const props = { draft, groups, trainings, gameDays, saving: false, onSave: vi.fn(), onClose: vi.fn() }
+const props = { draft, lastSentAt: null, groups, trainings, gameDays, saving: false, onSave: vi.fn(), onClose: vi.fn() }
 
 describe('PollEditor', () => {
   beforeEach(() => {
@@ -59,7 +59,17 @@ describe('PollEditor', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
     await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
 
-    expect(screen.getByLabelText('Datum')).toHaveValue('2026-08-02')
+    expect(screen.getByLabelText('Sendedatum')).toHaveValue('2026-08-02')
+  })
+
+  it('Spieltag-Modus beschriftet die Felder als Sendedatum/Sende-Uhrzeit, nicht Datum/Uhrzeit', async () => {
+    // Punkt 9: direkt unter dem Spieltag-Dropdown liest man "Datum"/"Uhrzeit" sonst als Spielbeginn.
+    render(<PollEditor {...props} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+
+    expect(screen.getByLabelText('Sendedatum')).toBeInTheDocument()
+    expect(screen.getByText('Sende-Uhrzeit')).toBeInTheDocument()
+    expect(screen.queryByText('Uhrzeit')).toBeNull()
   })
 
   it('Vorlage Auswärtsspiel füllt Antworten und Mehrfachauswahl', async () => {
@@ -91,11 +101,68 @@ describe('PollEditor', () => {
     render(<PollEditor {...props} />)
     await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
     await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
-    const dateInput = screen.getByLabelText('Datum')
+    const dateInput = screen.getByLabelText('Sendedatum')
     await userEvent.clear(dateInput)
     await userEvent.type(dateInput, '2026-08-05')
     await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '43')
 
-    expect(screen.getByLabelText('Datum')).toHaveValue('2026-08-05')
+    expect(screen.getByLabelText('Sendedatum')).toHaveValue('2026-08-05')
+  })
+
+  it('Spieltag-Dropdown zeigt nur kommende Spieltage mit Jahr im Label', () => {
+    // Punkt 5: nach mehreren Saisons stehen sonst Dutzende Einträge ohne Jahr in der Liste,
+    // teils mit identischem Kurzlabel. Vergangene Spieltage werden ausgeblendet.
+    const pastAndFuture: GameDayResponse[] = [
+      { id: 1, date: '2026-07-01', label: 'Verpasst', location: null, seasonId: 1, availablePlayers: [], games: [] },
+      ...gameDays,
+    ]
+    render(<PollEditor {...props} gameDays={pastAndFuture} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: null }} />)
+
+    expect(screen.queryByText('Verpasst', { exact: false })).toBeNull()
+    expect(screen.getByText(/09\.08\.2026/)).toBeInTheDocument()
+  })
+
+  it('bereits gesendeter Spieltag-Poll: Vorschau-Klammer nennt nur bei echten 7 Tagen "7 Tage vorher"', async () => {
+    // Punkt 8: defaultSendDate klemmt bei einem zu nahen Spieltag auf heute — die Klammer
+    // darf dann nicht trotzdem "7 Tage vor dem Spieltag" behaupten.
+    const closeGameDay: GameDayResponse[] = [
+      { id: 99, date: '2026-07-31', label: 'Übermorgen', location: null, seasonId: 1, availablePlayers: [], games: [] },
+    ]
+    render(<PollEditor {...props} gameDays={closeGameDay} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: 99, sendDate: '2026-07-29' }} />)
+
+    const preview = screen.getByText(/einmalig gesendet/)
+    expect(preview.textContent).not.toMatch(/\(7 Tage vor dem Spieltag\)/)
+    expect(preview.textContent).toMatch(/zu nah für 7 Tage Vorlauf/)
+  })
+
+  it('bereits gesendete Spieltag-Umfrage warnt vor Optionsänderung', () => {
+    render(<PollEditor {...props} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: 42 }} lastSentAt="2026-07-20T10:00:00" />)
+
+    expect(screen.getByText(/bereits gesendet/)).toBeInTheDocument()
+    expect(screen.getByText(/Sende-Sperre zurücksetzen/)).toBeInTheDocument()
+  })
+
+  it('Moduswechsel eines bereits gesendeten Spieltag-Polls warnt vor Stimmenverlust', async () => {
+    render(<PollEditor {...props} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: 42 }} lastSentAt="2026-07-20T10:00:00" />)
+    expect(screen.queryByText(/gehen die abgegebenen Stimmen/)).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Einmalig' }))
+
+    expect(screen.getByText(/gehen die abgegebenen Stimmen/)).toBeInTheDocument()
+  })
+
+  it('Spieltag-Wechsel eines bereits gesendeten Polls warnt ebenfalls', async () => {
+    render(<PollEditor {...props} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: 42 }} lastSentAt="2026-07-20T10:00:00" />)
+
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '43')
+
+    expect(screen.getByText(/gehen die abgegebenen Stimmen/)).toBeInTheDocument()
+  })
+
+  it('noch nie gesendete Spieltag-Umfrage zeigt keine Warnungen', () => {
+    render(<PollEditor {...props} draft={{ ...draft, mode: 'GAME_DAY', gameDayId: 42 }} lastSentAt={null} />)
+
+    expect(screen.queryByText(/bereits gesendet/)).toBeNull()
+    expect(screen.queryByText(/gehen die abgegebenen Stimmen/)).toBeNull()
   })
 })
