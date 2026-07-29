@@ -228,7 +228,7 @@ Karte zeigt Spieltag (Datum + Label/Ort) und nächsten Versand.
 
 ### GameDayPlanner
 
-Im Anwesend-Block:
+Im Anwesend-Block (Modal-Komponente: `PollVoteSyncSheet`, generisch über `target`):
 
 ```
 Anwesend (11)   [WhatsApp-Stimmen holen]   ⚠️ 2 unbekannte Wähler
@@ -258,6 +258,53 @@ Die Zuordnungs-Zeile ist dieselbe Komponente wie im WhatsApp-Tab: das Markup aus
 Spieler) wird als `UnknownVoterRow` extrahiert und von beiden Stellen benutzt. Sie ruft die
 bestehenden Endpoints `POST /api/orga/whatsapp/assign` bzw. `/assign-new`; danach lädt das
 Modal die Vorschau neu.
+
+### Gestaltung des Sync-Modals
+
+Container ist `ResponsiveSheet` (`maxWidth="xl"`, Bottom-Sheet auf Mobile, Center-Modal auf
+Desktop, Titel „WhatsApp-Stimmen übernehmen"). Keine eigene Overlay-Logik, kein
+`confirm()`. Bausteine aus `components/shared`: `Badge`, `Button`, `EmptyState`,
+`LoadingSkeleton`, `SectionHeader`. Palette wie im Rest der App: Flächen cream-50 mit
+cream-300-Rand, Text navy-900/navy-600, primärer CTA navy-800 (Hover navy-900),
+Sekundär-Button weiß mit navy-800/weiß-Hover, Warnungen softball-red.
+
+Aufbau von oben nach unten:
+
+1. **Kopfzeile mit Stimmen-Bilanz** — kompakte Badge-Reihe statt Prosa:
+   `Badge green „11 spielen"`, `Badge gray „3 fahren"`, `Badge gray „2 helfen"`,
+   `Badge red „2 Nein"`, rechts die Abrufzeit („gerade abgerufen").
+2. **Diff-Block** als zwei Listen mit farbiger linker Kante (grün für Zugang, rot für
+   Abgang), jeder Eintrag eine Zeile mit Spielername. Zugänge mit `Plus`-Icon, Abgänge mit
+   `Minus`-Icon aus `@/icons`. Warnungen hängen als Unterzeile am Abgang, in
+   softball-red-700 mit `AlertCircle`, Text konkret: „Lineup Spiel 2 (#4, SS) wird
+   gelöscht", „Base-Coach 1B in Spiel 1 wird entfernt".
+3. **Unbekannte Wähler** — eigener Abschnitt mit `SectionHeader` und Count, darin
+   `UnknownVoterRow` je Wähler. Nur sichtbar, wenn es welche gibt.
+4. **Info-Listen** „Fährt" und „Hilft" — eingeklappt in `CollapsibleSection`, damit sie den
+   Diff nicht zudecken. Namen als Chips (`rounded-full bg-navy-50 border-navy-100`), wie
+   die Alias-Chips im WhatsApp-Tab.
+5. **Footer** — links `Abbrechen` (sekundär), rechts `Anwesenheit übernehmen` (primär
+   navy-800). Der primäre Button trägt die Bilanz im Label, wenn sich etwas ändert:
+   „Übernehmen (+3 / −1)". Bei leerem Diff ist er disabled mit Hinweis „Nichts zu ändern".
+
+Zustände:
+
+- **Laden** — `LoadingSkeleton variant="list"` an der Stelle des Diff-Blocks, Footer-Button
+  disabled.
+- **Kein Diff** — `EmptyState` mit `CrossBones`, Titel „Anwesenheit ist aktuell",
+  Beschreibung „Alle Ja-Stimmen sind schon übernommen."
+- **Keine Stimmen** — `EmptyState` „Noch keine Stimmen", Beschreibung „Die Umfrage wurde
+  gesendet, aber niemand hat abgestimmt."
+- **WhatsApp nicht verbunden** — Fehlerkarte in softball-red-50 mit Rand
+  softball-red-200, Text „WhatsApp ist nicht verbunden — Stimmen konnten nicht abgerufen
+  werden.", Link „Zur WhatsApp-Einrichtung". Kein leeres Modal.
+- **Übernehmen läuft** — Button zeigt Spinner-Zustand und ist disabled, Modal bleibt offen,
+  danach Toast „Anwesenheit übernommen (+3 / −1)" und Modal schließt.
+
+Barrierefreiheit: Fokus landet beim Öffnen auf dem Modal-Titel, Escape schließt (kommt von
+`ResponsiveSheet`), Warnungen sind Text und nicht nur Farbe, Badge-Zahlen haben
+`aria-label` in Langform („11 Spieler spielen"). Mobile: Chips und Diff-Zeilen brechen um,
+der Footer bleibt am Sheet-Boden sichtbar.
 
 ### Unbekannte-Voter-Tab
 
@@ -292,10 +339,31 @@ Frontend:
   setzt `sendDate` auf −7 Tage, manuelles Datum wird nicht überschrieben, Modus-Wechsel.
 - Sync-Modal: Diff-Anzeige, Warnung bei Lineup-Verlust, Abbrechen schreibt nichts,
   Inline-Zuordnung eines unbekannten Wählers lädt die Vorschau neu und verschiebt ihn nach
-  „Neu anwesend".
+  „Neu anwesend", leerer Diff deaktiviert den Übernehmen-Button, nicht verbundenes WhatsApp
+  zeigt die Fehlerkarte statt einer leeren Liste.
 - `UnknownVoterRow`: in `WhatsappVotersTab` und Modal identisches Verhalten (Zuweisen,
   neuer Spieler).
 - `WhatsappPollPage.test.tsx`: Spieltag-Gruppe in der Übersicht.
+
+## Folgeschritt: dasselbe Modal für die Trainings-Anwesenheit
+
+Heute schreibt „Jetzt syncen" beim Training sofort (`PollVoteSyncService.syncNow`, Mirror
+ohne Vorschau), und unbekannte Wähler erfordern den Umweg über `/players?tab=whatsapp`.
+Beides löst dasselbe Modal.
+
+Damit das ohne Umbau geht, wird das Modal von Anfang an generisch gebaut:
+`PollVoteSyncSheet` mit `target: { type: 'TRAINING' | 'GAME_DAY', id }`. Die Spieltag-Variante
+kommt zuerst — dort ist die Vorschau wegen der Lineup-Kaskade zwingend. Das Training wird
+danach in einem **eigenen Schritt** umgestellt (eigener Commit), weil es dort reine UX-
+Verbesserung ist und der bestehende Sync durch Tests abgedeckt ist.
+
+Was der Folgeschritt braucht:
+
+- `POST /api/trainings/{id}/poll-votes/fetch` (Vorschau) und `.../apply` (Delta) analog zum
+  Spieltag; `syncNow` wird vom manuellen Button entkoppelt.
+- Der additive Scheduler-Sync (`syncAll`) bleibt unverändert — er soll weiter automatisch
+  und ohne Rücknahme buchen.
+- `TrainingTodayPage` ersetzt Sync-Button + Badge-Weiterleitung durch das Modal.
 
 ## Explizit nicht Teil dieser Änderung
 
