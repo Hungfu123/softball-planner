@@ -311,6 +311,46 @@ class WhatsappPollServiceTest {
         assertThat(updated.getLastSentMessageId()).isNull();
     }
 
+    @Test
+    void shouldRejectSecondPollForSameGameDay() {
+        // uq_poll_game_day greift erst beim Speichern (DataIntegrityViolationException -> 500) —
+        // die fachliche Prüfung muss vorher greifen und eine verständliche Meldung liefern.
+        service.create(gameDayPoll());
+        final WhatsappPoll second = gameDayPoll();
+
+        assertThatThrownBy(() -> service.create(second))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("schon eine Umfrage");
+    }
+
+    @Test
+    void shouldAllowUpdatingOwnPollOnSameGameDay() {
+        // Der eigene Poll darf beim Update nicht als Kollision mit sich selbst gelten.
+        final WhatsappPoll saved = service.create(gameDayPoll());
+        final WhatsappPoll incoming = gameDayPoll();
+        incoming.setTitle("Geänderte Frage");
+
+        final WhatsappPoll updated = service.update(saved.getId(), incoming);
+
+        assertThat(updated.getTitle()).isEqualTo("Geänderte Frage");
+        assertThat(updated.getGameDayId()).isEqualTo(saved.getGameDayId());
+    }
+
+    @Test
+    void shouldRejectUpdatingSecondPollOntoOccupiedGameDay() {
+        final WhatsappPoll first = service.create(gameDayPoll()); // belegt gameDayId 42
+        final WhatsappPoll otherGameDay = gameDayPoll();
+        otherGameDay.setGameDayId(99L);
+        final WhatsappPoll second = service.create(otherGameDay);
+
+        final WhatsappPoll incoming = gameDayPoll();
+        incoming.setGameDayId(first.getGameDayId()); // versucht auf den belegten Spieltag zu wechseln
+
+        assertThatThrownBy(() -> service.update(second.getId(), incoming))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("schon eine Umfrage");
+    }
+
     // Helper: gueltiger Spieltag-Poll (Ja-Option zuerst, wie in beiden Vorlagen)
     private WhatsappPoll gameDayPoll() {
         final WhatsappPoll poll = new WhatsappPoll();
