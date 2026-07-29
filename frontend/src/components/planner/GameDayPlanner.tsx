@@ -19,15 +19,17 @@ import { SaveButton } from './SaveButton'
 import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
+import { PollVoteSyncSheet } from './PollVoteSyncSheet'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { EmptyState, Button } from '@/components/shared'
+import { EmptyState, Button, Badge } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse, GameDayVotePreview } from '@/types'
 import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
+import { shouldShowPollSyncButton } from '@/utils/pollSyncVisibility'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -68,6 +70,8 @@ export function GameDayPlanner() {
   const [selectedPeriodId] = useState<number | null>(null)
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const [assignPosition, setAssignPosition] = useState<string | null>(null)
+  const [pollStatus, setPollStatus] = useState<GameDayVotePreview | null>(null)
+  const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
 
   // Block in-app navigation when there are unsaved changes
@@ -121,6 +125,16 @@ export function GameDayPlanner() {
   useEffect(() => {
     api.getTrainingPeriods().then(setTrainingPeriods)
   }, [])
+
+  // Poll-Status für den WhatsApp-Stimmen-Button: nur gespeicherte Stimmen (kein Live-Abruf
+  // bei WhatsApp), fehlertolerant — schlägt der Call fehl (kein Poll, Backend-Problem),
+  // bleibt der Button einfach versteckt statt den Planner zu brechen.
+  useEffect(() => {
+    if (!gameDay?.id) return
+    api.getGameDayPollVotes(gameDay.id)
+      .then(setPollStatus)
+      .catch(() => setPollStatus(null))
+  }, [gameDay?.id])
 
   // Fetch training stats — by period or last 12 weeks
   useEffect(() => {
@@ -577,6 +591,19 @@ export function GameDayPlanner() {
               )}
             </div>
 
+            {shouldShowPollSyncButton(pollStatus) && (
+              <button
+                onClick={() => setShowPollSync(true)}
+                className="px-3 py-2.5 text-sm rounded-lg font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 bg-white border border-cream-300 text-navy-800 hover:bg-navy-800 hover:text-white transition-colors"
+              >
+                <UsersIcon size={16} />
+                <span>WhatsApp-Stimmen</span>
+                {(pollStatus?.unknownVoters.length ?? 0) > 0 && (
+                  <Badge color="red" size="sm">⚠️ {pollStatus?.unknownVoters.length} unbekannt</Badge>
+                )}
+              </button>
+            )}
+
             {/* Secondary — Toolbar-Strip ohne einzelne Boxen */}
             <div className="flex items-center justify-between gap-0 border-t border-cream-200 pt-2">
               {availablePlayers.length > 0 && (
@@ -633,6 +660,19 @@ export function GameDayPlanner() {
                   <BallIcon size={15} />
                   <span>Live scoren</span>
                 </Link>
+              )}
+              {shouldShowPollSyncButton(pollStatus) && (
+                <button
+                  onClick={() => setShowPollSync(true)}
+                  className="font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase rounded-lg cursor-pointer inline-flex items-center gap-1.5 bg-white border border-cream-300 text-navy-800 hover:bg-navy-800 hover:text-white transition-colors"
+                  title="WhatsApp-Stimmen übernehmen"
+                >
+                  <UsersIcon size={14} />
+                  <span>WhatsApp-Stimmen</span>
+                  {(pollStatus?.unknownVoters.length ?? 0) > 0 && (
+                    <Badge color="red" size="sm">⚠️ {pollStatus?.unknownVoters.length} unbekannt</Badge>
+                  )}
+                </button>
               )}
             </div>
             {/* Toolbar-Strip: Tertiary-Aktionen (Icon + Label) */}
@@ -1068,6 +1108,19 @@ export function GameDayPlanner() {
           selectedIds={availablePlayers.map(p => p.id)}
           onSave={handleSetAvailablePlayers}
           onClose={() => setShowPlayersModal(false)}
+        />
+      )}
+
+      {showPollSync && (
+        <PollVoteSyncSheet
+          target={{ type: 'GAME_DAY', id: gameDay.id }}
+          players={players}
+          onApplied={async () => {
+            const updated = await api.getGameDay(gameDay.id)
+            setGameDay(updated)
+            setPollStatus(await api.getGameDayPollVotes(gameDay.id).catch(() => null))
+          }}
+          onClose={() => setShowPollSync(false)}
         />
       )}
 
