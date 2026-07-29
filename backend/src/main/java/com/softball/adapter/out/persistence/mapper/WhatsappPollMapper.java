@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.adapter.out.persistence.entity.WhatsappPollEntity;
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.WhatsappPoll;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +38,8 @@ public class WhatsappPollMapper {
         p.setLastSentAt(e.getLastSentAt());
         p.setLastSentMessageId(e.getLastSentMessageId());
         p.setLastSentTrainingId(e.getLastSentTrainingId());
-        p.setTrainingCoupled(e.isTrainingCoupled());
+        p.setMode(e.getMode() != null ? PollMode.valueOf(e.getMode()) : PollMode.TRAINING);
+        p.setGameDayId(e.getGameDayId());
         p.setSendDate(e.getSendDate());
         return p;
     }
@@ -67,7 +69,8 @@ public class WhatsappPollMapper {
         e.setLastSentAt(p.getLastSentAt());
         e.setLastSentMessageId(p.getLastSentMessageId());
         e.setLastSentTrainingId(p.getLastSentTrainingId());
-        e.setTrainingCoupled(p.isTrainingCoupled());
+        e.setMode(p.getMode().name());
+        e.setGameDayId(p.getGameDayId());
         e.setSendDate(p.getSendDate());
     }
 

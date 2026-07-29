@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
 import com.softball.domain.port.out.TrainingRepository;
@@ -40,7 +41,7 @@ class WhatsappPollSchedulerTest {
         p.setGroupId("g@g.us");
         p.setTitle("Training?");
         p.setOptions(List.of("Ja", "Nein"));
-        p.setTrainingCoupled(true);
+        p.setMode(PollMode.TRAINING);
         p.setWeekday(DayOfWeek.TUESDAY);
         p.setTime(LocalTime.of(18, 0));
         p.setEnabled(true);
@@ -119,7 +120,7 @@ class WhatsappPollSchedulerTest {
         p.setGroupId("g@g.us");
         p.setTitle("Einmalig");
         p.setOptions(List.of("Ja", "Nein"));
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(LocalDate.of(2026, 8, 5));
         p.setTime(LocalTime.of(10, 25));
         p.setEnabled(true);

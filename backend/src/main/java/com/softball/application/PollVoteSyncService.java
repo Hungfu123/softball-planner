@@ -102,9 +102,8 @@ public class PollVoteSyncService {
             .collect(Collectors.toMap(p -> p.getWhatsappName().trim().toLowerCase(), p -> p, (a, b) -> a));
 
         for (final WhatsappPoll poll : polls) {
-            // Einmalige Polls koppeln nie an ein Training → nie Anwesenheit buchen (Defense-in-Depth,
-            // auch falls ein coupled->einmalig-Wechsel eine alte lastSentTrainingId hinterlassen hätte).
-            if (!poll.isTrainingCoupled()) continue;
+            // Nur Trainings-Polls buchen Trainings-Anwesenheit.
+            if (poll.getMode() != PollMode.TRAINING) continue;
             if (!poll.isEnabled() || poll.getLastSentMessageId() == null || poll.getLastSentTrainingId() == null) continue;
             final Training training = trainingRepo.findById(poll.getLastSentTrainingId()).orElse(null);
             if (training == null || training.isCancelled()) continue;

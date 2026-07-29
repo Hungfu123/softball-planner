@@ -1,5 +1,6 @@
 package com.softball.domain.service;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.WhatsappPoll;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ class PollDueEvaluatorTest {
         final PollDueEvaluator ev = new PollDueEvaluator();
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
         assertThat(ev.isDueOneOff(p, java.time.LocalDateTime.of(2026, 8, 5, 10, 25))).isTrue();
@@ -77,7 +78,7 @@ class PollDueEvaluatorTest {
         final PollDueEvaluator ev = new PollDueEvaluator();
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
         p.setLastSentAt(java.time.LocalDateTime.of(2026, 8, 5, 10, 25));
@@ -109,7 +110,7 @@ class PollDueEvaluatorTest {
     private WhatsappPoll oneOff() {
         final WhatsappPoll p = new WhatsappPoll();
         p.setEnabled(true);
-        p.setTrainingCoupled(false);
+        p.setMode(PollMode.ONE_OFF);
         p.setSendDate(java.time.LocalDate.of(2026, 8, 5));
         p.setTime(java.time.LocalTime.of(10, 25));
         return p;

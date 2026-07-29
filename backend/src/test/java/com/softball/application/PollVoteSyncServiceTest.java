@@ -35,7 +35,7 @@ class PollVoteSyncServiceTest {
                 attendanceRepo, new VotePresenceEvaluator());
         training = new Training(10L, LocalDate.of(2026, 4, 14), "20:00", "Park");
         poll = new WhatsappPoll();
-        poll.setId(1L); poll.setEnabled(true); poll.setTrainingCoupled(true);
+        poll.setId(1L); poll.setEnabled(true); poll.setMode(PollMode.TRAINING);
         poll.setLastSentMessageId("msg-1");
         poll.setLastSentAt(LocalDateTime.of(2026, 4, 13, 20, 0)); // Mo
         poll.setLastSentTrainingId(10L);
@@ -64,7 +64,7 @@ class PollVoteSyncServiceTest {
     void oneOffPollSkipped_neverBooksAttendance() {
         // Regression C1: ein einmaliger Poll mit (evtl. stehengebliebener) lastSentTrainingId
         // darf NIE Anwesenheit buchen — Guard greift vor jedem fetchVotes.
-        poll.setTrainingCoupled(false);
+        poll.setMode(PollMode.ONE_OFF);
         when(playerRepo.findAll()).thenReturn(List.of());
 
         final int written = service.syncAll(now);

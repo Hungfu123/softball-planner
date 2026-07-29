@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.PollMode;
 import com.softball.domain.model.WhatsappPoll;
 
 import java.time.DayOfWeek;
@@ -21,13 +22,14 @@ public record WhatsappPollResponse(
         String message,
         List<LocalDate> skipDates,
         LocalDateTime lastSentAt,
-        boolean trainingCoupled,
+        PollMode mode,
+        Long gameDayId,
         LocalDate sendDate) {
 
     public static WhatsappPollResponse from(final WhatsappPoll p) {
         return new WhatsappPollResponse(p.getId(), p.getGroupId(), p.getGroupName(), p.getTitle(),
                 p.getOptions(), p.getWeekday(), p.getTime(), p.isEnabled(),
                 p.isAllowMultipleAnswers(), p.getMessage(), p.getSkipDates(), p.getLastSentAt(),
-                p.isTrainingCoupled(), p.getSendDate());
+                p.getMode(), p.getGameDayId(), p.getSendDate());
     }
 }
