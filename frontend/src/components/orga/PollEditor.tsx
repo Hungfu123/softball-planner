@@ -52,6 +52,10 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
   // Modus-Wechsel: sinnvolle Defaults setzen, ohne bereits gewählte Werte zu überschreiben.
   const switchSchedule = (mode: PollMode) => {
     if (mode === form.mode) return
+    // Ein manuell getipptes Datum gehörte zum vorherigen Modus — sonst bekäme man die
+    // Spieltag-Vorbelegung (Spieltag − 7 Tage) nie mehr, auch nicht bei einem späteren
+    // Spieltagwechsel.
+    setDateTouched(false)
     setForm(prev => {
       if (mode === 'TRAINING') {
         if (prev.weekday) return { ...prev, mode }
@@ -66,16 +70,17 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
         // Datum vorbelegen (morgen), damit das Feld nicht leer ist
         return { ...prev, mode, sendDate: prev.sendDate ?? tomorrowIso() }
       }
-      // GAME_DAY: nächsten kommenden Spieltag vorbelegen + Sendedatum 7 Tage vorher
-      if (prev.gameDayId != null) return { ...prev, mode }
-      const upcoming = [...gameDays]
+      // GAME_DAY: bereits gewählten oder nächsten kommenden Spieltag vorbelegen + Sendedatum
+      // 7 Tage vorher — dateTouched ist gerade zurückgesetzt, die Vorbelegung greift also immer.
+      const gameDayId = prev.gameDayId ?? [...gameDays]
         .filter(gd => gd.date >= todayIso())
-        .sort((a, b) => a.date.localeCompare(b.date))[0]
+        .sort((a, b) => a.date.localeCompare(b.date))[0]?.id ?? null
+      const gd = gameDayId != null ? gameDays.find(g => g.id === gameDayId) : undefined
       return {
         ...prev,
         mode,
-        gameDayId: upcoming?.id ?? null,
-        sendDate: !dateTouched && upcoming ? defaultSendDate(upcoming.date, todayIso()) : prev.sendDate,
+        gameDayId,
+        sendDate: gd ? defaultSendDate(gd.date, todayIso()) : prev.sendDate,
       }
     })
   }
@@ -94,6 +99,9 @@ export function PollEditor({ draft, groups, trainings, gameDays, saving, onSave,
   const applyTemplate = (template: (gameDay: GameDayResponse) => Pick<WhatsappPollRequest, 'title' | 'message' | 'options' | 'allowMultipleAnswers'>) => {
     if (!selectedGameDay) return
     setForm(prev => ({ ...prev, ...template(selectedGameDay) }))
+    // Vorlage füllt Frage + Antwortoptionen — ohne den Umfrage-Tab würde buildRequest() das
+    // wieder verwerfen (withPoll === false) und der Klick wäre wirkungslos.
+    setWithPoll(true)
   }
 
   // Mobil: fokussiertes Feld nur dann über die Tastatur scrollen, wenn es
