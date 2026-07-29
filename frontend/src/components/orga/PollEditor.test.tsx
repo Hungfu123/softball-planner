@@ -254,26 +254,13 @@ describe('PollEditor', () => {
   it('Trainingsumfrage-Vorlage füllt Frage und die zwei Optionen Ja/Nein', async () => {
     render(<PollEditor {...props} />)
     await userEvent.click(screen.getByRole('button', { name: 'Training' }))
-    await userEvent.selectOptions(screen.getByLabelText('Trainingstag'), 'TUESDAY')
 
     await userEvent.click(screen.getByRole('button', { name: 'Trainingsumfrage' }))
 
-    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt am Dienstag zum Training?')
+    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt morgen zum Training?')
     expect(screen.getByDisplayValue('Ja')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Nein')).toBeInTheDocument()
     expect(screen.getByLabelText(/Mehrfachauswahl/)).not.toBeChecked()
-  })
-
-  it('Trainingsumfrage-Vorlage angewandt, dann Trainingstag gewechselt: Frage nennt den neuen Tag', async () => {
-    render(<PollEditor {...props} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Training' }))
-    await userEvent.selectOptions(screen.getByLabelText('Trainingstag'), 'TUESDAY')
-    await userEvent.click(screen.getByRole('button', { name: 'Trainingsumfrage' }))
-    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt am Dienstag zum Training?')
-
-    await userEvent.selectOptions(screen.getByLabelText('Trainingstag'), 'FRIDAY')
-
-    expect(screen.getByPlaceholderText('z.B. Wer kommt zum Training?')).toHaveValue('Wer kommt am Freitag zum Training?')
   })
 
   it('Trainingsumfrage-Vorlage angewandt, dann Modus auf Einmalig: unveränderter Inhalt wird neutral zurückgesetzt', async () => {

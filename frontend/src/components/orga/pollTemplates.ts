@@ -1,5 +1,5 @@
-import type { GameDayResponse, WhatsappPollRequest, Weekday } from '@/types'
-import { isoDate, WEEKDAYS } from './pollSchedule'
+import type { GameDayResponse, WhatsappPollRequest } from '@/types'
+import { isoDate } from './pollSchedule'
 
 type TemplateFields = Pick<WhatsappPollRequest, 'title' | 'message' | 'options' | 'allowMultipleAnswers'>
 
@@ -47,11 +47,14 @@ export function homeTemplate(gameDay: GameDayResponse): TemplateFields {
  * "Ja, ich komme" würde vom Backend NICHT mehr als Zusage erkannt — bitte nicht "schöner"
  * umformulieren, ohne `VotePresenceEvaluator` entsprechend anzupassen. (Zur Abgrenzung: beim
  * Spieltag-Poll gilt eine andere Regel — dort zählt die erste Option unabhängig vom Text.)
+ *
+ * Statische Frage ohne Wochentag: PollDueEvaluator.isDue sendet den Trainings-Poll immer am
+ * Vortag des Zieltrainings — "morgen" ist also unabhängig vom gewählten Trainingstag korrekt und
+ * braucht keine Nachziehlogik bei einem Trainingstag-Wechsel.
  */
-export function trainingTemplate(weekday: Weekday): TemplateFields {
-  const label = WEEKDAYS.find(w => w.value === weekday)?.label ?? weekday
+export function trainingTemplate(): TemplateFields {
   return {
-    title: `Wer kommt am ${label} zum Training?`,
+    title: 'Wer kommt morgen zum Training?',
     message: null,
     options: ['Ja', 'Nein'],
     allowMultipleAnswers: false,
@@ -120,22 +123,13 @@ export function refreshTemplateDateFields(
   }
 }
 
-/** true, wenn Frage/Antworten/Nachricht/Mehrfachauswahl noch exakt der Trainings-Vorlage für
- * `weekday` entsprechen — Pendant zu isTemplateUnmodified für den Spieltag. Wird auch genutzt,
- * um bei einem bereits gespeicherten Trainings-Poll ohne eigenen Merker abzuleiten, ob er
- * vorlagen-verwaltet ist (siehe PollEditor). */
-export function isTrainingTemplateUnmodified(fields: TemplateFields, weekday: Weekday): boolean {
-  return templateFieldsEqual(fields, trainingTemplate(weekday))
-}
-
-/**
- * Bei einem Trainingstag-Wechsel: Frage, die noch unverändert vom Trainings-Vorlagentext für
- * `oldWeekday` stammt, für `newWeekday` neu erzeugen (Wochentag in der Frage folgt) — Pendant zu
- * refreshTemplateDateFields für den Spieltag. Die Trainings-Vorlage hat keine Nachricht, daher
- * genügt hier der Titel.
- */
-export function refreshTrainingTemplateTitle(currentTitle: string, oldWeekday: Weekday, newWeekday: Weekday): string {
-  return currentTitle === trainingTemplate(oldWeekday).title ? trainingTemplate(newWeekday).title : currentTitle
+/** true, wenn Frage/Antworten/Nachricht/Mehrfachauswahl noch exakt der Trainings-Vorlage
+ * entsprechen — Pendant zu isTemplateUnmodified für den Spieltag. Wird auch genutzt, um bei
+ * einem bereits gespeicherten Trainings-Poll ohne eigenen Merker abzuleiten, ob er
+ * vorlagen-verwaltet ist (siehe PollEditor). Die Trainings-Vorlage ist statisch (kein Kontext
+ * wie beim Spieltag), daher braucht es kein Pendant zu refreshTemplateDateFields. */
+export function isTrainingTemplateUnmodified(fields: TemplateFields): boolean {
+  return templateFieldsEqual(fields, trainingTemplate())
 }
 
 /** Neutraler Ausgangszustand für Frage/Antworten/Nachricht/Mehrfachauswahl — wie ein frischer

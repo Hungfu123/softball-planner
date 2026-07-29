@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   awayTemplate, homeTemplate, trainingTemplate, defaultSendDate,
   matchingTemplateKind, isTemplateUnmodified, refreshTemplateDateFields, NEUTRAL_TEMPLATE_FIELDS,
-  isTrainingTemplateUnmodified, refreshTrainingTemplateTitle,
+  isTrainingTemplateUnmodified,
 } from './pollTemplates'
 import type { GameDayResponse } from '@/types'
 
@@ -81,35 +81,29 @@ describe('pollTemplates', () => {
     })
   })
 
-  it('Trainings-Vorlage: exakt zwei Optionen, "Ja" zuerst, Einzelauswahl', () => {
-    const t = trainingTemplate('TUESDAY')
+  it('Trainings-Vorlage: exakt zwei Optionen, "Ja" zuerst, Einzelauswahl, keine Nachricht', () => {
+    const t = trainingTemplate()
     // Exakter Match statt toContain: VotePresenceEvaluator.isPresent bucht Anwesenheit nur bei
     // wörtlichem "ja" (Groß-/Kleinschreibung egal) — eine spätere Umformulierung ("Ja, ich
     // komme") darf hier nicht unbemerkt durchrutschen.
     expect(t.options).toEqual(['Ja', 'Nein'])
     expect(t.allowMultipleAnswers).toBe(false)
+    expect(t.message).toBeNull()
   })
 
-  it('Trainings-Vorlage: Frage nennt den Wochentag', () => {
-    expect(trainingTemplate('TUESDAY').title).toContain('Dienstag')
-    expect(trainingTemplate('FRIDAY').title).toContain('Freitag')
+  it('Trainings-Vorlage: Frage fragt nach "morgen", nicht nach einem Wochentag', () => {
+    // Der Trainings-Poll wird laut PollDueEvaluator.isDue immer am Vortag des Trainings
+    // gesendet — "morgen" stimmt also unabhängig vom Wochentag, ein Wochentagsname wäre
+    // überflüssig (und bräuchte eine eigene Nachziehlogik bei Trainingstag-Wechsel).
+    expect(trainingTemplate().title).toBe('Wer kommt morgen zum Training?')
   })
 
   it('isTrainingTemplateUnmodified: true solange Felder exakt der Vorlage entsprechen', () => {
-    expect(isTrainingTemplateUnmodified(trainingTemplate('MONDAY'), 'MONDAY')).toBe(true)
+    expect(isTrainingTemplateUnmodified(trainingTemplate())).toBe(true)
   })
 
   it('isTrainingTemplateUnmodified: false sobald ein Feld editiert wurde', () => {
-    const edited = { ...trainingTemplate('MONDAY'), title: 'Eigene Frage' }
-    expect(isTrainingTemplateUnmodified(edited, 'MONDAY')).toBe(false)
-  })
-
-  it('refreshTrainingTemplateTitle: Frage folgt dem neuen Wochentag, wenn unverändert', () => {
-    const current = trainingTemplate('MONDAY').title
-    expect(refreshTrainingTemplateTitle(current, 'MONDAY', 'THURSDAY')).toBe(trainingTemplate('THURSDAY').title)
-  })
-
-  it('refreshTrainingTemplateTitle: eigene Frage bleibt beim Wochentagwechsel erhalten', () => {
-    expect(refreshTrainingTemplateTitle('Eigene Frage', 'MONDAY', 'THURSDAY')).toBe('Eigene Frage')
+    const edited = { ...trainingTemplate(), title: 'Eigene Frage' }
+    expect(isTrainingTemplateUnmodified(edited)).toBe(false)
   })
 })
