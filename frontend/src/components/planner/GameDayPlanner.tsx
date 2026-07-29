@@ -20,16 +20,16 @@ import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { PollVoteSyncSheet } from './PollVoteSyncSheet'
+import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { EmptyState, Button, Badge } from '@/components/shared'
+import { EmptyState, Button } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse, GameDayVotePreview } from '@/types'
 import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
-import { shouldShowPollSyncButton } from '@/utils/pollSyncVisibility'
 import * as api from '@/api/client'
 
 export function GameDayPlanner() {
@@ -591,18 +591,7 @@ export function GameDayPlanner() {
               )}
             </div>
 
-            {shouldShowPollSyncButton(pollStatus) && (
-              <button
-                onClick={() => setShowPollSync(true)}
-                className="px-3 py-2.5 text-sm rounded-lg font-bold cursor-pointer inline-flex items-center justify-center gap-1.5 bg-white border border-cream-300 text-navy-800 hover:bg-navy-800 hover:text-white transition-colors"
-              >
-                <UsersIcon size={16} />
-                <span>WhatsApp-Stimmen</span>
-                {(pollStatus?.unknownVoters.length ?? 0) > 0 && (
-                  <Badge color="red" size="sm">⚠️ {pollStatus?.unknownVoters.length} unbekannt</Badge>
-                )}
-              </button>
-            )}
+            <PollSyncToolbarButton variant="mobile" pollStatus={pollStatus} onClick={() => setShowPollSync(true)} />
 
             {/* Secondary — Toolbar-Strip ohne einzelne Boxen */}
             <div className="flex items-center justify-between gap-0 border-t border-cream-200 pt-2">
@@ -661,19 +650,7 @@ export function GameDayPlanner() {
                   <span>Live scoren</span>
                 </Link>
               )}
-              {shouldShowPollSyncButton(pollStatus) && (
-                <button
-                  onClick={() => setShowPollSync(true)}
-                  className="font-display px-3 py-2 text-xs font-extrabold tracking-widest uppercase rounded-lg cursor-pointer inline-flex items-center gap-1.5 bg-white border border-cream-300 text-navy-800 hover:bg-navy-800 hover:text-white transition-colors"
-                  title="WhatsApp-Stimmen übernehmen"
-                >
-                  <UsersIcon size={14} />
-                  <span>WhatsApp-Stimmen</span>
-                  {(pollStatus?.unknownVoters.length ?? 0) > 0 && (
-                    <Badge color="red" size="sm">⚠️ {pollStatus?.unknownVoters.length} unbekannt</Badge>
-                  )}
-                </button>
-              )}
+              <PollSyncToolbarButton variant="desktop" pollStatus={pollStatus} onClick={() => setShowPollSync(true)} />
             </div>
             {/* Toolbar-Strip: Tertiary-Aktionen (Icon + Label) */}
             <div className="flex items-center gap-1 border-t border-cream-200 pt-1.5">
@@ -1123,7 +1100,6 @@ export function GameDayPlanner() {
           onClose={() => setShowPollSync(false)}
         />
       )}
-
 
       {showEditModal && (
         <EditGameDayModal
