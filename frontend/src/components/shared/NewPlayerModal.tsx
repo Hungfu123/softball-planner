@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from './Button'
 import { ResponsiveSheet } from './ResponsiveSheet'
 
@@ -10,23 +10,42 @@ interface Props {
   voterName: string
   nested?: boolean
   onCancel: () => void
-  onConfirm: (name: string) => void
+  onConfirm: (name: string) => void | Promise<void>
 }
 
 export function NewPlayerModal({ voterName, nested, onCancel, onConfirm }: Props) {
   const [name, setName] = useState(voterName)
+  const [submitting, setSubmitting] = useState(false)
+  // Ref statt nur State: verhindert einen zweiten onConfirm-Aufruf auch dann, wenn zwei Klicks
+  // im selben Tick eintreffen, bevor React das disabled-Attribut neu gerendert hat.
+  const submittingRef = useRef(false)
+
+  const handleConfirm = async () => {
+    if (submittingRef.current) return
+    submittingRef.current = true
+    setSubmitting(true)
+    try {
+      await onConfirm(name.trim())
+    } catch {
+      // Fehler wurde bereits vom Aufrufer angezeigt (Toast) — Modal bleibt offen, damit der
+      // eingetippte Name für einen Retry erhalten bleibt (siehe UnknownVoterRow).
+    } finally {
+      submittingRef.current = false
+      setSubmitting(false)
+    }
+  }
 
   const footer = (
     <div className="flex justify-end gap-2">
-      <Button type="button" variant="secondary" onClick={onCancel}>
+      <Button type="button" variant="secondary" onClick={onCancel} disabled={submitting}>
         Abbrechen
       </Button>
       <Button
         type="button"
-        onClick={() => onConfirm(name.trim())}
-        disabled={!name.trim()}
+        onClick={handleConfirm}
+        disabled={!name.trim() || submitting}
       >
-        Anlegen
+        {submitting ? 'Anlegen…' : 'Anlegen'}
       </Button>
     </div>
   )
