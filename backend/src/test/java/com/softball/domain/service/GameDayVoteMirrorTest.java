@@ -127,4 +127,34 @@ class GameDayVoteMirrorTest {
 
         assertThat(result.toAdd()).containsExactly(1L);
     }
+
+    @Test
+    void shouldFlagVoterWithOptionMatchingNoCurrentOption() {
+        // Option-Text wurde nach Versand geändert (z.B. Tippfehler-Korrektur) — die Stimme traegt
+        // noch den alten Text, der zu keiner der aktuellen Optionen passt.
+        final var result = mirror.compute(AWAY_OPTIONS,
+            List.of(new WhatsappVote("Sandra W.", List.of("Jaaa ich will unbedingt spielen"))),
+            Set.of(), Map.of());
+
+        assertThat(result.unmatchedVoters()).containsExactly("Sandra W.");
+    }
+
+    @Test
+    void shouldNotFlagVoterWhoWithdrewAllOptions() {
+        // Leere Optionsliste = legitime Stimmruecknahme, kein Options-Drift.
+        final var result = mirror.compute(AWAY_OPTIONS,
+            List.of(new WhatsappVote("Ben B.", List.of())),
+            Set.of(), Map.of());
+
+        assertThat(result.unmatchedVoters()).isEmpty();
+    }
+
+    @Test
+    void shouldNotFlagVoterWhoseOptionMatchesCurrentOptions() {
+        final var result = mirror.compute(AWAY_OPTIONS,
+            List.of(new WhatsappVote("Max M.", List.of("Ja ich will spielen"))),
+            Set.of(), Map.of());
+
+        assertThat(result.unmatchedVoters()).isEmpty();
+    }
 }
