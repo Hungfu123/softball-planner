@@ -120,4 +120,10 @@ public class GameDayController {
     public GameDayVotePreviewResponse storedPollVotes(@PathVariable final Long id) {
         return GameDayVotePreviewResponse.from(voteSyncService.stored(id));
     }
+
+    @PostMapping("/gamedays/{id}/poll-votes/apply")
+    public GameDayResponse applyPollVotes(@PathVariable final Long id,
+                                          @Valid @RequestBody final ApplyGameDayVotesRequest req) {
+        return GameDayResponse.from(voteSyncService.apply(id, req.add(), req.remove()));
+    }
 }

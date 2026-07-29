@@ -36,15 +36,16 @@ public class GameDayVoteSyncService {
     private final SyncedVoteRepository voteRepo;
     private final LineupEntryRepository lineupRepo;
     private final GameStaffRepository staffRepo;
+    private final AvailabilityService availabilityService;
     private final GameDayVoteMirror mirror = new GameDayVoteMirror();
 
     public GameDayVoteSyncService(final WhatsappPollRepository pollRepo, final WhatsappSender sender,
                                   final GameDayRepository gameDayRepo, final PlayerRepository playerRepo,
                                   final SyncedVoteRepository voteRepo, final LineupEntryRepository lineupRepo,
-                                  final GameStaffRepository staffRepo) {
+                                  final GameStaffRepository staffRepo, final AvailabilityService availabilityService) {
         this.pollRepo = pollRepo; this.sender = sender; this.gameDayRepo = gameDayRepo;
         this.playerRepo = playerRepo; this.voteRepo = voteRepo; this.lineupRepo = lineupRepo;
-        this.staffRepo = staffRepo;
+        this.staffRepo = staffRepo; this.availabilityService = availabilityService;
     }
 
     @Transactional
@@ -81,6 +82,29 @@ public class GameDayVoteSyncService {
         return new Preview(poll.isPresent(), poll.map(p -> p.getLastSentMessageId() != null).orElse(false),
                 List.of(), List.of(), List.of(), unknown, stored.size(),
                 (int) stored.stream().filter(SyncedVote::isPresent).count());
+    }
+
+    /**
+     * Rechnet das Vorschau-Delta auf die AKTUELLE Anwesenheitsliste (nicht auf die aus der
+     * Vorschau), damit parallele Aenderungen in einem anderen Tab nicht ueberschrieben werden.
+     */
+    @Transactional
+    public GameDay apply(final Long gameDayId, final List<Long> add, final List<Long> remove) {
+        final List<Long> toAdd = add != null ? add : List.of();
+        final List<Long> toRemove = remove != null ? remove : List.of();
+        final Set<Long> overlap = new HashSet<>(toAdd);
+        overlap.retainAll(toRemove);
+        if (!overlap.isEmpty()) {
+            throw new BusinessValidationException("Spieler kann nicht gleichzeitig hinzugefügt und entfernt werden");
+        }
+
+        final GameDay gameDay = loadGameDay(gameDayId);
+        final Set<Long> next = gameDay.getAvailablePlayers().stream()
+            .map(Player::getId).collect(Collectors.toCollection(LinkedHashSet::new));
+        next.addAll(toAdd);
+        toRemove.forEach(next::remove);
+        log.info("Spieltag {}: Anwesenheit aus Umfrage übernommen (+{} / -{})", gameDayId, toAdd.size(), toRemove.size());
+        return availabilityService.setAvailablePlayers(gameDayId, new ArrayList<>(next));
     }
 
     private void persist(final Long gameDayId, final List<WhatsappVote> votes,

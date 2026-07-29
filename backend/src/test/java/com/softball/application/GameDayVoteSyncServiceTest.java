@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
@@ -24,19 +26,22 @@ class GameDayVoteSyncServiceTest {
     private final SyncedVoteRepository voteRepo = mock(SyncedVoteRepository.class);
     private final LineupEntryRepository lineupRepo = mock(LineupEntryRepository.class);
     private final GameStaffRepository staffRepo = mock(GameStaffRepository.class);
-    // Wird von diesem Service (noch) nicht injiziert — dokumentiert nur, dass Task 5 die
-    // Anwesenheit nicht anfasst. Task 6 nimmt AvailabilityService in den Konstruktor.
+    // Seit Task 6 im Konstruktor injiziert. verifyNoInteractions(availabilityService) in
+    // shouldPersistVotesAndReturnDeltaWithoutTouchingAvailability ist damit eine echte
+    // Regressions-Sicherung: Vorschau darf nie schreiben, das darf nur apply().
     private final AvailabilityService availabilityService = mock(AvailabilityService.class);
     private GameDayVoteSyncService service;
 
-    private final Player max = new Player(5L, "Max", true, null);
-    private final Player ben = new Player(6L, "Ben", true, null);
+    private final Player max = new Player(1L, "Max", true, null);
+    private final Player ben = new Player(2L, "Ben", true, null);
+    private final Player jana = new Player(4L, "Jana", true, null);
     private WhatsappPoll poll;
     private GameDay gameDay;
 
     @BeforeEach
     void setup() {
-        service = new GameDayVoteSyncService(pollRepo, sender, gameDayRepo, playerRepo, voteRepo, lineupRepo, staffRepo);
+        service = new GameDayVoteSyncService(pollRepo, sender, gameDayRepo, playerRepo, voteRepo, lineupRepo, staffRepo,
+                availabilityService);
         max.setWhatsappName("Max M.");
         ben.setWhatsappName("Ben B.");
         when(playerRepo.findAll()).thenReturn(List.of(max, ben));
@@ -137,5 +142,35 @@ class GameDayVoteSyncServiceTest {
 
         assertThat(preview.unknownVoters()).containsExactly("Sandra W.");
         verify(sender, never()).fetchVotes(any());
+    }
+
+    @Test
+    void shouldApplyDeltaOnCurrentAvailability() {
+        givenGameDayWithAvailable(ben, jana);      // aktuell: Ben(2), Jana(4)
+        when(availabilityService.setAvailablePlayers(eq(7L), any())).thenReturn(new GameDay());
+
+        service.apply(7L, List.of(1L), List.of(2L));   // +Max(1), -Ben(2)
+
+        final ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(availabilityService).setAvailablePlayers(eq(7L), captor.capture());
+        assertThat(captor.getValue()).containsExactlyInAnyOrder(1L, 4L);   // Jana bleibt unberührt
+    }
+
+    @Test
+    void shouldIgnoreRemovalOfPlayerWhoIsNotAvailable() {
+        givenGameDayWithAvailable(jana);
+        when(availabilityService.setAvailablePlayers(eq(7L), any())).thenReturn(new GameDay());
+
+        service.apply(7L, List.of(), List.of(2L));
+
+        final ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(availabilityService).setAvailablePlayers(eq(7L), captor.capture());
+        assertThat(captor.getValue()).containsExactly(4L);
+    }
+
+    @Test
+    void shouldRejectPlayerInBothAddAndRemove() {
+        assertThatThrownBy(() -> service.apply(7L, List.of(1L), List.of(1L)))
+            .isInstanceOf(BusinessValidationException.class);
     }
 }
