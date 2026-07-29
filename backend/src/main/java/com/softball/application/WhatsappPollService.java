@@ -72,6 +72,7 @@ public class WhatsappPollService {
         final WhatsappPoll existing = findById(id);
         final boolean wasCoupled = existing.getMode() == PollMode.TRAINING;
         final boolean wasGameDay = existing.getMode() == PollMode.GAME_DAY;
+        final Long oldGameDayId = existing.getGameDayId();
         final LocalDate oldSendDate = existing.getSendDate();
         existing.setGroupId(incoming.getGroupId());
         existing.setGroupName(incoming.getGroupName());
@@ -94,6 +95,13 @@ public class WhatsappPollService {
             existing.setLastSentMessageId(null);
             existing.setLastSentTrainingId(null);
             if (existing.getMode() != PollMode.GAME_DAY) existing.setGameDayId(null);
+        } else if (wasGameDay && existing.getMode() == PollMode.GAME_DAY
+                && !java.util.Objects.equals(oldGameDayId, existing.getGameDayId())) {
+            // Spieltag gewechselt, Modus bleibt GAME_DAY: die alte Sendehistorie gehört zum alten
+            // Spieltag — sonst würde der Stimmen-Abruf die Stimmen des alten auf den neuen Spieltag ziehen.
+            existing.setLastSentAt(null);
+            existing.setLastSentMessageId(null);
+            existing.setLastSentTrainingId(null);
         } else if (existing.getMode() != PollMode.TRAINING
                 && !java.util.Objects.equals(oldSendDate, existing.getSendDate())
                 && existing.getSendDate() != null

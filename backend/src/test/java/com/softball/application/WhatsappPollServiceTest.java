@@ -276,6 +276,29 @@ class WhatsappPollServiceTest {
     }
 
     @Test
+    void shouldClearSendHistoryWhenGameDayChangesButModeStaysGameDay() {
+        // Poll wurde für Spieltag A bereits (test-)versendet. Wechsel auf Spieltag B, Modus bleibt
+        // GAME_DAY: die alte Sendehistorie gehört zu A, sonst würde der Stimmen-Abruf die Stimmen
+        // des alten Spieltags auf den neuen ziehen.
+        final WhatsappPoll saved = service.create(gameDayPoll());
+        final WhatsappPoll sentState = pollRepository.findById(saved.getId()).orElseThrow();
+        sentState.setLastSentMessageId("old-msg");
+        sentState.setLastSentAt(LocalDateTime.of(2026, 7, 20, 18, 0));
+        pollRepository.save(sentState);
+
+        final WhatsappPoll incoming = gameDayPoll();
+        incoming.setGameDayId(77L); // anderer Spieltag, Modus bleibt GAME_DAY
+
+        final WhatsappPoll updated = service.update(saved.getId(), incoming);
+
+        assertThat(updated.getMode()).isEqualTo(PollMode.GAME_DAY);
+        assertThat(updated.getGameDayId()).isEqualTo(77L);
+        assertThat(updated.getLastSentMessageId()).isNull();
+        assertThat(updated.getLastSentAt()).isNull();
+        assertThat(updated.getLastSentTrainingId()).isNull();
+    }
+
+    @Test
     void shouldDropGameDayLinkWhenSwitchingAwayFromGameDayMode() {
         final WhatsappPoll saved = service.create(gameDayPoll());
         final WhatsappPoll incoming = gameDayPoll();
