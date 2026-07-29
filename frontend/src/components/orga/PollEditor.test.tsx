@@ -72,6 +72,21 @@ describe('PollEditor', () => {
     expect(screen.getByLabelText(/Mehrfachauswahl/)).toBeChecked()
   })
 
+  it('Vorlage-Klick schaltet auf Umfrage-Tab, auch wenn "Nur Nachricht" aktiv war', async () => {
+    // Regression: applyTemplate setzte früher nur die Optionen, buildRequest() verwarf sie
+    // aber bei withPoll === false — der Klick war dann wirkungslos.
+    const messageOnlyDraft: WhatsappPollRequest = { ...draft, options: [] }
+    render(<PollEditor {...props} draft={messageOnlyDraft} />)
+    expect(screen.queryByText('Frage')).toBeNull() // startet im Nur-Nachricht-Tab
+    await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
+    await userEvent.selectOptions(screen.getByLabelText('Spieltag'), '42')
+
+    await userEvent.click(screen.getByRole('button', { name: /Auswärtsspiel/ }))
+
+    expect(screen.getByText('Frage')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Ja ich will spielen')).toBeInTheDocument()
+  })
+
   it('manuell geändertes Datum wird beim Spieltag-Wechsel nicht überschrieben', async () => {
     render(<PollEditor {...props} />)
     await userEvent.click(screen.getByRole('button', { name: 'Spieltag' }))
