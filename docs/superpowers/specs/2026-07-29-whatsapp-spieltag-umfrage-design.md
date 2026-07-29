@@ -1,0 +1,250 @@
+# WhatsApp Spieltag-Umfrage — Design
+
+**Datum:** 2026-07-29
+**Status:** Approved (Brainstorming)
+
+## Ziel
+
+Pro Spieltag eine WhatsApp-Umfrage anlegen, die automatisch 7 Tage vorher rausgeht, und
+deren Ja-Stimmen per Knopfdruck in die Anwesenheitsliste (`GameDay.availablePlayers`) des
+Spieltags übernommen werden — inklusive Rücknahme, wenn jemand seine Stimme zurückzieht.
+
+Analog zu den bestehenden Trainings-Polls, aber:
+
+- **einmaliger Versand** (Ort/Gegner wechseln pro Spieltag, kein Wochenrhythmus)
+- **Ziel ist ein GameDay**, nicht ein Training
+- **zwei Vorlagen**: Auswärtsspiel (Mehrfachauswahl, mit Auto-Option) und Heimspieltag
+  (Einzelauswahl, mit Aufbau/Catering-Option)
+
+## Bestand (Ausgangslage)
+
+- `whatsapp_polls`: `training_coupled` (boolean) unterscheidet Trainings-Poll (Wochentag →
+  nächstes Training via `CoupledPollTargetResolver`) von einmaligem Poll (`send_date`).
+- `PollDueEvaluator.isDue` (gekoppelt, Vortag des Trainings) / `isDueOneOff` (genau am
+  `sendDate` ab Uhrzeit, 1×, Same-Day-Catch-up).
+- `PollVoteSyncService` bucht Stimmen in `training_attendance`; `whatsapp_synced_vote`
+  (V47) speichert pro Voter `training_id`, `voter_name`, `player_id`, `present`.
+- Unbekannte Voter (`player_id IS NULL`) werden im WhatsApp-Tab der Spielerverwaltung
+  (`WhatsappVotersTab`) einem Spieler zugeordnet (`VoterAssignmentService`).
+- `VotePresenceEvaluator.isPresent` matcht hart auf den String `"ja"`.
+- `AvailabilityService.setAvailablePlayers` räumt beim Entfernen eines Spielers
+  kaskadierend auf: Lineup-Einträge löschen, `dhBatterPlayer` nullen, Staff-Einträge
+  löschen, Batting-Order neu nummerieren. **Destruktiv.**
+- Kein Carpool-Feature im Backend (CLAUDE.md ist da veraltet) — Auto-Stimmen können nur
+  angezeigt, nicht in Fahrten geschrieben werden.
+- `GameDay` hat kein Heim/Auswärts-Flag, nur `date`, `label`, `location`. Die Vorlage
+  wählt man daher selbst im Editor.
+
+## Datenmodell
+
+### Migration V53
+
+`whatsapp_polls` — boolean wird durch dreiwertigen Modus ersetzt, Spieltag-Link neu:
+
+```sql
+ALTER TABLE whatsapp_polls ADD COLUMN mode VARCHAR(12);
+UPDATE whatsapp_polls SET mode = CASE WHEN training_coupled THEN 'TRAINING' ELSE 'ONE_OFF' END;
+ALTER TABLE whatsapp_polls ALTER COLUMN mode SET NOT NULL;
+ALTER TABLE whatsapp_polls DROP COLUMN training_coupled;
+ALTER TABLE whatsapp_polls ADD COLUMN game_day_id BIGINT
+    REFERENCES game_days(id) ON DELETE CASCADE;
+```
+
+`ON DELETE CASCADE`: Wird ein Spieltag gelöscht, verschwindet seine Umfrage mit — ein
+Spieltag-Poll ohne Spieltag hätte kein gültiges Ziel.
+
+`whatsapp_synced_vote` — generalisiert auf zwei Ziel-Typen plus gewählte Optionen:
+
+```sql
+ALTER TABLE whatsapp_synced_vote ALTER COLUMN training_id DROP NOT NULL;
+ALTER TABLE whatsapp_synced_vote ADD COLUMN game_day_id BIGINT
+    REFERENCES game_days(id) ON DELETE CASCADE;
+ALTER TABLE whatsapp_synced_vote ADD COLUMN choices JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE whatsapp_synced_vote ADD CONSTRAINT chk_vote_target
+    CHECK ((training_id IS NULL) <> (game_day_id IS NULL));
+CREATE UNIQUE INDEX uq_synced_vote_gameday ON whatsapp_synced_vote (game_day_id, voter_name);
+```
+
+Die bestehende `uq_synced_vote (training_id, voter_name)` bleibt; Postgres behandelt
+NULL-Werte in Unique-Constraints als verschieden, Spieltag-Zeilen kollidieren also nicht.
+
+### Domain
+
+- Neues Enum `PollMode { TRAINING, ONE_OFF, GAME_DAY }` in `domain/model`.
+- `WhatsappPoll`: `boolean trainingCoupled` → `PollMode mode`, neu `Long gameDayId`.
+- `SyncedVote`: neu `Long gameDayId`, `List<String> choices`.
+
+`mode`-Semantik:
+
+| mode       | Ziel              | Versand                                   | Anwesenheit                |
+|------------|-------------------|-------------------------------------------|----------------------------|
+| `TRAINING` | nächstes Training | Vortag zur Uhrzeit, wiederkehrend         | automatisch (Scheduler)    |
+| `ONE_OFF`  | —                 | 1× am `sendDate`                          | keine                      |
+| `GAME_DAY` | `gameDayId`       | 1× am `sendDate` (= Spieltag − 7 Tage)    | manuell per Vorschau-Modal |
+
+## Versand
+
+`GAME_DAY` nutzt denselben Fälligkeitspfad wie `ONE_OFF` (`PollDueEvaluator.isDueOneOff`):
+genau am `sendDate` ab Uhrzeit, gesperrt sobald `lastSentAt` gesetzt, Same-Day-Catch-up
+gegen verpasste Scheduler-Minuten.
+
+Unterschiede zu `ONE_OFF`:
+
+- **`lastSentMessageId` wird immer gestempelt**, auch bei „Jetzt senden". Ohne Message-ID
+  kann `fetchVotes` die Stimmen nicht holen, und ein Testversand soll direkt syncbar sein.
+  `lastSentAt` bleibt bei „Jetzt senden" wie bisher leer, damit der geplante Versand
+  danach noch feuert (er überschreibt dann die Message-ID).
+- `enabled` immer `true` (kein Pausieren, wie bei `ONE_OFF`).
+- `weekday` und `skipDates` unbenutzt.
+
+`PollVoteSyncService` prüft heute `poll.isTrainingCoupled()` und muss nach der Umstellung
+auf `mode == TRAINING` prüfen — Spieltag-Polls dürfen dort nie durchlaufen (sie würden
+sonst auf `lastSentTrainingId` Trainings-Anwesenheit buchen).
+
+Validierung in `WhatsappPollService.validate` für `GAME_DAY`: `gameDayId`, `sendDate` und
+`time` sind Pflicht; `weekday` wird auf `null` gesetzt; `enabled` auf `true`.
+Modus-Wechsel `GAME_DAY` → anderer Modus verwirft `gameDayId` und die Sendehistorie
+(gleiche Regel wie der bestehende `coupled → einmalig`-Wechsel).
+
+## Stimmen → Anwesenheit
+
+Kein automatischer Sync. Die Kaskade in `setAvailablePlayers` löscht Lineup-Einträge und
+Base-Coach-Zuweisungen — das darf nur nach Bestätigung passieren. Daher zwei Endpoints:
+
+- `POST /api/gamedays/{id}/poll-votes/fetch` — holt Stimmen via
+  `sender.fetchVotes(poll.lastSentMessageId)`, macht Upsert in `whatsapp_synced_vote`
+  (mit `choices`) und liefert die Vorschau. Schreibt **nicht** in `availablePlayers`.
+  POST statt GET, weil der Abruf die Stimmen persistiert.
+- `GET /api/gamedays/{id}/poll-votes` — liest nur die gespeicherten Stimmen (für Badge
+  „unbekannte Wähler" und Fährt/Hilft-Listen ohne WhatsApp-Abfrage).
+- `POST /api/gamedays/{id}/poll-votes/apply` — übernimmt die Vorschau, indem es die neue
+  Spielerliste an `AvailabilityService.setAvailablePlayers` gibt (Kaskade damit korrekt
+  und ohne Duplikat-Logik).
+
+### Regeln
+
+- **Anwesend** = Voter hat die **erste Antwortoption** (Index 0) gewählt. Beide Vorlagen
+  stellen die Ja-Option an Position 1; der Editor zeigt an Option 1 den Hinweis „zählt als
+  anwesend". Kein String-Matching (`"Ich spiele (und helfe natürlich mit)"` enthält kein
+  „ja"), keine zusätzliche DB-Spalte. Trainings-Polls behalten `VotePresenceEvaluator`
+  unverändert.
+- Option 2 und 3 (Auto-Fahrer, Aufbau/Catering-Helfer) landen **nie** in
+  `availablePlayers`. Sie werden als Info-Listen angezeigt („Fährt", „Hilft").
+- **Mirror-Semantik:** bekannter Spieler mit Ja → wird anwesend; bekannter Spieler ohne Ja
+  → wird entfernt, falls aktuell anwesend. Nichtwähler bleiben unberührt (gleiche Regel
+  wie `PollVoteSyncService.syncNow`).
+- Unbekannte WhatsApp-Namen (`player_id IS NULL`) erscheinen in der Vorschau und im
+  bestehenden WhatsApp-Tab zur Zuordnung. Nach der Zuordnung öffnet man die Vorschau
+  erneut — Spieltag-Stimmen werden **nicht** automatisch gebucht, damit kein stiller
+  Kaskaden-Schreibvorgang entsteht (Trainings-Stimmen werden wie bisher re-gematcht).
+
+### Neue Klassen
+
+- `domain/service/GameDayVoteMirror` (pur, ohne Spring): Stimmen + aktuell Anwesende +
+  Player-Map (WhatsApp-Name → Player) → `toAdd`, `toRemove`, `drivers`, `helpers`,
+  `declined`, `unknown`. Kennt die Index-0-Regel.
+- `application/GameDayVoteSyncService`: orchestriert Poll-Lookup, `fetchVotes`,
+  Vote-Upsert, Mirror und `AvailabilityService`. Für `toRemove` sammelt es Warnungen aus
+  `LineupEntryRepository` und `GameStaffRepository` (welcher Eintrag in welchem Spiel
+  wegfällt).
+- `adapter/dto/GameDayVotePreviewResponse` + Endpoints in `GameDayController`.
+- `SyncedVoteRepository` erweitert um `findByGameDayIdAndVoterName`, `findByGameDayId`.
+
+## UI
+
+### Poll-Editor
+
+`WhatsappPollPage.tsx` ist mit 894 Zeilen zu groß und enthält `PollEditor`, `PollCard`,
+`AccountCard` und `SendPreview`. `PollEditor` (samt `SendPreview`) wandert in eine eigene
+Datei `PollEditor.tsx` — der Test `PollEditor.test.tsx` importiert schon danach benannt.
+
+Neu im Editor:
+
+- Modus-Umschalter dreiwertig: Training / Einmalig / **Spieltag**.
+- Bei Spieltag: Dropdown mit den Spieltagen der Saison. Sobald ein Spieltag gewählt ist,
+  wird `sendDate` auf **Spieltag − 7 Tage** vorbelegt. Ändert man den Spieltag, rechnet es
+  neu — außer das Datum wurde manuell überschrieben (dann bleibt der manuelle Wert, mit
+  Aktion „auf 7 Tage vorher zurücksetzen").
+- Zwei Vorlage-Buttons, die Frage, Nachricht, Antworten und Mehrfachauswahl aus dem
+  gewählten Spieltag füllen (Platzhalter: Datum, Wochentag, `location`, `label`). Alles
+  danach frei editierbar.
+
+```
+[Vorlage: Auswärtsspiel]              Mehrfachauswahl
+  Nachricht: Wer ist nächste Woche Samstag (20.06.)
+  Frage:     CoSe Spieltag in Aachen dabei?
+  1. Ja ich will spielen                    ← zählt als anwesend
+  2. Ich habe ein Auto und würde fahren
+  3. Nein
+
+[Vorlage: Heimspieltag]               Einzelauswahl
+  Frage:     Heimspieltag 09.08.
+  1. Ja, ich spiele (und helfe natürlich mit)   ← zählt als anwesend
+  2. Ich komme zum Aufbauen/Anfeuern/Catering helfen
+  3. Ich kann nicht :(
+```
+
+### Poll-Übersicht
+
+Dritte Gruppe „Spieltag-Umfragen" neben „Trainingsumfragen" und „Einmalig & Nachrichten".
+Karte zeigt Spieltag (Datum + Label/Ort) und nächsten Versand.
+
+### GameDayPlanner
+
+Im Anwesend-Block:
+
+```
+Anwesend (11)   [WhatsApp-Stimmen holen]   ⚠️ 2 unbekannte Wähler
+                                            └→ /players?tab=whatsapp
+```
+
+- Button nur sichtbar, wenn für diesen Spieltag ein Poll existiert und gesendet wurde.
+- Badge nur bei `game_day_id`-Stimmen mit `player_id IS NULL`; Klick navigiert in den
+  WhatsApp-Tab — identisch zum Muster in `TrainingTodayPage.tsx:372`.
+- Klick auf den Button öffnet das Vorschau-Modal:
+
+```
+Stimmen abgeholt (11 Ja, 3 Auto, 2 Nein)
+
++ Neu anwesend: Max, Tim, Jana
+- Nicht mehr:   Ben   ⚠ Lineup Spiel 2 (#4, SS) wird gelöscht
+? Unbekannt:    "Sandra W." → zuordnen
+
+Fährt: Ben, Lisa, Tom     Hilft: Anne
+
+[Abbrechen]  [Anwesenheit übernehmen]
+```
+
+### Unbekannte-Voter-Tab
+
+`UnknownVoterResponse` kennt heute nur `trainingId`/`trainingDate`. Neu: `source`
+(`TRAINING` | `GAME_DAY`), `targetId`, `date`. `WhatsappVotersTab` zeigt entsprechend
+„Training 20.06." bzw. „Spieltag 09.08.".
+
+## Tests
+
+Backend:
+
+- `GameDayVoteMirrorTest`: Index-0-Regel, Mehrfachauswahl (Ja + Auto), nur-Auto zählt
+  nicht, Rücknahme bei Stimmwechsel, Nichtwähler unberührt, unbekannte Voter.
+- `GameDayVoteSyncServiceTest`: Vorschau schreibt nicht in `availablePlayers`, Apply geht
+  über `AvailabilityService`, Warnungen für betroffene Lineup-/Staff-Einträge.
+- `PollDueEvaluatorTest`: `GAME_DAY` verhält sich wie `ONE_OFF`.
+- `WhatsappPollServiceTest`: Validierung `GAME_DAY`, Modus-Wechsel verwirft `gameDayId` +
+  Sendehistorie, „Jetzt senden" stempelt Message-ID.
+- `WhatsappPollMapperTest` / `WhatsappPollDtoMappingTest`: `mode` + `gameDayId`.
+- Integrationstest für V53 (Flyway + `chk_vote_target`).
+
+Frontend:
+
+- `PollEditor.test.tsx`: Vorlage-Buttons füllen Optionen/Mehrfachauswahl, Spieltag-Wahl
+  setzt `sendDate` auf −7 Tage, manuelles Datum wird nicht überschrieben, Modus-Wechsel.
+- Sync-Modal: Diff-Anzeige, Warnung bei Lineup-Verlust, Abbrechen schreibt nichts.
+- `WhatsappPollPage.test.tsx`: Spieltag-Gruppe in der Übersicht.
+
+## Explizit nicht Teil dieser Änderung
+
+- Kein Heim/Auswärts-Flag am `GameDay` — Vorlage wird manuell gewählt.
+- Keine Fahrgemeinschafts-Verwaltung aus den Auto-Stimmen (Feature existiert nicht).
+- Kein automatischer Anwesenheits-Sync für Spieltage (Kaskade ist destruktiv).
+- Keine Mehrfach-Polls pro Spieltag.
