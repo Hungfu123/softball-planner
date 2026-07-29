@@ -513,7 +513,7 @@ function PollCard({ poll, trainings, gameDays, connected, onPickSkip, onRemoveSk
               : (poll.sendDate ? `${formatDate(poll.sendDate)} · ${formatTime(poll.time)}` : formatTime(poll.time))}
           </span>
           {poll.groupName && <span className="font-body text-navy-500 truncate max-w-[10rem]">{poll.groupName}</span>}
-          <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{poll.mode === 'TRAINING' ? 'Training' : 'Einmalig'}</span>
+          <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{poll.mode === 'TRAINING' ? 'Training' : poll.mode === 'GAME_DAY' ? 'Spieltag' : 'Einmalig'}</span>
           {poll.mode === 'TRAINING' && <Badge color={poll.enabled ? 'emerald' : 'gray'} size="sm">{poll.enabled ? 'Aktiv' : 'Pausiert'}</Badge>}
           {poll.mode !== 'TRAINING' && poll.lastSentAt && <Badge color="gray" size="sm">Gesendet</Badge>}
           <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{typeLabel}</span>
