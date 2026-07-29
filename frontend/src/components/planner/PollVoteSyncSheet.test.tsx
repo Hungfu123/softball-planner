@@ -62,13 +62,56 @@ describe('PollVoteSyncSheet', () => {
     vi.clearAllMocks()
   })
 
-  it('zeigt Zugänge, Abgänge und die Kaskaden-Warnung', async () => {
+  it('zeigt Zugänge, Abgänge und die Kaskaden-Warnung mit Überschriften', async () => {
     vi.mocked(fetchGameDayPollVotes).mockResolvedValue(preview)
     renderSheet()
 
     expect(await screen.findByText('Max')).toBeInTheDocument()
     expect(screen.getByText('Ben')).toBeInTheDocument()
     expect(screen.getByText(/Lineup Spiel 2 \(#4, SS\) wird gelöscht/)).toBeInTheDocument()
+    // Punkt 7: Zwischenüberschriften unterscheiden Zugang von Abgang, nicht nur Farbe/Icon.
+    expect(screen.getByText('Neu anwesend (2)')).toBeInTheDocument()
+    expect(screen.getByText('Nicht mehr dabei (1)')).toBeInTheDocument()
+  })
+
+  it('Diff-Optionen-Sektion "Wer hat was gewählt" ist standardmäßig aufgeklappt und zeigt die Anzahl', async () => {
+    vi.mocked(fetchGameDayPollVotes).mockResolvedValue(preview)
+    renderSheet()
+
+    await screen.findByText('Max')
+    // Kein Klick nötig — Punkt 9: Default-Open + Anzahl im Header.
+    expect(screen.getByText('Wer hat was gewählt')).toBeInTheDocument()
+    expect(screen.getByText(`(${preview.voteCount})`)).toBeInTheDocument()
+    expect(screen.getByText('Max M.')).toBeInTheDocument()
+  })
+
+  it('leere Bilanz-Diff aber unbekannte Ja-Stimmen: Hinweis statt "Anwesenheit ist aktuell"', async () => {
+    // Regression Punkt 6: vier Ja-Stimmen, aber alle unbekannt -> kein Delta, trotzdem
+    // war nichts übernommen. Darf nicht denselben Text wie "alles aktuell" zeigen.
+    vi.mocked(fetchGameDayPollVotes).mockResolvedValue({
+      ...preview,
+      toAdd: [],
+      toRemove: [],
+      unknownVoters: ['Sandra W.', 'Petra P.'],
+    })
+    renderSheet()
+
+    expect(await screen.findByText('Ja-Stimmen ohne Zuordnung')).toBeInTheDocument()
+    expect(screen.queryByText('Anwesenheit ist aktuell')).toBeNull()
+  })
+
+  it('niemand hat zugesagt: eigener Text statt "Anwesenheit ist aktuell"', async () => {
+    vi.mocked(fetchGameDayPollVotes).mockResolvedValue({
+      ...preview,
+      yesCount: 0,
+      toAdd: [],
+      toRemove: [],
+      unknownVoters: [],
+    })
+    renderSheet()
+
+    expect(await screen.findByText('Niemand hat zugesagt')).toBeInTheDocument()
+    expect(screen.queryByText('Anwesenheit ist aktuell')).toBeNull()
   })
 
   it('Übernehmen schickt genau das Delta', async () => {
@@ -84,7 +127,8 @@ describe('PollVoteSyncSheet', () => {
   })
 
   it('leeres Delta deaktiviert den Übernehmen-Button', async () => {
-    vi.mocked(fetchGameDayPollVotes).mockResolvedValue({ ...preview, toAdd: [], toRemove: [] })
+    // Kein Delta UND keine unbekannten Ja-Wähler mehr -> wirklich alles übernommen.
+    vi.mocked(fetchGameDayPollVotes).mockResolvedValue({ ...preview, toAdd: [], toRemove: [], unknownVoters: [] })
     renderSheet()
 
     expect(await screen.findByText('Anwesenheit ist aktuell')).toBeInTheDocument()
@@ -110,7 +154,7 @@ describe('PollVoteSyncSheet', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('nach Zuordnung eines unbekannten Wählers wird die Vorschau neu geholt', async () => {
+  it('nach Zuordnung eines unbekannten Wählers wird die Vorschau neu geholt und bestätigt', async () => {
     vi.mocked(fetchGameDayPollVotes).mockResolvedValue(preview)
     vi.mocked(assignVoter).mockResolvedValue({} as never)
     renderSheet()
@@ -120,5 +164,14 @@ describe('PollVoteSyncSheet', () => {
 
     expect(assignVoter).toHaveBeenCalledWith('Sandra W.', 1)
     expect(fetchGameDayPollVotes).toHaveBeenCalledTimes(2)
+    // Punkt 9: Bestätigung statt stillem Verschwinden der Zeile.
+    expect(mockShow).toHaveBeenCalledWith(expect.stringContaining('Sandra W.'))
+  })
+
+  it('zeigt unter den unbekannten Wählern den Hinweis auf Spieler → WhatsApp', async () => {
+    vi.mocked(fetchGameDayPollVotes).mockResolvedValue(preview)
+    renderSheet()
+
+    expect(await screen.findByText(/Spieler → WhatsApp/)).toBeInTheDocument()
   })
 })
