@@ -67,7 +67,7 @@ describe('WhatsappVotersTab', () => {
     render(<WhatsappVotersTab />)
 
     expect(await screen.findByText('Chris Wähler')).toBeInTheDocument()
-    expect(screen.getByText('10.07.2026')).toBeInTheDocument()
+    expect(screen.getByText('Training 10.07.2026')).toBeInTheDocument()
   })
 
   it('zeigt Empty-State wenn keine unbekannten Wähler vorhanden sind', async () => {
