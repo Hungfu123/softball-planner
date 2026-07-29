@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWhatsappPoll } from '@/hooks/useWhatsappPoll'
-import { getWhatsappQr } from '@/api/client'
+import { getWhatsappQr, getAllGameDays } from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton, Button } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
-import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus } from '@/types'
+import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus, GameDayResponse } from '@/types'
 import { coupledSendDate, WEEKDAYS, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
 import { PollEditor } from './PollEditor'
 
@@ -119,8 +119,13 @@ export function WhatsappPollPage() {
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [sendId, setSendId] = useState<number | null>(null)
+  const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
 
   const connected = status?.connected ?? false
+
+  useEffect(() => {
+    getAllGameDays().then(setGameDays).catch(() => {})
+  }, [])
 
   // Solange nicht verbunden: QR alle 20s neu laden (läuft sonst ab) und Status
   // alle 4s pollen, damit die Seite automatisch umschaltet sobald gescannt wurde.
@@ -305,6 +310,7 @@ export function WhatsappPollPage() {
           draft={editor.draft}
           groups={groups}
           trainings={trainings}
+          gameDays={gameDays}
           saving={saving}
           onSave={handleSave}
           onClose={() => setEditor(null)}
