@@ -96,6 +96,7 @@ import type {
   WhatsappPollResponse,
   WhatsappPollRequest,
   UnknownVoter,
+  GameDayVotePreview,
 } from '@/types'
 
 // Players
@@ -181,6 +182,15 @@ export const getGameDayLineups = (id: number) =>
   request<GameDayLineupsResponse>(`/gamedays/${id}/lineups`)
 export const deleteGameDay = (id: number) =>
   request<void>(`/gamedays/${id}`, { method: 'DELETE' })
+export const fetchGameDayPollVotes = (gameDayId: number) =>
+  request<GameDayVotePreview>(`/gamedays/${gameDayId}/poll-votes/fetch`, { method: 'POST' })
+export const getGameDayPollVotes = (gameDayId: number) =>
+  request<GameDayVotePreview>(`/gamedays/${gameDayId}/poll-votes`)
+export const applyGameDayPollVotes = (gameDayId: number, add: number[], remove: number[]) =>
+  request<GameDayResponse>(`/gamedays/${gameDayId}/poll-votes/apply`, {
+    method: 'POST',
+    body: JSON.stringify({ add, remove }),
+  })
 
 // Lineup
 export const getLineup = (gameId: number) =>

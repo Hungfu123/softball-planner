@@ -84,7 +84,8 @@ export function TrainingTodayPage() {
   const unknownVoterCounts = useMemo(() => {
     const map = new Map<number, number>()
     for (const v of unknownVoters) {
-      map.set(v.trainingId, (map.get(v.trainingId) ?? 0) + 1)
+      if (v.source !== 'TRAINING') continue
+      map.set(v.targetId, (map.get(v.targetId) ?? 0) + 1)
     }
     return map
   }, [unknownVoters])

@@ -15,7 +15,7 @@ function formatDate(iso: string): string {
 }
 
 function voterKey(v: UnknownVoter): string {
-  return `${v.trainingId}:${v.voterName}`
+  return `${v.targetId}:${v.voterName}`
 }
 
 export function WhatsappVotersTab() {
@@ -113,7 +113,7 @@ export function WhatsappVotersTab() {
                 <div key={key} className="flex items-center gap-2 px-3 py-2 border border-cream-300 rounded-lg bg-cream-50">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-navy-900 truncate leading-tight">{voter.voterName}</p>
-                    <p className="text-[11px] text-gray-500 leading-tight">{formatDate(voter.trainingDate)}</p>
+                    <p className="text-[11px] text-gray-500 leading-tight">{voter.date && formatDate(voter.date)}</p>
                   </div>
                   <select
                     value={selectedPlayer[key] ?? ''}

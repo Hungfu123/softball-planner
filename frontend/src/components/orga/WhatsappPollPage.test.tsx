@@ -7,12 +7,12 @@ const polls: WhatsappPollResponse[] = [
   {
     id: 1, groupId: 'g', groupName: 'G', title: 'Wer kommt zum Training?', options: ['Ja', 'Nein'],
     weekday: 'MONDAY', time: '09:00:00', enabled: true, allowMultipleAnswers: false, message: null,
-    skipDates: [], lastSentAt: null, trainingCoupled: true, sendDate: null,
+    skipDates: [], lastSentAt: null, mode: 'TRAINING', gameDayId: null, sendDate: null,
   },
   {
     id: 2, groupId: 'g', groupName: 'G', title: 'Grillabend?', options: ['Ja', 'Nein'],
     weekday: null, time: '18:00:00', enabled: true, allowMultipleAnswers: false, message: null,
-    skipDates: [], lastSentAt: null, trainingCoupled: false, sendDate: '2026-08-05',
+    skipDates: [], lastSentAt: null, mode: 'ONE_OFF', gameDayId: null, sendDate: '2026-08-05',
   },
 ]
 
