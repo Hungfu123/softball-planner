@@ -272,6 +272,7 @@ export function WhatsappPollPage() {
                 key={poll.id}
                 poll={poll}
                 trainings={trainings}
+                gameDays={gameDays}
                 connected={connected}
                 onPickSkip={date => handlePickSkip(poll.id, date)}
                 onRemoveSkip={date => handleRemoveSkip(poll.id, date)}
@@ -283,7 +284,8 @@ export function WhatsappPollPage() {
               />
             )
             const coupled = polls.filter(p => p.mode === 'TRAINING').sort(byWeekdayTime)
-            const oneOff = polls.filter(p => p.mode !== 'TRAINING').sort(byOneOffDate)
+            const gameDayPolls = polls.filter(p => p.mode === 'GAME_DAY').sort(byOneOffDate)
+            const oneOff = polls.filter(p => p.mode === 'ONE_OFF').sort(byOneOffDate)
             const headCls = 'font-display text-xs font-extrabold uppercase tracking-widest text-navy-500'
             return (
               <div className="space-y-6">
@@ -291,6 +293,12 @@ export function WhatsappPollPage() {
                   <section className="space-y-3">
                     <h3 className={headCls}>Trainingsumfragen <span className="text-navy-400">({coupled.length})</span></h3>
                     {coupled.map(renderCard)}
+                  </section>
+                )}
+                {gameDayPolls.length > 0 && (
+                  <section className="space-y-3">
+                    <h3 className={headCls}>Spieltag-Umfragen <span className="text-navy-400">({gameDayPolls.length})</span></h3>
+                    {gameDayPolls.map(renderCard)}
                   </section>
                 )}
                 {oneOff.length > 0 && (
@@ -401,6 +409,7 @@ function AccountCard({ connected, status, qr }: { connected: boolean; status: Wh
 interface PollCardProps {
   poll: WhatsappPollResponse
   trainings: TrainingLite[]
+  gameDays: GameDayResponse[]
   connected: boolean
   onPickSkip: (date: string) => void
   onRemoveSkip: (date: string) => void
@@ -411,8 +420,9 @@ interface PollCardProps {
   onTogglePause: () => void
 }
 
-function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent, onTogglePause }: PollCardProps) {
+function PollCard({ poll, trainings, gameDays, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent, onTogglePause }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
+  const gameDay = poll.mode === 'GAME_DAY' ? gameDays.find(g => g.id === poll.gameDayId) ?? null : null
   const [showSkip, setShowSkip] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const dateRef = useRef<HTMLInputElement>(null)
@@ -509,6 +519,16 @@ function PollCard({ poll, trainings, connected, onPickSkip, onRemoveSkip, onEdit
           <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">{typeLabel}</span>
           {hasPoll && poll.allowMultipleAnswers && <span className="font-body text-[11px] font-semibold text-navy-600 bg-navy-50 border border-navy-100 rounded-md px-1.5 py-0.5">Mehrfach</span>}
         </div>
+
+        {/* Spieltag-Bezug — nur bei GAME_DAY-Umfragen */}
+        {poll.mode === 'GAME_DAY' && (
+          <p className="mt-1.5 flex items-center gap-1.5 font-body text-xs text-navy-600">
+            <CalendarIcon size={12} className="shrink-0 text-navy-400" />
+            {gameDay
+              ? `${formatDate(gameDay.date)}${gameDay.label ? ` · ${gameDay.label}` : ''}${gameDay.location ? ` · ${gameDay.location}` : ''}`
+              : <span className="text-gray-400 italic">Spieltag nicht mehr vorhanden</span>}
+          </p>
+        )}
 
         {/* Nächster Versand — Kern-Info */}
         <div className="mt-3 flex items-end justify-between gap-3">
