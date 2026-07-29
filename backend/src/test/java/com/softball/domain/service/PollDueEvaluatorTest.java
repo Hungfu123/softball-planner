@@ -115,4 +115,20 @@ class PollDueEvaluatorTest {
         p.setTime(java.time.LocalTime.of(10, 25));
         return p;
     }
+
+    @Test
+    void shouldTreatGameDayPollLikeOneOff() {
+        final WhatsappPoll poll = new WhatsappPoll();
+        poll.setMode(PollMode.GAME_DAY);
+        poll.setGameDayId(42L);
+        poll.setTime(LocalTime.of(18, 0));
+        poll.setSendDate(LocalDate.of(2026, 8, 2));
+
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 2, 18, 0))).isTrue();
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 2, 17, 59))).isFalse();
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 3, 18, 0))).isFalse();
+
+        poll.setLastSentAt(LocalDateTime.of(2026, 8, 2, 18, 0));
+        assertThat(ev.isDueOneOff(poll, LocalDateTime.of(2026, 8, 2, 18, 5))).isFalse();
+    }
 }

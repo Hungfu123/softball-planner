@@ -4,9 +4,13 @@ import com.softball.TestcontainersConfig;
 import com.softball.adapter.out.persistence.repository.SpringWhatsappPollRepository;
 import com.softball.domain.model.PollMode;
 import com.softball.domain.model.WhatsappPoll;
+import com.softball.domain.port.out.TrainingRepository;
 import com.softball.domain.port.out.WhatsappPollRepository;
+import com.softball.domain.port.out.WhatsappSender;
+import com.softball.domain.service.CoupledPollTargetResolver;
 import com.softball.shared.exception.BusinessValidationException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,13 +18,17 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
@@ -29,11 +37,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @WithMockUser
 class WhatsappPollServiceTest {
 
-    @Autowired WhatsappPollService service;
+    // Feste Clock statt LocalDate.now() — Spieltag-Validierung prüft "Vergangenheit" relativ zur
+    // Service-Clock; dieselbe Instanz wie in WhatsappPollServiceSendNowTest, damit beide Testklassen
+    // konsistent gegen denselben Referenzzeitpunkt laufen.
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-07-20T10:00:00Z"), ZoneId.of("Europe/Berlin"));
+
+    @Autowired WhatsappSender sender;
+
+    @Autowired TrainingRepository trainingRepo;
 
     @Autowired SpringWhatsappPollRepository whatsappPollRepository;
 
     @Autowired WhatsappPollRepository pollRepository;
+
+    private WhatsappPollService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new WhatsappPollService(pollRepository, sender, trainingRepo, new CoupledPollTargetResolver(), FIXED_CLOCK);
+    }
 
     @AfterEach
     void tearDown() {
@@ -219,5 +241,64 @@ class WhatsappPollServiceTest {
         service.resetLastSent(id);
 
         assertThat(service.findById(id).getLastSentAt()).isNull();
+    }
+
+    @Test
+    void shouldRejectGameDayPollWithoutGameDay() {
+        final WhatsappPoll poll = gameDayPoll();
+        poll.setGameDayId(null);
+
+        assertThatThrownBy(() -> service.create(poll))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("Spieltag");
+    }
+
+    @Test
+    void shouldRejectGameDayPollWithPastSendDate() {
+        final WhatsappPoll poll = gameDayPoll();
+        poll.setSendDate(LocalDate.now(FIXED_CLOCK).minusDays(1));
+
+        assertThatThrownBy(() -> service.create(poll))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("Vergangenheit");
+    }
+
+    @Test
+    void shouldClearWeekdayAndForceEnabledForGameDayPoll() {
+        final WhatsappPoll poll = gameDayPoll();
+        poll.setWeekday(DayOfWeek.FRIDAY);
+        poll.setEnabled(false);
+
+        final WhatsappPoll saved = service.create(poll);
+
+        assertThat(saved.getWeekday()).isNull();
+        assertThat(saved.isEnabled()).isTrue();
+    }
+
+    @Test
+    void shouldDropGameDayLinkWhenSwitchingAwayFromGameDayMode() {
+        final WhatsappPoll saved = service.create(gameDayPoll());
+        final WhatsappPoll incoming = gameDayPoll();
+        incoming.setMode(PollMode.ONE_OFF);
+        incoming.setGameDayId(null);
+
+        final WhatsappPoll updated = service.update(saved.getId(), incoming);
+
+        assertThat(updated.getGameDayId()).isNull();
+        assertThat(updated.getLastSentMessageId()).isNull();
+    }
+
+    // Helper: gueltiger Spieltag-Poll (Ja-Option zuerst, wie in beiden Vorlagen)
+    private WhatsappPoll gameDayPoll() {
+        final WhatsappPoll poll = new WhatsappPoll();
+        poll.setGroupId("g1");
+        poll.setTitle("CoSe Spieltag in Aachen dabei?");
+        poll.setOptions(List.of("Ja ich will spielen", "Ich habe ein Auto und würde fahren", "Nein"));
+        poll.setAllowMultipleAnswers(true);
+        poll.setTime(LocalTime.of(18, 0));
+        poll.setMode(PollMode.GAME_DAY);
+        poll.setGameDayId(42L);
+        poll.setSendDate(LocalDate.now(FIXED_CLOCK).plusDays(7));
+        return poll;
     }
 }
