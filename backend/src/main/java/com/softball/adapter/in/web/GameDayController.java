@@ -124,6 +124,9 @@ public class GameDayController {
     @PostMapping("/gamedays/{id}/poll-votes/apply")
     public GameDayResponse applyPollVotes(@PathVariable final Long id,
                                           @Valid @RequestBody final ApplyGameDayVotesRequest req) {
-        return GameDayResponse.from(voteSyncService.apply(id, req.add(), req.remove()));
+        voteSyncService.apply(id, req.add(), req.remove());
+        // findByIdAsDto statt GameDayResponse.from(...): baut die Antwort inkl. echter
+        // At-Bat-Counts/Live-Scores auf, genau wie der Schwester-Endpoint setAvailablePlayers.
+        return gameDayService.findByIdAsDto(id);
     }
 }

@@ -29,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -164,6 +165,24 @@ class GameLiveStatusIntegrationTest {
             .andExpect(jsonPath("$.games[0].scoreUs").value(7))
             .andExpect(jsonPath("$.games[0].scoreThem").value(5))
             .andExpect(jsonPath("$.games[0].atBatCount").value(0));
+    }
+
+    @Test
+    void applyPollVotes_returnsLiveAtBatCount_notZero() throws Exception {
+        // Regression fuer Task 6, Fix-Runde 1: der Apply-Endpoint muss die gleiche
+        // Live-Variante (echte At-Bat-Counts/Scores) liefern wie GET /gamedays/{id},
+        // nicht die 0-Wert-Platzhalter des 1-Parameter-GameDayResponse.from(GameDay)-Overloads.
+        final Long gameDayId = createGameDay("2026-03-15");
+        final Long gameId = firstGameId(gameDayId);
+        seedAtBat(gameId, 1, 0);
+        seedAtBat(gameId, 2, 2);
+
+        mockMvc.perform(post("/api/gamedays/" + gameDayId + "/poll-votes/apply")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("add", List.of(), "remove", List.of()))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.games[0].atBatCount").value(2))
+            .andExpect(jsonPath("$.games[0].scoreUs").value(2));
     }
 
     @Test
