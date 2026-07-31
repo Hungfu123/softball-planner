@@ -22,6 +22,7 @@ public interface SpringSpielbogenAtBatRepository extends JpaRepository<Spielboge
             WHEN a.outType = 'TRIPLE_PLAY' THEN 3
             WHEN a.result = 'STRIKEOUT' THEN 1
             WHEN a.result = 'OUT' THEN 1
+            WHEN a.result = 'AUTOMATIC_OUT' THEN 1
             ELSE 0
         END), 0)
         FROM SpielbogenAtBatEntity a

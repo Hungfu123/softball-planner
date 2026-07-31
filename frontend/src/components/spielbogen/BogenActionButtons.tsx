@@ -23,6 +23,9 @@ interface Props {
   onSwitchSide: () => void
   onSubstitution: () => void
   onPositionSwap: () => void
+  /** Öffnet den Confirm für ein Automatisches Out (Page-Level, geteilt mit den Out-Punkten). */
+  onAutomaticOut: () => void
+  canAutomaticOut: boolean
   onEndGame: () => void
   canEndGame: boolean
 }
@@ -44,6 +47,8 @@ export function BogenActionButtons({
   onRecordStealing,
   onSubstitution,
   onPositionSwap,
+  onAutomaticOut,
+  canAutomaticOut,
   onEndGame,
   canEndGame,
 }: Props) {
@@ -308,6 +313,14 @@ export function BogenActionButtons({
           >
             <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Stealing (Edge-Cases)</div>
             <div className="text-xs text-gray-500 mt-0.5">OUT_ON_PLAY oder mehrere Stealings · Standard: Tap auf Runner-Diamond</div>
+          </button>
+          <button
+            onClick={() => { setShowMore(false); onAutomaticOut() }}
+            disabled={!canAutomaticOut}
+            className="w-full text-left px-4 py-3 rounded-xl border border-cream-300 bg-white hover:bg-cream-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="font-display font-bold text-navy-800 text-sm uppercase tracking-wide">Automatisches Out</div>
+            <div className="text-xs text-gray-500 mt-0.5">Fehlende Spielerin · zählt als Out, nicht als At-Bat · Alternativ: Tap auf die Out-Punkte</div>
           </button>
           {canEndGame && (
             <button

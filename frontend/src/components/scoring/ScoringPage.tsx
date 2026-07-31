@@ -2618,9 +2618,12 @@ export function ScoringPage() {
 // Single" sollten vom User über die Runner-Korrektur manuell gesetzt werden,
 // weil Out-am-Basepad oder Stop-at-3rd auch vorkommen können.
 function advanceBases(state: BaseStateDto, result: AtBatResult, batterId: number): BaseStateDto {
+  // AUTOMATIC_OUT wird im Legacy-Scoring über AutomaticOutEvent gebucht, nie als AtBat —
+  // der Case existiert nur damit der Switch über AtBatResult vollständig bleibt.
   switch (result) {
     case 'STRIKEOUT':
     case 'OUT':
+    case 'AUTOMATIC_OUT':
       return state
     case 'HOMERUN':
     case 'INSIDE_PARK_HR':
@@ -2701,6 +2704,7 @@ function resultPillLabel(r: AtBatResult): string {
     case 'STRIKEOUT': return 'K'
     case 'OUT': return 'OUT'
     case 'REACHED_ON_ERROR': return 'E'
+    case 'AUTOMATIC_OUT': return 'AO'
   }
 }
 
@@ -2719,6 +2723,7 @@ function resultPillClass(r: AtBatResult): string {
       return 'bg-amber-100 text-amber-800'
     case 'STRIKEOUT':
     case 'OUT':
+    case 'AUTOMATIC_OUT':
       return 'bg-softball-red-100 text-softball-red-800'
   }
 }

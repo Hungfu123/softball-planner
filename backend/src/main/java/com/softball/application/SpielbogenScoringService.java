@@ -92,6 +92,22 @@ public class SpielbogenScoringService {
         if (runsScored != null && runsScored < 0) {
             throw new BusinessValidationException("runsScored muss >= 0 sein");
         }
+        if (result == AtBatResult.AUTOMATIC_OUT) {
+            // Automatisches Out = fehlende Spielerin. Es hat niemand geschlagen, also gibt es
+            // keine Fielding-Details, keinen Sacrifice, keine Runs und keine Runner-Bewegung.
+            if (Boolean.TRUE.equals(isError)) {
+                throw new BusinessValidationException("isError bei AUTOMATIC_OUT nicht erlaubt");
+            }
+            if (sacrificeType != null) {
+                throw new BusinessValidationException("sacrificeType bei AUTOMATIC_OUT nicht erlaubt");
+            }
+            if ((runsScored != null && runsScored > 0) || (rbi != null && rbi > 0)) {
+                throw new BusinessValidationException("runsScored/rbi bei AUTOMATIC_OUT nicht erlaubt");
+            }
+            if (runnerAdvances != null && !runnerAdvances.isEmpty()) {
+                throw new BusinessValidationException("runnerAdvances bei AUTOMATIC_OUT nicht erlaubt");
+            }
+        }
 
         SpielbogenAtBat atBat = new SpielbogenAtBat();
         atBat.setBogen(bogen);

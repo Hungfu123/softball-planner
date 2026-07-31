@@ -29,6 +29,7 @@ const SECTIONS: Array<{ title: string; entries: Entry[] }> = [
       { symbol: '6-3', label: 'Grounder', description: 'SS wirft zu 1B → Out' },
       { symbol: 'DP', label: 'Double Play', description: '2 Outs gleichzeitig' },
       { symbol: 'E5', label: 'Error', description: 'Position 5 (3B) verkackt — Spieler kommt auf Base' },
+      { symbol: 'AO', label: 'Automatisches Out', description: 'Fehlende Spielerin — Out im Inning, kein At-Bat' },
     ],
   },
   {

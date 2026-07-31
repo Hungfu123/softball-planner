@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cellKey, renderCells, type CellMap } from './bogenSheetRenderer'
+import { cellKey, renderCells, sideAnnotations, abOutsAdded, type CellMap, type StealingArrow, type AdvanceLabel } from './bogenSheetRenderer'
 import type { SpielbogenAtBatResponse } from '@/types'
 
 describe('cellKey', () => {
@@ -160,5 +160,108 @@ describe('renderCells — Sacrifice', () => {
     const sh = ab({ slotId: 3, result: 'OUT', outType: 'GROUNDER', sacrificeType: 'BUNT', fielderChain: [1, 3] })
     const cells = renderCells([sh], [])
     expect(cells.get('HOME|3|1')!.primaryLabel).toBe('1-3 SH')
+  })
+})
+
+describe('sideAnnotations — ein Label pro Base-Seite', () => {
+  const base = {
+    stealingArrow: null,
+    stealingArrows: [] as StealingArrow[],
+    advanceLabels: [] as AdvanceLabel[],
+  }
+
+  it('Steal-Event schlägt Advance-Label auf derselben Seite', () => {
+    const anns = sideAnnotations({
+      ...base,
+      stealingArrows: [{ fromBase: 1, toBase: 2, type: 'STOLEN_BASE' }],
+      advanceLabels: [{ side: '1b-2b', label: '1B', hitter: 4 }],
+    })
+    expect(anns).toEqual([{ side: '1b-2b', text: 'SB', color: 'dark' }])
+  })
+
+  it('Zwei Steals auf gleicher Seite ergeben nur ein Label (kein Überlagern)', () => {
+    const anns = sideAnnotations({
+      ...base,
+      stealingArrows: [
+        { fromBase: 1, toBase: 2, type: 'STOLEN_BASE' },
+        { fromBase: 1, toBase: 2, type: 'STOLEN_BASE' },
+      ],
+    })
+    expect(anns).toHaveLength(1)
+    expect(anns[0].text).toBe('SB')
+  })
+
+  it('Verschiedene Seiten behalten je ihr eigenes Label', () => {
+    const anns = sideAnnotations({
+      ...base,
+      stealingArrows: [{ fromBase: 2, toBase: 3, type: 'WILD_PITCH' }],
+      advanceLabels: [{ side: '3b-home', label: '1B', hitter: 7 }],
+    })
+    expect(anns).toEqual([
+      { side: '2b-3b', text: 'WP', color: 'orange' },
+      { side: '3b-home', text: '×7', color: 'dark' },
+    ])
+  })
+
+  it('WP/PB-Advance zeigt Kürzel statt ×N und wird orange gezeichnet', () => {
+    const anns = sideAnnotations({
+      ...base,
+      advanceLabels: [{ side: '1b-2b', label: 'WP' }],
+    })
+    expect(anns).toEqual([{ side: '1b-2b', text: 'WP', color: 'orange' }])
+  })
+
+  it('Legacy single stealingArrow wird berücksichtigt', () => {
+    const anns = sideAnnotations({
+      ...base,
+      stealingArrow: { fromBase: 3, toBase: 4, type: 'CAUGHT_STEALING' },
+    })
+    expect(anns).toEqual([{ side: '3b-home', text: 'CS', color: 'dark' }])
+  })
+})
+
+describe('renderCells — WP/PB bekommen kein ×N', () => {
+  it('Wild-Pitch-Advance behält Kürzel, obwohl ein anderer Batter am Schlag war', () => {
+    const walk = ab({ id: 1, slotId: 5, sequence: 1, result: 'WALK', baseStateAfter: { firstSlotId: 5, secondSlotId: null, thirdSlotId: null } })
+    const nextAb = ab({ id: 2, slotId: 6, sequence: 2, result: 'STRIKEOUT', baseStateAfter: { firstSlotId: null, secondSlotId: 5, thirdSlotId: null } })
+    const advance = {
+      id: 1, bogenId: 1, atBatId: 2, slotId: 5, side: 'HOME' as const, inning: 1,
+      fromBase: 1, toBase: 2, reason: 'WP' as const, createdAt: '',
+    }
+    const cells = renderCells([walk, nextAb], [], [advance], [{ id: 6, battingOrder: 6 }])
+    const label = cells.get('HOME|5|1')!.advanceLabels.find(l => l.side === '1b-2b')!
+    expect(label.label).toBe('WP')
+    expect(label.hitter).toBeUndefined()
+  })
+
+  it('Hit-Push-Advance behält ×N des treibenden Hitters', () => {
+    const walk = ab({ id: 1, slotId: 5, sequence: 1, result: 'WALK', baseStateAfter: { firstSlotId: 5, secondSlotId: null, thirdSlotId: null } })
+    const single = ab({ id: 2, slotId: 6, sequence: 2, result: 'SINGLE', baseStateAfter: { firstSlotId: 6, secondSlotId: 5, thirdSlotId: null } })
+    const advance = {
+      id: 1, bogenId: 1, atBatId: 2, slotId: 5, side: 'HOME' as const, inning: 1,
+      fromBase: 1, toBase: 2, reason: 'HIT_PUSH' as const, createdAt: '',
+    }
+    const cells = renderCells([walk, single], [], [advance], [{ id: 6, battingOrder: 6 }])
+    const label = cells.get('HOME|5|1')!.advanceLabels.find(l => l.side === '1b-2b')!
+    expect(label.hitter).toBe(6)
+  })
+})
+
+describe('renderCells — Automatisches Out', () => {
+  it('AUTOMATIC_OUT rendert "AO", bleibt auf reachedBase 0 und zählt als Out', () => {
+    const ao = ab({ id: 1, slotId: 4, sequence: 1, result: 'AUTOMATIC_OUT' })
+    const cells = renderCells([ao], [])
+    const cell = cells.get('HOME|4|1')!
+    expect(cell.primaryLabel).toBe('AO')
+    expect(cell.reachedBase).toBe(0)
+    expect(cell.outIndex).toBe('I')
+    expect(abOutsAdded(ao)).toBe(1)
+  })
+
+  it('3. Automatisches Out markiert Inning-Ende', () => {
+    const outs = [1, 2, 3].map(i => ab({ id: i, slotId: i, sequence: i, result: 'AUTOMATIC_OUT' }))
+    const cells = renderCells(outs, [])
+    expect(cells.get('HOME|3|1')!.inningEnd).toBe(true)
+    expect(cells.get('HOME|3|1')!.outIndex).toBe('III')
   })
 })

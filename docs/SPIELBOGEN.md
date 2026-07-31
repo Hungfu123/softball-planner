@@ -17,12 +17,12 @@ User arbeitet primär an **Spielbogen** weiter. Beide existieren parallel.
 - `application/SpielbogenScoringService.java` — recordAtBat, recordStealing, undoLast, switchSide, correctLastAtBat, maybeAutoSwitchSide
 - `domain/model/Spielbogen.java`, `SpielbogenSlot.java`, `SpielbogenAtBat.java`, `SpielbogenStealing.java`
 - `adapter/in/web/SpielbogenController.java` — REST endpoints
-- `adapter/out/persistence/repository/SpringSpielbogenAtBatRepository.java` — `countWeightedOutsInInning` (DP=2 outs, TP=3, K/OUT=1, Error=0)
+- `adapter/out/persistence/repository/SpringSpielbogenAtBatRepository.java` — `countWeightedOutsInInning` (DP=2 outs, TP=3, K/OUT/AUTOMATIC_OUT=1, Error=0)
 
 ## Key Frontend Files
 - `components/spielbogen/SpielbogenPage.tsx` — Main page, orchestriert alle Drawers/Sheets, handleRecord/handleRecordStealing/Undo
 - `components/spielbogen/BogenDiamondView.tsx` — animiertes Diamond mit Runner-Bewegungen (motion/react). `outSlotIds` Prop: Runner die als OUT verschwinden faden in-place statt zu Home zu laufen
-- `components/spielbogen/BogenActionButtons.tsx` — TREFFER/STRIKEOUT/AUS Tier-1 Pills + MEHR-Menu (Substitution/Stealing/PitchingEvent)
+- `components/spielbogen/BogenActionButtons.tsx` — TREFFER/STRIKEOUT/AUS Tier-1 Pills + MEHR-Menu (Substitution/Stealing/PitchingEvent/Automatisches Out)
 - `components/spielbogen/OutDetailDrawer.tsx` — Field-SVG zum Fielder-Pick → InfieldOptions/RunnerOutPicker/RunnerAdvancePicker/ChainPicker. Force-Out-Detection (`isForceOutFromBase`) ändert ChainPicker-Title auf "Force-Out — wer hat Base touched?"
 - `components/spielbogen/HitAdjustSheet.tsx` — Auto-opens nach SINGLE/DOUBLE/TRIPLE bei Runnern. Tap-Cycle Runner-Positionen + Force-Out-3rd-Out-Regel (Run zählt nicht bei Force-Out 3rd-Out)
 - `components/spielbogen/CorrectionSheet.tsx` — nachträgliche Anpassung letzter AB ohne Delete
@@ -34,11 +34,14 @@ User arbeitet primär an **Spielbogen** weiter. Beide existieren parallel.
   - `computeScoredSet` — wer scort gemerkt by Diff zw. baseStateBefore/After
   - `computeCellOutIndices` — Roman-Labels (I/II/III, DP "I-II", TP "I-III", multi-event "I·III") **inkl. Stealing-Outs** (CS/OUT_ON_PLAY)
   - `computeInningEndKeys` — wo fiel das 3. Out (markiert Cell mit kleinem Slash am rechten Border)
+  - `abOutsAdded` — Outs eines ABs (K/OUT/AUTOMATIC_OUT=1, DP=2, TP=3, Error=0). Einzige Quelle für AB-Out-Zählung: outIndex, Inning-End und `SpielbogenPage.computeOuts` nutzen sie
+  - `sideAnnotations` — löst Steal-Kürzel + Advance-×N zu **max einem Label pro Base-Seite** auf (Precedence: Stealing-Event > Advance-Label). DiamondCell und PDF-Export rendern nur daraus
   - **Wichtig:** sortKey für ABs = `ab.sequence` (NICHT createdAt — wird von correctLastAtBat aktualisiert). Stealings interpolieren via `priorSeq + 0.5`
 - `utils/spielbogenPdfExport.ts` — jsPDF-Renderer, paralleler Code zu DiamondCell für PDF-Output
 
 ## Domain-Regeln (don't break!)
-- **Outs zählen:** DP=2, TP=3, K=1, OUT=1, Error=0. Backend: `countWeightedOutsInInning`.
+- **Outs zählen:** DP=2, TP=3, K=1, OUT=1, AUTOMATIC_OUT=1, Error=0. Backend: `countWeightedOutsInInning`, Frontend: `abOutsAdded`.
+- **Automatisches Out** (fehlende Spielerin) ist ein AB mit `result=AUTOMATIC_OUT`, kein separates Event (anders als Legacy-Scoring mit eigener `AutomaticOutEvent`-Tabelle). Dadurch erben Out-Zählung, 3rd-Out-Auto-Switch, Out-Index und Undo den normalen AB-Pfad. Zählt **weder als At-Bat noch als Plate Appearance** (`AtBatResult.countsAsAtBat()` = false). Backend lehnt outType/fielderChain/isError/sacrificeType/runs/rbi/runnerAdvances darauf ab; Base-State bleibt unverändert. Trigger: Tap auf die Out-Punkte im Live-Strip **oder** MEHR-Menu → beide öffnen denselben ConfirmModal.
 - **Auto-Switch:** Backend `maybeAutoSwitchSide` bei Outs ≥ 3. HOME 3.Out → side=AWAY (gleiche Inning). AWAY 3.Out → side=HOME, inning+1.
 - **Undo nach 3rd-Out** revertet Side+Inning wenn Outs nach Delete unter 3 fallen (`SpielbogenScoringService.undoLast`).
 - **Force-Out 3rd-Out-Regel** (Softball): bei Force-Out als 3. Out zählt gleichzeitig erzielter Run NICHT (Inning endet vor Run). HitAdjustSheet zeigt Amber-Warnung mit Checkbox.
@@ -53,7 +56,9 @@ User arbeitet primär an **Spielbogen** weiter. Beide existieren parallel.
 - **Inning-End-Marker** (kleine Diagonale, unten-rechts am Border): markiert wo das 3. Out fiel. Hilft Scorekeeper für Lineup-Reihenfolge im nächsten Inning bei Wrap-Around.
 - **RBI-Dots** (rote Punkte oben-rechts): max 3 angezeigt (`Math.min(rbi, 3)`).
 - **×N Advance-Annotation** (an Base-Seite): RFL-Konvention — `×N` = Batting-Order-Nr des Hitters, der den Runner auf diese Base vorbrachte. Steht an jeder traversierten Base-Seite eines Runner-Advances (`AdvanceLabel.hitter`). Nur wenn Treiber ≠ Runner selbst; am eigenen Reach des Batters bleibt das Result-Label (1B/2B/…). Ersetzt den früheren abCount-Badge (der war Wiederhol-AB-Zähler, semantisch falsch — 4-6× pro Inning unrealistisch). Wiederhol-ABs zeigt weiterhin der Wrap-Around-Slash.
-- **Stealing-Arrows** zwischen Bases (gestrichelt). Farben: STOLEN_BASE=rot `#dc2626`, CS/OUT_ON_PLAY=dunkelrot `#7c2d12`, WP/PB=orange `#f97316` mit Text-Label "WP"/"PB".
+- **Stealing-Arrows** zwischen Bases (gestrichelt). Farben: STOLEN_BASE=rot `#dc2626`, CS/OUT_ON_PLAY=dunkelrot `#7c2d12`, WP/PB=orange `#f97316`.
+- **Ein Label pro Base-Seite** (`sideAnnotations`): Steal-Kürzel (SB/CS/OUT/WP/PB) und Advance-×N teilen dieselbe Koordinate. Ein Base-Hop hat genau eine Ursache, daher gewinnt das explizite Stealing-Event; mehrere Steals auf derselben Seite ergeben ein Label. WP/PB bekommen **nie** ×N — der Runner kam durch den Pitch vor, nicht durch den Schlag. Vorher rendeten DiamondCell und PDF zwei Text-Layer auf identische Punkte → unlesbarer Überlagerungs-Mush.
+- **AO** = Automatisches Out: leerer Diamond, Label "AO", normaler Out-Index.
 - **Layout responsive:** mobile fix-pixel Breiten, `lg:` table-fixed mit Inning-Cells ohne Width → expanden auf Viewport-Breite.
 
 ## Vermeintliche Bugs / Häufige Verwirrung

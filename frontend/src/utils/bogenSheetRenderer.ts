@@ -23,6 +23,26 @@ export interface StealingArrow {
   type: string
 }
 
+export type BaseSide = AdvanceLabel['side']
+
+/**
+ * Minimal-Shape für sideAnnotations — deckt CellNotation und den PDF-Render-Input ab,
+ * bei dem die Listen optional sind.
+ */
+export interface SideAnnotationInput {
+  stealingArrow?: StealingArrow | null
+  stealingArrows?: StealingArrow[]
+  advanceLabels?: AdvanceLabel[]
+}
+
+/** Ein aufgelöstes Label pro Base-Seite — genau eine Annotation, nie gestapelte Texte. */
+export interface SideAnnotation {
+  side: BaseSide
+  text: string
+  /** WP/PB werden orange gezeichnet (Pitching-Fehler), alles andere dunkel. */
+  color: 'dark' | 'orange'
+}
+
 export interface CellNotation {
   primaryLabel: string
   labels: string[]
@@ -162,9 +182,11 @@ export function renderCells(
     // Side-annotation: alle traversierten Seiten bekommen Label (Multi-Hop in einer AB → mehrere Labels).
     const sides = fromToTraversedSides(adv.fromBase, adv.toBase)
     // ×N: Batting-Order des treibenden Hitters. Nur wenn Treiber ≠ Runner selbst
-    // (Batter's eigener Reach zeigt weiter das Result-Label, kein ×N).
+    // (Batter's eigener Reach zeigt weiter das Result-Label, kein ×N) UND nur bei
+    // batter-verursachten Advances. WP/PB kommen vom Pitch, nicht vom Schlag —
+    // dort wäre ×N sachlich falsch, das Kürzel bleibt stehen.
     const driverSlotId = abById.get(adv.atBatId)?.slotId
-    const hitter = driverSlotId != null && driverSlotId !== adv.slotId
+    const hitter = isBatterDriven(adv.reason) && driverSlotId != null && driverSlotId !== adv.slotId
       ? orderBySlotId.get(driverSlotId)
       : undefined
     for (const side of sides) cell.advanceLabels.push({ side, label, hitter })
@@ -256,6 +278,73 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult, abFi
   }
 }
 
+/** Runner-verursachte Advances (Pitch/Steal) bekommen kein ×N — nur batter-getriebene. */
+function isBatterDriven(reason: RunnerAdvanceReason): boolean {
+  return reason !== 'WP' && reason !== 'PB'
+}
+
+/** Basepfad-Seite, auf der ein Stealing-Event gezeichnet wird. */
+function stealSide(fromBase: number, toBase: number): BaseSide | null {
+  if (fromBase === 0 && toBase === 1) return 'home-1b'
+  if (fromBase === 1 && toBase === 2) return '1b-2b'
+  if (fromBase === 2 && toBase === 3) return '2b-3b'
+  if (fromBase === 3 && toBase === 4) return '3b-home'
+  // Multi-Base-Steal: Label an der letzten traversierten Seite.
+  if (toBase >= 4) return '3b-home'
+  if (toBase === 3) return '2b-3b'
+  if (toBase === 2) return '1b-2b'
+  return null
+}
+
+function stealLabel(type: string): string | null {
+  switch (type) {
+    case 'STOLEN_BASE': return 'SB'
+    case 'CAUGHT_STEALING': return 'CS'
+    case 'OUT_ON_PLAY': return 'OUT'
+    case 'WILD_PITCH': return 'WP'
+    case 'PASSED_BALL': return 'PB'
+    default: return null
+  }
+}
+
+/**
+ * Löst alle Seiten-Annotationen einer Cell zu **max einer pro Base-Seite** auf.
+ *
+ * Ein Base-Hop hat genau eine Ursache, also darf auch nur ein Label an der Seite
+ * stehen. Precedence: explizites Stealing-Event > Advance-Label. Ohne diese
+ * Auflösung landeten Steal-Label und ×N-Advance auf identischen Koordinaten und
+ * überlagerten sich unlesbar.
+ *
+ * Advance-Records und synthetisierte Advances konkurrieren nicht: synthetisiert
+ * wird nur für ABs ohne Records. Bei Wrap-Around-Cells mit mehreren ABs gewinnt
+ * der erste Advance derselben Seite.
+ */
+export function sideAnnotations(notation: SideAnnotationInput | null | undefined): SideAnnotation[] {
+  if (!notation) return []
+  const bySide = new Map<BaseSide, SideAnnotation>()
+
+  const arrows = notation.stealingArrows && notation.stealingArrows.length > 0
+    ? notation.stealingArrows
+    : (notation.stealingArrow ? [notation.stealingArrow] : [])
+  for (const arrow of arrows) {
+    const side = stealSide(arrow.fromBase, arrow.toBase)
+    const text = stealLabel(arrow.type)
+    if (!side || !text || bySide.has(side)) continue
+    const orange = arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL'
+    bySide.set(side, { side, text, color: orange ? 'orange' : 'dark' })
+  }
+
+  for (const adv of notation.advanceLabels ?? []) {
+    if (bySide.has(adv.side)) continue
+    const text = adv.hitter != null ? `×${adv.hitter}` : adv.label
+    if (!text) continue
+    const orange = adv.label === 'WP' || adv.label === 'PB'
+    bySide.set(adv.side, { side: adv.side, text, color: orange ? 'orange' : 'dark' })
+  }
+
+  return [...bySide.values()]
+}
+
 function fromToTraversedSides(fromBase: number, toBase: number): AdvanceLabel['side'][] {
   if (toBase <= fromBase) return []
   const sides: AdvanceLabel['side'][] = []
@@ -280,6 +369,7 @@ function reachedBaseForAtBat(ab: SpielbogenAtBatResponse): number {
     case 'TRIPLE': return 3
     case 'HOMERUN': return 4
     case 'STRIKEOUT': return 0
+    case 'AUTOMATIC_OUT': return 0
     case 'OUT':
       // FORCE_OUT/TAG_OUT can mean a runner was out while the batter reached 1B (FC).
       // We check baseStateAfter: if the batter ended up on a base, mark reach accordingly.
@@ -311,6 +401,7 @@ function renderAtBatBase(ab: SpielbogenAtBatResponse): string {
     case 'HIT_BY_PITCH': return 'HP'
     case 'STRIKEOUT': return 'K'
     case 'OUT': return renderOut(ab)
+    case 'AUTOMATIC_OUT': return 'AO'
   }
   return 'OUT'
 }
@@ -346,6 +437,19 @@ function renderOut(ab: SpielbogenAtBatResponse): string {
     case 'TAG_OUT': return 'TO'
   }
   return 'OUT'
+}
+
+/**
+ * Outs, die ein AB zum Inning beisteuert. Errors zählen nicht (Batter safe),
+ * DP/TP zählen mehrfach, AUTOMATIC_OUT wie ein normales Out.
+ */
+export function abOutsAdded(ab: SpielbogenAtBatResponse): number {
+  if (ab.isError) return 0
+  if (ab.result === 'STRIKEOUT' || ab.result === 'AUTOMATIC_OUT') return 1
+  if (ab.result !== 'OUT') return 0
+  if (ab.outType === 'DOUBLE_PLAY') return 2
+  if (ab.outType === 'TRIPLE_PLAY') return 3
+  return 1
 }
 
 function basesInOrder(s: BogenBaseStateDto | null | undefined): number[] {
@@ -409,14 +513,7 @@ function computeCellOutIndices(
   type Evt = { side: BogenSide; inning: number; slotId: number; outsAdded: number; sortKey: number }
   const events: Evt[] = []
   for (const ab of sortedAtBats) {
-    if (ab.isError) continue
-    let added = 0
-    if (ab.result === 'STRIKEOUT') added = 1
-    else if (ab.result === 'OUT') {
-      if (ab.outType === 'DOUBLE_PLAY') added = 2
-      else if (ab.outType === 'TRIPLE_PLAY') added = 3
-      else added = 1
-    }
+    const added = abOutsAdded(ab)
     if (added > 0) {
       events.push({ side: ab.side, inning: ab.inning, slotId: ab.slotId, outsAdded: added, sortKey: ab.sequence })
     }
@@ -508,14 +605,7 @@ function computeInningEndKeys(
   // createdAt wäre falsch weil correctLastAtBat den Timestamp aktualisiert
   // und dann corrected ABs ans Ende rutschen würden.
   for (const ab of sortedAtBats) {
-    if (ab.isError) continue
-    let added = 0
-    if (ab.result === 'STRIKEOUT') added = 1
-    else if (ab.result === 'OUT') {
-      if (ab.outType === 'DOUBLE_PLAY') added = 2
-      else if (ab.outType === 'TRIPLE_PLAY') added = 3
-      else added = 1
-    }
+    const added = abOutsAdded(ab)
     if (added > 0) {
       events.push({ side: ab.side, inning: ab.inning, slotId: ab.slotId, outsAdded: added, sortKey: ab.sequence })
     }

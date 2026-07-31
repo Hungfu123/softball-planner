@@ -46,6 +46,7 @@ public class BogenSheetRenderer {
             case STRIKEOUT -> new CellNotation("K", false, null);
             case OUT -> new CellNotation(renderOutNotation(ab), false, null);
             case REACHED_ON_ERROR -> new CellNotation("E", runScored, null);
+            case AUTOMATIC_OUT -> new CellNotation("AO", false, null);
         };
     }
 

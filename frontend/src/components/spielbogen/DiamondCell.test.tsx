@@ -254,4 +254,49 @@ describe('DiamondCell', () => {
     const { getByText } = render(<DiamondCell notation={cell} />)
     expect(getByText('I-II')).toBeTruthy()
   })
+  it('Steal-Label und Advance-×N auf gleicher Seite: nur das Steal-Label wird gezeichnet', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: 'BB',
+      labels: ['BB'],
+      reachedBase: 2,
+      abCount: 1,
+      stealingArrows: [{ fromBase: 1, toBase: 2, type: 'STOLEN_BASE' }],
+      advanceLabels: [{ side: '1b-2b', label: '1B', hitter: 4 }],
+    }
+    const { getByText, queryByText } = render(<DiamondCell notation={cell} />)
+    expect(getByText('SB')).toBeTruthy()
+    expect(queryByText('×4')).toBeNull()
+  })
+
+  it('Zwei Steals auf gleicher Seite zeichnen nur ein SB-Label', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: 'BB',
+      labels: ['BB'],
+      reachedBase: 2,
+      abCount: 1,
+      stealingArrows: [
+        { fromBase: 1, toBase: 2, type: 'STOLEN_BASE' },
+        { fromBase: 1, toBase: 2, type: 'STOLEN_BASE' },
+      ],
+    }
+    const { container } = render(<DiamondCell notation={cell} />)
+    const sbLabels = Array.from(container.querySelectorAll('text')).filter(t => t.textContent === 'SB')
+    expect(sbLabels).toHaveLength(1)
+  })
+
+  it('AUTOMATIC_OUT: leerer Diamond mit "AO" + Out-Index', () => {
+    const cell: CellNotation = {
+      ...empty,
+      primaryLabel: 'AO',
+      labels: ['AO'],
+      reachedBase: 0,
+      outIndex: 'II',
+      abCount: 1,
+    }
+    const { getByText } = render(<DiamondCell notation={cell} />)
+    expect(getByText('AO')).toBeTruthy()
+    expect(getByText('II')).toBeTruthy()
+  })
 })
