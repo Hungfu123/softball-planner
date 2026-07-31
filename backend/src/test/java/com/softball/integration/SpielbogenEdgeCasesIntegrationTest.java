@@ -252,4 +252,73 @@ class SpielbogenEdgeCasesIntegrationTest {
         mvc.perform(get("/api/spielbogen/" + ctx.bogenId()))
             .andExpect(jsonPath("$.currentSide").value("HOME"));
     }
+    @Test
+    void automatic_out_counts_as_out_but_leaves_runners_untouched() throws Exception {
+        var ctx = createLiveBogen();
+        // Slot1 walks → on 1B
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "WALK",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot1())))))
+            .andExpect(status().isCreated());
+
+        // Slot2 fehlt → automatisches Out, Runner bleibt auf 1B
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot2(), "inning", 1, "result", "AUTOMATIC_OUT",
+                "baseStateAfter", Map.of("firstSlotId", ctx.awaySlot1())))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.result").value("AUTOMATIC_OUT"))
+            .andExpect(jsonPath("$.baseStateAfter.firstSlotId").value(ctx.awaySlot1()));
+
+        // Kein Side-Switch bei 1 Out
+        mvc.perform(get("/api/spielbogen/" + ctx.bogenId()))
+            .andExpect(jsonPath("$.currentSide").value("AWAY"));
+    }
+
+    @Test
+    void three_automatic_outs_end_inning_and_auto_switch() throws Exception {
+        var ctx = createLiveBogen();
+        for (int i = 0; i < 3; i++) {
+            mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of(
+                    "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "AUTOMATIC_OUT"))))
+                .andExpect(status().isCreated());
+        }
+        mvc.perform(get("/api/spielbogen/" + ctx.bogenId()))
+            .andExpect(jsonPath("$.currentSide").value("HOME"));
+    }
+
+    @Test
+    void undo_removes_automatic_out_via_standard_at_bat_path() throws Exception {
+        var ctx = createLiveBogen();
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "AUTOMATIC_OUT"))))
+            .andExpect(status().isCreated());
+
+        mvc.perform(delete("/api/spielbogen/" + ctx.bogenId() + "/at-bats/last").param("side", "AWAY"))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/spielbogen/" + ctx.bogenId() + "/at-bats").param("side", "AWAY"))
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void automatic_out_rejects_batting_details() throws Exception {
+        var ctx = createLiveBogen();
+        // RBI ist unmöglich — es hat niemand geschlagen
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "AUTOMATIC_OUT",
+                "runsScored", 1, "rbi", 1))))
+            .andExpect(status().isBadRequest());
+
+        // outType gehört zu einem gefielderten Out
+        mvc.perform(post("/api/spielbogen/" + ctx.bogenId() + "/at-bats").contentType(APPLICATION_JSON)
+            .content(json.writeValueAsString(Map.of(
+                "side", "AWAY", "slotId", ctx.awaySlot1(), "inning", 1, "result", "AUTOMATIC_OUT",
+                "outType", "GROUNDER"))))
+            .andExpect(status().isBadRequest());
+    }
 }

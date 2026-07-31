@@ -1,3 +1,4 @@
+import { sideAnnotations } from '@/utils/bogenSheetRenderer'
 import type { CellNotation } from '@/utils/bogenSheetRenderer'
 
 interface Props {
@@ -24,18 +25,6 @@ function sidePosition(side: 'home-1b' | '1b-2b' | '2b-3b' | '3b-home') {
   if (side === '2b-3b') return { x: 8, y: 6 }       // ganz oben links
   if (side === '3b-home') return { x: 8, y: 48 }    // unten-links
   return { x: 30, y: 30 }
-}
-
-function stealSide(fromBase: number, toBase: number): 'home-1b' | '1b-2b' | '2b-3b' | '3b-home' | null {
-  if (fromBase === 0 && toBase === 1) return 'home-1b'
-  if (fromBase === 1 && toBase === 2) return '1b-2b'
-  if (fromBase === 2 && toBase === 3) return '2b-3b'
-  if (fromBase === 3 && toBase === 4) return '3b-home'
-  // Multi-base: letzte Seite
-  if (toBase >= 4) return '3b-home'
-  if (toBase === 3) return '2b-3b'
-  if (toBase === 2) return '1b-2b'
-  return null
 }
 
 export function DiamondCell({ notation, outIndex }: Props) {
@@ -187,23 +176,6 @@ export function DiamondCell({ notation, outIndex }: Props) {
           fill="#dc2626"
         />
       ))}
-      {notation?.advanceLabels?.map((adv, i) => {
-        const pos = sidePosition(adv.side)
-        return (
-          <text
-            key={`adv-${i}`}
-            x={pos.x}
-            y={pos.y}
-            textAnchor="middle"
-            fontSize="7"
-            fontWeight="700"
-            fill="#1f2937"
-            style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
-          >
-            {adv.hitter != null ? `×${adv.hitter}` : adv.label}
-          </text>
-        )
-      })}
       {stealingArrows.map((arrow, i) => (
         <line
           key={i}
@@ -216,31 +188,23 @@ export function DiamondCell({ notation, outIndex }: Props) {
           strokeDasharray="2 1"
         />
       ))}
-      {stealingArrows.map((arrow, i) => {
-        const label =
-          arrow.type === 'WILD_PITCH' ? 'WP'
-          : arrow.type === 'PASSED_BALL' ? 'PB'
-          : arrow.type === 'CAUGHT_STEALING' ? 'CS'
-          : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
-          : arrow.type === 'STOLEN_BASE' ? 'SB'
-          : null
-        if (!label) return null
-        const fill = (arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL') ? '#f97316' : '#1f2937'
-        // Position per Direction des Steal-Pfeils (analog Advance-Labels).
-        const side = stealSide(arrow.fromBase, arrow.toBase)
-        const pos = side ? sidePosition(side) : { x: 30, y: 5 + i * 5 }
+      {/* Ein Label pro Base-Seite. Steal-Events und Advance-×N teilen dieselbe
+          Koordinate, daher werden sie vorher in sideAnnotations aufgelöst —
+          sonst überlagern sich zwei Texte pixelgleich und keiner ist lesbar. */}
+      {sideAnnotations(notation).map(ann => {
+        const pos = sidePosition(ann.side)
         return (
           <text
-            key={`lbl-${i}`}
+            key={`side-${ann.side}`}
             x={pos.x}
             y={pos.y}
             textAnchor="middle"
             fontSize="7"
             fontWeight="700"
-            fill={fill}
+            fill={ann.color === 'orange' ? '#f97316' : '#1f2937'}
             style={{ fontFamily: "'Saira Condensed', Impact, sans-serif" }}
           >
-            {label}
+            {ann.text}
           </text>
         )
       })}

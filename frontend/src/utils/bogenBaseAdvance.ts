@@ -102,6 +102,9 @@ export function computeBaseStateAdvance(input: AdvanceInput): AdvanceResult {
       }
       return { baseStateAfter: { firstSlotId: newB1, secondSlotId: newB2, thirdSlotId: newB3 }, runsScored }
     }
+    case 'AUTOMATIC_OUT':
+      // Fehlende Spielerin — niemand schlägt, Runner bleiben stehen.
+      return { baseStateAfter: before, runsScored: 0 }
     case 'STRIKEOUT':
     case 'OUT': {
       // Standard DP: 1B runner forced at 2B (most common DP scenario)

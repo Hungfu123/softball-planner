@@ -336,6 +336,8 @@ export type AtBatResult =
   | 'WALK' | 'HIT_BY_PITCH'
   | 'STRIKEOUT' | 'OUT'
   | 'REACHED_ON_ERROR'
+  /** Automatisches Out (fehlende Spielerin) — Out im Inning, aber kein At-Bat und keine PA. */
+  | 'AUTOMATIC_OUT'
 
 export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'PICKOFF'
 
@@ -470,6 +472,7 @@ export const AT_BAT_RESULT_LABELS: Record<AtBatResult, string> = {
   STRIKEOUT: 'Strikeout',
   OUT: 'Aus',
   REACHED_ON_ERROR: 'Reached on Error',
+  AUTOMATIC_OUT: 'Automatisches Out',
 }
 
 // Spielbogen

@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { renderCells, cellKey, computePositionHistoryPerSlot, positionDisplay } from './bogenSheetRenderer'
+import { renderCells, cellKey, computePositionHistoryPerSlot, positionDisplay, sideAnnotations } from './bogenSheetRenderer'
 import type { AdvanceLabel } from './bogenSheetRenderer'
 import type {
   BogenSheetResponse,
@@ -472,21 +472,27 @@ function drawDiamondCell(
     }
   }
 
-  if (cell?.advanceLabels?.length) {
-    doc.setFontSize(4)
+  // Seiten-Annotationen (Steal-Kürzel + Advance-×N) — vorher zu max einem Label
+  // pro Base-Seite aufgelöst, sonst drucken zwei Texte auf dieselbe Koordinate.
+  const annotations = sideAnnotations(cell)
+  if (annotations.length > 0) {
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(0, 0, 0)
-    for (const adv of cell.advanceLabels) {
-      const cellMid = { x: cellX + cellW * 0.5, y: cellY + cellH * 0.5 }
-      const pos = pdfSidePosition(adv.side, cellMid, cellW, cellH)
-      doc.text(adv.hitter != null ? `x${adv.hitter}` : adv.label, pos.x, pos.y, { align: 'center' })
+    const cellMid = { x: cellX + cellW * 0.5, y: cellY + cellH * 0.5 }
+    for (const ann of annotations) {
+      const pos = pdfSidePosition(ann.side, cellMid, cellW, cellH)
+      doc.setFontSize(ann.text.startsWith('x') || ann.text.startsWith('×') ? 4 : 4.5)
+      if (ann.color === 'orange') doc.setTextColor(...COLOR_ORANGE)
+      else doc.setTextColor(0, 0, 0)
+      // ×N wird im PDF als xN gedruckt (helvetica hat kein ×).
+      doc.text(ann.text.replace('×', 'x'), pos.x, pos.y, { align: 'center' })
     }
+    doc.setTextColor(0, 0, 0)
   }
 
   // Stealing arrows (dashed lines between bases) — Multi-Stealing pro Cell unterstützt.
-  // Farbe + Label per Type: SB rot, CS/OUT_ON_PLAY dunkelrot, WP/PB orange.
+  // Farbe per Type: SB rot, CS/OUT_ON_PLAY dunkelrot, WP/PB orange.
+  // Labels laufen über sideAnnotations (siehe oben), nicht pro Arrow.
   const arrows = cell?.stealingArrows ?? (cell?.stealingArrow ? [cell.stealingArrow] : [])
-  let labelIdx = 0
   for (const arrow of arrows) {
     const from = baseCenter(arrow.fromBase, home, first, sec, third)
     const to = baseCenter(arrow.toBase, home, first, sec, third)
@@ -507,35 +513,6 @@ function drawDiamondCell(
         from.y + (to.y - from.y) * t2,
       )
     }
-    const label =
-      arrow.type === 'WILD_PITCH' ? 'WP'
-      : arrow.type === 'PASSED_BALL' ? 'PB'
-      : arrow.type === 'CAUGHT_STEALING' ? 'CS'
-      : arrow.type === 'OUT_ON_PLAY' ? 'OUT'
-      : arrow.type === 'STOLEN_BASE' ? 'SB'
-      : null
-    if (label) {
-      const labelColor: [number, number, number] =
-        arrow.type === 'WILD_PITCH' || arrow.type === 'PASSED_BALL' ? COLOR_ORANGE : [0, 0, 0]
-      doc.setFontSize(4.5)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(...labelColor)
-      // Position per Steal-Direction (analog Advance-Labels).
-      const side = pdfStealSide(arrow.fromBase, arrow.toBase)
-      let labelX: number, labelY: number
-      if (side) {
-        const cellMid = { x: cellX + cellW * 0.5, y: cellY + cellH * 0.5 }
-        const pos = pdfSidePosition(side, cellMid, cellW, cellH)
-        labelX = pos.x
-        labelY = pos.y
-      } else {
-        labelX = cellX + cellW * 0.5
-        labelY = cellY + 1.4 + labelIdx * 1.4
-      }
-      doc.text(label, labelX, labelY, { align: 'center' })
-      doc.setTextColor(0, 0, 0)
-      labelIdx++
-    }
   }
 }
 
@@ -550,17 +527,6 @@ function baseCenter(
   if (base === 2) return sec
   if (base === 3) return third
   return home
-}
-
-function pdfStealSide(fromBase: number, toBase: number): 'home-1b' | '1b-2b' | '2b-3b' | '3b-home' | null {
-  if (fromBase === 0 && toBase === 1) return 'home-1b'
-  if (fromBase === 1 && toBase === 2) return '1b-2b'
-  if (fromBase === 2 && toBase === 3) return '2b-3b'
-  if (fromBase === 3 && toBase === 4) return '3b-home'
-  if (toBase >= 4) return '3b-home'
-  if (toBase === 3) return '2b-3b'
-  if (toBase === 2) return '1b-2b'
-  return null
 }
 
 function pdfSidePosition(

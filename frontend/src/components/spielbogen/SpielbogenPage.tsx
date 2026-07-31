@@ -20,6 +20,7 @@ import { PositionSwapDrawer } from './PositionSwapDrawer'
 import { BogenMetaEditModal } from './BogenMetaEditModal'
 import { Pencil } from '@/icons'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
+import { abOutsAdded } from '@/utils/bogenSheetRenderer'
 import * as api from '@/api/client'
 import type {
   SpielbogenRecordAtBatRequest,
@@ -44,8 +45,7 @@ function computeUpcomingSlots(
 }
 
 /** Compute outs from at-bats + stealing events for the current inning + side.
- *  STRIKEOUT = 1 out, OUT = 1 out (DOUBLE_PLAY = 2, TRIPLE_PLAY = 3).
- *  Errors (isError=true) do NOT count as outs.
+ *  AB-Outs via abOutsAdded (STRIKEOUT/OUT/AUTOMATIC_OUT, DP=2, TP=3, Errors=0).
  *  CAUGHT_STEALING / OUT_ON_PLAY stealing events count as 1 out each.
  */
 function computeOuts(
@@ -55,16 +55,8 @@ function computeOuts(
   side: BogenSide
 ): number {
   const atBatOuts = atBats
-    .filter(ab => ab.inning === inning && ab.side === side && !ab.isError)
-    .reduce((sum, ab) => {
-      if (ab.result === 'STRIKEOUT') return sum + 1
-      if (ab.result === 'OUT') {
-        if (ab.outType === 'DOUBLE_PLAY') return sum + 2
-        if (ab.outType === 'TRIPLE_PLAY') return sum + 3
-        return sum + 1
-      }
-      return sum
-    }, 0)
+    .filter(ab => ab.inning === inning && ab.side === side)
+    .reduce((sum, ab) => sum + abOutsAdded(ab), 0)
   const stealingOuts = stealings
     .filter(st => st.inning === inning && st.side === side
                   && (st.type === 'CAUGHT_STEALING' || st.type === 'OUT_ON_PLAY'))
@@ -161,6 +153,7 @@ export default function SpielbogenPage() {
   const [showSwitchConfirm, setShowSwitchConfirm] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [showAutoOutConfirm, setShowAutoOutConfirm] = useState(false)
   const [showSheet, setShowSheet] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
@@ -316,7 +309,7 @@ export default function SpielbogenPage() {
 
     // projectedOuts vor Flash-Block — wird genutzt um Strikeout-Flash bei 3rd-Out zu skippen
     let increment = 0
-    if (req.result === 'STRIKEOUT') {
+    if (req.result === 'STRIKEOUT' || req.result === 'AUTOMATIC_OUT') {
       increment = 1
     } else if (req.result === 'OUT' && !req.isError) {
       if (req.outType === 'DOUBLE_PLAY') increment = 2
@@ -502,6 +495,25 @@ export default function SpielbogenPage() {
     } catch (e) {
       toast.show((e as Error).message, 'error')
     }
+  }
+
+  /**
+   * Automatisches Out (fehlende Spielerin). Läuft über den normalen AB-Pfad,
+   * damit Out-Zählung, 3rd-Out-Auto-Switch, Out-Index und Undo identisch greifen.
+   * Base-State bleibt unverändert — es hat niemand geschlagen.
+   */
+  const handleAutomaticOut = async () => {
+    setShowAutoOutConfirm(false)
+    if (!currentSlot) return
+    await handleRecord({
+      side: currentSide,
+      slotId: currentSlot.id,
+      inning: meta.currentInning,
+      result: 'AUTOMATIC_OUT',
+      runsScored: 0,
+      rbi: 0,
+      baseStateAfter: displayBaseState,
+    })
   }
 
   const handleSideToggleClick = () => {
@@ -711,14 +723,23 @@ export default function SpielbogenPage() {
             {meta.currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'}
           </button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Outs</span>
+        {/* Tap auf die Out-Punkte bucht ein Automatisches Out (Legacy-Parität,
+            gleicher Handler wie der MEHR-Menu-Eintrag). */}
+        <button
+          type="button"
+          onClick={() => setShowAutoOutConfirm(true)}
+          disabled={!isLive || submitting || outs >= 3 || !currentSlot}
+          className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
+          title="Automatisches Out buchen (fehlende Spielerin) — zählt als Out im Inning"
+          aria-label="Automatisches Out"
+        >
+          <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80 group-hover:text-white transition-colors">Outs</span>
           <span className="flex items-center gap-1.5">
             {[0, 1, 2].map(i => (
-              <span key={i} className={`w-2.5 h-2.5 rounded-full ${i < outs ? 'bg-softball-red-500' : 'bg-white/20'}`} />
+              <span key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${i < outs ? 'bg-softball-red-500' : 'bg-white/20 group-hover:bg-white/35'}`} />
             ))}
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Score-Block */}
@@ -788,6 +809,8 @@ export default function SpielbogenPage() {
             setShowSubModal(true)
           }}
           onPositionSwap={() => setShowPositionSwapDrawer(true)}
+          onAutomaticOut={() => setShowAutoOutConfirm(true)}
+          canAutomaticOut={isLive && outs < 3 && currentSlot != null}
           onEndGame={() => setShowEndConfirm(true)}
           canEndGame={isLive}
         />
@@ -975,6 +998,18 @@ export default function SpielbogenPage() {
           cancelLabel="Abbrechen"
           onConfirm={handleSwitchConfirm}
           onCancel={() => setShowSwitchConfirm(false)}
+        />
+      )}
+
+      {/* Confirm: automatisches Out */}
+      {showAutoOutConfirm && (
+        <ConfirmModal
+          title="Automatisches Out?"
+          message={`${currentSlot?.name ?? 'Slot'} (#${currentSlot?.battingOrder ?? '?'}) fehlt. Wird als Out im Inning gezählt (${outs}/3 → ${Math.min(outs + 1, 3)}/3), aber nicht als At-Bat.`}
+          confirmLabel="Out buchen"
+          cancelLabel="Abbrechen"
+          onConfirm={handleAutomaticOut}
+          onCancel={() => setShowAutoOutConfirm(false)}
         />
       )}
 

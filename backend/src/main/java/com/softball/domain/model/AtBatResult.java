@@ -1,7 +1,12 @@
 package com.softball.domain.model;
 
 public enum AtBatResult {
-    SINGLE, DOUBLE, TRIPLE, HOMERUN, INSIDE_PARK_HR, WALK, HIT_BY_PITCH, STRIKEOUT, OUT, REACHED_ON_ERROR;
+    SINGLE, DOUBLE, TRIPLE, HOMERUN, INSIDE_PARK_HR, WALK, HIT_BY_PITCH, STRIKEOUT, OUT, REACHED_ON_ERROR,
+    /**
+     * Automatisches Out (fehlende Spielerin): Out im Inning, aber keine Batting-Leistung.
+     * Weder At-Bat noch Plate Appearance — der Slot hat gar nicht geschlagen.
+     */
+    AUTOMATIC_OUT;
 
     public boolean isHit() {
         return this == SINGLE || this == DOUBLE || this == TRIPLE || this == HOMERUN || this == INSIDE_PARK_HR;
@@ -9,7 +14,7 @@ public enum AtBatResult {
 
     /** At-Bat zählt für die Trefferquote. Walks und HBP zählen nicht. ROE zählt als AB (BA-Penalty). */
     public boolean countsAsAtBat() {
-        return this != WALK && this != HIT_BY_PITCH;
+        return this != WALK && this != HIT_BY_PITCH && this != AUTOMATIC_OUT;
     }
 
     public boolean reachedBase() {
@@ -27,7 +32,7 @@ public enum AtBatResult {
     }
 
     public boolean isOut() {
-        return this == STRIKEOUT || this == OUT;
+        return this == STRIKEOUT || this == OUT || this == AUTOMATIC_OUT;
     }
 
     public String displayNameDe() {
@@ -42,6 +47,7 @@ public enum AtBatResult {
             case STRIKEOUT -> "Strikeout";
             case OUT -> "Aus";
             case REACHED_ON_ERROR -> "Reached on Error";
+            case AUTOMATIC_OUT -> "Automatisches Out";
         };
     }
 }
