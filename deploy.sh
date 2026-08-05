@@ -5,9 +5,7 @@
 set -e
 
 cd /opt/softball/repo
-BEFORE=$(git rev-parse HEAD)
 git pull origin master
-AFTER=$(git rev-parse HEAD)
 
 # Backend-Image (enthält das gebaute Frontend als static resources)
 docker build -t softball-planner:latest .
@@ -15,22 +13,29 @@ docker build -t softball-planner:latest .
 cd /opt/softball
 docker compose up -d backend
 
-# WhatsApp-Sidecar nur neu bauen wenn sich whatsapp-service/ geändert hat.
-# Ohne diesen Block liefen Sidecar-Fixes nie in Produktion — deploy.sh hat
-# ausschließlich das Backend angefasst, das Sidecar-Image blieb auf dem Stand
-# des letzten manuellen Builds.
+# WhatsApp-Sidecar neu bauen wenn sich whatsapp-service/ seit dem letzten Build
+# geändert hat. Ohne diesen Block liefen Sidecar-Fixes nie in Produktion —
+# deploy.sh hat ausschließlich das Backend angefasst.
+#
+# Vergleich über den Git-Tree-Hash des Verzeichnisses gegen einen Stempel des
+# letzten Builds, NICHT über den Diff des Pulls: wenn der Push-Hook den Commit
+# schon geholt hat, ist ein späterer Pull ein No-Op und ein Pull-Diff würde die
+# Änderung übersehen. Der Tree-Hash beschreibt den Ist-Zustand und ist damit
+# unabhängig davon, wer wann gepullt hat.
 #
 # Der Neustart ist unkritisch für die Kopplung: die Baileys-Session liegt im
 # Volume 'whatsapp-session' und übersteht Container-Neubau. Nur wenn WhatsApp
 # das Gerät entfernt hat, ist erneutes QR-Scannen nötig.
-cd /opt/softball/repo
-if git diff --quiet "$BEFORE" "$AFTER" -- whatsapp-service; then
+STAMP=/opt/softball/.whatsapp-src-tree
+CURRENT_TREE=$(git -C /opt/softball/repo rev-parse HEAD:whatsapp-service)
+if [ "$(cat "$STAMP" 2>/dev/null)" = "$CURRENT_TREE" ]; then
   echo 'whatsapp-service unverändert → Sidecar bleibt'
 else
   echo 'whatsapp-service geändert → Sidecar neu bauen'
   cd /opt/softball
   docker compose build whatsapp
   docker compose up -d whatsapp
+  echo "$CURRENT_TREE" > "$STAMP"
 fi
 
 cd /opt/softball
