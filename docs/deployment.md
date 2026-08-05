@@ -83,6 +83,8 @@ Nach dem ersten Start hat Baileys noch keine Session. Über die Orga-UI unter `/
 
 **Self-Healing bei `loggedOut`:** Der Sidecar verwirft die Baileys-Auth-Dateien (`poll-store.json` und `disconnects.log` bleiben!) und startet den Socket neu → frischer QR ohne SSH-Eingriff. Vorher blieb der Dienst in diesem Fall stumm hängen: die alten Creds führten bei jedem Start direkt in denselben 401, und ein QR erschien nie.
 
+**Warn-Banner:** Sobald `state != CONNECTED` (und nicht `CONNECTING`), zeigt `components/layout/WhatsappStatusBanner.tsx` auf allen Layout-Seiten einen roten Streifen mit Link auf `/orga/whatsapp-umfrage`. Status wird beim Laden und dann alle 5 Minuten geholt. Ausblenden gilt nur für die Session und wird beim Wiederverbinden zurückgesetzt. Grund: Der Sidecar heilt sich selbst, aber das QR-Scannen kann nur ein Mensch — ohne Banner erfährt man den Verlust erst, wenn eine Umfrage nicht ankommt.
+
 **Disconnect-Historie:** Jeder Abbruch wird mit Zeitstempel und Grund nach `/data/session/disconnects.log` geschrieben. Container-Logs rotieren — diese Datei überlebt und ist die Beweisspur beim nächsten Vorfall:
 
 ```bash
