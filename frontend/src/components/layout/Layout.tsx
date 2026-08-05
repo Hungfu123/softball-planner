@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
 import { Home, CalendarDays, Dumbbell, Users, BarChart3, ClipboardList, Mail, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
+import { WhatsappStatusBanner } from './WhatsappStatusBanner'
 import { useToast } from '@/hooks/useToast'
 import { createContext, useContext, type ReactNode } from 'react'
 import type { ToastContext } from '@/hooks/useToast'
@@ -76,6 +77,8 @@ export function Layout() {
             </nav>
           </div>
         </header>
+
+        <WhatsappStatusBanner />
 
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 pt-2 sm:pt-4">
           <Outlet />
