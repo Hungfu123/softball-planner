@@ -32,7 +32,7 @@ ssh root@178.104.118.46 "/opt/softball/deploy.sh"
 
 ## WhatsApp-Sidecar (Umfragen-Polls)
 
-Der Node-Sidecar (`whatsapp-service/`, whatsapp-web.js) läuft in Produktion als eigener Compose-Service im **internen** Netz — kein Port nach außen, nur `backend` erreicht ihn über den Service-Namen.
+Der Node-Sidecar (`whatsapp-service/`, Baileys) läuft in Produktion als eigener Compose-Service im **internen** Netz — kein Port nach außen, nur `backend` erreicht ihn über den Service-Namen.
 
 Ergänzung in `/opt/softball/docker-compose.yml` (nicht Teil dieses Repos):
 
@@ -66,7 +66,28 @@ volumes:
 | `WHATSAPP_SERVICE_URL` | `backend` | Interne Compose-DNS-Adresse `http://whatsapp:3000`; lokal (`./mvnw spring-boot:run`) default `http://localhost:3000` (siehe `application.properties`) |
 
 **Erst-Kopplung (einmalig, pro Server-Neuaufsetzung oder Session-Reset):**
-Nach dem ersten Start hat whatsapp-web.js noch keine Session. Über die Orga-UI unter `/orga/whatsapp-umfrage` erscheint ein QR-Code — mit dem Handy (WhatsApp → Verknüpfte Geräte) scannen, danach Status „verbunden". Die Session wird danach im Docker-Volume `whatsapp-session` persistiert und übersteht Container-Neustarts/Deploys; nur bei Volume-Löschung oder Geräte-Abmeldung in WhatsApp selbst ist erneutes Scannen nötig.
+Nach dem ersten Start hat Baileys noch keine Session. Über die Orga-UI unter `/orga/whatsapp-umfrage` erscheint ein QR-Code — mit dem Handy (WhatsApp → Verknüpfte Geräte) scannen, danach Status „verbunden". Die Session wird danach im Docker-Volume `whatsapp-session` persistiert und übersteht Container-Neustarts/Deploys; nur bei Volume-Löschung oder Geräte-Abmeldung in WhatsApp selbst ist erneutes Scannen nötig.
+
+### Verbindungszustände + Self-Healing
+
+`GET /status` des Sidecars liefert `state`, `lastError`, `lastErrorAt`; das Backend reicht beides bis in die Orga-UI durch. Ohne diese Felder sah jeder Nicht-verbunden-Fall identisch aus (QR-Platzhalter mit Spinner), auch wenn nie ein QR kommen konnte.
+
+| `state` | Bedeutung | UI |
+|---|---|---|
+| `CONNECTING` | Socket baut auf | Hinweis, QR folgt |
+| `WAITING_QR` | QR liegt bereit, Kopplung fehlt | QR + Scan-Anleitung |
+| `CONNECTED` | verbunden | Konto + Nummer |
+| `LOGGED_OUT` | WhatsApp hat das Gerät entfernt (`conflict/device_removed`) | Fehlertext; Creds wurden verworfen, neuer QR kommt automatisch |
+| `INIT_FAILED` | Socket-Aufbau scheiterte (z.B. kein Netz) | Fehlertext; Retry mit Backoff läuft |
+| `UNREACHABLE` | Sidecar antwortet nicht (vom **Backend** gesetzt) | Fehlertext mit Ursache |
+
+**Self-Healing bei `loggedOut`:** Der Sidecar verwirft die Baileys-Auth-Dateien (`poll-store.json` und `disconnects.log` bleiben!) und startet den Socket neu → frischer QR ohne SSH-Eingriff. Vorher blieb der Dienst in diesem Fall stumm hängen: die alten Creds führten bei jedem Start direkt in denselben 401, und ein QR erschien nie.
+
+**Disconnect-Historie:** Jeder Abbruch wird mit Zeitstempel und Grund nach `/data/session/disconnects.log` geschrieben. Container-Logs rotieren — diese Datei überlebt und ist die Beweisspur beim nächsten Vorfall:
+
+```bash
+docker compose exec whatsapp cat /data/session/disconnects.log | tail -20
+```
 
 **Lokaler Smoke-Test:** Im Repo-`docker-compose.yml` hat der `whatsapp`-Service zusätzlich `ports: ["3000:3000"]` (lokal unkritisch, da kein Internet-Zugriff auf den Compose-Host) — damit erreicht der lokal per `./mvnw spring-boot:run` laufende Backend-Prozess den Container unter `localhost:3000` ganz ohne weitere Konfiguration.
 
@@ -74,7 +95,7 @@ Nach dem ersten Start hat whatsapp-web.js noch keine Session. Über die Orga-UI 
 | Pfad | Beschreibung |
 |------|-------------|
 | `/opt/softball/docker-compose.yml` | Container-Konfiguration |
-| `/opt/softball/deploy.sh` | Deploy-Script (git pull → build → restart) |
+| `/opt/softball/deploy.sh` | Deploy-Script (git pull → build → restart). Vorlage im Repo unter `deploy.sh` — Änderungen dort per `scp` auf den VPS kopieren. Baut den `whatsapp`-Service nur wenn sich `whatsapp-service/` im gepullten Diff geändert hat |
 | `/opt/softball/repo/` | Git-Repo-Klon |
 | `/opt/softball/nginx/default.conf` | Nginx-Config (SSL + Proxy) |
 

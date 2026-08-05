@@ -36,12 +36,27 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     public WhatsappAccountStatus status() {
         try {
             final StatusDto s = client.get().uri("/status").retrieve().body(StatusDto.class);
-            if (s == null) return new WhatsappAccountStatus(false, null, null, false, null);
-            return new WhatsappAccountStatus(s.connected(), s.number(), s.name(), s.needsQr(), null);
+            if (s == null) return WhatsappAccountStatus.unreachable("Sidecar antwortet mit leerem Body");
+            return new WhatsappAccountStatus(s.connected(), s.number(), s.name(), s.needsQr(), null,
+                    parseState(s.state(), s.connected()), s.lastError(), s.lastErrorAt());
         } catch (final Exception e) {
             log.warn("WhatsApp-Status nicht erreichbar: {}", e.getMessage());
-            return new WhatsappAccountStatus(false, null, null, false, null);
+            return WhatsappAccountStatus.unreachable(e.getMessage());
         }
+    }
+
+    /** Unbekannter/fehlender state (älterer Sidecar) → aus connected ableiten statt zu raten. */
+    private static WhatsappAccountStatus.ConnectionState parseState(final String raw, final boolean connected) {
+        if (raw != null) {
+            try {
+                return WhatsappAccountStatus.ConnectionState.valueOf(raw);
+            } catch (final IllegalArgumentException ignored) {
+                log.warn("Unbekannter WhatsApp-State vom Sidecar: {}", raw);
+            }
+        }
+        return connected
+                ? WhatsappAccountStatus.ConnectionState.CONNECTED
+                : WhatsappAccountStatus.ConnectionState.CONNECTING;
     }
 
     @Override
@@ -108,7 +123,8 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
         }
     }
 
-    private record StatusDto(boolean connected, String number, String name, boolean needsQr) {}
+    private record StatusDto(boolean connected, String number, String name, boolean needsQr,
+                             String state, String lastError, String lastErrorAt) {}
     private record QrDto(String qr) {}
     private record GroupsDto(List<GroupDto> groups) {}
     private record GroupDto(String id, String name) {}
