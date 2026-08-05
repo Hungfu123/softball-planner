@@ -33,15 +33,27 @@ const WEEKDAY_JS: Record<Weekday, number> = {
 export function nextTrainingOn(
   weekday: Weekday, trainings: TrainingLite[], skipDates: string[], today: Date,
 ): Date | null {
+  return upcomingTrainingsOn(weekday, trainings, skipDates, today)[0] ?? null
+}
+
+/** Alle gültigen Trainings am Wochentag ab heute, chronologisch. */
+export function upcomingTrainingsOn(
+  weekday: Weekday, trainings: TrainingLite[], skipDates: string[], today: Date,
+): Date[] {
   const target = WEEKDAY_JS[weekday]
   const skip = new Set(skipDates)
   const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  const hits = trainings
+  return trainings
     .filter(t => !t.cancelled && !skip.has(t.date))
     .map(t => new Date(t.date + 'T00:00:00'))
     .filter(d => d.getDay() === target && d >= todayMid)
     .sort((a, b) => a.getTime() - b.getTime())
-  return hits.length ? hits[0] : null
+}
+
+/** Versandzeitpunkt zu einem Training = Vortag zur Umfrage-Uhrzeit. */
+export function sendDateFor(trainingDate: Date, timeHHmm: string): Date {
+  const [h, m] = timeHHmm.split(':').map(Number)
+  return new Date(trainingDate.getFullYear(), trainingDate.getMonth(), trainingDate.getDate() - 1, h, m, 0, 0)
 }
 
 /** Versandzeitpunkt einer Trainingsumfrage = Vortag des nächsten Trainings zur Uhrzeit. null = kein Training. */
@@ -49,7 +61,12 @@ export function coupledSendDate(
   weekday: Weekday, timeHHmm: string, trainings: TrainingLite[], skipDates: string[], today: Date,
 ): Date | null {
   const t = nextTrainingOn(weekday, trainings, skipDates, today)
-  if (!t) return null
-  const [h, m] = timeHHmm.split(':').map(Number)
-  return new Date(t.getFullYear(), t.getMonth(), t.getDate() - 1, h, m, 0, 0)
+  return t ? sendDateFor(t, timeHHmm) : null
+}
+
+/** Versandzeitpunkte der nächsten Trainings am Wochentag, chronologisch. */
+export function coupledSendDates(
+  weekday: Weekday, timeHHmm: string, trainings: TrainingLite[], skipDates: string[], today: Date,
+): Date[] {
+  return upcomingTrainingsOn(weekday, trainings, skipDates, today).map(t => sendDateFor(t, timeHHmm))
 }
