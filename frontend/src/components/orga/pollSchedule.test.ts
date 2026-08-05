@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { nextTrainingOn, coupledSendDate } from './pollSchedule'
+import { nextTrainingOn, coupledSendDate, coupledSendDates } from './pollSchedule'
 
 const trainings = [
   { date: '2026-07-27', cancelled: false }, // Montag
@@ -21,6 +21,17 @@ describe('pollSchedule', () => {
     const d = coupledSendDate('MONDAY', '09:00', trainings, [], today)
     expect(d?.getDate()).toBe(26) // Sonntag, Vortag
     expect(d?.getHours()).toBe(9)
+  })
+
+  it('coupledSendDates liefert die Versandtermine aller kommenden Trainings', () => {
+    const today = new Date(2026, 6, 25) // 25.07.2026 (Sa)
+    const ds = coupledSendDates('MONDAY', '09:00', trainings, [], today)
+    expect(ds.map(d => d.getDate())).toEqual([26, 2]) // Vortage von 27.07. und 03.08.
+    expect(ds[0].getHours()).toBe(9)
+  })
+
+  it('coupledSendDates ohne Training am Wochentag -> leer', () => {
+    expect(coupledSendDates('WEDNESDAY', '09:00', trainings, [], new Date(2026, 6, 25))).toEqual([])
   })
 
   it('kein Training am Wochentag -> null', () => {

@@ -6,7 +6,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton, Button } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
 import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus, GameDayResponse } from '@/types'
-import { coupledSendDate, WEEKDAYS, isoDate, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
+import { coupledSendDates, WEEKDAYS, isoDate, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
 import { PollEditor } from './PollEditor'
 
 const weekdayShort = (w: Weekday | null) => (w ? WEEKDAYS.find(d => d.value === w)?.short ?? w : '')
@@ -58,10 +58,12 @@ function formatSendDateTime(d: Date): string {
 /**
  * Überschrift + Wert für die Versand-Zeile.
  *
- * Bei Trainingsumfragen kann der berechnete Zeitpunkt in der Vergangenheit liegen
- * (coupledSendDate rechnet aus dem nächsten Training, nicht aus der Uhrzeit). Dann ist
- * "Nächster Versand: heute 09:00" um 11:15 irreführend — je nach Lage ist der Versand
- * schon raus, wird gerade nachgeholt oder endgültig verpasst.
+ * Bei Trainingsumfragen kann der erste berechnete Zeitpunkt in der Vergangenheit liegen
+ * (er stammt aus dem nächsten Training, nicht aus der Uhrzeit). Ob das ein Problem ist,
+ * entscheidet lastSentAt gegen genau diesen Zeitpunkt:
+ *   - schon gesendet   → dieser Zyklus ist durch, der NÄCHSTE Termin gehört in die Zeile
+ *   - nicht gesendet, Versandtag ist heute → Scheduler holt es per Catch-up nach
+ *   - nicht gesendet, Versandtag vorbei    → für dieses Training kommt nichts mehr
  */
 function nextSendInfo(poll: WhatsappPollResponse, trainings: TrainingLite[], now: Date = new Date()): {
   label: string
@@ -72,13 +74,22 @@ function nextSendInfo(poll: WhatsappPollResponse, trainings: TrainingLite[], now
     const label = 'Nächster Versand'
     if (!poll.enabled) return { label, value: 'Pausiert', overdue: false }
     if (!poll.weekday) return { label, value: 'Kein Trainingstag', overdue: false }
-    const d = coupledSendDate(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, now)
+    const dates = coupledSendDates(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, now)
+    const d = dates[0]
     if (!d) return { label, value: 'Kein Training geplant', overdue: false }
     if (d.getTime() <= now.getTime()) {
-      if (isSentToday(poll.lastSentAt)) return { label: 'Versand', value: 'Heute gesendet', overdue: false }
+      const sentAt = poll.lastSentAt ? new Date(poll.lastSentAt) : null
+      // Für diesen Zyklus gesendet → nächsten Termin zeigen (statt weiter auf den
+      // erledigten Zeitpunkt zu starren). Ohne Folgetraining gibt es keinen mehr.
+      if (sentAt && sentAt.getTime() >= d.getTime()) {
+        const next = dates[1]
+        return next
+          ? { label, value: formatSendDateTime(next), overdue: false }
+          : { label, value: 'Kein weiteres Training geplant', overdue: false }
+      }
       // Versandtag ist noch heute → der Scheduler holt es per Catch-up innerhalb einer Minute nach.
       if (isoDate(d) === isoDate(now)) return { label: 'Versand', value: 'Wird nachgesendet', overdue: true }
-      // Versandtag vorbei (Training ist heute) → für dieses Training kommt nichts mehr.
+      // Versandtag vorbei und nie gesendet → für dieses Training kommt nichts mehr.
       return { label: 'Versand', value: 'Verpasst', overdue: true }
     }
     return { label, value: formatSendDateTime(d), overdue: false }

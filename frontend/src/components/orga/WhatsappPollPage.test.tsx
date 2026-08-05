@@ -175,14 +175,54 @@ describe('WhatsappPollPage Versand-Zeile bei Trainingsumfragen', () => {
     expect(screen.getByText('Wird nachgesendet')).toBeInTheDocument()
   })
 
-  it('verstrichene Sendezeit + heute gesendet: "Heute gesendet"', () => {
+  it('für diesen Zyklus gesendet: Zeile zeigt den NÄCHSTEN Termin', () => {
+    // Training morgen (Versand heute, erledigt) + gleicher Wochentag in 8 Tagen.
+    const weekday = weekdayOfTrainingTomorrow()
+    mockTrainings([
+      { date: isoInDays(1), cancelled: false },
+      { date: isoInDays(8), cancelled: false },
+    ])
+    mockPolls([poll({
+      id: 1, mode: 'TRAINING', weekday, time: '00:01:00',
+      lastSentAt: new Date().toISOString(),
+    })])
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Nächster Versand')).toBeInTheDocument()
+    // Versandtag des Trainings in 8 Tagen = in 7 Tagen
+    const next = new Date()
+    next.setDate(next.getDate() + 7)
+    const dd = String(next.getDate()).padStart(2, '0')
+    const mm = String(next.getMonth() + 1).padStart(2, '0')
+    expect(screen.getByText(new RegExp(`${dd}\\.${mm}\\. · 00:01`))).toBeInTheDocument()
+  })
+
+  it('gesendet, aber kein Folgetraining: sagt das explizit statt einen Termin zu erfinden', () => {
     mockTrainings([{ date: isoInDays(1), cancelled: false }])
     mockPolls([poll({
       id: 1, mode: 'TRAINING', weekday: weekdayOfTrainingTomorrow(), time: '00:01:00',
       lastSentAt: new Date().toISOString(),
     })])
     render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
-    expect(screen.getByText('Heute gesendet')).toBeInTheDocument()
+    expect(screen.getByText('Kein weiteres Training geplant')).toBeInTheDocument()
+  })
+
+  it('am Trainingstag nach erfolgtem Versand kein falsches "Verpasst"', () => {
+    // Training heute → Versandtag war gestern; gesendet wurde gestern zur Sendezeit.
+    const today = new Date()
+    const yesterdaySend = new Date()
+    yesterdaySend.setDate(yesterdaySend.getDate() - 1)
+    yesterdaySend.setHours(9, 0, 0, 0)
+    mockTrainings([
+      { date: isoInDays(0), cancelled: false },
+      { date: isoInDays(7), cancelled: false },
+    ])
+    mockPolls([poll({
+      id: 1, mode: 'TRAINING', weekday: WEEKDAY_NAMES[today.getDay()], time: '09:00:00',
+      lastSentAt: yesterdaySend.toISOString(),
+    })])
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.queryByText('Verpasst')).toBeNull()
+    expect(screen.getByText('Nächster Versand')).toBeInTheDocument()
   })
 
   it('Versandtag vorbei (Training heute): "Verpasst"', () => {
