@@ -15,10 +15,16 @@ public class PollDueEvaluator {
 
         final LocalDate sendDate = targetTraining.getDate().minusDays(1);
         if (!now.toLocalDate().equals(sendDate)) return false;
-        if (now.getHour() != poll.getTime().getHour() || now.getMinute() != poll.getTime().getMinute()) return false;
 
+        // Bereits für dieses Training gesendet → fertig. Dieser Guard (nicht die Uhrzeit)
+        // ist es, der Doppelversand verhindert, und er erlaubt damit das Catch-up unten.
         if (poll.getLastSentTrainingId() != null && poll.getLastSentTrainingId().equals(targetTraining.getId())) return false;
-        return true;
+
+        // Same-Day-Catch-up: fällig ab der Sendezeit, nicht nur exakt zur Minute. Vorher ging
+        // eine Trainingsumfrage endgültig verloren, wenn der Scheduler diese eine Minute
+        // verpasste (Deploy, Backend-Neustart, Sidecar nicht verbunden) — still und ohne
+        // Hinweis, bis jemand den Ausfall bemerkt. Analog zu isDueOneOff.
+        return !now.toLocalTime().isBefore(poll.getTime());
     }
 
     /** Einmalig (ONE_OFF und GAME_DAY): genau am sendDate zur Uhrzeit fällig, solange noch nie gesendet. */

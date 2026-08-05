@@ -14,6 +14,7 @@ function poll(overrides: Partial<WhatsappPollResponse> & { id: number }): Whatsa
 
 let polls: WhatsappPollResponse[] = []
 let gameDays: GameDayResponse[] = []
+let trainings: { date: string; cancelled: boolean }[] = []
 const CONNECTED_STATUS: WhatsappAccountStatus = {
   connected: true, number: '123', name: 'Test', needsQr: false,
   state: 'CONNECTED', lastError: null, lastErrorAt: null,
@@ -32,11 +33,22 @@ function mockGameDays(list: GameDayResponse[]) {
   gameDays = list
 }
 
+function mockTrainings(list: { date: string; cancelled: boolean }[]) {
+  trainings = list
+}
+
+/** Datum relativ zu heute als ISO — Tests dürfen nicht an einem festen Kalendertag hängen. */
+function isoInDays(offset: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + offset)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 vi.mock('@/hooks/useWhatsappPoll', () => ({
   useWhatsappPoll: () => ({
     polls,
     status,
-    groups: [], trainings: [], loading: false, error: null, reload: vi.fn(),
+    groups: [], trainings, loading: false, error: null, reload: vi.fn(),
     createPoll: vi.fn(), updatePoll: vi.fn(), deletePoll: vi.fn(), sendNow: vi.fn(),
     addSkipDate: vi.fn(), removeSkipDate: vi.fn(), resetSent: vi.fn(),
   }),
@@ -133,5 +145,66 @@ describe('WhatsappPollPage Verbindungszustand', () => {
   it('verbunden zeigt den Kontonamen', () => {
     render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
     expect(screen.getByText(/Verbunden als Test/)).toBeInTheDocument()
+  })
+})
+
+describe('WhatsappPollPage Versand-Zeile bei Trainingsumfragen', () => {
+  const WEEKDAY_NAMES = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'] as const
+
+  /** Wochentag des Trainings, das morgen liegt → Versandtag ist damit heute. */
+  function weekdayOfTrainingTomorrow() {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return WEEKDAY_NAMES[d.getDay()]
+  }
+
+  beforeEach(() => {
+    mockPolls([])
+    mockGameDays([])
+    mockTrainings([])
+    status = CONNECTED_STATUS
+  })
+
+  it('verstrichene Sendezeit am Versandtag: "Wird nachgesendet" statt Zeitpunkt in der Vergangenheit', () => {
+    // Training morgen → Versandtag heute; Sendezeit 00:01 ist längst vorbei, nichts gesendet.
+    mockTrainings([{ date: isoInDays(1), cancelled: false }])
+    mockPolls([poll({
+      id: 1, mode: 'TRAINING', weekday: weekdayOfTrainingTomorrow(), time: '00:01:00', lastSentAt: null,
+    })])
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Wird nachgesendet')).toBeInTheDocument()
+  })
+
+  it('verstrichene Sendezeit + heute gesendet: "Heute gesendet"', () => {
+    mockTrainings([{ date: isoInDays(1), cancelled: false }])
+    mockPolls([poll({
+      id: 1, mode: 'TRAINING', weekday: weekdayOfTrainingTomorrow(), time: '00:01:00',
+      lastSentAt: new Date().toISOString(),
+    })])
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Heute gesendet')).toBeInTheDocument()
+  })
+
+  it('Versandtag vorbei (Training heute): "Verpasst"', () => {
+    const today = new Date()
+    mockTrainings([{ date: isoInDays(0), cancelled: false }])
+    mockPolls([poll({
+      id: 1, mode: 'TRAINING', weekday: WEEKDAY_NAMES[today.getDay()], time: '09:00:00', lastSentAt: null,
+    })])
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Verpasst')).toBeInTheDocument()
+  })
+
+  it('Sendezeit in der Zukunft: Zeitpunkt wird angezeigt', () => {
+    mockTrainings([{ date: isoInDays(3), cancelled: false }])
+    const d = new Date()
+    d.setDate(d.getDate() + 3)
+    mockPolls([poll({
+      id: 1, mode: 'TRAINING', weekday: WEEKDAY_NAMES[d.getDay()], time: '09:00:00', lastSentAt: null,
+    })])
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Nächster Versand')).toBeInTheDocument()
+    // Datum + Uhrzeit, nicht das "Do · 09:00"-Badge (das matcht ohne Datum ebenfalls)
+    expect(screen.getByText(/\d{2}\.\d{2}\. · 09:00/)).toBeInTheDocument()
   })
 })

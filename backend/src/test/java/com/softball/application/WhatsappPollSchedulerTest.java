@@ -68,11 +68,25 @@ class WhatsappPollSchedulerTest {
     }
 
     @Test
-    void tick_skipsNotDuePoll() {
+    void tick_catchesUpAfterMissedMinute() {
+        // Verpasste Scheduler-Minute (Deploy/Neustart) darf die Umfrage nicht verlieren:
+        // am Versandtag wird ab der Sendezeit nachgesendet, der lastSentTrainingId-Guard
+        // verhindert Doppelversand.
         when(repo.findAll()).thenReturn(List.of(due()));
         when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
 
-        scheduler.tick(monAt1800.plusMinutes(1));  // falsche Minute
+        scheduler.tick(monAt1800.plusMinutes(47));
+
+        verify(sender).sendPoll(eq("g@g.us"), eq("Training?"), anyList(), anyBoolean(), any());
+        verify(repo).save(argThat(p -> p.getLastSentAt() != null && Long.valueOf(42L).equals(p.getLastSentTrainingId())));
+    }
+
+    @Test
+    void tick_skipsBeforeSendTime() {
+        when(repo.findAll()).thenReturn(List.of(due()));
+        when(trainingRepo.findAllByOrderByDateDesc()).thenReturn(List.of(targetTraining()));
+
+        scheduler.tick(monAt1800.minusMinutes(1));
 
         verify(sender, never()).sendPoll(any(), any(), anyList(), anyBoolean(), any());
         verify(repo, never()).save(any());
