@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import type { WhatsappPollResponse, GameDayResponse } from '@/types'
+import type { WhatsappPollResponse, GameDayResponse, WhatsappAccountStatus } from '@/types'
 
 function poll(overrides: Partial<WhatsappPollResponse> & { id: number }): WhatsappPollResponse {
   return {
@@ -14,6 +14,15 @@ function poll(overrides: Partial<WhatsappPollResponse> & { id: number }): Whatsa
 
 let polls: WhatsappPollResponse[] = []
 let gameDays: GameDayResponse[] = []
+const CONNECTED_STATUS: WhatsappAccountStatus = {
+  connected: true, number: '123', name: 'Test', needsQr: false,
+  state: 'CONNECTED', lastError: null, lastErrorAt: null,
+}
+let status: WhatsappAccountStatus = CONNECTED_STATUS
+
+function mockStatus(s: Partial<WhatsappAccountStatus>) {
+  status = { ...CONNECTED_STATUS, connected: false, state: null, ...s }
+}
 
 function mockPolls(list: WhatsappPollResponse[]) {
   polls = list
@@ -26,7 +35,7 @@ function mockGameDays(list: GameDayResponse[]) {
 vi.mock('@/hooks/useWhatsappPoll', () => ({
   useWhatsappPoll: () => ({
     polls,
-    status: { connected: true, number: '123', name: 'Test', needsQr: false },
+    status,
     groups: [], trainings: [], loading: false, error: null, reload: vi.fn(),
     createPoll: vi.fn(), updatePoll: vi.fn(), deletePoll: vi.fn(), sendNow: vi.fn(),
     addSkipDate: vi.fn(), removeSkipDate: vi.fn(), resetSent: vi.fn(),
@@ -46,6 +55,7 @@ describe('WhatsappPollPage Gruppierung', () => {
   beforeEach(() => {
     mockPolls([])
     mockGameDays([])
+    status = CONNECTED_STATUS
   })
 
   it('trennt Trainingsumfragen von Einmalig & Nachrichten mit Anzahl', () => {
@@ -87,5 +97,41 @@ describe('WhatsappPollPage Gruppierung', () => {
     expect(await screen.findByText('Spieltag-Umfragen')).toBeInTheDocument()
     expect(screen.getByText('Spieltag nicht mehr vorhanden')).toBeInTheDocument()
     expect(screen.queryByText('undefined')).not.toBeInTheDocument()
+  })
+})
+
+describe('WhatsappPollPage Verbindungszustand', () => {
+  beforeEach(() => {
+    mockPolls([])
+    mockGameDays([])
+    status = CONNECTED_STATUS
+  })
+
+  it('UNREACHABLE nennt den Grund statt QR-Spinner zu zeigen', () => {
+    mockStatus({ state: 'UNREACHABLE', lastError: 'Connection refused' })
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('WhatsApp-Dienst nicht erreichbar')).toBeInTheDocument()
+    expect(screen.getByText(/Connection refused/)).toBeInTheDocument()
+    expect(screen.queryByAltText('WhatsApp-Verknüpfungs-QR-Code')).toBeNull()
+    expect(screen.queryByText(/Verknüpfte Geräte/)).toBeNull()
+  })
+
+  it('LOGGED_OUT erklärt, dass ein neuer QR automatisch kommt', () => {
+    mockStatus({ state: 'LOGGED_OUT', lastError: 'logged_out (code 401)' })
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Von WhatsApp abgemeldet')).toBeInTheDocument()
+    expect(screen.getByText(/neuer QR-Code erscheint automatisch/)).toBeInTheDocument()
+  })
+
+  it('WAITING_QR ohne QR-Bild zeigt weiterhin die Scan-Anleitung', () => {
+    mockStatus({ state: 'WAITING_QR', needsQr: true })
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText('Noch nicht verbunden')).toBeInTheDocument()
+    expect(screen.getByText(/Verknüpfte Geräte/)).toBeInTheDocument()
+  })
+
+  it('verbunden zeigt den Kontonamen', () => {
+    render(<MemoryRouter><WhatsappPollPage /></MemoryRouter>)
+    expect(screen.getByText(/Verbunden als Test/)).toBeInTheDocument()
   })
 })

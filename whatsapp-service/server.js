@@ -24,6 +24,52 @@ let myNumber = null;
 let myName = null;
 let currentQrDataUrl = null;   // gesetzt solange Kopplung aussteht
 
+/**
+ * Sichtbarer Zustand für /status. Ohne den sah "Dienst tot", "wartet auf QR" und
+ * "ausgeloggt" in der UI identisch aus (Endlos-Spinner), weil nur connected/needsQr
+ * gemeldet wurde.
+ *   CONNECTING   — Socket baut auf
+ *   WAITING_QR   — QR liegt bereit, Kopplung fehlt
+ *   CONNECTED    — verbunden
+ *   LOGGED_OUT   — WhatsApp hat das Gerät entfernt; Creds werden verworfen, neuer QR folgt
+ *   INIT_FAILED  — Socket-Aufbau schlug fehl (z.B. kein Netz), Retry läuft
+ */
+let state = 'CONNECTING';
+let lastError = null;          // { reason, at } — überlebt Reconnects, damit die Ursache sichtbar bleibt
+let starting = false;          // verhindert parallele startSock-Läufe (Reconnect + Retry gleichzeitig)
+let retryDelayMs = 0;
+
+const DISCONNECT_LOG = path.join(SESSION_PATH, 'disconnects.log');
+
+function setError(reason) {
+  lastError = { reason, at: new Date().toISOString() };
+  // Zusätzlich persistent: Container-Logs rotieren, die Ursache soll beim nächsten
+  // Vorfall noch nachweisbar sein.
+  try {
+    fs.mkdirSync(SESSION_PATH, { recursive: true });
+    fs.appendFileSync(DISCONNECT_LOG, `${lastError.at}\t${reason}\n`);
+  } catch (e) { console.error('[wa] disconnect-log failed:', e && e.message || e); }
+}
+
+/**
+ * Verwirft die Baileys-Auth-Dateien, behält poll-store.json.
+ * Der Store hält messageSecret + abgegebene Stimmen — ohne ihn wären Votes
+ * bereits laufender Umfragen nicht mehr entschlüsselbar.
+ */
+function clearAuthFiles() {
+  let removed = 0;
+  try {
+    for (const f of fs.readdirSync(SESSION_PATH)) {
+      if (f === path.basename(STORE_FILE) || f === path.basename(DISCONNECT_LOG)) continue;
+      fs.rmSync(path.join(SESSION_PATH, f), { force: true, recursive: true });
+      removed++;
+    }
+  } catch (e) {
+    console.error('[wa] Auth-Dateien löschen fehlgeschlagen:', e && e.message || e);
+  }
+  console.log('[wa]', removed, 'Auth-Dateien verworfen (poll-store.json behalten)');
+}
+
 // Persistenter Poll-Store — überlebt Container-Neustart, sonst geht der messageSecret
 // (zum Entschlüsseln der Votes) verloren und schon abgegebene Stimmen wären futsch.
 //   polls[msgId] = { title, options:[...], groupId, secret(base64), votes: { voterJid: {name, options:[...]} } }
@@ -42,11 +88,21 @@ loadStore();
 const sha256hex = (s) => crypto.createHash('sha256').update(Buffer.from(s)).digest('hex');
 
 async function startSock() {
-  const { state, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
+  const { state: authState, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
   const { version } = await fetchLatestBaileysVersion();
   console.log('[wa] Baileys WA-Version:', version.join('.'));
 
-  sock = makeWASocket({ version, auth: state, printQRInTerminal: false });
+  // Alten Socket schließen, sonst hängen nach jedem Reconnect zusätzliche
+  // Event-Handler an einem verwaisten Socket (Leak + doppelte Vote-Verarbeitung).
+  if (sock) {
+    // Listener ZUERST abhängen: sock.end() feuert selbst ein connection.update/close,
+    // das sonst als echter Abbruch gezählt würde (Phantom-Log + Backoff-Erhöhung).
+    sock.ev?.removeAllListeners?.();
+    try { sock.end(new Error('restart')); } catch { /* schon tot */ }
+  }
+
+  state = 'CONNECTING';
+  sock = makeWASocket({ version, auth: authState });
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async (u) => {
@@ -54,11 +110,14 @@ async function startSock() {
     if (qr) {
       currentQrDataUrl = await QRCode.toDataURL(qr);
       connected = false;
+      state = 'WAITING_QR';
       console.log('[wa] QR bereit — koppeln nötig');
     }
     if (connection === 'open') {
       connected = true;
       currentQrDataUrl = null;
+      state = 'CONNECTED';
+      retryDelayMs = 0;
       const pn = sock.user?.id ? jidNormalizedUser(sock.user.id).split('@')[0] : null;
       myNumber = pn ? '+' + pn : null;
       myName = sock.user?.name || null;
@@ -68,10 +127,22 @@ async function startSock() {
       connected = false;
       const code = lastDisconnect?.error?.output?.statusCode;
       if (code === DisconnectReason.loggedOut) {
-        console.log('[wa] ausgeloggt — Session löschen und neu koppeln.');
+        // WhatsApp hat das Gerät entfernt (z.B. conflict/device_removed). Die alten Creds
+        // sind wertlos — mit ihnen läuft jeder Start sofort wieder in denselben 401 und es
+        // erscheint NIE ein QR. Also verwerfen und neu koppeln lassen, ohne SSH-Eingriff.
+        state = 'LOGGED_OUT';
+        setError('logged_out (code ' + code + ') — Gerät in WhatsApp entfernt, neue Kopplung nötig');
+        console.log('[wa] ausgeloggt — Creds werden verworfen, neuer QR folgt.');
+        clearAuthFiles();
+        restart(0);
       } else {
-        console.log('[wa] getrennt (code', code + '), reconnect…');
-        startSock();
+        setError('disconnected (code ' + code + ')');
+        const delay = retryDelayMs;
+        // Backoff wächst bei wiederholtem Abbruch, damit ein dauerhaft kaputter
+        // Zustand WhatsApp nicht im Sekundentakt hämmert. Reset beim ersten 'open'.
+        retryDelayMs = Math.min(retryDelayMs ? retryDelayMs * 2 : 2000, 60000);
+        console.log('[wa] getrennt (code', code + '), reconnect in', delay, 'ms…');
+        restart(delay);
       }
     }
   });
@@ -123,7 +194,30 @@ function handleVote(voteM, pu) {
   console.log('[wa] Vote nicht entschlüsselbar', msgId, voteM.key.participant || voteM.key.remoteJid);
 }
 
-startSock().catch((e) => console.error('[wa] init failed:', e));
+/**
+ * Einziger Einstieg in startSock — seriell und mit Backoff.
+ * Vorher konnte ein fehlgeschlagener Start (z.B. fetchLatestBaileysVersion ohne Netz)
+ * den Dienst dauerhaft ohne Socket zurücklassen: HTTP lief weiter, /qr lieferte für
+ * immer null. Jetzt wird nachgefasst, bis ein Socket steht.
+ */
+function restart(delayMs) {
+  if (starting) return;
+  starting = true;
+  setTimeout(() => {
+    startSock()
+      .then(() => { starting = false; })
+      .catch((e) => {
+        starting = false;
+        state = 'INIT_FAILED';
+        setError('init_failed: ' + (e && e.message || e));
+        retryDelayMs = Math.min(retryDelayMs ? retryDelayMs * 2 : 5000, 60000);
+        console.error('[wa] init failed, retry in', retryDelayMs, 'ms:', e && e.message || e);
+        restart(retryDelayMs);
+      });
+  }, delayMs || 0);
+}
+
+restart(0);
 
 const app = express();
 app.use(express.json());
@@ -137,7 +231,15 @@ app.use((req, res, next) => {
 });
 
 app.get('/status', (_req, res) => {
-  res.json({ connected, number: myNumber, name: myName, needsQr: !connected && currentQrDataUrl !== null });
+  res.json({
+    connected,
+    number: myNumber,
+    name: myName,
+    needsQr: !connected && currentQrDataUrl !== null,
+    state,
+    lastError: lastError ? lastError.reason : null,
+    lastErrorAt: lastError ? lastError.at : null,
+  });
 });
 
 app.get('/qr', (_req, res) => {

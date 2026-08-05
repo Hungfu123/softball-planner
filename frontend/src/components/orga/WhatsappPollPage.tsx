@@ -115,6 +115,7 @@ export function WhatsappPollPage() {
   const toast = useToastContext()
 
   const [qr, setQr] = useState<string | null>(null)
+  const [qrError, setQrError] = useState<string | null>(null)
   const [editor, setEditor] = useState<EditorState>(null)
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
@@ -132,8 +133,12 @@ export function WhatsappPollPage() {
   useEffect(() => {
     if (connected) return
     let cancelled = false
+    // Fehler NICHT schlucken — sonst bleibt qr null und die Karte spinnt endlos,
+    // ohne dass jemand sieht dass der Abruf selbst scheitert.
     const fetchQr = () => {
-      getWhatsappQr().then(r => { if (!cancelled) setQr(r.qr) }).catch(() => {})
+      getWhatsappQr()
+        .then(r => { if (!cancelled) { setQr(r.qr); setQrError(null) } })
+        .catch((e: unknown) => { if (!cancelled) setQrError((e as Error).message) })
     }
     fetchQr()
     const qrTimer = setInterval(fetchQr, 20000)
@@ -238,7 +243,7 @@ export function WhatsappPollPage() {
         <p className="text-sm text-softball-red-700 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">{error}</p>
       )}
 
-      <AccountCard connected={connected} status={status} qr={qr} />
+      <AccountCard connected={connected} status={status} qr={qr} qrError={qrError} />
 
       <div className="flex items-baseline justify-between">
         <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-700">
@@ -355,7 +360,53 @@ export function WhatsappPollPage() {
   )
 }
 
-function AccountCard({ connected, status, qr }: { connected: boolean; status: WhatsappAccountStatus | null; qr: string | null }) {
+/**
+ * Klartext je Verbindungszustand. Vorher zeigte die Karte bei JEDEM Nicht-verbunden-Fall
+ * denselben QR-Platzhalter mit Spinner — auch wenn der Sidecar tot war oder WhatsApp das
+ * Gerät entfernt hatte. Dann wartet man beliebig lange auf einen QR, der nie kommt.
+ */
+function stateInfo(state: WhatsappAccountStatus['state'], lastError: string | null): {
+  headline: string
+  detail: string
+  tone: 'wait' | 'error'
+} | null {
+  switch (state) {
+    case 'UNREACHABLE':
+      return {
+        headline: 'WhatsApp-Dienst nicht erreichbar',
+        detail: lastError
+          ? `Der Sidecar antwortet nicht: ${lastError}`
+          : 'Der Sidecar antwortet nicht. Läuft der whatsapp-Container?',
+        tone: 'error',
+      }
+    case 'INIT_FAILED':
+      return {
+        headline: 'Dienst konnte nicht starten',
+        detail: lastError ? `${lastError} — Neuversuch läuft automatisch.` : 'Neuversuch läuft automatisch.',
+        tone: 'error',
+      }
+    case 'LOGGED_OUT':
+      return {
+        headline: 'Von WhatsApp abgemeldet',
+        detail: 'Das verknüpfte Gerät wurde entfernt. Die alte Kopplung wurde verworfen, ein neuer QR-Code erscheint automatisch.',
+        tone: 'error',
+      }
+    case 'CONNECTING':
+      return { headline: 'Verbindung wird aufgebaut', detail: 'Der QR-Code erscheint in wenigen Sekunden.', tone: 'wait' }
+    default:
+      return null
+  }
+}
+
+function AccountCard({ connected, status, qr, qrError }: {
+  connected: boolean
+  status: WhatsappAccountStatus | null
+  qr: string | null
+  qrError: string | null
+}) {
+  const info = qrError
+    ? { headline: 'QR-Code nicht abrufbar', detail: qrError, tone: 'error' as const }
+    : stateInfo(status?.state ?? null, status?.lastError ?? null)
   return (
     <Card padding="lg">
       <div className="flex items-center justify-between mb-3">
@@ -377,6 +428,24 @@ function AccountCard({ connected, status, qr }: { connected: boolean; status: Wh
             <p className="text-xs text-gray-500">{status.name && status.number ? `${status.number} · ` : ''}Umfragen werden automatisch verschickt.</p>
           </div>
         </div>
+      ) : info?.tone === 'error' ? (
+        // Kein QR-Platzhalter: hier gibt es nichts zu scannen, der Grund gehört auf den Tisch.
+        <div className="flex flex-col items-center gap-3 py-4 text-center">
+          <span className="flex items-center justify-center w-10 h-10 rounded-full bg-softball-red-100 text-softball-red-700 shrink-0">
+            <XMark size={20} />
+          </span>
+          <div className="space-y-1 max-w-sm">
+            <p className="text-sm font-semibold text-softball-red-700">{info.headline}</p>
+            <p className="text-xs text-gray-600">{info.detail}</p>
+            {status?.lastErrorAt && (
+              <p className="text-xs text-gray-400">
+                Seit {new Date(status.lastErrorAt).toLocaleString('de-DE', {
+                  day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                })}
+              </p>
+            )}
+          </div>
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-4 py-2 text-center">
           <div className="relative">
@@ -396,9 +465,11 @@ function AccountCard({ connected, status, qr }: { connected: boolean; status: Wh
             </span>
           </div>
           <div className="space-y-1 max-w-xs">
-            <p className="text-sm font-semibold text-navy-900">Noch nicht verbunden</p>
+            <p className="text-sm font-semibold text-navy-900">{info?.headline ?? 'Noch nicht verbunden'}</p>
             <p className="text-xs text-gray-500">
-              WhatsApp → <span className="font-semibold text-navy-700">Verknüpfte Geräte</span> → <span className="font-semibold text-navy-700">Gerät verknüpfen</span> → QR-Code scannen
+              {info?.detail ?? (
+                <>WhatsApp → <span className="font-semibold text-navy-700">Verknüpfte Geräte</span> → <span className="font-semibold text-navy-700">Gerät verknüpfen</span> → QR-Code scannen</>
+              )}
             </p>
           </div>
         </div>

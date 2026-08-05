@@ -746,11 +746,21 @@ export interface EquipmentInput {
 
 export type Weekday = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
 
+/**
+ * CONNECTING/WAITING_QR/CONNECTED/LOGGED_OUT/INIT_FAILED kommen vom Sidecar,
+ * UNREACHABLE setzt das Backend wenn der Sidecar nicht antwortet.
+ */
+export type WhatsappConnectionState =
+  | 'CONNECTING' | 'WAITING_QR' | 'CONNECTED' | 'LOGGED_OUT' | 'INIT_FAILED' | 'UNREACHABLE'
+
 export interface WhatsappAccountStatus {
   connected: boolean
   number: string | null
   name: string | null
   needsQr: boolean
+  state: WhatsappConnectionState | null
+  lastError: string | null
+  lastErrorAt: string | null
 }
 
 export interface WhatsappGroup {
