@@ -6,7 +6,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { Card, Badge, ConfirmModal, EmptyState, ResponsiveSheet, LoadingSkeleton, Button } from '@/components/shared'
 import { PlusCircle, Pencil, TrashBin, CrossBones, SendIcon, XMark, CheckCircle, CalendarIcon, DotsVertical } from '@/icons'
 import type { WhatsappPollResponse, WhatsappPollRequest, WhatsappGroup, Weekday, WhatsappAccountStatus, GameDayResponse } from '@/types'
-import { coupledSendDate, WEEKDAYS, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
+import { coupledSendDate, WEEKDAYS, isoDate, todayIso, tomorrowIso, type TrainingLite } from './pollSchedule'
 import { PollEditor } from './PollEditor'
 
 const weekdayShort = (w: Weekday | null) => (w ? WEEKDAYS.find(d => d.value === w)?.short ?? w : '')
@@ -51,20 +51,47 @@ function byOneOffDate(a: WhatsappPollResponse, b: WhatsappPollResponse): number 
   return da !== db ? da.localeCompare(db) : a.time.localeCompare(b.time)
 }
 
-function formatNextSend(poll: WhatsappPollResponse, trainings: TrainingLite[]): string {
+function formatSendDateTime(d: Date): string {
+  return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+/**
+ * Überschrift + Wert für die Versand-Zeile.
+ *
+ * Bei Trainingsumfragen kann der berechnete Zeitpunkt in der Vergangenheit liegen
+ * (coupledSendDate rechnet aus dem nächsten Training, nicht aus der Uhrzeit). Dann ist
+ * "Nächster Versand: heute 09:00" um 11:15 irreführend — je nach Lage ist der Versand
+ * schon raus, wird gerade nachgeholt oder endgültig verpasst.
+ */
+function nextSendInfo(poll: WhatsappPollResponse, trainings: TrainingLite[], now: Date = new Date()): {
+  label: string
+  value: string
+  overdue: boolean
+} {
   if (poll.mode === 'TRAINING') {
-    if (!poll.enabled) return 'Pausiert'
-    if (!poll.weekday) return 'Kein Trainingstag'
-    const d = coupledSendDate(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, new Date())
-    if (!d) return 'Kein Training geplant'
-    return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+    const label = 'Nächster Versand'
+    if (!poll.enabled) return { label, value: 'Pausiert', overdue: false }
+    if (!poll.weekday) return { label, value: 'Kein Trainingstag', overdue: false }
+    const d = coupledSendDate(poll.weekday, formatTime(poll.time), trainings, poll.skipDates, now)
+    if (!d) return { label, value: 'Kein Training geplant', overdue: false }
+    if (d.getTime() <= now.getTime()) {
+      if (isSentToday(poll.lastSentAt)) return { label: 'Versand', value: 'Heute gesendet', overdue: false }
+      // Versandtag ist noch heute → der Scheduler holt es per Catch-up innerhalb einer Minute nach.
+      if (isoDate(d) === isoDate(now)) return { label: 'Versand', value: 'Wird nachgesendet', overdue: true }
+      // Versandtag vorbei (Training ist heute) → für dieses Training kommt nichts mehr.
+      return { label: 'Versand', value: 'Verpasst', overdue: true }
+    }
+    return { label, value: formatSendDateTime(d), overdue: false }
   }
-  // Einmalig
+  const label = (poll.lastSentAt || (poll.sendDate && poll.sendDate < todayIso())) ? 'Status' : 'Geplant'
+  return { label, value: formatOneOffSend(poll), overdue: false }
+}
+
+function formatOneOffSend(poll: WhatsappPollResponse): string {
   if (poll.lastSentAt) return 'Gesendet'
   if (!poll.sendDate) return 'Kein Datum'
   if (poll.sendDate < todayIso()) return 'Verpasst'
-  const d = new Date(poll.sendDate + 'T' + formatTime(poll.time))
-  return `${d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })} · ${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+  return formatSendDateTime(new Date(poll.sendDate + 'T' + formatTime(poll.time)))
 }
 
 function blankDraft(groups: WhatsappGroup[]): WhatsappPollRequest {
@@ -494,6 +521,7 @@ interface PollCardProps {
 
 function PollCard({ poll, trainings, gameDays, connected, onPickSkip, onRemoveSkip, onEdit, onDelete, onSend, onResetSent, onTogglePause }: PollCardProps) {
   const sentToday = isSentToday(poll.lastSentAt)
+  const sendInfo = nextSendInfo(poll, trainings)
   const gameDay = poll.mode === 'GAME_DAY' ? gameDays.find(g => g.id === poll.gameDayId) ?? null : null
   const [showSkip, setShowSkip] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -605,8 +633,10 @@ function PollCard({ poll, trainings, gameDays, connected, onPickSkip, onRemoveSk
         {/* Nächster Versand — Kern-Info */}
         <div className="mt-3 flex items-end justify-between gap-3">
           <div>
-            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{poll.mode === 'TRAINING' ? 'Nächster Versand' : ((poll.lastSentAt || (poll.sendDate && poll.sendDate < todayIso())) ? 'Status' : 'Geplant')}</p>
-            <p className={`font-display text-lg font-bold leading-none mt-0.5 ${poll.enabled ? 'text-navy-800' : 'text-gray-400'}`}>{formatNextSend(poll, trainings)}</p>
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-400">{sendInfo.label}</p>
+            <p className={`font-display text-lg font-bold leading-none mt-0.5 ${
+              sendInfo.overdue ? 'text-softball-red-600' : poll.enabled ? 'text-navy-800' : 'text-gray-400'
+            }`}>{sendInfo.value}</p>
           </div>
           {poll.options.length > 0 && (
             <div className="text-right shrink-0 max-w-[55%]">

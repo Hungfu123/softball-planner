@@ -63,6 +63,31 @@ class PollDueEvaluatorTest {
     }
 
     @Test
+    void catchUpLaterOnSendDayWhenSchedulerMissedTheMinute() {
+        // Deploy/Neustart um 18:00 → Tick verpasst. Um 18:47 muss die Umfrage noch rausgehen,
+        // sonst fällt sie für dieses Training komplett aus.
+        assertThat(ev.isDue(poll(), thu(), LocalDateTime.of(2026, 7, 22, 18, 47))).isTrue();
+    }
+
+    @Test
+    void catchUpUntilEndOfSendDay() {
+        assertThat(ev.isDue(poll(), thu(), LocalDateTime.of(2026, 7, 22, 23, 59))).isTrue();
+    }
+
+    @Test
+    void noCatchUpOnTrainingDayItself() {
+        // Am Trainingstag ist "Wer kommt morgen?" inhaltlich falsch → kein Nachsenden.
+        assertThat(ev.isDue(poll(), thu(), LocalDateTime.of(2026, 7, 23, 9, 0))).isFalse();
+    }
+
+    @Test
+    void catchUpDoesNotResendForSameTraining() {
+        final WhatsappPoll p = poll();
+        p.setLastSentTrainingId(1L);
+        assertThat(ev.isDue(p, thu(), LocalDateTime.of(2026, 7, 22, 18, 47))).isFalse();
+    }
+
+    @Test
     void oneOff_dueAtSendDateAndTime() {
         final PollDueEvaluator ev = new PollDueEvaluator();
         final WhatsappPoll p = new WhatsappPoll();
