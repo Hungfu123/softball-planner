@@ -43,11 +43,6 @@
 - Farbcodierte Badges (rot=0, amber=1, blau=2, grün=3+)
 - Bench-Anzeige (verfügbar aber nicht aufgestellt)
 
-### Fahrgemeinschaften (Carpool)
-- Autos erstellen: Fahrer, Sitzplätze (2-9), Richtung
-- Kapazitäts-Anzeige pro Richtung (Hin/Rück)
-- Autos bearbeiten/löschen
-
 ### Statistiken
 - Saison-Stats: Spiele pro Spieler, Positionsverteilung
 - Spieltag-Stats: Spielanzahl + Positionen pro Spieler

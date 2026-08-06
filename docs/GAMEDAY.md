@@ -42,17 +42,14 @@ Ein `WhatsappPoll` im Modus `GAME_DAY` ist per `game_day_id` an genau einen Spie
 - **Unbekannte Wähler** (WhatsApp-Name ohne zugeordneten Spieler) werden im Vorschau-Modal (`components/planner/PollVoteSyncSheet.tsx`) inline einem Spieler zugeordnet oder als neuer Spieler angelegt — geteilte `UnknownVoterRow`-Komponente, auch von der Trainings-Umfrage genutzt.
 
 ## Frontend Files
-- `components/gameday/GameDayPage.tsx`
-- `components/gameday/AvailabilityList.tsx`
-- `components/gameday/GameTabs.tsx`
-- `components/gameday/CarpoolPanel.tsx`
+- `components/planner/GameTabs.tsx`
+- `components/planner/AvailablePlayersModal.tsx`
 - `components/planner/GameDayPlanner.tsx` — Multi-GameDay Planner, enthält `PollSyncToolbarButton` neben „Anwesend (N)"
 - `components/planner/PollVoteSyncSheet.tsx` — Vorschau-Modal (Bilanz, Delta, unbekannte Wähler)
 - `hooks/useGameDay.ts`
 
 ## Häufige Fallstricke
-- **Player aus availablePlayers entfernen löscht Daten**: Cascade ist destruktiv. Confirm-Modal vor Remove zeigen, evtl. Auswirkungen ankündigen ("Olaf war in Game 1 Lineup auf 3B + Driver in Carpool — entfernen löscht beides").
+- **Player aus availablePlayers entfernen löscht Daten**: Cascade ist destruktiv. Confirm-Modal vor Remove zeigen, evtl. Auswirkungen ankündigen ("Olaf war in Game 1 Lineup auf 3B + Base Coach in Game 2 — entfernen löscht beides").
 - **Kein Test mockt DB**: Tests via Testcontainers mit echtem Postgres. Cascade-Verhalten daher echt getestet.
 - **`AvailabilityService` aus `GameDayService` extracted**: Falls Cascade-Logik wachsen soll, weiter in eigenen Service halten (SOLID single-responsibility).
-- **Carpool-Driver-Delete**: Auto wird komplett gelöscht (nicht nur Driver-Reference). Passenger sind dann aber ohne Mitfahrgelegenheit. Frontend sollte warnen.
 - **Spieltag-Umfrage übernimmt nie automatisch**: `fetch` speichert Stimmen und zeigt sie an, ändert `availablePlayers` aber nicht. Erst der explizite `apply`-Call im Vorschau-Modal löst die Cascade aus — dieselbe Vorsicht gilt hier wie beim manuellen Entfernen aus `availablePlayers`.
