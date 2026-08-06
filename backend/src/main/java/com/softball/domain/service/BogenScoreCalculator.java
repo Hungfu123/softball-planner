@@ -55,6 +55,32 @@ public class BogenScoreCalculator {
         }
     }
 
+    public TeamTotals calculateTeamTotals(final List<SpielbogenAtBat> atBats,
+                                          final List<SpielbogenStealingEvent> stealings,
+                                          final BogenSide side) {
+        int runs = 0;
+        int hits = 0;
+        int errors = 0;
+
+        for (SpielbogenAtBat ab : atBats) {
+            if (ab.getSide() == side) {
+                if (ab.getRunsScored() != null) runs += ab.getRunsScored();
+                if (ab.getResult() != null && ab.getResult().isHit()) hits++;
+            } else if (Boolean.TRUE.equals(ab.getIsError())) {
+                // Fehler entsteht beim At-Bat der Gegenseite und wird der feldenden Mannschaft angelastet.
+                errors++;
+            }
+        }
+
+        for (SpielbogenStealingEvent st : stealings) {
+            if (st.getSide() == side && stealingScoresRun(st)) runs++;
+        }
+
+        return new TeamTotals(runs, hits, errors);
+    }
+
+    public record TeamTotals(int runs, int hits, int errors) {}
+
     public static class InningRuns {
         public int home;
         public int away;
