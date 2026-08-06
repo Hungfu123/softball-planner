@@ -58,13 +58,18 @@ class PublicBogenFeedTest {
     @WithMockUser
     void tokenIstNichtAusDerIdAbleitbar() throws Exception {
         Long bogenId = legeSpielbogenAn();
+        String token = erzeugeToken(bogenId);
 
-        String body = mvc.perform(post("/api/spielbogen/" + bogenId + "/share"))
-            .andReturn().getResponse().getContentAsString();
-        String token = json.readTree(body).get("token").asText();
+        // 32 zufällige Bytes, base64url ohne Padding → immer exakt 43 Zeichen aus diesem Alphabet.
+        assertThat(token).matches("[A-Za-z0-9_-]{43}");
 
-        assertThat(token).hasSizeGreaterThanOrEqualTo(40);
-        assertThat(token).doesNotContain(String.valueOf(bogenId));
+        // Der eigentliche "nicht ableitbar"-Nachweis: zwei Bögen bekommen unterschiedliche
+        // Tokens. (Ein Substring-Check auf die Id selbst ist kein sinnvoller Test — ein
+        // zufälliger 43-Zeichen-Token enthält ein gegebenes Zeichen mit ~49% Wahrscheinlichkeit,
+        // unabhängig davon, ob der Token von der Id abhängt oder nicht.)
+        Long zweiterBogenId = legeSpielbogenAn();
+        String zweiterToken = erzeugeToken(zweiterBogenId);
+        assertThat(token).isNotEqualTo(zweiterToken);
     }
 
     @Test
