@@ -286,7 +286,11 @@ public class SpielbogenController {
             data.inningRuns().entrySet().stream().collect(Collectors.toMap(
                 java.util.Map.Entry::getKey,
                 e -> new BogenSheetResponse.InningRuns(e.getValue().getHome(), e.getValue().getAway())
-            ))
+            )),
+            new BogenSheetResponse.TeamTotals(
+                data.homeTotals().runs(), data.homeTotals().hits(), data.homeTotals().errors()),
+            new BogenSheetResponse.TeamTotals(
+                data.awayTotals().runs(), data.awayTotals().hits(), data.awayTotals().errors())
         );
     }
 }

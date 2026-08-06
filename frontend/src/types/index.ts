@@ -689,6 +689,12 @@ export interface PositionSwapEntry {
   newPosition: string | null
 }
 
+export interface BogenTeamTotals {
+  runs: number
+  hits: number
+  errors: number
+}
+
 export interface BogenSheetResponse {
   meta: SpielbogenResponse
   homeLineup: SpielbogenSlotResponse[]
@@ -700,6 +706,8 @@ export interface BogenSheetResponse {
   positionChanges: SpielbogenPositionChangeResponse[]
   runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   inningRuns: Record<number, { home: number; away: number }>
+  homeTotals: BogenTeamTotals
+  awayTotals: BogenTeamTotals
 }
 
 export type PairingMode = 'HEIM_GAST' | 'TEAM_1_2'

@@ -41,7 +41,9 @@ public class SpielbogenSheetService {
         List<SpielbogenSubstitution> subs,
         List<SpielbogenPositionChange> positionChanges,
         List<SpielbogenRunnerAdvance> runnerAdvances,
-        Map<Integer, BogenScoreCalculator.InningRuns> inningRuns
+        Map<Integer, BogenScoreCalculator.InningRuns> inningRuns,
+        BogenScoreCalculator.TeamTotals homeTotals,
+        BogenScoreCalculator.TeamTotals awayTotals
     ) {}
 
     @Transactional(readOnly = true)
@@ -69,7 +71,9 @@ public class SpielbogenSheetService {
             scoringService.findSubstitutions(bogenId),
             scoringService.findPositionChanges(bogenId),
             scoringService.findRunnerAdvances(bogenId),
-            scoreCalc.calculateInningRuns(allAtBats, stealings)
+            scoreCalc.calculateInningRuns(allAtBats, stealings),
+            scoreCalc.calculateTeamTotals(allAtBats, stealings, BogenSide.HOME),
+            scoreCalc.calculateTeamTotals(allAtBats, stealings, BogenSide.AWAY)
         );
     }
 }
