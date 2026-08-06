@@ -3,6 +3,7 @@ package com.softball.adapter.in.web;
 import com.softball.adapter.dto.*;
 import com.softball.adapter.dto.LeagueResultResponse;
 import com.softball.application.SpielbogenService;
+import com.softball.application.SpielbogenShareService;
 import com.softball.application.SpielbogenSheetService;
 import com.softball.application.SpielbogenScoringService;
 import com.softball.application.SpielbogenSlotService;
@@ -26,15 +27,18 @@ public class SpielbogenController {
     private final SpielbogenSlotService slotService;
     private final SpielbogenScoringService scoringService;
     private final SpielbogenSheetService sheetService;
+    private final SpielbogenShareService shareService;
 
     public SpielbogenController(final SpielbogenService bogenService,
                                 final SpielbogenSlotService slotService,
                                 final SpielbogenScoringService scoringService,
-                                final SpielbogenSheetService sheetService) {
+                                final SpielbogenSheetService sheetService,
+                                final SpielbogenShareService shareService) {
         this.bogenService = bogenService;
         this.slotService = slotService;
         this.scoringService = scoringService;
         this.sheetService = sheetService;
+        this.shareService = shareService;
     }
 
     @GetMapping
@@ -77,6 +81,17 @@ public class SpielbogenController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         bogenService.delete(id);
+    }
+
+    @PostMapping("/{id}/share")
+    public ShareLinkResponse createShareLink(@PathVariable Long id) {
+        return new ShareLinkResponse(shareService.createOrGetToken(id));
+    }
+
+    @DeleteMapping("/{id}/share")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeShareLink(@PathVariable Long id) {
+        shareService.revokeToken(id);
     }
 
     @PostMapping("/{id}/start")
