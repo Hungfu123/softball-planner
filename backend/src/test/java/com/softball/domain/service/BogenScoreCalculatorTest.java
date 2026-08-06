@@ -1,7 +1,6 @@
 package com.softball.domain.service;
 
-import com.softball.domain.model.BogenSide;
-import com.softball.domain.model.SpielbogenAtBat;
+import com.softball.domain.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -12,47 +11,84 @@ class BogenScoreCalculatorTest {
 
     private final BogenScoreCalculator calc = new BogenScoreCalculator();
 
-    @Test
-    void emptyAtBatsProduceEmptyMap() {
-        assertThat(calc.calculateInningRuns(List.of())).isEmpty();
+    private SpielbogenAtBat atBat(BogenSide side, int inning, AtBatResult result, int runs) {
+        SpielbogenAtBat ab = new SpielbogenAtBat();
+        ab.setSide(side);
+        ab.setInning(inning);
+        ab.setResult(result);
+        ab.setRunsScored(runs);
+        return ab;
+    }
+
+    private SpielbogenStealingEvent steal(BogenSide side, int inning, StealingEventType type, int toBase) {
+        SpielbogenStealingEvent e = new SpielbogenStealingEvent();
+        e.setSide(side);
+        e.setInning(inning);
+        e.setType(type);
+        e.setToBase(toBase);
+        return e;
     }
 
     @Test
-    void aggregatesRunsByInningAndSide() {
-        SpielbogenAtBat a1 = atBat(1, BogenSide.HOME, 2);
-        SpielbogenAtBat a2 = atBat(1, BogenSide.HOME, 3);
-        SpielbogenAtBat a3 = atBat(2, BogenSide.AWAY, 1);
-        SpielbogenAtBat a4 = atBat(1, BogenSide.AWAY, 1);
+    void inningRunsCountAtBatRuns() {
+        var runs = calc.calculateInningRuns(
+            List.of(atBat(BogenSide.HOME, 2, AtBatResult.SINGLE, 2)),
+            List.of()
+        );
 
-        var result = calc.calculateInningRuns(List.of(a1, a2, a3, a4));
-
-        assertThat(result.get(1).getHome()).isEqualTo(5);
-        assertThat(result.get(1).getAway()).isEqualTo(1);
-        assertThat(result.get(2).getAway()).isEqualTo(1);
+        assertThat(runs.get(2).getHome()).isEqualTo(2);
+        assertThat(runs.get(2).getAway()).isZero();
     }
 
     @Test
-    void zeroRunsAreSkipped() {
-        SpielbogenAtBat a = atBat(1, BogenSide.HOME, 0);
-        var result = calc.calculateInningRuns(List.of(a));
-        assertThat(result).isEmpty();
+    void inningRunsIncludeStealsThatReachHome() {
+        var runs = calc.calculateInningRuns(
+            List.of(),
+            List.of(steal(BogenSide.AWAY, 3, StealingEventType.STOLEN_BASE, 4))
+        );
+
+        assertThat(runs.get(3).getAway()).isEqualTo(1);
     }
 
     @Test
-    void nullRunsAreSkipped() {
-        SpielbogenAtBat a = new SpielbogenAtBat();
-        a.setInning(1);
-        a.setSide(BogenSide.HOME);
-        a.setRunsScored(null);
-        var result = calc.calculateInningRuns(List.of(a));
-        assertThat(result).isEmpty();
+    void inningRunsIgnoreStealsThatDoNotReachHome() {
+        var runs = calc.calculateInningRuns(
+            List.of(),
+            List.of(steal(BogenSide.HOME, 1, StealingEventType.STOLEN_BASE, 2))
+        );
+
+        assertThat(runs).isEmpty();
     }
 
-    private SpielbogenAtBat atBat(int inning, BogenSide side, int runs) {
-        SpielbogenAtBat a = new SpielbogenAtBat();
-        a.setInning(inning);
-        a.setSide(side);
-        a.setRunsScored(runs);
-        return a;
+    @Test
+    void caughtStealingAtHomeScoresNothing() {
+        var runs = calc.calculateInningRuns(
+            List.of(),
+            List.of(steal(BogenSide.HOME, 1, StealingEventType.CAUGHT_STEALING, 4),
+                    steal(BogenSide.HOME, 1, StealingEventType.OUT_ON_PLAY, 4))
+        );
+
+        assertThat(runs).isEmpty();
+    }
+
+    @Test
+    void wildPitchAndPassedBallToHomeScore() {
+        var runs = calc.calculateInningRuns(
+            List.of(),
+            List.of(steal(BogenSide.HOME, 4, StealingEventType.WILD_PITCH, 4),
+                    steal(BogenSide.HOME, 4, StealingEventType.PASSED_BALL, 4))
+        );
+
+        assertThat(runs.get(4).getHome()).isEqualTo(2);
+    }
+
+    @Test
+    void atBatAndStealRunsAddUpInSameInning() {
+        var runs = calc.calculateInningRuns(
+            List.of(atBat(BogenSide.HOME, 5, AtBatResult.DOUBLE, 1)),
+            List.of(steal(BogenSide.HOME, 5, StealingEventType.STOLEN_BASE, 4))
+        );
+
+        assertThat(runs.get(5).getHome()).isEqualTo(2);
     }
 }

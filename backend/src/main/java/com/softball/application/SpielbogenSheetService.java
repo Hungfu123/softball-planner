@@ -57,17 +57,19 @@ public class SpielbogenSheetService {
         allAtBats.addAll(homeAtBats);
         allAtBats.addAll(awayAtBats);
 
+        var stealings = scoringService.findStealingEvents(bogenId);
+
         return new SheetData(
             bogen,
             lineup.home(),
             lineup.away(),
             homeAtBats,
             awayAtBats,
-            scoringService.findStealingEvents(bogenId),
+            stealings,
             scoringService.findSubstitutions(bogenId),
             scoringService.findPositionChanges(bogenId),
             scoringService.findRunnerAdvances(bogenId),
-            scoreCalc.calculateInningRuns(allAtBats)
+            scoreCalc.calculateInningRuns(allAtBats, stealings)
         );
     }
 }
