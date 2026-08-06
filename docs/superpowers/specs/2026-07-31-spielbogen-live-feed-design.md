@@ -163,9 +163,30 @@ Die Allstar-Spielernamen und die Positionen der Slots 8–10 sind darin erfunden
    ▼ = Bottom/Home), Outs als gefüllte Punkte, besetzte Bases.
 2. **Linescore** — Inning-Spalten mit Runs, rechts R/H/E-Summen. Noch nicht gespielte Innings
    als `-`. Horizontal scrollbar bei Extra-Innings, die Seite selbst scrollt nie horizontal.
+   Jede Inning-Zelle ist ein **Sprungziel**: Team-Zeile plus Inning-Spalte bestimmen eine
+   Halbinning eindeutig, ein Tipp scrollt den Feed dorthin (`scrollIntoView`, weich).
 3. **Play-by-Play** — gruppiert nach (Inning, Seite), **neueste Gruppe oben, innerhalb der
    Gruppe ebenfalls neueste zuerst**, damit die letzte Aktion immer die oberste Zeile ist.
    Jede Gruppe endet mit einem Trenner, der den Zwischenstand nach dieser Halbinning zeigt.
+
+### Zurückschauen
+
+Der Feed enthält das ganze Spiel — alle Halbinnings von jetzt rückwärts bis Inning 1. Bei
+7 Innings × 2 Hälften × bis zu 10 Schlagleuten sind das 70+ Zeilen, also braucht das
+Zurückschauen Hilfe:
+
+- **Sprung über die Linescore** (oben) — der Hauptweg. Nutzt ein Element, das ohnehin da ist,
+  und trifft genau die Halbinning, deren Runs man gerade gesehen hat.
+- **Sticky Halbinning-Köpfe** — beim Scrollen steht immer oben, wo man ist.
+- **Trenner mit Zwischenstand** nach jeder Hälfte — man sieht beim Zurückscrollen, wann das
+  Spiel gekippt ist, ohne mitzuzählen.
+
+Noch nicht gespielte Innings sind keine Sprungziele.
+
+**Bewusst nicht:** ältere Halbinnings einklappen. Sieht aufgeräumter aus, kostet aber genau dann
+einen Extra-Klick, wenn jemand schnell etwas nachschlagen will.
+
+Bei `status === 'DONE'` ist derselbe Feed die Nachlese — Link bleibt gültig, Polling aus.
 4. **Aufstellung** — eingeklappt, HEIM/GAST-Umschalter, Slot + Name + Position.
    In-app mit Stift → `BogenSlotEditModal` (unverändert). Öffentlich ohne Stift.
 
@@ -306,6 +327,7 @@ weiter versuchen).
 - Linescore mit Extra-Innings und mit noch nicht gespielten Innings
 - Die vier Zustände oben
 - Run-Hervorhebung greift bei `runsScored > 0` und sonst nie
+- Linescore-Sprung: Zelle → richtige Halbinning; noch nicht gespielte Innings sind kein Ziel
 - Alle in „Fix in `ResponsiveSheet`" gelisteten Sheets manuell durchklicken — kein Kind darf
   durch das neue `overflow-hidden` abgeschnitten werden
 
