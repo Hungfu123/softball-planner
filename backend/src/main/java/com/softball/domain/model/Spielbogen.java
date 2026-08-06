@@ -19,6 +19,7 @@ public class Spielbogen {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant endedAt;
+    private String publicToken;
 
     public Spielbogen() {}
 
@@ -67,4 +68,6 @@ public class Spielbogen {
     public void setUpdatedAt(final Instant updatedAt) { this.updatedAt = updatedAt; }
     public Instant getEndedAt() { return endedAt; }
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
+    public String getPublicToken() { return publicToken; }
+    public void setPublicToken(final String publicToken) { this.publicToken = publicToken; }
 }

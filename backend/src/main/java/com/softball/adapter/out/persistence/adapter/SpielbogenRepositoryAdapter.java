@@ -64,4 +64,9 @@ public class SpielbogenRepositoryAdapter implements SpielbogenRepository {
     public boolean existsById(final Long id) {
         return repo.existsById(id);
     }
+
+    @Override
+    public Optional<Spielbogen> findByPublicToken(final String publicToken) {
+        return repo.findByPublicToken(publicToken).map(mapper::toDomain);
+    }
 }
