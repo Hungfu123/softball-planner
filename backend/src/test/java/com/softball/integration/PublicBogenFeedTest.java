@@ -92,6 +92,67 @@ class PublicBogenFeedTest {
             .andExpect(status().isNotFound());
     }
 
+    @Test
+    void oeffentlicherFeedBrauchtKeineAuth() throws Exception {
+        Long bogenId = legeSpielbogenAnAlsAdmin();
+        String token = erzeugeToken(bogenId);
+
+        mvc.perform(get("/api/public/bogen/" + token))
+            .andExpect(status().isOk())
+            .andExpect(header().string("X-Robots-Tag", "noindex"))
+            .andExpect(jsonPath("$.homeTeamName", notNullValue()))
+            .andExpect(jsonPath("$.awayTeamName", notNullValue()))
+            .andExpect(jsonPath("$.status", notNullValue()));
+    }
+
+    @Test
+    void oeffentlicherFeedLiefertKeineInternenFelder() throws Exception {
+        Long bogenId = legeSpielbogenAnAlsAdmin();
+        String token = erzeugeToken(bogenId);
+
+        String body = mvc.perform(get("/api/public/bogen/" + token))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+
+        var root = json.readTree(body);
+        assertThat(root.has("season")).isFalse();
+        assertThat(root.has("leagueResultId")).isFalse();
+        assertThat(root.has("publicToken")).isFalse();
+        assertThat(root.has("createdBy")).isFalse();
+    }
+
+    @Test
+    void unbekannterTokenGibt404() throws Exception {
+        mvc.perform(get("/api/public/bogen/gibtesnicht"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void zurueckgezogenerTokenGibt404() throws Exception {
+        Long bogenId = legeSpielbogenAnAlsAdmin();
+        String token = erzeugeToken(bogenId);
+        mvc.perform(delete("/api/spielbogen/" + bogenId + "/share").with(user("admin")))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/public/bogen/" + token))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void normaleSpielbogenApiBleibtGeschuetzt() throws Exception {
+        Long bogenId = legeSpielbogenAnAlsAdmin();
+
+        mvc.perform(get("/api/spielbogen/" + bogenId + "/sheet"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    /** Erzeugt einen Public-Token für einen Spielbogen (authentifiziert, unabhängig von der Test-Methode). */
+    private String erzeugeToken(Long bogenId) throws Exception {
+        String body = mvc.perform(post("/api/spielbogen/" + bogenId + "/share").with(user("admin")))
+            .andReturn().getResponse().getContentAsString();
+        return json.readTree(body).get("token").asText();
+    }
+
     /** Legt einen Spielbogen über die API an und gibt seine Id zurück (authentifiziert). */
     private Long legeSpielbogenAn() throws Exception {
         var createBody = Map.of(
