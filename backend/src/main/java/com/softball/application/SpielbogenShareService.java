@@ -61,6 +61,6 @@ public class SpielbogenShareService {
     @Transactional(readOnly = true)
     public Spielbogen resolve(final String token) {
         return bogenRepo.findByPublicToken(token)
-            .orElseThrow(() -> new ResourceNotFoundException("Spielbogen not found for token"));
+            .orElseThrow(() -> new ResourceNotFoundException("Kein Spielbogen zu diesem Link"));
     }
 }
