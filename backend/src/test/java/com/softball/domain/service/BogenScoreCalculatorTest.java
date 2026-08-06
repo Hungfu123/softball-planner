@@ -114,4 +114,75 @@ class BogenScoreCalculatorTest {
 
         assertThat(runs).isEmpty();
     }
+
+    private SpielbogenAtBat errorAtBat(BogenSide battingSide, int inning) {
+        SpielbogenAtBat ab = atBat(battingSide, inning, AtBatResult.REACHED_ON_ERROR, 0);
+        ab.setIsError(true);
+        ab.setErrorPosition(5);
+        return ab;
+    }
+
+    @Test
+    void hitsCountOnlyHits() {
+        var atBats = List.of(
+            atBat(BogenSide.HOME, 1, AtBatResult.SINGLE, 0),
+            atBat(BogenSide.HOME, 1, AtBatResult.DOUBLE, 0),
+            atBat(BogenSide.HOME, 1, AtBatResult.TRIPLE, 0),
+            atBat(BogenSide.HOME, 2, AtBatResult.HOMERUN, 1),
+            atBat(BogenSide.HOME, 2, AtBatResult.INSIDE_PARK_HR, 1),
+            atBat(BogenSide.HOME, 2, AtBatResult.WALK, 0),
+            atBat(BogenSide.HOME, 2, AtBatResult.HIT_BY_PITCH, 0),
+            atBat(BogenSide.HOME, 3, AtBatResult.STRIKEOUT, 0),
+            atBat(BogenSide.HOME, 3, AtBatResult.OUT, 0),
+            atBat(BogenSide.HOME, 3, AtBatResult.REACHED_ON_ERROR, 0)
+        );
+
+        var totals = calc.calculateTeamTotals(atBats, List.of(), BogenSide.HOME);
+
+        assertThat(totals.hits()).isEqualTo(5);
+    }
+
+    @Test
+    void errorsAreChargedToTheFieldingTeam() {
+        var atBats = List.of(errorAtBat(BogenSide.AWAY, 2));
+
+        var home = calc.calculateTeamTotals(atBats, List.of(), BogenSide.HOME);
+        var away = calc.calculateTeamTotals(atBats, List.of(), BogenSide.AWAY);
+
+        assertThat(home.errors()).as("AWAY schlägt, HOME feldet den Fehler").isEqualTo(1);
+        assertThat(away.errors()).isZero();
+    }
+
+    @Test
+    void totalsRunsIncludeStealRuns() {
+        var totals = calc.calculateTeamTotals(
+            List.of(atBat(BogenSide.HOME, 1, AtBatResult.SINGLE, 2)),
+            List.of(steal(BogenSide.HOME, 3, StealingEventType.STOLEN_BASE, 4)),
+            BogenSide.HOME
+        );
+
+        assertThat(totals.runs()).isEqualTo(3);
+    }
+
+    @Test
+    void totalsIgnoreTheOtherSide() {
+        var atBats = List.of(
+            atBat(BogenSide.HOME, 1, AtBatResult.SINGLE, 1),
+            atBat(BogenSide.AWAY, 1, AtBatResult.DOUBLE, 2)
+        );
+
+        var totals = calc.calculateTeamTotals(atBats, List.of(), BogenSide.HOME);
+
+        assertThat(totals.runs()).isEqualTo(1);
+        assertThat(totals.hits()).isEqualTo(1);
+    }
+
+    @Test
+    void emptyGameHasZeroTotals() {
+        var totals = calc.calculateTeamTotals(List.of(), List.of(), BogenSide.AWAY);
+
+        assertThat(totals.runs()).isZero();
+        assertThat(totals.hits()).isZero();
+        assertThat(totals.errors()).isZero();
+    }
 }
