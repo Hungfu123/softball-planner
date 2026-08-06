@@ -149,10 +149,15 @@ Aufbau von oben nach unten:
 ├──────────────────────────────┤
 │ ▸ Aufstellung          HEIM ▾│
 ├──────────────────────────────┤
-│ [PDF]  [Liga senden]         │
+│ [PDF] [Liga senden] [Link]   │
 │ [ Spiel beenden ]            │
 └──────────────────────────────┘
 ```
+
+Ausgearbeitetes Mockup mit den echten Farbtokens:
+`docs/superpowers/specs/2026-07-31-spielbogen-live-feed-mockup.html`
+(Desktop-Modal und Handy-Variante mit offener Aufstellung, im Browser öffnen).
+Die Allstar-Spielernamen und die Positionen der Slots 8–10 sind darin erfunden.
 
 1. **Scoreboard** — beide Teams, Score, aktuelles Inning mit Hälfte (▲ = Top/Away am Schlag,
    ▼ = Bottom/Home), Outs als gefüllte Punkte, besetzte Bases.
@@ -163,6 +168,60 @@ Aufbau von oben nach unten:
    Jede Gruppe endet mit einem Trenner, der den Zwischenstand nach dieser Halbinning zeigt.
 4. **Aufstellung** — eingeklappt, HEIM/GAST-Umschalter, Slot + Name + Position.
    In-app mit Stift → `BogenSlotEditModal` (unverändert). Öffentlich ohne Stift.
+
+### Visuelles Design
+
+Alle Werte sind bestehende Tokens aus `styles/index.css` — keine neuen Farben.
+
+**Scoreboard in `navy-900`, weiße Schrift** — als einziger dunkler Block im Sheet. Zwei Gründe:
+der Stand muss sich vom Feed absetzen statt in einer durchgehenden Cream-Fläche unterzugehen,
+und am Zaun in der Sonne findet das Auge zuerst den dunklen Block. Aufbau wie eine Anzeigetafel:
+Gastmannschaft oben und leicht gedimmt, Heimmannschaft darunter voll deckend, Score rechtsbündig
+in `font-display`. Darunter eine Meta-Zeile mit Inning + Hälfte, Outs als Punkte
+(gefüllt `softball-red-500`), Base-Diamant (besetzt = bernstein) und dem Namen am Schlag.
+
+**Run-Zeilen** bekommen `#FFF8E7` als Hintergrund und einen 3px-Balken links in Bernstein, das
+RBI-Tag wird gefüllt. Ausgelöst durch `runsScored > 0`, sonst nichts. Das ist der einzige
+Farbakzent im Feed — würde man auch Hits oder Outs einfärben, nutzt sich die Hervorhebung ab und
+der Feed liest sich nicht mehr auf einen Blick.
+
+**Steals, Substitutions und Positionswechsel** gedimmt und kursiv, eine Stufe kleiner. Sie
+gehören in den Verlauf, aber nicht auf Augenhöhe mit At-Bats — sonst rauscht der Feed zu.
+
+**Halbinning-Kopfzeilen** sticky in `cream-100`, mit ▲/▼ in `softball-red-600`. Die laufende
+Halbinning trägt zusätzlich ein rotes LIVE-Badge.
+
+**Trenner zwischen den Halbinnings** in `cream-200` mit dem Zwischenstand mittig — daran sieht
+man beim Scrollen, wann das Spiel gekippt ist.
+
+### Fix in `ResponsiveSheet` (betrifft die ganze App)
+
+`ResponsiveSheet`s Desktop-Container hat `rounded-2xl`, aber **kein `overflow-hidden`**. Randloser
+Inhalt mit eigenen Rahmenlinien — heute die RFL-Tabelle — schneidet dadurch durch die runde Ecke
+und steht über. Sichtbar oben rechts unter dem Kopf.
+
+Der Feed hat Innenabstand, das Symptom verschwände hier also von allein. Die Ursache bleibt aber
+und trifft jedes andere Sheet mit randlosem Inhalt. Deshalb `overflow-hidden` an beiden Stellen
+in `ResponsiveSheet` ergänzen (Desktop-`motion.div` und mobiler `Drawer.Content`) statt es im
+Spielbogen zu umgehen.
+
+**Das ist eine app-weite Änderung — `ResponsiveSheet` hat 33 Verbraucher**
+(`grep -rl ResponsiveSheet frontend/src/components`). Gefährlich sind Sheets mit absolut
+positionierten Kindern, die bewusst über den Rand ragen (Dropdowns, Tooltips, Popover) —
+`overflow-hidden` würde die abschneiden.
+
+Vor dem Merge durchklicken, priorisiert:
+
+- **Live-Scoring zuerst**, weil dort ein Fehler mitten im Spiel auffällt: `HitAdjustSheet`,
+  `OutDetailDrawer`, `ErrorPickerDrawer`, `StealingDrawer`, `PositionSwapDrawer`,
+  `PitchingEventDrawer`, `CheatsheetDrawer`, `CopyFromGameDayModal`, `CorrectionSheet`
+  (existiert zweimal — `spielbogen/` und `scoring/`), `BogenActionButtons`
+- **Verschachtelte Sheets** (`nested`-Prop): `SpielbogenPage`, `ScoringPage`
+- **Rest** stichprobenartig: Dashboard, Orga, Planner, Training, Stats
+
+`BogenSlotEditModal` ist **nicht** betroffen — es nutzt `ResponsiveSheet` nicht.
+
+Falls ein Sheet bewusst überragt, dort gezielt ausnehmen statt den Fix zurückzudrehen.
 
 ### Feed-Zeilen
 
@@ -192,10 +251,11 @@ PASSED_BALL → „Passed Ball".
 
 ### Drawer-Umbau
 
-`RflSheetDrawer` (261 Zeilen) verliert das Gitter, behält alles andere. Der Footer bleibt
-unverändert — Spiel beenden, wieder öffnen, PDF-Export, „Liga senden". Das Gitter-Rendering
-(`SideSheet`, `renderCells`) fliegt hier raus; `utils/bogenSheetRenderer.ts` bleibt, weil der
-PDF-Export es weiter braucht.
+`RflSheetDrawer` (261 Zeilen) verliert das Gitter, behält alles andere. Der Footer behält seine
+bestehenden Aktionen — Spiel beenden, wieder öffnen, PDF-Export, „Liga senden" — und bekommt
+**„Link teilen"** dazu (Reihe mit PDF und Liga senden, „Spiel beenden" bleibt allein darunter).
+Das Gitter-Rendering (`SideSheet`, `renderCells`) fliegt hier raus; `utils/bogenSheetRenderer.ts`
+bleibt, weil der PDF-Export es weiter braucht.
 
 Der Slot-Stift zieht aus den Gitter-Zeilen in den Aufstellung-Block. Begründung: der Feed soll
 reine Lese-Fläche bleiben (sonst tippt man beim Scrollen versehentlich in eine Bearbeitung), im
@@ -218,8 +278,7 @@ Auth-freier Pfad für `/api/public/**`.
 Aktualisierung per Polling alle 10 s, solange `status === 'LIVE'`; bei `DONE` einmal laden und
 stoppen. Kein WebSocket. Polling pausiert bei verstecktem Tab (`visibilitychange`).
 
-Teilen-Einstieg: Button im Drawer-Footer bzw. auf der `SpielbogenPage` — Link erzeugen, kopieren,
-zurückziehen.
+Teilen-Einstieg: „Link teilen" im Drawer-Footer — Link erzeugen, kopieren, zurückziehen.
 
 ### Zustände
 
@@ -246,6 +305,9 @@ weiter versuchen).
 - Sortierung über gemischte Ereignistypen via `createdAt`
 - Linescore mit Extra-Innings und mit noch nicht gespielten Innings
 - Die vier Zustände oben
+- Run-Hervorhebung greift bei `runsScored > 0` und sonst nie
+- Alle in „Fix in `ResponsiveSheet`" gelisteten Sheets manuell durchklicken — kein Kind darf
+  durch das neue `overflow-hidden` abgeschnitten werden
 
 **Vor dem Merge**
 - `cd frontend && npm run build` und `npm test`

@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spielbogen Live-Feed — Mockup</title>
+<style>
+  :root{
+    --cream-50:#FFFBF3; --cream-100:#FBF7F0; --cream-200:#F2EBDA; --cream-300:#E8DEC5;
+    --navy-50:#F0F1FA; --navy-100:#E8EAF6; --navy-600:#2D3BA0; --navy-700:#1E2A8F;
+    --navy-800:#111B6B; --navy-900:#0A0F5C;
+    --red-50:#FFF5F5; --red-100:#FEE2E2; --red-500:#E63946; --red-600:#CC2936; --red-700:#B91C2A;
+    --green-700:#15803d;
+    --display:"Saira Condensed","Oswald","Impact",sans-serif;
+    --body:"Archivo",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:var(--body); background:#0d1030; color:var(--navy-900);
+    padding:28px 16px 60px; min-height:100vh;
+  }
+  .page-head{max-width:1180px;margin:0 auto 24px;color:#cfd3f5}
+  .page-head h1{font-family:var(--display);font-size:24px;letter-spacing:.04em;text-transform:uppercase;color:#fff}
+  .page-head p{font-size:13px;margin-top:6px;line-height:1.6;color:#9aa1d8}
+  .stage{max-width:1180px;margin:0 auto;display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+  .col{flex:1 1 380px;min-width:320px}
+  .col > h2{
+    font-family:var(--display);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+    color:#8189cc;margin-bottom:10px;padding-left:2px;
+  }
+  .col.phone{flex:0 0 340px;min-width:340px}
+
+  /* ---- modal shell (ResponsiveSheet) ---- */
+  .sheet{
+    background:var(--cream-50); border:1px solid var(--cream-300);
+    border-radius:16px; box-shadow:0 22px 50px rgba(0,0,0,.45);
+    display:flex; flex-direction:column; overflow:hidden;   /* ← der heute fehlende Teil */
+    max-height:78vh;
+  }
+  .sheet-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 20px;border-bottom:1px solid var(--cream-300);flex-shrink:0;
+  }
+  .sheet-head h3{
+    font-family:var(--display);font-size:18px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--navy-900);display:flex;align-items:center;gap:8px;
+  }
+  .accent{width:4px;height:20px;background:var(--red-600);border-radius:99px;flex-shrink:0}
+  .x{border:0;background:none;color:#9ca3af;font-size:19px;cursor:pointer;line-height:1;padding:4px}
+  .sheet-body{flex:1;overflow-y:auto}
+  .sheet-foot{padding:14px 20px;border-top:1px solid var(--cream-300);flex-shrink:0;display:flex;flex-direction:column;gap:9px}
+
+  /* ---- scoreboard ---- */
+  .scoreboard{padding:14px 20px 12px;background:var(--navy-900);color:#fff}
+  .team-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0}
+  .team-row .nm{font-family:var(--display);font-size:20px;letter-spacing:.05em;text-transform:uppercase}
+  .team-row .nm.dim{opacity:.62}
+  .team-row .sc{font-family:var(--display);font-size:26px;font-weight:800;line-height:1;min-width:34px;text-align:right}
+  .sb-meta{
+    display:flex;align-items:center;gap:14px;margin-top:10px;padding-top:10px;
+    border-top:1px solid rgba(255,255,255,.16);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    font-family:var(--display);color:#b9c0f0;
+  }
+  .sb-meta .inn{color:#fff;font-size:13px;letter-spacing:.06em}
+  .outs{display:flex;gap:4px;align-items:center}
+  .dot{width:8px;height:8px;border-radius:99px;border:1.5px solid #7d86cf}
+  .dot.on{background:var(--red-500);border-color:var(--red-500)}
+  .diamond{position:relative;width:26px;height:26px}
+  .bs{position:absolute;width:8px;height:8px;transform:rotate(45deg);border:1.4px solid #7d86cf;background:transparent}
+  .bs.on{background:#fbbf24;border-color:#fbbf24}
+  .b1{right:0;top:9px}.b2{left:9px;top:0}.b3{left:0;top:9px}
+
+  /* ---- linescore ---- */
+  .lswrap{overflow-x:auto;border-bottom:1px solid var(--cream-300);background:var(--cream-100)}
+  table.ls{border-collapse:collapse;width:100%;font-family:var(--display);font-size:13px;white-space:nowrap}
+  table.ls th,table.ls td{padding:5px 0;text-align:center;min-width:24px}
+  table.ls thead th{font-size:10px;letter-spacing:.08em;color:#8a8577;font-weight:700;border-bottom:1px solid var(--cream-300)}
+  table.ls .tm{text-align:left;padding-left:20px;min-width:64px;font-size:12px;letter-spacing:.06em;color:var(--navy-800);font-weight:700}
+  table.ls .sep{border-left:1px solid var(--cream-300)}
+  table.ls .tot{font-weight:800;color:var(--navy-900)}
+  table.ls .tot.r{color:var(--red-700)}
+  table.ls td.pad{padding-right:20px}
+  table.ls tbody tr+tr td{border-top:1px solid var(--cream-200)}
+  .zero{color:#b9b2a0}
+
+  /* ---- feed ---- */
+  .halfhead{
+    display:flex;align-items:center;gap:7px;padding:9px 20px 6px;
+    font-family:var(--display);font-size:12px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--navy-700);background:var(--cream-100);border-bottom:1px solid var(--cream-200);
+    position:sticky;top:0;
+  }
+  .halfhead .arw{color:var(--red-600);font-size:11px}
+  .halfhead.live .badge{
+    margin-left:auto;background:var(--red-600);color:#fff;font-size:9px;letter-spacing:.14em;
+    padding:2px 7px;border-radius:99px;
+  }
+  .ev{display:flex;align-items:baseline;gap:10px;padding:8px 20px;border-bottom:1px solid var(--cream-200);font-size:14px}
+  .ev .who{font-family:var(--display);font-size:15px;letter-spacing:.03em;color:var(--navy-900);min-width:88px;flex-shrink:0}
+  .ev .what{color:#4b5563;flex:1}
+  .ev .tag{
+    font-family:var(--display);font-size:11px;letter-spacing:.08em;padding:2px 7px;border-radius:5px;
+    background:var(--cream-200);color:#6b6555;flex-shrink:0;
+  }
+  .ev.run{background:#FFF8E7;border-left:3px solid #f59e0b;padding-left:17px}
+  .ev.run .what{color:var(--navy-900);font-weight:600}
+  .ev.run .tag{background:#f59e0b;color:#fff}
+  .ev.minor{font-size:13px}
+  .ev.minor .who{color:#7c7566;font-size:14px}
+  .ev.minor .what{color:#8a8577;font-style:italic}
+  .divider{
+    display:flex;align-items:center;gap:10px;padding:7px 20px;background:var(--cream-200);
+    font-family:var(--display);font-size:12px;letter-spacing:.1em;color:#7a7365;
+  }
+  .divider .line{flex:1;height:1px;background:var(--cream-300)}
+  .divider b{color:var(--navy-800);font-size:13px}
+
+  /* ---- aufstellung ---- */
+  .acc{border-bottom:1px solid var(--cream-300)}
+  .acc-head{
+    display:flex;align-items:center;gap:9px;padding:11px 20px;cursor:pointer;
+    font-family:var(--display);font-size:13px;letter-spacing:.11em;text-transform:uppercase;color:var(--navy-800);
+    background:var(--cream-50);
+  }
+  .acc-head .chev{color:#a49c8a;font-size:11px}
+  .acc-head .side{
+    margin-left:auto;display:flex;gap:4px;
+  }
+  .pill{
+    font-family:var(--display);font-size:10px;letter-spacing:.13em;padding:3px 11px;border-radius:99px;
+    border:1px solid var(--cream-300);color:#8a8577;background:#fff;
+  }
+  .pill.on{background:var(--navy-800);color:#fff;border-color:var(--navy-800)}
+  .acc-body{border-top:1px solid var(--cream-200);background:#fff}
+  .lu{display:flex;align-items:center;gap:10px;padding:6px 20px;font-size:13px;border-bottom:1px solid var(--cream-100)}
+  .lu .no{font-family:var(--display);color:var(--navy-600);width:14px;font-size:13px}
+  .lu .nm{flex:1;color:var(--navy-900)}
+  .lu .po{font-family:var(--display);font-size:12px;letter-spacing:.08em;color:#8a8577;width:30px}
+  .lu .pen{color:#c3bbab;font-size:12px}
+
+  /* ---- buttons ---- */
+  .btn{
+    display:block;width:100%;text-align:center;padding:11px;border:0;border-radius:9px;cursor:pointer;
+    font-family:var(--display);font-size:14px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;
+  }
+  .btn.red{background:var(--red-600);color:#fff}
+  .btn.ghost{background:#fff;border:1px solid var(--cream-300);color:var(--navy-800)}
+  .btn-row{display:flex;gap:9px}
+  .btn-row .btn{flex:1}
+
+  .note{
+    max-width:1180px;margin:30px auto 0;color:#9aa1d8;font-size:13px;line-height:1.75;
+    border-top:1px solid #232a5c;padding-top:18px;
+  }
+  .note b{color:#fff}
+  .note code{background:#1a1f4a;padding:1px 6px;border-radius:4px;font-size:12px;color:#c9cef5}
+  .note ul{margin:8px 0 0 18px}
+  .note li{margin-bottom:5px}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Spielbogen — neuer Drawer</h1>
+  <p>Gitter raus, Feed rein. Gleiche Hülle (<code style="background:#1a1f4a;padding:1px 5px;border-radius:4px;color:#c9cef5">ResponsiveSheet</code>), gleicher Footer. Daten aus deinem Screenshot: Köln Abbots 4 : 1 Allstar, 4. Inning BTM.</p>
+</div>
+
+<div class="stage">
+
+  <!-- ============ DESKTOP ============ -->
+  <div class="col">
+    <h2>Desktop-Modal</h2>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3><span class="accent"></span>Spielbogen</h3>
+        <button class="x">✕</button>
+      </div>
+
+      <div class="sheet-body">
+
+        <!-- scoreboard -->
+        <div class="scoreboard">
+          <div class="team-row"><span class="nm dim">Allstar</span><span class="sc">1</span></div>
+          <div class="team-row"><span class="nm">Köln Abbots</span><span class="sc">4</span></div>
+          <div class="sb-meta">
+            <span class="inn">▼ 4. Inning</span>
+            <span class="outs">Outs
+              <span class="dot on"></span><span class="dot"></span><span class="dot"></span>
+            </span>
+            <span class="diamond">
+              <span class="bs b2"></span><span class="bs b1 on"></span><span class="bs b3"></span>
+            </span>
+            <span style="margin-left:auto">Sebastian am Schlag</span>
+          </div>
+        </div>
+
+        <!-- linescore -->
+        <div class="lswrap">
+          <table class="ls">
+            <thead>
+              <tr>
+                <th class="tm"></th>
+                <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th>
+                <th class="sep">R</th><th>H</th><th class="pad">E</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="tm">Allstar</td>
+                <td class="zero">0</td><td>1</td><td class="zero">0</td><td class="zero">0</td>
+                <td class="zero">–</td><td class="zero">–</td><td class="zero">–</td>
+                <td class="sep tot r">1</td><td class="tot">3</td><td class="tot pad">2</td>
+              </tr>
+              <tr>
+                <td class="tm">Köln Abbots</td>
+                <td class="zero">0</td><td>3</td><td>1</td><td class="zero">0</td>
+                <td class="zero">–</td><td class="zero">–</td><td class="zero">–</td>
+                <td class="sep tot r">4</td><td class="tot">6</td><td class="tot pad">1</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- feed -->
+        <div class="halfhead live"><span class="arw">▼</span> 4. Inning — Köln Abbots <span class="badge">LIVE</span></div>
+        <div class="ev"><span class="who">Fanzi</span><span class="what">Strikeout</span></div>
+        <div class="ev"><span class="who">Krosaki</span><span class="what">Single</span><span class="tag">1B</span></div>
+
+        <div class="divider"><span class="line"></span><b>4 : 1</b><span class="line"></span></div>
+
+        <div class="halfhead"><span class="arw">▲</span> 4. Inning — Allstar</div>
+        <div class="ev"><span class="who">Weber</span><span class="what">Fly F9</span></div>
+        <div class="ev"><span class="who">Schmidt</span><span class="what">Grounder 6-3</span></div>
+        <div class="ev"><span class="who">Kaya</span><span class="what">Reached on Error</span><span class="tag">E5</span></div>
+
+        <div class="divider"><span class="line"></span><b>4 : 1</b><span class="line"></span></div>
+
+        <div class="halfhead"><span class="arw">▼</span> 3. Inning — Köln Abbots</div>
+        <div class="ev"><span class="who">Rauf</span><span class="what">Grounder 6-3</span></div>
+        <div class="ev"><span class="who">Charlotte</span><span class="what">Double</span><span class="tag">2B</span></div>
+        <div class="ev"><span class="who">Desi</span><span class="what">Grounder 4-3</span></div>
+        <div class="ev run"><span class="who">Juli</span><span class="what">Walk — Rauf läuft ein</span><span class="tag">+1 RBI</span></div>
+        <div class="ev minor"><span class="who">Rauf</span><span class="what">stiehlt 2nd</span></div>
+        <div class="ev"><span class="who">Ylvi</span><span class="what">Grounder 3-3</span></div>
+
+        <div class="divider"><span class="line"></span><b>3 : 1</b><span class="line"></span></div>
+
+        <div class="halfhead"><span class="arw">▲</span> 3. Inning — Allstar</div>
+        <div class="ev"><span class="who">Baran</span><span class="what">Strikeout</span></div>
+        <div class="ev minor"><span class="who">Sub</span><span class="what">Kaya für Öztürk (RF)</span></div>
+
+        <!-- aufstellung -->
+        <div class="acc">
+          <div class="acc-head">
+            <span class="chev">▸</span> Aufstellung
+            <span class="side"><span class="pill on">Heim</span><span class="pill">Gast</span></span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="sheet-foot">
+        <div class="btn-row">
+          <button class="btn ghost">PDF</button>
+          <button class="btn ghost">Liga senden</button>
+          <button class="btn ghost">Link teilen</button>
+        </div>
+        <button class="btn red">Spiel beenden</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PHONE ============ -->
+  <div class="col phone">
+    <h2>Handy — Aufstellung offen</h2>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3><span class="accent"></span>Spielbogen</h3>
+        <button class="x">✕</button>
+      </div>
+
+      <div class="sheet-body">
+        <div class="scoreboard">
+          <div class="team-row"><span class="nm dim">Allstar</span><span class="sc">1</span></div>
+          <div class="team-row"><span class="nm">Köln Abbots</span><span class="sc">4</span></div>
+          <div class="sb-meta">
+            <span class="inn">▼ 4.</span>
+            <span class="outs"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></span>
+            <span class="diamond"><span class="bs b2"></span><span class="bs b1 on"></span><span class="bs b3"></span></span>
+            <span style="margin-left:auto">Sebastian</span>
+          </div>
+        </div>
+
+        <div class="lswrap">
+          <table class="ls">
+            <thead>
+              <tr><th class="tm"></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th>
+                  <th class="sep">R</th><th>H</th><th class="pad">E</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="tm">Allstar</td><td class="zero">0</td><td>1</td><td class="zero">0</td><td class="zero">0</td>
+                  <td class="zero">–</td><td class="zero">–</td><td class="zero">–</td>
+                  <td class="sep tot r">1</td><td class="tot">3</td><td class="tot pad">2</td></tr>
+              <tr><td class="tm">Abbots</td><td class="zero">0</td><td>3</td><td>1</td><td class="zero">0</td>
+                  <td class="zero">–</td><td class="zero">–</td><td class="zero">–</td>
+                  <td class="sep tot r">4</td><td class="tot">6</td><td class="tot pad">1</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="halfhead live"><span class="arw">▼</span> 4. Inning — Abbots <span class="badge">LIVE</span></div>
+        <div class="ev"><span class="who">Fanzi</span><span class="what">Strikeout</span></div>
+        <div class="ev"><span class="who">Krosaki</span><span class="what">Single</span><span class="tag">1B</span></div>
+
+        <div class="acc">
+          <div class="acc-head">
+            <span class="chev">▾</span> Aufstellung
+            <span class="side"><span class="pill on">Heim</span><span class="pill">Gast</span></span>
+          </div>
+          <div class="acc-body">
+            <div class="lu"><span class="no">1</span><span class="nm">Ylvi</span><span class="po">2B</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">2</span><span class="nm">Juli</span><span class="po">EH</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">3</span><span class="nm">Desi</span><span class="po">LF</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">4</span><span class="nm">Charlotte</span><span class="po">CF</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">5</span><span class="nm">Rauf</span><span class="po">3B</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">6</span><span class="nm">Krosaki</span><span class="po">SS</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">7</span><span class="nm">Fanzi</span><span class="po">RF</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">8</span><span class="nm">Sebastian</span><span class="po">1B</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">9</span><span class="nm">Dave</span><span class="po">C</span><span class="pen">✎</span></div>
+            <div class="lu"><span class="no">10</span><span class="nm">Kathrin</span><span class="po">P</span><span class="pen">✎</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sheet-foot">
+        <button class="btn red">Spiel beenden</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Was hier absichtlich anders ist als in der Spec:</b>
+  <ul>
+    <li>Die Hülle hat <code>overflow:hidden</code> — deshalb schneidet kein eckiger Inhalt mehr durch die runde Ecke. Das ist der Fix für den komischen Rand, und er gehört in <code>ResponsiveSheet</code>, nicht in den Spielbogen. Betrifft dann alle Sheets.</li>
+    <li>Run-Zeilen sind bernstein hinterlegt mit linkem Balken — nur Ereignisse, bei denen jemand einläuft.</li>
+    <li>Steals und Subs sind gedimmt und kursiv: sichtbar, aber nicht auf Augenhöhe mit At-Bats.</li>
+    <li>„Link teilen" sitzt im Footer neben PDF und Liga senden.</li>
+    <li>Der Scoreboard-Block ist navy statt cream, damit der Stand sich vom Feed absetzt und man ihn im Sonnenlicht am Zaun findet.</li>
+  </ul>
+</div>
+
+</body>
+</html>
