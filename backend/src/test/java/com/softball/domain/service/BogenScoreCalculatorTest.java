@@ -91,4 +91,27 @@ class BogenScoreCalculatorTest {
 
         assertThat(runs.get(5).getHome()).isEqualTo(2);
     }
+
+    @Test
+    void zeroRunsAreSkipped() {
+        var runs = calc.calculateInningRuns(
+            List.of(atBat(BogenSide.HOME, 1, AtBatResult.OUT, 0)),
+            List.of()
+        );
+
+        assertThat(runs).isEmpty();
+    }
+
+    @Test
+    void nullRunsAreSkipped() {
+        SpielbogenAtBat ab = new SpielbogenAtBat();
+        ab.setSide(BogenSide.HOME);
+        ab.setInning(1);
+        ab.setResult(AtBatResult.OUT);
+        ab.setRunsScored(null);
+
+        var runs = calc.calculateInningRuns(List.of(ab), List.of());
+
+        assertThat(runs).isEmpty();
+    }
 }
