@@ -1,5 +1,5 @@
 import type { BogenSide, BogenTeamTotals } from '@/types'
-import { halfInningId, teamAbbreviation, type HalfInning } from '@/utils/bogenFeed'
+import { halfInningId, type HalfInning } from '@/utils/bogenFeed'
 
 export interface BogenLiveFeedProps {
   homeTeamName: string
@@ -34,8 +34,6 @@ export function BogenLiveFeed({
 }: BogenLiveFeedProps) {
   const columns = inningColumns(inningRuns, currentInning)
   const played = new Set(feed.map(h => halfInningId(h.inning, h.side)))
-  const awayAbbr = teamAbbreviation(awayTeamName)
-  const homeAbbr = teamAbbreviation(homeTeamName)
 
   const jumpTo = (inning: number, side: BogenSide) => {
     document.getElementById(halfInningId(inning, side))
@@ -155,15 +153,20 @@ export function BogenLiveFeed({
 
           <div
             data-testid={`divider-${halfInningId(half.inning, half.side)}`}
-            className="flex items-center gap-2.5 px-5 py-1.5 bg-cream-200 font-display text-xs tracking-widest text-gray-600"
+            className="flex items-center gap-2 px-5 py-1.5 bg-cream-200 font-display"
           >
-            <span className="flex-1 h-px bg-cream-300" />
-            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Labels,
-                weil das Scoreboard beim Lesen längst weggescrollt ist. */}
-            <span className="text-[11px] text-gray-500">{awayAbbr}</span>
-            <b className="text-navy-800 text-[13px]">{half.scoreAfter.away} : {half.scoreAfter.home}</b>
-            <span className="text-[11px] text-gray-500">{homeAbbr}</span>
-            <span className="flex-1 h-px bg-cream-300" />
+            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Namen
+                sind Kontext, nicht Inhalt: sie schrumpfen/truncaten Richtung Rand,
+                die Zahl bleibt fett und mittig, egal wie lang der Teamname ist. */}
+            <span className="flex-1 min-w-0 truncate text-right text-[11px] tracking-wide text-gray-500">
+              {awayTeamName}
+            </span>
+            <b className="shrink-0 text-navy-900 text-sm font-extrabold tabular-nums">
+              {half.scoreAfter.away} : {half.scoreAfter.home}
+            </b>
+            <span className="flex-1 min-w-0 truncate text-left text-[11px] tracking-wide text-gray-500">
+              {homeTeamName}
+            </span>
           </div>
         </div>
       ))}
