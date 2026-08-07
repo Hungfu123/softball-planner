@@ -66,18 +66,36 @@ test.describe('Spielbogen — Plays jeder Position', () => {
       // Team-Namen im Score-Block immer sichtbar
       await expect(page.getByText('Defenders').first()).toBeVisible({ timeout: 5000 })
       await expect(page.getByText('Attackers').first()).toBeVisible()
-      // RFL-Sheet öffnen für Spielernamen
+      // Spielbogen-Drawer öffnen
       await page.locator('button[aria-label="Spielbogen anzeigen"]').first().click()
       await page.waitForTimeout(500)
-      // Default Sheet-Side = currentSide (AWAY=Attackers). Spielernamen sichtbar.
+      const dialog = page.getByRole('dialog')
+      // Der Live-Feed nennt die Batter, die schon dran waren.
       await expect(page.getByText('Attackers-1').first()).toBeVisible({ timeout: 4000 })
       await expect(page.getByText('Attackers-5').first()).toBeVisible()
-      // Auf HOME-Side switchen ("Heim"-Pill im RFL-Sheet) — scope dialog, sonst kollidiert
-      // mit der Page-Header-Heim-Tab.
-      await page.getByRole('dialog').getByRole('button', { name: /^Heim$/i }).click()
-      await page.waitForTimeout(300)
-      await expect(page.getByText('Defenders-1').first()).toBeVisible({ timeout: 3000 })
-      await expect(page.getByText('Defenders-5').first()).toBeVisible()
+
+      // Die vollständige Aufstellung steckt seit dem Live-Feed-Umbau im kollabierten
+      // Accordion (Default-Side HEIM) — nicht mehr im RFL-Gitter. Defenders-5 hat nie
+      // geschlagen, taucht also nur hier auf und ist damit ein ehrlicher Beleg.
+      await dialog.getByRole('button', { name: /Aufstellung/i }).click()
+      await expect(dialog.getByText('Defenders-5')).toBeVisible({ timeout: 3000 })
+      await expect(dialog.getByRole('button', { name: 'Defenders-1 bearbeiten' })).toBeVisible()
+
+      // Umschalten auf GAST zeigt die andere Aufstellung.
+      await dialog.getByRole('button', { name: /^Gast$/i }).click()
+      await expect(dialog.getByRole('button', { name: 'Attackers-9 bearbeiten' })).toBeVisible({ timeout: 3000 })
+
+      // Regression Stacking-Context: der Stift öffnet BogenSlotEditModal, während der
+      // Drawer offen bleibt. Ohne Portal ans document.body läge das Modal hinter dem
+      // Drawer — fill() scheitert dann an Playwrights Pointer-Actionability, weil der
+      // Drawer-Backdrop den Klick abfängt.
+      await dialog.getByRole('button', { name: 'Attackers-9 bearbeiten' }).click()
+      const slotEditor = page.getByRole('dialog', { name: /Slot bearbeiten/i })
+      await expect(slotEditor).toBeVisible({ timeout: 3000 })
+      await slotEditor.getByRole('textbox').fill('Attackers-9')
+      // Ohne Speichern schließen — der Spielbogen bleibt unverändert.
+      await slotEditor.getByRole('button', { name: 'Abbrechen' }).click()
+      await expect(slotEditor).toBeHidden()
     } finally {
       await deleteSpielbogen(bogenId).catch(() => {})
     }

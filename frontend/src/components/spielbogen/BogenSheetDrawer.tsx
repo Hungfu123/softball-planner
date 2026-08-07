@@ -144,11 +144,10 @@ export function BogenSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame
         />
       </ResponsiveSheet>
 
-      {/* Modals als Geschwister außerhalb der ResponsiveSheet-Children gerendert:
-          deren CenterModal animiert mit transform und spannt so einen eigenen
-          Stacking-Context auf, in dem nicht-portalte fixed-Kinder (Slot-Edit,
-          Share-Link inkl. dessen ConfirmModal) unter einem später gemounteten
-          Geschwister-Portal verschwinden können. */}
+      {/* Modals als Geschwister außerhalb der ResponsiveSheet-Children: deren CenterModal
+          animiert mit transform und spannt einen eigenen Stacking-Context auf. Sichtbar
+          über dem Drawer landen sie, weil sie selbst ans document.body portalen und dort
+          als spätere Body-Kinder bei gleichem z-50 gewinnen. */}
       {onSlotUpdate && (
         <BogenSlotEditModal
           open={editingSlot != null}
