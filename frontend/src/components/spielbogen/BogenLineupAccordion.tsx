@@ -7,7 +7,7 @@ export interface BogenLineupAccordionProps {
   awayLineup: SpielbogenSlotResponse[]
   homeTeamName: string
   awayTeamName: string
-  /** Fehlt der Handler, wird kein Stift gerendert — so läuft derselbe Block öffentlich. */
+  /** Optional: ohne Handler wird kein Stift gerendert, der Block bleibt dann read-only. */
   onEditSlot?: (slot: SpielbogenSlotResponse) => void
 }
 
