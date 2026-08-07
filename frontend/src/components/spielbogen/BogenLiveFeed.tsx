@@ -41,7 +41,7 @@ export function BogenLiveFeed({
   return (
     <div>
       {/* Scoreboard — einziger dunkler Block, damit der Stand sofort gefunden wird */}
-      <div className="bg-navy-900 text-cream-50 px-5 pt-3 pb-3">
+      <div data-testid="scoreboard" className="bg-navy-900 text-cream-50 px-5 pt-3 pb-3">
         <div className="flex items-center justify-between py-0.5">
           <span className="font-display text-xl uppercase tracking-wide opacity-70">{awayTeamName}</span>
           <span className="font-display text-2xl font-extrabold">{awayRuns}</span>
@@ -77,7 +77,7 @@ export function BogenLiveFeed({
               { side: 'HOME' as const, name: homeTeamName, totals: homeTotals },
             ]).map(row => (
               <tr key={row.side} data-testid={`linescore-row-${row.side}`} className="border-t border-cream-200">
-                <td className="text-left pl-5 py-1 text-xs font-bold text-navy-800 uppercase">{row.name.toUpperCase()}</td>
+                <td className="text-left pl-5 py-1 text-xs font-bold text-navy-800">{row.name}</td>
                 {columns.map(i => {
                   const runs = inningRuns[i]
                   const value = row.side === 'HOME' ? runs?.home : runs?.away
