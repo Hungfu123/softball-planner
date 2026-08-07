@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BogenLiveFeed } from './BogenLiveFeed'
 import type { HalfInning } from '@/utils/bogenFeed'
@@ -46,8 +46,9 @@ afterEach(() => {
 describe('BogenLiveFeed', () => {
   it('zeigt beide Teams mit Stand', () => {
     render(<BogenLiveFeed {...base} />)
-    expect(screen.getByText('Köln Abbots')).toBeInTheDocument()
-    expect(screen.getByText('Allstar')).toBeInTheDocument()
+    const scoreboard = within(screen.getByTestId('scoreboard'))
+    expect(scoreboard.getByText('Köln Abbots')).toBeInTheDocument()
+    expect(scoreboard.getByText('Allstar')).toBeInTheDocument()
   })
 
   it('zeigt R/H/E beider Teams in der Linescore', () => {
