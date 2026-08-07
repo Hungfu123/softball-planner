@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Drawer } from 'vaul'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { motion, AnimatePresence } from 'motion/react'
@@ -71,12 +72,16 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
     )
   }
 
-  return (
+  // Portal ans document.body: sonst wäre der Desktop-Dialog (fixed inset-0, Backdrop + Box)
+  // ein DOM-Kind des aufrufenden ResponsiveSheet — dessen overflow-hidden würde ihn abschneiden,
+  // wenn ein Sheet aus einem anderen heraus geöffnet wird (z.B. NewPlayerModal aus PollVoteSyncSheet).
+  return createPortal(
     <AnimatePresence>
       {open && (
         <CenterModal onClose={onClose} title={title} maxWidth={maxWidth} footer={footer}>{children}</CenterModal>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
 
