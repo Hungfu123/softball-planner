@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { ResponsiveSheet } from './ResponsiveSheet'
+import { ConfirmModal } from './ConfirmModal'
 
 // Erzwingt den Desktop-Zweig (CenterModal) — der mobile Zweig nutzt vaul's Drawer.Portal
 // und portalt bereits von sich aus, ist also nicht das, was dieser Test absichert.
@@ -49,5 +50,47 @@ describe('ResponsiveSheet', () => {
     for (const dialog of dialogs) {
       expect(appRoot.contains(dialog)).toBe(false)
     }
+  })
+
+  it('ein bei offenem Sheet geöffnetes Modal liegt im Body NACH dem Sheet — wird also nicht davon überdeckt', () => {
+    // Regression: seit das Sheet nach document.body portalt, liegt es hinter #root.
+    // Ein Modal, das im React-Baum noch unter #root steckt, hat dieselbe z-50 —
+    // bei gleichem z-index im selben Stacking-Context gewinnt das spätere Body-Kind,
+    // also das Sheet. Das Modal wäre unsichtbar dahinter (BogenSlotEditModal aus dem
+    // Spielbogen-Drawer, ConfirmModal aus dem PeriodManagerDrawer).
+    const view = render(
+      <div data-testid="app-root">
+        <ResponsiveSheet open onClose={() => {}} title="Sheet">
+          <p>Sheet-Inhalt</p>
+        </ResponsiveSheet>
+      </div>,
+    )
+
+    // Modal öffnet erst, während das Sheet schon offen ist — wie beim Klick auf den Stift.
+    view.rerender(
+      <div data-testid="app-root">
+        <ResponsiveSheet open onClose={() => {}} title="Sheet">
+          <ConfirmModal
+            title="Wirklich löschen?"
+            message="Test"
+            onConfirm={() => {}}
+            onCancel={() => {}}
+          />
+        </ResponsiveSheet>
+      </div>,
+    )
+
+    const confirmDialog = screen.getByRole('dialog', { name: 'Wirklich löschen?' })
+    const sheetDialog = screen.getAllByRole('dialog').find(d => d !== confirmDialog)
+    expect(sheetDialog).toBeDefined()
+
+    // dialog -> Backdrop (fixed inset-0 z-50) -> muss direktes Body-Kind sein
+    const confirmBackdrop = confirmDialog.parentElement
+    const sheetBackdrop = sheetDialog!.parentElement
+    expect(sheetBackdrop?.parentElement).toBe(document.body)
+    expect(confirmBackdrop?.parentElement).toBe(document.body)
+
+    const bodyChildren = Array.from(document.body.children)
+    expect(bodyChildren.indexOf(confirmBackdrop!)).toBeGreaterThan(bodyChildren.indexOf(sheetBackdrop!))
   })
 })

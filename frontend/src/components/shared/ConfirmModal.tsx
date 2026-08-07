@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { XMark, AlertCircle } from '@/icons'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 
@@ -38,7 +39,10 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancel
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onCancel])
 
-  return (
+  // Portal ans document.body — wie ResponsiveSheet. Sonst bliebe das Modal ein DOM-Kind
+  // von #root, während ein offenes Sheet als späteres Body-Kind daneben liegt: bei
+  // gleichem z-50 gewinnt das spätere Element, das Modal verschwände dahinter.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onCancel}>
       <div
         ref={dialogRef}
@@ -76,6 +80,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancel
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

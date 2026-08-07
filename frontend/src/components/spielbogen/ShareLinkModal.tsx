@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { Button } from '@/components/shared'
@@ -83,19 +82,14 @@ export function ShareLinkModal({ open, onClose, bogenId }: Props) {
         </div>
       </ResponsiveSheet>
 
-      {/* Portal statt direktem Render: ConfirmModal ist selbst nicht portalt, würde also
-          im DOM unter dem hier bereits offenen ResponsiveSheet-Portal landen und dessen
-          Backdrop könnte Klicks abfangen. Als eigener, später gemounteter body-Portal
-          liegt es zuverlässig darüber. */}
-      {showRevokeConfirm && createPortal(
+      {showRevokeConfirm && (
         <ConfirmModal
           title="Link zurückziehen?"
           message="Der bisherige Link funktioniert danach nicht mehr — wer ihn geöffnet hatte, kann das Spiel nicht mehr live verfolgen."
           confirmLabel="Zurückziehen"
           onConfirm={handleRevoke}
           onCancel={() => setShowRevokeConfirm(false)}
-        />,
-        document.body,
+        />
       )}
     </>
   )
