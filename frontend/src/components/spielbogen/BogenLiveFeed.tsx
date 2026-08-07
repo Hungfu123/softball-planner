@@ -20,9 +20,11 @@ export interface BogenLiveFeedProps {
 /** Regelspiel geht über 7 Innings, Extra-Innings hängen rechts an. */
 const REGULAR_INNINGS = 7
 
-function inningColumns(inningRuns: Record<number, { home: number; away: number }>): number[] {
+// currentInning muss mit rein: ein torloses Extra-Inning erzeugt keinen inningRuns-Key,
+// die Spalte würde sonst fehlen — obwohl der Feed darunter schon "8. Inning" zeigt.
+function inningColumns(inningRuns: Record<number, { home: number; away: number }>, currentInning: number): number[] {
   const highest = Object.keys(inningRuns).reduce((max, k) => Math.max(max, Number(k)), 0)
-  const count = Math.max(REGULAR_INNINGS, highest)
+  const count = Math.max(REGULAR_INNINGS, highest, currentInning)
   return Array.from({ length: count }, (_, i) => i + 1)
 }
 
@@ -30,7 +32,7 @@ export function BogenLiveFeed({
   homeTeamName, awayTeamName, status, currentInning, currentSide,
   homeRuns, awayRuns, inningRuns, homeTotals, awayTotals, feed, currentBatterName,
 }: BogenLiveFeedProps) {
-  const columns = inningColumns(inningRuns)
+  const columns = inningColumns(inningRuns, currentInning)
   const played = new Set(feed.map(h => halfInningId(h.inning, h.side)))
 
   const jumpTo = (inning: number, side: BogenSide) => {
@@ -151,7 +153,8 @@ export function BogenLiveFeed({
 
           <div className="flex items-center gap-2.5 px-5 py-1.5 bg-cream-200 font-display text-xs tracking-widest text-gray-600">
             <span className="flex-1 h-px bg-cream-300" />
-            <b className="text-navy-800 text-[13px]">{half.scoreAfter.home} : {half.scoreAfter.away}</b>
+            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore */}
+            <b className="text-navy-800 text-[13px]">{half.scoreAfter.away} : {half.scoreAfter.home}</b>
             <span className="flex-1 h-px bg-cream-300" />
           </div>
         </div>

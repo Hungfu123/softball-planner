@@ -83,9 +83,13 @@ describe('BogenLiveFeed', () => {
     expect(screen.getByTestId('event-c')).toHaveAttribute('data-minor', 'true')
   })
 
-  it('zeigt den Zwischenstand je Halbinning', () => {
+  it('zeigt den Zwischenstand je Halbinning — Away zuerst, wie Scoreboard und Linescore', () => {
     render(<BogenLiveFeed {...base} />)
-    expect(screen.getByText('3 : 1')).toBeInTheDocument()
+    // 2. Inning HOME: scoreAfter { home: 3, away: 1 } → Away zuerst
+    expect(screen.getByText('1 : 3')).toBeInTheDocument()
+    // 1. Inning AWAY: scoreAfter { home: 0, away: 1 }
+    expect(screen.getByText('1 : 0')).toBeInTheDocument()
+    expect(screen.queryByText('3 : 1')).not.toBeInTheDocument()
   })
 
   it('springt beim Klick auf eine gespielte Inning-Zelle', async () => {
@@ -115,5 +119,21 @@ describe('BogenLiveFeed', () => {
   it('zeigt den Endstand-Hinweis bei beendetem Spiel', () => {
     render(<BogenLiveFeed {...base} status="DONE" />)
     expect(screen.getByText(/endstand/i)).toBeInTheDocument()
+  })
+
+  it('zeigt ein torloses Extra-Inning trotzdem als Linescore-Spalte', () => {
+    // Regression: die Spalten kamen nur aus den inningRuns-Keys. Ein 8. Inning ohne Run
+    // erzeugt keinen Key — die Linescore endete bei 7, während der Feed schon
+    // "8. Inning" zeigte und das Sprungziel fehlte.
+    render(<BogenLiveFeed {...base} currentInning={8} />)
+    expect(screen.getByTestId('linescore-cell-8-AWAY')).toBeInTheDocument()
+    expect(screen.getByTestId('linescore-cell-8-HOME')).toBeInTheDocument()
+    expect(screen.queryByTestId('linescore-cell-9-AWAY')).not.toBeInTheDocument()
+  })
+
+  it('behält die 7 Regel-Innings, auch wenn früher abgebrochen wird', () => {
+    render(<BogenLiveFeed {...base} currentInning={3} />)
+    expect(screen.getByTestId('linescore-cell-7-HOME')).toBeInTheDocument()
+    expect(screen.queryByTestId('linescore-cell-8-HOME')).not.toBeInTheDocument()
   })
 })
