@@ -34,7 +34,6 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/calendar.ics").permitAll() // öffentlich → in Kalender-Apps abonnierbar
-                .requestMatchers("/api/public/**").permitAll() // Zuschauer-Link, Token statt Auth
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )

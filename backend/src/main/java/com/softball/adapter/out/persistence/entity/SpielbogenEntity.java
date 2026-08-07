@@ -60,9 +60,6 @@ public class SpielbogenEntity {
     @Column(name = "ended_at")
     private Instant endedAt;
 
-    @Column(name = "public_token", length = 43)
-    private String publicToken;
-
     @OneToMany(mappedBy = "bogen", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<SpielbogenSlotEntity> slots = new ArrayList<>();
@@ -108,8 +105,6 @@ public class SpielbogenEntity {
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public Instant getEndedAt() { return endedAt; }
     public void setEndedAt(Instant endedAt) { this.endedAt = endedAt; }
-    public String getPublicToken() { return publicToken; }
-    public void setPublicToken(String publicToken) { this.publicToken = publicToken; }
     public List<SpielbogenSlotEntity> getSlots() { return slots; }
     public void setSlots(List<SpielbogenSlotEntity> slots) { this.slots = slots; }
 }

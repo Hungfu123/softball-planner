@@ -14,5 +14,4 @@ public interface SpielbogenRepository {
     Spielbogen save(Spielbogen bogen);
     void deleteById(Long id);
     boolean existsById(Long id);
-    Optional<Spielbogen> findByPublicToken(String publicToken);
 }

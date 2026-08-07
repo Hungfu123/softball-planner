@@ -32,18 +32,6 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json()
 }
 
-/** Wie request(), aber ohne Auth-Header — für /api/public/**. */
-async function publicRequest<T>(url: string): Promise<T> {
-  const res = await fetch(`${API}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => null)
-    throw new Error(body?.error ?? `Fehler ${res.status}`)
-  }
-  return res.json()
-}
-
 import type {
   Player,
   Season,
@@ -92,7 +80,6 @@ import type {
   SpielbogenPositionChangeResponse,
   SpielbogenRecordPositionSwapRequest,
   BogenSheetResponse,
-  ShareLinkResponse,
   RunnerAdvanceEntry,
   UndoResult,
   InningAdvanceEventResponse,
@@ -110,7 +97,6 @@ import type {
   WhatsappPollRequest,
   UnknownVoter,
   GameDayVotePreview,
-  PublicBogenFeed,
 } from '@/types'
 
 // Players
@@ -618,18 +604,6 @@ export async function registerSpielbogenLeagueResult(bogenId: number): Promise<L
 
 export async function setSpielbogenCurrentSide(bogenId: number, side: BogenSide): Promise<SpielbogenResponse> {
   return request<SpielbogenResponse>(`/spielbogen/${bogenId}/set-side?side=${side}`, { method: 'POST' })
-}
-
-export function createShareLink(bogenId: number): Promise<ShareLinkResponse> {
-  return request<ShareLinkResponse>(`/spielbogen/${bogenId}/share`, { method: 'POST' })
-}
-
-export function revokeShareLink(bogenId: number): Promise<void> {
-  return request<void>(`/spielbogen/${bogenId}/share`, { method: 'DELETE' })
-}
-
-export function getPublicBogenFeed(token: string) {
-  return publicRequest<PublicBogenFeed>(`/public/bogen/${encodeURIComponent(token)}`)
 }
 
 export async function correctLastSpielbogenAtBat(
