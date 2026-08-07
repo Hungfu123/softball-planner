@@ -695,6 +695,10 @@ export interface BogenTeamTotals {
   errors: number
 }
 
+export interface ShareLinkResponse {
+  token: string
+}
+
 export interface BogenSheetResponse {
   meta: SpielbogenResponse
   homeLineup: SpielbogenSlotResponse[]
