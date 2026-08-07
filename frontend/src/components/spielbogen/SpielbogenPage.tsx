@@ -15,7 +15,7 @@ import { BatterCard } from './BatterCard'
 import { LastAtBatPreview } from './LastAtBatPreview'
 import { CorrectionSheet } from './CorrectionSheet'
 import { HitAdjustSheet } from './HitAdjustSheet'
-import { RflSheetDrawer } from './RflSheetDrawer'
+import { BogenSheetDrawer } from './BogenSheetDrawer'
 import { PositionSwapDrawer } from './PositionSwapDrawer'
 import { BogenMetaEditModal } from './BogenMetaEditModal'
 import { Pencil } from '@/icons'
@@ -928,9 +928,9 @@ export default function SpielbogenPage() {
         </button>
       </div>
 
-      {/* RFL Sheet Drawer */}
+      {/* Spielbogen-Drawer: Live-Feed statt RFL-Gitter */}
       {showSheet && (
-        <RflSheetDrawer
+        <BogenSheetDrawer
           open={showSheet}
           onClose={() => setShowSheet(false)}
           sheet={sheet}
@@ -938,6 +938,7 @@ export default function SpielbogenPage() {
           onReopenGame={isDone ? handleReopenGame : undefined}
           onReload={reload}
           onSlotUpdate={handleSlotUpdate}
+          currentBatterName={isLive ? currentSlot?.name : undefined}
         />
       )}
 

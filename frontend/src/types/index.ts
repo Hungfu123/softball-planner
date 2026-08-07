@@ -335,9 +335,9 @@ export type AtBatResult =
   | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN' | 'INSIDE_PARK_HR'
   | 'WALK' | 'HIT_BY_PITCH'
   | 'STRIKEOUT' | 'OUT'
-  | 'REACHED_ON_ERROR'
   /** Automatisches Out (fehlende Spielerin) — Out im Inning, aber kein At-Bat und keine PA. */
   | 'AUTOMATIC_OUT'
+  | 'REACHED_ON_ERROR'
 
 export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'PICKOFF'
 
@@ -689,6 +689,12 @@ export interface PositionSwapEntry {
   newPosition: string | null
 }
 
+export interface BogenTeamTotals {
+  runs: number
+  hits: number
+  errors: number
+}
+
 export interface BogenSheetResponse {
   meta: SpielbogenResponse
   homeLineup: SpielbogenSlotResponse[]
@@ -700,6 +706,8 @@ export interface BogenSheetResponse {
   positionChanges: SpielbogenPositionChangeResponse[]
   runnerAdvances: SpielbogenRunnerAdvanceResponse[]
   inningRuns: Record<number, { home: number; away: number }>
+  homeTotals: BogenTeamTotals
+  awayTotals: BogenTeamTotals
 }
 
 export type PairingMode = 'HEIM_GAST' | 'TEAM_1_2'

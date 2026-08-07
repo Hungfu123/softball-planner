@@ -135,6 +135,17 @@ class SpielbogenScoringScenarioTest {
         int actualAbs = finalSheet.get("awayAtBats").size();
         int expectedAbs = expected.get("totalAtBats").asInt();
         org.assertj.core.api.Assertions.assertThat(actualAbs).isEqualTo(expectedAbs);
+
+        var homeTotals = finalSheet.get("homeTotals");
+        var awayTotals = finalSheet.get("awayTotals");
+        org.assertj.core.api.Assertions.assertThat(homeTotals).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(awayTotals).isNotNull();
+        org.assertj.core.api.Assertions.assertThat(homeTotals.get("runs").asInt())
+            .isEqualTo(finalSheet.get("meta").get("homeRuns").asInt());
+        org.assertj.core.api.Assertions.assertThat(awayTotals.get("runs").asInt())
+            .isEqualTo(finalSheet.get("meta").get("awayRuns").asInt());
+        org.assertj.core.api.Assertions.assertThat(homeTotals.get("hits").asInt()).isGreaterThanOrEqualTo(0);
+        org.assertj.core.api.Assertions.assertThat(homeTotals.get("errors").asInt()).isGreaterThanOrEqualTo(0);
     }
 
     private long[] collectIds(JsonNode arr) {
