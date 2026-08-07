@@ -52,7 +52,7 @@ docker compose up -d db
 cd frontend && npm run test:e2e
 ```
 
-**77 Playwright-Tests (2 skipped)** decken:
+**77 Playwright-Tests** decken (einige überspringen sich selbst, wenn die nötigen Daten in der DB fehlen — abhängig von der Seed-Lage, keine feste Zahl):
 - AB-Recording alle 9 Result-Typen × empty/loaded
 - Stealing (STOLEN_BASE / CAUGHT_STEALING / Out-Counter)
 - Substitution (Sub-Sheet + currentBatter-Rotation + Persistenz)
