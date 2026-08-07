@@ -67,15 +67,6 @@ export function halfInningId(inning: number, side: BogenSide): string {
   return `half-${inning}-${side}`
 }
 
-/** Kurzlabel fürs Score-Divider — ohne sichtbares Scoreboard muss die Zeile selbst
- *  sagen, welche Zahl zu welchem Team gehört. Bei Mehrwortnamen ("Köln Abbots")
- *  ist meist das letzte Wort der eigentliche Teamname; sonst das ganze Wort. */
-export function teamAbbreviation(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  const word = words[words.length - 1] ?? ''
-  return word.slice(0, 3).toUpperCase()
-}
-
 /** Einzige Quelle für "erzielt ein Steal einen Run" — muss die Backend-Regel
  *  (BogenScoreCalculator.stealingScoresRun) exakt spiegeln, sonst widerspricht
  *  der Feed dem Score, den er selbst zeigt. Nur SB/WP/PB bis toBase===Home zählt;

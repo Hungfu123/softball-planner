@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildFeed, halfInningId, teamAbbreviation } from './bogenFeed'
+import { buildFeed, halfInningId } from './bogenFeed'
 import type { SpielbogenAtBatResponse, SpielbogenSlotResponse, SpielbogenStealingResponse } from '@/types'
 
 const slot = (id: number, name: string): SpielbogenSlotResponse => ({
@@ -115,20 +115,6 @@ describe('buildFeed — Steals', () => {
     const feed = buildFeed({ ...base, stealingEvents: [steal(type, 4)] })
     expect(feed[0].events[0].scored).toBe(false)
     expect(feed[0].events[0].minor).toBe(true)
-  })
-})
-
-describe('teamAbbreviation', () => {
-  it('nimmt bei einem Einwort-Namen die ersten drei Buchstaben', () => {
-    expect(teamAbbreviation('Allstar')).toBe('ALL')
-  })
-
-  it('nimmt bei Mehrwort-Namen das letzte Wort — meist der eigentliche Teamname', () => {
-    expect(teamAbbreviation('Köln Abbots')).toBe('ABB')
-  })
-
-  it('ignoriert mehrfache Leerzeichen', () => {
-    expect(teamAbbreviation('Dead   Sox')).toBe('SOX')
   })
 })
 
