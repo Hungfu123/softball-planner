@@ -1641,15 +1641,19 @@ export function buildFeed(input: FeedInput): HalfInning[] {
 
   const result = order.map(id => groups.get(id)!)
 
-  // Zwischenstand nach jeder Halbinning: alle Runs bis einschließlich dieser Inning.
+  // Zwischenstand nach jeder Halbinning.
+  //
+  // Away schlägt oben, Home unten. Nach dem Ende der TOP-Hälfte von Inning N hat Home
+  // erst die Innings 1..N-1 gespielt — dessen Runs aus Inning N sind noch nicht gefallen.
+  // Away dagegen ist in beiden Fällen bis einschließlich N zu zählen.
   for (const group of result) {
     let home = 0
     let away = 0
+    const homeThrough = group.side === 'AWAY' ? group.inning - 1 : group.inning
     for (const [inningKey, runs] of Object.entries(input.inningRuns)) {
-      if (Number(inningKey) <= group.inning) {
-        home += runs.home
-        away += runs.away
-      }
+      const inning = Number(inningKey)
+      if (inning <= group.inning) away += runs.away
+      if (inning <= homeThrough) home += runs.home
     }
     group.scoreAfter = { home, away }
   }
