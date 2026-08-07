@@ -111,6 +111,20 @@ describe('buildFeed — Reihenfolge und Gruppierung', () => {
     expect(feed[0].events.map(e => e.what)).toEqual(['Strikeout', 'stiehlt 2nd', 'Single'])
   })
 
+  it('sortiert numerisch statt lexikalisch, damit Sekundenbruchteile nicht die Reihenfolge kippen', () => {
+    // Jackson serialisiert Instant ohne Bruchteil, wenn er exakt null ist — lexikalisch
+    // sortiert "." vor "Z", also müsste "10:00:00.500Z" fälschlich vor "10:00:00Z" landen.
+    const feed = buildFeed({
+      ...base,
+      homeAtBats: [
+        ab({ id: 1, result: 'SINGLE', createdAt: '2026-08-06T10:00:00Z' }),
+        ab({ id: 2, result: 'STRIKEOUT', createdAt: '2026-08-06T10:00:00.500Z' }),
+      ],
+    })
+
+    expect(feed[0].events.map(e => e.what)).toEqual(['Strikeout', 'Single'])
+  })
+
   it('gruppiert nach Halbinning, neueste Gruppe oben', () => {
     const feed = buildFeed({
       ...base,
@@ -147,6 +161,33 @@ describe('buildFeed — Reihenfolge und Gruppierung', () => {
 
     expect(feed[0].scoreAfter).toEqual({ home: 3, away: 0 })
     expect(feed[1].scoreAfter).toEqual({ home: 1, away: 0 })
+  })
+
+  it('Away-Gruppe schließt Home-Runs derselben Inning aus, Home-Gruppe schließt sie ein', () => {
+    // Top of inning 1 (AWAY) ist vorbei, bevor Bottom of inning 1 (HOME) gespielt wird —
+    // der Zwischenstand nach der AWAY-Halbinning darf die Home-Runs derselben Inning
+    // noch nicht zeigen, obwohl inningRuns[1] sie schon als fertige Inning-Summe führt.
+    const feed = buildFeed({
+      ...base,
+      homeAtBats: [ab({ id: 1, inning: 1, side: 'HOME', result: 'SINGLE', createdAt: '2026-08-06T10:05:00Z' })],
+      awayAtBats: [ab({ id: 2, inning: 1, side: 'AWAY', slotId: 9, result: 'SINGLE', createdAt: '2026-08-06T10:00:00Z' })],
+      inningRuns: { 1: { home: 3, away: 2 } },
+    })
+
+    const home = feed.find(h => h.side === 'HOME')!
+    const away = feed.find(h => h.side === 'AWAY')!
+    expect(away.scoreAfter).toEqual({ home: 0, away: 2 })
+    expect(home.scoreAfter).toEqual({ home: 3, away: 2 })
+  })
+
+  it('Away-Zwischenstand berücksichtigt nur die bereits gespielten Home-Halbinnings', () => {
+    const feed = buildFeed({
+      ...base,
+      awayAtBats: [ab({ id: 1, inning: 2, side: 'AWAY', slotId: 9, createdAt: '2026-08-06T10:10:00Z' })],
+      inningRuns: { 1: { home: 1, away: 0 }, 2: { home: 5, away: 3 } },
+    })
+
+    expect(feed[0].scoreAfter).toEqual({ home: 1, away: 3 })
   })
 
   it('gibt bei leerem Spiel eine leere Liste', () => {

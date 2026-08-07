@@ -147,8 +147,10 @@ export function buildFeed(input: FeedInput): HalfInning[] {
   }
 
   // Neueste zuerst — über alle Typen hinweg über createdAt, der einzige
-  // Schlüssel, den At-Bats, Steals und Subs gemeinsam haben.
-  events.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  // Schlüssel, den At-Bats, Steals und Subs gemeinsam haben. Numerisch vergleichen,
+  // nicht lexikalisch: Jackson serialisiert Instant ohne Bruchteil, wenn er null ist
+  // ("...:00Z" vs. "...:00.500Z"), und "." sortiert lexikalisch vor "Z".
+  events.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
 
   const groups = new Map<string, HalfInning>()
   const order: string[] = []
@@ -165,15 +167,18 @@ export function buildFeed(input: FeedInput): HalfInning[] {
 
   const result = order.map(id => groups.get(id)!)
 
-  // Zwischenstand nach jeder Halbinning: alle Runs bis einschließlich dieser Inning.
+  // Zwischenstand nach jeder Halbinning: Away hat zu diesem Zeitpunkt Inning 1..N
+  // gespielt, Home aber erst 1..N-1, solange die Home-Halbinning von N noch nicht
+  // dran war (also für eine AWAY-Gruppe). Für eine HOME-Gruppe ist auch Home schon
+  // bei N angekommen.
   for (const group of result) {
     let home = 0
     let away = 0
+    const homeCutoff = group.side === 'HOME' ? group.inning : group.inning - 1
     for (const [inningKey, runs] of Object.entries(input.inningRuns)) {
-      if (Number(inningKey) <= group.inning) {
-        home += runs.home
-        away += runs.away
-      }
+      const inningNumber = Number(inningKey)
+      if (inningNumber <= group.inning) away += runs.away
+      if (inningNumber <= homeCutoff) home += runs.home
     }
     group.scoreAfter = { home, away }
   }
