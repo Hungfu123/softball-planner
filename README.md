@@ -7,7 +7,7 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 - **Schluss mit Zettelwirtschaft:** Kein Hin-und-Her mehr mit WhatsApp-Listen oder handgeschriebenen Lineups
 - **Faire Aufstellung:** Die App zeigt automatisch, wer wie oft gespielt hat — Spieler mit weniger Einsaetzen stehen oben im Pool
 - **Schnell am Spieltag:** Lineup vom letzten Spiel kopieren, anpassen, fertig. Druckbares Sheet direkt dabei
-- **Alles an einem Ort:** Saisons, Spieltage, Lineups, Gegner, Ergebnisse, Tabelle und Fahrgemeinschaften
+- **Alles an einem Ort:** Saisons, Spieltage, Lineups, Gegner, Ergebnisse, Tabelle und Statistiken
 
 ## Was kann die App?
 
@@ -57,10 +57,6 @@ Planungstool fuer Softball-Teams. Verwaltet Saisons, Spieltage, Lineups, Positio
 - Mannschaften pro Saison verwalten
 - Ergebnisse eintragen
 - Automatische Tabellenberechnung
-
-### Fahrgemeinschaften
-- Fahrer und Sitzplaetze pro Spieltag planen
-- Hin- und Rueckfahrt getrennt oder zusammen
 
 ### Training
 - Trainings-Zeitraeume verwalten (z.B. Wintertraining, Saisonvorbereitung)

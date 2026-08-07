@@ -92,7 +92,6 @@ Begriffe die im Code, in `CLAUDE.md` und den Feature-Docs vorkommen. Zweiteilung
 | **TrainingPlan** | KI-/regelbasiert generierter Trainingsplan (`TrainingPlanGenerator`). Siehe `docs/04-KI-TRAININGSPLAN.md` + `docs/trainingsplan-algorithmus.md`. |
 | **TrainingStation / Drill** | Übungsstation bzw. konkrete Übung. `TrainingStation`, `Drill` (+ `DrillCategory`, `DrillComplexity`). Neue Drills: Skill `drill-onboarding`, gespeichert in `backend/src/main/resources/drills.json`. |
 | **Award / GamedayAward** | Auszeichnungen (`Award`, `AwardType`, `GamedayAwardCalculator`). |
-| **Carpool / Car** | Fahrgemeinschaften zu Spielen (`CarService`, `useCarpool`). |
 
 ---
 

@@ -12,7 +12,7 @@ Legacy Live-Scoring pro Game (nicht ein kompletter Bogen). Existiert parallel zu
 | Lineup-Quelle | Bestehende `LineupEntry` aus GameDay | Eigenes Lineup im Wizard erfasst |
 | Inning-Tracking | Frontend-State (`scoreboard.currentInning` aus AB-Liste) | Backend persistiert `currentInning`/`currentSide` |
 | Side-Switch | Frontend `switchSide` (per Inning-Half) | Backend `maybeAutoSwitchSide` bei 3 Outs |
-| RFL-Sheet-Export | Nein (nur Game-spezifische Stats) | Ja (`RflSheetDrawer` + PDF) |
+| RFL-Sheet-Export | Nein (nur Game-spezifische Stats) | Ja (`BogenSheetDrawer`, RFL-Gitter nur noch im PDF-Export — siehe `docs/SPIELBOGEN.md`) |
 | Liga-Senden | Über GameDay → Standings-Berechnung | Über Spielbogen → `LeagueResult` direkt |
 | Verwendung | DeadSox-eigene Spiele live tracken | RFL-Sheet erfassen (auch Gegner-Spiele) |
 
@@ -52,7 +52,7 @@ docker compose up -d db
 cd frontend && npm run test:e2e
 ```
 
-**43 Playwright-Tests** decken:
+**77 Playwright-Tests** decken (einige überspringen sich selbst, wenn die nötigen Daten in der DB fehlen — abhängig von der Seed-Lage, keine feste Zahl):
 - AB-Recording alle 9 Result-Typen × empty/loaded
 - Stealing (STOLEN_BASE / CAUGHT_STEALING / Out-Counter)
 - Substitution (Sub-Sheet + currentBatter-Rotation + Persistenz)

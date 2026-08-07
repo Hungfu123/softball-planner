@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Drawer } from 'vaul'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
 import { motion, AnimatePresence } from 'motion/react'
@@ -42,7 +43,7 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
       <Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl max-h-[90vh] flex flex-col focus:outline-none">
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl overflow-hidden max-h-[90vh] flex flex-col focus:outline-none">
             <Drawer.Title className="sr-only">{title}</Drawer.Title>
             <div className="w-12 h-1.5 bg-cream-300 rounded-full mx-auto mt-3 shrink-0" />
             <div className="flex items-center justify-between px-5 py-3 border-b border-cream-300 shrink-0">
@@ -71,12 +72,16 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
     )
   }
 
-  return (
+  // Portal ans document.body: sonst wäre der Desktop-Dialog (fixed inset-0, Backdrop + Box)
+  // ein DOM-Kind des aufrufenden ResponsiveSheet — dessen overflow-hidden würde ihn abschneiden,
+  // wenn ein Sheet aus einem anderen heraus geöffnet wird (z.B. NewPlayerModal aus PollVoteSyncSheet).
+  return createPortal(
     <AnimatePresence>
       {open && (
         <CenterModal onClose={onClose} title={title} maxWidth={maxWidth} footer={footer}>{children}</CenterModal>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   )
 }
 
@@ -136,7 +141,7 @@ function CenterModal({ onClose, title, maxWidth, footer, children }: { onClose: 
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 8 }}
         transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-        className={`bg-cream-50 border border-cream-300 rounded-2xl shadow-xl w-full ${MAX_WIDTH[maxWidth]} max-h-[85vh] flex flex-col focus:outline-none`}
+        className={`bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden shadow-xl w-full ${MAX_WIDTH[maxWidth]} max-h-[85vh] flex flex-col focus:outline-none`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-cream-300 shrink-0">
