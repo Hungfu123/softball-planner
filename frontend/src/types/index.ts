@@ -335,9 +335,9 @@ export type AtBatResult =
   | 'SINGLE' | 'DOUBLE' | 'TRIPLE' | 'HOMERUN' | 'INSIDE_PARK_HR'
   | 'WALK' | 'HIT_BY_PITCH'
   | 'STRIKEOUT' | 'OUT'
-  | 'REACHED_ON_ERROR'
   /** Automatisches Out (fehlende Spielerin) — Out im Inning, aber kein At-Bat und keine PA. */
   | 'AUTOMATIC_OUT'
+  | 'REACHED_ON_ERROR'
 
 export type BaseRunningEventType = 'STOLEN_BASE' | 'CAUGHT_STEALING' | 'OUT_ON_PLAY' | 'PICKOFF'
 
