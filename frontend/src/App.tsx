@@ -22,6 +22,7 @@ const CalendarPage = lazy(() => import('@/components/calendar/CalendarPage').the
 const SpielbogenList = lazy(() => import('@/components/spielbogen/SpielbogenList'))
 const SpielbogenWizard = lazy(() => import('@/components/spielbogen/SpielbogenWizard'))
 const SpielbogenPage = lazy(() => import('@/components/spielbogen/SpielbogenPage'))
+const PublicBogenPage = lazy(() => import('@/components/public/PublicBogenPage'))
 
 function LazyScoring() {
   // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
     ],
   },
   { path: '/spielbogen/:id', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },
+  { path: '/live/:token', element: <Suspense fallback={<LoadingSkeleton />}><PublicBogenPage /></Suspense>, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/export', element: <LineupSheet />, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/scoring/:gameIndex', element: <LazyScoring />, errorElement: <ChunkErrorBoundary /> },
 ])
@@ -100,7 +102,13 @@ export default function App() {
     }
   }, [])
 
-  if (!loggedIn) {
+  // /live/:token ist der öffentliche Zuschauer-Feed — der einzige Weg in diese App
+  // ohne Login. Das Login-Gate hier ist global vor dem Router, muss also diese
+  // Route selbst kennen, sonst sieht ein Zuschauer ohne localStorage.auth nie
+  // mehr als die Login-Maske.
+  const isPublicRoute = window.location.pathname.startsWith('/live/')
+
+  if (!loggedIn && !isPublicRoute) {
     return <LoginPage onLogin={handleLogin} error={loginError} />
   }
 
