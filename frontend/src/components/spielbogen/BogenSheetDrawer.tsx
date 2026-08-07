@@ -6,7 +6,6 @@ import { buildFeed } from '@/utils/bogenFeed'
 import { BogenLiveFeed } from './BogenLiveFeed'
 import { BogenLineupAccordion } from './BogenLineupAccordion'
 import { BogenSlotEditModal } from './BogenSlotEditModal'
-import { ShareLinkModal } from './ShareLinkModal'
 import { Button } from '@/components/shared'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
@@ -26,7 +25,6 @@ interface Props {
 export function BogenSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame, onReload, onSlotUpdate, currentBatterName }: Props) {
   const [ligaLoading, setLigaLoading] = useState(false)
   const [editingSlot, setEditingSlot] = useState<SpielbogenSlotResponse | null>(null)
-  const [showShareModal, setShowShareModal] = useState(false)
   const toast = useToastContext()
 
   const {
@@ -68,17 +66,17 @@ export function BogenSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame
 
   const footer = (isLive || isDone) ? (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-2">
-        {isDone && onReopenGame && (
-          <Button
-            variant="secondary"
-            onClick={() => { onClose(); onReopenGame() }}
-            className="flex-1 h-11"
-          >
-            Spiel wieder öffnen
-          </Button>
-        )}
-        {isDone && (
+      {isDone && (
+        <div className="flex flex-wrap gap-2">
+          {onReopenGame && (
+            <Button
+              variant="secondary"
+              onClick={() => { onClose(); onReopenGame() }}
+              className="flex-1 h-11"
+            >
+              Spiel wieder öffnen
+            </Button>
+          )}
           <Button
             variant="secondary"
             onClick={handlePdfExport}
@@ -86,25 +84,18 @@ export function BogenSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame
           >
             Als PDF exportieren
           </Button>
-        )}
-        <Button
-          variant="secondary"
-          onClick={() => setShowShareModal(true)}
-          className="flex-1 h-11"
-        >
-          Link teilen
-        </Button>
-        {canSendToLiga && (
-          <Button
-            variant="navy"
-            onClick={handleLigaSenden}
-            disabled={ligaLoading}
-            className="flex-1 h-11 font-bold"
-          >
-            {ligaLoading ? 'Sende…' : 'An Liga senden'}
-          </Button>
-        )}
-      </div>
+          {canSendToLiga && (
+            <Button
+              variant="navy"
+              onClick={handleLigaSenden}
+              disabled={ligaLoading}
+              className="flex-1 h-11 font-bold"
+            >
+              {ligaLoading ? 'Sende…' : 'An Liga senden'}
+            </Button>
+          )}
+        </div>
+      )}
       {isLive && onEndGame && (
         <Button
           variant="primary"
@@ -158,12 +149,6 @@ export function BogenSheetDrawer({ open, onClose, sheet, onEndGame, onReopenGame
           }}
         />
       )}
-
-      <ShareLinkModal
-        open={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        bogenId={meta.id}
-      />
     </>
   )
 }

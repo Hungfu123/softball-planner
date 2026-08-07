@@ -695,10 +695,6 @@ export interface BogenTeamTotals {
   errors: number
 }
 
-export interface ShareLinkResponse {
-  token: string
-}
-
 export interface BogenSheetResponse {
   meta: SpielbogenResponse
   homeLineup: SpielbogenSlotResponse[]
@@ -709,28 +705,6 @@ export interface BogenSheetResponse {
   substitutions: SpielbogenSubstitutionResponse[]
   positionChanges: SpielbogenPositionChangeResponse[]
   runnerAdvances: SpielbogenRunnerAdvanceResponse[]
-  inningRuns: Record<number, { home: number; away: number }>
-  homeTotals: BogenTeamTotals
-  awayTotals: BogenTeamTotals
-}
-
-/** Öffentlicher Zuschauer-Feed — bewusst flach, ohne interne Felder (Season, LeagueResult, publicToken). */
-export interface PublicBogenFeed {
-  homeTeamName: string
-  awayTeamName: string
-  date: string
-  location: string | null
-  status: BogenStatus
-  currentInning: number
-  currentSide: BogenSide
-  homeRuns: number
-  awayRuns: number
-  homeLineup: SpielbogenSlotResponse[]
-  awayLineup: SpielbogenSlotResponse[]
-  homeAtBats: SpielbogenAtBatResponse[]
-  awayAtBats: SpielbogenAtBatResponse[]
-  stealingEvents: SpielbogenStealingResponse[]
-  substitutions: SpielbogenSubstitutionResponse[]
   inningRuns: Record<number, { home: number; away: number }>
   homeTotals: BogenTeamTotals
   awayTotals: BogenTeamTotals
