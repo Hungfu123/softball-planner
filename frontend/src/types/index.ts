@@ -714,6 +714,28 @@ export interface BogenSheetResponse {
   awayTotals: BogenTeamTotals
 }
 
+/** Öffentlicher Zuschauer-Feed — bewusst flach, ohne interne Felder (Season, LeagueResult, publicToken). */
+export interface PublicBogenFeed {
+  homeTeamName: string
+  awayTeamName: string
+  date: string
+  location: string | null
+  status: BogenStatus
+  currentInning: number
+  currentSide: BogenSide
+  homeRuns: number
+  awayRuns: number
+  homeLineup: SpielbogenSlotResponse[]
+  awayLineup: SpielbogenSlotResponse[]
+  homeAtBats: SpielbogenAtBatResponse[]
+  awayAtBats: SpielbogenAtBatResponse[]
+  stealingEvents: SpielbogenStealingResponse[]
+  substitutions: SpielbogenSubstitutionResponse[]
+  inningRuns: Record<number, { home: number; away: number }>
+  homeTotals: BogenTeamTotals
+  awayTotals: BogenTeamTotals
+}
+
 export type PairingMode = 'HEIM_GAST' | 'TEAM_1_2'
 export interface InvitationGame { time: string; teamA: string; teamB: string; ump: string }
 export interface InvitationContact { role: string; name: string; email: string; phone: string }
