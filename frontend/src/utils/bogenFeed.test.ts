@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildFeed, halfInningId } from './bogenFeed'
+import { buildFeed, halfInningId, teamAbbreviation } from './bogenFeed'
 import type { SpielbogenAtBatResponse, SpielbogenSlotResponse, SpielbogenStealingResponse } from '@/types'
 
 const slot = (id: number, name: string): SpielbogenSlotResponse => ({
@@ -90,12 +90,50 @@ describe('buildFeed — Steals', () => {
   ])('%s → %s', (type, toBase, expected) => {
     const feed = buildFeed({ ...base, stealingEvents: [steal(type, toBase)] })
     expect(feed[0].events[0].what).toBe(expected)
+  })
+
+  it('Steal auf eine Vorbase bleibt Minor-Notiz, kein Run', () => {
+    const feed = buildFeed({ ...base, stealingEvents: [steal('STOLEN_BASE', 2)] })
+    expect(feed[0].events[0].scored).toBe(false)
+    expect(feed[0].events[0].minor).toBe(true)
+  })
+
+  it.each([
+    ['STOLEN_BASE'],
+    ['WILD_PITCH'],
+    ['PASSED_BALL'],
+  ])('%s bis Home ist ein Run — amber statt grauer Notiz, wie der Backend-Score ihn zählt', (type) => {
+    const feed = buildFeed({ ...base, stealingEvents: [steal(type, 4)] })
+    expect(feed[0].events[0].scored).toBe(true)
+    expect(feed[0].events[0].minor).toBe(false)
+  })
+
+  it.each([
+    ['CAUGHT_STEALING'],
+    ['OUT_ON_PLAY'],
+  ])('%s bei Home ist ein Out, kein Run — bleibt Minor-Notiz', (type) => {
+    const feed = buildFeed({ ...base, stealingEvents: [steal(type, 4)] })
+    expect(feed[0].events[0].scored).toBe(false)
     expect(feed[0].events[0].minor).toBe(true)
   })
 })
 
+describe('teamAbbreviation', () => {
+  it('nimmt bei einem Einwort-Namen die ersten drei Buchstaben', () => {
+    expect(teamAbbreviation('Allstar')).toBe('ALL')
+  })
+
+  it('nimmt bei Mehrwort-Namen das letzte Wort — meist der eigentliche Teamname', () => {
+    expect(teamAbbreviation('Köln Abbots')).toBe('ABB')
+  })
+
+  it('ignoriert mehrfache Leerzeichen', () => {
+    expect(teamAbbreviation('Dead   Sox')).toBe('SOX')
+  })
+})
+
 describe('buildFeed — Reihenfolge und Gruppierung', () => {
-  it('sortiert gemischte Typen nach createdAt, neueste zuerst', () => {
+  it('mischt gemischte Typen innerhalb einer Gruppe chronologisch, ältestes zuerst', () => {
     const feed = buildFeed({
       ...base,
       homeAtBats: [
@@ -108,12 +146,13 @@ describe('buildFeed — Reihenfolge und Gruppierung', () => {
       } as SpielbogenStealingResponse],
     })
 
-    expect(feed[0].events.map(e => e.what)).toEqual(['Strikeout', 'stiehlt 2nd', 'Single'])
+    expect(feed[0].events.map(e => e.what)).toEqual(['Single', 'stiehlt 2nd', 'Strikeout'])
   })
 
   it('sortiert numerisch statt lexikalisch, damit Sekundenbruchteile nicht die Reihenfolge kippen', () => {
     // Jackson serialisiert Instant ohne Bruchteil, wenn er exakt null ist — lexikalisch
-    // sortiert "." vor "Z", also müsste "10:00:00.500Z" fälschlich vor "10:00:00Z" landen.
+    // sortiert "." vor "Z", also müsste "10:00:00.500Z" fälschlich VOR "10:00:00Z" landen,
+    // obwohl es chronologisch danach kommt.
     const feed = buildFeed({
       ...base,
       homeAtBats: [
@@ -122,7 +161,20 @@ describe('buildFeed — Reihenfolge und Gruppierung', () => {
       ],
     })
 
-    expect(feed[0].events.map(e => e.what)).toEqual(['Strikeout', 'Single'])
+    expect(feed[0].events.map(e => e.what)).toEqual(['Single', 'Strikeout'])
+  })
+
+  it('liest sich innerhalb einer Gruppe wie das Inning selbst — erster Batter oben', () => {
+    const feed = buildFeed({
+      ...base,
+      homeAtBats: [
+        ab({ id: 1, result: 'SINGLE', createdAt: '2026-08-06T10:00:00Z' }),
+        ab({ id: 2, result: 'DOUBLE', createdAt: '2026-08-06T10:05:00Z' }),
+        ab({ id: 3, result: 'STRIKEOUT', createdAt: '2026-08-06T10:10:00Z' }),
+      ],
+    })
+
+    expect(feed[0].events.map(e => e.what)).toEqual(['Single', 'Double', 'Strikeout'])
   })
 
   it('gruppiert nach Halbinning, neueste Gruppe oben', () => {

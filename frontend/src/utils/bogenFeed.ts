@@ -67,6 +67,25 @@ export function halfInningId(inning: number, side: BogenSide): string {
   return `half-${inning}-${side}`
 }
 
+/** Kurzlabel fürs Score-Divider — ohne sichtbares Scoreboard muss die Zeile selbst
+ *  sagen, welche Zahl zu welchem Team gehört. Bei Mehrwortnamen ("Köln Abbots")
+ *  ist meist das letzte Wort der eigentliche Teamname; sonst das ganze Wort. */
+export function teamAbbreviation(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  const word = words[words.length - 1] ?? ''
+  return word.slice(0, 3).toUpperCase()
+}
+
+/** Einzige Quelle für "erzielt ein Steal einen Run" — muss die Backend-Regel
+ *  (BogenScoreCalculator.stealingScoresRun) exakt spiegeln, sonst widerspricht
+ *  der Feed dem Score, den er selbst zeigt. Nur SB/WP/PB bis toBase===Home zählt;
+ *  CAUGHT_STEALING und OUT_ON_PLAY sind Outs, auch bei toBase===4. */
+function stealingScoresRun(st: SpielbogenStealingResponse): boolean {
+  return st.toBase === 4 && (
+    st.type === 'STOLEN_BASE' || st.type === 'WILD_PITCH' || st.type === 'PASSED_BALL'
+  )
+}
+
 function atBatLabel(ab: SpielbogenAtBatResponse): string {
   if (ab.sacrificeType) {
     return ab.sacrificeType === 'BUNT' ? 'Sac Bunt' : 'Sac Fly'
@@ -119,6 +138,7 @@ export function buildFeed(input: FeedInput): HalfInning[] {
   }
 
   for (const st of input.stealingEvents) {
+    const scoresRun = stealingScoresRun(st)
     events.push({
       key: `st-${st.id}`,
       inning: st.inning,
@@ -127,8 +147,8 @@ export function buildFeed(input: FeedInput): HalfInning[] {
       who: nameOf(st.slotId),
       what: stealLabel(st),
       rbi: 0,
-      scored: false,
-      minor: true,
+      scored: scoresRun,
+      minor: !scoresRun,
     })
   }
 
@@ -166,6 +186,14 @@ export function buildFeed(input: FeedInput): HalfInning[] {
   }
 
   const result = order.map(id => groups.get(id)!)
+
+  // Gruppenreihenfolge bleibt neueste-zuerst (die laufende Halbinning oben), aber
+  // innerhalb einer Gruppe soll sich ein Inning wie ein Inning lesen: erster Batter
+  // oben. Da group.events durch die vorsortierte (neueste-zuerst) Liste befüllt wurde,
+  // reicht ein Reverse pro Gruppe für die chronologische Reihenfolge.
+  for (const group of result) {
+    group.events.reverse()
+  }
 
   // Zwischenstand nach jeder Halbinning: Away hat zu diesem Zeitpunkt Inning 1..N
   // gespielt, Home aber erst 1..N-1, solange die Home-Halbinning von N noch nicht
