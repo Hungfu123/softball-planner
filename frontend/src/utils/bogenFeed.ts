@@ -46,6 +46,7 @@ const RESULT_DE: Record<string, string> = {
   STRIKEOUT: 'Strikeout',
   OUT: 'Aus',
   REACHED_ON_ERROR: 'Reached on Error',
+  AUTOMATIC_OUT: 'Automatisches Out',
 }
 
 const OUT_TYPE_DE: Record<string, string> = {

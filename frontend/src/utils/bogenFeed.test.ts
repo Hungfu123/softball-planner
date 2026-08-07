@@ -50,6 +50,11 @@ describe('buildFeed — At-Bat-Zeilen', () => {
     expect(feed[0].events[0].what).toBe('Sac Fly')
   })
 
+  it('nennt automatisches Out beim deutschen Namen', () => {
+    const feed = buildFeed({ ...base, homeAtBats: [ab({ result: 'AUTOMATIC_OUT' })] })
+    expect(feed[0].events[0].what).toBe('Automatisches Out')
+  })
+
   it('nennt Error mit Position', () => {
     const feed = buildFeed({ ...base, homeAtBats: [ab({ result: 'REACHED_ON_ERROR', isError: true, errorPosition: 5 })] })
     expect(feed[0].events[0].what).toBe('Reached on Error')
