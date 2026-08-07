@@ -1,5 +1,5 @@
 import type { BogenSide, BogenTeamTotals } from '@/types'
-import { halfInningId, type HalfInning } from '@/utils/bogenFeed'
+import { halfInningId, teamAbbreviation, type HalfInning } from '@/utils/bogenFeed'
 
 export interface BogenLiveFeedProps {
   homeTeamName: string
@@ -34,6 +34,8 @@ export function BogenLiveFeed({
 }: BogenLiveFeedProps) {
   const columns = inningColumns(inningRuns, currentInning)
   const played = new Set(feed.map(h => halfInningId(h.inning, h.side)))
+  const awayAbbr = teamAbbreviation(awayTeamName)
+  const homeAbbr = teamAbbreviation(homeTeamName)
 
   const jumpTo = (inning: number, side: BogenSide) => {
     document.getElementById(halfInningId(inning, side))
@@ -54,7 +56,7 @@ export function BogenLiveFeed({
         </div>
         <div className="mt-2.5 pt-2.5 border-t border-navy-600 flex items-center gap-3 font-display text-xs uppercase tracking-widest text-navy-100">
           <span className="text-cream-50 text-sm">
-            {currentSide === 'AWAY' ? '▲' : '▼'} {currentInning}. Inning
+            {currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'} {currentInning}. Inning
           </span>
           {status === 'DONE' && <span className="text-cream-50">Endstand</span>}
           {currentBatterName && <span className="ml-auto">{currentBatterName} am Schlag</span>}
@@ -121,8 +123,8 @@ export function BogenLiveFeed({
 
       {feed.map((half, index) => (
         <div key={halfInningId(half.inning, half.side)} id={halfInningId(half.inning, half.side)}>
-          <div className="sticky top-0 flex items-center gap-2 px-5 pt-2 pb-1.5 bg-cream-100 border-b border-cream-200 font-display text-xs uppercase tracking-widest text-navy-700">
-            <span className="text-softball-red-600">{half.side === 'AWAY' ? '▲' : '▼'}</span>
+          <div className="sticky top-0 z-10 flex items-center gap-2 px-5 pt-2 pb-1.5 bg-cream-100 border-b border-cream-200 font-display text-sm font-bold uppercase tracking-wide text-navy-900">
+            <span className="text-softball-red-600">{half.side === 'AWAY' ? '↑ Top' : '↓ Btm'}</span>
             {half.inning}. Inning — {half.side === 'HOME' ? homeTeamName : awayTeamName}
             {index === 0 && status === 'LIVE' && (
               <span className="ml-auto bg-softball-red-600 text-white text-[9px] tracking-widest px-2 py-0.5 rounded-full">LIVE</span>
@@ -151,10 +153,16 @@ export function BogenLiveFeed({
             </div>
           ))}
 
-          <div className="flex items-center gap-2.5 px-5 py-1.5 bg-cream-200 font-display text-xs tracking-widest text-gray-600">
+          <div
+            data-testid={`divider-${halfInningId(half.inning, half.side)}`}
+            className="flex items-center gap-2.5 px-5 py-1.5 bg-cream-200 font-display text-xs tracking-widest text-gray-600"
+          >
             <span className="flex-1 h-px bg-cream-300" />
-            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore */}
+            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Labels,
+                weil das Scoreboard beim Lesen längst weggescrollt ist. */}
+            <span className="text-[11px] text-gray-500">{awayAbbr}</span>
             <b className="text-navy-800 text-[13px]">{half.scoreAfter.away} : {half.scoreAfter.home}</b>
+            <span className="text-[11px] text-gray-500">{homeAbbr}</span>
             <span className="flex-1 h-px bg-cream-300" />
           </div>
         </div>
