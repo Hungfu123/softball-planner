@@ -155,16 +155,17 @@ export function BogenLiveFeed({
             data-testid={`divider-${halfInningId(half.inning, half.side)}`}
             className="flex items-center gap-2 px-5 py-1.5 bg-cream-200 font-display"
           >
-            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Namen
-                sind Kontext, nicht Inhalt: sie schrumpfen/truncaten Richtung Rand,
-                die Zahl bleibt fett und mittig, egal wie lang der Teamname ist. */}
-            <span className="flex-1 min-w-0 truncate text-right text-[11px] tracking-wide text-gray-500">
+            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Namen sind
+                Kontext, nicht Inhalt, aber ein abgeschnittener Name verwirrt mehr, als er
+                hilft — also nie kürzen: bei zu wenig Platz bricht die Zeile um, statt den
+                Namen zu clippen. Die Zahl bleibt fett und mittig, ein- wie zweizeilig. */}
+            <span className="flex-1 text-right text-[11px] tracking-wide text-gray-500">
               {awayTeamName}
             </span>
             <b className="shrink-0 text-navy-900 text-sm font-extrabold tabular-nums">
               {half.scoreAfter.away} : {half.scoreAfter.home}
             </b>
-            <span className="flex-1 min-w-0 truncate text-left text-[11px] tracking-wide text-gray-500">
+            <span className="flex-1 text-left text-[11px] tracking-wide text-gray-500">
               {homeTeamName}
             </span>
           </div>
