@@ -385,6 +385,22 @@ function multiAbLabelFit(label: string, maxLen: number): { text: string; fontSiz
   return { text, fontSize: 3.2 }
 }
 
+/**
+ * Dritte Variante derselben Kappungs-Falle: bat-around-Cell MIT Run (filled diamond) —
+ * beide AB-Labels landen als ein zentrierter String unter dem Diamond statt an zwei
+ * Ecken. `.slice(0, 12)` kappte den kombinierten String hart, z.B. "GO 4-6-3 DP" (11
+ * Zeichen, passt) vs. "2B F9-6-4-3 DP" (13 Zeichen, DP verschwand). Gleicher Fix:
+ * Schriftgröße skaliert statt zu kappen. maxLen 23 = realistische Obergrenze für zwei
+ * Labels (fielderChain ≤ 4 Einträge, längstes Label "F9-6-4-3 TP" = 11 Zeichen, ×2 + Space).
+ */
+function filledMultiLabelFit(joined: string, maxLen: number): { text: string; fontSize: number } {
+  const text = joined.slice(0, maxLen)
+  if (text.length <= 6) return { text, fontSize: 5 }
+  if (text.length <= 10) return { text, fontSize: 4.2 }
+  if (text.length <= 16) return { text, fontSize: 3.6 }
+  return { text, fontSize: 3 }
+}
+
 function drawDiamondCell(
   doc: jsPDF,
   cellX: number,
@@ -459,8 +475,9 @@ function drawDiamondCell(
       doc.setTextColor(...COLOR_NAVY)
       const baseY = home.y + 2.5
       if (isMulti && cell.labels.length >= 2) {
-        doc.setFontSize(cell.labels.length >= 3 ? 4 : 5)
-        doc.text(cell.labels.join(' ').slice(0, 12), cx, baseY, { align: 'center' })
+        const { text, fontSize } = filledMultiLabelFit(cell.labels.join(' '), 23)
+        doc.setFontSize(fontSize)
+        doc.text(text, cx, baseY, { align: 'center' })
       } else {
         const { text, fontSize } = primaryLabelFit(cell.primaryLabel, 10)
         doc.setFontSize(fontSize)
