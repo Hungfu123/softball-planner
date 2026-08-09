@@ -368,6 +368,23 @@ function primaryLabelFit(label: string, maxLen: number): { text: string; fontSiz
   return { text, fontSize: 3.8 }
 }
 
+/**
+ * Wie primaryLabelFit, aber für die zwei Corner-Labels im Bat-Around-Fall
+ * (isMulti, kein Run): erstes und letztes AB-Label teilen sich dieselbe Cell wie
+ * die Diamond-Grafik — bat-around ist in großen Innings der Normalfall, nicht die
+ * Ausnahme, trotzdem kappte `.slice(0, 5)` bisher hart (z.B. "4-6-3 DP" → "4-6-3",
+ * DP-Suffix unsichtbar). Fix wie bei primaryLabelFit: Schriftgröße skaliert statt
+ * zu kappen. Die Stufen liegen eine Nummer niedriger, weil pro Label weniger Platz
+ * bleibt als beim Single-AB-Fall (zwei Labels + Diamond in derselben Cell).
+ */
+function multiAbLabelFit(label: string, maxLen: number): { text: string; fontSize: number } {
+  const text = label.slice(0, maxLen)
+  if (text.length <= 4) return { text, fontSize: 5 }
+  if (text.length <= 6) return { text, fontSize: 4.2 }
+  if (text.length <= 8) return { text, fontSize: 3.6 }
+  return { text, fontSize: 3.2 }
+}
+
 function drawDiamondCell(
   doc: jsPDF,
   cellX: number,
@@ -450,13 +467,17 @@ function drawDiamondCell(
         doc.text(text, cx, baseY, { align: 'center' })
       }
     } else if (isMulti && cell.labels.length >= 2) {
-      // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle — größere Schrift für Lesbarkeit
+      // 1. AB oben-links, neueste AB unten-rechts — je Corner eigene Schriftgröße,
+      // damit z.B. "4-6-3 DP" das DP-Suffix behält statt hart gekappt zu werden.
       doc.setTextColor(...COLOR_NAVY)
-      doc.setFontSize(5.5)
       const firstLbl = cell.labels[cell.labels.length - 2] ?? ''
       const lastLbl = cell.labels[cell.labels.length - 1] ?? ''
-      doc.text(firstLbl.slice(0, 5), cellX + 2, cellY + 6.5)
-      doc.text(lastLbl.slice(0, 5), cellX + cellW - 2, cellY + cellH - 2, { align: 'right' })
+      const first = multiAbLabelFit(firstLbl, 11)
+      doc.setFontSize(first.fontSize)
+      doc.text(first.text, cellX + 2, cellY + 6.5)
+      const last = multiAbLabelFit(lastLbl, 11)
+      doc.setFontSize(last.fontSize)
+      doc.text(last.text, cellX + cellW - 2, cellY + cellH - 2, { align: 'right' })
     } else {
       const labels = cell.labels.length > 1 ? cell.labels.slice(-2) : [cell.primaryLabel]
       doc.setTextColor(...COLOR_NAVY)
