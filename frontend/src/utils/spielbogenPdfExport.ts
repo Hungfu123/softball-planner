@@ -496,19 +496,16 @@ function drawDiamondCell(
       doc.setFontSize(last.fontSize)
       doc.text(last.text, cellX + cellW - 2, cellY + cellH - 2, { align: 'right' })
     } else {
-      const labels = cell.labels.length > 1 ? cell.labels.slice(-2) : [cell.primaryLabel]
+      // War früher ein `labels.length > 1`-Zweig mit eigenem `.slice(0, 6)` (vierte Variante
+      // derselben Kappungsfalle) — tot: `labels.length === abCount` ist ein Invariant, das
+      // `renderCells` überall einhält (jede Stelle, die `abCount` erhöht, pusht im selben
+      // Schritt auf `labels`). Dieser `else`-Zweig läuft nur, wenn `isMulti` (= abCount >= 2)
+      // false ist, also abCount === 1 === labels.length — der `> 1`-Fall war unerreichbar.
       doc.setTextColor(...COLOR_NAVY)
       const baseY = home.y + 2.5
-      if (labels.length > 1) {
-        doc.setFontSize(4.5)
-        labels.forEach((lbl, i) => {
-          doc.text(lbl.slice(0, 6), cx, baseY + i * 3.5, { align: 'center' })
-        })
-      } else {
-        const { text, fontSize } = primaryLabelFit(labels[0], 10)
-        doc.setFontSize(fontSize)
-        doc.text(text, cx, baseY, { align: 'center' })
-      }
+      const { text, fontSize } = primaryLabelFit(cell.primaryLabel, 10)
+      doc.setFontSize(fontSize)
+      doc.text(text, cx, baseY, { align: 'center' })
     }
     doc.setTextColor(0, 0, 0)
   }

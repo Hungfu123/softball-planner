@@ -238,7 +238,12 @@ function synthesizeAdvances(sortedAtBats: SpielbogenAtBatResponse[], skipAbIds: 
 }
 
 function mapResultToReason(r: AtBatResult): RunnerAdvanceReason | null {
-  if (r === 'SINGLE' || r === 'DOUBLE' || r === 'TRIPLE' || r === 'HOMERUN') return 'HIT_PUSH'
+  // INSIDE_PARK_HR fehlte hier — dieselbe Familie wie renderAtBatBase/reachedBaseForAtBat:
+  // ein Inside-the-Park-Homerun schiebt Runner exakt wie ein normaler Homerun vor, aber ohne
+  // diesen Case synthetisiert synthesizeAdvances() keine Records für Bögen ohne explizite
+  // RunnerAdvance-Einträge → die geschobenen Runner bekommen zwar via computeScoredSet einen
+  // gefüllten Diamond, aber keine ×N-Annotation, die zeigt wer sie nach Hause gebracht hat.
+  if (r === 'SINGLE' || r === 'DOUBLE' || r === 'TRIPLE' || r === 'HOMERUN' || r === 'INSIDE_PARK_HR') return 'HIT_PUSH'
   if (r === 'WALK') return 'BB_FORCE'
   if (r === 'HIT_BY_PITCH') return 'HBP_FORCE'
   if (r === 'OUT' || r === 'STRIKEOUT') return 'FIELDERS_CHOICE' // Productive Out (Runner advance)
@@ -260,6 +265,7 @@ function reasonToLabel(reason: RunnerAdvanceReason, abResult?: AtBatResult, abFi
       if (abResult === 'DOUBLE') return '2B'
       if (abResult === 'TRIPLE') return '3B'
       if (abResult === 'HOMERUN') return 'HR'
+      if (abResult === 'INSIDE_PARK_HR') return 'IHR'
       return 'H'
     case 'BB_FORCE': return 'BB'
     case 'HBP_FORCE': return 'HBP'
@@ -368,8 +374,14 @@ function reachedBaseForAtBat(ab: SpielbogenAtBatResponse): number {
     case 'DOUBLE': return 2
     case 'TRIPLE': return 3
     case 'HOMERUN': return 4
+    case 'INSIDE_PARK_HR': return 4
     case 'STRIKEOUT': return 0
     case 'AUTOMATIC_OUT': return 0
+    case 'REACHED_ON_ERROR':
+      // Wie in renderAtBatBase: im Spielbogen faktisch nie der echte result-Wert
+      // ("reached on error" wird als OUT+isError kodiert, der isError-Guard oben fängt
+      // das schon ab) — Case bleibt defensiv, falls doch mal isError fehlt.
+      return 1
     case 'OUT':
       // FORCE_OUT/TAG_OUT can mean a runner was out while the batter reached 1B (FC).
       // We check baseStateAfter: if the batter ended up on a base, mark reach accordingly.
@@ -379,8 +391,16 @@ function reachedBaseForAtBat(ab: SpielbogenAtBatResponse): number {
         if (ab.baseStateAfter.thirdSlotId === ab.slotId) return 3
       }
       return 0
+    default: {
+      // Dritte Exhaustiveness-Absicherung im File (siehe renderAtBatBase/renderOut): ein
+      // neuer AtBatResult-Wert ohne eigenen Case bricht den Build, statt wie INSIDE_PARK_HR
+      // hier unbemerkt auf 0 Basen zu fallen (nur durch computeScoredSet's `scored ? 4 : …`
+      // maskiert — ohne das wäre der Diamond gefüllt, aber der Fortschritt-Balken auf 0).
+      const unhandled: never = ab.result
+      console.error('reachedBaseForAtBat: unbehandelter AtBatResult', unhandled)
+      return 0
+    }
   }
-  return 0
 }
 
 function renderAtBat(ab: SpielbogenAtBatResponse): { label: string } {
