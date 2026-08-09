@@ -65,6 +65,12 @@ User arbeitet primär an **Spielbogen** weiter. Beide existieren parallel.
 - **Stealing-Arrows** zwischen Bases (gestrichelt). Farben: STOLEN_BASE=rot `#dc2626`, CS/OUT_ON_PLAY=dunkelrot `#7c2d12`, WP/PB=orange `#f97316`.
 - **Ein Label pro Base-Seite** (`sideAnnotations`): Steal-Kürzel (SB/CS/OUT/WP/PB) und Advance-×N teilen dieselbe Koordinate. Ein Base-Hop hat genau eine Ursache, daher gewinnt das explizite Stealing-Event; mehrere Steals auf derselben Seite ergeben ein Label. WP/PB bekommen **nie** ×N — der Runner kam durch den Pitch vor, nicht durch den Schlag. Vorher rendeten DiamondCell und PDF zwei Text-Layer auf identische Punkte → unlesbarer Überlagerungs-Mush.
 - **AO** = Automatisches Out: leerer Diamond, Label "AO", normaler Out-Index.
+- **IHR** = Inside-the-Park Homerun (`AtBatResult.INSIDE_PARK_HR`). Kein etabliertes RFL-Kürzel
+  gefunden (`displayNameDe()` nutzt den vollen Begriff "Park-HR", zu lang für die Cell) — IHR
+  gewählt, kurz und eindeutig von HR unterscheidbar. `renderAtBatBase`/`computeScoredSet`
+  (`bogenSheetRenderer.ts`) behandeln IHR wie HOMERUN: gefüllter Diamond, Batter selbst zählt
+  als gescort (kein "disappeared runner" wie andere Base-Runner). Fehlte dieser Case, fiel das
+  Label auf den generischen Switch-Fallback zurück und druckte "OUT" für einen Homerun.
 - **Layout responsive:** mobile fix-pixel Breiten, `lg:` table-fixed mit Inning-Cells ohne Width → expanden auf Viewport-Breite.
 
 ## Live-Feed

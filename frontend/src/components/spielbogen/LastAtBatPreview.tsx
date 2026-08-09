@@ -17,6 +17,7 @@ const KLARTEXT: Record<string, string> = {
   '2B': 'Double',
   '3B': 'Triple',
   'HR': 'Homerun!',
+  'IHR': 'Inside-the-Park Homerun!',
   'BB': 'Walk (Base on Balls)',
   'HP': 'Hit by Pitch (getroffen)',
   'K': 'Strikeout',

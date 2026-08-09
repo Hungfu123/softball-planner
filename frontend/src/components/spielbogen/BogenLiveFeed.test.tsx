@@ -92,6 +92,34 @@ describe('BogenLiveFeed', () => {
     expect(screen.queryByText('3 : 1')).not.toBeInTheDocument()
   })
 
+  it('beschriftet den Zwischenstand mit den vollen Teamnamen, weil das Scoreboard längst weggescrollt ist', () => {
+    render(<BogenLiveFeed {...base} />)
+    const divider = within(screen.getByTestId('divider-half-2-HOME'))
+    expect(divider.getByText('Allstar')).toBeInTheDocument()
+    expect(divider.getByText('1 : 3')).toBeInTheDocument()
+    expect(divider.getByText('Köln Abbots')).toBeInTheDocument()
+  })
+
+  it('ordnet die Teamnamen im Divider wie im Scoreboard — Away links vom Score, Home rechts', () => {
+    render(<BogenLiveFeed {...base} />)
+    const divider = screen.getByTestId('divider-half-2-HOME')
+    const names = within(divider).getAllByText(/^(Allstar|Köln Abbots)$/).map(el => el.textContent)
+    expect(names).toEqual(['Allstar', 'Köln Abbots'])
+  })
+
+  it('beschriftet Top/Btm als Wort statt als Dreieck, damit es nicht wie ein Fold-Control wirkt', () => {
+    render(<BogenLiveFeed {...base} />)
+    // Scoreboard-Meta-Zeile: currentSide HOME → Btm
+    const scoreboard = within(screen.getByTestId('scoreboard'))
+    expect(scoreboard.getByText(/↓ Btm/)).toBeInTheDocument()
+    expect(scoreboard.queryByText(/▲|▼/)).not.toBeInTheDocument()
+    // Gruppenheader: erste Gruppe ist HOME → Btm, zweite ist AWAY → Top
+    expect(screen.getByText('↓ Btm')).toBeInTheDocument()
+    expect(screen.getByText('↑ Top')).toBeInTheDocument()
+    expect(screen.queryByText('▲')).not.toBeInTheDocument()
+    expect(screen.queryByText('▼')).not.toBeInTheDocument()
+  })
+
   it('springt beim Klick auf eine gespielte Inning-Zelle', async () => {
     const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
 
