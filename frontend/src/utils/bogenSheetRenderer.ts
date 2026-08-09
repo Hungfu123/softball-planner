@@ -397,13 +397,31 @@ function renderAtBatBase(ab: SpielbogenAtBatResponse): string {
     case 'DOUBLE': return '2B'
     case 'TRIPLE': return '3B'
     case 'HOMERUN': return 'HR'
+    // Kein etablierten Kürzel in docs/SPIELBOGEN.md oder AtBatResult.displayNameDe()
+    // ("Park-HR") gefunden — IHR gewählt: kurz genug für die Cell, unterscheidet sich
+    // eindeutig von HR, ohne dass die Notation eine neue Zeichenklasse einführt.
+    case 'INSIDE_PARK_HR': return 'IHR'
     case 'WALK': return 'BB'
     case 'HIT_BY_PITCH': return 'HP'
     case 'STRIKEOUT': return 'K'
     case 'OUT': return renderOut(ab)
     case 'AUTOMATIC_OUT': return 'AO'
+    case 'REACHED_ON_ERROR':
+      // Im Spielbogen nie der tatsächliche result-Wert: "reached on error" wird dort als
+      // result=OUT + isError=true kodiert (SpielbogenPage.tsx), der isError-Guard oben fängt
+      // das schon ab. Das Backend erzwingt diese Kopplung aber nicht (isError=true verlangt
+      // errorPosition, aber nichts verlangt isError bei result=REACHED_ON_ERROR) — Case bleibt
+      // defensiv für den Fall, dass doch mal jemand diesen Wert direkt schickt.
+      return 'E'
+    default: {
+      // Exhaustiveness-Check: ein neuer AtBatResult-Wert ohne eigenen Case bricht den Build,
+      // statt wie INSIDE_PARK_HR unbemerkt hier durchzufallen. Kommt zur Laufzeit trotzdem ein
+      // unbekannter String an (Backend/Frontend-Enum-Drift), lieber sichtbar falsch drucken als
+      // ein gültig aussehendes Label wie "OUT" — genau das hat den Bug hier verschleiert.
+      const unhandled: never = ab.result
+      return `?${unhandled}`
+    }
   }
-  return 'OUT'
 }
 
 function renderOut(ab: SpielbogenAtBatResponse): string {
@@ -435,8 +453,13 @@ function renderOut(ab: SpielbogenAtBatResponse): string {
     case 'TRIPLE_PLAY': return 'TP'
     case 'FORCE_OUT': return 'FO'
     case 'TAG_OUT': return 'TO'
+    default: {
+      // Gleiche Absicherung wie renderAtBatBase: neuer OutType ohne Case bricht den Build,
+      // statt hier still auf "OUT" zu fallen.
+      const unhandled: never = ab.outType
+      return `?${unhandled}`
+    }
   }
-  return 'OUT'
 }
 
 /**
@@ -483,7 +506,12 @@ function computeScoredSet(sortedAtBats: SpielbogenAtBatResponse[]): Set<string> 
       const currSet = new Set(basesInOrder(ab.baseStateAfter))
       const disappeared = prevRunners.filter(s => !currSet.has(s))
       const runs = ab.runsScored ?? 0
-      if (ab.result === 'HOMERUN') {
+      // Jeder Homerun (Park oder Inside-the-Park) läuft die Bases komplett durch und
+      // scort den Batter selbst — der ist aber kein "prior runner", der laut Diff aus dem
+      // Base-State verschwindet, deshalb braucht der Batter hier ein explizites Add statt
+      // sich auf die disappeared-Heuristik unten zu verlassen (die nur andere Runner fängt).
+      // Fehlte INSIDE_PARK_HR hier, blieb der Diamond der Batterin trotz erzieltem Run leer.
+      if (ab.result === 'HOMERUN' || ab.result === 'INSIDE_PARK_HR') {
         scored.add(`${ab.side}|${ab.slotId}|${ab.inning}`)
         for (const sid of disappeared) {
           scored.add(`${ab.side}|${sid}|${ab.inning}`)
