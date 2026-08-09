@@ -247,6 +247,47 @@ describe('renderCells — WP/PB bekommen kein ×N', () => {
   })
 })
 
+describe('renderCells — INSIDE_PARK_HR', () => {
+  it('rendert eigenes Label "IHR", nicht "OUT" (Bug: fiel bisher durch den Switch-Fallback)', () => {
+    const iphr = ab({ id: 1, slotId: 4, sequence: 1, result: 'INSIDE_PARK_HR', runsScored: 1, rbi: 1 })
+    const cells = renderCells([iphr], [])
+    const cell = cells.get('HOME|4|1')!
+    expect(cell.primaryLabel).toBe('IHR')
+    expect(cell.primaryLabel).not.toBe('OUT')
+    expect(cell.runScored).toBe(true)
+  })
+
+  it('scort auch die Batterin, wenn schon ein Runner auf Base war (Spielbogen 143, Mitchi Inning 2)', () => {
+    // Reproduziert die echte Produktions-Cell: Runner auf 2B (slot 6) vor dem AB, danach
+    // Bases leer. computeScoredSet special-cased bisher nur 'HOMERUN' fürs "Batter selbst
+    // ist kein disappeared runner" — INSIDE_PARK_HR fiel durch denselben Fallback wie das
+    // Label und blieb trotz runsScored=1 ein leerer Diamond.
+    const double = ab({
+      id: 1, slotId: 6, sequence: 1, result: 'DOUBLE', runsScored: 0,
+      baseStateAfter: { firstSlotId: null, secondSlotId: 6, thirdSlotId: null },
+    })
+    const iphr = ab({
+      id: 2, slotId: 7, sequence: 2, result: 'INSIDE_PARK_HR', runsScored: 1, rbi: 1,
+      baseStateAfter: { firstSlotId: null, secondSlotId: null, thirdSlotId: null },
+    })
+    const cells = renderCells([double, iphr], [])
+    expect(cells.get('HOME|7|1')!.runScored).toBe(true) // die Batterin selbst
+    expect(cells.get('HOME|6|1')!.runScored).toBe(true) // Runner, der mit heimkam
+  })
+})
+
+describe('renderCells — unbekannter AtBatResult-Wert', () => {
+  it('rendert sichtbar falsch statt stillschweigend "OUT" (simuliert Backend/Frontend-Enum-Drift)', () => {
+    // `as never` umgeht die TS-Exhaustiveness bewusst — genau der Fall, den die Laufzeit-
+    // Absicherung in renderAtBatBase abdecken muss: ein String, den der Compiler nicht kennt.
+    const future = ab({ id: 1, slotId: 4, sequence: 1, result: 'SOME_FUTURE_RESULT' as never })
+    const cells = renderCells([future], [])
+    const cell = cells.get('HOME|4|1')!
+    expect(cell.primaryLabel).not.toBe('OUT')
+    expect(cell.primaryLabel).toBe('?SOME_FUTURE_RESULT')
+  })
+})
+
 describe('renderCells — Automatisches Out', () => {
   it('AUTOMATIC_OUT rendert "AO", bleibt auf reachedBase 0 und zählt als Out', () => {
     const ao = ab({ id: 1, slotId: 4, sequence: 1, result: 'AUTOMATIC_OUT' })
