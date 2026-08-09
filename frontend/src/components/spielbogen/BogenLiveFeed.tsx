@@ -54,7 +54,7 @@ export function BogenLiveFeed({
         </div>
         <div className="mt-2.5 pt-2.5 border-t border-navy-600 flex items-center gap-3 font-display text-xs uppercase tracking-widest text-navy-100">
           <span className="text-cream-50 text-sm">
-            {currentSide === 'AWAY' ? '▲' : '▼'} {currentInning}. Inning
+            {currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'} {currentInning}. Inning
           </span>
           {status === 'DONE' && <span className="text-cream-50">Endstand</span>}
           {currentBatterName && <span className="ml-auto">{currentBatterName} am Schlag</span>}
@@ -121,8 +121,8 @@ export function BogenLiveFeed({
 
       {feed.map((half, index) => (
         <div key={halfInningId(half.inning, half.side)} id={halfInningId(half.inning, half.side)}>
-          <div className="sticky top-0 flex items-center gap-2 px-5 pt-2 pb-1.5 bg-cream-100 border-b border-cream-200 font-display text-xs uppercase tracking-widest text-navy-700">
-            <span className="text-softball-red-600">{half.side === 'AWAY' ? '▲' : '▼'}</span>
+          <div className="sticky top-0 z-10 flex items-center gap-2 px-5 pt-2 pb-1.5 bg-cream-100 border-b border-cream-200 font-display text-sm font-bold uppercase tracking-wide text-navy-900">
+            <span className="text-softball-red-600">{half.side === 'AWAY' ? '↑ Top' : '↓ Btm'}</span>
             {half.inning}. Inning — {half.side === 'HOME' ? homeTeamName : awayTeamName}
             {index === 0 && status === 'LIVE' && (
               <span className="ml-auto bg-softball-red-600 text-white text-[9px] tracking-widest px-2 py-0.5 rounded-full">LIVE</span>
@@ -151,11 +151,23 @@ export function BogenLiveFeed({
             </div>
           ))}
 
-          <div className="flex items-center gap-2.5 px-5 py-1.5 bg-cream-200 font-display text-xs tracking-widest text-gray-600">
-            <span className="flex-1 h-px bg-cream-300" />
-            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore */}
-            <b className="text-navy-800 text-[13px]">{half.scoreAfter.away} : {half.scoreAfter.home}</b>
-            <span className="flex-1 h-px bg-cream-300" />
+          <div
+            data-testid={`divider-${halfInningId(half.inning, half.side)}`}
+            className="flex items-center gap-2 px-5 py-1.5 bg-cream-200 font-display"
+          >
+            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Namen sind
+                Kontext, nicht Inhalt, aber ein abgeschnittener Name verwirrt mehr, als er
+                hilft — also nie kürzen: bei zu wenig Platz bricht die Zeile um, statt den
+                Namen zu clippen. Die Zahl bleibt fett und mittig, ein- wie zweizeilig. */}
+            <span className="flex-1 min-w-0 break-words text-right text-[11px] tracking-wide text-gray-500">
+              {awayTeamName}
+            </span>
+            <b className="shrink-0 text-navy-900 text-sm font-extrabold tabular-nums">
+              {half.scoreAfter.away} : {half.scoreAfter.home}
+            </b>
+            <span className="flex-1 min-w-0 break-words text-left text-[11px] tracking-wide text-gray-500">
+              {homeTeamName}
+            </span>
           </div>
         </div>
       ))}

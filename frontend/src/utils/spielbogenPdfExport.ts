@@ -182,6 +182,16 @@ function drawSheet(
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
 
+  // "Wurde dieses Inning gespielt?" — dieselbe Quelle wie bogenFeed.ts (buildFeed):
+  // At-Bats + Stealing-Events der Seite, NICHT der inningRuns-Key. Ein torloses
+  // gespieltes Inning hat auch keinen inningRuns-Key, muss aber trotzdem "0" zeigen;
+  // ein wegen Game-Ende nie gespieltes Inning (z.B. Heim gewinnt vor der letzten
+  // Unterseite) darf dagegen nicht als "0" erscheinen.
+  const playedInnings = new Set<number>([
+    ...atBats.map(a => a.inning),
+    ...stealings.filter(s => s.side === side).map(s => s.inning),
+  ])
+
   const cellMap = renderCells(atBats, stealings, runnerAdvances ?? [], lineup)
   const sorted = [...lineup].sort((a, b) => a.battingOrder - b.battingOrder)
   const sideChanges = positionChanges.filter(pc => pc.side === side)
@@ -262,6 +272,7 @@ function drawSheet(
   doc.setTextColor(0, 0, 0)
   doc.text('erzielte Runs', x + 2, lastRowY + 4)
   for (let inn = 1; inn <= numInnings; inn++) {
+    if (!playedInnings.has(inn)) continue // nicht gespieltes Inning: Zelle bleibt leer, keine "0"
     const runs = inningRuns[inn]
     const value = runs ? runs[sideKey] : 0
     doc.setTextColor(...COLOR_NAVY)
@@ -341,6 +352,55 @@ interface CellRenderInput {
   advanceLabels?: AdvanceLabel[]
 }
 
+/**
+ * Primary-Label kann durch langen Fielder-Chain + DP/TP-Suffix ("4-6-3 DP", "FC 6-4-3")
+ * über die alte feste 5/6-Zeichen-Grenze wachsen — die harte `.slice()` kappte bisher
+ * unbemerkt Zeichen ab (z.B. verschwand "DP" komplett, siehe Anna Hoffmann Inning 5 in
+ * Spielbogen 143: "4-6-3 DP" wurde zu "4-6-3", ein Double Play war optisch nicht mehr von
+ * einem einfachen Groundout mit 3 Assists zu unterscheiden). Fix: Schriftgröße mit der
+ * Länge skalieren statt stillschweigend zu kappen — der Cell-Innenraum bleibt eng, aber
+ * bis zu einer realistischen Obergrenze geht nichts mehr verloren.
+ */
+function primaryLabelFit(label: string, maxLen: number): { text: string; fontSize: number } {
+  const text = label.slice(0, maxLen)
+  if (text.length <= 5) return { text, fontSize: 5.5 }
+  if (text.length <= 8) return { text, fontSize: 4.5 }
+  return { text, fontSize: 3.8 }
+}
+
+/**
+ * Wie primaryLabelFit, aber für die zwei Corner-Labels im Bat-Around-Fall
+ * (isMulti, kein Run): erstes und letztes AB-Label teilen sich dieselbe Cell wie
+ * die Diamond-Grafik — bat-around ist in großen Innings der Normalfall, nicht die
+ * Ausnahme, trotzdem kappte `.slice(0, 5)` bisher hart (z.B. "4-6-3 DP" → "4-6-3",
+ * DP-Suffix unsichtbar). Fix wie bei primaryLabelFit: Schriftgröße skaliert statt
+ * zu kappen. Die Stufen liegen eine Nummer niedriger, weil pro Label weniger Platz
+ * bleibt als beim Single-AB-Fall (zwei Labels + Diamond in derselben Cell).
+ */
+function multiAbLabelFit(label: string, maxLen: number): { text: string; fontSize: number } {
+  const text = label.slice(0, maxLen)
+  if (text.length <= 4) return { text, fontSize: 5 }
+  if (text.length <= 6) return { text, fontSize: 4.2 }
+  if (text.length <= 8) return { text, fontSize: 3.6 }
+  return { text, fontSize: 3.2 }
+}
+
+/**
+ * Dritte Variante derselben Kappungs-Falle: bat-around-Cell MIT Run (filled diamond) —
+ * beide AB-Labels landen als ein zentrierter String unter dem Diamond statt an zwei
+ * Ecken. `.slice(0, 12)` kappte den kombinierten String hart, z.B. "GO 4-6-3 DP" (11
+ * Zeichen, passt) vs. "2B F9-6-4-3 DP" (13 Zeichen, DP verschwand). Gleicher Fix:
+ * Schriftgröße skaliert statt zu kappen. maxLen 23 = realistische Obergrenze für zwei
+ * Labels (fielderChain ≤ 4 Einträge, längstes Label "F9-6-4-3 TP" = 11 Zeichen, ×2 + Space).
+ */
+function filledMultiLabelFit(joined: string, maxLen: number): { text: string; fontSize: number } {
+  const text = joined.slice(0, maxLen)
+  if (text.length <= 6) return { text, fontSize: 5 }
+  if (text.length <= 10) return { text, fontSize: 4.2 }
+  if (text.length <= 16) return { text, fontSize: 3.6 }
+  return { text, fontSize: 3 }
+}
+
 function drawDiamondCell(
   doc: jsPDF,
   cellX: number,
@@ -415,29 +475,37 @@ function drawDiamondCell(
       doc.setTextColor(...COLOR_NAVY)
       const baseY = home.y + 2.5
       if (isMulti && cell.labels.length >= 2) {
-        doc.setFontSize(cell.labels.length >= 3 ? 4 : 5)
-        doc.text(cell.labels.join(' ').slice(0, 12), cx, baseY, { align: 'center' })
+        const { text, fontSize } = filledMultiLabelFit(cell.labels.join(' '), 23)
+        doc.setFontSize(fontSize)
+        doc.text(text, cx, baseY, { align: 'center' })
       } else {
-        doc.setFontSize(5.5)
-        doc.text(cell.primaryLabel.slice(0, 5), cx, baseY, { align: 'center' })
+        const { text, fontSize } = primaryLabelFit(cell.primaryLabel, 10)
+        doc.setFontSize(fontSize)
+        doc.text(text, cx, baseY, { align: 'center' })
       }
     } else if (isMulti && cell.labels.length >= 2) {
-      // 1. AB oben-links Triangle, neueste AB unten-rechts Triangle — größere Schrift für Lesbarkeit
+      // 1. AB oben-links, neueste AB unten-rechts — je Corner eigene Schriftgröße,
+      // damit z.B. "4-6-3 DP" das DP-Suffix behält statt hart gekappt zu werden.
       doc.setTextColor(...COLOR_NAVY)
-      doc.setFontSize(5.5)
       const firstLbl = cell.labels[cell.labels.length - 2] ?? ''
       const lastLbl = cell.labels[cell.labels.length - 1] ?? ''
-      doc.text(firstLbl.slice(0, 5), cellX + 2, cellY + 6.5)
-      doc.text(lastLbl.slice(0, 5), cellX + cellW - 2, cellY + cellH - 2, { align: 'right' })
+      const first = multiAbLabelFit(firstLbl, 11)
+      doc.setFontSize(first.fontSize)
+      doc.text(first.text, cellX + 2, cellY + 6.5)
+      const last = multiAbLabelFit(lastLbl, 11)
+      doc.setFontSize(last.fontSize)
+      doc.text(last.text, cellX + cellW - 2, cellY + cellH - 2, { align: 'right' })
     } else {
-      const labels = cell.labels.length > 1 ? cell.labels.slice(-2) : [cell.primaryLabel]
+      // War früher ein `labels.length > 1`-Zweig mit eigenem `.slice(0, 6)` (vierte Variante
+      // derselben Kappungsfalle) — tot: `labels.length === abCount` ist ein Invariant, das
+      // `renderCells` überall einhält (jede Stelle, die `abCount` erhöht, pusht im selben
+      // Schritt auf `labels`). Dieser `else`-Zweig läuft nur, wenn `isMulti` (= abCount >= 2)
+      // false ist, also abCount === 1 === labels.length — der `> 1`-Fall war unerreichbar.
       doc.setTextColor(...COLOR_NAVY)
-      const fontSize = labels.length > 1 ? 4.5 : 5.5
-      doc.setFontSize(fontSize)
       const baseY = home.y + 2.5
-      labels.forEach((lbl, i) => {
-        doc.text(lbl.slice(0, 6), cx, baseY + i * (fontSize - 1), { align: 'center' })
-      })
+      const { text, fontSize } = primaryLabelFit(cell.primaryLabel, 10)
+      doc.setFontSize(fontSize)
+      doc.text(text, cx, baseY, { align: 'center' })
     }
     doc.setTextColor(0, 0, 0)
   }
