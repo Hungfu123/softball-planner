@@ -93,6 +93,22 @@ class GameClockActionsIntegrationTest {
             .andExpect(status().isBadRequest());
     }
 
+    // Regression fuer Fix-Runde 1: die Uhr eines beendeten Spiels darf beim Pausieren nicht die
+    // Zeit seit Spielende mitzaehlen — sie muss an endedAt einfrieren, exakt wie beim Lesepfad
+    // (GameClockCalculator.compute). Ohne den Deckel wuerde bankElapsed "jetzt - runningSince"
+    // buchen, also die volle Stunde seit Spielende statt der 100s bis zum Spielende.
+    @Test
+    void pause_afterGameEnded_banksElapsedOnlyUntilEndedAt_notUntilNow() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 3700); // Uhr laeuft seit 3700s
+        endGameAt(gameId, 3600); // Spiel endete vor 3600s -> 100s liefen bis dahin
+
+        final int elapsed = pauseClock(gameId);
+        assertThat(elapsed).isBetween(100, 105);
+        assertThat(elapsed).isLessThan(3700);
+    }
+
     @Test
     void resume_continuesWithoutLosingAccumulated_resumeWithoutStartRejected() throws Exception {
         final Long freshGameId = createGame();
@@ -214,6 +230,13 @@ class GameClockActionsIntegrationTest {
     private void rewindRunningSince(final Long gameId, final long seconds) {
         final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
         entity.setTimerRunningSince(Instant.now().minusSeconds(seconds));
+        gameRepository.save(entity);
+    }
+
+    /** Setzt {@code endedAt} in die Vergangenheit, um ein beendetes Spiel zu simulieren. */
+    private void endGameAt(final Long gameId, final long secondsAgo) {
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        entity.setEndedAt(Instant.now().minusSeconds(secondsAgo));
         gameRepository.save(entity);
     }
 }

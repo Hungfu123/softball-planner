@@ -8,10 +8,11 @@ import com.softball.domain.service.GameClockCalculator;
 import com.softball.domain.service.GameClockCalculator.ClockState;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -27,6 +28,8 @@ import java.time.Instant;
  */
 @Service
 public class GameClockService {
+
+    private static final Logger log = LoggerFactory.getLogger(GameClockService.class);
 
     private final GameRepository gameRepository;
     private final SpielbogenRepository spielbogenRepository;
@@ -50,7 +53,9 @@ public class GameClockService {
         game.setTimerRunningSince(now);
         game.setTimeLimitMinutes(limitMinutes);
         gameRepository.save(game);
-        return clockState(game, now);
+        final ClockState state = clockState(game, now);
+        log.info("Game {} Uhr gestartet: Limit={}", gameId, limitMinutes != null ? limitMinutes + "min" : "keins");
+        return state;
     }
 
     @Transactional
@@ -58,10 +63,13 @@ public class GameClockService {
         final Game game = findGame(gameId);
         final Instant runningSince = rejectIfNotRunning(game.getTimerRunningSince());
         final Instant now = Instant.now();
-        game.setTimerAccumulatedSeconds(bankElapsed(game.getTimerAccumulatedSeconds(), runningSince, now));
+        game.setTimerAccumulatedSeconds(
+            bankElapsed(runningSince, game.getTimerAccumulatedSeconds(), game.getEndedAt(), now));
         game.setTimerRunningSince(null);
         gameRepository.save(game);
-        return clockState(game, now);
+        final ClockState state = clockState(game, now);
+        log.info("Game {} Uhr pausiert: {}s angesammelt", gameId, state.elapsedSeconds());
+        return state;
     }
 
     @Transactional
@@ -72,7 +80,9 @@ public class GameClockService {
         final Instant now = Instant.now();
         game.setTimerRunningSince(now);
         gameRepository.save(game);
-        return clockState(game, now);
+        final ClockState state = clockState(game, now);
+        log.info("Game {} Uhr fortgesetzt: {}s bereits angesammelt", gameId, state.elapsedSeconds());
+        return state;
     }
 
     @Transactional
@@ -81,7 +91,9 @@ public class GameClockService {
         game.setTimerRunningSince(null);
         game.setTimerAccumulatedSeconds(0);
         gameRepository.save(game);
-        return clockState(game, Instant.now());
+        final ClockState state = clockState(game, Instant.now());
+        log.info("Game {} Uhr zurückgesetzt", gameId);
+        return state;
     }
 
     /** Uhr-Zustand eines bereits geladenen Games — für die bestehenden Lese-Endpunkte. */
@@ -109,7 +121,9 @@ public class GameClockService {
         bogen.setTimerRunningSince(now);
         bogen.setTimeLimitMinutes(limitMinutes);
         spielbogenRepository.save(bogen);
-        return clockState(bogen, now);
+        final ClockState state = clockState(bogen, now);
+        log.info("Spielbogen {} Uhr gestartet: Limit={}", bogenId, limitMinutes != null ? limitMinutes + "min" : "keins");
+        return state;
     }
 
     @Transactional
@@ -117,10 +131,13 @@ public class GameClockService {
         final Spielbogen bogen = findBogen(bogenId);
         final Instant runningSince = rejectIfNotRunning(bogen.getTimerRunningSince());
         final Instant now = Instant.now();
-        bogen.setTimerAccumulatedSeconds(bankElapsed(bogen.getTimerAccumulatedSeconds(), runningSince, now));
+        bogen.setTimerAccumulatedSeconds(
+            bankElapsed(runningSince, bogen.getTimerAccumulatedSeconds(), bogen.getEndedAt(), now));
         bogen.setTimerRunningSince(null);
         spielbogenRepository.save(bogen);
-        return clockState(bogen, now);
+        final ClockState state = clockState(bogen, now);
+        log.info("Spielbogen {} Uhr pausiert: {}s angesammelt", bogenId, state.elapsedSeconds());
+        return state;
     }
 
     @Transactional
@@ -131,7 +148,9 @@ public class GameClockService {
         final Instant now = Instant.now();
         bogen.setTimerRunningSince(now);
         spielbogenRepository.save(bogen);
-        return clockState(bogen, now);
+        final ClockState state = clockState(bogen, now);
+        log.info("Spielbogen {} Uhr fortgesetzt: {}s bereits angesammelt", bogenId, state.elapsedSeconds());
+        return state;
     }
 
     @Transactional
@@ -140,7 +159,9 @@ public class GameClockService {
         bogen.setTimerRunningSince(null);
         bogen.setTimerAccumulatedSeconds(0);
         spielbogenRepository.save(bogen);
-        return clockState(bogen, Instant.now());
+        final ClockState state = clockState(bogen, Instant.now());
+        log.info("Spielbogen {} Uhr zurückgesetzt", bogenId);
+        return state;
     }
 
     /** Uhr-Zustand eines bereits geladenen Spielbogens — für die bestehenden Lese-Endpunkte. */
@@ -179,8 +200,14 @@ public class GameClockService {
         }
     }
 
-    private int bankElapsed(final int accumulatedSeconds, final Instant runningSince, final Instant now) {
-        final long delta = Duration.between(runningSince, now).getSeconds();
-        return accumulatedSeconds + (int) Math.max(delta, 0);
+    /**
+     * Bucht die laufende Spanne ins Konto — über den Calculator, nicht handgestrickt, damit ein
+     * beendetes Spiel/Bogen mit noch laufender Uhr an {@code endedAt} deckelt statt an {@code now}.
+     * Sonst würde ein spätes Pause auf ein längst beendetes Spiel die Zeit seit Spielende
+     * mitzählen — genau der Sprung, den die Ableitung in {@link GameClockCalculator} verhindert.
+     */
+    private int bankElapsed(final Instant runningSince, final int accumulatedSeconds,
+                             final Instant endedAt, final Instant now) {
+        return clockCalculator.compute(runningSince, accumulatedSeconds, null, endedAt, now).elapsedSeconds();
     }
 }
