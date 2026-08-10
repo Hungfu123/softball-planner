@@ -1348,7 +1348,15 @@ export function ScoringPage() {
                             const isOut = ab.result === 'STRIKEOUT' || ab.result === 'OUT'
                             const abRuns = ab.runsScored ?? 0
                             return (
-                              <div key={`ab-${ab.id ?? idx}`} className="flex items-center gap-2 px-3 py-1.5">
+                              <div
+                                key={`ab-${ab.id ?? idx}`}
+                                // Run-Zeile: navyfarbener Balken links + dezenter Flaechenton —
+                                // dieselbe Grammatik wie die Steal-Zeilen (farbiger Rand + Tint
+                                // = "hier ist etwas passiert", Farbe sagt was).
+                                className={`flex items-center gap-2 py-1.5 ${
+                                  abRuns > 0 ? 'border-l-2 border-navy-800 bg-navy-50/60 pl-[10px] pr-3' : 'px-3'
+                                }`}
+                              >
                                 <span className="font-display text-[9px] tabular-nums font-bold text-gray-400 w-4 text-right shrink-0">
                                   {order ?? ''}
                                 </span>
