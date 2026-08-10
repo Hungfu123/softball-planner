@@ -1,14 +1,17 @@
 package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.AtBatResponse;
+import com.softball.adapter.dto.ClockStateResponse;
 import com.softball.adapter.dto.InningAdvanceEventResponse;
 import com.softball.adapter.dto.NextInningRequest;
 import com.softball.adapter.dto.RecordAtBatRequest;
 import com.softball.adapter.dto.RecordStealingEventRequest;
 import com.softball.adapter.dto.ScoreboardResponse;
+import com.softball.adapter.dto.StartClockRequest;
 import com.softball.adapter.dto.StealingEventResponse;
 import com.softball.adapter.dto.UndoResultResponse;
 import com.softball.adapter.dto.UpdateBaseStateRequest;
+import com.softball.application.GameClockService;
 import com.softball.application.GameScoringService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,9 +24,11 @@ import java.util.List;
 public class ScoringController {
 
     private final GameScoringService scoringService;
+    private final GameClockService clockService;
 
-    public ScoringController(final GameScoringService scoringService) {
+    public ScoringController(final GameScoringService scoringService, final GameClockService clockService) {
         this.scoringService = scoringService;
+        this.clockService = clockService;
     }
 
     @GetMapping("/{gameId}/atbats")
@@ -102,5 +107,26 @@ public class ScoringController {
     @GetMapping("/{gameId}/scoreboard")
     public ScoreboardResponse getScoreboard(@PathVariable final Long gameId) {
         return scoringService.getScoreboard(gameId);
+    }
+
+    @PostMapping("/{gameId}/clock/start")
+    public ClockStateResponse startClock(@PathVariable final Long gameId,
+                                          @Valid @RequestBody final StartClockRequest request) {
+        return ClockStateResponse.from(clockService.startGameClock(gameId, request.limitMinutes()));
+    }
+
+    @PostMapping("/{gameId}/clock/pause")
+    public ClockStateResponse pauseClock(@PathVariable final Long gameId) {
+        return ClockStateResponse.from(clockService.pauseGameClock(gameId));
+    }
+
+    @PostMapping("/{gameId}/clock/resume")
+    public ClockStateResponse resumeClock(@PathVariable final Long gameId) {
+        return ClockStateResponse.from(clockService.resumeGameClock(gameId));
+    }
+
+    @PostMapping("/{gameId}/clock/reset")
+    public ClockStateResponse resetClock(@PathVariable final Long gameId) {
+        return ClockStateResponse.from(clockService.resetGameClock(gameId));
     }
 }
