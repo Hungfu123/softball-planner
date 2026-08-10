@@ -134,16 +134,31 @@ dort ist nichts zu bearbeiten außer über den Weg unten.
 
 ### Spieler kommt später
 
-Realistischer Fall: die neunte Spielerin trifft im dritten Inning ein.
+Realistischer Fall: die neunte Spielerin trifft im dritten Inning ein. **Die RFL-Ordnung
+erlaubt das** (vom Nutzer bestätigt), der Fall ist also Teil dieser Arbeit.
 
-Vorschlag: der freie Platz wird über den bestehenden Slot-Editor mit einem Namen belegt und
-`vacant` fällt weg. Ab dann schlägt an dieser Position eine Spielerin, die vorher entstandenen
-`AO`-Einträge bleiben stehen — sie sind ja passiert.
+Umgesetzt über den **bestehenden Einwechslungs-Pfad**, nicht über den Slot-Editor. Der Pfad
+passt fast unverändert:
 
-**Das ist die einzige offene Regelfrage in diesem Entwurf**, und sie gehört dem Nutzer:
-erlaubt die RFL-Ordnung, einen freien Platz mitten im Spiel zu besetzen? Falls nicht, muss der
-Slot-Editor das verweigern, statt es zuzulassen. Bis das geklärt ist, wird der Fall **nicht**
-umgesetzt — ein `vacant`-Slot bleibt für das ganze Spiel frei.
+- `SpielbogenScoringService.recordSubstitution` verlangt nur `playerInName` als nicht leer
+  (Zeile 260) und übernimmt `playerOutName` aus dem aktuellen Slot-Namen. Bei einem freien
+  Platz ist der leer — das ist zulässig, weil `playerOutName` nicht validiert wird.
+- Der Service setzt anschließend `slot.setName(playerInName)` (Zeile 273). Ergänzt werden muss
+  nur: `vacant` auf `false` setzen.
+- Der Bogen rendert Einwechslungen als `„{playerInName} ab {inning}."` unter der Zeile
+  (`spielbogenPdfExport.ts:254`). Für den freien Platz entsteht damit von selbst die richtige
+  Darstellung — Markierung oben, darunter der Name mit dem Inning des Eintritts.
+
+Der Slot-Editor bleibt bewusst außen vor. Über ihn würde der Name still ersetzt, ohne Eintrag
+im Bogen und ohne Inning — die Liga sähe nicht, dass und ab wann der Platz besetzt wurde.
+Eine Einwechslung ist genau das richtige Modell: es kommt jemand ins Spiel.
+
+Bereits entstandene `AO`-Einträge bleiben stehen. Sie sind passiert, und die Out-Zählung der
+betroffenen Innings hängt daran.
+
+**Der umgekehrte Weg ist nicht Teil dieser Arbeit:** einen besetzten Platz nachträglich auf
+`vacant` setzen (Spielerin verletzt sich und wird nicht ersetzt). Dafür gibt es das
+automatische Out bereits am besetzten Platz — es braucht keine Änderung der Aufstellung.
 
 ## Nicht Teil dieser Arbeit
 
@@ -165,6 +180,10 @@ umgesetzt — ein `vacant`-Slot bleibt für das ganze Spiel frei.
   eine einseitige Abbildung verliert das Feld beim Speichern still.
 - Integration: Lineup mit freiem Platz setzen, automatisches Out an dieser Position aufnehmen,
   Out-Zählung des Innings prüfen, Undo prüfen.
+- Einwechslung auf einen freien Platz: `playerOutName` bleibt leer, `vacant` fällt auf `false`,
+  der Slot trägt danach den Namen, und ein weiteres automatisches Out an dieser Position ist
+  nicht mehr die einzige Aktion. Die vorher entstandenen `AO`-Einträge bleiben erhalten — das
+  ist die eigentliche Zusicherung des Tests.
 
 **Frontend**
 - `wizardValidation`: acht Namen plus freier Platz ist gültig, acht Namen allein nicht.
