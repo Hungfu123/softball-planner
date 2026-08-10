@@ -100,14 +100,31 @@ Damit ist die angezeigte Zeit unabhängig davon, wie das Gerät eingestellt ist.
 
 ## Randfälle
 
-- **Spiel endet, während die Uhr läuft.** Beim Beenden wird sie mit gestoppt — die verstrichene
-  Zeit friert auf dem Endstand ein. Sonst zählt sie über Nacht weiter und zeigt beim Nachschauen
-  vierzehn Stunden.
-- **Spiel wird wieder geöffnet** (`reopen`). Die Uhr bleibt **pausiert**; wer weiterspielt,
-  startet sie bewusst. Automatisches Weiterlaufen wäre eine Überraschung.
+- **Spiel endet, während die Uhr läuft.** Die Uhr friert ein — **abgeleitet, nicht geschrieben**:
+
+  ```
+  bezugszeit  = endedAt ?? jetzt
+  verstrichen = accumulated + (läuft ? bezugszeit − runningSince : 0)
+  ```
+
+  Damit muss keine der vier Stellen angefasst werden, die `endedAt` setzen (inklusive der zwei
+  Walkoff-Pfade in `SpielbogenScoringService`). Der Grundsatz dieser Arbeit: **die Uhr liest den
+  Spielzustand, sie schreibt nie hinein**, und der Spielablauf schreibt so selten wie möglich in
+  die Uhr.
+
+- **Spiel wird wieder geöffnet** (`reopen`) — der eine Fall, der doch einen Schreibvorgang
+  braucht. Fällt `endedAt` weg, verlöre die Ableitung ihre Obergrenze und würde schlagartig alle
+  Stunden seit Spielende mitzählen; die Anzeige spränge von 93 Minuten auf vierzehn Stunden.
+
+  **Regel:** beim Wiederöffnen wird die Uhr pausiert und die bis dahin gelaufene Zeit gebucht
+  (`accumulated += endedAt − runningSince`, `runningSince = NULL`) — berechenbar, weil `endedAt`
+  in diesem Moment noch gesetzt ist. Drei Aufrufstellen statt vier, und inhaltlich richtig: wer
+  ein Spiel wieder aufmacht, startet die Uhr bewusst neu.
+
 - **Scoring wird zurückgesetzt** (`/reset` beim Spielbogen, `DELETE /scoring` beim Legacy). Die
-  Uhr wird mit zurückgesetzt: `runningSince = NULL`, `accumulated = 0`, Limit bleibt stehen. Ein
-  zurückgesetztes Spiel mit weiterlaufender Uhr wäre widersprüchlich.
+  bestehenden Reset-Pfade werden **nicht angefasst**. Stattdessen bekommt die Uhr eine eigene
+  Zurücksetzen-Aktion. Ein zurückgesetztes Spiel zeigt bis dahin die alte Zeit — sichtbar und
+  vom Nutzer korrigierbar, statt eine weitere Kopplung in bestehenden Code zu ziehen.
 - **Nie gestartet.** Alles bleibt leer, nichts bricht. Die Uhr ist optional — wer sie nicht
   nutzt, merkt nichts von ihr.
 - **Limit gesetzt, Uhr nie gestartet.** Keine Warnung, keine Färbung. Ohne Startzeit gibt es
