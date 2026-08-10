@@ -45,6 +45,9 @@ public class GameRepositoryAdapter implements GameRepository {
                 existing.setThirdBaseCoachRotation(game.getThirdBaseCoachRotation());
                 existing.setFirstBaseCoachRotationReversed(game.isFirstBaseCoachRotationReversed());
                 existing.setThirdBaseCoachRotationReversed(game.isThirdBaseCoachRotationReversed());
+                existing.setTimerRunningSince(game.getTimerRunningSince());
+                existing.setTimerAccumulatedSeconds(game.getTimerAccumulatedSeconds());
+                existing.setTimeLimitMinutes(game.getTimeLimitMinutes());
                 if (game.getOpponentTeam() != null && game.getOpponentTeam().getId() != null) {
                     existing.setOpponentTeam(leagueTeamRepo.getReferenceById(game.getOpponentTeam().getId()));
                 } else {

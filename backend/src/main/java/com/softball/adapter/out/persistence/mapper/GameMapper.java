@@ -26,6 +26,9 @@ public class GameMapper {
         game.setThirdBaseCoachRotation(entity.getThirdBaseCoachRotation());
         game.setFirstBaseCoachRotationReversed(entity.isFirstBaseCoachRotationReversed());
         game.setThirdBaseCoachRotationReversed(entity.isThirdBaseCoachRotationReversed());
+        game.setTimerRunningSince(entity.getTimerRunningSince());
+        game.setTimerAccumulatedSeconds(entity.getTimerAccumulatedSeconds());
+        game.setTimeLimitMinutes(entity.getTimeLimitMinutes());
         if (entity.getGameDay() != null) {
             final com.softball.domain.model.GameDay gd = new com.softball.domain.model.GameDay();
             gd.setId(entity.getGameDay().getId());

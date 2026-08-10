@@ -52,6 +52,18 @@ public class GameEntity {
     @Column(name = "third_base_coach_rotation_reversed", nullable = false)
     private boolean thirdBaseCoachRotationReversed;
 
+    // Spielzeit-Uhr. Pausierbar, deshalb zwei Felder statt eines Startzeitpunkts:
+    // timerAccumulatedSeconds haelt die Zeit vor der laufenden Phase, timerRunningSince den
+    // Beginn der laufenden. NULL = pausiert oder nie gestartet.
+    @Column(name = "timer_running_since")
+    private Instant timerRunningSince;
+
+    @Column(name = "timer_accumulated_seconds", nullable = false)
+    private int timerAccumulatedSeconds;
+
+    @Column(name = "time_limit_minutes")
+    private Integer timeLimitMinutes;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_day_id", nullable = false)
     @JsonIgnore
@@ -101,4 +113,10 @@ public class GameEntity {
     public void setFirstBaseCoachRotationReversed(final boolean v) { this.firstBaseCoachRotationReversed = v; }
     public boolean isThirdBaseCoachRotationReversed() { return thirdBaseCoachRotationReversed; }
     public void setThirdBaseCoachRotationReversed(final boolean v) { this.thirdBaseCoachRotationReversed = v; }
+    public Instant getTimerRunningSince() { return timerRunningSince; }
+    public void setTimerRunningSince(final Instant timerRunningSince) { this.timerRunningSince = timerRunningSince; }
+    public int getTimerAccumulatedSeconds() { return timerAccumulatedSeconds; }
+    public void setTimerAccumulatedSeconds(final int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
+    public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
+    public void setTimeLimitMinutes(final Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
 }

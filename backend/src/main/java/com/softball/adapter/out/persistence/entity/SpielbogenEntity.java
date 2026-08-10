@@ -60,6 +60,18 @@ public class SpielbogenEntity {
     @Column(name = "ended_at")
     private Instant endedAt;
 
+    // Spielzeit-Uhr. Pausierbar, deshalb zwei Felder statt eines Startzeitpunkts:
+    // timerAccumulatedSeconds haelt die Zeit vor der laufenden Phase, timerRunningSince den
+    // Beginn der laufenden. NULL = pausiert oder nie gestartet.
+    @Column(name = "timer_running_since")
+    private Instant timerRunningSince;
+
+    @Column(name = "timer_accumulated_seconds", nullable = false)
+    private int timerAccumulatedSeconds;
+
+    @Column(name = "time_limit_minutes")
+    private Integer timeLimitMinutes;
+
     @OneToMany(mappedBy = "bogen", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<SpielbogenSlotEntity> slots = new ArrayList<>();
@@ -105,6 +117,12 @@ public class SpielbogenEntity {
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public Instant getEndedAt() { return endedAt; }
     public void setEndedAt(Instant endedAt) { this.endedAt = endedAt; }
+    public Instant getTimerRunningSince() { return timerRunningSince; }
+    public void setTimerRunningSince(Instant timerRunningSince) { this.timerRunningSince = timerRunningSince; }
+    public int getTimerAccumulatedSeconds() { return timerAccumulatedSeconds; }
+    public void setTimerAccumulatedSeconds(int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
+    public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
+    public void setTimeLimitMinutes(Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
     public List<SpielbogenSlotEntity> getSlots() { return slots; }
     public void setSlots(List<SpielbogenSlotEntity> slots) { this.slots = slots; }
 }
