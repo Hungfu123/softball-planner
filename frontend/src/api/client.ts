@@ -61,6 +61,7 @@ import type {
   StealingEventResponse,
   RecordStealingEventRequest,
   ScoreboardResponse,
+  ClockStateResponse,
   PlayerBattingStatsResponse,
   SpielbogenResponse,
   SpielbogenLineupResponse,
@@ -462,6 +463,13 @@ export const deleteStealingEvent = (gameId: number, eventId: number) =>
 
 export const getScoreboard = (gameId: number) =>
   request<ScoreboardResponse>(`/games/${gameId}/scoreboard`)
+
+export const startClock = (gameId: number, limitMinutes: number | null) =>
+  request<ClockStateResponse>(`/games/${gameId}/clock/start`, { method: 'POST', body: JSON.stringify({ limitMinutes }) })
+export const pauseClock = (gameId: number) =>
+  request<ClockStateResponse>(`/games/${gameId}/clock/pause`, { method: 'POST' })
+export const resumeClock = (gameId: number) =>
+  request<ClockStateResponse>(`/games/${gameId}/clock/resume`, { method: 'POST' })
 
 export const getGameBattingStats = (gameId: number) =>
   request<PlayerBattingStatsResponse[]>(`/games/${gameId}/batting-stats`)

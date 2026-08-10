@@ -69,6 +69,30 @@ export function useScoring(gameId: number | null) {
     await reload()
   }, [gameId, reload])
 
+  // Uhr-Aktionen: Backend ist die einzige Quelle für elapsedSeconds — nach jeder
+  // Aktion reload(), damit das Scoreboard (und damit scoreboard.clock) den frischen
+  // Serverzustand trägt statt dass die UI ihn aus der Antwort selbst ableitet.
+  const startClock = useCallback(async (limitMinutes: number | null) => {
+    if (gameId == null) throw new Error('Kein Spiel aktiv')
+    const state = await api.startClock(gameId, limitMinutes)
+    await reload()
+    return state
+  }, [gameId, reload])
+
+  const pauseClock = useCallback(async () => {
+    if (gameId == null) throw new Error('Kein Spiel aktiv')
+    const state = await api.pauseClock(gameId)
+    await reload()
+    return state
+  }, [gameId, reload])
+
+  const resumeClock = useCallback(async () => {
+    if (gameId == null) throw new Error('Kein Spiel aktiv')
+    const state = await api.resumeClock(gameId)
+    await reload()
+    return state
+  }, [gameId, reload])
+
   const deleteStealingEvent = useCallback(async (eventId: number) => {
     if (gameId == null) return
     await api.deleteStealingEvent(gameId, eventId)
@@ -87,5 +111,8 @@ export function useScoring(gameId: number | null) {
     recordStealingEvent,
     recordAutomaticOut,
     deleteStealingEvent,
+    startClock,
+    pauseClock,
+    resumeClock,
   }
 }
