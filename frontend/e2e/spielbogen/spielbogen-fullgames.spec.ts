@@ -140,8 +140,9 @@ test.describe('Spielbogen — Full Games + UI Verifikation', () => {
       const awayScore = page.locator('span.text-softball-red-600.tabular-nums').first()
       await expect(homeScore).toHaveText('3', { timeout: 4000 })
       await expect(awayScore).toHaveText('5')
-      // Endstand-Card sichtbar (Game DONE)
-      await expect(page.getByText(/Endstand|Gewinner|Spielende/i).first()).toBeVisible({ timeout: 2000 }).catch(() => {})
+      // Game-End-Card sichtbar (Game DONE) — Heading-Text ist "Spiel beendet" (SpielbogenPage.tsx),
+      // nicht "Endstand"/"Gewinner"/"Spielende" wie ursprünglich hier erwartet.
+      await expect(page.getByRole('heading', { name: /Spiel beendet/i })).toBeVisible({ timeout: 2000 })
     } finally {
       await deleteSpielbogen(bogenId).catch(() => {})
     }
