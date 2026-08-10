@@ -86,6 +86,22 @@ class SpielbogenClockActionsIntegrationTest {
             .andExpect(status().isBadRequest());
     }
 
+    // Regression fuer Fix-Runde 1: die Uhr eines beendeten Bogens darf beim Pausieren nicht die
+    // Zeit seit Spielende mitzaehlen — sie muss an endedAt einfrieren, exakt wie beim Lesepfad
+    // (GameClockCalculator.compute). Ohne den Deckel wuerde bankElapsed "jetzt - runningSince"
+    // buchen, also die volle Stunde seit Spielende statt der 100s bis zum Spielende.
+    @Test
+    void pause_afterBogenEnded_banksElapsedOnlyUntilEndedAt_notUntilNow() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        rewindRunningSince(bogenId, 3700); // Uhr laeuft seit 3700s
+        endBogenAt(bogenId, 3600); // Bogen endete vor 3600s -> 100s liefen bis dahin
+
+        final int elapsed = pauseClock(bogenId);
+        assertThat(elapsed).isBetween(100, 105);
+        assertThat(elapsed).isLessThan(3700);
+    }
+
     @Test
     void resume_continuesWithoutLosingAccumulated_resumeWithoutStartRejected() throws Exception {
         final Long freshBogenId = createBogen();
@@ -205,6 +221,13 @@ class SpielbogenClockActionsIntegrationTest {
     private void rewindRunningSince(final Long bogenId, final long seconds) {
         final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
         entity.setTimerRunningSince(Instant.now().minusSeconds(seconds));
+        spielbogenRepository.save(entity);
+    }
+
+    /** Setzt {@code endedAt} in die Vergangenheit, um einen beendeten Bogen zu simulieren. */
+    private void endBogenAt(final Long bogenId, final long secondsAgo) {
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        entity.setEndedAt(Instant.now().minusSeconds(secondsAgo));
         spielbogenRepository.save(entity);
     }
 }
