@@ -35,6 +35,7 @@ class GameScoringServiceTest {
     @Mock private SubstitutionRepository substitutionRepository;
     @Mock private com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
     @Mock private com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository;
+    @Mock private GameClockService clockService;
 
     @InjectMocks
     private GameScoringService service;
@@ -52,6 +53,10 @@ class GameScoringServiceTest {
         hung = new Player(1L, "Hung", false, 1);
         anne = new Player(2L, "Anne", false, 2);
         khang = new Player(3L, "Khang", false, 3);
+        // Scoreboard liefert seit Task 3 den berechneten Uhr-Zustand mit — fuer diese
+        // Scoring-Tests irrelevant, deshalb neutraler Default (nie gestartet).
+        when(clockService.gameClockState(org.mockito.ArgumentMatchers.any(Game.class))).thenReturn(
+            new com.softball.domain.service.GameClockCalculator.ClockState(0, false, false, null, false));
     }
 
     @Test
