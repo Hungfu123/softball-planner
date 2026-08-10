@@ -397,6 +397,15 @@ export interface RunnerOnBase {
   battingOrder: number | null
 }
 
+/** Berechneter Uhr-Zustand — kommt aus dem Backend, nie aus einem lokalen Timestamp. */
+export interface ClockStateResponse {
+  elapsedSeconds: number
+  running: boolean
+  started: boolean
+  limitMinutes: number | null
+  overLimit: boolean
+}
+
 export interface ScoreboardResponse {
   gameId: number
   scoreUs: number
@@ -409,6 +418,7 @@ export interface ScoreboardResponse {
   currentBatterName: string | null
   currentBatterOrder: number | null
   totalAtBats: number
+  clock: ClockStateResponse
 }
 
 export interface WeatherHourSlot {

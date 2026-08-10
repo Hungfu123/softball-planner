@@ -10,6 +10,7 @@ import { ActionButtons } from './ActionButtons'
 import { CorrectionSheet } from './CorrectionSheet'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { GameClockReadout, GameClockRule } from '@/components/shared/GameClock'
 import * as api from '@/api/client'
 import type { AtBatResult, BaseStateDto, GameDayResponse, LineupEntryResponse, Player, RunnerOnBase, SubstitutionResponse } from '@/types'
 
@@ -84,6 +85,8 @@ export function ScoringPage() {
   // Top (Gegner schlägt zuerst) / Bottom (wir schlagen zuerst). Pro Spiel in localStorage.
   const [battingSide, setBattingSide] = useState<'top' | 'bottom' | null>(null)
   const [showSidePrompt, setShowSidePrompt] = useState(false)
+  const [showClockStartSheet, setShowClockStartSheet] = useState(false)
+  const [clockLimitInput, setClockLimitInput] = useState('')
 
   useEffect(() => {
     if (gameDayId == null) return
@@ -100,7 +103,7 @@ export function ScoringPage() {
   const currentGame = gameDay?.games[gameIndex] ?? null
   const opponentName = currentGame?.opponentTeam?.name ?? 'Gegner'
 
-  const { atBats, stealingEvents, scoreboard, reload, recordAtBat, undo, recordStealingEvent, recordAutomaticOut } = useScoring(currentGame?.id ?? null)
+  const { atBats, stealingEvents, scoreboard, reload, recordAtBat, undo, recordStealingEvent, recordAutomaticOut, startClock, pauseClock, resumeClock } = useScoring(currentGame?.id ?? null)
 
   // Lineup laden für Batter-Preview (nächste 2-3 + Full-Lineup-Sheet)
   useEffect(() => {
@@ -132,6 +135,9 @@ export function ScoringPage() {
   const displayOuts = scoreboard?.outsInCurrentInning ?? 0
   const displayBaseState = scoreboard?.baseState ?? { first: null, second: null, third: null }
   const displayRunners = scoreboard?.runners ?? []
+  // Uhr kommt ausschließlich aus dem Scoreboard — nie aus timerRunningSince/timerAccumulatedSeconds
+  // im Game selbst, sonst würde die UI mit der (potenziell falsch gehenden) Geräteuhr rechnen.
+  const clock = scoreboard?.clock ?? { elapsedSeconds: 0, running: false, started: false, limitMinutes: null, overLimit: false }
   // Diamond-Freeze: während CorrectionSheet (hit-auto-getriggert) offen ist, zeigt
   // Diamond preAB-State — Animation erst nach Close (einmalig vom alten zum korrigierten State).
   const preAbBaseState = useMemo(() => ({
@@ -620,6 +626,46 @@ export function ScoringPage() {
     }
   }
 
+  // Tippen auf die Uhr: noch nie gestartet → Start-Dialog; sonst pausiert/setzt fort.
+  const handleClockPress = () => {
+    if (!clock.started) {
+      setClockLimitInput('')
+      setShowClockStartSheet(true)
+      return
+    }
+    if (clock.running) {
+      void handlePauseClock()
+    } else {
+      void handleResumeClock()
+    }
+  }
+
+  const handleStartClock = async (limitMinutes: number | null) => {
+    try {
+      await startClock(limitMinutes)
+      setShowClockStartSheet(false)
+      setClockLimitInput('')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handlePauseClock = async () => {
+    try {
+      await pauseClock()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleResumeClock = async () => {
+    try {
+      await resumeClock()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const handleReset = async () => {
     if (!currentGame) return
     setShowResetConfirm(false)
@@ -699,7 +745,7 @@ export function ScoringPage() {
       </header>
 
       {/* Live-State-Strip — Navy, direkt unter Header (1 Navy-Block oben) */}
-      <div className="bg-navy-900 text-white px-4 py-2 flex items-center justify-between border-b-[3px] border-softball-red-600">
+      <div className="bg-navy-900 text-white px-4 py-2 flex items-center gap-2">
         <div className="flex items-center gap-2.5">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white">Inning</span>
           <span className="font-display text-2xl font-extrabold leading-none">{displayInning}</span>
@@ -713,6 +759,15 @@ export function ScoringPage() {
               {battingSide === 'top' ? '↑ Top' : '↓ Btm'}
             </button>
           )}
+        </div>
+        <div className="flex-1 flex justify-center">
+          <GameClockReadout
+            elapsedSeconds={clock.elapsedSeconds}
+            limitMinutes={clock.limitMinutes}
+            running={clock.running}
+            started={clock.started}
+            onPress={handleClockPress}
+          />
         </div>
         <button
           onClick={() => { if (!halfInningOver) setShowAutoOutConfirm(true) }}
@@ -734,6 +789,12 @@ export function ScoringPage() {
           </span>
         </button>
       </div>
+      <GameClockRule
+        elapsedSeconds={clock.elapsedSeconds}
+        limitMinutes={clock.limitMinutes}
+        running={clock.running}
+        started={clock.started}
+      />
 
       {/* Score-Band — Cream, kompakt + zentriert (Reference) — direkt nach Navy für klare Trennung */}
       <div className="bg-cream-50 border-b border-cream-300 px-4 py-2.5">
@@ -2500,6 +2561,59 @@ export function ScoringPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Uhr-Start-Sheet: Schnellwahl 50/90 min, freie Eingabe, ohne Limit */}
+      <ResponsiveSheet
+        open={showClockStartSheet}
+        onClose={() => setShowClockStartSheet(false)}
+        title="Uhr starten"
+        maxWidth="sm"
+      >
+        <div className="px-4 pt-4 pb-4 space-y-3">
+          <p className="text-xs text-gray-500 text-center">Zeitlimit festlegen — optional</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => handleStartClock(50)}
+              className="font-display h-14 rounded-xl bg-navy-800 hover:bg-navy-900 text-white font-extrabold text-base tracking-wide cursor-pointer"
+            >
+              50 min
+            </button>
+            <button
+              onClick={() => handleStartClock(90)}
+              className="font-display h-14 rounded-xl bg-navy-800 hover:bg-navy-900 text-white font-extrabold text-base tracking-wide cursor-pointer"
+            >
+              90 min
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              value={clockLimitInput}
+              onChange={e => setClockLimitInput(e.target.value)}
+              placeholder="eigenes Limit (min)"
+              className="flex-1 px-3 py-2 border border-cream-300 rounded-lg text-center font-bold text-base text-gray-900 bg-white outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-100"
+            />
+            <button
+              onClick={() => {
+                const parsed = Number(clockLimitInput)
+                if (!Number.isNaN(parsed) && parsed >= 1) handleStartClock(parsed)
+              }}
+              disabled={clockLimitInput.trim() === '' || Number.isNaN(Number(clockLimitInput)) || Number(clockLimitInput) < 1}
+              className="px-4 py-2 rounded-lg bg-navy-800 hover:bg-navy-900 text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              Start
+            </button>
+          </div>
+          <button
+            onClick={() => handleStartClock(null)}
+            className="w-full h-11 rounded-xl border border-cream-300 text-gray-600 font-medium cursor-pointer hover:bg-cream-50"
+          >
+            Ohne Limit
+          </button>
+        </div>
+      </ResponsiveSheet>
 
       {/* Manueller Advance: Runner-Stranding Warnung */}
       {pendingAdvanceConfirm && (
