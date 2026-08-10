@@ -15,7 +15,8 @@ public record BogenSheetResponse(
     List<SpielbogenRunnerAdvanceResponse> runnerAdvances,
     Map<Integer, InningRuns> inningRuns,
     TeamTotals homeTotals,
-    TeamTotals awayTotals
+    TeamTotals awayTotals,
+    ClockStateResponse clock
 ) {
     public record InningRuns(int home, int away) {}
     public record TeamTotals(int runs, int hits, int errors) {}

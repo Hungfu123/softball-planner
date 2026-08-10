@@ -2,6 +2,7 @@ package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.*;
 import com.softball.adapter.dto.LeagueResultResponse;
+import com.softball.application.GameClockService;
 import com.softball.application.SpielbogenService;
 import com.softball.application.SpielbogenSheetService;
 import com.softball.application.SpielbogenScoringService;
@@ -26,15 +27,18 @@ public class SpielbogenController {
     private final SpielbogenSlotService slotService;
     private final SpielbogenScoringService scoringService;
     private final SpielbogenSheetService sheetService;
+    private final GameClockService clockService;
 
     public SpielbogenController(final SpielbogenService bogenService,
                                 final SpielbogenSlotService slotService,
                                 final SpielbogenScoringService scoringService,
-                                final SpielbogenSheetService sheetService) {
+                                final SpielbogenSheetService sheetService,
+                                final GameClockService clockService) {
         this.bogenService = bogenService;
         this.slotService = slotService;
         this.scoringService = scoringService;
         this.sheetService = sheetService;
+        this.clockService = clockService;
     }
 
     @GetMapping
@@ -254,6 +258,26 @@ public class SpielbogenController {
         return SpielbogenResponse.from(scoringService.resetScoring(id));
     }
 
+    @PostMapping("/{id}/clock/start")
+    public ClockStateResponse startClock(@PathVariable Long id, @Valid @RequestBody StartClockRequest req) {
+        return ClockStateResponse.from(clockService.startBogenClock(id, req.limitMinutes()));
+    }
+
+    @PostMapping("/{id}/clock/pause")
+    public ClockStateResponse pauseClock(@PathVariable Long id) {
+        return ClockStateResponse.from(clockService.pauseBogenClock(id));
+    }
+
+    @PostMapping("/{id}/clock/resume")
+    public ClockStateResponse resumeClock(@PathVariable Long id) {
+        return ClockStateResponse.from(clockService.resumeBogenClock(id));
+    }
+
+    @PostMapping("/{id}/clock/reset")
+    public ClockStateResponse resetClock(@PathVariable Long id) {
+        return ClockStateResponse.from(clockService.resetBogenClock(id));
+    }
+
     @GetMapping("/{id}/sheet")
     public BogenSheetResponse getSheet(@PathVariable Long id) {
         var data = sheetService.getSheet(id);
@@ -290,7 +314,8 @@ public class SpielbogenController {
             new BogenSheetResponse.TeamTotals(
                 data.homeTotals().runs(), data.homeTotals().hits(), data.homeTotals().errors()),
             new BogenSheetResponse.TeamTotals(
-                data.awayTotals().runs(), data.awayTotals().hits(), data.awayTotals().errors())
+                data.awayTotals().runs(), data.awayTotals().hits(), data.awayTotals().errors()),
+            ClockStateResponse.from(clockService.bogenClockState(data.bogen()))
         );
     }
 }
