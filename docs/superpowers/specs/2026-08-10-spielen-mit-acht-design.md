@@ -84,9 +84,9 @@ unverändert, Undo und 3rd-Out-Auto-Switch über den normalen At-Bat-Pfad. Backe
 `outType`, `fielderChain`, `isError`, `sacrificeType`, `runs`, `rbi` und Runner-Advances darauf
 ab. Rendert als `AO`.
 
-**Keine Warnung nötig.** In der Achter-Variante war eine geplant („du musst das Out selbst
-eintragen"). Mit dem freien Slot bietet die App das Out von selbst an, sobald der Platz dran
-ist — es gibt nichts zu erinnern.
+**Eine Warnung gibt es weiterhin**, aber mit anderem Zweck als in der Achter-Variante. Dort
+hätte sie erinnern müssen, das Out selbst einzutragen. Hier erklärt sie, **was der markierte
+Platz bewirkt** — siehe „Wizard" unten.
 
 ## Änderungen im Detail
 
@@ -127,7 +127,25 @@ Der Aufstellungs-Schritt braucht eine Möglichkeit, eine Zeile als frei zu marki
 Namen zu tippen — eine Schaltfläche oder ein Kästchen pro Zeile. `WizardStepLineup` rendert
 bereits zehn Zeilen (`Array.from({ length: 10 })`), die Zeile existiert also.
 
-Eine als frei markierte Zeile zeigt keinen Namens- und keinen Positions-Eingabe mehr.
+Eine als frei markierte Zeile zeigt keine Namens- und keine Positions-Eingabe mehr.
+
+**Warnung**, sobald eine Seite einen freien Platz enthält. Sie muss sagen, was folgt — sonst
+steht der Scorer mitten im Spiel vor einem Platz, an dem plötzlich nur noch ein einzelner
+Knopf ist, und weiß nicht, warum:
+
+> **Nur 8 Spielerinnen bei {Teamname}.** Platz 9 bleibt frei und zählt bei jedem Durchgang der
+> Schlagreihenfolge als Out. Wenn er dran ist, bietet die App das automatische Out an — andere
+> Aktionen sind dort nicht möglich.
+
+Drei Eigenschaften, jede mit Grund:
+
+- **Blockiert nicht.** Acht ist eine gültige Aufstellung, kein Fehler. Also der Ton und die
+  Farbgebung einer Warnung, nicht einer Fehlermeldung — die Amber-Utilities, die das Projekt für
+  Status-Warnungen führt (`styles/index.css:6`), nicht `softball-red`.
+- **Nennt den Teamnamen.** Bei einer asymmetrischen Aufstellung (eine Seite acht, die andere
+  zehn) ist sonst unklar, welche Mannschaft gemeint ist. Erscheint pro betroffener Seite.
+- **Nennt die Folge, nicht nur den Zustand.** „Nur 8 Spielerinnen" allein wäre eine Feststellung,
+  die der Scorer selbst sieht. Der Wert liegt im zweiten Satz.
 
 ### Scoring
 
@@ -207,6 +225,10 @@ betroffenen Innings hängt daran.
 
 **Frontend**
 - `wizardValidation`: acht Namen plus freier Platz gültig, acht Namen allein nicht
+- Warnung im Wizard: erscheint bei einem freien Platz mit dem Namen der betroffenen Mannschaft;
+  erscheint nicht bei neun oder zehn Namen; erscheint bei acht gegen zehn **nur** für die
+  betroffene Seite; der Weiter-Button bleibt aktiv — der Test muss fallen, wenn die Warnung
+  blockiert. Das ist die eigentliche Zusicherung: acht ist erlaubt, nicht bloß gewarnt.
 - `BogenActionButtons`: bei `vacant` erscheint ausschließlich das automatische Out und keine der
   übrigen Aktionen. Der Test muss fallen, wenn ein Treffer-Knopf gerendert wird — das ist die
   Zusicherung, dass die Out-Zählung nicht umgangen werden kann.
