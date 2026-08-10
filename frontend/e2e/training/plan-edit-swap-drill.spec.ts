@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test'
-import { seedAuth } from '../helpers/auth'
+import { test, expect, request } from '@playwright/test'
+import { seedAuth, basicAuthHeader } from '../helpers/auth'
 
 /**
  * E2E: Manual Drill-Swap im Plan-Edit-Drawer.
@@ -12,7 +12,71 @@ import { seedAuth } from '../helpers/auth'
  *   5. Swap-Pencil klicken → DrillPickerModal öffnet sich
  *   6. Einen anderen Drill auswählen
  *   7. Assert: userNote bleibt erhalten (Server preserved), Drill-Titel hat sich geändert
+ *
+ * Isolation: läuft auf einer EIGENEN, weit in der Zukunft liegenden Trainingseinheit
+ * mit vorab per API generiertem Plan — NICHT auf "der aktuellen" (Default-)Trainingseinheit.
+ * Grund: plan-generate-dual-group.spec.ts regeneriert (löscht + erstellt) einen Plan, und
+ * würde bei paralleler Ausführung der gerade editierten Section unter uns wegräumen
+ * (PATCH auf gelöschte Section-Id → 404). Training + Plan werden nach dem Test wieder
+ * gelöscht (ON DELETE CASCADE räumt den Plan mit weg).
  */
+
+const ISO_DATE = '2094-11-02'
+const DISPLAY_DATE = '02.11.2094'
+
+let dedicatedTrainingId: number | null = null
+
+/** Legt die dedizierte Trainingseinheit + einen generierten MAIN-Plan an (idempotent — find-or-create). */
+async function ensureDedicatedTrainingWithPlan(): Promise<number> {
+  const ctx = await request.newContext({
+    baseURL: 'http://localhost:8080',
+    extraHTTPHeaders: { Authorization: basicAuthHeader() },
+  })
+  try {
+    const res = await ctx.get('/api/trainings')
+    const list: Array<{ id: number; date: string }> = res.ok() ? await res.json() : []
+    let training = list.find(t => t.date === ISO_DATE)
+    if (!training) {
+      const create = await ctx.post('/api/trainings', { data: { date: ISO_DATE } })
+      if (!create.ok()) throw new Error(`Failed to create training: ${create.status()} ${await create.text()}`)
+      training = await create.json()
+    }
+    const trainingId = training!.id
+
+    const plansRes = await ctx.get(`/api/training-plans/training/${trainingId}`)
+    const plans: Array<{ kind: string }> = plansRes.ok() ? await plansRes.json() : []
+    if (!plans.some(p => p.kind === 'MAIN')) {
+      const gen = await ctx.post('/api/training-plans/generate', {
+        data: { trainingId, playerCount: 10, focus: 'WERFEN', durationMinutes: 90 },
+      })
+      if (!gen.ok()) throw new Error(`Failed to generate plan: ${gen.status()} ${await gen.text()}`)
+    }
+    return trainingId
+  } finally {
+    await ctx.dispose()
+  }
+}
+
+/** Räumt die dedizierte Trainingseinheit wieder weg (Plan hängt per ON DELETE CASCADE dran). */
+async function teardownDedicatedTraining(trainingId: number): Promise<void> {
+  const ctx = await request.newContext({
+    baseURL: 'http://localhost:8080',
+    extraHTTPHeaders: { Authorization: basicAuthHeader() },
+  })
+  try {
+    await ctx.delete(`/api/trainings/${trainingId}`)
+  } finally {
+    await ctx.dispose()
+  }
+}
+
+/** Wechselt via Training-Picker-Drawer auf die dedizierte Trainingseinheit. */
+async function switchToDedicatedTraining(page: import('@playwright/test').Page): Promise<void> {
+  await page.getByRole('button', { name: /Training wechseln/i }).click()
+  await page.getByRole('button', { name: /^Anstehend/i }).click()
+  await page.getByRole('button', { name: new RegExp(DISPLAY_DATE) }).click()
+  await page.waitForTimeout(300)
+}
 
 async function hasTrainings(page: import('@playwright/test').Page): Promise<boolean> {
   await page.waitForLoadState('networkidle')
@@ -41,7 +105,15 @@ async function activatePlanTabIfMobile(page: import('@playwright/test').Page): P
 }
 
 test.describe('Trainingsplan — Manual Drill-Swap', () => {
+  test.afterEach(async () => {
+    if (dedicatedTrainingId !== null) {
+      await teardownDedicatedTraining(dedicatedTrainingId)
+      dedicatedTrainingId = null
+    }
+  })
+
   test('swap drill in section keeps userNotes, replaces drill-meta', async ({ page, context }) => {
+    dedicatedTrainingId = await ensureDedicatedTrainingWithPlan()
     await seedAuth(context)
     await page.goto('/training')
     if (!(await hasTrainings(page))) {
@@ -49,6 +121,7 @@ test.describe('Trainingsplan — Manual Drill-Swap', () => {
       return
     }
 
+    await switchToDedicatedTraining(page)
     await activatePlanTabIfMobile(page)
 
     if (!(await hasPlanContent(page))) {
