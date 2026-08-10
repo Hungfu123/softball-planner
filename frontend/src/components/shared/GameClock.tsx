@@ -87,24 +87,29 @@ function formatClock(totalSeconds: number): string {
 export function GameClockReadout(props: GameClockProps) {
   const { onPress } = props
   const { phase, displaySeconds, overSeconds } = useGameClock(props)
-  const Tag = onPress ? 'button' : 'span'
 
   if (phase === 'idle') {
+    // Ohne Handler gibt es (noch) nichts, das die Uhr starten könnte — dann darf hier
+    // auch keine Affordance stehen. Ein Wort, das eine Aktion verspricht und keine liefert,
+    // ist schlechter als gar kein Wort. Reserviert auch keinen Platz in der Mitte.
+    if (!onPress) return null
+
     return (
-      <Tag
-        type={onPress ? 'button' : undefined}
+      <button
+        type="button"
         onClick={onPress}
         className="font-display text-[10px] font-bold tracking-widest uppercase text-white/45 hover:text-white/70 transition-colors cursor-pointer"
         aria-label="Spielzeit starten"
       >
         Zeit
-      </Tag>
+      </button>
     )
   }
 
   const label = phase === 'paused' ? 'Pause' : phase === 'over' ? `+${formatClock(overSeconds)}` : 'Zeit'
   const labelClass = phase === 'paused' || phase === 'over' ? 'text-amber-400' : 'text-white/80'
   const valueClass = phase === 'paused' ? 'text-white/55' : phase === 'over' ? 'text-amber-400' : 'text-white'
+  const Tag = onPress ? 'button' : 'span'
 
   return (
     <Tag

@@ -3,10 +3,16 @@ import { describe, expect, it } from 'vitest'
 import { GameClockReadout, GameClockRule } from './GameClock'
 
 describe('GameClockReadout', () => {
-  it('zeigt bei nie gestarteter Uhr nur die blasse "Zeit"-Affordance', () => {
-    render(<GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} />)
-    const affordance = screen.getByText('Zeit')
-    expect(affordance).toBeInTheDocument()
+  it('rendert nichts, wenn die Uhr nie gestartet wurde und es keinen Handler gibt (kein toter Affordance-Text)', () => {
+    const { container } = render(<GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} />)
+    expect(container).toBeEmptyDOMElement()
+    expect(screen.queryByText('Zeit')).not.toBeInTheDocument()
+  })
+
+  it('zeigt die blasse "Zeit"-Affordance nur, wenn ein Handler existiert', () => {
+    render(<GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} onPress={() => {}} />)
+    const affordance = screen.getByRole('button', { name: 'Spielzeit starten' })
+    expect(affordance).toHaveTextContent('Zeit')
     expect(affordance.className).toContain('text-white/45')
   })
 
@@ -48,6 +54,16 @@ describe('GameClockRule', () => {
     const { container } = render(<GameClockRule elapsedSeconds={0} limitMinutes={null} running={false} started={false} />)
     const rule = container.firstElementChild as HTMLElement
     expect(rule.className).toBe('h-[3px] bg-softball-red-600')
+  })
+
+  it('bleibt auch mit Handler unverändert, solange die Uhr nicht gestartet ist (Affordance betrifft nur den Readout)', () => {
+    const { container } = render(<GameClockRule elapsedSeconds={0} limitMinutes={null} running={false} started={false} />)
+    const withoutHandler = (container.firstElementChild as HTMLElement).outerHTML
+
+    const { container: container2 } = render(<GameClockRule elapsedSeconds={0} limitMinutes={null} running={false} started={false} onPress={() => {}} />)
+    const withHandler = (container2.firstElementChild as HTMLElement).outerHTML
+
+    expect(withHandler).toBe(withoutHandler)
   })
 
   it('füllt proportional zu elapsed/limit, wenn ein Limit gesetzt ist', () => {
