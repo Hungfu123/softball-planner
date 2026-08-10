@@ -36,6 +36,9 @@ public class SpielbogenMapper {
         b.setCreatedAt(e.getCreatedAt());
         b.setUpdatedAt(e.getUpdatedAt());
         b.setEndedAt(e.getEndedAt());
+        b.setTimerRunningSince(e.getTimerRunningSince());
+        b.setTimerAccumulatedSeconds(e.getTimerAccumulatedSeconds());
+        b.setTimeLimitMinutes(e.getTimeLimitMinutes());
         return b;
     }
 
@@ -64,6 +67,9 @@ public class SpielbogenMapper {
         e.setAwayRuns(b.getAwayRuns());
         e.setLeagueResult(toLeagueResultRef(b));
         e.setEndedAt(b.getEndedAt());
+        e.setTimerRunningSince(b.getTimerRunningSince());
+        e.setTimerAccumulatedSeconds(b.getTimerAccumulatedSeconds());
+        e.setTimeLimitMinutes(b.getTimeLimitMinutes());
     }
 
     /**

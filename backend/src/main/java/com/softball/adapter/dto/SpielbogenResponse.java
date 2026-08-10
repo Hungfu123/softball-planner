@@ -22,7 +22,10 @@ public record SpielbogenResponse(
     Long leagueResultId,
     Instant createdAt,
     Instant updatedAt,
-    Instant endedAt
+    Instant endedAt,
+    Instant timerRunningSince,
+    int timerAccumulatedSeconds,
+    Integer timeLimitMinutes
 ) {
     public static SpielbogenResponse from(final Spielbogen b) {
         return new SpielbogenResponse(
@@ -40,7 +43,10 @@ public record SpielbogenResponse(
             b.getLeagueResult() != null ? b.getLeagueResult().getId() : null,
             b.getCreatedAt(),
             b.getUpdatedAt(),
-            b.getEndedAt()
+            b.getEndedAt(),
+            b.getTimerRunningSince(),
+            b.getTimerAccumulatedSeconds(),
+            b.getTimeLimitMinutes()
         );
     }
 }

@@ -19,6 +19,9 @@ public class Spielbogen {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant endedAt;
+    private Instant timerRunningSince;
+    private int timerAccumulatedSeconds;
+    private Integer timeLimitMinutes;
 
     public Spielbogen() {}
 
@@ -67,4 +70,10 @@ public class Spielbogen {
     public void setUpdatedAt(final Instant updatedAt) { this.updatedAt = updatedAt; }
     public Instant getEndedAt() { return endedAt; }
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
+    public Instant getTimerRunningSince() { return timerRunningSince; }
+    public void setTimerRunningSince(final Instant timerRunningSince) { this.timerRunningSince = timerRunningSince; }
+    public int getTimerAccumulatedSeconds() { return timerAccumulatedSeconds; }
+    public void setTimerAccumulatedSeconds(final int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
+    public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
+    public void setTimeLimitMinutes(final Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
 }

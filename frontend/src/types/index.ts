@@ -45,6 +45,9 @@ export interface GameResponse {
   thirdBaseCoachRotation?: CoachRotationPair | null
   firstBaseCoachRotationReversed?: boolean
   thirdBaseCoachRotationReversed?: boolean
+  timerRunningSince?: string | null
+  timerAccumulatedSeconds?: number
+  timeLimitMinutes?: number | null
 }
 
 export interface LineupEntryResponse {
@@ -495,6 +498,9 @@ export interface SpielbogenResponse {
   createdAt: string
   updatedAt: string
   endedAt: string | null
+  timerRunningSince: string | null
+  timerAccumulatedSeconds: number
+  timeLimitMinutes: number | null
 }
 
 export interface SpielbogenSlotResponse {

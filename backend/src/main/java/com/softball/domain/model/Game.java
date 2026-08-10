@@ -18,6 +18,9 @@ public class Game {
     private CoachRotationPair thirdBaseCoachRotation;
     private boolean firstBaseCoachRotationReversed;
     private boolean thirdBaseCoachRotationReversed;
+    private Instant timerRunningSince;
+    private int timerAccumulatedSeconds;
+    private Integer timeLimitMinutes;
     private List<LineupEntry> lineupEntries = new ArrayList<>();
     private List<GameStaff> staff = new ArrayList<>();
 
@@ -59,4 +62,10 @@ public class Game {
     public void setFirstBaseCoachRotationReversed(final boolean v) { this.firstBaseCoachRotationReversed = v; }
     public boolean isThirdBaseCoachRotationReversed() { return thirdBaseCoachRotationReversed; }
     public void setThirdBaseCoachRotationReversed(final boolean v) { this.thirdBaseCoachRotationReversed = v; }
+    public Instant getTimerRunningSince() { return timerRunningSince; }
+    public void setTimerRunningSince(final Instant timerRunningSince) { this.timerRunningSince = timerRunningSince; }
+    public int getTimerAccumulatedSeconds() { return timerAccumulatedSeconds; }
+    public void setTimerAccumulatedSeconds(final int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
+    public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
+    public void setTimeLimitMinutes(final Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
 }
