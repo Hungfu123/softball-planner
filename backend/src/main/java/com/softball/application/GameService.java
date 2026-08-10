@@ -23,13 +23,16 @@ public class GameService {
     private final LineupEntryRepository lineupEntryRepository;
     private final GameStaffRepository gameStaffRepository;
     private final LeagueTeamService leagueTeamService;
+    private final GameClockService gameClockService;
 
     public GameService(final GameRepository gameRepository, final LineupEntryRepository lineupEntryRepository,
-                       final GameStaffRepository gameStaffRepository, final LeagueTeamService leagueTeamService) {
+                       final GameStaffRepository gameStaffRepository, final LeagueTeamService leagueTeamService,
+                       final GameClockService gameClockService) {
         this.gameRepository = gameRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.gameStaffRepository = gameStaffRepository;
         this.leagueTeamService = leagueTeamService;
+        this.gameClockService = gameClockService;
     }
 
     @Transactional(readOnly = true)
@@ -103,6 +106,10 @@ public class GameService {
         if (game.getEndedAt() == null) {
             return game;
         }
+        // Vor dem Nullen von endedAt: laufende Uhr pausieren und deckeln (siehe
+        // GameClockService.pauseClockBeforeReopen) — sonst zaehlt die Ableitung schlagartig alle
+        // Stunden seit Spielende mit statt die Uhr pausiert zu lassen.
+        gameClockService.pauseClockBeforeReopen(game);
         game.setEndedAt(null);
         log.info("Spiel {} wieder geoeffnet", gameId);
         return gameRepository.save(game);

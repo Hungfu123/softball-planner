@@ -28,17 +28,20 @@ public class SpielbogenService {
     private final SpielbogenSlotService slotService;
     private final LeagueTeamService leagueTeamService;
     private final LeagueResultService leagueResultService;
+    private final GameClockService gameClockService;
 
     public SpielbogenService(final SpielbogenRepository bogenRepo,
                              final SeasonService seasonService,
                              @Lazy final SpielbogenSlotService slotService,
                              final LeagueTeamService leagueTeamService,
-                             final LeagueResultService leagueResultService) {
+                             final LeagueResultService leagueResultService,
+                             final GameClockService gameClockService) {
         this.bogenRepo = bogenRepo;
         this.seasonService = seasonService;
         this.slotService = slotService;
         this.leagueTeamService = leagueTeamService;
         this.leagueResultService = leagueResultService;
+        this.gameClockService = gameClockService;
     }
 
     @Transactional(readOnly = true)
@@ -153,6 +156,10 @@ public class SpielbogenService {
         if (bogen.getStatus() != BogenStatus.DONE) {
             throw new BusinessValidationException("Nur DONE-Spielbogen kann wieder geöffnet werden (aktuell: " + bogen.getStatus() + ")");
         }
+        // Vor dem Nullen von endedAt: laufende Uhr pausieren und deckeln (siehe
+        // GameClockService.pauseClockBeforeReopen) — sonst zaehlt die Ableitung schlagartig alle
+        // Stunden seit Spielende mit statt die Uhr pausiert zu lassen.
+        gameClockService.pauseClockBeforeReopen(bogen);
         bogen.setStatus(BogenStatus.LIVE);
         bogen.setEndedAt(null);
         log.info("Spielbogen {} reopened (LIVE)", id);

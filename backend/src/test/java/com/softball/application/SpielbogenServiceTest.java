@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +33,7 @@ class SpielbogenServiceTest {
     @Mock private SpielbogenRepository bogenRepo;
     @Mock private SeasonService seasonService;
     @Mock private SpielbogenSlotService slotService;
+    @Mock private GameClockService gameClockService;
 
     @InjectMocks
     private SpielbogenService service;
@@ -168,6 +171,40 @@ class SpielbogenServiceTest {
         assertThatThrownBy(() -> service.reopen(1L))
             .isInstanceOf(BusinessValidationException.class)
             .hasMessageContaining("DONE");
+    }
+
+    // Task 4: der einzige Schreibvorgang vom Spielablauf in die Uhr. Reopen muss die Uhr VOR
+    // dem Nullen von endedAt pausieren — sonst verlöre die Ableitung ihre Obergrenze. Der
+    // Deckelungs-Beweis selbst laeuft in der Integration mit echtem GameClockService (ein
+    // Mockito-Mock wuerde einen falschen Wert nicht auffangen).
+    @Test
+    void reopen_runningClock_banksBeforeEndedAtIsCleared() {
+        draftBogen.setStatus(BogenStatus.DONE);
+        draftBogen.setEndedAt(Instant.now());
+        draftBogen.setTimerRunningSince(Instant.now().minusSeconds(90));
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(draftBogen));
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reopen(1L);
+
+        verify(gameClockService).pauseClockBeforeReopen(draftBogen);
+    }
+
+    @Test
+    void reopen_regressionGuard_bogenWithoutClock_behavesAsBefore() {
+        draftBogen.setStatus(BogenStatus.DONE);
+        draftBogen.setEndedAt(Instant.now());
+        assertThat(draftBogen.getTimerRunningSince()).isNull();
+        assertThat(draftBogen.getTimerAccumulatedSeconds()).isZero();
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(draftBogen));
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Spielbogen result = service.reopen(1L);
+
+        assertThat(result.getStatus()).isEqualTo(BogenStatus.LIVE);
+        assertThat(result.getEndedAt()).isNull();
+        assertThat(result.getTimerRunningSince()).isNull();
+        assertThat(result.getTimerAccumulatedSeconds()).isZero();
     }
 
     private List<SpielbogenSlot> buildSlots(final int count) {
