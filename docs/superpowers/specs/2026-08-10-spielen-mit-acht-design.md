@@ -6,8 +6,8 @@
 ## Problem
 
 Mixed Fastpitch schreibt ein Geschlechterverhältnis vor. Steht an einem Spieltag nur eine Frau
-zur Verfügung, lässt sich damit keine reguläre Aufstellung stellen — das Team muss mit acht
-Spielerinnen antreten oder gar nicht.
+zur Verfügung, lässt sich damit keine reguläre Aufstellung stellen — das Team tritt mit acht
+Spielerinnen an oder gar nicht.
 
 Der Spielbogen lässt das nicht zu. `BogenLineupValidator` verlangt mindestens neun Slots:
 
@@ -15,194 +15,143 @@ Der Spielbogen lässt das nicht zu. `BogenLineupValidator` verlangt mindestens n
 Lineup für HOME muss mindestens 9 Spieler haben (aktuell: 8)   → HTTP 400
 ```
 
-Empirisch bestätigt: ein Achter-Lineup wird abgelehnt. Der Wizard blockt schon vorher
-(`wizardValidation.ts:11`, `filledHome >= 9 && filledAway >= 9`).
+Empirisch bestätigt. Der Wizard blockt schon vorher (`wizardValidation.ts:11`,
+`filledHome >= 9 && filledAway >= 9`).
 
 Damit ist ein Spiel, das auf dem Platz stattfindet, in der App nicht erfassbar.
 
-## Regel, wie sie gilt
+## Lösung
 
-Vom Nutzer festgelegt:
+Zwei Änderungen, nichts weiter:
 
-- Es wird mit **acht** Schlagfrauen gespielt.
-- Der **freie neunte Platz zählt bei jedem Durchgang als Out**.
-- Im Feld bleibt **eine Position unbesetzt** (in der Praxis meist ein Outfielder).
+1. **Minimum von 9 auf 8 senken** — im Backend-Validator und im Wizard.
+2. **Warnung bei weniger als neun**, die zwei Dinge sagt: dass die Aufstellung unter neun liegt,
+   und dass das automatische Out für den fehlenden Platz **selbst** eingetragen werden muss.
 
-Der zweite Punkt ist der fachliche Kern: der leere Platz verschwindet nicht, er kostet ein Out.
+Das automatische Out existiert bereits und wird manuell ausgelöst. Es entsteht also kein neues
+Konzept — die App erlaubt nur, was auf dem Platz ohnehin passiert, und weist auf die eine
+Pflicht hin, die der Scorer übernehmen muss.
 
-## Was die App dafür schon hat
+### Was bewusst NICHT gebaut wird
 
-`AUTOMATIC_OUT` existiert bereits und ist in `docs/SPIELBOGEN.md:48` genau dafür beschrieben
-(„fehlende Spielerin"):
+Ein früherer Entwurf sah einen als „frei" markierten neunten Slot vor, damit das automatische
+Out dort entsteht, wo es hingehört, und die App es von selbst anbietet. **Verworfen** — auf
+Entscheidung des Nutzers, und die Begründung gehört festgehalten, weil sie eine bewusste
+Abwägung ist und kein Versehen:
 
-- zählt als **ein** Out (`abOutsAdded`, `countWeightedOutsInInning`)
-- zählt **weder als At-Bat noch als Plate Appearance** (`AtBatResult.countsAsAtBat()` = false)
-- lässt den Base-State unverändert; Backend lehnt `outType`, `fielderChain`, `isError`,
-  `sacrificeType`, `runs`, `rbi` und Runner-Advances darauf ab
-- erbt Out-Zählung, 3rd-Out-Auto-Switch, Out-Index und Undo vom normalen At-Bat-Pfad
-- rendert auf dem Bogen als `AO`
+Der Preis der einfachen Lösung ist, dass das automatische Out dem **aktuellen** Slot
+zugeordnet wird (`SpielbogenPage.tsx:510-512`, `slotId: currentSlot.id`). Bei acht Plätzen ist
+nach der Achten wieder die Erste dran, das Out landet also in ihrer Zelle. Auf dem Bogen sieht
+es aus, als hätte sie ein automatisches Out gehabt, und ihr echter At-Bat teilt sich dann die
+Zelle mit dem Eintrag.
 
-Es ist also kein neues Konzept nötig, nur ein Ort, an dem es entsteht.
+**Die Out-Zahl stimmt** — nur die Zuordnung nicht. Das ist für die Liga hinnehmbar; der Aufwand
+für Migration, Validierungsregeln und einen eigenen UI-Zweig steht dazu nicht im Verhältnis.
+
+Falls sich im Einsatz zeigt, dass die Zuordnung doch störend ist oder das Out regelmäßig
+vergessen wird, ist der freie Platz die naheliegende Ausbaustufe — additiv, nichts an dieser
+Arbeit wäre dann umsonst.
+
+## Was gar keine Arbeit ist
 
 **Eine unbesetzte Feldposition ist bereits erlaubt.** `BogenLineupValidator` prüft
 Positionswerte nur gegen `VALID_POSITIONS` und verlangt weder Vollständigkeit noch
-Eindeutigkeit. Der Wizard erzwingt Positionen ebenfalls nicht. Für Punkt 3 der Regel ist
-**keine Änderung** erforderlich — das gehört festgehalten, damit niemand es später als
-fehlende Validierung „nachbessert".
+Eindeutigkeit; der Wizard erzwingt Positionen ebenfalls nicht. Für „im Feld bleibt eine
+Position unbesetzt" ist **keine Änderung** nötig.
 
-## Entwurf: der freie Platz ist ein Slot
+Das gehört festgehalten, damit niemand es später als fehlende Validierung „nachbessert".
 
-Der Reihum-Wechsel läuft über `battingOrder` (`SpielbogenPage.resolveCurrentSlot` /
-`nextBatterSlot`, Round-Robin über die vorhandenen Slots). Bei acht Slots geht er von 8
-direkt zurück auf 1 — es gibt nichts, wo ein Out entstehen könnte.
+**Das automatische Out braucht keine Änderung.** `docs/SPIELBOGEN.md:48` beschreibt es genau
+für diesen Zweck („fehlende Spielerin"): ein Out, weder At-Bat noch Plate Appearance, Base-State
+unverändert, Undo und 3rd-Out-Auto-Switch über den normalen At-Bat-Pfad. Auslösbar über die
+Out-Punkte im Live-Strip oder das MEHR-Menü.
 
-Deshalb: **das Lineup behält neun Slots, einer davon ist als frei markiert.**
+## Änderungen im Detail
 
-Damit bleibt vieles unberührt:
+### Backend
 
-| | |
-|---|---|
-| `battingOrder` | weiter sequenziell 1..N, keine Lücke |
-| Round-Robin | unverändert, der freie Platz kommt regulär dran |
-| Out-Zählung | unverändert, `AUTOMATIC_OUT` liefert das Out |
-| Undo | unverändert, normaler At-Bat-Pfad |
-| Bogen | der freie Platz hat eine Zeile, die `AO`-Einträge stehen dort, wo sie hingehören |
+`domain/service/BogenLineupValidator.java:21` — Grenze von 9 auf 8:
 
-**Die verworfene Alternative** wäre gewesen, acht Slots zu speichern und das Out beim
-Umbruch synthetisch einzufügen. Dagegen sprechen zwei Dinge: der Scoring-Fluss müsste einen
-Batter erfinden, den es in den Daten nicht gibt, und der Bogen hätte keine Zeile für die
-entstandenen Outs — auf einem Blatt, das der Liga vorgelegt wird, wäre das eine Lücke.
+```java
+if (slots.size() < 8) {
+    throw new BusinessValidationException(
+        "Lineup für " + side + " muss mindestens 8 Spieler haben (aktuell: " + slots.size() + ")"
+    );
+}
+```
 
-### Datenmodell
+Maximum bleibt 10. Die Prüfung auf sequenzielle Batting-Order 1..N bleibt unverändert und
+funktioniert für acht ohne Anpassung.
 
-Neues Feld auf `SpielbogenSlot`: `vacant BOOLEAN NOT NULL DEFAULT FALSE`.
+Keine Migration. Kein neues Feld. Keine Änderung an Entity, Mapper, Port oder Adapter.
 
-Migration `V55__spielbogen_slot_vacant.sql`. Höchste vorhandene Version ist geprüft **`V54`** —
-`V55` war kurzzeitig für den entfernten Zuschauer-Link vergeben und ist wieder frei. Vor dem
-Schreiben trotzdem nachsehen: liegt lokal noch eine angewandte `V55` in der Datenbank, meldet
-Flyway einen Konflikt, und die lokale DB braucht einmal `docker compose down -v`.
+### Frontend
 
-Ein Boolean statt einer Namenskonvention (etwa `name = '—'`), weil ein reservierter Name
-still bricht, sobald jemand eine Spielerin so nennt, und weil die Bedingung „nur ein freier
-Platz" gegen ein Feld prüfbar ist, gegen einen Namen nicht.
+`components/spielbogen/wizardValidation.ts:11` — `>= 9` zu `>= 8` in `lineupIsValid`.
 
-### Validierung
+**Die Warnung** erscheint im Aufstellungs-Schritt des Wizards, sobald eine Seite weniger als
+neun befüllte Namen hat. `lineupCounts` liefert die Zahlen dafür bereits.
 
-`BogenLineupValidator`:
+Sie muss beides benennen, sonst erfüllt sie ihren Zweck nicht:
 
-- Minimum bleibt **9 Slots**, Maximum 10 — die Grenzen ändern sich nicht.
-- **Höchstens ein** Slot pro Seite darf `vacant` sein. Zwei freie Plätze wären ein Spiel mit
-  sieben; das ist nicht die beschlossene Regel und wird abgelehnt.
-- Ein `vacant`-Slot braucht **keinen Namen** (die `name`-darf-nicht-leer-Prüfung muss ihn
-  ausnehmen) und **keine Position**.
-- Ein `vacant`-Slot darf **nicht** `EH` oder `DH` sein — ein freier Platz ist kein Extra
-  Hitter.
+> **Nur 8 Spielerinnen aufgestellt.** Der fehlende Platz zählt bei jedem Durchgang als Out —
+> du musst das automatische Out selbst eintragen (über die Out-Punkte oder MEHR → Automatisches
+> Out).
 
-`wizardValidation.lineupIsValid`: zählt heute befüllte Namen und verlangt neun. Künftig
-gilt eine Seite als gültig, wenn Namen **plus** freier Platz neun ergeben, also acht Namen
-und ein markierter freier Platz.
+Sie **blockiert nicht**. Acht ist eine gültige Aufstellung, kein Fehler. Also der Ton und die
+Farbgebung einer Warnung, nicht einer Fehlermeldung — die Amber-Utilities, die das Projekt für
+Status-Warnungen führt (`styles/index.css:6`), nicht `softball-red`.
 
-### Scoring
+Erscheint pro betroffener Seite, mit dem Teamnamen, damit klar ist, welche Mannschaft gemeint
+ist — bei einer asymmetrischen Aufstellung (eine Seite acht, die andere zehn) ist das sonst
+Rätselraten.
 
-Wird der freie Platz zur aktuellen Schlagposition, ist die **einzige verfügbare Aktion das
-automatische Out**. Keine Treffer, kein Walk, kein Strikeout — für einen leeren Platz gibt es
-nichts davon.
+### Ausdrücklich nicht im Umfang
 
-Umgesetzt in `BogenActionButtons`: bei `currentSlot.vacant` treten die üblichen Aktionen
-zurück und es erscheint ein einzelner, deutlicher Knopf, der denselben Bestätigungsdialog
-öffnet, den das automatische Out heute schon nutzt.
-
-Damit ist das Out faktisch erzwungen, ohne eine Blockade zu bauen: es gibt keinen anderen Weg,
-an diesem Platz weiterzukommen. Das ist der Grund, diese Variante der bloßen Empfehlung
-vorzuziehen — ein Scorer, der die Aktion überspringen könnte, würde die Out-Zählung des ganzen
-Innings verschieben.
-
-### Darstellung
-
-**Bogen (PDF):** Die Zeile des freien Platzes trägt statt eines Namens eine Markierung —
-Vorschlag `frei`, kursiv und gedimmt, damit sie nicht wie ein Spielername gelesen wird. Die
-Inning-Zellen zeigen `AO` wie bisher. `drawSheet` zeichnet ohnehin zehn Zeilen unabhängig von
-der Lineup-Länge, die Zeile existiert also schon; sie bekommt nur einen Inhalt.
-
-**Live-Feed:** Das automatische Out erscheint als normale Ereigniszeile. Ob es als
-Nebenereignis gedimmt wird wie Steals und Wechsel, oder wie ein regulärer At-Bat: gedimmt,
-denn es ist kein Schlagversuch. `bogenFeed.ts` braucht dafür keinen neuen Zweig, nur die
-Einordnung.
-
-**Aufstellungs-Block:** Der freie Platz erscheint mit derselben Markierung, ohne Stift —
-dort ist nichts zu bearbeiten außer über den Weg unten.
-
-### Spieler kommt später
-
-Realistischer Fall: die neunte Spielerin trifft im dritten Inning ein. **Die RFL-Ordnung
-erlaubt das** (vom Nutzer bestätigt), der Fall ist also Teil dieser Arbeit.
-
-Umgesetzt über den **bestehenden Einwechslungs-Pfad**, nicht über den Slot-Editor. Der Pfad
-passt fast unverändert:
-
-- `SpielbogenScoringService.recordSubstitution` verlangt nur `playerInName` als nicht leer
-  (Zeile 260) und übernimmt `playerOutName` aus dem aktuellen Slot-Namen. Bei einem freien
-  Platz ist der leer — das ist zulässig, weil `playerOutName` nicht validiert wird.
-- Der Service setzt anschließend `slot.setName(playerInName)` (Zeile 273). Ergänzt werden muss
-  nur: `vacant` auf `false` setzen.
-- Der Bogen rendert Einwechslungen als `„{playerInName} ab {inning}."` unter der Zeile
-  (`spielbogenPdfExport.ts:254`). Für den freien Platz entsteht damit von selbst die richtige
-  Darstellung — Markierung oben, darunter der Name mit dem Inning des Eintritts.
-
-Der Slot-Editor bleibt bewusst außen vor. Über ihn würde der Name still ersetzt, ohne Eintrag
-im Bogen und ohne Inning — die Liga sähe nicht, dass und ab wann der Platz besetzt wurde.
-Eine Einwechslung ist genau das richtige Modell: es kommt jemand ins Spiel.
-
-Bereits entstandene `AO`-Einträge bleiben stehen. Sie sind passiert, und die Out-Zählung der
-betroffenen Innings hängt daran.
-
-**Der umgekehrte Weg ist nicht Teil dieser Arbeit:** einen besetzten Platz nachträglich auf
-`vacant` setzen (Spielerin verletzt sich und wird nicht ersetzt). Dafür gibt es das
-automatische Out bereits am besetzten Platz — es braucht keine Änderung der Aufstellung.
-
-## Nicht Teil dieser Arbeit
-
+- **Eine Erinnerung während des Spiels.** Die Warnung steht beim Aufstellen, also womöglich
+  zwanzig Minuten vor dem ersten Pitch. Ein dauerhafter Hinweis auf der Scoring-Seite wäre der
+  Ort, an dem er wirkt — der Nutzer hat ihn nicht verlangt und er wird nicht auf Verdacht
+  gebaut. Wenn sich im Einsatz zeigt, dass Outs vergessen werden, ist das die erste
+  Ausbaustufe.
 - Sieben oder weniger Spielerinnen.
-- Automatisches Erkennen des Geschlechterverhältnisses oder Warnungen dazu. Die App kennt das
-  Geschlecht der Spielerinnen nicht, und der Nutzer hat es nicht verlangt.
-- Legacy-Scoring (`ScoringPage`). Dort gibt es eine eigene `AutomaticOutEvent`-Tabelle und
-  eine andere Lineup-Validierung; die Regel wird nur im Spielbogen umgesetzt.
-- Änderungen an der Positionsvalidierung — sie erlaubt eine leere Position bereits.
+- Erkennung des Geschlechterverhältnisses. Die App kennt das Geschlecht der Spielerinnen nicht.
+- Legacy-Scoring (`ScoringPage`). Eigene Validierung, eigene `AutomaticOutEvent`-Tabelle; die
+  Regel wird nur im Spielbogen umgesetzt.
 
 ## Tests
 
-**Backend**
-- `BogenLineupValidator`: acht Namen plus ein `vacant`-Slot ist gültig; zwei `vacant`-Slots
-  werden abgelehnt; ein `vacant`-Slot ohne Namen ist gültig; ein `vacant`-Slot mit Position
-  `EH` oder `DH` wird abgelehnt; neun echte Namen bleiben gültig; sieben Namen plus ein
-  `vacant` (= 8 Slots) wird weiter abgelehnt.
-- Mapper-Rundlauf für `vacant` in beide Richtungen — dieselbe Falle wie bei `publicToken`:
-  eine einseitige Abbildung verliert das Feld beim Speichern still.
-- Integration: Lineup mit freiem Platz setzen, automatisches Out an dieser Position aufnehmen,
-  Out-Zählung des Innings prüfen, Undo prüfen.
-- Einwechslung auf einen freien Platz: `playerOutName` bleibt leer, `vacant` fällt auf `false`,
-  der Slot trägt danach den Namen, und ein weiteres automatisches Out an dieser Position ist
-  nicht mehr die einzige Aktion. Die vorher entstandenen `AO`-Einträge bleiben erhalten — das
-  ist die eigentliche Zusicherung des Tests.
+**Backend** — `BogenLineupValidator`:
 
-**Frontend**
-- `wizardValidation`: acht Namen plus freier Platz ist gültig, acht Namen allein nicht.
-- `BogenActionButtons`: bei `vacant` erscheint ausschließlich das automatische Out und keine
-  der übrigen Aktionen. Der Test muss fallen, wenn ein Treffer-Knopf gerendert wird — das ist
-  die Zusicherung, dass die Out-Zählung nicht umgangen werden kann.
-- `bogenSheetRenderer`: die Zeile des freien Platzes trägt die Markierung, nicht einen leeren
-  Namen, und die `AO`-Zellen erscheinen.
+- acht Slots sind gültig
+- sieben Slots werden weiter abgelehnt, mit der neuen Grenze in der Meldung
+- zehn Slots bleiben gültig, elf weiter abgelehnt
+- sequenzielle Batting-Order 1..8 wird akzeptiert, eine Lücke (1..7 und 9) weiter abgelehnt
+
+**Frontend** — `wizardValidation`:
+
+- acht Namen pro Seite gelten als gültig
+- sieben nicht
+- asymmetrisch (acht gegen zehn) gilt als gültig
+
+**Frontend** — Warnung im Wizard:
+
+- bei acht Namen erscheint sie, mit dem Namen der betroffenen Mannschaft
+- bei neun oder zehn erscheint sie nicht
+- bei acht gegen zehn erscheint sie **nur** für die betroffene Seite
+- der Weiter-Button bleibt aktiv — der Test muss fallen, wenn die Warnung blockiert. Das ist
+  die eigentliche Zusicherung: acht ist erlaubt, nicht bloß gewarnt.
 
 **Vor dem Merge**
+
 - `cd backend && ./mvnw test -s .mvn/local-settings.xml`
 - `cd frontend && npm test && npm run build && npm run lint`
 - `cd frontend && npm run test:e2e`
-- Einen echten Bogen mit acht Spielerinnen anlegen, ein Inning durchspielen, das PDF ansehen.
-  Diese Regel betrifft das Blatt, das der Liga vorgelegt wird; sie gehört gedruckt geprüft und
-  nicht nur im Test.
+- Einen echten Bogen mit acht Spielerinnen anlegen, ein Inning mit einem manuellen
+  automatischen Out durchspielen, das PDF ansehen. Diese Regel betrifft das Blatt für die Liga
+  und gehört gedruckt geprüft, nicht nur im Test.
 
 ## Dokumentation
 
-`docs/SPIELBOGEN.md` um die Regel ergänzen, samt der Notiz, dass eine unbesetzte Feldposition
-absichtlich nicht validiert wird. In `CLAUDE.md` bei den Domänenregeln die Lineup-Grenzen
-korrigieren — dort steht bislang nur die Regel für das Game-Lineup (max 10).
+`docs/SPIELBOGEN.md`: Lineup-Grenzen auf 8–10 korrigieren, dazu die Notiz, dass eine unbesetzte
+Feldposition absichtlich nicht validiert wird, und der Hinweis, dass das automatische Out bei
+einer Achter-Aufstellung manuell erfolgt.
