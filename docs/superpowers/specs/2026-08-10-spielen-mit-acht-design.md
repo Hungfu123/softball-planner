@@ -199,9 +199,38 @@ Bogen und ohne Inning — die Liga sähe nicht, ab wann der Platz besetzt wurde.
 Bereits entstandene `AO`-Einträge bleiben stehen. Sie sind passiert, und die Out-Zählung der
 betroffenen Innings hängt daran.
 
+## Risiko für das Bestehende
+
+Die Frage, ob diese Arbeit mehr Fehler ins bestehende System trägt als sie löst, gehört
+beantwortet, nicht weggewischt.
+
+**Der wesentliche Schutz ist, dass fast alles additiv ist und hinter `vacant === true` liegt.**
+Jeder existierende Bogen bekommt `vacant = false` per `DEFAULT FALSE`, und jede neue Regel
+greift nur, wenn das Feld `true` ist. Das Minimum bleibt bei neun Slots — bestehende
+Aufstellungen validieren also genau wie vorher, kein Verhalten ändert sich für sie.
+
+Drei Stellen ändern echtes Verhalten und tragen das Risiko:
+
+| Stelle | Risiko | Absicherung |
+|---|---|---|
+| `wizardValidation.lineupIsValid` | die Bedingung wird umgeschrieben; ein Fehler blockt reguläre 9er/10er-Aufstellungen oder lässt Ungültiges durch | Tests für 9, 10, 8+frei, 8 allein, 7, asymmetrisch |
+| `recordSubstitution` (+`vacant = false`) | eine Zeile, die **jede** Einwechslung durchläuft, nicht nur die auf freie Plätze | bestehende Einwechslungs-Tests müssen unverändert grün bleiben |
+| `BogenActionButtons` (neuer `vacant`-Zweig) | der Zweig darf den Normalpfad nicht anfassen | Test, dass bei `vacant = false` alle Aktionen unverändert erscheinen |
+
+Alles andere — Spalte, Modell, Entity, Mapper, DTO, TS-Typ, Bogen-Markierung, Feed-Name — ist
+Ergänzung ohne Wirkung auf bestehende Daten.
+
+Als Netz darunter: 799 Backend-Tests, 345 vitest-Tests und 77 Playwright-Tests, die alle heute
+grün sind. Ein Verhaltensbruch im Normalpfad fällt dort auf.
+
+**Die Umsetzung wird entsprechend geordnet:** erst die additiven Schichten (Migration bis
+TS-Typ) mit unverändert grüner Suite, dann die drei verhaltensändernden Stellen einzeln, jede
+mit ihrem eigenen Review. Nicht alles in einem Zug, damit ein Bruch dem Commit zuzuordnen ist,
+der ihn verursacht hat.
+
 ## Randfälle
 
-Durchgedacht vor der Umsetzung. Die ersten fünf ändern das Design, der Rest gehört in Tests.
+Durchgedacht vor der Umsetzung. Die ersten vier ändern das Design, der Rest gehört in Tests.
 
 ### 1. Einwechslung muss am freien Platz erreichbar bleiben
 
@@ -218,21 +247,33 @@ Durchgang. Ebenso `8 Namen + 1 frei + 1 EH`.
 (Gesamtzahl also neun). Sonst ablehnen. Ohne diese Regel kann sich ein Team versehentlich selbst
 ein Out pro Durchgang eintragen.
 
-### 3. `vacant` nicht auf einen Slot setzen, der schon At-Bats hat
+### 3. `vacant` gehört nicht in `UpdateSlotRequest`
 
-`setLineup` (Bulk-Replace) ist im Status `LIVE` gesperrt — geprüft, `SpielbogenSlotService:64`.
-Einzelne Slot-PATCHes sind aber erlaubt. Damit könnte man mitten im Spiel einen Slot als frei
-markieren, an dem bereits At-Bats hängen — die wären dann einem freien Platz zugeordnet.
+Zunächst waren hier zwei Wächter geplant: PATCH soll `vacant = true` ablehnen, wenn der Slot
+schon At-Bats hat, und eine `vacant`-Änderung im Status `LIVE` grundsätzlich ablehnen.
 
-**Regel:** Slot-PATCH lehnt `vacant = true` ab, wenn für diesen Slot At-Bats existieren.
+**Beides entfällt.** `UpdateSlotRequest` hat genau drei Felder (`name`, `position`,
+`battingOrder`), und der Service wendet jedes nur an, wenn es gesetzt ist
+(`SpielbogenSlotService:98-112`). Nimmt man `vacant` dort **nicht** auf, existiert kein
+PATCH-Weg dafür — und es braucht keine Regel, die einen Weg verbietet, den es nicht gibt.
 
-### 4. `vacant` fällt nur über die Einwechslung, nicht über den Slot-PATCH
+Damit ergibt sich von selbst:
 
-Sonst gibt es zwei Wege, den Platz zu besetzen, und einer davon hinterlässt keinen Eintrag im
-Bogen. **Regel:** Slot-PATCH lehnt eine Änderung von `vacant` im Status `LIVE` grundsätzlich ab.
-Vor dem Start (`DRAFT`) ist sie frei — dort korrigiert man die Aufstellung.
+- `vacant` wird ausschließlich über `setLineup` gesetzt, und das ist im Status `LIVE` gesperrt
+  (`SpielbogenSlotService:64`). Ein freier Platz entsteht also nur vor dem Anpfiff.
+- `vacant` fällt ausschließlich über `recordSubstitution`. Genau ein Weg, und der hinterlässt
+  den Eintrag im Bogen.
 
-### 5. Der freie Platz braucht einen Anzeigenamen
+**Ein Wächter bleibt nötig:** PATCH lehnt einen `name` auf einem `vacant`-Slot ab. Sonst könnte
+der Stift im Aufstellungs-Block einen Namen setzen, während `vacant` weiter `true` ist — ein
+benannter freier Platz. Die Fehlermeldung verweist auf die Einwechslung.
+
+Das ist auch der Grund, `vacant` nicht ins PATCH-DTO zu nehmen, obwohl es „vollständiger"
+wirkte: der Stift bearbeitet Slots **während** des Spiels (`BogenSlotEditModal` aus dem Drawer).
+Ein Wächter, der dort zu grob prüft — etwa „Payload enthält `vacant`" statt „Wert weicht ab" —
+hätte das Umbenennen einer Spielerin mitten im Spiel gesperrt.
+
+### 4. Der freie Platz braucht einen Anzeigenamen
 
 `bogenFeed.ts` löst den Namen über `nameOf(slotId)` auf und fällt bei leerem Namen auf `'—'`
 zurück. Im Feed stünde dann `— Automatisches Out`. Der freie Platz braucht stattdessen eine
@@ -293,9 +334,12 @@ Aufwand für einen Fall, den niemand versehentlich trifft. Bleibt erlaubt.
 - ein `vacant`-Slot mit gesetzter Position wird abgelehnt
 
 **Backend** — Slot-PATCH:
-- `vacant = true` auf einen Slot mit vorhandenen At-Bats wird abgelehnt (Randfall 3)
-- eine Änderung von `vacant` im Status `LIVE` wird abgelehnt (Randfall 4)
-- im Status `DRAFT` ist sie erlaubt
+- ein `name` auf einem `vacant`-Slot wird abgelehnt, mit Verweis auf die Einwechslung
+  (Randfall 3)
+- `UpdateSlotRequest` enthält **kein** `vacant`-Feld — ein Test, der das festhält, verhindert,
+  dass es später „zur Vollständigkeit" ergänzt wird und damit einen zweiten Weg aufmacht
+- **Regressionsschutz:** Umbenennen eines regulären Slots im Status `LIVE` funktioniert
+  unverändert (das ist der Stift im Aufstellungs-Block, ein bestehender Ablauf)
 
 **Backend** — Mapper: Rundlauf für `vacant` in beide Richtungen.
 
