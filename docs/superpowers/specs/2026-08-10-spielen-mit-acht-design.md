@@ -230,7 +230,7 @@ der ihn verursacht hat.
 
 ## Randfälle
 
-Durchgedacht vor der Umsetzung. Die ersten vier ändern das Design, der Rest gehört in Tests.
+Durchgedacht vor der Umsetzung. Die ersten sechs ändern das Design, der Rest gehört in Tests.
 
 ### 1. Einwechslung muss am freien Platz erreichbar bleiben
 
@@ -282,6 +282,49 @@ sprechende Bezeichnung, konsistent mit dem Bogen: **`frei`**.
 Damit wird der aufgeschobene Minor-Befund aus der Feed-Arbeit relevant — der `nameOf`-Fallback
 hatte keinen Test. Er bekommt jetzt einen, weil er tragend wird.
 
+### 5. `copy-from-gameday` umgeht den Validator komplett
+
+**Der wichtigste Fund dieser Runde.** `SpielbogenSlotService.copyFromGameDay` baut Slots aus dem
+Spieltag-Lineup und ruft `slotRepo.saveAll(slots)` direkt — **ohne** `BogenLineupValidator`.
+
+Zwei Folgen:
+
+**Heute schon:** ein Spieltag-Lineup mit acht Einträgen erzeugt einen Spielbogen mit acht Slots,
+an der Mindestgrenze vorbei. Die Neun-Regel ist über diesen Weg bereits umgehbar. Das ist eine
+bestehende Inkonsistenz, kein neuer Fehler — aber sie trifft genau unseren Fall.
+
+**Für diese Arbeit entscheidend:** das ist der Weg, den der Nutzer im Ernstfall nimmt. Wer mit
+acht Spielerinnen anreist, hat auch im Spieltag acht verfügbar und kopiert die Aufstellung in den
+Bogen. Ohne Anpassung entstünde dann eine Achter-Aufstellung **ohne** freien Platz — kein
+Marker, keine automatischen Outs, keine Warnung. Das gesamte Design würde am wahrscheinlichsten
+Weg vorbeigehen.
+
+**Regeln:**
+
+- Hat das Quell-Lineup **genau acht** Einträge, ergänzt `copyFromGameDay` einen neunten Slot mit
+  `vacant = true`.
+- `copyFromGameDay` ruft anschließend `BogenLineupValidator.validate`, wie der manuelle Weg.
+  Sonst gelten die neuen Regeln dort weiterhin nicht.
+- Hat das Quell-Lineup sieben oder weniger, schlägt der Kopiervorgang mit der Validator-Meldung
+  fehl, statt still eine ungültige Aufstellung zu erzeugen.
+
+### 6. Der Bogen verliert die Markierung nach der Einwechslung
+
+`spielbogenPdfExport.ts:228`:
+
+```
+const originalName = subsForSlot.length > 0 ? subsForSlot[0].playerOutName : slot.name
+```
+
+Der Primärname der Zeile ist der `playerOutName` der ersten Einwechslung. Bei einem freien Platz
+ist der **leer** — die Zeile zeigt dann gar keinen Namen mehr, nur noch `„Name ab 3."` darunter.
+Die `frei`-Markierung verschwindet also genau in dem Moment, in dem sie erklären würde, warum
+dort vorher automatische Outs stehen.
+
+**Regel:** ist der Slot `vacant` **oder** ist der `playerOutName` der ersten Einwechslung leer,
+zeigt die Zeile die Markierung als Primärnamen. Der Bogen liest sich dann als „frei, ab dem 3.
+Inning besetzt" — was passiert ist.
+
 ### Für Tests, ohne Designfolgen
 
 - **Der freie Platz ist Schlagposition 1.** Dann ist die erste Aktion des Spiels ein
@@ -297,11 +340,27 @@ hatte keinen Test. Er bekommt jetzt einen, weil er tragend wird.
   Batting-Order bleibt sequenziell; die Bogen-Zeile erscheint entsprechend in der Mitte.
 - **Undo des automatischen Outs.** Danach ist der freie Platz wieder dran und bietet erneut nur
   das Out an.
-- **`copy-from-gameday`** überträgt Aufstellungen aus einem Spieltag, der das Konzept nicht kennt.
-  Es darf dabei kein `vacant`-Slot entstehen und nichts brechen.
 - **Wizard: Zeile mit getipptem Namen wird als frei markiert.** Der Name muss verschwinden, nicht
   unsichtbar erhalten bleiben.
 - **Position war gesetzt, Slot wird frei markiert.** Position muss geleert werden.
+- **Manueller Seitenwechsel, während der freie Platz dran ist.** Sein Zug wird dann nicht
+  erreicht, es entsteht kein Out. Das ist **richtig** — das Inning endete aus einem anderen
+  Grund. Gehört festgehalten, damit es niemand später „behebt", indem er ein Out erzwingt.
+- **Einwechslung mit `isPinchHitter` auf einen freien Platz.** Fachlich unsinnig, es schlug ja
+  niemand. Sollte `false` sein; wenn der Dialog das Kästchen anbietet, für freie Plätze
+  ausblenden.
+- **Reset und Wieder-Öffnen.** `/reset` löscht At-Bats, die Aufstellung bleibt — der freie Platz
+  überlebt und bietet danach wieder nur das Out an. Ein wieder geöffneter Bogen ebenso.
+- **Einwechslung, dann verlässt die Spielerin das Spiel wieder.** Zweite Einwechslung auf
+  denselben Slot, normaler Pfad. Der Slot wird **nicht** wieder `vacant` — das ist ausdrücklich
+  nicht Teil dieser Arbeit.
+
+### Geprüft und unbedenklich
+
+- **Statistik.** `BattingStatsService` und `BattingStatsCalculator` kennen den Spielbogen nicht —
+  kein Weg, über den ein namenloser freier Platz als Phantom-Spielerin in die Auswertung gerät.
+- **Datenexport und -import.** `DataExportService` berührt den Spielbogen nicht; das neue Feld
+  muss dort nicht mitgeführt werden.
 
 ### Bewusst nicht eingeschränkt
 
@@ -343,6 +402,12 @@ Aufwand für einen Fall, den niemand versehentlich trifft. Bleibt erlaubt.
 
 **Backend** — Mapper: Rundlauf für `vacant` in beide Richtungen.
 
+**Backend** — `copyFromGameDay` (Randfall 5):
+- Quell-Lineup mit acht Einträgen ergibt acht benannte Slots plus einen `vacant`-Slot
+- Quell-Lineup mit neun oder zehn ergibt keinen `vacant`-Slot
+- Quell-Lineup mit sieben schlägt mit der Validator-Meldung fehl, statt still zu speichern
+- der Validator wird auf diesem Weg überhaupt aufgerufen — heute nicht der Fall
+
 **Backend** — Integration:
 - Lineup mit freiem Platz setzen, automatisches Out an dieser Position aufnehmen, Out-Zählung
   des Innings prüfen, Undo prüfen
@@ -359,8 +424,11 @@ Aufwand für einen Fall, den niemand versehentlich trifft. Bleibt erlaubt.
 - `BogenActionButtons`: bei `vacant` erscheint ausschließlich das automatische Out und keine der
   übrigen Aktionen. Der Test muss fallen, wenn ein Treffer-Knopf gerendert wird — das ist die
   Zusicherung, dass die Out-Zählung nicht umgangen werden kann.
-- `bogenSheetRenderer`: die Zeile des freien Platzes trägt die Markierung, nicht einen leeren
-  Namen; `AO` und der Out-Index erscheinen in ihren Zellen
+- `bogenSheetRenderer` / `spielbogenPdfExport`: die Zeile des freien Platzes trägt die
+  Markierung, nicht einen leeren Namen; `AO` und der Out-Index erscheinen in ihren Zellen
+- **nach einer Einwechslung auf den freien Platz** trägt die Zeile weiterhin die Markierung als
+  Primärnamen, darunter `„Name ab 3."` (Randfall 6). Der Test muss fallen, wenn die Zeile
+  namenlos wird — das war das Verhalten vor dem Fix.
 - `bogenFeed`: das automatische Out am freien Platz zeigt `frei` als Namen, nicht den
   `—`-Fallback (Randfall 5). Dazu der bislang aufgeschobene Test für den Fallback selbst.
 - `BogenActionButtons`: bei `vacant` sind Einwechslung und Steal **weiterhin** erreichbar. Der
