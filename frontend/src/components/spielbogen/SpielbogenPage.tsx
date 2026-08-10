@@ -18,6 +18,7 @@ import { HitAdjustSheet } from './HitAdjustSheet'
 import { BogenSheetDrawer } from './BogenSheetDrawer'
 import { PositionSwapDrawer } from './PositionSwapDrawer'
 import { BogenMetaEditModal } from './BogenMetaEditModal'
+import { GameClockReadout, GameClockRule } from '@/components/shared/GameClock'
 import { Pencil } from '@/icons'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import { abOutsAdded } from '@/utils/bogenSheetRenderer'
@@ -709,7 +710,7 @@ export default function SpielbogenPage() {
       </header>
 
       {/* Live-State-Strip */}
-      <div className="bg-navy-900 text-white px-4 py-2 flex items-center justify-between border-b-[3px] border-softball-red-600">
+      <div className="bg-navy-900 text-white px-4 py-2 flex items-center gap-2">
         <div className="flex items-center gap-2.5">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Inning</span>
           <span className="font-display text-2xl font-extrabold leading-none tabular-nums">{meta.currentInning}</span>
@@ -722,6 +723,9 @@ export default function SpielbogenPage() {
           >
             {meta.currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'}
           </button>
+        </div>
+        <div className="flex-1 flex justify-center">
+          <GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} />
         </div>
         {/* Tap auf die Out-Punkte bucht ein Automatisches Out (Legacy-Parität,
             gleicher Handler wie der MEHR-Menu-Eintrag). */}
@@ -741,6 +745,7 @@ export default function SpielbogenPage() {
           </span>
         </button>
       </div>
+      <GameClockRule elapsedSeconds={0} limitMinutes={null} running={false} started={false} />
 
       {/* Score-Block */}
       <div className="px-4 py-3 bg-cream-50 flex items-center justify-center gap-3 border-b border-cream-300">
