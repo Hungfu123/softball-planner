@@ -153,13 +153,19 @@ Ist der freie Platz die aktuelle Schlagposition, ist die **einzige verfügbare A
 automatische Out**. Keine Treffer, kein Walk, kein Strikeout — für einen leeren Platz gibt es
 nichts davon.
 
-In `BogenActionButtons`: bei `currentSlot.vacant` treten die üblichen Aktionen zurück und es
-erscheint ein einzelner, deutlicher Knopf, der denselben Bestätigungsdialog öffnet, den das
-automatische Out heute nutzt.
+In `BogenActionButtons`: bei `currentSlot.vacant` treten die **At-Bat-Aktionen** zurück
+(Treffer, Walk, Strikeout, Aus, Error) und es erscheint ein einzelner, deutlicher Knopf, der
+denselben Bestätigungsdialog öffnet, den das automatische Out heute nutzt.
+
+**Einwechslung und Steal bleiben erreichbar.** Das ist keine Feinheit, sondern Bedingung:
+`BogenActionButtons` hält `onSubstitution`, `onRecordStealing` und `onAutomaticOut` in derselben
+Komponente. Würde man pauschal „alle übrigen Aktionen" ausblenden, verschwände die Einwechslung
+mit — und damit der einzige Weg, eine nachgekommene Spielerin auf den freien Platz zu setzen,
+genau in dem Moment, in dem der Platz dran ist und man es tun will.
 
 Damit ist das Out faktisch erzwungen, ohne eine Blockade zu bauen: es gibt keinen anderen Weg,
-an diesem Platz weiterzukommen. Ein Scorer, der es überspringen könnte, würde die Out-Zählung
-des ganzen Innings verschieben.
+diesen Platz *abzuschließen*. Ein Scorer, der es überspringen könnte, würde die Out-Zählung des
+ganzen Innings verschieben.
 
 ### Darstellung
 
@@ -193,6 +199,75 @@ Bogen und ohne Inning — die Liga sähe nicht, ab wann der Platz besetzt wurde.
 Bereits entstandene `AO`-Einträge bleiben stehen. Sie sind passiert, und die Out-Zählung der
 betroffenen Innings hängt daran.
 
+## Randfälle
+
+Durchgedacht vor der Umsetzung. Die ersten fünf ändern das Design, der Rest gehört in Tests.
+
+### 1. Einwechslung muss am freien Platz erreichbar bleiben
+
+Siehe „Scoring". Wäre sie mit den At-Bat-Aktionen ausgeblendet, wäre der Nachzügler-Fall genau
+dann unerreichbar, wenn er auftritt.
+
+### 2. `vacant` nur bei genau acht Namen
+
+`8 Namen + 1 frei = 9 Slots` ist der Zweck. Aber `9 Namen + 1 frei = 10 Slots` wäre nach den
+Grenzen ebenfalls zulässig — und Unsinn: man spielt mit neun und kassiert trotzdem ein Out je
+Durchgang. Ebenso `8 Namen + 1 frei + 1 EH`.
+
+**Regel:** ein `vacant`-Slot ist nur erlaubt, wenn die Seite **genau acht** benannte Slots hat
+(Gesamtzahl also neun). Sonst ablehnen. Ohne diese Regel kann sich ein Team versehentlich selbst
+ein Out pro Durchgang eintragen.
+
+### 3. `vacant` nicht auf einen Slot setzen, der schon At-Bats hat
+
+`setLineup` (Bulk-Replace) ist im Status `LIVE` gesperrt — geprüft, `SpielbogenSlotService:64`.
+Einzelne Slot-PATCHes sind aber erlaubt. Damit könnte man mitten im Spiel einen Slot als frei
+markieren, an dem bereits At-Bats hängen — die wären dann einem freien Platz zugeordnet.
+
+**Regel:** Slot-PATCH lehnt `vacant = true` ab, wenn für diesen Slot At-Bats existieren.
+
+### 4. `vacant` fällt nur über die Einwechslung, nicht über den Slot-PATCH
+
+Sonst gibt es zwei Wege, den Platz zu besetzen, und einer davon hinterlässt keinen Eintrag im
+Bogen. **Regel:** Slot-PATCH lehnt eine Änderung von `vacant` im Status `LIVE` grundsätzlich ab.
+Vor dem Start (`DRAFT`) ist sie frei — dort korrigiert man die Aufstellung.
+
+### 5. Der freie Platz braucht einen Anzeigenamen
+
+`bogenFeed.ts` löst den Namen über `nameOf(slotId)` auf und fällt bei leerem Namen auf `'—'`
+zurück. Im Feed stünde dann `— Automatisches Out`. Der freie Platz braucht stattdessen eine
+sprechende Bezeichnung, konsistent mit dem Bogen: **`frei`**.
+
+Damit wird der aufgeschobene Minor-Befund aus der Feed-Arbeit relevant — der `nameOf`-Fallback
+hatte keinen Test. Er bekommt jetzt einen, weil er tragend wird.
+
+### Für Tests, ohne Designfolgen
+
+- **Der freie Platz ist Schlagposition 1.** Dann ist die erste Aktion des Spiels ein
+  automatisches Out. `resolveCurrentSlot` liefert bei leerer At-Bat-Liste Slot 1 — sollte
+  funktionieren, gehört aber geprüft.
+- **Der freie Platz kommt zweimal in einem Inning dran.** Bei einem Durchlauf der ganzen
+  Reihenfolge möglich. Dann stehen zwei `AO` in einer Zelle — das ist der Multi-At-Bat-Pfad im
+  Bogen, der gerade dreimal wegen Kürzung nachgebessert wurde. Mit `AO AO` unkritisch kurz, aber
+  einmal ansehen.
+- **Das automatische Out ist das dritte Out.** Löst den Halbinning-Wechsel aus, normaler Pfad.
+- **Beide Mannschaften haben einen freien Platz.** Erlaubt, je einer pro Seite.
+- **Der freie Platz liegt mitten in der Reihenfolge** (etwa Position 5), nicht am Ende. Zulässig,
+  Batting-Order bleibt sequenziell; die Bogen-Zeile erscheint entsprechend in der Mitte.
+- **Undo des automatischen Outs.** Danach ist der freie Platz wieder dran und bietet erneut nur
+  das Out an.
+- **`copy-from-gameday`** überträgt Aufstellungen aus einem Spieltag, der das Konzept nicht kennt.
+  Es darf dabei kein `vacant`-Slot entstehen und nichts brechen.
+- **Wizard: Zeile mit getipptem Namen wird als frei markiert.** Der Name muss verschwinden, nicht
+  unsichtbar erhalten bleiben.
+- **Position war gesetzt, Slot wird frei markiert.** Position muss geleert werden.
+
+### Bewusst nicht eingeschränkt
+
+**Steals während des freien Platzes.** Streng genommen wird für ein automatisches Out kein Pitch
+geworfen, ein Steal ist also unmöglich. Die App modelliert keine Pitches, und eine Sperre wäre
+Aufwand für einen Fall, den niemand versehentlich trifft. Bleibt erlaubt.
+
 ## Nicht Teil dieser Arbeit
 
 - **Sieben oder weniger Spielerinnen.**
@@ -213,6 +288,14 @@ betroffenen Innings hängt daran.
 - ein `vacant`-Slot mit Position `EH` oder `DH` wird abgelehnt
 - neun echte Namen bleiben gültig, zehn ebenfalls, elf weiter abgelehnt
 - sieben Namen plus ein `vacant` (= 8 Slots) wird weiter abgelehnt
+- **neun** Namen plus ein `vacant` (= 10 Slots) wird abgelehnt — `vacant` nur bei genau acht
+  Namen (Randfall 2)
+- ein `vacant`-Slot mit gesetzter Position wird abgelehnt
+
+**Backend** — Slot-PATCH:
+- `vacant = true` auf einen Slot mit vorhandenen At-Bats wird abgelehnt (Randfall 3)
+- eine Änderung von `vacant` im Status `LIVE` wird abgelehnt (Randfall 4)
+- im Status `DRAFT` ist sie erlaubt
 
 **Backend** — Mapper: Rundlauf für `vacant` in beide Richtungen.
 
@@ -234,6 +317,11 @@ betroffenen Innings hängt daran.
   Zusicherung, dass die Out-Zählung nicht umgangen werden kann.
 - `bogenSheetRenderer`: die Zeile des freien Platzes trägt die Markierung, nicht einen leeren
   Namen; `AO` und der Out-Index erscheinen in ihren Zellen
+- `bogenFeed`: das automatische Out am freien Platz zeigt `frei` als Namen, nicht den
+  `—`-Fallback (Randfall 5). Dazu der bislang aufgeschobene Test für den Fallback selbst.
+- `BogenActionButtons`: bei `vacant` sind Einwechslung und Steal **weiterhin** erreichbar. Der
+  Test muss fallen, wenn die Einwechslung verschwindet — sonst ist der Nachzügler-Fall
+  unerreichbar (Randfall 1).
 
 **Vor dem Merge**
 - `cd backend && ./mvnw test -s .mvn/local-settings.xml`
