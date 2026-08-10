@@ -1,5 +1,6 @@
 package com.softball.service;
 
+import com.softball.application.GameClockService;
 import com.softball.application.GameService;
 import com.softball.application.LeagueTeamService;
 import com.softball.domain.model.*;
@@ -37,6 +38,8 @@ class GameServiceTest {
     private GameStaffRepository gameStaffRepository;
     @Mock
     private LeagueTeamService leagueTeamService;
+    @Mock
+    private GameClockService gameClockService;
 
     @InjectMocks
     private GameService gameService;
@@ -228,6 +231,54 @@ class GameServiceTest {
 
             assertThat(result.getEndedAt()).isNull();
             verify(gameRepository, never()).save(any());
+            verify(gameClockService, never()).pauseClockBeforeReopen(any(Game.class));
+        }
+
+        // Task 4: der einzige Schreibvorgang vom Spielablauf in die Uhr. Reopen muss die Uhr
+        // VOR dem Nullen von endedAt pausieren — sonst verlöre die Ableitung ihre Obergrenze.
+        // Ob tatsächlich gedeckelt wird statt "jetzt - runningSince" gebucht wird, prüft die
+        // Integration mit realem GameClockService (Mockito-Mock würde das hier verschlucken).
+        @Test
+        void reopenGame_runningClock_banksBeforeEndedAtIsCleared() {
+            game.setEndedAt(Instant.now());
+            game.setTimerRunningSince(Instant.now().minusSeconds(90));
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(gameRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            gameService.reopenGame(10L);
+
+            verify(gameClockService).pauseClockBeforeReopen(game);
+        }
+
+        @Test
+        void reopenGame_pausedClock_stillDelegatesToClockService() {
+            game.setEndedAt(Instant.now());
+            game.setTimerRunningSince(null);
+            game.setTimerAccumulatedSeconds(60);
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(gameRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            gameService.reopenGame(10L);
+
+            // pauseClockBeforeReopen ist ein No-Op auf einer bereits pausierten Uhr — der
+            // Aufruf selbst passiert trotzdem, die Entscheidung liegt beim Service.
+            verify(gameClockService).pauseClockBeforeReopen(game);
+            assertThat(game.getTimerAccumulatedSeconds()).isEqualTo(60);
+        }
+
+        @Test
+        void reopenGame_regressionGuard_gameWithoutClock_behavesAsBefore() {
+            game.setEndedAt(Instant.now());
+            assertThat(game.getTimerRunningSince()).isNull();
+            assertThat(game.getTimerAccumulatedSeconds()).isZero();
+            when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
+            when(gameRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            final Game result = gameService.reopenGame(10L);
+
+            assertThat(result.getEndedAt()).isNull();
+            assertThat(result.getTimerRunningSince()).isNull();
+            assertThat(result.getTimerAccumulatedSeconds()).isZero();
         }
 
         @Test

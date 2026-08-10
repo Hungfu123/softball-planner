@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.TestcontainersConfig;
 import com.softball.adapter.dto.StartClockRequest;
 import com.softball.adapter.out.persistence.entity.SpielbogenEntity;
+import com.softball.domain.model.BogenStatus;
 import com.softball.adapter.out.persistence.repository.SpringSpielbogenRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -182,6 +183,56 @@ class SpielbogenClockActionsIntegrationTest {
             .andExpect(jsonPath("$.clock.limitMinutes").value(50));
     }
 
+    // Task 4: Wiederoeffnen ist der einzige Schreibvorgang vom Spielablauf in die Uhr — reopen
+    // nullt endedAt und muss die laufende Uhr davor pausieren+deckeln. Ohne den Fix bliebe
+    // timerRunningSince gesetzt (>3700s alt) und die naechste Ableitung wuerde "jetzt -
+    // runningSince" zaehlen statt der 100s bis zum Bogen-Ende — genau der Sprung aus dem Ticket
+    // (93 Minuten -> vierzehn Stunden).
+    @Test
+    void reopen_runningClock_pausesWithElapsedCappedAtBogenEnd_notJumpingToNow() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        rewindRunningSince(bogenId, 3700); // Uhr laeuft seit 3700s
+        markBogenDone(bogenId, 3600); // Bogen endete vor 3600s -> nur 100s liefen bis dahin
+
+        mvc.perform(post("/api/spielbogen/" + bogenId + "/reopen"))
+            .andExpect(status().isOk());
+
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isBetween(100, 110);
+    }
+
+    @Test
+    void reopen_pausedClock_unchanged() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        rewindRunningSince(bogenId, 60);
+        final int accumulated = pauseClock(bogenId);
+        markBogenDone(bogenId, 0);
+
+        mvc.perform(post("/api/spielbogen/" + bogenId + "/reopen")).andExpect(status().isOk());
+
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isEqualTo(accumulated);
+    }
+
+    @Test
+    void reopen_regressionGuard_bogenWithoutClock_behavesAsBefore() throws Exception {
+        final Long bogenId = createBogen();
+        markBogenDone(bogenId, 0);
+
+        mvc.perform(post("/api/spielbogen/" + bogenId + "/reopen")).andExpect(status().isOk());
+
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isZero();
+    }
+
     // ===== Helpers =====
 
     private Long createBogen() throws Exception {
@@ -227,6 +278,16 @@ class SpielbogenClockActionsIntegrationTest {
     /** Setzt {@code endedAt} in die Vergangenheit, um einen beendeten Bogen zu simulieren. */
     private void endBogenAt(final Long bogenId, final long secondsAgo) {
         final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        entity.setEndedAt(Instant.now().minusSeconds(secondsAgo));
+        spielbogenRepository.save(entity);
+    }
+
+    /** Setzt Status DONE + {@code endedAt} in die Vergangenheit — Kurzschluss fuer reopen-Tests
+     *  ohne den echten LIVE/end-Flow (der ein vollstaendiges 9-Spieler-Lineup pro Seite braeuchte),
+     *  analog zu {@link #endBogenAt}. */
+    private void markBogenDone(final Long bogenId, final long secondsAgo) {
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        entity.setStatus(BogenStatus.DONE.name());
         entity.setEndedAt(Instant.now().minusSeconds(secondsAgo));
         spielbogenRepository.save(entity);
     }

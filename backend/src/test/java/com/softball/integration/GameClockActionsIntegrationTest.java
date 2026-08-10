@@ -189,6 +189,56 @@ class GameClockActionsIntegrationTest {
             .andExpect(jsonPath("$.clock.limitMinutes").value(50));
     }
 
+    // Task 4: Wiederoeffnen ist der einzige Schreibvorgang vom Spielablauf in die Uhr — reopen
+    // nullt endedAt und muss die laufende Uhr davor pausieren+deckeln. Ohne den Fix bliebe
+    // timerRunningSince gesetzt (>3700s alt) und die naechste Ableitung wuerde "jetzt -
+    // runningSince" zaehlen statt der 100s bis zum Spielende — genau der Sprung aus dem Ticket
+    // (93 Minuten -> vierzehn Stunden).
+    @Test
+    void reopen_runningClock_pausesWithElapsedCappedAtGameEnd_notJumpingToNow() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 3700); // Uhr laeuft seit 3700s
+        endGameAt(gameId, 3600); // Spiel endete vor 3600s -> nur 100s liefen bis zum Spielende
+
+        mvc.perform(post("/api/games/" + gameId + "/reopen"))
+            .andExpect(status().isOk());
+
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isBetween(100, 110);
+    }
+
+    @Test
+    void reopen_pausedClock_unchanged() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 60);
+        final int accumulated = pauseClock(gameId);
+
+        mvc.perform(post("/api/games/" + gameId + "/end")).andExpect(status().isOk());
+        mvc.perform(post("/api/games/" + gameId + "/reopen")).andExpect(status().isOk());
+
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isEqualTo(accumulated);
+    }
+
+    @Test
+    void reopen_regressionGuard_gameWithoutClock_behavesAsBefore() throws Exception {
+        final Long gameId = createGame();
+
+        mvc.perform(post("/api/games/" + gameId + "/end")).andExpect(status().isOk());
+        mvc.perform(post("/api/games/" + gameId + "/reopen")).andExpect(status().isOk());
+
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isZero();
+    }
+
     // ===== Helpers =====
 
     private Long createGame() throws Exception {

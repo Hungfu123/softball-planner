@@ -36,6 +36,7 @@ class SpielbogenScoringServiceTest {
     @Mock private SpielbogenSubstitutionRepository subRepo;
     @Mock private SpielbogenPositionChangeRepository positionChangeRepo;
     @Mock private SpielbogenRunnerAdvanceRepository runnerAdvanceRepo;
+    @Mock private GameClockService gameClockService;
 
     @InjectMocks
     private SpielbogenScoringService service;
@@ -535,6 +536,62 @@ class SpielbogenScoringServiceTest {
         assertThat(liveBogen.getStatus()).isEqualTo(BogenStatus.LIVE);
         assertThat(liveBogen.getEndedAt()).isNull();
         assertThat(liveBogen.getHomeRuns()).isEqualTo(0);
+        // Regressionsschutz: ein Bogen ohne je gestartete Uhr verhaelt sich unveraendert.
+        assertThat(liveBogen.getTimerRunningSince()).isNull();
+        assertThat(liveBogen.getTimerAccumulatedSeconds()).isZero();
+    }
+
+    // Task 4: der einzige Schreibvorgang vom Spielablauf in die Uhr. reopenIfDone() nullt
+    // endedAt bei Undo eines Walkoff/Game-End — muss die Uhr davor pausieren, sonst verlöre die
+    // Ableitung ihre Obergrenze. Der Deckelungs-Beweis selbst laeuft in der Integration mit
+    // echtem GameClockService (ein Mockito-Mock wuerde einen falschen Wert nicht auffangen).
+    @Test
+    void undoLast_reopensGameWhenStatusDone_banksRunningClockBeforeEndedAtIsCleared() {
+        SpielbogenAtBat last = new SpielbogenAtBat();
+        last.setId(99L);
+        last.setSide(BogenSide.HOME);
+        last.setInning(7);
+        last.setRunsScored(1);
+        liveBogen.setStatus(BogenStatus.DONE);
+        liveBogen.setEndedAt(java.time.Instant.now());
+        liveBogen.setTimerRunningSince(java.time.Instant.now().minusSeconds(90));
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(7);
+        liveBogen.setHomeRuns(1);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 7)).thenReturn(0L);
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.undoLast(1L, BogenSide.HOME);
+
+        verify(gameClockService).pauseClockBeforeReopen(liveBogen);
+    }
+
+    /** Zweiter Aufrufer von reopenIfDone (Stealing-Undo) — muss ebenso an die Uhr denken. */
+    @Test
+    void deleteLastStealing_reopensGameWhenStatusDone_banksRunningClockBeforeEndedAtIsCleared() {
+        SpielbogenStealingEvent ev = new SpielbogenStealingEvent();
+        ev.setId(7L);
+        ev.setBogen(liveBogen);
+        ev.setSide(BogenSide.HOME);
+        ev.setInning(7);
+        ev.setType(StealingEventType.STOLEN_BASE);
+        ev.setToBase(4);
+        liveBogen.setStatus(BogenStatus.DONE);
+        liveBogen.setEndedAt(java.time.Instant.now());
+        liveBogen.setTimerRunningSince(java.time.Instant.now().minusSeconds(90));
+        liveBogen.setCurrentSide(BogenSide.HOME);
+        liveBogen.setCurrentInning(7);
+        liveBogen.setHomeRuns(1);
+        when(stealingRepo.findLatestForBogenIdAndSide(1L, BogenSide.HOME)).thenReturn(Optional.of(ev));
+        when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 7)).thenReturn(0L);
+        when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
+        when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.deleteLastStealingForSide(1L, BogenSide.HOME);
+
+        verify(gameClockService).pauseClockBeforeReopen(liveBogen);
     }
 
     /** BUG E: Stealing-Undo muss den gestohlenen Home-Run vom Score abziehen. */

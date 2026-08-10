@@ -210,4 +210,34 @@ public class GameClockService {
                              final Instant endedAt, final Instant now) {
         return clockCalculator.compute(runningSince, accumulatedSeconds, null, endedAt, now).elapsedSeconds();
     }
+
+    // ===== Wiederöffnen — die eine Ausnahme vom Leitgrundsatz =====
+
+    /**
+     * Pausiert eine laufende Uhr, unmittelbar bevor der Aufrufer {@code endedAt} nullt (Reopen).
+     * Der einzige Schreibvorgang vom Spielablauf in die Uhr — sonst gilt strikt "Uhr liest,
+     * schreibt nie" (siehe Klassenkommentar). Reopen löscht {@code endedAt}; ohne dieses Banking
+     * verlöre die Ableitung in {@link GameClockCalculator} schlagartig ihre Obergrenze und
+     * zählte alle Stunden seit Spielende mit statt die Uhr pausiert zu lassen. Muss aufgerufen
+     * werden, WÄHREND {@code endedAt} noch gesetzt ist — danach ist die Deckelung nicht mehr
+     * rekonstruierbar.
+     */
+    public void pauseClockBeforeReopen(final Game game) {
+        if (game.getTimerRunningSince() == null) {
+            return;
+        }
+        game.setTimerAccumulatedSeconds(
+            bankElapsed(game.getTimerRunningSince(), game.getTimerAccumulatedSeconds(), game.getEndedAt(), Instant.now()));
+        game.setTimerRunningSince(null);
+    }
+
+    /** Wie {@link #pauseClockBeforeReopen(Game)}, für den Spielbogen. */
+    public void pauseClockBeforeReopen(final Spielbogen bogen) {
+        if (bogen.getTimerRunningSince() == null) {
+            return;
+        }
+        bogen.setTimerAccumulatedSeconds(
+            bankElapsed(bogen.getTimerRunningSince(), bogen.getTimerAccumulatedSeconds(), bogen.getEndedAt(), Instant.now()));
+        bogen.setTimerRunningSince(null);
+    }
 }

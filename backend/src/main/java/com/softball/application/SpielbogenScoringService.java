@@ -29,6 +29,7 @@ public class SpielbogenScoringService {
     private final SpielbogenSubstitutionRepository subRepo;
     private final SpielbogenPositionChangeRepository positionChangeRepo;
     private final SpielbogenRunnerAdvanceRepository runnerAdvanceRepo;
+    private final GameClockService gameClockService;
 
     public SpielbogenScoringService(final SpielbogenRepository bogenRepo,
                                     final SpielbogenSlotRepository slotRepo,
@@ -36,7 +37,8 @@ public class SpielbogenScoringService {
                                     final SpielbogenStealingRepository stealingRepo,
                                     final SpielbogenSubstitutionRepository subRepo,
                                     final SpielbogenPositionChangeRepository positionChangeRepo,
-                                    final SpielbogenRunnerAdvanceRepository runnerAdvanceRepo) {
+                                    final SpielbogenRunnerAdvanceRepository runnerAdvanceRepo,
+                                    final GameClockService gameClockService) {
         this.bogenRepo = bogenRepo;
         this.slotRepo = slotRepo;
         this.atBatRepo = atBatRepo;
@@ -44,6 +46,7 @@ public class SpielbogenScoringService {
         this.subRepo = subRepo;
         this.positionChangeRepo = positionChangeRepo;
         this.runnerAdvanceRepo = runnerAdvanceRepo;
+        this.gameClockService = gameClockService;
     }
 
     @Transactional
@@ -705,6 +708,10 @@ public class SpielbogenScoringService {
      *  Events. Sonst bliebe der User im DONE-Zustand gefangen und müsste manuell neu öffnen. */
     private void reopenIfDone(final Spielbogen bogen) {
         if (bogen.getStatus() == BogenStatus.DONE) {
+            // Vor dem Nullen von endedAt: laufende Uhr pausieren und deckeln (siehe
+            // GameClockService.pauseClockBeforeReopen) — sonst zaehlt die Ableitung schlagartig
+            // alle Stunden seit Spielende mit statt die Uhr pausiert zu lassen.
+            gameClockService.pauseClockBeforeReopen(bogen);
             bogen.setStatus(BogenStatus.LIVE);
             bogen.setEndedAt(null);
             log.info("Spielbogen {} Undo: Status DONE → LIVE (Spiel wieder geöffnet)", bogen.getId());
