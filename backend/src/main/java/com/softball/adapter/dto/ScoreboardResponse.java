@@ -13,7 +13,8 @@ public record ScoreboardResponse(
     Long currentBatterId,
     String currentBatterName,
     Integer currentBatterOrder,
-    Integer totalAtBats
+    Integer totalAtBats,
+    ClockStateResponse clock
 ) {
     public record RunnerOnBase(int base, Long playerId, String playerName, Integer battingOrder) {}
 }

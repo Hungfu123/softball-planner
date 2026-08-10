@@ -1,6 +1,7 @@
 package com.softball.application;
 
 import com.softball.adapter.dto.AtBatResponse;
+import com.softball.adapter.dto.ClockStateResponse;
 import com.softball.adapter.dto.RecordAtBatRequest;
 import com.softball.adapter.dto.RecordStealingEventRequest;
 import com.softball.adapter.dto.ScoreboardResponse;
@@ -36,6 +37,7 @@ public class GameScoringService {
     private final SubstitutionRepository substitutionRepository;
     private final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository;
     private final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository;
+    private final GameClockService clockService;
     private final BaseRunningReplay baseRunningReplay = new BaseRunningReplay();
 
     public GameScoringService(final GameRepository gameRepository,
@@ -45,7 +47,8 @@ public class GameScoringService {
                                final BaseRunningEventRepository stealingRepository,
                                final SubstitutionRepository substitutionRepository,
                                final com.softball.domain.port.out.InningAdvanceEventRepository inningAdvanceEventRepository,
-                               final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository) {
+                               final com.softball.domain.port.out.AutomaticOutEventRepository automaticOutEventRepository,
+                               final GameClockService clockService) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.lineupEntryRepository = lineupEntryRepository;
@@ -54,6 +57,7 @@ public class GameScoringService {
         this.substitutionRepository = substitutionRepository;
         this.inningAdvanceEventRepository = inningAdvanceEventRepository;
         this.automaticOutEventRepository = automaticOutEventRepository;
+        this.clockService = clockService;
     }
 
     @Transactional(readOnly = true)
@@ -485,6 +489,8 @@ public class GameScoringService {
         final Optional<Player> currentBatter = currentBatterEntry.map(e ->
             resolveBatterForEntry(e, substitutions, currentInning));
 
+        final ClockStateResponse clock = ClockStateResponse.from(clockService.gameClockState(game));
+
         return new ScoreboardResponse(
             gameId,
             scoreUs,
@@ -496,7 +502,8 @@ public class GameScoringService {
             currentBatter.map(Player::getId).orElse(null),
             currentBatter.map(Player::getName).orElse(null),
             currentBatterEntry.map(LineupEntry::getBattingOrder).orElse(null),
-            atBats.size()
+            atBats.size(),
+            clock
         );
     }
 
