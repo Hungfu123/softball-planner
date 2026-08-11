@@ -54,7 +54,9 @@ function useTickingSeconds(elapsedSeconds: number, running: boolean): number {
 function useGameClock({ elapsedSeconds, limitMinutes, running, started }: GameClockProps): ClockComputed {
   const displaySeconds = useTickingSeconds(elapsedSeconds, running)
   const limitSeconds = limitMinutes != null ? limitMinutes * 60 : null
-  const isOverLimit = limitSeconds != null && displaySeconds >= limitSeconds
+  // `>` statt `>=`, exakt wie GameClockCalculator.overLimit im Backend — genau am Limit gilt
+  // es noch nicht als "drüber", sonst weichen Server und lokale Ticking-Anzeige eine Sekunde ab.
+  const isOverLimit = limitSeconds != null && displaySeconds > limitSeconds
   const overSeconds = isOverLimit && limitSeconds != null ? displaySeconds - limitSeconds : 0
   const progress = limitSeconds ? Math.min(1, displaySeconds / limitSeconds) : 0
 
