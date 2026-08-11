@@ -271,7 +271,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                         <td className="px-3 py-2 text-right tabular-nums text-gray-600 text-xs" title="Single / Double / Triple / HR">
                           {s.singles}/{s.doubles}/{s.triples}/{s.homeRuns}
                         </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-navy-900">{formatPct(Number(s.onBasePct))}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-navy-900">{formatDec(Number(s.onBasePct))}</td>
                         <td className="px-3 py-2 text-right tabular-nums text-navy-900">{formatDec(Number(s.sluggingPct))}</td>
                         <td className="px-3 py-2 text-right tabular-nums text-navy-900 font-bold">{formatDec(Number(s.ops))}</td>
                       </>
@@ -304,10 +304,6 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
       )}
     </div>
   )
-}
-
-function formatPct(val: number): string {
-  return `${Math.round(val * 100)} %`
 }
 
 function formatDec(val: number): string {
