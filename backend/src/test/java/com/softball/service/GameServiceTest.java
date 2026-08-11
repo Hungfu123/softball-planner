@@ -238,16 +238,29 @@ class GameServiceTest {
         // VOR dem Nullen von endedAt pausieren — sonst verlöre die Ableitung ihre Obergrenze.
         // Ob tatsächlich gedeckelt wird statt "jetzt - runningSince" gebucht wird, prüft die
         // Integration mit realem GameClockService (Mockito-Mock würde das hier verschlucken).
+        //
+        // Review-Fund: eine reine verify(...) dass der Aufruf passiert ist, prüft NICHT die
+        // Reihenfolge — game.setEndedAt(null) ist kein Mock-Aufruf, ein InOrder zwischen zwei
+        // Mocks würde die Mutation auf demselben Objekt gar nicht sehen. Stattdessen wird per
+        // doAnswer erfasst, ob endedAt zum Zeitpunkt des Bankings noch gesetzt war — das ist der
+        // Name des Tests, jetzt tatsächlich geprüft statt nur behauptet.
         @Test
         void reopenGame_runningClock_banksBeforeEndedAtIsCleared() {
             game.setEndedAt(Instant.now());
             game.setTimerRunningSince(Instant.now().minusSeconds(90));
             when(gameRepository.findById(10L)).thenReturn(Optional.of(game));
             when(gameRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            final Instant[] endedAtWhenBanked = new Instant[1];
+            org.mockito.Mockito.doAnswer(inv -> {
+                endedAtWhenBanked[0] = game.getEndedAt();
+                return null;
+            }).when(gameClockService).pauseClockBeforeReopen(game);
 
             gameService.reopenGame(10L);
 
             verify(gameClockService).pauseClockBeforeReopen(game);
+            assertThat(endedAtWhenBanked[0]).isNotNull();
+            assertThat(game.getEndedAt()).isNull();
         }
 
         @Test

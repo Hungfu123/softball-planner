@@ -177,6 +177,12 @@ class SpielbogenServiceTest {
     // dem Nullen von endedAt pausieren — sonst verlöre die Ableitung ihre Obergrenze. Der
     // Deckelungs-Beweis selbst laeuft in der Integration mit echtem GameClockService (ein
     // Mockito-Mock wuerde einen falschen Wert nicht auffangen).
+    //
+    // Review-Fund (gleicher Fehler in GameServiceTest/SpielbogenScoringServiceTest): eine reine
+    // verify(...) dass der Aufruf passiert ist, prüft NICHT die Reihenfolge — bogen.setEndedAt
+    // (null) ist kein Mock-Aufruf, ein InOrder zwischen zwei Mocks würde die Mutation auf
+    // demselben Objekt gar nicht sehen. Stattdessen wird per doAnswer erfasst, ob endedAt zum
+    // Zeitpunkt des Bankings noch gesetzt war.
     @Test
     void reopen_runningClock_banksBeforeEndedAtIsCleared() {
         draftBogen.setStatus(BogenStatus.DONE);
@@ -184,10 +190,17 @@ class SpielbogenServiceTest {
         draftBogen.setTimerRunningSince(Instant.now().minusSeconds(90));
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(draftBogen));
         when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        final Instant[] endedAtWhenBanked = new Instant[1];
+        org.mockito.Mockito.doAnswer(inv -> {
+            endedAtWhenBanked[0] = draftBogen.getEndedAt();
+            return null;
+        }).when(gameClockService).pauseClockBeforeReopen(draftBogen);
 
         service.reopen(1L);
 
         verify(gameClockService).pauseClockBeforeReopen(draftBogen);
+        assertThat(endedAtWhenBanked[0]).isNotNull();
+        assertThat(draftBogen.getEndedAt()).isNull();
     }
 
     @Test
