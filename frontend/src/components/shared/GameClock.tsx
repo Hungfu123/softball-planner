@@ -8,6 +8,9 @@ export interface GameClockProps {
   running: boolean
   /** false = Uhr wurde nie gestartet, zeigt nur das „Zeit"-Affordance-Wort. */
   started: boolean
+  /** Geschätzte Gesamtdauer in Minuten (nur ohne Limit, ab 3 abgeschlossenen Halbinnings —
+   *  siehe GameDurationEstimator im Backend). `null`/`undefined` zeigt keine Schätzung. */
+  estimatedTotalMinutes?: number | null
   onPress?: () => void
 }
 
@@ -79,6 +82,14 @@ function formatClock(totalSeconds: number): string {
   return `${mm}:${String(ss).padStart(2, '0')}`
 }
 
+/** h:mm für die geschätzte GESAMTdauer (anders als formatClock: die kann leicht über eine
+ *  Stunde liegen, deshalb mit Stunden-Anteil statt reiner Minutenzahl, z.B. "1:35"). */
+function formatDurationEstimate(totalMinutes: number): string {
+  const m = Math.max(0, Math.round(totalMinutes))
+  const h = Math.floor(m / 60)
+  return `${h}:${String(m % 60).padStart(2, '0')}`
+}
+
 /**
  * Spielzeit-Anzeige für den Live-State-Strip des Spielbogens (und später der Legacy-ScoringPage).
  * Gehört in die freie Mitte zwischen Inning und Outs — gleiche Typo-Grammatik (font-display,
@@ -124,6 +135,13 @@ export function GameClockReadout(props: GameClockProps) {
       <span className={`font-display text-[15px] font-extrabold leading-none tabular-nums tracking-wide transition-colors ${valueClass}`}>
         {formatClock(displaySeconds)}
       </span>
+      {props.estimatedTotalMinutes != null && (
+        // Nur ohne Limit befüllt (Backend-Gate) — im 'over'-Zustand (nur mit Limit möglich)
+        // taucht das also nie neben der Überschreitung auf, konkurriert also nie mit ihr.
+        <span className="font-display text-[11px] font-bold tabular-nums text-white/45">
+          ≈ {formatDurationEstimate(props.estimatedTotalMinutes)}
+        </span>
+      )}
     </Tag>
   )
 }

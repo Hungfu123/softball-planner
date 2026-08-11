@@ -315,7 +315,21 @@ public class SpielbogenController {
                 data.homeTotals().runs(), data.homeTotals().hits(), data.homeTotals().errors()),
             new BogenSheetResponse.TeamTotals(
                 data.awayTotals().runs(), data.awayTotals().hits(), data.awayTotals().errors()),
-            ClockStateResponse.from(clockService.bogenClockState(data.bogen()))
+            clockStateWithEstimate(data.bogen())
         );
+    }
+
+    /**
+     * Uhr-Zustand plus Dauer-Hochrechnung für den Sheet-Endpunkt — Auswärts (top) schlägt
+     * zuerst, sobald Heim (bottom) dran ist, ist die erste Hälfte des aktuellen Innings fertig
+     * (siehe {@code GameDurationEstimator.completedHalfInnings}).
+     */
+    private ClockStateResponse clockStateWithEstimate(final Spielbogen bogen) {
+        final var clockState = clockService.bogenClockState(bogen);
+        final int currentInning = bogen.getCurrentInning() != null ? bogen.getCurrentInning() : 1;
+        final boolean secondHalfInProgress = bogen.getCurrentSide() == BogenSide.HOME;
+        final var estimate = clockService.estimateDuration(
+            clockState, currentInning, secondHalfInProgress, bogen.getEndedAt() != null);
+        return ClockStateResponse.from(clockState, estimate);
     }
 }

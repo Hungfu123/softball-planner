@@ -180,6 +180,77 @@ Geräte mit falsch gestellter Uhr davor bewahrt, eine falsche Spielzeit anzuzeig
 - Ohne gestartete Uhr rendert die Kopfzeile exakt wie vor diesem Feature — Regressionsschutz,
   geprüft in `GameClock.test.tsx` / `ScoringPage.clock.test.tsx`.
 
+### Dauer-Schätzung ohne Limit
+
+Für Spiele **ohne** Zeitlimit: eine grobe Live-Schätzung der Gesamtdauer aus dem bisherigen
+Tempo, hochgerechnet auf ein reguläres Spiel. Bewusst eine Live-Schätzung statt einer
+historischen Statistik über vergangene Spiele — funktioniert also schon beim allerersten Spiel,
+ganz ohne angesammelte Historie.
+
+**Rechenkern: `domain/service/GameDurationEstimator`.** Eigener Service statt Erweiterung von
+`GameClockCalculator.compute` — der Rechenkern der Uhr kennt nur die vier rohen Timer-Felder,
+nichts vom Spielstand (Inning/Seite). Diese Schätzung braucht genau das zusätzlich, und die
+beiden Aufrufer leiten "abgeschlossene Halbinnings" grundverschieden her (siehe unten) — eine
+Vermischung würde `GameClockCalculator` seine Eingangs-Reinheit nehmen.
+
+```
+Tempo       = elapsedSeconds / abgeschlossene Halbinnings
+Gesamtdauer = Tempo × 14                (7 Innings × 2 Halbinnings)
+Rest        = Gesamtdauer − elapsedSeconds (min. 0)
+```
+
+`GameDurationEstimator.estimate(...)` liefert `Optional<DurationEstimate>` — leer, wenn:
+- weniger als 3 abgeschlossene Halbinnings vorliegen (frühes Tempo ist zu verrauscht — kein
+  Wert ist besser als ein schlechter Wert),
+- ein Limit gesetzt ist (die Restzeit gegen das Limit ist dann schon die Zahl, die zählt; eine
+  zweite Zahl daneben würde mit ihr konkurrieren statt sie zu ergänzen),
+- die Uhr nie gestartet wurde, oder
+- das Spiel/der Bogen bereits beendet ist (`endedAt` gesetzt) — die gelaufene Zeit IST dann
+  schon die tatsächliche Gesamtdauer, eine Hochrechnung würde ihr widersprechen statt sie zu
+  ergänzen.
+
+**Abgeschlossene Halbinnings — eine Formel, zwei Herleitungen.**
+`GameDurationEstimator.completedHalfInnings(inning, secondHalfInProgress)` rechnet
+`(inning - 1) * 2 + (secondHalfInProgress ? 1 : 0)`. Was `secondHalfInProgress` bedeutet, hängt
+vom Aufrufer ab:
+- **Spielbogen** hat einen echten Seitenwechsel: `secondHalfInProgress = currentSide ==
+  BogenSide.HOME` (Auswärts schlägt zuerst/top, sobald Heim/bottom dran ist, ist die erste
+  Hälfte des Innings fertig). Bottom des 4. → 7 abgeschlossene Halbinnings, Top des 4. → 6.
+- **Legacy-`Game`** trackt nur die eigenen At-Bats, keinen echten Seitenwechsel — ein
+  `InningAdvanceEvent` bündelt die Gegner-Runs der anderen Hälfte in einem Rutsch.
+  `secondHalfInProgress = outsInCurrentInning >= 3`: 3 Outs im eigenen Frame heißt "die eigene
+  Hälfte ist fertig", unabhängig davon ob das top oder bottom war.
+
+**Verdrahtung:** `GameClockService.estimateDuration(clockState, currentInning,
+secondHalfInProgress, ended)` — nimmt den bereits berechneten `ClockState` entgegen statt ihn
+selbst neu zu lesen, damit nicht zwei Aufrufe kurz hintereinander `Instant.now()` lesen und
+minimal auseinanderlaufen. Aufgerufen von `GameScoringService.getScoreboard` (Legacy) und
+`SpielbogenController.getSheet` (Spielbogen) — die beiden einzigen Lese-Endpunkte, die Inning +
+Seite kennen. Die vier Uhr-Aktions-Endpunkte (start/pause/resume/reset) liefern weiterhin
+`durationEstimate: null`; ihre Antwort wird vom Frontend ohnehin verworfen (`reload()` danach
+holt den vollen Scoreboard-/Sheet-Zustand). Ergebnis landet in
+`ClockStateResponse.durationEstimate` (`{ totalMinutes, remainingMinutes,
+completedHalfInnings }`, `null` wenn nicht vorhanden) — dort statt in einem eigenen DTO, weil
+`ClockStateResponse` schon der eine Ort für berechnete Uhr-Werte ist.
+
+**Anzeige, nie Neuberechnung im Frontend** — es gibt genau eine Implementierung dieser Formel
+im gesamten Code:
+- **Inline neben der verstrichenen Zeit** (`GameClockReadout`, neue Prop
+  `estimatedTotalMinutes`): `≈ 1:35` (h:mm der Gesamtdauer). Nur befüllt, wenn das Backend eine
+  Schätzung liefert — kein Limit gesetzt, kein Tap-Verhalten geändert (Tap auf die Zahl bleibt
+  Start/Pause/Fortsetzen).
+- **Restzeit + Basis im Options-Sheet** (`GameClockStartSheet`, neue Prop `durationEstimate`):
+  `≈ 53 min noch` plus „Schätzung aus N abgeschlossenen Halbinnings" — auditierbar statt
+  magisch, erreichbar über den ⋮-Punkt neben der Uhr.
+- Die Schätzung wird zwischen Fetches leicht unscharf (`elapsedSeconds` tickt lokal weiter, die
+  Schätzung nicht) — gewollt: sie ist auf Minuten gerundet und ändert sich ohnehin nur
+  merklich, wenn ein Halbinning abgeschlossen wird, genau dann holt das Frontend sowieso neu.
+  Kein zusätzliches Polling dafür.
+- Ehrlichkeitsvorbehalte, die absichtlich **nicht** geglättet werden: Bottom des 7. wird bei
+  Heim-Führung nicht gespielt (13 statt 14 Halbinnings möglich), Extra-Innings verlängern über
+  14 hinaus, `elapsedSeconds` schließt Pausen aus (Spielzeit-, keine Wanduhr-Schätzung) — das
+  `≈` steht deshalb immer dabei.
+
 ### PDF: `Zeit:`-Feld
 `utils/spielbogenPdfExport.ts` — `formatStartTime(timerStartedAt)` formatiert
 `sheet.meta.timerStartedAt` (`BogenSheetResponse.meta` *ist* ein `SpielbogenResponse`) als

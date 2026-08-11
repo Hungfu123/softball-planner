@@ -11,6 +11,9 @@ interface GameClockStartSheetProps {
   /** Uhr läuft bereits oder ist pausiert — zeigt die Zurücksetzen-Ansicht statt der Start-Optionen.
    *  Erreichbar über eine eigene Öffnungsstelle des Aufrufers (die Uhr selbst togglet Pause/Fortsetzen). */
   hasStarted: boolean
+  /** Restzeit-Schätzung + ihre Basis — nur ohne Limit vorhanden (siehe GameClock/GameDurationEstimator).
+   *  `null`/`undefined` zeigt nichts, statt eine Lücke zu lassen. */
+  durationEstimate?: { remainingMinutes: number; completedHalfInnings: number } | null
 }
 
 /**
@@ -22,7 +25,7 @@ interface GameClockStartSheetProps {
  * Uhr, sonst nur die Zurücksetzen-Aktion (kein Sinn, ein Limit zu wählen, während die Uhr schon
  * läuft; der dokumentierte Wiederherstellungsweg bei Fehlstart ist „zurücksetzen und neu starten").
  */
-export function GameClockStartSheet({ open, onClose, onStart, onReset, hasStarted }: GameClockStartSheetProps) {
+export function GameClockStartSheet({ open, onClose, onStart, onReset, hasStarted, durationEstimate }: GameClockStartSheetProps) {
   const [limitInput, setLimitInput] = useState('')
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
@@ -44,6 +47,15 @@ export function GameClockStartSheet({ open, onClose, onStart, onReset, hasStarte
       >
         {hasStarted ? (
           <div className="px-4 pt-4 pb-4 space-y-3">
+            {durationEstimate != null && (
+              // Auditierbar statt magisch: die Basis (wie viele Halbinnings) steht direkt dabei.
+              <p className="text-sm text-gray-500 text-center">
+                ≈ {durationEstimate.remainingMinutes} min noch
+                <span className="block text-xs text-gray-400 mt-0.5">
+                  Schätzung aus {durationEstimate.completedHalfInnings} abgeschlossenen Halbinnings
+                </span>
+              </p>
+            )}
             <p className="text-sm text-gray-600 text-center">
               Setzt die gelaufene Zeit auf 0 zurück, das Limit bleibt erhalten. Das Spiel selbst
               (Score, Innings, At-Bats) ist davon nicht betroffen.

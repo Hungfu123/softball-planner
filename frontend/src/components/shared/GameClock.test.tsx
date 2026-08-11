@@ -36,6 +36,31 @@ describe('GameClockReadout', () => {
     expect(screen.getByText('93:20')).toBeInTheDocument()
   })
 
+  it('zeigt die geschätzte Gesamtdauer inline neben der verstrichenen Zeit, wenn übergeben', () => {
+    render(<GameClockReadout elapsedSeconds={37 * 60 + 12} limitMinutes={null} running started estimatedTotalMinutes={95} />)
+    expect(screen.getByText('≈ 1:35')).toBeInTheDocument()
+  })
+
+  it('zeigt keine Schätzung, wenn estimatedTotalMinutes fehlt (undefined)', () => {
+    render(<GameClockReadout elapsedSeconds={37 * 60 + 12} limitMinutes={null} running started />)
+    expect(screen.queryByText(/≈/)).not.toBeInTheDocument()
+  })
+
+  it('zeigt keine Schätzung, wenn estimatedTotalMinutes explizit null ist', () => {
+    render(<GameClockReadout elapsedSeconds={37 * 60 + 12} limitMinutes={null} running started estimatedTotalMinutes={null} />)
+    expect(screen.queryByText(/≈/)).not.toBeInTheDocument()
+  })
+
+  // Regression: eine nie gestartete Uhr bleibt exakt wie bisher, auch wenn (unerwartet)
+  // eine estimatedTotalMinutes-Prop übergeben würde — die Backend-Gates garantieren das zwar
+  // schon, aber die Komponente selbst darf sich nicht darauf verlassen.
+  it('rendert bei nie gestarteter Uhr trotz estimatedTotalMinutes weiterhin nichts', () => {
+    const { container } = render(
+      <GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} estimatedTotalMinutes={95} />
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
   it('ruft onPress beim Klick auf, wenn übergeben', async () => {
     let pressed = false
     render(<GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} onPress={() => { pressed = true }} />)

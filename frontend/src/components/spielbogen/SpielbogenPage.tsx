@@ -787,6 +787,7 @@ export default function SpielbogenPage() {
             limitMinutes={clock.limitMinutes}
             running={clock.running}
             started={clock.started}
+            estimatedTotalMinutes={clock.durationEstimate?.totalMinutes}
             onPress={handleClockPress}
           />
           {clock.started && (
@@ -1652,6 +1653,7 @@ export default function SpielbogenPage() {
         onStart={handleStartClock}
         onReset={handleResetClock}
         hasStarted={clock.started}
+        durationEstimate={clock.durationEstimate}
       />
     </div>
   )

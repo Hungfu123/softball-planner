@@ -226,6 +226,63 @@ class SpielbogenClockActionsIntegrationTest {
             .andExpect(jsonPath("$.clock.limitMinutes").value(50));
     }
 
+    // Dauer-Schätzung ohne Limit — Verdrahtung im Sheet-Endpunkt. Die eigentliche Formel ist in
+    // GameDurationEstimatorTest erschöpfend geprüft; hier geht es nur darum, dass Inning + Seite
+    // aus dem Bogen korrekt hinein- und die Schätzung korrekt hinausfließt.
+    @Test
+    void sheet_noEstimate_belowThreeCompletedHalfInnings() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        rewindRunningSince(bogenId, 100);
+        setInningAndSide(bogenId, 1, "AWAY"); // 0 abgeschlossene Halbinnings
+
+        mvc.perform(get("/api/spielbogen/" + bogenId + "/sheet"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate").doesNotExist());
+    }
+
+    @Test
+    void sheet_noEstimate_whenLimitSet() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, 90);
+        rewindRunningSince(bogenId, 3600);
+        setInningAndSide(bogenId, 4, "HOME"); // 7 abgeschlossene Halbinnings — genug, aber Limit gesetzt
+
+        mvc.perform(get("/api/spielbogen/" + bogenId + "/sheet"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate").doesNotExist());
+    }
+
+    @Test
+    void sheet_noEstimate_afterBogenEnded() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        rewindRunningSince(bogenId, 3600);
+        setInningAndSide(bogenId, 4, "HOME");
+        endBogenAt(bogenId, 60);
+
+        mvc.perform(get("/api/spielbogen/" + bogenId + "/sheet"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate").doesNotExist());
+    }
+
+    // Bottom des 4. -> 7 abgeschlossene Halbinnings (siehe GameDurationEstimator.completedHalfInnings).
+    // 3600s gelaufen -> Tempo ~514s/HI -> Gesamt ~120min. Grobe Grenzen statt exaktem Wert, weil
+    // zwischen rewindRunningSince und dem GET ein paar echte Sekunden vergehen.
+    @Test
+    void sheet_estimatesDuration_afterThreeCompletedHalfInnings() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        rewindRunningSince(bogenId, 3600);
+        setInningAndSide(bogenId, 4, "HOME");
+
+        mvc.perform(get("/api/spielbogen/" + bogenId + "/sheet"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate.completedHalfInnings").value(7))
+            .andExpect(jsonPath("$.clock.durationEstimate.totalMinutes", greaterThanOrEqualTo(119)))
+            .andExpect(jsonPath("$.clock.durationEstimate.totalMinutes", lessThan(122)));
+    }
+
     // Task 4: Wiederoeffnen ist der einzige Schreibvorgang vom Spielablauf in die Uhr — reopen
     // nullt endedAt und muss die laufende Uhr davor pausieren+deckeln. Ohne den Fix bliebe
     // timerRunningSince gesetzt (>3700s alt) und die naechste Ableitung wuerde "jetzt -
@@ -328,6 +385,14 @@ class SpielbogenClockActionsIntegrationTest {
     private void rewindRunningSince(final Long bogenId, final long seconds) {
         final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
         entity.setTimerRunningSince(Instant.now().minusSeconds(seconds));
+        spielbogenRepository.save(entity);
+    }
+
+    /** Setzt Inning + Seite direkt, ohne den echten Scoring-Flow durchzuspielen. */
+    private void setInningAndSide(final Long bogenId, final int inning, final String side) {
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        entity.setCurrentInning(inning);
+        entity.setCurrentSide(side);
         spielbogenRepository.save(entity);
     }
 
