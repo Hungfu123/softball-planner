@@ -470,6 +470,8 @@ export const pauseClock = (gameId: number) =>
   request<ClockStateResponse>(`/games/${gameId}/clock/pause`, { method: 'POST' })
 export const resumeClock = (gameId: number) =>
   request<ClockStateResponse>(`/games/${gameId}/clock/resume`, { method: 'POST' })
+export const resetClock = (gameId: number) =>
+  request<ClockStateResponse>(`/games/${gameId}/clock/reset`, { method: 'POST' })
 
 export const getGameBattingStats = (gameId: number) =>
   request<PlayerBattingStatsResponse[]>(`/games/${gameId}/batting-stats`)
@@ -596,6 +598,15 @@ export async function getSpielbogenSheet(bogenId: number): Promise<BogenSheetRes
 export async function resetSpielbogenScoring(bogenId: number): Promise<SpielbogenResponse> {
   return request<SpielbogenResponse>(`/spielbogen/${bogenId}/reset`, { method: 'POST' })
 }
+
+export const startSpielbogenClock = (bogenId: number, limitMinutes: number | null) =>
+  request<ClockStateResponse>(`/spielbogen/${bogenId}/clock/start`, { method: 'POST', body: JSON.stringify({ limitMinutes }) })
+export const pauseSpielbogenClock = (bogenId: number) =>
+  request<ClockStateResponse>(`/spielbogen/${bogenId}/clock/pause`, { method: 'POST' })
+export const resumeSpielbogenClock = (bogenId: number) =>
+  request<ClockStateResponse>(`/spielbogen/${bogenId}/clock/resume`, { method: 'POST' })
+export const resetSpielbogenClock = (bogenId: number) =>
+  request<ClockStateResponse>(`/spielbogen/${bogenId}/clock/reset`, { method: 'POST' })
 
 export interface LeagueResultLite {
   id: number

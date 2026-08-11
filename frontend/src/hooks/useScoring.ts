@@ -93,6 +93,13 @@ export function useScoring(gameId: number | null) {
     return state
   }, [gameId, reload])
 
+  const resetClock = useCallback(async () => {
+    if (gameId == null) throw new Error('Kein Spiel aktiv')
+    const state = await api.resetClock(gameId)
+    await reload()
+    return state
+  }, [gameId, reload])
+
   const deleteStealingEvent = useCallback(async (eventId: number) => {
     if (gameId == null) return
     await api.deleteStealingEvent(gameId, eventId)
@@ -114,5 +121,6 @@ export function useScoring(gameId: number | null) {
     startClock,
     pauseClock,
     resumeClock,
+    resetClock,
   }
 }
