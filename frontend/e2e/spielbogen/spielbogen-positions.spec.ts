@@ -70,8 +70,11 @@ test.describe('Spielbogen — Plays jeder Position', () => {
       await page.locator('button[aria-label="Spielbogen anzeigen"]').first().click()
       await page.waitForTimeout(500)
       const dialog = page.getByRole('dialog')
-      // Der Live-Feed nennt die Batter, die schon dran waren.
+      // Der Live-Feed nennt die Batter, die schon dran waren. "Attackers-1" steht schon
+      // im Scoreboard (nächster Batter), Attackers-5 spielte im 2. Inning AWAY — nicht
+      // mehr das neueste Halbinning, das startet seit dem Feed-Collapse eingeklappt.
       await expect(page.getByText('Attackers-1').first()).toBeVisible({ timeout: 4000 })
+      await dialog.getByTestId('toggle-half-2-AWAY').click()
       await expect(page.getByText('Attackers-5').first()).toBeVisible()
 
       // Die vollständige Aufstellung steckt seit dem Live-Feed-Umbau im kollabierten
@@ -136,7 +139,10 @@ test.describe('Spielbogen — Plays jeder Position', () => {
       // Spielbogen anzeigen öffnen
       await page.locator('button[aria-label="Spielbogen anzeigen"]').first().click()
       await page.waitForTimeout(500)
-      // Spielernamen "Foxes-1" + "Foxes-2" im Lineup sichtbar
+      // Foxes-1/-2 spielten im 1. Inning AWAY, danach folgte HOME Inning 1 — AWAY 1 ist
+      // also nicht mehr das neueste Halbinning und startet seit dem Feed-Collapse
+      // eingeklappt. Erst aufklappen, dann sind die Spielernamen im Feed sichtbar.
+      await page.getByTestId('toggle-half-1-AWAY').click()
       await expect(page.getByText('Foxes-1').first()).toBeVisible({ timeout: 4000 })
       await expect(page.getByText('Foxes-2').first()).toBeVisible()
     } finally {

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { BogenSide, BogenTeamTotals } from '@/types'
 import { halfInningId, type HalfInning } from '@/utils/bogenFeed'
 
@@ -35,9 +36,36 @@ export function BogenLiveFeed({
   const columns = inningColumns(inningRuns, currentInning)
   const played = new Set(feed.map(h => halfInningId(h.inning, h.side)))
 
+  // Nur das neueste Halbinning (index 0, trägt den LIVE-Badge) startet aufgeklappt —
+  // alles Ältere ist eingeklappt, sonst ist ein 7-Innings-Spiel 14 Blöcke zum Scrollen.
+  // Manuell umgeschaltete Halbinnings merken sich das über id, unabhängig davon, ob sie
+  // später aus dem "neuesten" Slot rutschen.
+  const [manualOpen, setManualOpen] = useState<Record<string, boolean>>({})
+  const isHalfOpen = (id: string, index: number) => manualOpen[id] ?? index === 0
+  const toggleHalf = (id: string, index: number) => {
+    setManualOpen(prev => ({ ...prev, [id]: !isHalfOpen(id, index) }))
+  }
+
+  // Sprung von der Linescore auf ein eingeklapptes Halbinning: erst aufklappen, dann
+  // scrollen — und zwar erst, nachdem der aufgeklappte Inhalt gerendert ist, sonst landet
+  // scrollIntoView am falschen Offset. Ziel-Id liegt in einem Ref (kein Re-Render nötig,
+  // um sie zu konsumieren), ein Tick-Counter stößt den Scroll-Effekt nach dem nächsten
+  // Render an.
+  const pendingJumpId = useRef<string | null>(null)
+  const [jumpTick, setJumpTick] = useState(0)
+  useEffect(() => {
+    if (!pendingJumpId.current) return
+    document.getElementById(pendingJumpId.current)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [jumpTick, manualOpen])
+
   const jumpTo = (inning: number, side: BogenSide) => {
-    document.getElementById(halfInningId(inning, side))
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const id = halfInningId(inning, side)
+    const index = feed.findIndex(h => halfInningId(h.inning, h.side) === id)
+    if (index !== -1 && !isHalfOpen(id, index)) {
+      setManualOpen(prev => ({ ...prev, [id]: true }))
+    }
+    pendingJumpId.current = id
+    setJumpTick(t => t + 1)
   }
 
   return (
@@ -119,58 +147,81 @@ export function BogenLiveFeed({
         </p>
       )}
 
-      {feed.map((half, index) => (
-        <div key={halfInningId(half.inning, half.side)} id={halfInningId(half.inning, half.side)}>
-          <div className="sticky top-0 z-10 flex items-center gap-2 px-5 pt-2 pb-1.5 bg-cream-100 border-b border-cream-200 font-display text-sm font-bold uppercase tracking-wide text-navy-900">
-            <span className="text-softball-red-600">{half.side === 'AWAY' ? '↑ Top' : '↓ Btm'}</span>
-            {half.inning}. Inning — {half.side === 'HOME' ? homeTeamName : awayTeamName}
-            {index === 0 && status === 'LIVE' && (
-              <span className="ml-auto bg-softball-red-600 text-white text-[9px] tracking-widest px-2 py-0.5 rounded-full">LIVE</span>
-            )}
-          </div>
+      {feed.map((half, index) => {
+        const id = halfInningId(half.inning, half.side)
+        const open = isHalfOpen(id, index)
+        const halfRuns = inningRuns[half.inning]?.[half.side === 'HOME' ? 'home' : 'away'] ?? 0
 
-          {half.events.map(ev => (
-            <div
-              key={ev.key}
-              data-testid={`event-${ev.key}`}
-              data-scored={String(ev.scored)}
-              data-minor={String(ev.minor)}
-              className={`flex items-baseline gap-2.5 py-2 border-b border-cream-200 text-sm ${
-                ev.scored ? 'bg-amber-50 border-l-[3px] border-l-amber-500 pl-[17px] pr-5' : 'px-5'
-              } ${ev.minor ? 'italic text-gray-500' : ''}`}
+        return (
+          <div key={id} id={id}>
+            <button
+              type="button"
+              data-testid={`toggle-${id}`}
+              aria-expanded={open}
+              onClick={() => toggleHalf(id, index)}
+              className="w-full sticky top-0 z-10 flex items-center gap-2 px-5 pt-2 pb-1.5 bg-cream-100 border-b border-cream-200 font-display text-sm font-bold uppercase tracking-wide text-navy-900 text-left cursor-pointer hover:bg-cream-200/60"
             >
-              <span className={`font-display text-[15px] tracking-wide shrink-0 w-24 ${ev.minor ? 'text-gray-500' : 'text-navy-900'}`}>
-                {ev.who}
+              <span className="text-softball-red-600">{half.side === 'AWAY' ? '↑ Top' : '↓ Btm'}</span>
+              {half.inning}. Inning — {half.side === 'HOME' ? homeTeamName : awayTeamName}
+              <span className="ml-auto flex items-center gap-2">
+                {!open && halfRuns > 0 && (
+                  <span
+                    data-testid={`runs-${id}`}
+                    className="font-normal normal-case tracking-normal text-[11px] text-gray-500"
+                  >
+                    {halfRuns} Run{halfRuns === 1 ? '' : 's'}
+                  </span>
+                )}
+                {index === 0 && status === 'LIVE' && (
+                  <span className="bg-softball-red-600 text-white text-[9px] tracking-widest px-2 py-0.5 rounded-full">LIVE</span>
+                )}
+                <span aria-hidden="true" className="text-navy-900/50 text-xs">{open ? '▾' : '▸'}</span>
               </span>
-              <span className={`flex-1 ${ev.scored ? 'text-navy-900 font-semibold' : ''}`}>{ev.what}</span>
-              {ev.rbi > 0 && (
-                <span className="font-display text-[11px] tracking-wide px-1.5 py-0.5 rounded bg-amber-500 text-white shrink-0">
-                  +{ev.rbi} RBI
-                </span>
-              )}
-            </div>
-          ))}
+            </button>
 
-          <div
-            data-testid={`divider-${halfInningId(half.inning, half.side)}`}
-            className="flex items-center gap-2 px-5 py-1.5 bg-cream-200 font-display"
-          >
-            {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Namen sind
-                Kontext, nicht Inhalt, aber ein abgeschnittener Name verwirrt mehr, als er
-                hilft — also nie kürzen: bei zu wenig Platz bricht die Zeile um, statt den
-                Namen zu clippen. Die Zahl bleibt fett und mittig, ein- wie zweizeilig. */}
-            <span className="flex-1 min-w-0 break-words text-right text-[11px] tracking-wide text-gray-500">
-              {awayTeamName}
-            </span>
-            <b className="shrink-0 text-navy-900 text-sm font-extrabold tabular-nums">
-              {half.scoreAfter.away} : {half.scoreAfter.home}
-            </b>
-            <span className="flex-1 min-w-0 break-words text-left text-[11px] tracking-wide text-gray-500">
-              {homeTeamName}
-            </span>
+            {open && half.events.map(ev => (
+              <div
+                key={ev.key}
+                data-testid={`event-${ev.key}`}
+                data-scored={String(ev.scored)}
+                data-minor={String(ev.minor)}
+                className={`flex items-baseline gap-2.5 py-2 border-b border-cream-200 text-sm ${
+                  ev.scored ? 'bg-amber-50 border-l-[3px] border-l-amber-500 pl-[17px] pr-5' : 'px-5'
+                } ${ev.minor ? 'italic text-gray-500' : ''}`}
+              >
+                <span className={`font-display text-[15px] tracking-wide shrink-0 w-24 ${ev.minor ? 'text-gray-500' : 'text-navy-900'}`}>
+                  {ev.who}
+                </span>
+                <span className={`flex-1 ${ev.scored ? 'text-navy-900 font-semibold' : ''}`}>{ev.what}</span>
+                {ev.rbi > 0 && (
+                  <span className="font-display text-[11px] tracking-wide px-1.5 py-0.5 rounded bg-amber-500 text-white shrink-0">
+                    +{ev.rbi} RBI
+                  </span>
+                )}
+              </div>
+            ))}
+
+            <div
+              data-testid={`divider-${id}`}
+              className="flex items-center gap-2 px-5 py-1.5 bg-cream-200 font-display"
+            >
+              {/* Away zuerst — gleiche Konvention wie Scoreboard und Linescore. Namen sind
+                  Kontext, nicht Inhalt, aber ein abgeschnittener Name verwirrt mehr, als er
+                  hilft — also nie kürzen: bei zu wenig Platz bricht die Zeile um, statt den
+                  Namen zu clippen. Die Zahl bleibt fett und mittig, ein- wie zweizeilig. */}
+              <span className="flex-1 min-w-0 break-words text-right text-[11px] tracking-wide text-gray-500">
+                {awayTeamName}
+              </span>
+              <b className="shrink-0 text-navy-900 text-sm font-extrabold tabular-nums">
+                {half.scoreAfter.away} : {half.scoreAfter.home}
+              </b>
+              <span className="flex-1 min-w-0 break-words text-left text-[11px] tracking-wide text-gray-500">
+                {homeTeamName}
+              </span>
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
