@@ -60,10 +60,9 @@ describe('BogenLiveFeed', () => {
     expect(home).toHaveTextContent('4')
   })
 
-  it('rendert Ereigniszeilen', () => {
+  it('rendert Ereigniszeilen des offenen Halbinnings', () => {
     render(<BogenLiveFeed {...base} />)
     expect(screen.getByText('Krosaki')).toBeInTheDocument()
-    expect(screen.getByText('Grounder 6-3')).toBeInTheDocument()
   })
 
   it('hebt nur Run-Zeilen hervor', () => {
@@ -163,5 +162,64 @@ describe('BogenLiveFeed', () => {
     render(<BogenLiveFeed {...base} currentInning={3} />)
     expect(screen.getByTestId('linescore-cell-7-HOME')).toBeInTheDocument()
     expect(screen.queryByTestId('linescore-cell-8-HOME')).not.toBeInTheDocument()
+  })
+
+  describe('Halbinnings ein-/ausklappen', () => {
+    it('öffnet standardmäßig nur das neueste Halbinning, ältere sind eingeklappt', () => {
+      render(<BogenLiveFeed {...base} />)
+      expect(screen.getByTestId('toggle-half-2-HOME')).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByTestId('toggle-half-1-AWAY')).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.getByText('Krosaki')).toBeInTheDocument()
+      expect(screen.queryByText('Grounder 6-3')).not.toBeInTheDocument()
+    })
+
+    it('klappt ein Halbinning per Klick auf den ganzen Header auf und wieder zu', async () => {
+      render(<BogenLiveFeed {...base} />)
+      const toggle = screen.getByTestId('toggle-half-1-AWAY')
+
+      await userEvent.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByText('Grounder 6-3')).toBeInTheDocument()
+
+      await userEvent.click(toggle)
+      expect(toggle).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByText('Grounder 6-3')).not.toBeInTheDocument()
+    })
+
+    it('zeigt bei eingeklapptem Halbinning trotzdem den Divider und die erzielten Runs', () => {
+      render(<BogenLiveFeed {...base} />)
+      // 1. Inning AWAY ist per Default eingeklappt, hat laut inningRuns 1 Run erzielt
+      expect(screen.queryByText('Grounder 6-3')).not.toBeInTheDocument()
+      expect(screen.getByTestId('divider-half-1-AWAY')).toBeInTheDocument()
+      expect(screen.getByTestId('runs-half-1-AWAY')).toHaveTextContent('1 Run')
+    })
+
+    it('zeigt keine Run-Zahl, wenn im eingeklappten Halbinning nichts erzielt wurde', () => {
+      const scorelessFeed: HalfInning[] = [
+        { inning: 2, side: 'HOME', scoreAfter: { home: 0, away: 0 }, events: [] },
+        { inning: 1, side: 'AWAY', scoreAfter: { home: 0, away: 0 }, events: [] },
+      ]
+      render(
+        <BogenLiveFeed
+          {...base}
+          feed={scorelessFeed}
+          inningRuns={{ 1: { home: 0, away: 0 }, 2: { home: 0, away: 0 } }}
+        />
+      )
+      expect(screen.queryByTestId('runs-half-1-AWAY')).not.toBeInTheDocument()
+    })
+
+    it('klappt beim Sprung über die Linescore ein eingeklapptes Ziel auf', async () => {
+      const scrollIntoView = vi.spyOn(window.HTMLElement.prototype, 'scrollIntoView').mockImplementation(() => {})
+
+      render(<BogenLiveFeed {...base} />)
+      expect(screen.getByTestId('toggle-half-1-AWAY')).toHaveAttribute('aria-expanded', 'false')
+
+      await userEvent.click(screen.getByTestId('linescore-cell-1-AWAY'))
+
+      expect(screen.getByTestId('toggle-half-1-AWAY')).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByText('Grounder 6-3')).toBeInTheDocument()
+      expect(scrollIntoView).toHaveBeenCalled()
+    })
   })
 })
