@@ -371,6 +371,11 @@ public class GameScoringService {
         game.setScoreThem(0);
         // Batting-Side zurücksetzen — User wählt nach Reset neu
         game.setBattingSide(null);
+        // Vor dem Nullen von endedAt: laufende Uhr pausieren und deckeln (siehe
+        // GameClockService.pauseClockBeforeReopen) — sonst zaehlt die Ableitung schlagartig alle
+        // Stunden seit Spielende mit statt die Uhr pausiert zu lassen. Reset ist die vierte
+        // Stelle, die endedAt nullt (neben den drei Reopen-Aufrufern aus Task 4).
+        clockService.pauseClockBeforeReopen(game);
         // Game-End-Marker zurücksetzen — Reset = "alles auf Anfang"
         game.setEndedAt(null);
         // Game neu speichern — geht über GameService, aber direkt über Repo einfacher: wir nutzen JPA dirty-tracking nicht für Domain-Objekte, also setGameScore via GameRepository
