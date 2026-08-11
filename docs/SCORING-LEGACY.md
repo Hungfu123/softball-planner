@@ -37,6 +37,25 @@ Legacy Live-Scoring pro Game (nicht ein kompletter Bogen). Existiert parallel zu
 - **Stealing-Hint** mit Color-Coded Keywords ("Tipp" navy, "Stolen Base" emerald, "Caught Stealing" red) als Help-Text.
 - **`displayRunners` statt `scoreboard.runners`** verwenden — letzteres hat stale Data nach Inning-Switch (während `inningTransition` ist `displayRunners=[]`).
 
+## Spielzeit-Uhr
+
+Pausierbare Stoppuhr mit optionalem Zeitlimit, **geteilt mit dem Spielbogen** —
+`application/GameClockService` + `domain/service/GameClockCalculator` bedienen `Game` und
+`Spielbogen` aus demselben Service, Frontend teilt sich `components/shared/GameClock.tsx` +
+`GameClockStartSheet.tsx`. Volle Doku (Leitgrundsatz „Uhr liest, schreibt nie", Datenmodell
+V55/V56, Randfälle, PDF-Anbindung) steht in `docs/SPIELBOGEN.md` — hier nur der
+Legacy-spezifische Anschluss:
+
+- Endpunkte: `POST /api/games/{gameId}/clock/start|pause|resume|reset` (`ScoringController`).
+- Kopfzeile: `ScoringPage.tsx` bindet `GameClockReadout`/`GameClockRule` neben Inning/Outs ein;
+  `useScoring.ts` um start/pause/resume/reset erweitert; `api/client.ts` um die vier Aufrufe.
+- Wiederöffnen: `GameClockService.pauseClockBeforeReopen(Game)` läuft in
+  `GameService.reopenGame:101`, **bevor** `endedAt` genullt wird — sonst verlöre die
+  Zeit-Ableitung ihre Obergrenze.
+- Eigener `/clock/reset`, bewusst getrennt vom bestehenden `DELETE /scoring`-Reset.
+- Ohne gestartete Uhr rendert die Kopfzeile unverändert wie vor diesem Feature
+  (`ScoringPage.clock.test.tsx`) — die 77 E2E-Tests dieser Seite liefen dagegen grün.
+
 ## Häufige Fallstricke
 - **CorrectionSheet useEffect Infinite Loop**: useEffect[initial,open] loopt durch neue Array-Reference per Render. Fix: `useEffect[open]` + inline computation.
 - **+2 RUNS Toast nach Inning-Switch**: stale `scoreboard.runners`. Fix: `displayRunners`.

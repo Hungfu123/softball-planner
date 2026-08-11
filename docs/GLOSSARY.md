@@ -46,6 +46,12 @@ Begriffe die im Code, in `CLAUDE.md` und den Feature-Docs vorkommen. Zweiteilung
 | **BogenSide** | Aktive Seite im Spielbogen (HOME/AWAY). `BogenSide`. |
 | **BogenStatus** | Status eines Spielbogens (z.B. laufend/abgeschlossen). `BogenStatus`. |
 | **BaseState / BogenBaseState** | Belegung der Bases (Runner-Zustand). |
+| **Spielzeit-Uhr** | Pausierbare Stoppuhr mit optionalem Zeitlimit, geteilt zwischen Spielbogen und Legacy-Scoring (`GameClockService`, `GameClockCalculator`). Leitgrundsatz: die Uhr liest den Spielzustand, sie schreibt nie hinein. Details `docs/SPIELBOGEN.md`. |
+| **`timer_running_since`** | Wann die Uhr **zuletzt** gestartet/fortgesetzt wurde, `NULL` = pausiert oder nie gestartet. |
+| **`timer_accumulated_seconds`** | Angesammelte Sekunden vor der aktuell laufenden Phase. |
+| **`timer_started_at`** | Der **erste** Start (V56) — bleibt über Pause/Fortsetzen konstant, anders als `timer_running_since`. Fürs RFL-Blatt (`Zeit:`-Feld). |
+| **`time_limit_minutes`** | Zeitlimit dieses Spiels, `NULL` = keins gesetzt. Pro Spiel, nicht liga-weit. |
+| **`ClockState` / `overLimit`** | Berechneter Uhr-Zustand (`GameClockCalculator.compute()`). `overLimit` bei Überschreiten des Limits — greift nicht ein, färbt nur amber. |
 
 ### RFL-Sheet-Notation (DiamondCell / PDF)
 
