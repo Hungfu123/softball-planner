@@ -48,6 +48,7 @@ public class GameRepositoryAdapter implements GameRepository {
                 existing.setTimerRunningSince(game.getTimerRunningSince());
                 existing.setTimerAccumulatedSeconds(game.getTimerAccumulatedSeconds());
                 existing.setTimeLimitMinutes(game.getTimeLimitMinutes());
+                existing.setTimerStartedAt(game.getTimerStartedAt());
                 if (game.getOpponentTeam() != null && game.getOpponentTeam().getId() != null) {
                     existing.setOpponentTeam(leagueTeamRepo.getReferenceById(game.getOpponentTeam().getId()));
                 } else {

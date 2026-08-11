@@ -17,7 +17,8 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
                             boolean thirdBaseCoachRotationReversed,
                             Instant timerRunningSince,
                             int timerAccumulatedSeconds,
-                            Integer timeLimitMinutes) {
+                            Integer timeLimitMinutes,
+                            Instant timerStartedAt) {
 
     public static GameResponse from(final Game game) {
         return from(game, 0L, null);
@@ -42,7 +43,8 @@ public record GameResponse(Long id, Integer gameNumber, LeagueTeamResponse oppon
             game.isThirdBaseCoachRotationReversed(),
             game.getTimerRunningSince(),
             game.getTimerAccumulatedSeconds(),
-            game.getTimeLimitMinutes()
+            game.getTimeLimitMinutes(),
+            game.getTimerStartedAt()
         );
     }
 }

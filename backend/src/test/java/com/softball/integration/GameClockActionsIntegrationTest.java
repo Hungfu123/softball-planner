@@ -76,6 +76,25 @@ class GameClockActionsIntegrationTest {
             .andExpect(status().isBadRequest());
     }
 
+    // Task 7: timerStartedAt ist der Wanduhr-Wert fuers "Zeit:"-Feld im PDF-Export — anders als
+    // timerRunningSince darf er einen Limit-Wechsel bei bereits pausierter Uhr (Task-3-Design)
+    // nicht mitmachen, sonst zeigt das RFL-Blatt eine falsche Anfangszeit.
+    @Test
+    void start_setsTimerStartedAt_onlyOnFirstStart_restartAfterPauseKeepsIt() throws Exception {
+        final Long gameId = createGame();
+
+        startClock(gameId, 50);
+        final Instant firstStartedAt = gameRepository.findById(gameId).orElseThrow().getTimerStartedAt();
+        assertThat(firstStartedAt).isNotNull();
+
+        mvc.perform(post("/api/games/" + gameId + "/clock/pause")).andExpect(status().isOk());
+        startClock(gameId, 90); // Limit-Aenderung an pausierter Uhr, s. Task-3-Design
+
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        assertThat(entity.getTimerStartedAt()).isEqualTo(firstStartedAt);
+        assertThat(entity.getTimeLimitMinutes()).isEqualTo(90);
+    }
+
     @Test
     void pause_banksElapsed_andClearsRunningSince_secondPauseRejected() throws Exception {
         final Long gameId = createGame();
@@ -133,6 +152,19 @@ class GameClockActionsIntegrationTest {
     }
 
     @Test
+    void resume_neverTouchesTimerStartedAt() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        final Instant startedAt = gameRepository.findById(gameId).orElseThrow().getTimerStartedAt();
+        rewindRunningSince(gameId, 60);
+        pauseClock(gameId);
+
+        resumeClock(gameId);
+
+        assertThat(gameRepository.findById(gameId).orElseThrow().getTimerStartedAt()).isEqualTo(startedAt);
+    }
+
+    @Test
     void startPauseResumePause_sumsAcrossCycles() throws Exception {
         final Long gameId = createGame();
         startClock(gameId, null);
@@ -159,6 +191,17 @@ class GameClockActionsIntegrationTest {
             .andExpect(jsonPath("$.running").value(false))
             .andExpect(jsonPath("$.elapsedSeconds").value(0))
             .andExpect(jsonPath("$.limitMinutes").value(90));
+    }
+
+    @Test
+    void reset_clearsTimerStartedAt() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, 90);
+        assertThat(gameRepository.findById(gameId).orElseThrow().getTimerStartedAt()).isNotNull();
+
+        mvc.perform(post("/api/games/" + gameId + "/clock/reset")).andExpect(status().isOk());
+
+        assertThat(gameRepository.findById(gameId).orElseThrow().getTimerStartedAt()).isNull();
     }
 
     @Test
@@ -224,6 +267,19 @@ class GameClockActionsIntegrationTest {
         assertThat(entity.getEndedAt()).isNull();
         assertThat(entity.getTimerRunningSince()).isNull();
         assertThat(entity.getTimerAccumulatedSeconds()).isEqualTo(accumulated);
+    }
+
+    @Test
+    void reopen_neverTouchesTimerStartedAt() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        final Instant startedAt = gameRepository.findById(gameId).orElseThrow().getTimerStartedAt();
+        rewindRunningSince(gameId, 3700);
+        endGameAt(gameId, 3600);
+
+        mvc.perform(post("/api/games/" + gameId + "/reopen")).andExpect(status().isOk());
+
+        assertThat(gameRepository.findById(gameId).orElseThrow().getTimerStartedAt()).isEqualTo(startedAt);
     }
 
     @Test

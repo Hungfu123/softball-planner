@@ -39,6 +39,7 @@ public class SpielbogenMapper {
         b.setTimerRunningSince(e.getTimerRunningSince());
         b.setTimerAccumulatedSeconds(e.getTimerAccumulatedSeconds());
         b.setTimeLimitMinutes(e.getTimeLimitMinutes());
+        b.setTimerStartedAt(e.getTimerStartedAt());
         return b;
     }
 
@@ -70,6 +71,7 @@ public class SpielbogenMapper {
         e.setTimerRunningSince(b.getTimerRunningSince());
         e.setTimerAccumulatedSeconds(b.getTimerAccumulatedSeconds());
         e.setTimeLimitMinutes(b.getTimeLimitMinutes());
+        e.setTimerStartedAt(b.getTimerStartedAt());
     }
 
     /**

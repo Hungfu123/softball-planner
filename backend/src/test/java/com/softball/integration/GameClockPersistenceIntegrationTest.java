@@ -60,16 +60,19 @@ class GameClockPersistenceIntegrationTest {
         final GameEntity gameEntity = gameRepository.save(new GameEntity(1, gameDay));
 
         final Instant runningSince = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        final Instant startedAt = runningSince.minusSeconds(600);
         final Game game = gameRepositoryPort.findById(gameEntity.getId()).orElseThrow();
         game.setTimerRunningSince(runningSince);
         game.setTimerAccumulatedSeconds(125);
         game.setTimeLimitMinutes(50);
+        game.setTimerStartedAt(startedAt);
         gameRepositoryPort.save(game);
 
         final Game reloaded = gameRepositoryPort.findById(gameEntity.getId()).orElseThrow();
         assertThat(reloaded.getTimerRunningSince()).isEqualTo(runningSince);
         assertThat(reloaded.getTimerAccumulatedSeconds()).isEqualTo(125);
         assertThat(reloaded.getTimeLimitMinutes()).isEqualTo(50);
+        assertThat(reloaded.getTimerStartedAt()).isEqualTo(startedAt);
     }
 
     @Test
@@ -77,9 +80,11 @@ class GameClockPersistenceIntegrationTest {
         final Spielbogen bogen = new Spielbogen(LocalDate.now(), "Testplatz", "Dead Sox", "Gegner", null);
 
         final Instant runningSince = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        final Instant startedAt = runningSince.minusSeconds(600);
         bogen.setTimerRunningSince(runningSince);
         bogen.setTimerAccumulatedSeconds(300);
         bogen.setTimeLimitMinutes(90);
+        bogen.setTimerStartedAt(startedAt);
 
         final Spielbogen saved = spielbogenRepository.save(bogen);
         try {
@@ -87,6 +92,7 @@ class GameClockPersistenceIntegrationTest {
             assertThat(reloaded.getTimerRunningSince()).isEqualTo(runningSince);
             assertThat(reloaded.getTimerAccumulatedSeconds()).isEqualTo(300);
             assertThat(reloaded.getTimeLimitMinutes()).isEqualTo(90);
+            assertThat(reloaded.getTimerStartedAt()).isEqualTo(startedAt);
         } finally {
             spielbogenRepository.deleteById(saved.getId());
         }
