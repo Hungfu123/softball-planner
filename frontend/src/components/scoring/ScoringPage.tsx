@@ -773,6 +773,7 @@ export function ScoringPage() {
             limitMinutes={clock.limitMinutes}
             running={clock.running}
             started={clock.started}
+            estimatedTotalMinutes={clock.durationEstimate?.totalMinutes}
             onPress={handleClockPress}
           />
           {clock.started && (
@@ -2587,6 +2588,7 @@ export function ScoringPage() {
         onStart={handleStartClock}
         onReset={handleResetClock}
         hasStarted={clock.started}
+        durationEstimate={clock.durationEstimate}
       />
 
       {/* Manueller Advance: Runner-Stranding Warnung */}

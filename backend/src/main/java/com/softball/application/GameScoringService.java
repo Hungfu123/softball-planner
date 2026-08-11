@@ -9,6 +9,7 @@ import com.softball.adapter.dto.StealingEventResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.port.out.*;
 import com.softball.domain.service.BaseRunningReplay;
+import com.softball.domain.service.GameClockCalculator;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -494,7 +495,12 @@ public class GameScoringService {
         final Optional<Player> currentBatter = currentBatterEntry.map(e ->
             resolveBatterForEntry(e, substitutions, currentInning));
 
-        final ClockStateResponse clock = ClockStateResponse.from(clockService.gameClockState(game));
+        final GameClockCalculator.ClockState clockState = clockService.gameClockState(game);
+        // secondHalfInProgress hier = "eigene Haelfte in currentInning schon fertig" (3 Outs) —
+        // das Legacy-Modell trackt keinen echten Seitenwechsel, siehe
+        // GameDurationEstimator.completedHalfInnings.
+        final ClockStateResponse clock = ClockStateResponse.from(clockState,
+            clockService.estimateDuration(clockState, currentInning, outsInCurrent >= 3, game.getEndedAt() != null));
 
         return new ScoreboardResponse(
             gameId,

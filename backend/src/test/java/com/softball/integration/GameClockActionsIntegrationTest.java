@@ -6,8 +6,10 @@ import com.softball.TestcontainersConfig;
 import com.softball.adapter.dto.StartClockRequest;
 import com.softball.adapter.out.persistence.entity.GameEntity;
 import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.repository.SpringAutomaticOutEventRepository;
 import com.softball.adapter.out.persistence.repository.SpringGameDayRepository;
 import com.softball.adapter.out.persistence.repository.SpringGameRepository;
+import com.softball.adapter.out.persistence.repository.SpringInningAdvanceEventRepository;
 import com.softball.adapter.out.persistence.repository.SpringSeasonRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -50,9 +52,15 @@ class GameClockActionsIntegrationTest {
     @Autowired private SpringSeasonRepository seasonRepository;
     @Autowired private SpringGameDayRepository gameDayRepository;
     @Autowired private SpringGameRepository gameRepository;
+    @Autowired private SpringAutomaticOutEventRepository automaticOutEventRepository;
+    @Autowired private SpringInningAdvanceEventRepository inningAdvanceEventRepository;
 
     @AfterEach
     void tearDown() {
+        // Muss vor games geloescht werden -- deleteAll() bulk-loescht ohne Cascade ueber die
+        // FK zu games (neu seit den Dauer-Schaetzung-Tests, die automatic-out/next-inning nutzen).
+        automaticOutEventRepository.deleteAll();
+        inningAdvanceEventRepository.deleteAll();
         gameRepository.deleteAll();
         gameDayRepository.deleteAll();
         seasonRepository.deleteAll();
@@ -233,6 +241,64 @@ class GameClockActionsIntegrationTest {
             .andExpect(jsonPath("$.clock.limitMinutes").value(50));
     }
 
+    // Dauer-Schätzung ohne Limit — Verdrahtung im Scoreboard-Endpunkt. Die Formel selbst ist in
+    // GameDurationEstimatorTest erschöpfend geprüft; hier geht es nur um die Herleitung von
+    // "abgeschlossene Halbinnings" aus currentInning + outsInCurrentInning (das Legacy-Modell hat
+    // keinen echten Seitenwechsel, siehe GameDurationEstimator.completedHalfInnings).
+    @Test
+    void scoreboard_noEstimate_belowThreeCompletedHalfInnings() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 100);
+
+        mvc.perform(get("/api/games/" + gameId + "/scoreboard"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate").doesNotExist());
+    }
+
+    @Test
+    void scoreboard_noEstimate_whenLimitSet() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, 50);
+        rewindRunningSince(gameId, 100);
+        advanceToThreeCompletedHalfInnings(gameId);
+
+        mvc.perform(get("/api/games/" + gameId + "/scoreboard"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate").doesNotExist());
+    }
+
+    @Test
+    void scoreboard_noEstimate_afterGameEnded() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 100);
+        advanceToThreeCompletedHalfInnings(gameId);
+        endGameAt(gameId, 10);
+
+        mvc.perform(get("/api/games/" + gameId + "/scoreboard"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate").doesNotExist());
+    }
+
+    // 3 abgeschlossene Halbinnings (Inning 1 unser Frame zu 3 Outs, Inning-Advance, dann 3 Outs
+    // im 2. Inning) bei 150s gelaufener Zeit -> Tempo 50s/HI -> Gesamt 700s (~12min). Grobe
+    // Grenzen statt exaktem Wert, weil zwischen rewindRunningSince und dem GET ein paar echte
+    // Sekunden vergehen.
+    @Test
+    void scoreboard_estimatesDuration_afterThreeCompletedHalfInnings() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 150);
+        advanceToThreeCompletedHalfInnings(gameId);
+
+        mvc.perform(get("/api/games/" + gameId + "/scoreboard"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.clock.durationEstimate.completedHalfInnings").value(3))
+            .andExpect(jsonPath("$.clock.durationEstimate.totalMinutes", greaterThanOrEqualTo(11)))
+            .andExpect(jsonPath("$.clock.durationEstimate.totalMinutes", lessThan(13)));
+    }
+
     // Task 4: Wiederoeffnen ist der einzige Schreibvorgang vom Spielablauf in die Uhr — reopen
     // nullt endedAt und muss die laufende Uhr davor pausieren+deckeln. Ohne den Fix bliebe
     // timerRunningSince gesetzt (>3700s alt) und die naechste Ableitung wuerde "jetzt -
@@ -377,5 +443,27 @@ class GameClockActionsIntegrationTest {
         final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
         entity.setEndedAt(Instant.now().minusSeconds(secondsAgo));
         gameRepository.save(entity);
+    }
+
+    /**
+     * 3 automatische Outs (eigener Frame in Inning 1 fertig) + Inning-Advance (Inning 2) + 3
+     * weitere automatische Outs (eigener Frame in Inning 2 fertig) -> 3 abgeschlossene
+     * Halbinnings nach {@code GameDurationEstimator.completedHalfInnings(2, true)}. Kein echter
+     * Seitenwechsel im Legacy-Modell — Outs sind hier das einzige verfügbare Signal.
+     */
+    private void advanceToThreeCompletedHalfInnings(final Long gameId) throws Exception {
+        recordThreeAutomaticOuts(gameId);
+        mvc.perform(post("/api/games/" + gameId + "/scoring/next-inning")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("opponentRuns", 0))))
+            .andExpect(status().isCreated());
+        recordThreeAutomaticOuts(gameId);
+    }
+
+    private void recordThreeAutomaticOuts(final Long gameId) throws Exception {
+        for (int i = 0; i < 3; i++) {
+            mvc.perform(post("/api/games/" + gameId + "/scoring/automatic-out"))
+                .andExpect(status().isNoContent());
+        }
     }
 }

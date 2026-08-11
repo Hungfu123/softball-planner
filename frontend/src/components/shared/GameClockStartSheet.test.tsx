@@ -84,6 +84,26 @@ describe('GameClockStartSheet — Zurücksetzen-Modus (hasStarted=true)', () => 
     expect(screen.queryByRole('button', { name: 'Ohne Limit' })).not.toBeInTheDocument()
   })
 
+  it('zeigt ohne durationEstimate keine Restzeit-Zeile', () => {
+    render(<GameClockStartSheet open onClose={() => {}} onStart={() => {}} onReset={() => {}} hasStarted />)
+    expect(screen.queryByText(/min noch/)).not.toBeInTheDocument()
+  })
+
+  it('zeigt Restzeit + Basis, wenn durationEstimate übergeben wird', () => {
+    render(
+      <GameClockStartSheet
+        open
+        onClose={() => {}}
+        onStart={() => {}}
+        onReset={() => {}}
+        hasStarted
+        durationEstimate={{ remainingMinutes: 53, completedHalfInnings: 7 }}
+      />
+    )
+    expect(screen.getByText(/≈ 53 min noch/)).toBeInTheDocument()
+    expect(screen.getByText(/7 abgeschlossenen Halbinnings/)).toBeInTheDocument()
+  })
+
   it('fragt vor dem Zurücksetzen nach Bestätigung und nennt, dass nur die Uhr betroffen ist', async () => {
     const user = userEvent.setup()
     const onReset = vi.fn()

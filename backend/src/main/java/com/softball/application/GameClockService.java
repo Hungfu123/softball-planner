@@ -6,6 +6,8 @@ import com.softball.domain.port.out.GameRepository;
 import com.softball.domain.port.out.SpielbogenRepository;
 import com.softball.domain.service.GameClockCalculator;
 import com.softball.domain.service.GameClockCalculator.ClockState;
+import com.softball.domain.service.GameDurationEstimator;
+import com.softball.domain.service.GameDurationEstimator.DurationEstimate;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Start/Pause/Fortsetzen/Reset der Spielzeit-Uhr — für Legacy-{@link Game} UND
@@ -38,13 +41,16 @@ public class GameClockService {
     private final GameRepository gameRepository;
     private final SpielbogenRepository spielbogenRepository;
     private final GameClockCalculator clockCalculator;
+    private final GameDurationEstimator durationEstimator;
 
     public GameClockService(final GameRepository gameRepository,
                              final SpielbogenRepository spielbogenRepository,
-                             final GameClockCalculator clockCalculator) {
+                             final GameClockCalculator clockCalculator,
+                             final GameDurationEstimator durationEstimator) {
         this.gameRepository = gameRepository;
         this.spielbogenRepository = spielbogenRepository;
         this.clockCalculator = clockCalculator;
+        this.durationEstimator = durationEstimator;
     }
 
     // ===== Legacy Game =====
@@ -189,6 +195,28 @@ public class GameClockService {
     private Spielbogen findBogen(final Long id) {
         return spielbogenRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Spielbogen", id));
+    }
+
+    // ===== Dauer-Schätzung ohne Limit =====
+
+    /**
+     * Hochrechnung der Gesamtspieldauer aus einem bereits berechneten {@link ClockState} plus
+     * Spielstand — aggregat-unabhängig, deshalb hier statt in {@code gameClockState}/
+     * {@code bogenClockState} verankert (die kennen nur Game bzw. Spielbogen, nicht beide).
+     * Nimmt den ClockState statt ihn selbst neu zu berechnen, damit nicht zwei Aufrufe
+     * kurz hintereinander {@code Instant.now()} lesen und minimal auseinanderlaufen.
+     *
+     * @param currentInning        aktuelles Inning (1-basiert)
+     * @param secondHalfInProgress siehe {@link GameDurationEstimator#completedHalfInnings} —
+     *                             pro Aufrufer unterschiedlich hergeleitet (Spielbogen-Seite vs.
+     *                             Legacy-Game-Outs)
+     * @param ended                Spiel/Bogen bereits beendet
+     */
+    public Optional<DurationEstimate> estimateDuration(final ClockState clockState, final int currentInning,
+                                                         final boolean secondHalfInProgress, final boolean ended) {
+        final int completedHalfInnings = GameDurationEstimator.completedHalfInnings(currentInning, secondHalfInProgress);
+        return durationEstimator.estimate(clockState.elapsedSeconds(), completedHalfInnings,
+            clockState.limitMinutes(), clockState.started(), ended);
     }
 
     // ===== gemeinsame Validierung, beide Aggregate =====

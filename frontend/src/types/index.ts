@@ -398,6 +398,14 @@ export interface RunnerOnBase {
   battingOrder: number | null
 }
 
+/** Dauer-Hochrechnung ohne Zeitlimit — nur vorhanden, wenn eine Schätzung sinnvoll ist
+ *  (mind. 3 abgeschlossene Halbinnings, kein Limit gesetzt, Uhr läuft/lief, Spiel nicht beendet). */
+export interface DurationEstimateResponse {
+  totalMinutes: number
+  remainingMinutes: number
+  completedHalfInnings: number
+}
+
 /** Berechneter Uhr-Zustand — kommt aus dem Backend, nie aus einem lokalen Timestamp. */
 export interface ClockStateResponse {
   elapsedSeconds: number
@@ -405,6 +413,7 @@ export interface ClockStateResponse {
   started: boolean
   limitMinutes: number | null
   overLimit: boolean
+  durationEstimate?: DurationEstimateResponse | null
 }
 
 export interface ScoreboardResponse {
