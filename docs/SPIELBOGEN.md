@@ -154,10 +154,17 @@ amber und zählt `+MM:SS über Limit` weiter; kein erzwungenes Spielende, kein b
 Inning-Wechsel. Ein Fehlgriff beim Starten der Uhr darf nie Folgen fürs Spielergebnis haben.
 
 ### `timerStartedAt` — Sonderrolle in den Response-DTOs
-Liegt in `GameResponse`/`SpielbogenResponse`, **nicht** in `ClockStateResponse`. Grund: es ist
-der einzige rohe Zeitstempel, der überhaupt nach außen geht — erlaubt, weil er ausschließlich
-**wörtlich als Uhrzeit** angezeigt wird (`HH:MM`), nie in Zeit-Arithmetik einfließt. Die
-Trennung von `ClockStateResponse` (reine Rechenwerte) hält diesen Unterschied im Code sichtbar.
+Liegt in `GameResponse`/`SpielbogenResponse`, **nicht** in `ClockStateResponse`. Erlaubt ist er
+dort, weil er ausschließlich **wörtlich als Uhrzeit** angezeigt wird (`HH:MM`) und nie in
+Zeit-Arithmetik einfließt. Die Trennung von `ClockStateResponse` (reine Rechenwerte) hält
+diesen Unterschied im Code sichtbar.
+
+Zur Klarstellung: `timerStartedAt` ist **nicht** der einzige rohe Zeitstempel in diesen beiden
+DTOs — `timerRunningSince` geht ebenfalls raus (`GameResponse.java:18`,
+`SpielbogenResponse.java:33`). Konsumiert wird er nirgends, und er darf auch nicht konsumiert
+werden: **verstrichene Zeit wird nie im Browser aus Zeitstempeln gerechnet**, sondern kommt als
+`elapsedSeconds` vom Server. Wer hier einen Verbraucher hinzufügt, bricht die Regel, die
+Geräte mit falsch gestellter Uhr davor bewahrt, eine falsche Spielzeit anzuzeigen.
 
 ### Frontend
 - `components/shared/GameClock.tsx` — `GameClockReadout` (Label + `MM:SS`) und `GameClockRule`
