@@ -14,6 +14,7 @@ import type { GameDayResponse, ScoreboardResponse, ClockStateResponse } from '@/
 const mockStartClock = vi.fn()
 const mockPauseClock = vi.fn()
 const mockResumeClock = vi.fn()
+const mockResetClock = vi.fn()
 const mockToastShow = vi.fn()
 
 let scoreboardValue: ScoreboardResponse | null = null
@@ -34,6 +35,7 @@ vi.mock('@/hooks/useScoring', () => ({
     startClock: mockStartClock,
     pauseClock: mockPauseClock,
     resumeClock: mockResumeClock,
+    resetClock: mockResetClock,
   }),
 }))
 
@@ -110,6 +112,7 @@ beforeEach(() => {
   mockStartClock.mockResolvedValue(clockState({ started: true, running: true, limitMinutes: 50 }))
   mockPauseClock.mockResolvedValue(clockState({ started: true, running: false }))
   mockResumeClock.mockResolvedValue(clockState({ started: true, running: true }))
+  mockResetClock.mockResolvedValue(clockState({ started: false, running: false }))
   vi.mocked(getGameDay).mockResolvedValue(gameDayFixture())
   // Erzwingt den Desktop-Zweig von ResponsiveSheet (CenterModal) — der mobile Zweig
   // portalt über vaul's Drawer und ist hier nicht Gegenstand des Tests.
@@ -248,5 +251,43 @@ describe('ScoringPage — Spielzeit-Uhr im Legacy-Header', () => {
 
     await waitFor(() =>
       expect(mockToastShow).toHaveBeenCalledWith('Die Uhr läuft nicht — Pause nicht möglich.', 'error'))
+  })
+})
+
+// Task 6, Addition 2: Reset-Kontrolle. Task 5 verdrahtete nur Start/Pause/Fortsetzen — ohne
+// Reset gab es keinen Weg zurück aus einem Fehlstart. Erreichbar über eine eigene
+// "Uhr-Optionen"-Schaltfläche (Tap auf die Uhr selbst bleibt Pause/Fortsetzen, unverändert).
+describe('ScoringPage — Uhr zurücksetzen', () => {
+  it('idle Uhr zeigt keine Uhr-Optionen-Schaltfläche — nichts zum Zurücksetzen', async () => {
+    scoreboardValue = scoreboardFixture()
+    renderScoringPage()
+
+    await screen.findByRole('button', { name: 'Spielzeit starten' })
+    expect(screen.queryByRole('button', { name: 'Uhr-Optionen' })).not.toBeInTheDocument()
+  })
+
+  it('laufende Uhr: Uhr-Optionen öffnet den Zurücksetzen-Dialog statt der Start-Optionen', async () => {
+    const user = userEvent.setup()
+    scoreboardValue = scoreboardFixture({ clock: clockState({ started: true, running: true, elapsedSeconds: 125, limitMinutes: 50 }) })
+    renderScoringPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Uhr-Optionen' }))
+
+    expect(screen.getByRole('button', { name: 'Uhr zurücksetzen' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '50 min' })).not.toBeInTheDocument()
+  })
+
+  it('Bestätigtes Zurücksetzen ruft resetClock auf und schließt den Dialog', async () => {
+    const user = userEvent.setup()
+    scoreboardValue = scoreboardFixture({ clock: clockState({ started: true, running: false, elapsedSeconds: 340, limitMinutes: 50 }) })
+    renderScoringPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Uhr-Optionen' }))
+    await user.click(screen.getByRole('button', { name: 'Uhr zurücksetzen' }))
+    expect(screen.getByText(/Score, Innings und At-Bats bleiben unverändert/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Zurücksetzen' }))
+
+    expect(mockResetClock).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Uhr zurücksetzen' })).not.toBeInTheDocument())
   })
 })

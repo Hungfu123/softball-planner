@@ -724,6 +724,7 @@ export interface BogenSheetResponse {
   inningRuns: Record<number, { home: number; away: number }>
   homeTotals: BogenTeamTotals
   awayTotals: BogenTeamTotals
+  clock: ClockStateResponse
 }
 
 export type PairingMode = 'HEIM_GAST' | 'TEAM_1_2'

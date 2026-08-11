@@ -111,5 +111,39 @@ export function useSpielbogenScoring(bogenId: number | null) {
     return result
   }, [bogenId, reload])
 
-  return { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, undoLastStealing, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot }
+  // Uhr-Aktionen: gleiches Muster wie useScoring — Backend ist die einzige Quelle für
+  // elapsedSeconds, nach jeder Aktion reload(), damit sheet.clock den frischen Stand trägt.
+  const startClock = useCallback(async (limitMinutes: number | null) => {
+    if (bogenId == null) throw new Error('bogenId is required')
+    const state = await api.startSpielbogenClock(bogenId, limitMinutes)
+    await reload()
+    return state
+  }, [bogenId, reload])
+
+  const pauseClock = useCallback(async () => {
+    if (bogenId == null) throw new Error('bogenId is required')
+    const state = await api.pauseSpielbogenClock(bogenId)
+    await reload()
+    return state
+  }, [bogenId, reload])
+
+  const resumeClock = useCallback(async () => {
+    if (bogenId == null) throw new Error('bogenId is required')
+    const state = await api.resumeSpielbogenClock(bogenId)
+    await reload()
+    return state
+  }, [bogenId, reload])
+
+  const resetClock = useCallback(async () => {
+    if (bogenId == null) throw new Error('bogenId is required')
+    const state = await api.resetSpielbogenClock(bogenId)
+    await reload()
+    return state
+  }, [bogenId, reload])
+
+  return {
+    sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap,
+    undoLast, undoLastStealing, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta,
+    updateSlot, startClock, pauseClock, resumeClock, resetClock,
+  }
 }

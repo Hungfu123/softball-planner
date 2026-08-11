@@ -19,7 +19,8 @@ import { BogenSheetDrawer } from './BogenSheetDrawer'
 import { PositionSwapDrawer } from './PositionSwapDrawer'
 import { BogenMetaEditModal } from './BogenMetaEditModal'
 import { GameClockReadout, GameClockRule } from '@/components/shared/GameClock'
-import { Pencil } from '@/icons'
+import { GameClockStartSheet } from '@/components/shared/GameClockStartSheet'
+import { Pencil, DotsVertical } from '@/icons'
 import { generateSpielbogenPdf } from '@/utils/spielbogenPdfExport'
 import { abOutsAdded } from '@/utils/bogenSheetRenderer'
 import * as api from '@/api/client'
@@ -146,8 +147,11 @@ export default function SpielbogenPage() {
   const bogenId = idParam ? Number(idParam) : null
   const toast = useToastContext()
 
-  const { sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap, undoLast, undoLastStealing, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta, updateSlot } =
-    useSpielbogenScoring(bogenId)
+  const {
+    sheet, loading, error, reload, recordAtBat, recordStealing, recordSubstitution, recordPositionSwap,
+    undoLast, undoLastStealing, switchSide, resetScoring, correctLastAtBat, setCurrentSide, updateMeta,
+    updateSlot, startClock, pauseClock, resumeClock, resetClock,
+  } = useSpielbogenScoring(bogenId)
 
   const [showCorrection, setShowCorrection] = useState(false)
   const [showSidePicker, setShowSidePicker] = useState(false)
@@ -155,6 +159,7 @@ export default function SpielbogenPage() {
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [showAutoOutConfirm, setShowAutoOutConfirm] = useState(false)
+  const [showClockStartSheet, setShowClockStartSheet] = useState(false)
   const [showSheet, setShowSheet] = useState(false)
   const [showCheatsheet, setShowCheatsheet] = useState(false)
   const [showSubModal, setShowSubModal] = useState(false)
@@ -230,7 +235,7 @@ export default function SpielbogenPage() {
 
   if (!sheet) return null
 
-  const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats } = sheet
+  const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats, clock } = sheet
 
   const currentSide = meta.currentSide
   const slots = currentSide === 'HOME' ? homeLineup : awayLineup
@@ -569,6 +574,54 @@ export default function SpielbogenPage() {
     }
   }
 
+  // Tippen auf die Uhr: noch nie gestartet → Start-Dialog; sonst pausiert/setzt fort.
+  // Gleiche Bedienung wie in der Legacy-ScoringPage (Task 5) — geteilter Dialog, siehe unten.
+  const handleClockPress = () => {
+    if (!clock.started) {
+      setShowClockStartSheet(true)
+      return
+    }
+    if (clock.running) {
+      void handlePauseClock()
+    } else {
+      void handleResumeClock()
+    }
+  }
+
+  const handleStartClock = async (limitMinutes: number | null) => {
+    try {
+      await startClock(limitMinutes)
+      setShowClockStartSheet(false)
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handlePauseClock = async () => {
+    try {
+      await pauseClock()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleResumeClock = async () => {
+    try {
+      await resumeClock()
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleResetClock = async () => {
+    try {
+      await resetClock()
+      setShowClockStartSheet(false)
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const handleSubstitutionSubmit = async () => {
     if (!subSlotId || !subPlayerInName.trim()) return
     setSubmitting(true)
@@ -724,8 +777,25 @@ export default function SpielbogenPage() {
             {meta.currentSide === 'AWAY' ? '↑ Top' : '↓ Btm'}
           </button>
         </div>
-        <div className="flex-1 flex justify-center">
-          <GameClockReadout elapsedSeconds={0} limitMinutes={null} running={false} started={false} />
+        <div className="flex-1 flex items-center justify-center gap-1.5">
+          <GameClockReadout
+            elapsedSeconds={clock.elapsedSeconds}
+            limitMinutes={clock.limitMinutes}
+            running={clock.running}
+            started={clock.started}
+            onPress={handleClockPress}
+          />
+          {clock.started && (
+            <button
+              type="button"
+              onClick={() => setShowClockStartSheet(true)}
+              className="text-white/45 hover:text-white/80 cursor-pointer transition-colors"
+              aria-label="Uhr-Optionen"
+              title="Uhr zurücksetzen"
+            >
+              <DotsVertical size={14} />
+            </button>
+          )}
         </div>
         {/* Tap auf die Out-Punkte bucht ein Automatisches Out (Legacy-Parität,
             gleicher Handler wie der MEHR-Menu-Eintrag). */}
@@ -745,7 +815,12 @@ export default function SpielbogenPage() {
           </span>
         </button>
       </div>
-      <GameClockRule elapsedSeconds={0} limitMinutes={null} running={false} started={false} />
+      <GameClockRule
+        elapsedSeconds={clock.elapsedSeconds}
+        limitMinutes={clock.limitMinutes}
+        running={clock.running}
+        started={clock.started}
+      />
 
       {/* Score-Block */}
       <div className="px-4 py-3 bg-cream-50 flex items-center justify-center gap-3 border-b border-cream-300">
@@ -1565,6 +1640,15 @@ export default function SpielbogenPage() {
           </div>
         )}
       </ResponsiveSheet>
+
+      {/* Uhr-Start-/Optionen-Sheet: geteilt mit der Legacy-ScoringPage (GameClockStartSheet) */}
+      <GameClockStartSheet
+        open={showClockStartSheet}
+        onClose={() => setShowClockStartSheet(false)}
+        onStart={handleStartClock}
+        onReset={handleResetClock}
+        hasStarted={clock.started}
+      />
     </div>
   )
 }
