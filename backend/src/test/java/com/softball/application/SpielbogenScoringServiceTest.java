@@ -545,6 +545,11 @@ class SpielbogenScoringServiceTest {
     // endedAt bei Undo eines Walkoff/Game-End — muss die Uhr davor pausieren, sonst verlöre die
     // Ableitung ihre Obergrenze. Der Deckelungs-Beweis selbst laeuft in der Integration mit
     // echtem GameClockService (ein Mockito-Mock wuerde einen falschen Wert nicht auffangen).
+    //
+    // Review-Fund: eine reine verify(...) dass der Aufruf passiert ist, prüft NICHT die
+    // Reihenfolge — bogen.setEndedAt(null) ist kein Mock-Aufruf, ein InOrder zwischen zwei Mocks
+    // würde die Mutation auf demselben Objekt gar nicht sehen. Stattdessen wird per doAnswer
+    // erfasst, ob endedAt zum Zeitpunkt des Bankings noch gesetzt war.
     @Test
     void undoLast_reopensGameWhenStatusDone_banksRunningClockBeforeEndedAtIsCleared() {
         SpielbogenAtBat last = new SpielbogenAtBat();
@@ -562,10 +567,17 @@ class SpielbogenScoringServiceTest {
         when(atBatRepo.findLatestForSide(1L, BogenSide.HOME)).thenReturn(Optional.of(last));
         when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 7)).thenReturn(0L);
         when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        final java.time.Instant[] endedAtWhenBanked = new java.time.Instant[1];
+        org.mockito.Mockito.doAnswer(inv -> {
+            endedAtWhenBanked[0] = liveBogen.getEndedAt();
+            return null;
+        }).when(gameClockService).pauseClockBeforeReopen(liveBogen);
 
         service.undoLast(1L, BogenSide.HOME);
 
         verify(gameClockService).pauseClockBeforeReopen(liveBogen);
+        assertThat(endedAtWhenBanked[0]).isNotNull();
+        assertThat(liveBogen.getEndedAt()).isNull();
     }
 
     /** Zweiter Aufrufer von reopenIfDone (Stealing-Undo) — muss ebenso an die Uhr denken. */
@@ -588,10 +600,17 @@ class SpielbogenScoringServiceTest {
         when(atBatRepo.countOutsInInning(1L, BogenSide.HOME, 7)).thenReturn(0L);
         when(bogenRepo.findById(1L)).thenReturn(Optional.of(liveBogen));
         when(bogenRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        final java.time.Instant[] endedAtWhenBanked = new java.time.Instant[1];
+        org.mockito.Mockito.doAnswer(inv -> {
+            endedAtWhenBanked[0] = liveBogen.getEndedAt();
+            return null;
+        }).when(gameClockService).pauseClockBeforeReopen(liveBogen);
 
         service.deleteLastStealingForSide(1L, BogenSide.HOME);
 
         verify(gameClockService).pauseClockBeforeReopen(liveBogen);
+        assertThat(endedAtWhenBanked[0]).isNotNull();
+        assertThat(liveBogen.getEndedAt()).isNull();
     }
 
     /** BUG E: Stealing-Undo muss den gestohlenen Home-Run vom Score abziehen. */
