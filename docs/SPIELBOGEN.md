@@ -78,6 +78,121 @@ User arbeitet primär an **Spielbogen** weiter. Beide existieren parallel.
 - **`utils/bogenFeed.ts` (`buildFeed`)** ist die einzige Stelle, die At-Bats, Stealing-Events und Substitutions zu einer gemeinsamen Timeline mischt. Sortiert nach `createdAt`, aber numerisch (`Date.parse`), nicht als String — Jackson serialisiert einen `Instant` ohne Bruchteil-Sekunden inkonsistent zu einem mit (`...:00Z` vs. `...:00.500Z`), und lexikalisch sortiert `.` vor `Z`, was die Reihenfolge kippen würde. Gruppiert per `halfInningId(inning, side)`, neueste Halbinning zuerst.
 - **Nur authentifiziert:** Der Feed lebt ausschließlich im Drawer hinter dem Login-Gate. Eine öffentliche Zuschauer-Seite war geplant (`/live/:token` mit Share-Link und `/api/public/**`), wurde vor dem Merge aber wieder entfernt — `App.tsx` gated deshalb die ganze App ohne Ausnahme hinter `LoginPage`, und `SecurityConfig` hat als einzigen `permitAll()`-Pfad unter `/api/**` weiterhin nur `/api/calendar.ics`.
 
+## Spielzeit-Uhr
+
+Pausierbare Stoppuhr pro Spiel/Bogen mit optionalem Zeitlimit. Identischer Backend-Service für
+Spielbogen **und** Legacy-Scoring (siehe `docs/SCORING-LEGACY.md` für den Legacy-Anschluss) —
+hier steht der volle Stand. Design-Herleitung inkl. Alternativen-Abwägung:
+`docs/superpowers/specs/2026-08-10-spielzeit-uhr-design.md`.
+
+### Datenmodell (V55, V56)
+Vier Spalten auf `spielbogen` **und** `games`:
+
+| Spalte | Bedeutung |
+|---|---|
+| `timer_running_since` | wann die Uhr **zuletzt** gestartet/fortgesetzt wurde; `NULL` = pausiert oder nie gestartet |
+| `timer_accumulated_seconds` | angesammelte Sekunden vor der aktuell laufenden Phase |
+| `time_limit_minutes` | Limit dieses Spiels; `NULL` = keins gesetzt (pro Spiel, nicht liga-weit) |
+| `timer_started_at` | der **erste** Start (V56, nachgezogen) |
+
+`timer_started_at` ist bewusst eine vierte Spalte, nicht aus den anderen drei ableitbar:
+`runningSince − accumulated` überspringt genau die Pausenlücken — nach einer Regenpause stünde
+dort ein halbe Stunde zu später Spielbeginn, auf einem Blatt, das an die Liga geht (`Zeit:`-Feld
+im PDF, siehe unten).
+
+### Rechenkern: `domain/service/GameClockCalculator`
+Reine Funktion — `compute(runningSince, accumulatedSeconds, limitMinutes, endedAt, now)` →
+`ClockState`, kein Spring, kein Zugriff auf DB oder Systemuhr.
+
+**Leitgrundsatz dieser gesamten Arbeit: die Uhr liest den Spielzustand, sie schreibt nie
+hinein.**
+
+- Deckelt gegen `endedAt ?? now`. Ein beendetes Spiel mit noch laufender Uhr friert dadurch
+  **ohne jeden Schreibvorgang** ein — keine der vier Stellen, die `endedAt` setzen (inklusive
+  der zwei Walkoff-Pfade in `SpielbogenScoringService`), musste dafür angefasst werden.
+- `overLimit` nutzt striktes `>` — exakt auf dem Limit gilt noch nicht als überschritten.
+- `running` wird `false`, sobald `endedAt` gesetzt ist (unabhängig von `runningSince`) — sonst
+  würde das Frontend, das lokal weiterzählt, über den eingefrorenen Wert hinauslaufen.
+
+### Service: `application/GameClockService`
+Ein Service für Legacy-`Game` **und** `Spielbogen` — Validierung und Arithmetik sind für beide
+identisch, nur der Repository-Typ unterscheidet sich. Vier Aktionen, jeweils **abgelehnt statt
+still ignoriert**, damit ein Doppeltipp keine Zeit verschluckt oder verdoppelt:
+
+| Aktion | Endpunkt (Spielbogen) | Endpunkt (Legacy) | Ablehnungsregel |
+|---|---|---|---|
+| Start | `POST /api/spielbogen/{id}/clock/start` | `POST /api/games/{id}/clock/start` | wenn die Uhr schon läuft |
+| Pause | `.../clock/pause` | `.../clock/pause` | wenn sie nicht läuft |
+| Fortsetzen | `.../clock/resume` | `.../clock/resume` | wenn sie nie gestartet wurde |
+| Reset | `.../clock/reset` | `.../clock/reset` | — (immer erlaubt) |
+
+Start-Body: `StartClockRequest{ limitMinutes }` (`null` = ohne Limit). Antwort aller vier
+Aktionen plus der bestehenden Lese-Endpunkte (Scoreboard, Sheet):
+`ClockStateResponse{ elapsedSeconds, running, started, limitMinutes, overLimit }` — nie die
+rohen Zeitstempel, damit das Frontend nie mit der eigenen (möglicherweise falsch gehenden)
+Geräteuhr rechnet.
+
+**Limit nachträglich ändern** (Schiedsrichter entscheidet um): Start auf eine pausierte Uhr
+rufen. Behält `timerAccumulatedSeconds`, setzt nur `timeLimitMinutes` neu und rührt
+`timerStartedAt` **nicht** an — `start()` setzt `timerStartedAt` nur, wenn es noch `null` ist.
+
+**Die eine Ausnahme vom Leitgrundsatz — Wiederöffnen.**
+`GameClockService.pauseClockBeforeReopen(Game|Spielbogen)` bankt eine laufende Uhr
+(`accumulated += endedAt − runningSince`) und **muss vor** dem Nullen von `endedAt` laufen —
+danach ist die Deckelung nicht mehr rekonstruierbar und die Anzeige spränge auf alle seither
+verstrichenen Stunden. Drei Aufrufstellen: `GameService.reopenGame:101`,
+`SpielbogenService.reopen:151`, `SpielbogenScoringService.reopenIfDone:706` (gerufen aus den
+zwei Undo-Pfaden `:328`/`:679` — eine Methode deckt beide Aufrufer ab).
+
+**Bewusst nicht gekoppelt:** der `/clock/reset`-Endpunkt und die bestehenden Scoring-Resets
+(`POST /spielbogen/{id}/reset`, `DELETE /games/{id}/scoring`) sind getrennt. Ein
+zurückgesetztes Spiel zeigt bis dahin die alte Zeit — sichtbar und vom Nutzer korrigierbar,
+statt eine zusätzliche Kopplung in bestehenden Reset-Code zu ziehen.
+
+**Bei Ablauf greift die App nicht ein** — ausdrückliche Nutzer-Entscheidung. Die Anzeige färbt
+amber und zählt `+MM:SS über Limit` weiter; kein erzwungenes Spielende, kein blockierter
+Inning-Wechsel. Ein Fehlgriff beim Starten der Uhr darf nie Folgen fürs Spielergebnis haben.
+
+### `timerStartedAt` — Sonderrolle in den Response-DTOs
+Liegt in `GameResponse`/`SpielbogenResponse`, **nicht** in `ClockStateResponse`. Grund: es ist
+der einzige rohe Zeitstempel, der überhaupt nach außen geht — erlaubt, weil er ausschließlich
+**wörtlich als Uhrzeit** angezeigt wird (`HH:MM`), nie in Zeit-Arithmetik einfließt. Die
+Trennung von `ClockStateResponse` (reine Rechenwerte) hält diesen Unterschied im Code sichtbar.
+
+### Frontend
+- `components/shared/GameClock.tsx` — `GameClockReadout` (Label + `MM:SS`) und `GameClockRule`
+  (die 3px-Linie unter dem Live-State-Strip, wird bei gesetztem Limit zum Fortschrittsbalken).
+  Geteilt zwischen Spielbogen und Legacy-Scoring. Tickt lokal per `setInterval` zwischen
+  Server-Updates weiter (`useTickingSeconds`) — reine Anzeige-Interpolation, keine eigene
+  Datenquelle; bei Pause/Spielende exakt der Serverwert, kein Nachlaufen.
+- `components/shared/GameClockStartSheet.tsx` — geteilter Start-/Reset-Dialog (`50 min`,
+  `90 min`, freie Eingabe, „ohne Limit"; bei bereits gestarteter Uhr stattdessen nur „Uhr
+  zurücksetzen" mit Confirm). Erreichbar über einen kleinen Options-Punkt (⋮) neben der Uhr,
+  der erst erscheint, sobald die Uhr gestartet ist — Tippen auf die Zahl selbst bleibt
+  Start/Pause/Fortsetzen; der Punkt trägt nur den seltenen Korrekturfall bei Fehlstart.
+- Ohne gestartete Uhr rendert die Kopfzeile exakt wie vor diesem Feature — Regressionsschutz,
+  geprüft in `GameClock.test.tsx` / `ScoringPage.clock.test.tsx`.
+
+### PDF: `Zeit:`-Feld
+`utils/spielbogenPdfExport.ts` — `formatStartTime(timerStartedAt)` formatiert
+`sheet.meta.timerStartedAt` (`BogenSheetResponse.meta` *ist* ein `SpielbogenResponse`) als
+`HH:MM` in Europe/Berlin, `null`/ungültiger Wert → leerer String. Vorher stand dort immer ein
+fest leerer Platzhalter zum Handausfüllen.
+
+### Referenzdaten: `scripts/seed-rfl-demo.mjs`
+Baut per REST-API (kein Direktzugriff auf die DB) einen kompletten Spielbogen mit allen 20
+Notationsformen, die Sheet und PDF-Export kennen (alle Hit-Typen inkl. Inside-the-Park-HR,
+Walk/HBP/K, Groundout mit Fielder-Chain, Fly-Out, DP, TP, Reached-on-Error, Sacrifice Bunt/Fly,
+Stolen Base/Caught Stealing/Steal-of-Home, Wild Pitch/Passed Ball, Substitution,
+Positionswechsel, automatisches Out). Aufruf: `node scripts/seed-rfl-demo.mjs`
+(`--delete <id>` zum Aufräumen eigener Testläufe).
+
+Der bisherige Referenz-Bogen (id 143) lebte nur als Zeilen in der lokalen Dev-Datenbank und ist
+verloren gegangen — dieses Skript, nicht die Zeilen, die es erzeugt, ist die eigentliche
+Absicherung gegen den nächsten Verlust. **Aktuelle Referenz: Bogen 395** (Status DONE, Uhr
+gestartet 10:03). Beim Aufräumen eigener Testdaten: Bogen 1 (alt) und Bogen 395 (RFL-Demo)
+unangetastet lassen.
+
 ## Vermeintliche Bugs / Häufige Verwirrung
 - **"Inning geht nach 3 Outs weiter"**: meistens Wrap-Around. Sheet rendert per Lineup-Row, NICHT chronologisch. Multiple Cells im selben Inning-Column zeigen ABs in Lineup-Reihenfolge. Inning-End-Marker und Roman-Labels (I/II/III) verraten chronologische Out-Reihenfolge.
 - **"Diagonale auf Cell mit nur Roman 'I'"**: Cell hat 3 Events: AB seq=N war 1. Out (I) UND späterer Stealing-Event auf gleichem Slot war 3. Out (III). Out-Index zeigt "I·III" kombiniert. Falls nur "I" sichtbar → cache-stale, hard-reload.
