@@ -64,6 +64,12 @@ public class GameEntity {
     @Column(name = "time_limit_minutes")
     private Integer timeLimitMinutes;
 
+    // Der tatsaechliche Spielbeginn — getrennt von timerRunningSince, das nach einer Pause den
+    // letzten Resume zeigt statt des ersten Starts. Wird nur beim allerersten Start gesetzt
+    // (siehe GameClockService), nie ueberschrieben.
+    @Column(name = "timer_started_at")
+    private Instant timerStartedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "game_day_id", nullable = false)
     @JsonIgnore
@@ -119,4 +125,6 @@ public class GameEntity {
     public void setTimerAccumulatedSeconds(final int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
     public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
     public void setTimeLimitMinutes(final Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
+    public Instant getTimerStartedAt() { return timerStartedAt; }
+    public void setTimerStartedAt(final Instant timerStartedAt) { this.timerStartedAt = timerStartedAt; }
 }

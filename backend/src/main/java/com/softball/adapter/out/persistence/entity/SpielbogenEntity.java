@@ -72,6 +72,12 @@ public class SpielbogenEntity {
     @Column(name = "time_limit_minutes")
     private Integer timeLimitMinutes;
 
+    // Der tatsaechliche Spielbeginn — getrennt von timerRunningSince, das nach einer Pause den
+    // letzten Resume zeigt statt des ersten Starts. Wird nur beim allerersten Start gesetzt
+    // (siehe GameClockService), nie ueberschrieben.
+    @Column(name = "timer_started_at")
+    private Instant timerStartedAt;
+
     @OneToMany(mappedBy = "bogen", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<SpielbogenSlotEntity> slots = new ArrayList<>();
@@ -123,6 +129,8 @@ public class SpielbogenEntity {
     public void setTimerAccumulatedSeconds(int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
     public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
     public void setTimeLimitMinutes(Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
+    public Instant getTimerStartedAt() { return timerStartedAt; }
+    public void setTimerStartedAt(Instant timerStartedAt) { this.timerStartedAt = timerStartedAt; }
     public List<SpielbogenSlotEntity> getSlots() { return slots; }
     public void setSlots(List<SpielbogenSlotEntity> slots) { this.slots = slots; }
 }

@@ -70,6 +70,25 @@ class SpielbogenClockActionsIntegrationTest {
             .andExpect(status().isBadRequest());
     }
 
+    // Task 7: timerStartedAt ist der Wanduhr-Wert fuers "Zeit:"-Feld im PDF-Export — anders als
+    // timerRunningSince darf er einen Limit-Wechsel bei bereits pausierter Uhr (Task-3-Design)
+    // nicht mitmachen, sonst zeigt das RFL-Blatt eine falsche Anfangszeit.
+    @Test
+    void start_setsTimerStartedAt_onlyOnFirstStart_restartAfterPauseKeepsIt() throws Exception {
+        final Long bogenId = createBogen();
+
+        startClock(bogenId, 50);
+        final Instant firstStartedAt = spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt();
+        assertThat(firstStartedAt).isNotNull();
+
+        mvc.perform(post("/api/spielbogen/" + bogenId + "/clock/pause")).andExpect(status().isOk());
+        startClock(bogenId, 90); // Limit-Aenderung an pausierter Uhr, s. Task-3-Design
+
+        final SpielbogenEntity entity = spielbogenRepository.findById(bogenId).orElseThrow();
+        assertThat(entity.getTimerStartedAt()).isEqualTo(firstStartedAt);
+        assertThat(entity.getTimeLimitMinutes()).isEqualTo(90);
+    }
+
     @Test
     void pause_banksElapsed_andClearsRunningSince_secondPauseRejected() throws Exception {
         final Long bogenId = createBogen();
@@ -127,6 +146,19 @@ class SpielbogenClockActionsIntegrationTest {
     }
 
     @Test
+    void resume_neverTouchesTimerStartedAt() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        final Instant startedAt = spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt();
+        rewindRunningSince(bogenId, 60);
+        pauseClock(bogenId);
+
+        resumeClock(bogenId);
+
+        assertThat(spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt()).isEqualTo(startedAt);
+    }
+
+    @Test
     void startPauseResumePause_sumsAcrossCycles() throws Exception {
         final Long bogenId = createBogen();
         startClock(bogenId, null);
@@ -153,6 +185,17 @@ class SpielbogenClockActionsIntegrationTest {
             .andExpect(jsonPath("$.running").value(false))
             .andExpect(jsonPath("$.elapsedSeconds").value(0))
             .andExpect(jsonPath("$.limitMinutes").value(90));
+    }
+
+    @Test
+    void reset_clearsTimerStartedAt() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, 90);
+        assertThat(spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt()).isNotNull();
+
+        mvc.perform(post("/api/spielbogen/" + bogenId + "/clock/reset")).andExpect(status().isOk());
+
+        assertThat(spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt()).isNull();
     }
 
     @Test
@@ -218,6 +261,19 @@ class SpielbogenClockActionsIntegrationTest {
         assertThat(entity.getEndedAt()).isNull();
         assertThat(entity.getTimerRunningSince()).isNull();
         assertThat(entity.getTimerAccumulatedSeconds()).isEqualTo(accumulated);
+    }
+
+    @Test
+    void reopen_neverTouchesTimerStartedAt() throws Exception {
+        final Long bogenId = createBogen();
+        startClock(bogenId, null);
+        final Instant startedAt = spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt();
+        rewindRunningSince(bogenId, 3700);
+        markBogenDone(bogenId, 3600);
+
+        mvc.perform(post("/api/spielbogen/" + bogenId + "/reopen")).andExpect(status().isOk());
+
+        assertThat(spielbogenRepository.findById(bogenId).orElseThrow().getTimerStartedAt()).isEqualTo(startedAt);
     }
 
     @Test

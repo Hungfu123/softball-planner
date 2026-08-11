@@ -21,6 +21,7 @@ public class Game {
     private Instant timerRunningSince;
     private int timerAccumulatedSeconds;
     private Integer timeLimitMinutes;
+    private Instant timerStartedAt;
     private List<LineupEntry> lineupEntries = new ArrayList<>();
     private List<GameStaff> staff = new ArrayList<>();
 
@@ -68,4 +69,6 @@ public class Game {
     public void setTimerAccumulatedSeconds(final int timerAccumulatedSeconds) { this.timerAccumulatedSeconds = timerAccumulatedSeconds; }
     public Integer getTimeLimitMinutes() { return timeLimitMinutes; }
     public void setTimeLimitMinutes(final Integer timeLimitMinutes) { this.timeLimitMinutes = timeLimitMinutes; }
+    public Instant getTimerStartedAt() { return timerStartedAt; }
+    public void setTimerStartedAt(final Instant timerStartedAt) { this.timerStartedAt = timerStartedAt; }
 }

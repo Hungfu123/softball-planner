@@ -29,6 +29,7 @@ public class GameMapper {
         game.setTimerRunningSince(entity.getTimerRunningSince());
         game.setTimerAccumulatedSeconds(entity.getTimerAccumulatedSeconds());
         game.setTimeLimitMinutes(entity.getTimeLimitMinutes());
+        game.setTimerStartedAt(entity.getTimerStartedAt());
         if (entity.getGameDay() != null) {
             final com.softball.domain.model.GameDay gd = new com.softball.domain.model.GameDay();
             gd.setId(entity.getGameDay().getId());

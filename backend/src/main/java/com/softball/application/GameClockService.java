@@ -23,8 +23,12 @@ import java.time.Instant;
  * {@link GameClockCalculator} widerspricht ("Die Rechnung gehört an eine Stelle").
  *
  * <p>Leitgrundsatz gilt auch hier, nur umgekehrt: dieser Service schreibt ausschließlich in die
- * drei Uhr-Felder ({@code timerRunningSince}, {@code timerAccumulatedSeconds},
- * {@code timeLimitMinutes}) — nie in Score, Inning, Outs, At-Bats oder {@code endedAt}.
+ * vier Uhr-Felder ({@code timerRunningSince}, {@code timerAccumulatedSeconds},
+ * {@code timeLimitMinutes}, {@code timerStartedAt}) — nie in Score, Inning, Outs, At-Bats oder
+ * {@code endedAt}. {@code timerStartedAt} ist der einzige Wert, der über den ersten Start
+ * hinaus konstant bleibt: {@code timerRunningSince} zeigt nach einer Pause den letzten Resume,
+ * nicht den ersten Start — start() setzt {@code timerStartedAt} deshalb nur, wenn es noch null
+ * ist; resume()/pause()/pauseClockBeforeReopen() fassen es nie an, reset() löscht es.
  */
 @Service
 public class GameClockService {
@@ -52,6 +56,9 @@ public class GameClockService {
         final Instant now = Instant.now();
         game.setTimerRunningSince(now);
         game.setTimeLimitMinutes(limitMinutes);
+        if (game.getTimerStartedAt() == null) {
+            game.setTimerStartedAt(now);
+        }
         gameRepository.save(game);
         final ClockState state = clockState(game, now);
         log.info("Game {} Uhr gestartet: Limit={}", gameId, limitMinutes != null ? limitMinutes + "min" : "keins");
@@ -90,6 +97,7 @@ public class GameClockService {
         final Game game = findGame(gameId);
         game.setTimerRunningSince(null);
         game.setTimerAccumulatedSeconds(0);
+        game.setTimerStartedAt(null);
         gameRepository.save(game);
         final ClockState state = clockState(game, Instant.now());
         log.info("Game {} Uhr zurückgesetzt", gameId);
@@ -120,6 +128,9 @@ public class GameClockService {
         final Instant now = Instant.now();
         bogen.setTimerRunningSince(now);
         bogen.setTimeLimitMinutes(limitMinutes);
+        if (bogen.getTimerStartedAt() == null) {
+            bogen.setTimerStartedAt(now);
+        }
         spielbogenRepository.save(bogen);
         final ClockState state = clockState(bogen, now);
         log.info("Spielbogen {} Uhr gestartet: Limit={}", bogenId, limitMinutes != null ? limitMinutes + "min" : "keins");
@@ -158,6 +169,7 @@ public class GameClockService {
         final Spielbogen bogen = findBogen(bogenId);
         bogen.setTimerRunningSince(null);
         bogen.setTimerAccumulatedSeconds(0);
+        bogen.setTimerStartedAt(null);
         spielbogenRepository.save(bogen);
         final ClockState state = clockState(bogen, Instant.now());
         log.info("Spielbogen {} Uhr zurückgesetzt", bogenId);

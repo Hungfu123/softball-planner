@@ -7,6 +7,13 @@ import com.softball.domain.model.Spielbogen;
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * {@code timerStartedAt} ist ein Wanduhr-Wert, kein Rechen-Rohdatum: der RFL-Bogen zeigt ihn
+ * unverändert als "HH:MM" an, niemand leitet daraus Dauer/Elapsed ab (das bleibt ausschließlich
+ * {@link ClockStateResponse}s Job — siehe dessen Klassenkommentar). Deshalb lebt er hier, neben
+ * den anderen rohen Uhr-Feldern dieser Response, statt in der bewusst rohdatum-freien
+ * {@code ClockStateResponse}.
+ */
 public record SpielbogenResponse(
     Long id,
     LocalDate date,
@@ -25,7 +32,8 @@ public record SpielbogenResponse(
     Instant endedAt,
     Instant timerRunningSince,
     int timerAccumulatedSeconds,
-    Integer timeLimitMinutes
+    Integer timeLimitMinutes,
+    Instant timerStartedAt
 ) {
     public static SpielbogenResponse from(final Spielbogen b) {
         return new SpielbogenResponse(
@@ -46,7 +54,8 @@ public record SpielbogenResponse(
             b.getEndedAt(),
             b.getTimerRunningSince(),
             b.getTimerAccumulatedSeconds(),
-            b.getTimeLimitMinutes()
+            b.getTimeLimitMinutes(),
+            b.getTimerStartedAt()
         );
     }
 }
