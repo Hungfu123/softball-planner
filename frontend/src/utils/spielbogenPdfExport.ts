@@ -21,6 +21,21 @@ const COLOR_ORANGE: [number, number, number] = [249, 115, 22]
 const COLOR_CREAM: [number, number, number] = [240, 240, 240]
 const COLOR_CREAM_LIGHT: [number, number, number] = [255, 255, 255]
 
+/**
+ * "Zeit:"-Feld des RFL-Blatts: die tatsächliche Startzeit als "HH:MM", verbatim angezeigt
+ * (keine Dauer, keine Berechnung — dasselbe Prinzip wie bei `ClockStateResponse`, siehe dessen
+ * Klassenkommentar im Backend). `timerStartedAt` bleibt über Pause/Resume-Zyklen hinweg
+ * unverändert (im Gegensatz zu `timerRunningSince`), ist also die korrekte Quelle für die
+ * Anfangszeit selbst nach einer Regenpause. Ohne gestartete Uhr bleibt das Feld leer wie bisher
+ * — auf dem Papier-Blatt ist ein leeres Feld besser als eine falsche Zeit.
+ */
+export function formatStartTime(timerStartedAt: string | null | undefined): string {
+  if (!timerStartedAt) return ''
+  const started = new Date(timerStartedAt)
+  if (Number.isNaN(started.getTime())) return ''
+  return started.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+}
+
 export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' })
 
@@ -32,7 +47,7 @@ export async function generateSpielbogenPdf(sheet: BogenSheetResponse): Promise<
   // Boxen alle bei gleichem X starten (rechts vom breitesten Label "Datum:")
   drawHeaderField(doc, 'Ort:', sheet.meta.location ?? '', 232, 10, 244, 38)
   drawHeaderField(doc, 'Datum:', date, 232, 15, 244, 38)
-  drawHeaderField(doc, 'Zeit:', '', 232, 20, 244, 38)
+  drawHeaderField(doc, 'Zeit:', formatStartTime(sheet.meta.timerStartedAt), 232, 20, 244, 38)
 
   await drawLogo(doc, 10, 6, 18, 18)
 

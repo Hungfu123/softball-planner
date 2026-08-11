@@ -48,6 +48,7 @@ export interface GameResponse {
   timerRunningSince?: string | null
   timerAccumulatedSeconds?: number
   timeLimitMinutes?: number | null
+  timerStartedAt?: string | null
 }
 
 export interface LineupEntryResponse {
@@ -511,6 +512,7 @@ export interface SpielbogenResponse {
   timerRunningSince: string | null
   timerAccumulatedSeconds: number
   timeLimitMinutes: number | null
+  timerStartedAt: string | null
 }
 
 export interface SpielbogenSlotResponse {
