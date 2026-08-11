@@ -821,6 +821,53 @@ class GameScoringServiceTest {
         org.mockito.Mockito.verify(substitutionRepository).deleteByGameId(1L);
     }
 
+    // Review nach Task 4: resetScoring war die vierte Stelle, die endedAt nullt, ohne die Uhr
+    // vorher zu bankern — die Spec hatte nur drei Reopen-Stellen genannt. Ohne Fix verlöre die
+    // Ableitung ihre Obergrenze, sobald jemand nach Spielende die Scoring resettet (und
+    // ScoringPage.tsx ruft danach reopenGame auf, das bei endedAt==null sofort zurückkehrt —
+    // Task 4s Banking wird also garantiert übersprungen, wenn resetScoring es nicht selbst tut).
+    @Test
+    void resetScoring_banksRunningClockBeforeEndedAtIsCleared() {
+        mockGame();
+        game.setEndedAt(Instant.now());
+        game.setTimerRunningSince(Instant.now().minusSeconds(90));
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+
+        // Erfasst, ob endedAt zum Zeitpunkt des Bankings noch gesetzt war — reine
+        // Interaktions-Verifikation ("wurde aufgerufen") würde eine falsche Reihenfolge nicht
+        // auffangen, weil beide Aufrufe auf demselben Game-Objekt mutieren.
+        final Instant[] endedAtWhenBanked = new Instant[1];
+        org.mockito.Mockito.doAnswer(inv -> {
+            endedAtWhenBanked[0] = game.getEndedAt();
+            return null;
+        }).when(clockService).pauseClockBeforeReopen(game);
+
+        service.resetScoring(1L);
+
+        verify(clockService).pauseClockBeforeReopen(game);
+        assertThat(endedAtWhenBanked[0]).isNotNull();
+        assertThat(game.getEndedAt()).isNull();
+    }
+
+    @Test
+    void resetScoring_regressionGuard_gameWithoutClock_behavesAsBefore() {
+        mockGame();
+        game.setEndedAt(Instant.now());
+        assertThat(game.getTimerRunningSince()).isNull();
+        assertThat(game.getTimerAccumulatedSeconds()).isZero();
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(1L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(inningAdvanceEventRepository.findByGameIdOrderByCreatedAtAsc(1L)).thenReturn(List.of());
+
+        service.resetScoring(1L);
+
+        assertThat(game.getEndedAt()).isNull();
+        assertThat(game.getTimerRunningSince()).isNull();
+        assertThat(game.getTimerAccumulatedSeconds()).isZero();
+    }
+
     @org.junit.jupiter.api.Nested
     class UndoLastAction {
 

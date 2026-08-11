@@ -27,6 +27,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -288,6 +289,38 @@ class GameClockActionsIntegrationTest {
 
         mvc.perform(post("/api/games/" + gameId + "/end")).andExpect(status().isOk());
         mvc.perform(post("/api/games/" + gameId + "/reopen")).andExpect(status().isOk());
+
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isZero();
+    }
+
+    // Review nach Task 4: resetScoring ist die vierte Stelle, die endedAt nullt — die Spec
+    // hatte nur die drei Reopen-Aufrufer genannt. ScoringPage.tsx ruft nach resetScoring
+    // zusätzlich reopenGame auf, das bei endedAt==null aber sofort zurückkehrt (siehe
+    // GameService.reopenGame) — das Banking MUSS also in resetScoring selbst passieren.
+    @Test
+    void resetScoring_runningClock_pausesWithElapsedCappedAtGameEnd_notJumpingToNow() throws Exception {
+        final Long gameId = createGame();
+        startClock(gameId, null);
+        rewindRunningSince(gameId, 3700); // Uhr laeuft seit 3700s
+        endGameAt(gameId, 3600); // Spiel endete vor 3600s -> nur 100s liefen bis zum Spielende
+
+        mvc.perform(delete("/api/games/" + gameId + "/scoring")).andExpect(status().isNoContent());
+
+        final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
+        assertThat(entity.getEndedAt()).isNull();
+        assertThat(entity.getTimerRunningSince()).isNull();
+        assertThat(entity.getTimerAccumulatedSeconds()).isBetween(100, 110);
+    }
+
+    @Test
+    void resetScoring_regressionGuard_gameWithoutClock_behavesAsBefore() throws Exception {
+        final Long gameId = createGame();
+
+        mvc.perform(post("/api/games/" + gameId + "/end")).andExpect(status().isOk());
+        mvc.perform(delete("/api/games/" + gameId + "/scoring")).andExpect(status().isNoContent());
 
         final GameEntity entity = gameRepository.findById(gameId).orElseThrow();
         assertThat(entity.getEndedAt()).isNull();
