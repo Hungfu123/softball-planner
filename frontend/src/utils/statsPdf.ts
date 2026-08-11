@@ -14,10 +14,6 @@ function formatDec(val: number): string {
   return val.toFixed(3).replace(/^0\./, '.')
 }
 
-function formatPct(val: number): string {
-  return `${Math.round(val * 100)}%`
-}
-
 function formatTimestamp(): string {
   return new Date().toLocaleString('de-DE', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -112,67 +108,122 @@ function applyFootersToAllPages(doc: jsPDF) {
   }
 }
 
-function drawHeroBlock(
-  doc: jsPDF,
-  startY: number,
-  eyebrow: string,
-  primary: string,
-  valueLabel: string,
-  value: string,
-): number {
+/**
+ * Eigene, hoehere Schwelle fuer die AVG-Fuehrung im Kopfblock. Die Tabelle qualifiziert ab
+ * 5 At-Bats — fuer eine Rangliste reicht das, fuer eine herausgestellte "Bester Schlaeger"-Zahl
+ * nicht: 1.000 aus 5 AB ist Rauschen und stand vorher gross und rot ueber der Seite, waehrend
+ * der tatsaechlich beste Schlaeger (.846 aus 13 AB) darunter in der Tabelle verschwand.
+ */
+const LEADER_MIN_AB = 10
+
+interface Leader {
+  label: string
+  name: string
+  value: string
+  /** Zusatz unter dem Namen, z.B. die Stichprobe — macht die Zahl pruefbar. */
+  note?: string
+}
+
+/** Fuehrender je Kategorie. Gleichstand: mehr At-Bats gewinnt, dann alphabetisch. */
+function pickLeaders(stats: PlayerBattingStatsResponse[]): Leader[] {
+  const best = (
+    candidates: PlayerBattingStatsResponse[],
+    metric: (s: PlayerBattingStatsResponse) => number,
+  ): PlayerBattingStatsResponse | undefined =>
+    [...candidates].sort((a, b) =>
+      metric(b) - metric(a) || b.atBats - a.atBats || a.playerName.localeCompare(b.playerName),
+    )[0]
+
+  const leaders: Leader[] = []
+
+  // AVG nur aus Spielern mit belastbarer Stichprobe. Gibt es keinen, faellt die Schwelle weg —
+  // dann macht die mitgedruckte AB-Zahl die Schwaeche sichtbar, statt sie zu verstecken.
+  const avgPool = stats.filter(s => s.atBats >= LEADER_MIN_AB)
+  const avgLeader = best(avgPool.length > 0 ? avgPool : stats.filter(s => s.atBats > 0),
+                         s => Number(s.battingAverage))
+  if (avgLeader) {
+    leaders.push({
+      label: 'AVG',
+      name: avgLeader.playerName,
+      value: formatDec(Number(avgLeader.battingAverage)),
+      note: `${avgLeader.atBats} AB`,
+    })
+  }
+
+  const counting: [string, (s: PlayerBattingStatsResponse) => number][] = [
+    ['HR', s => s.homeRuns],
+    ['RBI', s => s.runsBattedIn],
+    ['SB', s => s.stolenBases],
+  ]
+  for (const [label, metric] of counting) {
+    const leader = best(stats, metric)
+    if (leader && metric(leader) > 0) {
+      leaders.push({ label, name: leader.playerName, value: String(metric(leader)) })
+    }
+  }
+
+  return leaders
+}
+
+/**
+ * Kopfblock mit den Fuehrenden je Kategorie. Ersetzt den frueheren Einzel-Hero, der die volle
+ * Seitenbreite fuer zwei Datenpunkte belegte und dabei Zeile 1 der Tabelle wiederholte.
+ */
+function drawLeadersBand(doc: jsPDF, startY: number, leaders: Leader[]): number {
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 14
   const boxX = margin
   const boxY = startY
   const boxW = pageWidth - 2 * margin
-  const boxH = 16
+  const boxH = 19
 
-  // Background block — deep navy
   doc.setFillColor(...COLOR_NAVY)
   doc.rect(boxX, boxY, boxW, boxH, 'F')
-
-  // Red accent strip on the left edge — sharp 10% accent
   doc.setFillColor(...COLOR_RED)
   doc.rect(boxX, boxY, 2.4, boxH, 'F')
 
-  // Eyebrow — kurz halten. Hier stand vorher der komplette Filtertext ("TOP HITTER · JAHR ·
-  // JAHR 2026 · 5 SAISONS: …"), gesperrt und ohne Breitenbegrenzung: er lief aus dem Kasten
-  // heraus und wurde am Seitenrand abgeschnitten. Der Filter steht schon im Untertitel.
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(6.5)
-  doc.setTextColor(255, 220, 220)
-  doc.setCharSpace(0.8)
-  doc.text(eyebrow.toUpperCase(), boxX + 6, boxY + 6)
-  doc.setCharSpace(0)
+  const innerX = boxX + 8
+  const innerW = boxW - 14
+  const cellW = innerW / leaders.length
 
-  // Primary name — white. Breite begrenzt auf den Platz links vom Wert.
-  const valueFontSize = 20
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(valueFontSize)
-  const valueWidth = doc.getTextWidth(value)
+  leaders.forEach((leader, i) => {
+    const x = innerX + i * cellW
 
-  doc.setFontSize(13)
-  doc.setTextColor(255, 255, 255)
-  const nameMax = boxW - 12 - valueWidth - 8
-  const nameLine = doc.splitTextToSize(primary, nameMax)[0] ?? primary
-  doc.text(nameLine, boxX + 6, boxY + 12.5)
+    // Trennstrich zwischen den Zellen — nur zwischen, nicht aussen.
+    if (i > 0) {
+      doc.setDrawColor(80, 92, 120)
+      doc.setLineWidth(0.2)
+      doc.line(x - 4, boxY + 4, x - 4, boxY + boxH - 4)
+    }
 
-  // Value — right side, red
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(valueFontSize)
-  doc.setTextColor(...COLOR_RED)
-  doc.text(value, boxX + boxW - 6, boxY + 11.5, { align: 'right' })
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(5.5)
+    doc.setTextColor(255, 190, 190)
+    doc.setCharSpace(0.8)
+    doc.text(leader.label, x, boxY + 5.5)
+    doc.setCharSpace(0)
 
-  // Tiny value label
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(5.5)
-  doc.setTextColor(255, 220, 220)
-  doc.setCharSpace(0.8)
-  doc.text(valueLabel.toUpperCase(), boxX + boxW - 6, boxY + 14.6, { align: 'right' })
-  doc.setCharSpace(0)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.setTextColor(255, 255, 255)
+    doc.text(leader.value, x, boxY + 12)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(205, 210, 230)
+    const nameLine = doc.splitTextToSize(leader.name, cellW - 6)[0] ?? leader.name
+    doc.text(nameLine, x, boxY + 16.5)
+
+    if (leader.note) {
+      doc.setFontSize(6)
+      doc.setTextColor(150, 160, 190)
+      doc.text(leader.note, x + cellW - 6, boxY + 16.5, { align: 'right' })
+    }
+  })
 
   return boxY + boxH + 5
 }
+
 
 /**
  * Spaltenbreiten in mm, in Spaltenreihenfolge. Einzige Quelle: daraus entstehen sowohl die
@@ -184,27 +235,41 @@ function drawHeroBlock(
  */
 const COL_WIDTHS = [
   7,    // #
-  30,   // Spieler
+  22,   // Spieler — Vornamen im Team sind kurz (<= 8 Zeichen); 30 mm liessen die Spalte halb
+        //           leer stehen. Laengere Namen werden ellipsiert, nicht umgebrochen.
   7.5,  // PA
   7.5,  // AB
   7,    // H
-  9.5,  // AVG
-  6.8,  // 1B
-  6.8,  // 2B
-  6.8,  // 3B
-  6.8,  // HR
-  6.8,  // R
-  6.8,  // BB
+  7.4,  // 1B
+  7.4,  // 2B
+  7.4,  // 3B
+  7.4,  // HR
+  7.4,  // R
+  7.4,  // BB
   8,    // HBP
-  6.8,  // K
-  6.8,  // SB
-  6.8,  // CS
-  6.8,  // PO
+  7.4,  // K
+  7.4,  // SB
+  7.4,  // CS
+  7.4,  // PO
   8,    // RBI
-  9,    // OBP
+  9.5,  // AVG  ← ab hier die Quotenwerte, siehe RATE_COLUMN_START
+  9.5,  // OBP
   9.5,  // SLG
   9.5,  // OPS
 ] as const
+
+/**
+ * Erste Quotenspalte (AVG). Die vier Quotenwerte AVG/OBP/SLG/OPS stehen zusammen rechts, weil
+ * man sie miteinander vergleicht — vorher stand AVG an Position 6 und war von OBP/SLG/OPS durch
+ * zwoelf Zaehlspalten getrennt, was die Tabelle unscanbar machte. Vor dieser Spalte laeuft eine
+ * feine senkrechte Trennlinie.
+ */
+const RATE_COLUMN_START = 17
+
+/** X-Position der Trennlinie: linker Rand plus alle Zaehlspalten davor. */
+const RATE_DIVIDER_OFFSET = COL_WIDTHS
+  .slice(0, RATE_COLUMN_START)
+  .reduce((sum, w) => sum + w, 0)
 
 export const TABLE_WIDTH = COL_WIDTHS.reduce((sum, w) => sum + w, 0)
 
@@ -226,9 +291,11 @@ function buildColumnStyles() {
     0: { cellWidth: COL_WIDTHS[0], halign: 'right', textColor: COLOR_GRAY_MUTED, font: 'courier' },
     // Namen ellipsieren statt ueberlaufen zu lassen — ein langer Name darf nicht in die
     // Zahlenspalten bluten.
-    1: { cellWidth: COL_WIDTHS[1], fontStyle: 'bold', overflow: 'ellipsize' },
+    // Kopfzelle linksbuendig wie die Namen darunter — headStyles zentriert sonst alles, was
+    // ueber einer linksbuendigen Spalte schief aussieht.
+    1: { cellWidth: COL_WIDTHS[1], fontStyle: 'bold', overflow: 'ellipsize', halign: 'left' },
   }
-  const boldColumns = new Set([5, 20]) // AVG, OPS
+  const boldColumns = new Set([RATE_COLUMN_START, 20]) // AVG, OPS
   for (let i = 2; i < COL_WIDTHS.length; i++) {
     styles[i] = numericColumn(COL_WIDTHS[i], boldColumns.has(i))
   }
@@ -267,21 +334,14 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
     return
   }
 
-  const topPlayer = sorted.find(p => p.atBats > 0)
-  if (topPlayer) {
-    y = drawHeroBlock(
-      doc,
-      y,
-      'Top Hitter',
-      topPlayer.playerName,
-      'AVG',
-      formatDec(Number(topPlayer.battingAverage)),
-    )
+  const leaders = pickLeaders(sorted)
+  if (leaders.length > 0) {
+    y = drawLeadersBand(doc, y, leaders)
   }
 
   const head = [[
-    '#', 'Spieler', 'PA', 'AB', 'H', 'AVG', '1B', '2B', '3B', 'HR', 'R',
-    'BB', 'HBP', 'K', 'SB', 'CS', 'PO', 'RBI', 'OBP', 'SLG', 'OPS',
+    '#', 'Spieler', 'PA', 'AB', 'H', '1B', '2B', '3B', 'HR', 'R',
+    'BB', 'HBP', 'K', 'SB', 'CS', 'PO', 'RBI', 'AVG', 'OBP', 'SLG', 'OPS',
   ]]
 
   const rows = sorted.map((s, idx) => [
@@ -290,7 +350,6 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
     String(s.plateAppearances),
     String(s.atBats),
     String(s.hits),
-    formatDec(Number(s.battingAverage)),
     String(s.singles),
     String(s.doubles),
     String(s.triples),
@@ -303,7 +362,10 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
     String(s.caughtStealing),
     String(s.pickoffs ?? 0),
     String(s.runsBattedIn),
-    formatPct(Number(s.onBasePct)),
+    formatDec(Number(s.battingAverage)),
+    // OBP als Dezimalwert wie AVG/SLG/OPS. Vorher als Prozent ("87%") — dieselbe Art von Zahl
+    // in zwei Notationen, und im Softball ist die Dezimalform die Konvention.
+    formatDec(Number(s.onBasePct)),
     formatDec(Number(s.sluggingPct)),
     formatDec(Number(s.ops)),
   ])
@@ -319,7 +381,9 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
       // 6.5pt war zu klein zum Lesen, und die Seite war zur Haelfte leer — 17 Zeilen lassen
       // reichlich Luft nach unten.
       fontSize: 7.5,
-      cellPadding: { top: 2, bottom: 2, left: 1.2, right: 1.2 },
+      // Zeilenhoehe nutzt den freien Platz nach unten — die Seite war zu etwa 40 % leer,
+      // waehrend die Zeilen eng standen. Reicht bis ~20 Spieler auf einer Seite.
+      cellPadding: { top: 2.9, bottom: 2.9, left: 1.2, right: 1.2 },
       lineColor: COLOR_GRAY_LINE,
       lineWidth: 0,
       textColor: COLOR_NAVY,
@@ -355,21 +419,22 @@ export function generateBattingStatsPdf({ stats, contextLabel, scopeLabel }: Bat
         const lineY = data.cell.y + data.cell.height
         doc.line(margin, lineY, lineEnd, lineY)
       }
-    },
-    didParseCell: (data) => {
-      // Highlight top-1 row in red (only when AB > 0)
-      if (data.section === 'body' && data.row.index === 0 && sorted[0].atBats > 0) {
-        if (data.column.index === 0) {
-          data.cell.styles.textColor = COLOR_RED
-          data.cell.styles.fontStyle = 'bold'
-        } else if (data.column.index === 1) {
-          data.cell.styles.textColor = COLOR_RED
-        } else {
-          data.cell.styles.textColor = COLOR_NAVY
-          data.cell.styles.fontStyle = 'bold'
-        }
+      // Senkrechte Trennung zwischen Zaehl- und Quotenspalten. Zeile fuer Zeile gezeichnet,
+      // damit sie ueber Seitenumbrueche hinweg genau so hoch ist wie die Tabelle.
+      if (data.column.index === RATE_COLUMN_START) {
+        const dividerColor: [number, number, number] =
+          data.section === 'head' ? [90, 100, 130] : COLOR_GRAY_LINE
+        doc.setDrawColor(...dividerColor)
+        doc.setLineWidth(0.2)
+        const x = margin + RATE_DIVIDER_OFFSET
+        doc.line(x, data.cell.y, x, data.cell.y + data.cell.height)
       }
     },
+    // Kein roter Hervorhebung von Zeile 1 mehr. Die Tabelle ist nach AVG sortiert, und ein
+    // Spieler mit 5 At-Bats kann dort oben stehen — rot markiert las sich das als "bester
+    // Schlaeger" und widersprach dem Kopfblock, der die Fuehrenden mit belastbarer Stichprobe
+    // nennt. Zwei verschiedene Aussagen zum Besten auf einer Seite. Der Rang steht jetzt nur
+    // noch in der #-Spalte, behauptet wird nichts.
   })
 
   const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y
