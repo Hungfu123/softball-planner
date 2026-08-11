@@ -235,7 +235,11 @@ export default function SpielbogenPage() {
 
   if (!sheet) return null
 
-  const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats, clock } = sheet
+  const { meta, homeLineup, awayLineup, homeAtBats, awayAtBats } = sheet
+  // PWA cacht API-GETs NetworkFirst (5s Timeout, 7 Tage) unter einem Cache-Namen, der Deploys
+  // überlebt — bei schlechtem Empfang am Feld kann eine Vor-Deploy-Response ohne `clock`
+  // ausgeliefert werden. Fallback statt Destructure-Crash, exakt wie in ScoringPage.tsx.
+  const clock = sheet.clock ?? { elapsedSeconds: 0, running: false, started: false, limitMinutes: null, overLimit: false }
 
   const currentSide = meta.currentSide
   const slots = currentSide === 'HOME' ? homeLineup : awayLineup
