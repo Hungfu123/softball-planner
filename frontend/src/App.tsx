@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
 import { Layout, ToastProvider } from '@/components/layout/Layout'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
@@ -59,7 +59,7 @@ function LazyCounter() {
 
 // Als eigener Export gehalten, damit App.routes.test.tsx jede Route unabhängig
 // vom App-Root (und dessen AuthProvider/RouterProvider-Verdrahtung) durchgehen kann.
-export const routes = [
+export const routes: RouteObject[] = [
   {
     element: <RequireAuth><Layout /></RequireAuth>,
     errorElement: <ChunkErrorBoundary />,
