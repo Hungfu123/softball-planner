@@ -65,7 +65,7 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
   const batting = battingTeam(state)
 
   return (
-    <div className="relative bg-navy-900 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+    <div className="relative shrink-0 bg-navy-900 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
       <Link
         to={backTo}
         aria-label={backLabel}
@@ -85,8 +85,8 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
           <div className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-100/70">
             Inning
           </div>
-          <div className="mt-1 flex items-center justify-center gap-1 font-display text-3xl font-extrabold leading-none tabular-nums">
-            <span aria-hidden className="text-base text-softball-red-400">
+          <div aria-hidden className="mt-1 flex items-center justify-center gap-1 font-display text-3xl font-extrabold leading-none tabular-nums">
+            <span className="text-base text-softball-red-400">
               {state.half === 'top' ? '▲' : '▼'}
             </span>
             {state.inning}
