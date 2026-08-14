@@ -11,7 +11,7 @@ afterEach(() => {
 describe('ShareCounterButton', () => {
   it('nutzt das native Teilen-Blatt, wenn es da ist', async () => {
     const share = vi.fn().mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { ...navigator, share })
+    vi.stubGlobal('navigator', { share, clipboard: navigator.clipboard })
     const user = userEvent.setup()
 
     render(<ShareCounterButton />)
@@ -24,7 +24,24 @@ describe('ShareCounterButton', () => {
 
   it('kopiert in die Zwischenablage, wenn Teilen fehlt, und meldet das zurück', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { ...navigator, share: undefined, clipboard: { writeText } })
+    const mockClipboard = { writeText }
+    const realNavigator = navigator
+
+    // Verwende einen Proxy, um navigator.clipboard zu überschreiben
+    const navProxy = new Proxy(realNavigator, {
+      get(target, prop, receiver) {
+        if (prop === 'clipboard') {
+          return mockClipboard
+        }
+        if (prop === 'share') {
+          return undefined
+        }
+        return Reflect.get(target, prop, receiver)
+      },
+    })
+
+    vi.stubGlobal('navigator', navProxy as any)
+
     const user = userEvent.setup()
 
     render(<ShareCounterButton />)
@@ -36,7 +53,24 @@ describe('ShareCounterButton', () => {
 
   it('meldet, wenn auch das Kopieren scheitert', async () => {
     const writeText = vi.fn().mockRejectedValue(new Error('nope'))
-    vi.stubGlobal('navigator', { ...navigator, share: undefined, clipboard: { writeText } })
+    const mockClipboard = { writeText }
+    const realNavigator = navigator
+
+    // Verwende einen Proxy, um navigator.clipboard zu überschreiben
+    const navProxy = new Proxy(realNavigator, {
+      get(target, prop, receiver) {
+        if (prop === 'clipboard') {
+          return mockClipboard
+        }
+        if (prop === 'share') {
+          return undefined
+        }
+        return Reflect.get(target, prop, receiver)
+      },
+    })
+
+    vi.stubGlobal('navigator', navProxy as any)
+
     const user = userEvent.setup()
 
     render(<ShareCounterButton />)
@@ -49,7 +83,7 @@ describe('ShareCounterButton', () => {
     const abort = Object.assign(new Error('abgebrochen'), { name: 'AbortError' })
     const share = vi.fn().mockRejectedValue(abort)
     const writeText = vi.fn().mockResolvedValue(undefined)
-    vi.stubGlobal('navigator', { ...navigator, share, clipboard: { writeText } })
+    vi.stubGlobal('navigator', { share, clipboard: { writeText } })
     const user = userEvent.setup()
 
     render(<ShareCounterButton />)
