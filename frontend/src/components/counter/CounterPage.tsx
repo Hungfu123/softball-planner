@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ConfirmModal } from '@/components/shared'
 import { hasAuth } from '@/api/client'
 import { useCounter } from '@/hooks/useCounter'
+import { useWakeLock } from '@/hooks/useWakeLock'
 import { CounterBoard } from './CounterBoard'
 import { CounterPad } from './CounterPad'
 
@@ -27,6 +28,10 @@ import { CounterPad } from './CounterPad'
 export default function CounterPage() {
   const counter = useCounter()
   const [confirmReset, setConfirmReset] = useState(false)
+
+  // Am Feld vergehen zwischen zwei Würfen leicht Minuten — ohne das hier müsste man das
+  // Handy jedes Mal erst aufwecken, bevor man zählen kann.
+  useWakeLock()
 
   const loggedIn = hasAuth()
 
