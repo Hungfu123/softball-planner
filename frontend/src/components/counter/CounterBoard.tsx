@@ -32,7 +32,7 @@ function Lamps({ label, count, total, onClass }: LampsProps) {
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
-            className={`h-4 w-4 rounded-full ring-1 ring-inset ring-white/20 ${i < count ? onClass : 'bg-white/10'}`}
+            className={`h-6 w-6 rounded-full ring-1 ring-inset ring-white/20 ${i < count ? onClass : 'bg-white/10'}`}
           />
         ))}
       </div>
@@ -54,7 +54,7 @@ function Score({ label, runs, atBat }: ScoreProps) {
       >
         {label}
       </div>
-      <div className="font-display text-5xl font-extrabold leading-none tabular-nums text-white sm:text-6xl">
+      <div className="font-display text-7xl font-extrabold leading-none tabular-nums text-white">
         {runs}
       </div>
     </div>
@@ -65,7 +65,7 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
   const batting = battingTeam(state)
 
   return (
-    <div className="relative shrink-0 bg-navy-900 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+    <div className="relative flex grow shrink-0 flex-col justify-center bg-navy-900 px-4 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
       <Link
         to={backTo}
         aria-label={backLabel}

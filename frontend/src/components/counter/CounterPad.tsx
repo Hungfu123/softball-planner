@@ -30,7 +30,7 @@ export function CounterPad({
   canUndo,
 }: Props) {
   return (
-    <div className="flex flex-1 flex-col gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div className="flex shrink-0 flex-col gap-2 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="flex gap-2">
         <Button variant="primary" onClick={onStrike} className={ACTION}>Strike</Button>
         <Button variant="navy" onClick={onBall} className={ACTION}>Ball</Button>
