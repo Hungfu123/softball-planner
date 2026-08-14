@@ -1,12 +1,11 @@
-import { useState, useCallback, lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { Layout, ToastProvider } from '@/components/layout/Layout'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
 import { LineupSheet } from '@/components/export/LineupSheet'
-import { LoginPage } from '@/components/auth/LoginPage'
-import { setAuth, hasAuth, clearAuth } from '@/api/client'
+import { AuthProvider, RequireAuth } from '@/components/auth/AuthProvider'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 import { InvitationListPage } from '@/components/orga/InvitationListPage'
@@ -22,6 +21,7 @@ const CalendarPage = lazy(() => import('@/components/calendar/CalendarPage').the
 const SpielbogenList = lazy(() => import('@/components/spielbogen/SpielbogenList'))
 const SpielbogenWizard = lazy(() => import('@/components/spielbogen/SpielbogenWizard'))
 const SpielbogenPage = lazy(() => import('@/components/spielbogen/SpielbogenPage'))
+const CounterPage = lazy(() => import('@/components/counter/CounterPage'))
 
 function LazyScoring() {
   // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
@@ -53,9 +53,15 @@ function LazySpielbogenPage() {
   )
 }
 
-const router = createBrowserRouter([
+function LazyCounter() {
+  return <Suspense fallback={<LoadingSkeleton />}><CounterPage /></Suspense>
+}
+
+// Als eigener Export gehalten, damit App.routes.test.tsx jede Route unabhängig
+// vom App-Root (und dessen AuthProvider/RouterProvider-Verdrahtung) durchgehen kann.
+export const routes = [
   {
-    element: <Layout />,
+    element: <RequireAuth><Layout /></RequireAuth>,
     errorElement: <ChunkErrorBoundary />,
     children: [
       { path: '/', element: <Dashboard />, errorElement: <ChunkErrorBoundary /> },
@@ -72,37 +78,19 @@ const router = createBrowserRouter([
       { path: '/orga/whatsapp-umfrage', element: <WhatsappPollPage />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
-  { path: '/spielbogen/:id', element: <LazySpielbogenPage />, errorElement: <ChunkErrorBoundary /> },
-  { path: '/gameday/:id/export', element: <LineupSheet />, errorElement: <ChunkErrorBoundary /> },
-  { path: '/gameday/:id/scoring/:gameIndex', element: <LazyScoring />, errorElement: <ChunkErrorBoundary /> },
-])
+  // Einzige Route ohne RequireAuth — der Zähler soll ohne Anmeldung laufen.
+  { path: '/counter', element: <LazyCounter />, errorElement: <ChunkErrorBoundary /> },
+  { path: '/spielbogen/:id', element: <RequireAuth><LazySpielbogenPage /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  { path: '/gameday/:id/export', element: <RequireAuth><LineupSheet /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  { path: '/gameday/:id/scoring/:gameIndex', element: <RequireAuth><LazyScoring /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+]
+
+const router = createBrowserRouter(routes)
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(hasAuth())
-  const [loginError, setLoginError] = useState<string | null>(null)
-
-  const handleLogin = useCallback(async (password: string) => {
-    setAuth(password)
-    try {
-      const res = await fetch('/api/players', {
-        headers: { Authorization: `Basic ${btoa(`admin:${password}`)}` },
-      })
-      if (res.status === 401) {
-        clearAuth()
-        setLoginError('Falsches Passwort')
-        return
-      }
-      setLoginError(null)
-      setLoggedIn(true)
-    } catch {
-      clearAuth()
-      setLoginError('Server nicht erreichbar')
-    }
-  }, [])
-
-  if (!loggedIn) {
-    return <LoginPage onLogin={handleLogin} error={loginError} />
-  }
-
-  return <RouterProvider router={router} />
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  )
 }
