@@ -16,9 +16,9 @@ export interface CounterState {
   away: number
 }
 
-const MAX_BALLS = 4
-const MAX_STRIKES = 3
-const MAX_OUTS = 3
+export const MAX_BALLS = 4
+export const MAX_STRIKES = 3
+export const MAX_OUTS = 3
 
 export const INITIAL_STATE: CounterState = {
   balls: 0,
