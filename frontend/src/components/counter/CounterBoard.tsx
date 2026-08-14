@@ -25,10 +25,10 @@ interface LampsProps {
 function Lamps({ label, count, total, onClass }: LampsProps) {
   return (
     <div className="flex-1 text-center">
-      <div className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-100/70">
+      <div className="font-display text-xs font-bold uppercase tracking-[0.18em] text-navy-100/70">
         {label}
       </div>
-      <div className="mt-1.5 flex justify-center gap-1.5" role="img" aria-label={`${label}: ${count} von ${total}`}>
+      <div className="mt-2 flex justify-center gap-2" role="img" aria-label={`${label}: ${count} von ${total}`}>
         {Array.from({ length: total }, (_, i) => (
           <span
             key={i}
@@ -46,15 +46,25 @@ interface ScoreProps {
   atBat: boolean
 }
 
+/*
+ * Die Ziffern wachsen mit der Bildschirmhöhe (`clamp`), damit die Tafel den Platz
+ * wirklich füllt statt in der Mitte zu schweben — eine Anzeigetafel soll man von der
+ * Bank aus lesen können. Untergrenze für kleine Geräte, Obergrenze gegen Riesenziffern
+ * auf dem Tablet.
+ */
+const SCORE_ZIFFER = 'text-[clamp(3.5rem,17vh,9rem)]'
+
 function Score({ label, runs, atBat }: ScoreProps) {
   return (
-    <div className={`flex-1 rounded-xl py-1 text-center ${atBat ? 'bg-white/10' : 'opacity-40'}`}>
+    <div
+      className={`flex flex-1 flex-col items-center justify-center gap-2 rounded-2xl py-2 ${atBat ? 'bg-white/10' : 'opacity-40'}`}
+    >
       <div
-        className={`font-display text-[10px] font-bold uppercase tracking-[0.18em] ${atBat ? 'text-white' : 'text-navy-100/70'}`}
+        className={`font-display text-xs font-bold uppercase tracking-[0.18em] ${atBat ? 'text-white' : 'text-navy-100/70'}`}
       >
         {label}
       </div>
-      <div className="font-display text-7xl font-extrabold leading-none tabular-nums text-white">
+      <div className={`font-display font-extrabold leading-none tabular-nums text-white ${SCORE_ZIFFER}`}>
         {runs}
       </div>
     </div>
@@ -65,28 +75,33 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
   const batting = battingTeam(state)
 
   return (
-    <div className="relative flex grow shrink-0 flex-col justify-center bg-navy-900 px-4 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
-      <Link
-        to={backTo}
-        aria-label={backLabel}
-        title={backLabel}
-        className="absolute left-2 top-[max(0.5rem,env(safe-area-inset-top))] rounded-lg p-2 text-navy-100/70 hover:bg-white/10 hover:text-white"
-      >
-        <ChevronLeft size={22} />
-      </Link>
-
-      <div className="absolute right-2 top-[max(0.5rem,env(safe-area-inset-top))]">
+    /*
+     * Drei Bänder: dünne Kopfzeile, wachsendes Score-Band, Lampen am unteren Rand.
+     * Das Score-Band nimmt den freien Platz auf und gibt ihn an die Ziffern weiter,
+     * statt den Inhalt in einer leeren Fläche schweben zu lassen. Die Lampen sitzen
+     * fest an der Unterkante, damit die Tafel dort eine Kante hat und nicht ausläuft.
+     */
+    <div className="flex grow shrink-0 flex-col bg-navy-900 px-4 pb-4 pt-[max(0.5rem,env(safe-area-inset-top))] text-white">
+      <div className="flex shrink-0 items-center justify-between">
+        <Link
+          to={backTo}
+          aria-label={backLabel}
+          title={backLabel}
+          className="rounded-lg p-2 text-navy-100/70 hover:bg-white/10 hover:text-white"
+        >
+          <ChevronLeft size={22} />
+        </Link>
         <ShareCounterButton />
       </div>
 
-      <div className="flex items-center pt-6">
+      <div className="flex grow items-stretch py-2">
         <Score label="Heim" runs={state.home} atBat={batting === 'home'} />
-        <div className="w-16 shrink-0 border-x border-white/15 text-center">
-          <div className="font-display text-[10px] font-bold uppercase tracking-[0.18em] text-navy-100/70">
+        <div className="flex w-20 shrink-0 flex-col items-center justify-center gap-1 border-x border-white/15 px-1">
+          <div className="font-display text-xs font-bold uppercase tracking-[0.18em] text-navy-100/70">
             Inning
           </div>
-          <div aria-hidden className="mt-1 flex items-center justify-center gap-1 font-display text-3xl font-extrabold leading-none tabular-nums">
-            <span className="text-base text-softball-red-400">
+          <div aria-hidden className="flex items-center justify-center gap-1 font-display text-4xl font-extrabold leading-none tabular-nums">
+            <span className="text-lg text-softball-red-400">
               {state.half === 'top' ? '▲' : '▼'}
             </span>
             {state.inning}
@@ -98,7 +113,7 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
         <Score label="Gast" runs={state.away} atBat={batting === 'away'} />
       </div>
 
-      <div className="mt-3 flex border-t border-white/15 pt-3">
+      <div className="flex shrink-0 border-t border-white/15 pt-3">
         <Lamps label="Ball" count={state.balls} total={3} onClass="bg-cream-50" />
         <Lamps label="Strike" count={state.strikes} total={2} onClass="bg-amber-400" />
         <Lamps label="Out" count={state.outs} total={2} onClass="bg-softball-red-400" />
