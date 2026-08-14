@@ -35,6 +35,20 @@ Zwei Einstiege, beide auf dieselbe Route — die Seite existiert nur einmal:
 
 Der Counter läuft auch aus der Orga-Kachel heraus ohne `Layout` — er ist eine Vollbild-Seite, kein Unterbereich von Orga. Damit er keine Sackgasse ist, sitzt links oben auf der Navy-Tafel ein `ChevronLeft`-Link, wie in `ScoringPage`: bei angemeldetem Nutzer nach `/orga`, sonst nach `/` (dort steht die `LoginPage`). Ziel und `aria-label` richten sich nach `hasAuth()`.
 
+### Teilen
+
+Rechts oben auf der Tafel, gespiegelt zum Zurück-Link, ein **Teilen**-Knopf. Er reicht die Adresse der Counter-Seite weiter, damit Leute ohne Zugangsdaten den Zähler auf ihrem eigenen Gerät öffnen können.
+
+Reihenfolge:
+
+1. `navigator.share({ title, url })`, wenn verfügbar — auf dem Handy das native Teilen-Blatt.
+2. Sonst `navigator.clipboard.writeText(url)` und für zwei Sekunden die Rückmeldung „Link kopiert".
+3. Schlägt auch das fehl: „Kopieren nicht möglich".
+
+Ein Abbruch im Teilen-Blatt (`AbortError`) ist kein Fehler und erzeugt keine Meldung.
+
+**Geteilt wird die Seite, nicht der Spielstand.** Der Stand liegt im localStorage des jeweiligen Geräts; wer den Link öffnet, startet bei 0:0. Das ist gewollt — Live-Sync über mehrere Geräte steht ausdrücklich nicht im Umfang. Der Knopf heißt deshalb „Teilen" und nicht „Spielstand teilen".
+
 **Backend: keine Änderung.** Kein Endpoint, keine Tabelle, kein `permitAll()`. `SecurityConfig` behält `/api/calendar.ics` als einzige Ausnahme im Auth-Gate. Ein öffentlich schreibender Endpoint wäre ein Missbrauchsvektor und für einen Gerätezähler ohne Gegenwert.
 
 ## State & Persistenz
@@ -103,7 +117,7 @@ Design-System: Stadium Pocket (Cream-Papier, Navy, Softball-Red; Saira Condensed
 
 ### Tafel (`CounterBoard`) — `navy-900`-Platte oben
 
-- Links oben ein `ChevronLeft`-Zurück-Link (siehe Routing), klein und zurückhaltend — er darf der Anzeige nicht die Aufmerksamkeit nehmen.
+- Links oben ein `ChevronLeft`-Zurück-Link, rechts oben der Teilen-Knopf (beide siehe Routing), klein und zurückhaltend — sie dürfen der Anzeige nicht die Aufmerksamkeit nehmen.
 - Score links `Heim`, rechts `Gast`, in `font-display`, sehr groß.
 - Die schlagende Mannschaft steht hell auf leicht aufgehelltem Grund, die wartende auf `opacity-42`.
 - Mitte: `Inning` mit Pfeil — ▲ oben, ▼ unten — durch Hairlines abgesetzt.
@@ -143,6 +157,7 @@ Lampenfarben (Ampel — die Farbe steigert sich mit dem Ernst der Lage, und die 
 frontend/src/components/counter/CounterPage.tsx
 frontend/src/components/counter/CounterBoard.tsx
 frontend/src/components/counter/CounterPad.tsx
+frontend/src/components/counter/ShareCounterButton.tsx   (+ ShareCounterButton.test.tsx)
 frontend/src/hooks/useCounter.ts        (+ useCounter.test.ts)
 frontend/src/utils/counterRules.ts      (+ counterRules.test.ts)
 ```
