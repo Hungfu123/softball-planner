@@ -28,7 +28,12 @@ Das wird umgedreht. Der Router läuft immer; das Auth-Gate wandert in ein `Requi
 
 Begründung: ein zweiter Gate-Pfad neben dem Router wäre eine zweite Stelle, an der man Auth vergessen kann. Ein Wrapper-Element ist eine Stelle. Der Login-State (`useState(hasAuth())` + `handleLogin`) muss dafür in einen Context wandern, damit `RequireAuth` und `LoginPage` ihn teilen.
 
-Auf der `LoginPage` ein sekundärer Link „Nur Zähler öffnen" unter dem Passwortfeld.
+Zwei Einstiege, beide auf dieselbe Route — die Seite existiert nur einmal:
+
+- **Ohne Login:** sekundärer Link „Nur Zähler öffnen" unter dem Passwortfeld der `LoginPage`.
+- **Mit Login:** vierte Kachel „Zähler" in `OrgaHome`, `<Link to="/counter">`, neben Einladungen / Aufbau / WhatsApp-Umfragen. Icon: Lucide `Tally5`, als `CounterIcon` in die Icon-Facade aufgenommen.
+
+Der Counter läuft auch aus der Orga-Kachel heraus ohne `Layout` — er ist eine Vollbild-Seite, kein Unterbereich von Orga. Damit er keine Sackgasse ist, sitzt links oben auf der Navy-Tafel ein `ChevronLeft`-Link, wie in `ScoringPage`: bei angemeldetem Nutzer nach `/orga`, sonst nach `/` (dort steht die `LoginPage`). Ziel und `aria-label` richten sich nach `hasAuth()`.
 
 **Backend: keine Änderung.** Kein Endpoint, keine Tabelle, kein `permitAll()`. `SecurityConfig` behält `/api/calendar.ics` als einzige Ausnahme im Auth-Gate. Ein öffentlich schreibender Endpoint wäre ein Missbrauchsvektor und für einen Gerätezähler ohne Gegenwert.
 
@@ -98,6 +103,7 @@ Design-System: Stadium Pocket (Cream-Papier, Navy, Softball-Red; Saira Condensed
 
 ### Tafel (`CounterBoard`) — `navy-900`-Platte oben
 
+- Links oben ein `ChevronLeft`-Zurück-Link (siehe Routing), klein und zurückhaltend — er darf der Anzeige nicht die Aufmerksamkeit nehmen.
 - Score links `Heim`, rechts `Gast`, in `font-display`, sehr groß.
 - Die schlagende Mannschaft steht hell auf leicht aufgehelltem Grund, die wartende auf `opacity-42`.
 - Mitte: `Inning` mit Pfeil — ▲ oben, ▼ unten — durch Hairlines abgesetzt.
