@@ -100,6 +100,36 @@ describe('useCounter', () => {
     expect(result.current.canUndo).toBe(false)
   })
 
+  it('fällt bei einem Zähler außerhalb seines Wertebereichs auf den Anfangszustand zurück', () => {
+    localStorage.setItem(
+      COUNTER_STORAGE_KEY,
+      JSON.stringify({ current: { ...INITIAL_STATE, outs: 7 }, history: [] }),
+    )
+    const { result } = renderHook(() => useCounter())
+    expect(result.current.state).toEqual(INITIAL_STATE)
+  })
+
+  it('fällt bei einem negativen Zähler auf den Anfangszustand zurück', () => {
+    localStorage.setItem(
+      COUNTER_STORAGE_KEY,
+      JSON.stringify({ current: { ...INITIAL_STATE, strikes: -1 }, history: [] }),
+    )
+    const { result } = renderHook(() => useCounter())
+    expect(result.current.state).toEqual(INITIAL_STATE)
+  })
+
+  it('deckelt eine beim Laden bereits zu große History sofort auf MAX_HISTORY', () => {
+    const overflow = MAX_HISTORY + 5
+    const history = Array.from({ length: overflow }, () => INITIAL_STATE)
+    localStorage.setItem(COUNTER_STORAGE_KEY, JSON.stringify({ current: INITIAL_STATE, history }))
+
+    const { result } = renderHook(() => useCounter())
+    expect(result.current.canUndo).toBe(true)
+
+    const stored = JSON.parse(localStorage.getItem(COUNTER_STORAGE_KEY)!)
+    expect(stored.history).toHaveLength(MAX_HISTORY)
+  })
+
   it('deckelt die History und wirft den ältesten Snapshot raus', () => {
     const overflow = MAX_HISTORY + 5
     const { result } = renderHook(() => useCounter())
