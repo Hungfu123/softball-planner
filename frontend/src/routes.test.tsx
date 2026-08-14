@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider } from '@/components/auth/AuthProvider'
-import { routes } from './App'
+import { routes } from './routes'
 
 /**
  * Jede Route der App, abgemeldet durchgegangen. Fängt genau die Regression ab,
