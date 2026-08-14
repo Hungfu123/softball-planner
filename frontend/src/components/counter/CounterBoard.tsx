@@ -5,8 +5,12 @@ import { ShareCounterButton } from './ShareCounterButton'
 
 interface Props {
   state: CounterState
-  backTo: string
-  backLabel: string
+  /**
+   * Ziel des Zurück-Pfeils. Fehlt beides, entfällt der Pfeil — wer über einen geteilten
+   * Link kommt, hat kein Konto und käme auf der Anmeldung nicht weiter.
+   */
+  backTo?: string
+  backLabel?: string
 }
 
 interface LampsProps {
@@ -82,16 +86,20 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
      * fest an der Unterkante, damit die Tafel dort eine Kante hat und nicht ausläuft.
      */
     <div className="flex grow shrink-0 flex-col bg-navy-900 px-4 pb-4 pt-[max(0.5rem,env(safe-area-inset-top))] text-white">
-      <div className="flex shrink-0 items-center justify-between">
-        <Link
-          to={backTo}
-          aria-label={backLabel}
-          title={backLabel}
-          className="rounded-lg p-2 text-navy-100/70 hover:bg-white/10 hover:text-white"
-        >
-          <ChevronLeft size={22} />
-        </Link>
-        <ShareCounterButton />
+      <div className="flex shrink-0 items-center">
+        {backTo && backLabel && (
+          <Link
+            to={backTo}
+            aria-label={backLabel}
+            title={backLabel}
+            className="rounded-lg p-2 text-navy-100/70 hover:bg-white/10 hover:text-white"
+          >
+            <ChevronLeft size={22} />
+          </Link>
+        )}
+        <div className="ml-auto">
+          <ShareCounterButton />
+        </div>
       </div>
 
       <div className="flex grow items-stretch py-2">

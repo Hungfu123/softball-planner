@@ -16,6 +16,19 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+describe('CounterPage — Zurück-Pfeil', () => {
+  it('zeigt ohne Anmeldung keinen Zurück-Pfeil', () => {
+    renderPage()
+    expect(screen.queryByRole('link', { name: /Zurück/ })).not.toBeInTheDocument()
+  })
+
+  it('zeigt angemeldet einen Zurück-Pfeil zur Orga', () => {
+    localStorage.setItem('auth', btoa('admin:x'))
+    renderPage()
+    expect(screen.getByRole('link', { name: 'Zurück zur Orga' })).toHaveAttribute('href', '/orga')
+  })
+})
+
 describe('CounterPage', () => {
   it('zeigt beide Scores auf 0', () => {
     renderPage()
