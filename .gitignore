@@ -35,7 +35,6 @@ Thumbs.db
 .claude/projects/
 .claude/worktrees/
 .claude/settings.local.json
-CLAUDE.md
 
 # Env
 .env
