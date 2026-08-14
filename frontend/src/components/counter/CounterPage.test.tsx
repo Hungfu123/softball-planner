@@ -42,9 +42,9 @@ describe('CounterPage', () => {
     expect(screen.getByLabelText('Strike: 0 von 2')).toBeInTheDocument()
   })
 
-  it('sperrt Zurück, solange nichts passiert ist', () => {
+  it('sperrt Rückgängig, solange nichts passiert ist', () => {
     renderPage()
-    expect(screen.getByRole('button', { name: 'Zurück' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Rückgängig' })).toBeDisabled()
   })
 
   // Der Bestätigungsknopf im Modal heißt bewusst anders als der auslösende Knopf
@@ -136,10 +136,10 @@ describe('CounterPage', () => {
     expect(screen.getByText('1. Inning, unten, Heim schlägt')).toBeInTheDocument()
   })
 
-  it('Zurück stellt den Stand vor der letzten Aktion wieder her', async () => {
+  it('Rückgängig stellt den Stand vor der letzten Aktion wieder her', async () => {
     const user = userEvent.setup()
     renderPage()
-    const back = screen.getByRole('button', { name: 'Zurück' })
+    const back = screen.getByRole('button', { name: 'Rückgängig' })
     expect(back).toBeDisabled()
 
     await user.click(screen.getByRole('button', { name: 'Strike' }))
