@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider } from '@/components/auth/AuthProvider'
@@ -58,5 +58,33 @@ describe('Routing: Auth-Gate pro Route (abgemeldet)', () => {
 
     expect(await screen.findByRole('img', { name: 'Ball: 0 von 3' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
+  })
+})
+
+describe('Routing: Auth-Gate pro Route (angemeldet)', () => {
+  beforeEach(() => {
+    localStorage.setItem('auth', btoa('admin:x'))
+    // Die Standalone-Route lädt beim Mounten echte Daten nach — ohne Netz im Test
+    // würde das als unbehandelte Rejection auffallen. Die Promise bleibt bewusst
+    // offen, die Seite zeigt einfach weiter ihren Lade-Zustand, den wir prüfen wollen.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('/orga (Layout-Zweig) zeigt die Seite, nicht den Login', () => {
+    renderAt('/orga')
+
+    expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+  })
+
+  it('/gameday/1/export (eigenständige Top-Level-Route) zeigt die Seite, nicht den Login', () => {
+    renderAt('/gameday/1/export')
+
+    expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
+    expect(screen.getByRole('status', { name: 'Lade Daten' })).toBeInTheDocument()
   })
 })
