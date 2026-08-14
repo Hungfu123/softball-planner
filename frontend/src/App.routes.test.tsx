@@ -26,6 +26,7 @@ const PROTECTED_PATHS = [
   '/gameday/1/export',
   '/gameday/1/scoring/0',
   '/spielbogen/1',
+  '/nichtvorhanden',
 ]
 
 function renderAt(path: string) {
@@ -86,5 +87,12 @@ describe('Routing: Auth-Gate pro Route (angemeldet)', () => {
 
     expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
     expect(screen.getByRole('status', { name: 'Lade Daten' })).toBeInTheDocument()
+  })
+
+  it('/nichtvorhanden (unbekannte Route) leitet angemeldet aufs Dashboard um', () => {
+    renderAt('/nichtvorhanden')
+
+    expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 })
