@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   INITIAL_STATE,
   addBall,
@@ -81,7 +81,6 @@ export function useCounter() {
         current: transition(prev.current),
         history: [...prev.history, prev.current].slice(-MAX_HISTORY),
       }
-      save(next)
       return next
     })
   }, [])
@@ -93,15 +92,24 @@ export function useCounter() {
         current: prev.history[prev.history.length - 1],
         history: prev.history.slice(0, -1),
       }
-      save(next)
       return next
     })
   }, [])
 
   const reset = useCallback(() => {
-    save(EMPTY)
     setStored(EMPTY)
   }, [])
+
+  /**
+   * Persistente Seiteneffekte müssen aus den State-Updaterin heraus in einen
+   * Effekt: React ruft Updater im Dev unter StrictMode doppelt auf. Eine
+   * localStorage-Persistenz in den Updatern würde also jede Aktion zweimal
+   * schreiben. Der Effekt sorgt dafür, dass nur einmal pro tatsächlicher
+   * Zustandsänderung persistiert wird.
+   */
+  useEffect(() => {
+    save(stored)
+  }, [stored])
 
   const actions = useMemo(
     () => ({
