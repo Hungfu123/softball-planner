@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, RouterProvider, type RouteObject } from 'react-router-dom'
+import { createBrowserRouter, Navigate, RouterProvider, type RouteObject } from 'react-router-dom'
 import { Layout, ToastProvider } from '@/components/layout/Layout'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
@@ -83,6 +83,10 @@ export const routes: RouteObject[] = [
   { path: '/spielbogen/:id', element: <RequireAuth><LazySpielbogenPage /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/export', element: <RequireAuth><LineupSheet /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/scoring/:gameIndex', element: <RequireAuth><LazyScoring /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  // Kein Match (z.B. vertippte URL) fiele sonst auf die pfadlose Layout-Route
+  // zurück und zeigte deren errorElement statt einer sinnvollen Seite —
+  // abgemeldet die Anmeldung, angemeldet zurück aufs Dashboard.
+  { path: '*', element: <RequireAuth><Navigate to="/" replace /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
 ]
 
 const router = createBrowserRouter(routes)
