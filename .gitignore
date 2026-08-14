@@ -69,3 +69,6 @@ frontend/*.pdf
 # Extern installierte Design-Skills (drill-onboarding bleibt getrackt)
 .claude/skills/*
 !.claude/skills/drill-onboarding/
+
+# Brainstorming-Mockups (Visual Companion)
+.superpowers/
