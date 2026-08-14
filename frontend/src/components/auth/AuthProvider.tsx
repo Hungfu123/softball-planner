@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { setAuth, hasAuth, clearAuth } from '@/api/client'
 import { LoginPage } from './LoginPage'
@@ -15,20 +15,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState(hasAuth())
   const [error, setError] = useState<string | null>(null)
 
+  /*
+   * Laufende Nummer des Anmeldeversuchs. Wer zweimal hintereinander tippt, weil der erste
+   * Versuch hängt, soll nicht dadurch wieder abgemeldet werden, dass die alte Antwort
+   * später eintrudelt. Nur die Antwort des jüngsten Versuchs zählt.
+   */
+  const versuch = useRef(0)
+
   const login = useCallback(async (password: string) => {
+    const meiner = ++versuch.current
     setAuth(password)
     try {
       const res = await fetch('/api/players', {
         headers: { Authorization: `Basic ${btoa(`admin:${password}`)}` },
       })
-      if (res.status === 401) {
-        clearAuth()
-        setError('Falsches Passwort')
+      if (meiner !== versuch.current) return
+
+      if (res.ok) {
+        setError(null)
+        setLoggedIn(true)
         return
       }
-      setError(null)
-      setLoggedIn(true)
+
+      // Alles außer einer erfolgreichen Antwort heißt: nicht angemeldet. Früher galt nur
+      // 401 als Fehlschlag, ein 500 führte auf ein Dashboard, dessen API-Aufrufe alle
+      // scheiterten.
+      clearAuth()
+      setError(
+        res.status === 401
+          ? 'Falsches Passwort'
+          : `Anmeldung fehlgeschlagen (Fehler ${res.status})`,
+      )
     } catch {
+      if (meiner !== versuch.current) return
       clearAuth()
       setError('Server nicht erreichbar')
     }
