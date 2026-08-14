@@ -32,7 +32,9 @@ export function ShareCounterButton() {
   }
 
   async function handleShare() {
-    const url = window.location.href
+    // Die Route ist bekannt und fest — teile explizit den Zähler, nicht die aktuelle URL mit
+    // ihren Query-Parametern oder Hash-Fragmenten
+    const url = new URL('/counter', window.location.origin).href
 
     if (navigator.share) {
       try {
