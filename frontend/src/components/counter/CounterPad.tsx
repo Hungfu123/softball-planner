@@ -52,7 +52,7 @@ export function CounterPad({
 
       <div className="flex gap-2">
         <Button variant="ghost" onClick={onUndo} disabled={!canUndo} className={UTILITY}>
-          Zurück
+          Rückgängig
         </Button>
         <Button variant="ghost" onClick={onHalfInning} className={UTILITY}>
           Seitenwechsel

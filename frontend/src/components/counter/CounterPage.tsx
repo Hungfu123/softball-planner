@@ -43,7 +43,7 @@ export default function CounterPage() {
       {confirmReset && (
         <ConfirmModal
           title="Zähler zurücksetzen"
-          message="Score, Inning und alle Zähler gehen auf Anfang. Auch der Verlauf für Zurück wird gelöscht."
+          message="Score, Inning und alle Zähler gehen auf Anfang. Auch der Verlauf für Rückgängig wird gelöscht."
           confirmLabel="Alles zurücksetzen"
           onConfirm={() => {
             counter.reset()
