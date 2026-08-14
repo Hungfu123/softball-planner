@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Button } from '@/components/shared'
 
 interface LoginPageProps {
@@ -81,6 +82,15 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
             Ready Up
           </Button>
         </div>
+
+        <p className="mt-4 text-center">
+          <Link
+            to="/counter"
+            className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-500 underline decoration-cream-300 underline-offset-4 hover:text-navy-800 hover:decoration-navy-800"
+          >
+            Nur Zähler öffnen
+          </Link>
+        </p>
       </form>
     </div>
   )
