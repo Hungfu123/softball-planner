@@ -20,8 +20,9 @@ import { CounterPad } from './CounterPad'
  * (`overflow-y-auto`), statt die unterste Knopfreihe abzuschneiden. Die PWA ist ohnehin
  * auf `portrait` festgenagelt.
  *
- * hasAuth() entscheidet hier nur über das Ziel des Zurück-Links; die Seite selbst
- * ist bewusst für alle offen.
+ * hasAuth() entscheidet hier nur, ob es einen Zurück-Pfeil gibt und wohin er führt — die
+ * Seite selbst ist bewusst für alle offen. Ohne Anmeldung entfällt der Pfeil: wer über einen
+ * geteilten Link kommt, hat kein Konto und käme auf der Anmeldung nicht weiter.
  */
 export default function CounterPage() {
   const counter = useCounter()
@@ -33,8 +34,8 @@ export default function CounterPage() {
     <div className="flex h-svh flex-col overflow-y-auto bg-cream-100">
       <CounterBoard
         state={counter.state}
-        backTo={loggedIn ? '/orga' : '/'}
-        backLabel={loggedIn ? 'Zurück zur Orga' : 'Zurück zur Anmeldung'}
+        backTo={loggedIn ? '/orga' : undefined}
+        backLabel={loggedIn ? 'Zurück zur Orga' : undefined}
       />
 
       <CounterPad
