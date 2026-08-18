@@ -53,6 +53,8 @@ Onion-Struktur wie im Bestand.
 
 **Wichtigster Punkt: die Scoreboard-Logik wird nicht nachgebaut.** `LiveViewService` ruft dasselbe `GameScoringService.getScoreboard(gameId)`, das die `ScoringPage` nutzt — nur lesend. Andernfalls würden öffentliche und interne Ansicht mit der Zeit auseinanderlaufen.
 
+**Zu prüfen, bevor darauf gebaut wird:** dass `getScoreboard` ohne angemeldeten Principal durchläuft. Lesepfade sollten keinen brauchen, aber die Annahme ist bisher nicht belegt. Trägt sie nicht, wird der Aufruf in `LiveViewService` durch direkte Port-Aufrufe ersetzt — die Logik bleibt dann trotzdem an einer Stelle.
+
 **Domain**
 
 - `domain/model/SpectatorLink` — POJO: `id`, `gameId`, `token`, `createdAt`, `revokedAt`
@@ -83,11 +85,13 @@ LiveViewResponse(
 PublicScoreboard(
     Integer scoreUs, Integer scoreThem,
     Integer currentInning, Integer outsInCurrentInning,
-    List<String> runnersByBase,       // Index 0 = 1st, 1 = 2nd, 2 = 3rd; null = leer
+    Bases bases,                      // Bases(String first, String second, String third), null = leer
     String currentBatterName,
     ClockStateResponse clock)
 
-TickerEntry(Integer inning, String batterName, String result, Integer runsScored)
+Bases(String first, String second, String third)
+
+TickerEntry(Integer inning, String batterName, String resultCode, Integer runsScored)
 ```
 
 Die eine Ausnahme ist `ClockStateResponse`: das DTO wird wiederverwendet, weil es ausschließlich Zeiten führt und keine Personen- oder Nutzerdaten. Bei der Umsetzung ist das gegen die aktuelle Fassung zu prüfen — kommt dort je ein Feld mit Nutzerbezug hinzu, braucht auch die Uhr ein eigenes öffentliches DTO.
@@ -95,6 +99,8 @@ Die eine Ausnahme ist `ClockStateResponse`: das DTO wird wiederverwendet, weil e
 `AtBatResponse` enthält `createdBy` (eine Nutzerkennung) und interne Ids. Beides fehlt in `TickerEntry` bewusst. Auch `PublicScoreboard` führt keine Ids: der Diamant braucht nur Base plus Name.
 
 Der Ticker ist auf die **letzten 15** At-Bats begrenzt, damit die Antwort im Sekundentakt klein bleibt.
+
+`resultCode` ist der rohe `AtBatResult`-Wert; die deutsche Beschriftung entsteht im Frontend. **Eine solche Zuordnung existiert für das Legacy-Scoring noch nicht** — die `ScoringPage` zeigt die Enum-Namen unübersetzt an (`ActionButtons.tsx` beschriftet einen Knopf mit `STRIKEOUT`). Für eine öffentliche Seite, die auch Angehörige lesen, genügt das nicht. Dieses Vorhaben legt die Zuordnung deshalb an einer Stelle an, in `frontend/src/utils/atBatResultLabels.ts`, und die Zuschauerseite nutzt sie. Die `ScoringPage` bleibt unverändert — sie umzustellen wäre ein eigenes Vorhaben.
 
 **`SecurityConfig`** — eine Zeile, `/api/live/**` als `permitAll()` **vor** `/api/**`:
 
@@ -117,10 +123,12 @@ Drei Zustände:
 | Zustand | Anzeige |
 |---|---|
 | Spiel läuft | Live-Tafel, Aktualisierung alle 5 Sekunden |
-| Spiel beendet | gleicher Aufbau, Endstand, Hinweis „Spiel beendet", **kein** weiteres Nachladen |
+| Spiel beendet | gleicher Aufbau, Endstand, Hinweis „Spiel beendet", Nachladen auf 30 Sekunden gedrosselt |
 | Token tot, widerrufen oder erfunden | schlichte Seite „Dieser Link ist nicht mehr gültig." — ohne Hinweis, ob er je existierte |
 
-Aktualisierung per Polling, nicht WebSocket: der Stack hat keine, und bei Softball genügt der 5-Sekunden-Takt. Sobald `ended` gemeldet wird, endet das Polling.
+Aktualisierung per Polling, nicht WebSocket: der Stack hat keine, und bei Softball genügt der 5-Sekunden-Takt.
+
+**Bei beendetem Spiel wird gedrosselt, nicht gestoppt.** `POST /api/games/{id}/reopen` existiert (`GameController`, `GameScoringService` setzt `endedAt` zurück auf null) — ein beendetes Spiel kann also weitergehen. Würde das Polling ganz enden, blieben Zuschauer dauerhaft auf dem Endstand hängen, während auf dem Feld weitergespielt wird. Deshalb 30 Sekunden statt Stillstand: die Last bleibt gering, ein Reopen wird aber bemerkt.
 
 **In der `ScoringPage`** kommt genau ein Element dazu: ein Knopf, der entweder „Zuschauer-Link erzeugen" anbietet oder den aktiven Link mit Teilen und Widerrufen zeigt. Rein zusätzliche UI, keine Änderung an der Scoring-Logik.
 
@@ -145,6 +153,8 @@ Wiederverwendet: `ResponsiveSheet`, `Button`, `ConfirmModal` (für den Widerruf)
 Die Namen sind die Werte aus `Player.name` — bei diesem Team Vornamen bzw. Spitznamen. Es steht nichts darin, was nicht auch auf dem Spielbogen steht, der an die Liga geht.
 
 **Token:** 32 Bytes `SecureRandom` als base64url. Nicht erratbar.
+
+**Der Token steht in der URL.** Er landet damit in der Browser-Historie des Zuschauers und in WhatsApp-Vorschauen. Für eine tagesgültige Spielstandsseite ist das vertretbar. Wichtig ist, dass die Seite **keine ausgehenden Links** hat — sonst könnte der Token über den Referer-Header abfließen. Der Entwurf hat bewusst keine.
 
 **Der Token wird nicht geloggt.** Er ist ein Geheimnis wie ein Passwort; in Logs steht die `gameId`.
 
