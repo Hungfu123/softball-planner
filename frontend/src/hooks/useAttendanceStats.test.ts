@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeAttendanceStats } from './useAttendanceStats'
+import { computeAttendanceStats, filterByWeekday, isoWeekday } from './useAttendanceStats'
 
 const NOW = new Date('2026-05-12T12:00:00Z')
 
@@ -86,5 +86,42 @@ describe('computeAttendanceStats', () => {
     att.set(3, new Map([[1, false]]))
     const stats = computeAttendanceStats({ trainings, attendance: att, playerId: 1, now: NOW })
     expect(stats.last3Months.percentage).toBe(67)
+  })
+})
+
+describe('Wochentag-Filter (Montag = P/C, Rest = Basic)', () => {
+  // 2026-05-04 Mo, 2026-05-06 Mi, 2026-05-11 Mo
+  const trainings = [
+    { id: 1, date: '2026-05-04' },
+    { id: 2, date: '2026-05-06' },
+    { id: 3, date: '2026-05-11' },
+  ]
+  const att = new Map<number, Map<number, boolean>>([
+    [1, new Map([[1, true]])],
+    [2, new Map([[1, true]])],
+    [3, new Map([[1, false]])],
+  ])
+
+  it('isoWeekday liefert 1 für Montag und 7 für Sonntag', () => {
+    expect(isoWeekday('2026-05-04')).toBe(1)
+    expect(isoWeekday('2026-05-10')).toBe(7)
+  })
+
+  it('filterByWeekday wirft die ausgeschlossenen Tage raus', () => {
+    expect(filterByWeekday(trainings, [1]).map(t => t.id)).toEqual([2])
+    expect(filterByWeekday(trainings, []).map(t => t.id)).toEqual([1, 2, 3])
+  })
+
+  it('computeAttendanceStats zählt ohne Montag nur das Basic-Training', () => {
+    const all = computeAttendanceStats({ trainings, attendance: att, playerId: 1, now: NOW })
+    expect(all.last3Months.total).toBe(3)
+    expect(all.last3Months.attended).toBe(2)
+
+    const basicOnly = computeAttendanceStats({
+      trainings, attendance: att, playerId: 1, now: NOW, excludeWeekdays: [1],
+    })
+    expect(basicOnly.last3Months.total).toBe(1)
+    expect(basicOnly.last3Months.attended).toBe(1)
+    expect(basicOnly.last3Months.percentage).toBe(100)
   })
 })

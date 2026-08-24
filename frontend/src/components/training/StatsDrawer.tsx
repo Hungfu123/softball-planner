@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Player } from '@/types'
-import type { PlayerAttendanceStats } from '@/hooks/useAttendanceStats'
+import {
+  computeAttendanceStats,
+  filterByWeekday,
+  isoWeekday,
+  type PlayerAttendanceStats,
+} from '@/hooks/useAttendanceStats'
 import { ResponsiveSheet } from '@/components/shared/ResponsiveSheet'
+import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 import { HistoryMatrix } from './HistoryMatrix'
 
 type Training = { id: number; date: string; cancelled?: boolean }
@@ -21,19 +27,83 @@ type Tab = 'anzahl' | 'matrix'
 
 export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTrainings, trainings, attendance }: Props) {
   const [tab, setTab] = useState<Tab>('anzahl')
+  // Montag ist P/C-Training, die übrigen Tage Basic — ausgeschlossene Wochentage
+  // fliegen aus Zahlen UND Matrix, damit die Quote zum Trainingstyp passt.
+  const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
+
+  const toggleWeekday = (day: number) =>
+    setExcludedWeekdays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day])
+
+  const presentWeekdays = useMemo(
+    () => [...new Set(trainings.filter(t => !t.cancelled).map(t => isoWeekday(t.date)))],
+    [trainings]
+  )
+
+  const filteredTrainings = useMemo(
+    () => filterByWeekday(trainings, excludedWeekdays),
+    [trainings, excludedWeekdays]
+  )
+
+  // Ohne Filter die vom Parent gelieferten Zahlen nutzen, mit Filter neu rechnen.
+  const shownStats = useMemo(() => {
+    if (excludedWeekdays.length === 0) return stats
+    const m = new Map<number, PlayerAttendanceStats>()
+    for (const p of players) {
+      m.set(p.id, computeAttendanceStats({ trainings, attendance, playerId: p.id, excludeWeekdays: excludedWeekdays }))
+    }
+    return m
+  }, [stats, players, trainings, attendance, excludedWeekdays])
+
+  const shownTotalTrainings = excludedWeekdays.length === 0
+    ? totalTrainings
+    : filteredTrainings.filter(t => !t.cancelled).length
+
+  const shownAvgPresent = useMemo(() => {
+    if (excludedWeekdays.length === 0) return avgPresent
+    const relevant = filteredTrainings.filter(t => !t.cancelled)
+    if (relevant.length === 0) return 0
+    let sum = 0
+    for (const t of relevant) {
+      const map = attendance.get(t.id) ?? new Map<number, boolean>()
+      sum += [...map.values()].filter(v => v === true).length
+    }
+    return sum / relevant.length
+  }, [avgPresent, filteredTrainings, attendance, excludedWeekdays])
 
   const sorted = [...players].sort((a, b) => {
-    const cA = stats.get(a.id)?.last3Months.attended ?? 0
-    const cB = stats.get(b.id)?.last3Months.attended ?? 0
+    const cA = shownStats.get(a.id)?.last3Months.attended ?? 0
+    const cB = shownStats.get(b.id)?.last3Months.attended ?? 0
     return cB - cA || a.name.localeCompare(b.name)
   })
 
-  const max3M = Math.max(1, ...sorted.map(p => stats.get(p.id)?.last3Months.attended ?? 0))
+  const max3M = Math.max(1, ...sorted.map(p => shownStats.get(p.id)?.last3Months.attended ?? 0))
 
   return (
     <ResponsiveSheet open={open} onClose={onClose} title="Anwesenheits-Statistik" maxWidth="lg">
       <div className="px-4 py-4 space-y-4">
         <p className="text-xs text-navy-600">Anzahl Teilnahmen · letzte 3 Monate &amp; Jahr</p>
+
+        {presentWeekdays.length > 1 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-display text-[10px] font-bold tracking-widest uppercase text-navy-500">
+              Trainingstage
+            </span>
+            <WeekdayFilter
+              weekdays={presentWeekdays}
+              excluded={excludedWeekdays}
+              onToggle={toggleWeekday}
+            />
+            {excludedWeekdays.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setExcludedWeekdays([])}
+                className="text-[10px] font-display font-bold tracking-widest uppercase text-navy-600 hover:text-navy-900 cursor-pointer"
+              >
+                Alle
+              </button>
+            )}
+          </div>
+        )}
 
             {/* Tab Toggle */}
             <div className="inline-flex bg-cream-200 rounded-lg p-0.5">
@@ -60,7 +130,7 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
                     <span className="text-right w-12">Jahr</span>
                   </div>
                   {sorted.map(p => {
-                    const s = stats.get(p.id) ?? { last3Months: { attended: 0, total: 0, percentage: 0 }, lastYear: { attended: 0, total: 0, percentage: 0 } }
+                    const s = shownStats.get(p.id) ?? { last3Months: { attended: 0, total: 0, percentage: 0 }, lastYear: { attended: 0, total: 0, percentage: 0 } }
                     const ratio = s.last3Months.attended / max3M
                     return (
                       <div key={p.id} className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-center px-3 py-2 border-b border-cream-100 last:border-b-0">
@@ -83,18 +153,18 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-white border border-cream-300 rounded-xl p-3">
                     <div className="text-xs text-navy-500 uppercase tracking-wide">⌀ Spieler</div>
-                    <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{avgPresent.toFixed(1)}</div>
+                    <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{shownAvgPresent.toFixed(1)}</div>
                   </div>
                   <div className="bg-white border border-cream-300 rounded-xl p-3">
                     <div className="text-xs text-navy-500 uppercase tracking-wide">Trainings</div>
-                    <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{totalTrainings}</div>
+                    <div className="font-display text-2xl font-black text-navy-800 tabular-nums">{shownTotalTrainings}</div>
                   </div>
                 </div>
               </>
             )}
 
             {tab === 'matrix' && (
-              <HistoryMatrix players={players} trainings={trainings} attendance={attendance} />
+              <HistoryMatrix players={players} trainings={filteredTrainings} attendance={attendance} />
             )}
       </div>
     </ResponsiveSheet>

@@ -365,6 +365,34 @@ class TrainingIntegrationTest {
     }
 
     @Test
+    void stats_excludeWeekdays_skipsMondayTrainings() throws Exception {
+        // 2026-03-02 ist ein Montag (P/C), 2026-03-04 ein Mittwoch (Basic)
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-03-02"))))
+            .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/trainings")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("date", "2026-03-04"))))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/trainings/stats"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.playerName == 'Max')].totalTrainings").value(2));
+
+        mockMvc.perform(get("/api/trainings/stats").param("excludeWeekdays", "1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.playerName == 'Max')].totalTrainings").value(1));
+
+        // Mehrere Tage ausschliessbar -> nichts bleibt uebrig
+        mockMvc.perform(get("/api/trainings/stats")
+                .param("excludeWeekdays", "1")
+                .param("excludeWeekdays", "3"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.playerName == 'Max')].totalTrainings").value(0));
+    }
+
+    @Test
     void playerRegularFlag_updateAndVerify() throws Exception {
         // Verify initial regular flag
         mockMvc.perform(get("/api/players"))

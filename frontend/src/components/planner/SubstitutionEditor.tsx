@@ -74,11 +74,14 @@ export function SubstitutionEditor({ substitutions, lineupEntries, poolPlayers, 
               <span className="text-gray-700 truncate">{sub.playerOut.name}</span>
               <span className="text-gray-300">&rarr;</span>
               <span className="text-gray-900 font-medium truncate">{sub.playerIn.name}</span>
+              {/* Immer sichtbar — Hover-Reveal war auf Touch nicht erreichbar */}
               <button
                 onClick={() => onRemove(index)}
-                className="ml-auto p-1 text-gray-400 hover:text-softball-red-600 opacity-0 group-hover/sub:opacity-100 transition-opacity"
+                aria-label={`Auswechslung ${sub.playerOut.name} → ${sub.playerIn.name} entfernen`}
+                title="Auswechslung entfernen"
+                className="ml-auto shrink-0 p-2 -my-1 text-gray-400 hover:text-softball-red-600 active:text-softball-red-700 transition-colors cursor-pointer"
               >
-                <XMark size={14} />
+                <XMark size={16} />
               </button>
             </div>
           ))}

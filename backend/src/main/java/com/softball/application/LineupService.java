@@ -107,10 +107,22 @@ public class LineupService {
             : Set.of();
 
         try {
-            lineupValidator.validate(inputs, staffPlayerIds, availableIds);
+            lineupValidator.validate(inputs, staffPlayerIds, availableIds, playerNamesFor(inputs, staffPlayerIds));
         } catch (final LineupValidator.LineupValidationException e) {
             throw new BusinessValidationException(e.getMessage());
         }
+    }
+
+    /** id → Name fuer alle beteiligten Spieler (Lineup, DH-Batter, Coaches), damit Fehlermeldungen Namen nennen. */
+    private Map<Long, String> playerNamesFor(final List<LineupInput> inputs, final Set<Long> staffPlayerIds) {
+        final Set<Long> ids = new LinkedHashSet<>(staffPlayerIds);
+        inputs.forEach(i -> {
+            ids.add(i.playerId());
+            if (i.dhBatterPlayerId() != null) ids.add(i.dhBatterPlayerId());
+        });
+        if (ids.isEmpty()) return Map.of();
+        return playerRepository.findAllById(ids).stream()
+            .collect(Collectors.toMap(Player::getId, Player::getName));
     }
 
     static Position parsePosition(final String position) {

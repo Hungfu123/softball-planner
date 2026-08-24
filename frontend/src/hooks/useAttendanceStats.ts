@@ -16,11 +16,28 @@ type Args = {
   attendance: Map<number, Map<number, boolean>>
   playerId: number
   now?: Date
+  /** ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen — Montag ist P/C, Rest Basic. */
+  excludeWeekdays?: number[]
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
-export function computeAttendanceStats({ trainings, attendance, playerId, now = new Date() }: Args): PlayerAttendanceStats {
+/** ISO-Wochentag (1 = Mo … 7 = So) eines `YYYY-MM-DD`-Datums. */
+export function isoWeekday(date: string): number {
+  const d = new Date(date + 'T00:00:00')
+  const js = d.getDay() // 0 = So
+  return js === 0 ? 7 : js
+}
+
+/** Trainings ohne die ausgeschlossenen Wochentage (abgesagte bleiben unverändert enthalten). */
+export function filterByWeekday<T extends { date: string }>(trainings: T[], excludeWeekdays: number[]): T[] {
+  if (excludeWeekdays.length === 0) return trainings
+  const excluded = new Set(excludeWeekdays)
+  return trainings.filter(t => !excluded.has(isoWeekday(t.date)))
+}
+
+export function computeAttendanceStats({ trainings, attendance, playerId, now = new Date(), excludeWeekdays = [] }: Args): PlayerAttendanceStats {
+  const excluded = new Set(excludeWeekdays)
   const cutoff3M = new Date(now.getTime() - 90 * MS_PER_DAY)
   const cutoff1Y = new Date(now.getTime() - 365 * MS_PER_DAY)
 
@@ -29,6 +46,7 @@ export function computeAttendanceStats({ trainings, attendance, playerId, now = 
 
   for (const t of trainings) {
     if (t.cancelled) continue
+    if (excluded.has(isoWeekday(t.date))) continue
     const tDate = new Date(t.date)
     if (Number.isNaN(tDate.getTime())) continue
     const inThreeMonths = tDate >= cutoff3M

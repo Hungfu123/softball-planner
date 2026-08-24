@@ -32,6 +32,12 @@ public class LineupSetController {
         return LineupSetResponse.from(lineupSetService.snapshot(gameDayId, request.name()));
     }
 
+    /** Ueberschreibt das Set mit dem aktuellen Stand des Spieltags (Name + ID bleiben). */
+    @PutMapping("/lineup-sets/{id}")
+    public LineupSetResponse overwrite(@PathVariable final Long id) {
+        return LineupSetResponse.from(lineupSetService.overwrite(id));
+    }
+
     @PatchMapping("/lineup-sets/{id}")
     public LineupSetResponse rename(@PathVariable final Long id,
                                     @Valid @RequestBody final RenameLineupSetRequest request) {

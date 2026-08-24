@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -192,6 +193,27 @@ class LineupValidatorTest {
             assertThatThrownBy(() -> validator.validateDhBatter(entries))
                 .isInstanceOf(LineupValidationException.class)
                 .hasMessageContaining("Maximal 1");
+        }
+    }
+
+    @Nested
+    class ErrorMessageNames {
+        @Test
+        void staffConflict_namesPlayerInsteadOfId() {
+            final List<LineupInput> entries = List.of(entryWithDh(1L, "1B", 1, 99L));
+            assertThatThrownBy(() -> validator.validate(entries, Set.of(99L), Set.of(1L, 99L),
+                    Map.of(1L, "Miriam", 99L, "Yuki")))
+                .isInstanceOf(LineupValidationException.class)
+                .hasMessageContaining("Yuki")
+                .hasMessageContaining("Coach-Slot leeren");
+        }
+
+        @Test
+        void unknownName_fallsBackToId() {
+            final List<LineupInput> entries = List.of(entry(1L, "P", 1));
+            assertThatThrownBy(() -> validator.validate(entries, Set.of(1L), Set.of(1L), Map.of()))
+                .isInstanceOf(LineupValidationException.class)
+                .hasMessageContaining("Spieler 1");
         }
     }
 

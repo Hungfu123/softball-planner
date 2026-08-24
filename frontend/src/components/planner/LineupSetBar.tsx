@@ -7,11 +7,12 @@ interface Props {
   activeSetId: number | null
   onApply: (set: LineupSetResponse) => void
   onSaveNew: () => void
+  onOverwrite: (set: LineupSetResponse) => void
   onRename: (set: LineupSetResponse) => void
   onDelete: (set: LineupSetResponse) => void
 }
 
-export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, onDelete }: Props) {
+export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onOverwrite, onRename, onDelete }: Props) {
   const [menuId, setMenuId] = useState<number | null>(null)
   const menuSet = sets.find(s => s.id === menuId) ?? null
 
@@ -93,6 +94,12 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onRename, 
             <p className="px-3 py-2 font-display text-[11px] font-bold tracking-widest uppercase text-gray-400 border-b border-cream-200 truncate">
               {menuSet.name}
             </p>
+            <button
+              onClick={() => { onOverwrite(menuSet); setMenuId(null) }}
+              className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-navy-800 hover:bg-cream-100 rounded-lg cursor-pointer"
+            >
+              <PlusCircle size={14} /> Mit aktuellem Stand überschreiben
+            </button>
             <button
               onClick={() => { onRename(menuSet); setMenuId(null) }}
               className="w-full flex items-center gap-2.5 px-3 py-3 text-sm font-medium text-navy-800 hover:bg-cream-100 rounded-lg cursor-pointer"

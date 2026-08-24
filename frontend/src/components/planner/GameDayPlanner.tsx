@@ -19,6 +19,7 @@ import { SaveButton } from './SaveButton'
 import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
+import { TrainingAttendancePanel } from './TrainingAttendancePanel'
 import { PollVoteSyncSheet } from './PollVoteSyncSheet'
 import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
@@ -53,6 +54,7 @@ export function GameDayPlanner() {
   const [saveSetOpen, setSaveSetOpen] = useState(false)
   const [renameSet, setRenameSet] = useState<LineupSetResponse | null>(null)
   const [deleteSet, setDeleteSet] = useState<LineupSetResponse | null>(null)
+  const [overwriteSet, setOverwriteSet] = useState<LineupSetResponse | null>(null)
   const [pendingApplySet, setPendingApplySet] = useState<LineupSetResponse | null>(null)
   const [activeSetId, setActiveSetId] = useState<number | null>(null)
   const [showAutoAllConfirm, setShowAutoAllConfirm] = useState(false)
@@ -71,6 +73,9 @@ export function GameDayPlanner() {
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const [assignPosition, setAssignPosition] = useState<string | null>(null)
   const [pollStatus, setPollStatus] = useState<GameDayVotePreview | null>(null)
+  // Montag = P/C-Training. Ausgeschlossene Wochentage gehen als Query-Param mit,
+  // das Backend rechnet die Teilnahme-Zahlen ohne diese Tage.
+  const [excludedTrainingWeekdays, setExcludedTrainingWeekdays] = useState<number[]>([])
   const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
 
@@ -136,17 +141,23 @@ export function GameDayPlanner() {
       .catch(() => setPollStatus(null))
   }, [gameDay?.id])
 
+  const toggleTrainingWeekday = useCallback((weekday: number) => {
+    setExcludedTrainingWeekdays(prev =>
+      prev.includes(weekday) ? prev.filter(d => d !== weekday) : [...prev, weekday])
+  }, [])
+
   // Fetch training stats — by period or last 12 weeks
   useEffect(() => {
     if (!gameDay?.date) return
     if (selectedPeriodId) {
-      api.getTrainingStats(selectedPeriodId).then(setTrainingStats)
+      api.getTrainingStats(selectedPeriodId, undefined, undefined, excludedTrainingWeekdays).then(setTrainingStats)
     } else {
       const d = new Date(gameDay.date + 'T00:00:00')
       d.setDate(d.getDate() - 84)
-      api.getTrainingStats(undefined, d.toISOString().slice(0, 10), gameDay.date).then(setTrainingStats)
+      api.getTrainingStats(undefined, d.toISOString().slice(0, 10), gameDay.date, excludedTrainingWeekdays)
+        .then(setTrainingStats)
     }
-  }, [gameDay?.date, selectedPeriodId])
+  }, [gameDay?.date, selectedPeriodId, excludedTrainingWeekdays])
 
   // Nur den Tab wechseln — das Laden von Lineup/Staff übernimmt zentral der
   // Effect auf activeGame?.id (verhindert doppelte, konkurrierende load()-Aufrufe).
@@ -200,10 +211,13 @@ export function GameDayPlanner() {
           ))
       if (roster.length > 0) await setAvailablePlayers(roster)
       // 1-3. pro Spiel: Coaches leeren → Lineup → Set-Coaches (in applySet)
-      const skipped = await lineup.applySet(set.entries, set.staff, games)
+      const skipped = await lineup.applySet(set.entries, set.staff, games, set.rotations ?? [])
       setActiveSetId(set.id)
       // Staff des aktiven Spiels neu laden, damit CoachSlots stimmen
       if (activeGame) await staff.load(activeGame.id)
+      // Games frisch ziehen: applySet schreibt die Coach-Rotation des Sets ins
+      // Backend, sonst zeigt das Lineup weiter die 1B/3B-Badges des vorherigen Sets.
+      if (gameDay) setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
       if (skipped.length === 0) {
         toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')
@@ -235,6 +249,28 @@ export function GameDayPlanner() {
       await refreshStats()
       setSaveSetOpen(false)
       toast.show(`Set „${name}" + alle Lineups gespeichert`, 'success')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  // Überschreiben = gleiche Reihenfolge wie "Als Set speichern": erst alle Game-Lineups
+  // in die DB, dann snapshotet das Backend den frischen Stand in das bestehende Set.
+  const handleOverwriteSet = async () => {
+    if (!overwriteSet) return
+    const target = overwriteSet
+    const games = (gameDay?.games ?? []).map(g => ({ id: g.id, gameNumber: g.gameNumber }))
+    try {
+      const skipped = await lineup.saveAllGames(games)
+      if (skipped.length > 0) {
+        toast.show(`Spiel ${skipped.join(', ')} hat freie Slots — erst füllen, dann überschreiben`, 'error')
+        return
+      }
+      await lineupSets.overwrite(target.id)
+      await refreshStats()
+      setActiveSetId(target.id)
+      setOverwriteSet(null)
+      toast.show(`Set „${target.name}" überschrieben`, 'success')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -306,6 +342,24 @@ export function GameDayPlanner() {
         .filter(s => s.player.id !== player.id)
         .map(s => ({ playerId: s.player.id, role: s.role }))
       handleStaffSave(remaining)
+    }
+  }
+
+  // Der DH-Batter schlägt → darf laut Domain-Regel NICHT Base Coach sein.
+  // Wie beim Hinzufügen ins Lineup den Coach-Slot direkt freiräumen, statt den
+  // Konflikt erst beim Speichern als Backend-Fehler hochkommen zu lassen.
+  const handleSetDhBatter = async (fieldPlayerId: number, batter: Player | null) => {
+    lineup.setDhBatter(fieldPlayerId, batter)
+    if (!batter || !activeGame || !staffPlayerIds.has(batter.id)) return
+    const remaining = staff.staff
+      .filter(s => s.player.id !== batter.id)
+      .map(s => ({ playerId: s.player.id, role: s.role }))
+    try {
+      await staff.save(activeGame.id, remaining)
+      await refreshStats()
+      toast.show(`${batter.name} schlägt als DH — Base-Coach-Slot geleert`)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
     }
   }
 
@@ -776,6 +830,7 @@ export function GameDayPlanner() {
               activeSetId={activeSetId}
               onApply={handleApplySet}
               onSaveNew={() => setSaveSetOpen(true)}
+              onOverwrite={s => setOverwriteSet(s)}
               onRename={s => setRenameSet(s)}
               onDelete={s => setDeleteSet(s)}
             />
@@ -826,7 +881,7 @@ export function GameDayPlanner() {
                         poolPlayers={poolPlayers}
                         onRemove={lineup.removePlayer}
                         onSetPosition={lineup.setPosition}
-                        onSetDhBatter={lineup.setDhBatter}
+                        onSetDhBatter={handleSetDhBatter}
                         onMoveUp={lineup.moveUp}
                         onMoveDown={lineup.moveDown}
                         onReorder={lineup.reorder}
@@ -870,7 +925,7 @@ export function GameDayPlanner() {
                   poolPlayers={poolPlayers}
                   onRemove={lineup.removePlayer}
                   onSetPosition={lineup.setPosition}
-                  onSetDhBatter={lineup.setDhBatter}
+                  onSetDhBatter={handleSetDhBatter}
                   onMoveUp={lineup.moveUp}
                   onMoveDown={lineup.moveDown}
                   onReorder={lineup.reorder}
@@ -942,49 +997,12 @@ export function GameDayPlanner() {
             <div className="hidden lg:block space-y-4 order-3">
               {/* lg only: Training + Coaches */}
               <div className="xl:hidden space-y-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-cream-200">
-                    <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
-                      Training
-                    </span>
-                    <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
-                      Letzte 3 Monate
-                    </span>
-                  </div>
-                  <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 space-y-1.5">
-                    {(() => {
-                      const availableIds = new Set(availablePlayers.map(p => p.id))
-                      const filtered = trainingStats
-                        .filter(s => availableIds.has(s.playerId))
-                        .sort((a, b) => b.attended - a.attended)
-                      const maxAttended = Math.max(...filtered.map(s => s.attended), 1)
-
-                      return filtered.length === 0 ? (
-                        <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten.</p>
-                      ) : (
-                        filtered.map(s => {
-                          const barWidth = Math.round((s.attended / maxAttended) * 100)
-                          return (
-                            <div key={s.playerId} className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-gray-900 w-16 truncate">
-                                {s.playerName}
-                              </span>
-                              <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full rounded-full bg-navy-800"
-                                  style={{ width: `${barWidth}%` }}
-                                />
-                              </div>
-                              <span className="text-[10px] font-display tabular-nums text-gray-500 tabular-nums w-6 text-right shrink-0">
-                                {s.attended}
-                              </span>
-                            </div>
-                          )
-                        })
-                      )
-                    })()}
-                  </div>
-                </div>
+                <TrainingAttendancePanel
+                  stats={trainingStats}
+                  availablePlayers={availablePlayers}
+                  excludedWeekdays={excludedTrainingWeekdays}
+                  onToggleWeekday={toggleTrainingWeekday}
+                />
 
                 <CoachSlots
                   staff={staff.staff}
@@ -1014,49 +1032,12 @@ export function GameDayPlanner() {
 
             {/* Col 4 — Training (xl only) */}
             <div className="hidden xl:block space-y-4 order-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-cream-200">
-                  <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
-                    Training
-                  </span>
-                  <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
-                    Letzte 3 Monate
-                  </span>
-                </div>
-                <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 space-y-1.5">
-                  {(() => {
-                    const availableIds = new Set(availablePlayers.map(p => p.id))
-                    const filtered = trainingStats
-                      .filter(s => availableIds.has(s.playerId))
-                      .sort((a, b) => b.attended - a.attended)
-                    const maxAttended = Math.max(...filtered.map(s => s.attended), 1)
-
-                    return filtered.length === 0 ? (
-                      <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten.</p>
-                    ) : (
-                      filtered.map(s => {
-                        const barWidth = Math.round((s.attended / maxAttended) * 100)
-                        return (
-                          <div key={s.playerId} className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-900 w-16 truncate">
-                              {s.playerName}
-                            </span>
-                            <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full bg-navy-800"
-                                style={{ width: `${barWidth}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] font-display tabular-nums text-gray-500 tabular-nums w-6 text-right shrink-0">
-                              {s.attended}
-                            </span>
-                          </div>
-                        )
-                      })
-                    )
-                  })()}
-                </div>
-              </div>
+              <TrainingAttendancePanel
+                stats={trainingStats}
+                availablePlayers={availablePlayers}
+                excludedWeekdays={excludedTrainingWeekdays}
+                onToggleWeekday={toggleTrainingWeekday}
+              />
             </div>
 
             {/* Mobile: Coaches + Bench after pool */}
@@ -1174,6 +1155,15 @@ export function GameDayPlanner() {
           confirmLabel="Löschen"
           onConfirm={handleDeleteSet}
           onCancel={() => setDeleteSet(null)}
+        />
+      )}
+      {overwriteSet && (
+        <ConfirmModal
+          title="Set überschreiben"
+          message={`Set „${overwriteSet.name}" mit dem aktuellen Stand des Spieltags überschreiben? Der bisherige Inhalt des Sets ist danach weg.`}
+          confirmLabel="Ja, überschreiben"
+          onConfirm={handleOverwriteSet}
+          onCancel={() => setOverwriteSet(null)}
         />
       )}
       {pendingApplySet && (
