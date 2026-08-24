@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse, LineupSetStaffEntryResponse } from '@/types'
+import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse, LineupSetStaffEntryResponse, LineupSetGameRotationResponse } from '@/types'
 import * as api from '@/api/client'
 
 let emptySlotSeq = 0
@@ -247,13 +247,31 @@ export function useLineup() {
     })
   }
 
-  // True if any of the given games has unsaved lineup changes (active or cached).
+  const subsDiffer = (subs: LocalSubstitution[], saved: SubstitutionResponse[]): boolean => {
+    if (subs.length !== saved.length) return true
+    return subs.some((sub, i) => {
+      const s = saved[i]
+      if (!s) return true
+      return sub.playerOut.id !== s.playerOut.id
+        || sub.playerIn.id !== s.playerIn.id
+        || sub.inning !== s.inning
+    })
+  }
+
+  // True if any of the given games has unsaved lineup- OR substitution-changes
+  // (active or cached). Subs zählen mit, sonst bleibt der Speichern-Button aus,
+  // wenn im anderen Tab nur eine Auswechslung entfernt wurde.
   const hasUnsavedWork = useCallback((gameIds: number[]): boolean => {
     const activeId = activeIdRef.current
     return gameIds.some(gid => {
-      if (gid === activeId) return entriesDiffer(entriesRef.current, savedRef.current)
+      if (gid === activeId) {
+        return entriesDiffer(entriesRef.current, savedRef.current)
+          || subsDiffer(subsRef.current, savedSubsRef.current)
+      }
       const c = cache.current.get(gid)
-      return c ? entriesDiffer(c.entries, c.savedEntries) : false
+      return c
+        ? entriesDiffer(c.entries, c.savedEntries) || subsDiffer(c.substitutions, c.savedSubstitutions)
+        : false
     })
   }, [])
 
@@ -284,8 +302,16 @@ export function useLineup() {
           playerInId: s.playerIn.id,
           inning: s.inning,
         }))
-        const saved = await api.setLineup(g.id, payload)
-        const savedSubs = await api.setSubstitutions(g.id, subsPayload)
+        // Fehler dem Spiel zuordnen — sonst sieht der User eine Meldung zu einem
+        // Lineup, das gerade nicht im offenen Tab steht, und versteht sie nicht.
+        let saved: LineupEntryResponse[]
+        let savedSubs: SubstitutionResponse[]
+        try {
+          saved = await api.setLineup(g.id, payload)
+          savedSubs = await api.setSubstitutions(g.id, subsPayload)
+        } catch (e: unknown) {
+          throw new Error(`Spiel ${g.gameNumber}: ${(e as Error).message}`)
+        }
         cache.current.set(g.id, {
           entries: ents,
           savedEntries: saved,
@@ -381,7 +407,21 @@ export function useLineup() {
     setItems: LineupSetEntryResponse[],
     staffItems: LineupSetStaffEntryResponse[],
     games: { id: number; gameNumber: number }[],
+    rotationItems: LineupSetGameRotationResponse[] = [],
   ): Promise<number[]> => {
+    // Coach-Rotation aus dem Set. Alt-Sets (vor V57) bringen keine mit — dann wird
+    // die Rotation geleert, statt die des vorher geladenen Sets stehen zu lassen.
+    const rotationByGameNumber = new Map(rotationItems.map(r => [r.gameNumber, r]))
+    const applyRotation = (gameId: number, gameNumber: number) => {
+      const r = rotationByGameNumber.get(gameNumber)
+      return api.setCoachRotation(
+        gameId,
+        r?.firstBaseCoachRotation ?? null,
+        r?.thirdBaseCoachRotation ?? null,
+        r?.firstBaseCoachRotationReversed ?? false,
+        r?.thirdBaseCoachRotationReversed ?? false,
+      )
+    }
     // Spieler-Map direkt aus den Set-Daten (Field-Player + DH-Batter) — jeder
     // Set-Spieler ist damit auflösbar; die verfügbaren Spieler wurden vom Planner
     // vorher passend gesetzt.
@@ -427,6 +467,7 @@ export function useLineup() {
         // stehen ("Set anwenden" überschreibt Coaches immer, auch bei Skip-Spielen).
         skipped.push(g.gameNumber)
         await api.setStaff(g.id, [])
+        await applyRotation(g.id, g.gameNumber)
         const base = await baselineFor(g.id)
         if (g.id === activeId) {
           setEntries(draft)
@@ -437,14 +478,22 @@ export function useLineup() {
       }
 
       // Complete lineup — persist. Reihenfolge: Coaches leeren → Lineup → Set-Coaches.
+      // Rotation gehört zum Set-Snapshot — erst hier setzen, damit ein Set die
+      // 1B/3B-Zuordnung des Vorgängers nie erbt.
       await api.setStaff(g.id, [])
+      await applyRotation(g.id, g.gameNumber)
       const payload = draft.map((e, i) => ({
         playerId: e.player.id,
         position: e.position ?? null,
         battingOrder: i + 1,
         dhBatterPlayerId: e.dhBatterId,
       }))
-      const saved = await api.setLineup(g.id, payload)
+      let saved: LineupEntryResponse[]
+      try {
+        saved = await api.setLineup(g.id, payload)
+      } catch (e: unknown) {
+        throw new Error(`Spiel ${g.gameNumber}: ${(e as Error).message}`)
+      }
       const setCoaches = staffByGameNumber.get(g.gameNumber) ?? []
       if (setCoaches.length > 0) await api.setStaff(g.id, setCoaches)
       const base = await baselineFor(g.id)

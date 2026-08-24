@@ -4,6 +4,7 @@ import com.softball.domain.model.Game;
 import com.softball.domain.model.LineupEntry;
 import com.softball.domain.model.LineupSet;
 import com.softball.domain.model.LineupSetEntry;
+import com.softball.domain.model.LineupSetGameRotation;
 import com.softball.domain.model.LineupSetStaffEntry;
 import com.softball.domain.model.Player;
 import com.softball.domain.port.out.GameDayRepository;
@@ -57,6 +58,33 @@ public class LineupSetService {
         if (name == null || name.isBlank()) {
             throw new BusinessValidationException("Set-Name darf nicht leer sein");
         }
+        final int sortOrder = lineupSetRepository.maxSortOrder(gameDayId) + 1;
+        final LineupSet set = new LineupSet(gameDayId, name.trim(), sortOrder);
+        captureCurrentState(set, gameDayId);
+
+        final LineupSet saved = lineupSetRepository.save(set);
+        log.info("Lineup-Set '{}' fuer GameDay {} mit {} Eintraegen gespeichert", name, gameDayId, saved.getEntries().size());
+        return saved;
+    }
+
+    /**
+     * Ueberschreibt ein bestehendes Set mit dem aktuellen Stand des Spieltags.
+     * Name, Sortierung und ID bleiben — nur Lineups, Coaches, Rotation und Roster werden neu geschnappt.
+     */
+    @Transactional
+    public LineupSet overwrite(final Long setId) {
+        final LineupSet set = lineupSetRepository.findById(setId)
+            .orElseThrow(() -> new ResourceNotFoundException("LineupSet", setId));
+        captureCurrentState(set, set.getGameDayId());
+
+        final LineupSet saved = lineupSetRepository.save(set);
+        log.info("Lineup-Set {} ('{}') mit aktuellem Stand ueberschrieben — {} Eintraege",
+            setId, saved.getName(), saved.getEntries().size());
+        return saved;
+    }
+
+    /** Liest Lineups, Base-Coaches, Coach-Rotation und Roster des Spieltags in das Set (ueberschreibt vorhandene Listen). */
+    private void captureCurrentState(final LineupSet set, final Long gameDayId) {
         final List<Game> games = gameRepository.findByGameDayIdOrderByGameNumberAsc(gameDayId);
         if (games.isEmpty()) {
             throw new ResourceNotFoundException("GameDay", gameDayId);
@@ -66,8 +94,6 @@ public class LineupSetService {
         final List<Long> gameIds = games.stream().map(Game::getId).toList();
         final List<LineupEntry> entries = lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds);
 
-        final int sortOrder = lineupSetRepository.maxSortOrder(gameDayId) + 1;
-        final LineupSet set = new LineupSet(gameDayId, name.trim(), sortOrder);
         set.setEntries(entries.stream().map(e -> new LineupSetEntry(
             gameNumberById.get(e.getGame().getId()),
             e.getPlayer(),
@@ -84,6 +110,16 @@ public class LineupSetService {
                 s.getRole()))
             .toList());
 
+        // Coach-Rotation je Spiel (liegt am Game, nicht am Lineup) — ohne Snapshot
+        // wuerde sie beim Set-Wechsel vom vorher geladenen Set haengenbleiben.
+        set.setGameRotations(games.stream()
+            .map(g -> new LineupSetGameRotation(
+                g.getGameNumber(),
+                g.getFirstBaseCoachRotation(), g.isFirstBaseCoachRotationReversed(),
+                g.getThirdBaseCoachRotation(), g.isThirdBaseCoachRotationReversed()))
+            .filter(r -> !r.isEmpty())
+            .toList());
+
         // Verfügbare Spieler des Gamedays (Fallback: Vereinigung der Lineup-/DH-Spieler)
         final List<Long> availableIds = gameDayRepository.findByIdWithPlayers(gameDayId)
             .map(gd -> gd.getAvailablePlayers().stream().map(Player::getId).toList())
@@ -98,10 +134,6 @@ public class LineupSetService {
         } else {
             set.setAvailablePlayerIds(new ArrayList<>(availableIds));
         }
-
-        final LineupSet saved = lineupSetRepository.save(set);
-        log.info("Lineup-Set '{}' fuer GameDay {} mit {} Eintraegen gespeichert", name, gameDayId, saved.getEntries().size());
-        return saved;
     }
 
     @Transactional

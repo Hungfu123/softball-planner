@@ -64,4 +64,55 @@ describe('StatsDrawer', () => {
     // After click, matrix shows training date
     expect(screen.getByText(/01\.05/)).toBeInTheDocument()
   })
+
+  it('zeigt Wochentag-Chips nur wenn mehrere Trainingstage vorkommen', () => {
+    const players = [mockPlayer(1, 'Khang')]
+    const monOnly = [{ id: 1, date: '2026-05-04' }, { id: 2, date: '2026-05-11' }]
+    const { unmount } = render(
+      <StatsDrawer open={true} onClose={() => {}} players={players} stats={new Map()}
+        avgPresent={1} totalTrainings={2} trainings={monOnly} attendance={new Map()} />
+    )
+    expect(screen.queryByText('Trainingstage')).not.toBeInTheDocument()
+    unmount()
+
+    render(
+      <StatsDrawer open={true} onClose={() => {}} players={players} stats={new Map()}
+        avgPresent={1} totalTrainings={2}
+        trainings={[{ id: 1, date: '2026-05-04' }, { id: 2, date: '2026-05-06' }]}
+        attendance={new Map()} />
+    )
+    expect(screen.getByText('Trainingstage')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Montag \(P\/C\) ausblenden/ })).toBeInTheDocument()
+  })
+
+  it('Montag ausblenden rechnet Trainings-Anzahl und Teilnahmen neu', () => {
+    const players = [mockPlayer(1, 'Khang')]
+    // Mo 04.05. (da), Mi 06.05. (da), Mo 11.05. (nicht da)
+    const trainings = [
+      { id: 1, date: '2026-05-04' },
+      { id: 2, date: '2026-05-06' },
+      { id: 3, date: '2026-05-11' },
+    ]
+    const attendance = new Map<number, Map<number, boolean>>([
+      [1, new Map([[1, true]])],
+      [2, new Map([[1, true]])],
+      [3, new Map([[1, false]])],
+    ])
+    const stats = new Map([
+      [1, { last3Months: { attended: 2, total: 3, percentage: 67 }, lastYear: { attended: 2, total: 3, percentage: 67 } }],
+    ])
+    render(
+      <StatsDrawer open={true} onClose={() => {}} players={players} stats={stats}
+        avgPresent={0.67} totalTrainings={3} trainings={trainings} attendance={attendance} />
+    )
+    const trainingsTile = () => screen.getByText('Trainings').parentElement as HTMLElement
+    // ungefiltert: 3 Trainings
+    expect(trainingsTile()).toHaveTextContent('3')
+
+    fireEvent.click(screen.getByRole('button', { name: /Montag \(P\/C\) ausblenden/ }))
+
+    // nur noch das Mittwoch-Training -> 1 Training
+    expect(trainingsTile()).toHaveTextContent('1')
+    expect(screen.getByRole('button', { name: /Montag \(P\/C\) einblenden/ })).toBeInTheDocument()
+  })
 })

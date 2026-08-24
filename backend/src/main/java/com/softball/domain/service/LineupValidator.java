@@ -4,6 +4,7 @@ import com.softball.domain.model.Position;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class LineupValidator {
@@ -15,15 +16,31 @@ public class LineupValidator {
     public void validate(final List<LineupInput> entries,
                          final Set<Long> staffPlayerIds,
                          final Set<Long> availablePlayerIds) {
+        validate(entries, staffPlayerIds, availablePlayerIds, Map.of());
+    }
+
+    /**
+     * @param playerNames id → Name, damit Fehlermeldungen Spielernamen statt IDs nennen.
+     *                    Fehlt ein Name, faellt die Meldung auf die ID zurueck.
+     */
+    public void validate(final List<LineupInput> entries,
+                         final Set<Long> staffPlayerIds,
+                         final Set<Long> availablePlayerIds,
+                         final Map<Long, String> playerNames) {
         validateSize(entries);
-        validateNoDuplicatePlayers(entries);
+        validateNoDuplicatePlayers(entries, playerNames);
         validateBattingOrder(entries);
         validatePositions(entries);
-        validateDhBatter(entries);
-        validateNoConflictWithStaff(entries, staffPlayerIds);
+        validateDhBatter(entries, playerNames);
+        validateNoConflictWithStaff(entries, staffPlayerIds, playerNames);
         if (availablePlayerIds != null && !availablePlayerIds.isEmpty()) {
-            validatePlayerAvailability(entries, availablePlayerIds);
+            validatePlayerAvailability(entries, availablePlayerIds, playerNames);
         }
+    }
+
+    private static String label(final Long playerId, final Map<Long, String> playerNames) {
+        final String name = playerNames == null ? null : playerNames.get(playerId);
+        return name != null ? name : String.valueOf(playerId);
     }
 
     void validateSize(final List<LineupInput> entries) {
@@ -33,10 +50,14 @@ public class LineupValidator {
     }
 
     void validateNoDuplicatePlayers(final List<LineupInput> entries) {
+        validateNoDuplicatePlayers(entries, Map.of());
+    }
+
+    void validateNoDuplicatePlayers(final List<LineupInput> entries, final Map<Long, String> playerNames) {
         final Set<Long> playerIds = new HashSet<>();
         for (final LineupInput entry : entries) {
             if (!playerIds.add(entry.playerId())) {
-                throw new LineupValidationException("Spieler " + entry.playerId() + " ist doppelt im Lineup");
+                throw new LineupValidationException("Spieler " + label(entry.playerId(), playerNames) + " ist doppelt im Lineup");
             }
         }
     }
@@ -71,6 +92,10 @@ public class LineupValidator {
     }
 
     void validateDhBatter(final List<LineupInput> entries) {
+        validateDhBatter(entries, Map.of());
+    }
+
+    void validateDhBatter(final List<LineupInput> entries, final Map<Long, String> playerNames) {
         final Set<Long> lineupPlayerIds = new HashSet<>();
         for (final LineupInput entry : entries) {
             lineupPlayerIds.add(entry.playerId());
@@ -87,7 +112,7 @@ public class LineupValidator {
                     throw new LineupValidationException("DH-Batter darf nur fuer Feldspieler gesetzt werden, nicht fuer " + pos.displayName());
                 }
                 if (lineupPlayerIds.contains(entry.dhBatterPlayerId())) {
-                    throw new LineupValidationException("DH-Batter " + entry.dhBatterPlayerId() + " darf nicht selbst im Lineup sein");
+                    throw new LineupValidationException("DH-Batter " + label(entry.dhBatterPlayerId(), playerNames) + " darf nicht selbst im Lineup sein");
                 }
                 if (dhBatterCount > 1) {
                     throw new LineupValidationException("Maximal 1 DH-Batter pro Lineup erlaubt");
@@ -97,27 +122,43 @@ public class LineupValidator {
     }
 
     void validateNoConflictWithStaff(final List<LineupInput> entries, final Set<Long> staffPlayerIds) {
+        validateNoConflictWithStaff(entries, staffPlayerIds, Map.of());
+    }
+
+    void validateNoConflictWithStaff(final List<LineupInput> entries,
+                                     final Set<Long> staffPlayerIds,
+                                     final Map<Long, String> playerNames) {
         for (final LineupInput entry : entries) {
             if (entry.dhBatterPlayerId() != null) {
                 // DH-Host schlägt nicht und darf Base Coach sein. Der DH-Batter schlägt → darf NICHT coachen.
                 if (staffPlayerIds.contains(entry.dhBatterPlayerId())) {
-                    throw new LineupValidationException("DH-Batter " + entry.dhBatterPlayerId() + " ist bereits als Base Coach eingeteilt");
+                    throw new LineupValidationException("DH-Batter " + label(entry.dhBatterPlayerId(), playerNames)
+                        + " ist als Base Coach eingeteilt und kann nicht gleichzeitig schlagen"
+                        + " — Coach-Slot leeren oder anderen DH waehlen");
                 }
                 continue;
             }
             if (staffPlayerIds.contains(entry.playerId())) {
-                throw new LineupValidationException("Spieler " + entry.playerId() + " ist bereits als Base Coach eingeteilt");
+                throw new LineupValidationException("Spieler " + label(entry.playerId(), playerNames)
+                    + " steht im Lineup und ist gleichzeitig als Base Coach eingeteilt"
+                    + " — Coach-Slot leeren oder aus dem Lineup nehmen");
             }
         }
     }
 
     void validatePlayerAvailability(final List<LineupInput> entries, final Set<Long> availablePlayerIds) {
+        validatePlayerAvailability(entries, availablePlayerIds, Map.of());
+    }
+
+    void validatePlayerAvailability(final List<LineupInput> entries,
+                                    final Set<Long> availablePlayerIds,
+                                    final Map<Long, String> playerNames) {
         for (final LineupInput entry : entries) {
             if (!availablePlayerIds.contains(entry.playerId())) {
-                throw new LineupValidationException("Spieler " + entry.playerId() + " ist nicht fuer diesen Spieltag eingetragen");
+                throw new LineupValidationException("Spieler " + label(entry.playerId(), playerNames) + " ist nicht fuer diesen Spieltag eingetragen");
             }
             if (entry.dhBatterPlayerId() != null && !availablePlayerIds.contains(entry.dhBatterPlayerId())) {
-                throw new LineupValidationException("DH-Batter " + entry.dhBatterPlayerId() + " ist nicht fuer diesen Spieltag eingetragen");
+                throw new LineupValidationException("DH-Batter " + label(entry.dhBatterPlayerId(), playerNames) + " ist nicht fuer diesen Spieltag eingetragen");
             }
         }
     }

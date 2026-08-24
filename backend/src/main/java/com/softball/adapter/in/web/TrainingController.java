@@ -92,8 +92,10 @@ public class TrainingController {
     @GetMapping("/stats")
     public List<TrainingStatsResponse> getStats(@RequestParam(required = false) final Long periodId,
                                                  @RequestParam(required = false) final java.time.LocalDate since,
-                                                 @RequestParam(required = false) final java.time.LocalDate until) {
-        return statsService.getStats(periodId, since, until);
+                                                 @RequestParam(required = false) final java.time.LocalDate until,
+                                                 @RequestParam(required = false) final List<Integer> excludeWeekdays) {
+        return statsService.getStats(periodId, since, until,
+            excludeWeekdays != null ? excludeWeekdays : List.of());
     }
 
     // --- Period endpoints ---

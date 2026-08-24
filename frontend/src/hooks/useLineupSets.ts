@@ -25,6 +25,12 @@ export function useLineupSets(gameDayId: number | null) {
     return created
   }, [gameDayId])
 
+  const overwrite = useCallback(async (setId: number) => {
+    const updated = await api.overwriteLineupSet(setId)
+    setSets(prev => prev.map(s => s.id === setId ? updated : s))
+    return updated
+  }, [])
+
   const rename = useCallback(async (setId: number, name: string) => {
     const updated = await api.renameLineupSet(setId, name)
     setSets(prev => prev.map(s => s.id === setId ? updated : s))
@@ -35,5 +41,5 @@ export function useLineupSets(gameDayId: number | null) {
     setSets(prev => prev.filter(s => s.id !== setId))
   }, [])
 
-  return { sets, loading, reload, create, rename, remove }
+  return { sets, loading, reload, create, overwrite, rename, remove }
 }

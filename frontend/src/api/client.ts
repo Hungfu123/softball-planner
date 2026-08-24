@@ -214,6 +214,10 @@ export const createLineupSet = (gameDayId: number, name: string) =>
     body: JSON.stringify({ name }),
   })
 
+/** Überschreibt ein bestehendes Set mit dem aktuellen Spieltag-Stand (Name + ID bleiben). */
+export const overwriteLineupSet = (setId: number) =>
+  request<LineupSetResponse>(`/lineup-sets/${setId}`, { method: 'PUT' })
+
 export const renameLineupSet = (setId: number, name: string) =>
   request<LineupSetResponse>(`/lineup-sets/${setId}`, {
     method: 'PATCH',
@@ -333,11 +337,13 @@ export const setAttendance = (trainingId: number, entries: { playerId: number; p
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
 export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; type?: string }) =>
   request<TrainingResponse[]>('/trainings/bulk', { method: 'POST', body: JSON.stringify(data) })
-export const getTrainingStats = (periodId?: number, since?: string, until?: string) => {
+/** `excludeWeekdays`: ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen (z. B. Montag = P/C). */
+export const getTrainingStats = (periodId?: number, since?: string, until?: string, excludeWeekdays?: number[]) => {
   const params = new URLSearchParams()
   if (periodId) params.set('periodId', String(periodId))
   if (since) params.set('since', since)
   if (until) params.set('until', until)
+  for (const day of excludeWeekdays ?? []) params.append('excludeWeekdays', String(day))
   const qs = params.toString()
   return request<TrainingStatsResponse[]>(`/trainings/stats${qs ? `?${qs}` : ''}`)
 }

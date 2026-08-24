@@ -108,6 +108,14 @@ export interface LineupSetStaffEntryResponse {
   role: string
 }
 
+export interface LineupSetGameRotationResponse {
+  gameNumber: number
+  firstBaseCoachRotation: CoachRotationPair | null
+  firstBaseCoachRotationReversed: boolean
+  thirdBaseCoachRotation: CoachRotationPair | null
+  thirdBaseCoachRotationReversed: boolean
+}
+
 export interface LineupSetResponse {
   id: number
   gameDayId: number
@@ -115,6 +123,8 @@ export interface LineupSetResponse {
   entries: LineupSetEntryResponse[]
   staff: LineupSetStaffEntryResponse[]
   availablePlayerIds: number[]
+  /** Coach-Rotation je Spiel. Alt-Sets (vor V57) haben eine leere Liste → Rotation wird geleert. */
+  rotations: LineupSetGameRotationResponse[]
 }
 
 export interface SubstitutionResponse {

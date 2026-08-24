@@ -31,14 +31,28 @@ public class TrainingStatsService {
 
     @Transactional(readOnly = true)
     public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since, final LocalDate until) {
+        return getStats(periodId, since, until, List.of());
+    }
+
+    /**
+     * @param excludeWeekdays ISO-Wochentage (1 = Montag … 7 = Sonntag), die NICHT mitzaehlen sollen.
+     *                        Montag ist P/C-Training, die uebrigen Tage Basic — so laesst sich die
+     *                        Anwesenheit getrennt auswerten. Leer/null = alle Tage zaehlen.
+     */
+    @Transactional(readOnly = true)
+    public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since, final LocalDate until,
+                                                 final Collection<Integer> excludeWeekdays) {
         final List<Training> allTrainings = periodId != null
             ? trainingRepository.findByPeriodIdOrderByDateDesc(periodId)
             : trainingRepository.findAllByOrderByDateDesc();
+
+        final Set<Integer> excluded = excludeWeekdays == null ? Set.of() : new HashSet<>(excludeWeekdays);
 
         final List<Training> nonCancelledTrainings = allTrainings.stream()
             .filter(t -> !t.isCancelled())
             .filter(t -> since == null || !t.getDate().isBefore(since))
             .filter(t -> until == null || !t.getDate().isAfter(until))
+            .filter(t -> !excluded.contains(t.getDate().getDayOfWeek().getValue()))
             .toList();
 
         final long totalNonCancelled = nonCancelledTrainings.size();
