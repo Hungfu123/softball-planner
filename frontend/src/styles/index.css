@@ -29,6 +29,11 @@
 
   --font-display: "Saira Condensed", "Impact", sans-serif;
   --font-body: "Archivo", system-ui, sans-serif;
+
+  /* Nav-Label. 11px ist die kleinste Schriftgröße, die wir setzen —
+     darunter schließen sich bei Saira Condensed in Caps die Punzen.
+     (Material/iOS-Empfehlung für Tab-Labels: 10–12px.) */
+  --text-nav: 0.6875rem;
 }
 
 body {
@@ -49,6 +54,16 @@ body {
 /* Hide scrollbar (für horizontale Pill-Nav etc.) */
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+
+/*
+ * Scroll-Hinweis für die Tab-Leiste: rechts weich auslaufender Rand, damit
+ * sichtbar ist, dass noch Tabs folgen. Nötig, weil .scrollbar-none den Balken
+ * versteckt — ohne den Fade sah der Überlauf wie ein harter Abschnitt aus.
+ * Das Attribut setzt Layout.tsx nur, wenn tatsächlich überlaufen wird.
+ */
+[data-scroll-hint='true'] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+}
 
 button, a, [role="button"] {
   transition: transform 150ms ease, opacity 150ms ease,
