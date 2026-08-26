@@ -95,20 +95,32 @@ export function Layout() {
               data-scroll-hint={navOverflows}
               className="flex overflow-x-auto scrollbar-none flex-1 min-w-0"
             >
-              <div className="flex items-stretch gap-1 sm:gap-1.5 sm:ml-auto">
+              {/*
+                Auto-Margins statt justify-*: bei negativem Freiraum lösen sie zu 0 auf,
+                der Inhalt beginnt links und ist nach rechts scrollbar. justify-center/-end
+                würde den Überlauf stattdessen nach links schieben, wo er unerreichbar ist.
+                Kompakt beidseitig auto = zentriert, ab lg nur links = rechtsbündig.
+
+                Der Layout-Wechsel liegt bei lg, nicht sm: die breite Variante (Zeile,
+                volle Labels) braucht 620px und passt erst ab ~860px Viewport. Bei sm
+                (640px) wäre sie 220px zu früh und die Leiste abgeschnitten. Bis 1023px
+                bleibt die kompakte Variante — passt mit 284px bequem und hat die
+                44px-Targets, die auf dem Tablet ohnehin richtig sind.
+              */}
+              <div className="flex items-stretch gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
                 {TABS.map(tab => {
                   const active = activeTab === tab.path
                   return (
                     <Link
                       key={tab.path}
                       to={tab.path}
-                      className={`font-display shrink-0 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 min-w-11 min-h-11 sm:min-w-0 px-2 sm:px-3 py-1 sm:py-1.5 text-nav sm:text-xs font-bold tracking-wide sm:tracking-widest rounded-lg sm:rounded-full transition-colors duration-200 whitespace-nowrap ${
+                      className={`font-display shrink-0 flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-1.5 min-w-11 min-h-11 lg:min-w-0 px-2 lg:px-3 py-1 lg:py-1.5 text-nav lg:text-xs font-bold tracking-wide lg:tracking-widest rounded-lg lg:rounded-full transition-colors duration-200 whitespace-nowrap ${
                         active ? 'bg-white text-navy-900' : 'text-white/70 hover:text-white hover:bg-white/10'
                       }`}
                     >
                       <tab.Icon size={24} strokeWidth={2.2} className="shrink-0" />
-                      <span className="uppercase leading-none sm:hidden">{tab.shortLabel}</span>
-                      <span className="uppercase hidden sm:inline">{tab.label}</span>
+                      <span className="uppercase leading-none lg:hidden">{tab.shortLabel}</span>
+                      <span className="uppercase hidden lg:inline">{tab.label}</span>
                     </Link>
                   )
                 })}
