@@ -115,6 +115,8 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
+      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline">← Zurück zur Orga</Link>
+
       {/* Header: Monats-Nav + ICS-Export */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
