@@ -75,12 +75,18 @@ export function Layout() {
                 <ChevronLeft size={22} />
               </Link>
             )}
-            {/* Auf Unterseiten zeigt der Chevron schon nach "/" — mobil wäre das Logo
-                ein zweiter Link aufs selbe Ziel und kostet 40px Nav-Breite.
-                Ab sm ist Platz, da bleibt die Marke stehen. */}
-            <Link to="/" className={`items-center gap-2 shrink-0 ${isSubPage ? 'hidden sm:flex' : 'flex'}`}>
+            {/*
+              Marke erst ab lg. Darunter kostet sie 44px (Logo + gap) und genau die
+              fehlen zum Zentrieren: die Tabs brauchen 301px, ein 390er-Viewport hat
+              366px innen. Mit Logo bleiben 21px Luft und der Block sitzt sichtbar
+              links; ohne sind es 65px und er steht mittig im Header. Im
+              PWA-Standalone-Modus trägt ohnehin das App-Icon die Marke.
+              Auf Unterseiten zeigt links der Chevron nach "/" — das Logo wäre dort
+              zusätzlich ein zweiter Link aufs selbe Ziel.
+            */}
+            <Link to="/" className="hidden lg:flex items-center gap-2 shrink-0">
               <img src="/deadsox.jpeg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
-              <span className="font-display font-extrabold text-base tracking-wider hidden sm:block">DEAD SOX</span>
+              <span className="font-display font-extrabold text-base tracking-wider">DEAD SOX</span>
             </Link>
             {/*
               Die nav ist nur Scroll-Container; die Tabs liegen in einem Wrapper.
