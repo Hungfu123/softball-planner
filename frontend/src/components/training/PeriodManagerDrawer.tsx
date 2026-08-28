@@ -21,9 +21,11 @@ type FormState = {
   weekdays: number[]
   weekdayTimes: Record<number, string>
   location: string
+  cycleWeeks: number
+  activeWeeksInCycle: number[]
 }
 
-const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, location: '' }
+const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, location: '', cycleWeeks: 1, activeWeeksInCycle: [1] }
 
 type Props = {
   open: boolean
@@ -31,8 +33,8 @@ type Props = {
   periods: TrainingPeriodResponse[]
   activePeriodId: number | null
   onSelect: (id: number | null) => void
-  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string }) => Promise<void>
-  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null }) => Promise<void>
+  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; cycleWeeks?: number; activeWeeksInCycle?: number[] }) => Promise<void>
+  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null; cycleWeeks?: number; activeWeeksInCycle?: number[] }) => Promise<void>
   onDelete: (id: number) => Promise<void>
 }
 
@@ -45,7 +47,10 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
   const startEdit = (p: TrainingPeriodResponse) => {
     const weekdayTimes: Record<number, string> = {}
     p.weekdays.forEach(w => { weekdayTimes[w] = p.weekdayTimes?.[w] ?? p.time ?? '18:00' })
-    setForm({ id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], weekdayTimes, location: p.location ?? '' })
+    setForm({
+      id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], weekdayTimes, location: p.location ?? '',
+      cycleWeeks: p.cycleWeeks ?? 1, activeWeeksInCycle: p.activeWeeksInCycle?.length ? [...p.activeWeeksInCycle] : [1],
+    })
     setEditing(true)
   }
   const startCreate = () => { setForm(EMPTY_FORM); setEditing(true) }
@@ -71,6 +76,23 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     setForm(f => ({ ...f, weekdayTimes: { ...f.weekdayTimes, [value]: time } }))
   }
 
+  const setCycleWeeks = (weeks: number) => {
+    setForm(f => {
+      const cycleWeeks = Math.max(1, weeks || 1)
+      const filtered = f.activeWeeksInCycle.filter(w => w <= cycleWeeks)
+      return { ...f, cycleWeeks, activeWeeksInCycle: filtered.length > 0 ? filtered : [1] }
+    })
+  }
+
+  const toggleActiveWeek = (week: number) => {
+    setForm(f => {
+      const has = f.activeWeeksInCycle.includes(week)
+      if (has && f.activeWeeksInCycle.length === 1) return f // mindestens eine aktive Woche
+      const next = has ? f.activeWeeksInCycle.filter(w => w !== week) : [...f.activeWeeksInCycle, week].sort((a, b) => a - b)
+      return { ...f, activeWeeksInCycle: next }
+    })
+  }
+
   const canSave = form.name.trim() !== '' && form.startDate !== '' && form.endDate !== '' && form.weekdays.length > 0
     && form.startDate <= form.endDate && form.weekdays.every(w => !!form.weekdayTimes[w])
 
@@ -79,9 +101,9 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     setSaving(true)
     try {
       if (form.id == null) {
-        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, periodName: form.name.trim() })
+        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, periodName: form.name.trim(), cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle })
       } else {
-        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null })
+        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null, cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle })
       }
       cancelEdit()
     } finally {
@@ -111,7 +133,10 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                     <div key={p.id} className={`flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 ${p.id === activePeriodId ? 'bg-navy-50' : ''}`}>
                       <button type="button" onClick={() => onSelect(p.id)} className="flex-1 text-left cursor-pointer">
                         <div className="text-sm font-bold text-navy-900">{p.name}</div>
-                        <div className="text-[11px] text-navy-500 tabular-nums">{p.startDate} – {p.endDate} · {weekdayChips(p.weekdays)}</div>
+                        <div className="text-[11px] text-navy-500 tabular-nums">
+                          {p.startDate} – {p.endDate} · {weekdayChips(p.weekdays)}
+                          {p.cycleWeeks > 1 && ` · alle ${p.cycleWeeks} Wo. (${p.activeWeeksInCycle.join(',')})`}
+                        </div>
                       </button>
                       <button type="button" onClick={() => startEdit(p)} className="text-xs font-semibold text-navy-700 hover:text-navy-900 cursor-pointer px-2">Bearbeiten</button>
                       <button type="button" onClick={() => setDeleteTarget(p)} className="text-xs font-semibold text-softball-red-600 hover:text-softball-red-800 cursor-pointer px-2">Löschen</button>
@@ -153,6 +178,38 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                     </button>
                   ))}
                 </div>
+              </div>
+              <div>
+                <span className="text-[11px] text-navy-500 uppercase tracking-wide">Rhythmus</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-navy-700">alle</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={form.cycleWeeks}
+                    onChange={e => setCycleWeeks(parseInt(e.target.value, 10))}
+                    className="w-16 h-10 px-2 rounded-lg border border-cream-300 text-sm text-center"
+                  />
+                  <span className="text-xs text-navy-700">Woche(n)</span>
+                </div>
+                {form.cycleWeeks > 1 && (
+                  <div className="mt-2">
+                    <span className="text-[11px] text-navy-500">Aktive Woche(n) im Zyklus (ab Start-Datum gezählt)</span>
+                    <div className="flex gap-1.5 mt-1 flex-wrap">
+                      {Array.from({ length: form.cycleWeeks }, (_, i) => i + 1).map(week => (
+                        <button
+                          key={week}
+                          type="button"
+                          onClick={() => toggleActiveWeek(week)}
+                          className={`w-10 h-10 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${form.activeWeeksInCycle.includes(week) ? 'bg-navy-800 border-navy-900 text-white' : 'bg-cream-50 border-cream-300 text-navy-700 hover:bg-cream-200'}`}
+                        >
+                          {week}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               {form.weekdays.length > 0 && (
                 <div>

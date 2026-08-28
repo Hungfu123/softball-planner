@@ -19,7 +19,8 @@ public class PeriodRhythmSync {
     public record SyncPlan(List<LocalDate> datesToCreate, List<Long> trainingIdsToDelete) {}
 
     public SyncPlan computeFuture(final List<Integer> weekdays, final LocalDate start, final LocalDate end,
-                                   final LocalDate today, final List<Training> existing) {
+                                   final LocalDate today, final List<Training> existing,
+                                   final int cycleWeeks, final List<Integer> activeWeeksInCycle) {
         final Set<DayOfWeek> targetDays = weekdays.stream().map(DayOfWeek::of).collect(Collectors.toSet());
 
         final Set<LocalDate> existingFutureDates = existing.stream()
@@ -30,7 +31,8 @@ public class PeriodRhythmSync {
         final List<LocalDate> datesToCreate = new ArrayList<>();
         final LocalDate from = start.isBefore(today) ? today : start;
         for (LocalDate d = from; !d.isAfter(end); d = d.plusDays(1)) {
-            if (targetDays.contains(d.getDayOfWeek()) && !existingFutureDates.contains(d)) {
+            if (targetDays.contains(d.getDayOfWeek()) && !existingFutureDates.contains(d)
+                && TrainingCycleEvaluator.isActiveWeek(d, start, cycleWeeks, activeWeeksInCycle)) {
                 datesToCreate.add(d);
             }
         }
@@ -38,7 +40,8 @@ public class PeriodRhythmSync {
         final List<Long> trainingIdsToDelete = existing.stream()
             .filter(t -> !t.getDate().isBefore(today))
             .filter(t -> !t.getDate().isAfter(end))
-            .filter(t -> !targetDays.contains(t.getDate().getDayOfWeek()))
+            .filter(t -> !targetDays.contains(t.getDate().getDayOfWeek())
+                || !TrainingCycleEvaluator.isActiveWeek(t.getDate(), start, cycleWeeks, activeWeeksInCycle))
             .map(Training::getId)
             .collect(Collectors.toCollection(ArrayList::new));
 

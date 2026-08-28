@@ -188,7 +188,7 @@ class TrainingServiceTest {
         void startAfterEnd_throws() {
             assertThatThrownBy(() -> service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 30), LocalDate.of(2025, 6, 1),
-                "18:00", Map.of(1, "18:00"), "Feld", null, null))
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Startdatum");
         }
@@ -197,7 +197,7 @@ class TrainingServiceTest {
         void invalidWeekday_throws() {
             assertThatThrownBy(() -> service.createBulk(
                 List.of(8), LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 30),
-                "18:00", Map.of(), "Feld", null, null))
+                "18:00", Map.of(), "Feld", null, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Wochentag");
         }
@@ -206,7 +206,7 @@ class TrainingServiceTest {
         void missingTimeForWeekday_throws() {
             assertThatThrownBy(() -> service.createBulk(
                 List.of(1, 4), LocalDate.of(2025, 6, 1), LocalDate.of(2025, 6, 30),
-                "18:00", Map.of(1, "18:00"), "Feld", null, null))
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Uhrzeit");
         }
@@ -223,7 +223,7 @@ class TrainingServiceTest {
 
             final List<TrainingResponse> result = service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", Map.of(1, "18:00"), "Feld", null, null);
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, null, null);
 
             assertThat(result).hasSize(1); // nur Montag
         }
@@ -240,7 +240,7 @@ class TrainingServiceTest {
 
             final List<TrainingResponse> result = service.createBulk(
                 List.of(1, 4), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", Map.of(1, "18:00", 4, "19:00"), "Feld", null, null);
+                "18:00", Map.of(1, "18:00", 4, "19:00"), "Feld", null, null, null, null);
 
             assertThat(result).hasSize(2);
             assertThat(result).allSatisfy(r -> {
@@ -265,7 +265,7 @@ class TrainingServiceTest {
             });
 
             service.createBulk(List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", Map.of(1, "18:00"), "Feld", "Sommer", null);
+                "18:00", Map.of(1, "18:00"), "Feld", "Sommer", null, null, null);
 
             verify(periodRepository, atLeastOnce()).save(any(TrainingPeriod.class));
         }
@@ -279,11 +279,71 @@ class TrainingServiceTest {
 
             final List<TrainingResponse> result = service.createBulk(
                 List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
-                "18:00", Map.of(1, "18:00"), "Feld", null, null);
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, null, null);
 
             assertThat(result).hasSize(1);
             assertThat(result.getFirst().time()).isEqualTo("18:00"); // updated
             verify(autoFiller, never()).autoFill(any()); // kein autoFill fuer bestehendes
+        }
+
+        @Test
+        void invalidCycleWeeks_throws() {
+            assertThatThrownBy(() -> service.createBulk(
+                List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, 0, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Zyklus");
+        }
+
+        @Test
+        void activeWeekOutsideCycle_throws() {
+            assertThatThrownBy(() -> service.createBulk(
+                List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 8),
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, 4, List.of(5)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Zyklus");
+        }
+
+        @Test
+        void cycleOfFour_onlyCreatesOnActiveCycleWeek() {
+            // 2025-06-02 (Mo) bis 2025-06-30: Montage 02.,09.,16.,23.,30. -> Zyklus 4, nur Position 1 (02. und 30.).
+            when(trainingRepository.findByDateIn(any())).thenReturn(List.of());
+            when(trainingRepository.save(any())).thenAnswer(inv -> {
+                final Training t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+
+            final List<TrainingResponse> result = service.createBulk(
+                List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 30),
+                "18:00", Map.of(1, "18:00"), "Feld", null, null, 4, List.of(1));
+
+            assertThat(result).extracting(TrainingResponse::date)
+                .containsExactly(LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 30));
+        }
+
+        @Test
+        void withPeriodName_persistsCycleOnPeriod() {
+            when(trainingRepository.findByDateIn(any())).thenReturn(List.of());
+            when(trainingRepository.save(any())).thenAnswer(inv -> {
+                final Training t = inv.getArgument(0);
+                t.setId(1L);
+                return t;
+            });
+            when(periodRepository.findByNameIgnoreCase("Basic")).thenReturn(Optional.empty());
+            when(periodRepository.save(any(TrainingPeriod.class))).thenAnswer(inv -> {
+                final TrainingPeriod p = inv.getArgument(0);
+                p.setId(11L);
+                return p;
+            });
+
+            service.createBulk(List.of(1), LocalDate.of(2025, 6, 2), LocalDate.of(2025, 6, 30),
+                "18:00", Map.of(1, "18:00"), "Feld", "Basic", null, 4, List.of(1));
+
+            final org.mockito.ArgumentCaptor<TrainingPeriod> captor = org.mockito.ArgumentCaptor.forClass(TrainingPeriod.class);
+            verify(periodRepository, atLeastOnce()).save(captor.capture());
+            assertThat(captor.getValue().getCycleWeeks()).isEqualTo(4);
+            assertThat(captor.getValue().getActiveWeeksInCycle()).containsExactly(1);
         }
     }
 }

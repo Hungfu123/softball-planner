@@ -50,7 +50,8 @@ public class TrainingController {
     public List<TrainingResponse> createBulk(@Valid @RequestBody final CreateBulkTrainingRequest request) {
         return trainingService.createBulk(
             request.weekdays(), request.startDate(), request.endDate(),
-            request.time(), request.weekdayTimes(), request.location(), request.periodName(), request.type()
+            request.time(), request.weekdayTimes(), request.location(), request.periodName(), request.type(),
+            request.cycleWeeks(), request.activeWeeksInCycle()
         );
     }
 
@@ -115,7 +116,8 @@ public class TrainingController {
     public TrainingPeriodResponse updatePeriod(@PathVariable final Long id,
                                                 @Valid @RequestBody final UpdateTrainingPeriodRequest request) {
         return periodService.update(id, request.name(), request.startDate(), request.endDate(),
-            request.weekdays(), request.time(), request.weekdayTimes(), request.location());
+            request.weekdays(), request.time(), request.weekdayTimes(), request.location(),
+            request.cycleWeeks(), request.activeWeeksInCycle());
     }
 
     @DeleteMapping("/periods/{id}")

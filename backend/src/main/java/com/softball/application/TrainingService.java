@@ -3,6 +3,7 @@ package com.softball.application;
 import com.softball.adapter.dto.TrainingResponse;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.TrainingPeriod;
+import com.softball.domain.service.TrainingCycleEvaluator;
 import com.softball.shared.exception.ResourceNotFoundException;
 import com.softball.domain.port.out.TrainingPeriodRepository;
 import com.softball.domain.port.out.TrainingRepository;
@@ -72,9 +73,21 @@ public class TrainingService {
                                               final LocalDate endDate, final String time,
                                               final Map<Integer, String> weekdayTimes,
                                               final String location, final String periodName,
-                                              final String type) {
+                                              final String type, final Integer cycleWeeksParam,
+                                              final List<Integer> activeWeeksInCycleParam) {
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("Startdatum darf nicht nach dem Enddatum liegen");
+        }
+
+        final int cycleWeeks = cycleWeeksParam != null ? cycleWeeksParam : 1;
+        if (cycleWeeks < 1) {
+            throw new IllegalArgumentException("Zyklus-Länge muss mindestens 1 Woche betragen");
+        }
+        final List<Integer> activeWeeksInCycle = TrainingCycleEvaluator.normalize(activeWeeksInCycleParam);
+        for (final Integer w : activeWeeksInCycle) {
+            if (w == null || w < 1 || w > cycleWeeks) {
+                throw new IllegalArgumentException("Aktive Woche im Zyklus muss zwischen 1 und " + cycleWeeks + " liegen");
+            }
         }
 
         final Set<DayOfWeek> targetDays = weekdays.stream()
@@ -101,12 +114,15 @@ public class TrainingService {
             period.setTime(time);
             period.setWeekdayTimes(weekdayTimes);
             period.setLocation(location);
+            period.setCycleWeeks(cycleWeeks);
+            period.setActiveWeeksInCycle(activeWeeksInCycle);
             period = periodRepository.save(period);
         }
 
         final List<LocalDate> candidateDates = new ArrayList<>();
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-            if (targetDays.contains(date.getDayOfWeek())) {
+            if (targetDays.contains(date.getDayOfWeek())
+                && TrainingCycleEvaluator.isActiveWeek(date, startDate, cycleWeeks, activeWeeksInCycle)) {
                 candidateDates.add(date);
             }
         }

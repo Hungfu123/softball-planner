@@ -24,5 +24,9 @@ public record UpdateTrainingPeriodRequest(
     @NotNull(message = "Uhrzeiten je Wochentag sind erforderlich")
     Map<Integer, String> weekdayTimes,
 
-    String location
+    String location,
+
+    Integer cycleWeeks,
+
+    List<Integer> activeWeeksInCycle
 ) {}
