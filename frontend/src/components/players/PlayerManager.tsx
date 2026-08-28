@@ -211,7 +211,7 @@ export function PlayerManager() {
             role="tab"
             aria-selected={tab === 'spieler'}
             onClick={() => { setTab('spieler'); setEditingId(null) }}
-            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors ${tab === 'spieler' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
+            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors whitespace-nowrap ${tab === 'spieler' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
           >
             Spieler
           </button>
@@ -219,15 +219,16 @@ export function PlayerManager() {
             role="tab"
             aria-selected={tab === 'batting'}
             onClick={() => { setTab('batting'); setEditingId(null) }}
-            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors ${tab === 'batting' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
+            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors whitespace-nowrap ${tab === 'batting' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
           >
-            Batting-Reihenfolge
+            <span className="sm:hidden">Reihenfolge</span>
+            <span className="hidden sm:inline">Batting-Reihenfolge</span>
           </button>
           <button
             role="tab"
             aria-selected={tab === 'whatsapp'}
             onClick={() => { setTab('whatsapp'); setEditingId(null) }}
-            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors ${tab === 'whatsapp' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
+            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors whitespace-nowrap ${tab === 'whatsapp' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
           >
             WhatsApp
           </button>
