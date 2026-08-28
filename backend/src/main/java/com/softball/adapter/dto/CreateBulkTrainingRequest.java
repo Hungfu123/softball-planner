@@ -26,5 +26,9 @@ public record CreateBulkTrainingRequest(
 
     String periodName,
 
-    String type
+    String type,
+
+    Integer cycleWeeks,
+
+    List<Integer> activeWeeksInCycle
 ) {}

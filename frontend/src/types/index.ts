@@ -199,6 +199,8 @@ export interface TrainingPeriodResponse {
   time: string | null
   weekdayTimes: Record<number, string>
   location: string | null
+  cycleWeeks: number
+  activeWeeksInCycle: number[]
 }
 
 export type TrainingType = 'REGULAR' | 'PITCHER_CATCHER'

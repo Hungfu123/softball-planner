@@ -126,7 +126,7 @@ class TrainingPeriodServiceTest {
         // Rhythmus: der Wochentag von 'today' -> mind. 1 künftiger Termin (today) wird angelegt.
         final int todayDow = today.getDayOfWeek().getValue();
         final TrainingPeriodResponse res = service.update(7L, "Sommer", start, end, List.of(todayDow),
-            "18:00", Map.of(todayDow, "18:00"), "Park");
+            "18:00", Map.of(todayDow, "18:00"), "Park", null, null);
 
         assertThat(res.weekdays()).containsExactly(todayDow);
         assertThat(res.time()).isEqualTo("18:00");
@@ -150,7 +150,7 @@ class TrainingPeriodServiceTest {
 
         // Mo (1) -> 18:00, Do (4) -> 19:00
         final Map<Integer, String> weekdayTimes = Map.of(1, "18:00", 4, "19:00");
-        service.update(7L, "Sommer", start, end, List.of(1, 4), "18:00", weekdayTimes, "Park");
+        service.update(7L, "Sommer", start, end, List.of(1, 4), "18:00", weekdayTimes, "Park", null, null);
 
         final org.mockito.ArgumentCaptor<Training> captor = org.mockito.ArgumentCaptor.forClass(Training.class);
         verify(trainingRepository, atLeastOnce()).save(captor.capture());
@@ -174,7 +174,7 @@ class TrainingPeriodServiceTest {
 
         // weekday 4 (Do) hat keine Zeit
         assertThatThrownBy(() -> service.update(7L, "Sommer", start, end, List.of(1, 4),
-            "18:00", Map.of(1, "18:00"), "Park"))
+            "18:00", Map.of(1, "18:00"), "Park", null, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Uhrzeit");
     }
@@ -187,7 +187,7 @@ class TrainingPeriodServiceTest {
         when(periodRepository.findById(7L)).thenReturn(Optional.of(period));
 
         assertThatThrownBy(() -> service.update(7L, "Sommer", start, end, List.of(1),
-            "18:00", Map.of(1, "6pm"), "Park"))
+            "18:00", Map.of(1, "6pm"), "Park", null, null))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Uhrzeit");
     }
@@ -209,7 +209,7 @@ class TrainingPeriodServiceTest {
         when(trainingRepository.findByPeriodIdOrderByDateDesc(7L)).thenReturn(List.of(kept));
         when(trainingRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.update(7L, "Sommer", start, end, List.of(todayDow), "20:00", Map.of(todayDow, "20:00"), "Park");
+        service.update(7L, "Sommer", start, end, List.of(todayDow), "20:00", Map.of(todayDow, "20:00"), "Park", null, null);
 
         assertThat(kept.getTime()).isEqualTo("20:00");
         verify(trainingRepository).save(kept);
@@ -230,10 +230,47 @@ class TrainingPeriodServiceTest {
     }
 
     @Test
+    void update_withCycle_persistsCycleFieldsOnPeriod() {
+        final LocalDate today = LocalDate.now();
+        final LocalDate start = today.minusDays(1);
+        final LocalDate end = today.plusWeeks(2);
+        final int todayDow = today.getDayOfWeek().getValue();
+
+        final TrainingPeriod period = new TrainingPeriod(7L, "Basic", start, end);
+        when(periodRepository.findById(7L)).thenReturn(Optional.of(period));
+        when(periodRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(trainingRepository.findByPeriodIdOrderByDateDesc(7L)).thenReturn(List.of());
+        when(trainingRepository.save(any())).thenAnswer(inv -> {
+            final Training t = inv.getArgument(0);
+            t.setId(99L);
+            return t;
+        });
+
+        final TrainingPeriodResponse res = service.update(7L, "Basic", start, end, List.of(todayDow),
+            "18:00", Map.of(todayDow, "18:00"), "Park", 4, List.of(1));
+
+        assertThat(res.cycleWeeks()).isEqualTo(4);
+        assertThat(res.activeWeeksInCycle()).containsExactly(1);
+    }
+
+    @Test
+    void update_activeWeekOutsideCycle_throws() {
+        final LocalDate start = LocalDate.now();
+        final LocalDate end = start.plusWeeks(2);
+        final TrainingPeriod period = new TrainingPeriod(7L, "Sommer", start, end);
+        when(periodRepository.findById(7L)).thenReturn(Optional.of(period));
+
+        assertThatThrownBy(() -> service.update(7L, "Sommer", start, end, List.of(1),
+            "18:00", Map.of(1, "18:00"), "Park", 2, List.of(3)))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Zyklus");
+    }
+
+    @Test
     void update_missingPeriod_throws() {
         when(periodRepository.findById(404L)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> service.update(404L, "X", LocalDate.now(), LocalDate.now().plusDays(1),
-            List.of(1), null, null, null))
+            List.of(1), null, null, null, null, null))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 }

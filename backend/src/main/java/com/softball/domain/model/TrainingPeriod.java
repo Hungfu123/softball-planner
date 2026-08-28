@@ -15,6 +15,8 @@ public class TrainingPeriod {
     private String time;
     private String location;
     private Map<Integer, String> weekdayTimes = new LinkedHashMap<>();
+    private int cycleWeeks = 1;
+    private List<Integer> activeWeeksInCycle = new ArrayList<>(List.of(1));
 
     public TrainingPeriod() {}
 
@@ -49,4 +51,12 @@ public class TrainingPeriod {
 
     public Map<Integer, String> getWeekdayTimes() { return weekdayTimes; }
     public void setWeekdayTimes(final Map<Integer, String> weekdayTimes) { this.weekdayTimes = weekdayTimes != null ? weekdayTimes : new LinkedHashMap<>(); }
+
+    public int getCycleWeeks() { return cycleWeeks; }
+    public void setCycleWeeks(final int cycleWeeks) { this.cycleWeeks = cycleWeeks; }
+    public List<Integer> getActiveWeeksInCycle() { return activeWeeksInCycle; }
+    public void setActiveWeeksInCycle(final List<Integer> activeWeeksInCycle) {
+        this.activeWeeksInCycle = (activeWeeksInCycle != null && !activeWeeksInCycle.isEmpty())
+            ? new ArrayList<>(activeWeeksInCycle) : new ArrayList<>(List.of(1));
+    }
 }

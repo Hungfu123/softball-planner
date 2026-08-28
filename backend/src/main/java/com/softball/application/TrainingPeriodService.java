@@ -4,6 +4,7 @@ import com.softball.adapter.dto.TrainingPeriodResponse;
 import com.softball.domain.model.Training;
 import com.softball.domain.model.TrainingPeriod;
 import com.softball.domain.service.PeriodRhythmSync;
+import com.softball.domain.service.TrainingCycleEvaluator;
 import com.softball.shared.exception.ResourceNotFoundException;
 import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.domain.port.out.TrainingPeriodRepository;
@@ -69,7 +70,8 @@ public class TrainingPeriodService {
     public TrainingPeriodResponse update(final Long periodId, final String name, final LocalDate startDate,
                                           final LocalDate endDate, final List<Integer> weekdays,
                                           final String time, final Map<Integer, String> weekdayTimes,
-                                          final String location) {
+                                          final String location, final Integer cycleWeeksParam,
+                                          final List<Integer> activeWeeksInCycleParam) {
         final TrainingPeriod period = periodRepository.findById(periodId)
             .orElseThrow(() -> new ResourceNotFoundException("TrainingPeriod", periodId));
         if (name == null || name.isBlank()) {
@@ -90,6 +92,16 @@ public class TrainingPeriodService {
                 throw new IllegalArgumentException("Für jeden Trainingstag muss eine Uhrzeit (HH:mm) gesetzt sein");
             }
         }
+        final int cycleWeeks = cycleWeeksParam != null ? cycleWeeksParam : 1;
+        if (cycleWeeks < 1) {
+            throw new IllegalArgumentException("Zyklus-Länge muss mindestens 1 Woche betragen");
+        }
+        final List<Integer> activeWeeksInCycle = TrainingCycleEvaluator.normalize(activeWeeksInCycleParam);
+        for (final Integer w : activeWeeksInCycle) {
+            if (w == null || w < 1 || w > cycleWeeks) {
+                throw new IllegalArgumentException("Aktive Woche im Zyklus muss zwischen 1 und " + cycleWeeks + " liegen");
+            }
+        }
 
         period.setName(name.trim());
         period.setStartDate(startDate);
@@ -98,12 +110,14 @@ public class TrainingPeriodService {
         period.setTime(time);
         period.setWeekdayTimes(weekdayTimes);
         period.setLocation(location);
+        period.setCycleWeeks(cycleWeeks);
+        period.setActiveWeeksInCycle(activeWeeksInCycle);
         final TrainingPeriod saved = periodRepository.save(period);
 
         final LocalDate today = LocalDate.now();
         final List<Training> existing = trainingRepository.findByPeriodIdOrderByDateDesc(periodId);
         final PeriodRhythmSync.SyncPlan plan = rhythmSync.computeFuture(
-            safeWeekdays, startDate, endDate, today, existing);
+            safeWeekdays, startDate, endDate, today, existing, cycleWeeks, activeWeeksInCycle);
 
         for (final LocalDate date : plan.datesToCreate()) {
             Training training = new Training(date, weekdayTimes.get(date.getDayOfWeek().getValue()), location);
