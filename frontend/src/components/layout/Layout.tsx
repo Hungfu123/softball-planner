@@ -1,9 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
-import { Home, Dumbbell, Users, ClipboardList, Mail, type LucideIcon } from 'lucide-react'
+import { Home, Dumbbell, Users, BarChart3, ClipboardList, Mail, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { WhatsappStatusBanner } from './WhatsappStatusBanner'
-import { KaderPageSwitch } from '@/components/shared'
 import { useToast } from '@/hooks/useToast'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ToastContext } from '@/hooks/useToast'
@@ -33,7 +32,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon; extraPaths?: string[] }[] = [
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
-  { path: '/players', label: 'Kader', shortLabel: 'Kader', Icon: Users, extraPaths: ['/stats'] },
+  { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
+  { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
   { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender'] },
 ]
@@ -136,7 +136,6 @@ export function Layout() {
         </header>
 
         <WhatsappStatusBanner />
-        {activeTab === '/players' && <KaderPageSwitch />}
 
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 pt-2 sm:pt-4">
           <Outlet />
