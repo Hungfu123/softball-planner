@@ -1040,8 +1040,14 @@ export function GameDayPlanner() {
               />
             </div>
 
-            {/* Mobile: Coaches + Bench after pool */}
+            {/* Mobile: Training + Coaches + Bench after pool */}
             <div className="lg:hidden space-y-4 order-3">
+              <TrainingAttendancePanel
+                stats={trainingStats}
+                availablePlayers={availablePlayers}
+                excludedWeekdays={excludedTrainingWeekdays}
+                onToggleWeekday={toggleTrainingWeekday}
+              />
               <CoachSlots
                 staff={staff.staff}
                 availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
