@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse, PlayerBattingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
+import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 
 interface Props {
   allAvailablePlayers: Player[]
@@ -83,6 +84,12 @@ export function PlayerPool({
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
+  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — Montag ist P/C-Training. */
+  const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
+  const toggleWeekday = useCallback((weekday: number) => {
+    setExcludedWeekdays(prev =>
+      prev.includes(weekday) ? prev.filter(d => d !== weekday) : [...prev, weekday])
+  }, [])
   const statsMap = new Map(stats.map(s => [s.playerId, s]))
 
   // Load training periods once
@@ -90,16 +97,17 @@ export function PlayerPool({
     api.getTrainingPeriods().then(setTrainingPeriods)
   }, [])
 
-  const loadTrainingStats = useCallback((filter: TrainingFilter, periodId: number | null) => {
-    const cacheKey = periodId ? `period-${periodId}` : `${filter}-${gameDayDate}`
+  const loadTrainingStats = useCallback((filter: TrainingFilter, periodId: number | null, excluded: number[]) => {
+    const exKey = [...excluded].sort((a, b) => a - b).join(',')
+    const cacheKey = periodId ? `period-${periodId}-${exKey}` : `${filter}-${gameDayDate}-${exKey}`
     if (loadedFilter === cacheKey) return // already loaded
     if (periodId) {
-      api.getTrainingStats(periodId).then(data => {
+      api.getTrainingStats(periodId, undefined, undefined, excluded).then(data => {
         setTrainingStats(data)
         setLoadedFilter(cacheKey)
       })
     } else {
-      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), gameDayDate).then(data => {
+      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), gameDayDate, excluded).then(data => {
         setTrainingStats(data)
         setLoadedFilter(cacheKey)
       })
@@ -107,8 +115,8 @@ export function PlayerPool({
   }, [gameDayDate, loadedFilter])
 
   useEffect(() => {
-    if (tab === 'training') loadTrainingStats(trainingFilter, selectedPeriodId)
-  }, [tab, trainingFilter, selectedPeriodId, loadTrainingStats])
+    if (tab === 'training') loadTrainingStats(trainingFilter, selectedPeriodId, excludedWeekdays)
+  }, [tab, trainingFilter, selectedPeriodId, excludedWeekdays, loadTrainingStats])
 
   // Filter training stats to available players only, sorted by attendance desc
   const availableTrainingStats = useMemo(() => {
@@ -357,6 +365,15 @@ export function PlayerPool({
                 {label}
               </button>
             ))}
+            <span className="w-px h-4 bg-cream-300 mx-0.5" aria-hidden="true" />
+            <WeekdayFilter
+              weekdays={[1]}
+              excluded={excludedWeekdays}
+              onToggle={toggleWeekday}
+            />
+            <span className="text-[10px] text-gray-400">
+              {excludedWeekdays.includes(1) ? 'nur Basic' : 'inkl. P/C'}
+            </span>
           </div>
           {availableTrainingStats.length === 0 ? (
             <div className="text-center py-6 text-gray-400">
