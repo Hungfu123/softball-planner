@@ -1,20 +1,22 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { CaretDown } from '@phosphor-icons/react'
 import { Reveal, SectionTag } from '@/components/Reveal'
 import { EdgeFade } from '@/components/EdgeFade'
-import { SwipeRow } from '@/components/SwipeRow'
 
 const FACTS = [
   {
+    key: 'ball' as const,
     term: 'Ball',
     text: 'Größer als ein Baseball, aber genauso hart. Wer einen abbekommt, merkt den Unterschied nicht.',
   },
   {
+    key: 'wurf' as const,
     term: 'Wurf',
     text: 'Unterhand wirft nur die Pitcher:in, der Windmill-Wurf. Alle anderen werfen ganz normal überhand.',
   },
   {
+    key: 'feld' as const,
     term: 'Feld',
     text: 'Kleineres Spielfeld, kürzere Wege. Die Plays kommen schneller, das Spiel ist direkter.',
   },
@@ -386,34 +388,131 @@ const LEGEND = [
   'LF, CF, RF = Outfield',
 ]
 
-/** Mixed/Fastpitch: gleiche Inhalte für Mobile-Kästchen und Desktop-Karten. */
+/** Mixed/Fastpitch + Regel-Karten: gleiche Inhalte für Mobile-Kästchen und Desktop-Karten. */
 const TERMS = [
   {
     key: 'mixed' as const,
-    pre: 'Mi',
-    accent: 'xed.',
+    title: (active: boolean) => (
+      <>
+        Mi<span className={active ? 'text-brand-500' : 'text-brand-600'}>xed.</span>
+      </>
+    ),
     text: 'Männer und Frauen spielen bei den Dead Sox in einem Team. Im Softball kein Sonderfall, sondern Standard.',
   },
   {
     key: 'fastpitch' as const,
-    pre: 'Fast',
-    accent: 'pitch.',
+    title: (active: boolean) => (
+      <>
+        Fast<span className={active ? 'text-brand-500' : 'text-brand-600'}>pitch.</span>
+      </>
+    ),
     text: 'Die schnelle Variante: Der Pitch kommt mit ordentlich Tempo, nicht gemütlich wie beim Slowpitch.',
   },
 ]
 
-function TermTitle({ pre, accent, tone }: { pre: string; accent: string; tone: 'light' | 'dark' }) {
+const RULES = [
+  {
+    key: 'outs' as const,
+    title: 'Outs',
+    text: 'Die Verteidigung macht ein Out, wenn sie den Ball vor dem Runner zur Base bringt, ihn mit dem Ball taggt oder einen Flugball direkt fängt.',
+  },
+  {
+    key: 'wechsel' as const,
+    title: 'Wechsel',
+    text: 'Nach drei Outs wird getauscht: Das Schlagteam geht ins Feld, das Feldteam schlägt.',
+  },
+  {
+    key: 'homerun' as const,
+    title: 'Home Run',
+    text: 'Fliegt der Schlag über die Feldgrenze, gibt es einen Punkt für jeden Runner und einen für die Batter:in.',
+  },
+]
+
+/**
+ * Mobile-Pattern: kleine Auswahl-Kästchen + EIN gemeinsames Aufklapp-Panel
+ * darunter — gleiche Interaktion wie die Szenen-Tabs. Kein Kästchen bleibt
+ * aufklappbar-leer stehen, die Beschreibung lebt zentral im Panel.
+ * Die Kästchen sind gleich hoch (Grid-Stretch), Titel oben, Mehr/Pfeil-Hint
+ * unten ausgerichtet (flex-1 auf dem Titel).
+ */
+function ChipPanel<K extends string>({
+  items,
+  open,
+  onToggle,
+  grid,
+  titleClass,
+}: {
+  items: { key: K; title: ReactNode | ((active: boolean) => ReactNode); text: string }[]
+  open: K | null
+  onToggle: (key: K | null) => void
+  grid: string
+  titleClass: string
+}) {
   return (
-    <>
-      {pre}
-      <span className={tone === 'dark' ? 'text-brand-500' : 'text-brand-600'}>{accent}</span>
-    </>
+    <div className="md:hidden">
+      <div className={grid}>
+        {items.map((t) => {
+          const isActive = open === t.key
+          return (
+            <button
+              key={t.key}
+              type="button"
+              aria-pressed={isActive}
+              onClick={() => onToggle(isActive ? null : t.key)}
+              className={`press group relative flex flex-col overflow-hidden rounded-sm border p-4 text-left transition-colors duration-200 ${
+                isActive
+                  ? 'border-navy-900 bg-navy-900 text-cream-50'
+                  : 'border-navy-900/15 bg-cream-100 text-navy-900 hover:border-navy-900/30'
+              }`}
+            >
+              <span aria-hidden className="card-accent" />
+              <h3 className={`flex-1 ${titleClass}`}>
+                {typeof t.title === 'function' ? t.title(isActive) : t.title}
+              </h3>
+              <span
+                className={`mt-2 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.2em] ${
+                  isActive ? 'text-cream-50/70' : 'text-navy-700/60'
+                }`}
+              >
+                {isActive ? 'Weniger' : 'Mehr'}
+                <CaretDown
+                  size={13}
+                  weight="bold"
+                  aria-hidden
+                  className={`transition-transform duration-300 ${isActive ? 'rotate-180' : ''}`}
+                />
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key={open}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="mt-4 rounded-sm border border-navy-900/15 bg-cream-100 p-4">
+              <p className="leading-relaxed text-navy-700 hyphens-auto">
+                {items.find((i) => i.key === open)?.text}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
 export function Basics() {
   const [scene, setScene] = useState<Scene>('feld')
+  const [factOpen, setFactOpen] = useState<'ball' | 'wurf' | 'feld' | null>(null)
   const [termOpen, setTermOpen] = useState<'mixed' | 'fastpitch' | null>(null)
+  const [ruleOpen, setRuleOpen] = useState<'outs' | 'wechsel' | 'homerun' | null>(null)
   const active = SCENES.find((s) => s.key === scene)!
 
   return (
@@ -437,7 +536,16 @@ export function Basics() {
             <h3 className="font-display text-3xl tracking-wide text-navy-900">
               Softball vs. Baseball
             </h3>
-            <div className="mt-6 divide-y divide-navy-900/15 border-t border-navy-900/15">
+            {/* Mobile: Fakten als Auswahl-Kästchen + Panel (gleiche Sprache wie
+                Regeln und Mixed/Fastpitch), ab md die editoriale Liste. */}
+            <ChipPanel
+              items={FACTS.map((f) => ({ key: f.key, title: f.term, text: f.text }))}
+              open={factOpen}
+              onToggle={setFactOpen}
+              grid="mt-6 grid grid-cols-3 gap-3"
+              titleClass="font-display text-xl leading-tight tracking-wide"
+            />
+            <div className="mt-6 hidden divide-y divide-navy-900/15 border-t border-navy-900/15 md:block">
               {FACTS.map((fact) => (
                 <div
                   key={fact.term}
@@ -505,116 +613,52 @@ export function Basics() {
           </div>
         </div>
 
-        {/* Regel-Karten: Mobile SwipeRow mit Pfeil-Hint (gleiche Sprache wie
-            die Galerie), ab md das 3er-Grid. Info bleibt komplett. */}
+        {/* Regel-Karten: Mobile Auswahl-Kästchen + Panel, ab md das 3er-Grid.
+            Info bleibt komplett, nur die Präsentation wechselt. */}
         <div className="mt-10 md:mt-12">
-          <SwipeRow hideAt="md" desktop="md:grid md:grid-cols-3 md:gap-6">
-            <Reveal className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
-              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-                <span aria-hidden className="card-accent" />
-                <h3 className="font-display text-3xl tracking-wide text-navy-900">Outs</h3>
-                <p className="mt-3 text-sm leading-relaxed text-navy-700">
-                  Die Verteidigung macht ein Out, wenn sie den Ball vor dem Runner zur Base bringt,
-                  ihn mit dem Ball taggt oder einen Flugball direkt fängt.
-                </p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.08} className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
-              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-                <span aria-hidden className="card-accent" />
-                <h3 className="font-display text-3xl tracking-wide text-navy-900">Wechsel</h3>
-                <p className="mt-3 text-sm leading-relaxed text-navy-700">
-                  Nach drei Outs wird getauscht: Das Schlagteam geht ins Feld, das Feldteam schlägt.
-                </p>
-              </div>
-            </Reveal>
-            <Reveal delay={0.16} className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
-              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-                <span aria-hidden className="card-accent" />
-                <h3 className="font-display text-3xl tracking-wide text-navy-900">Home Run</h3>
-                <p className="mt-3 text-sm leading-relaxed text-navy-700">
-                  Fliegt der Schlag über die Feldgrenze, gibt es einen Punkt für jeden Runner und
-                  einen für die Batter:in.
-                </p>
-              </div>
-            </Reveal>
-          </SwipeRow>
-        </div>
-
-        {/* Mobile: Mixed/Fastpitch als kleine Kästchen (Auswahl wie Tabs),
-            Beschreibung klappt als GEMEINSAMES Panel darunter auf — kein
-            zweites, leer stehendes Aufklapp-Kästchen daneben.
-            Ab md die zwei großen Karten mit sichtbarem Text. */}
-        <div className="mt-6 md:hidden">
-          <div className="grid grid-cols-2 gap-4">
-            {TERMS.map((t) => {
-              const isActive = termOpen === t.key
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  aria-pressed={isActive}
-                  onClick={() => setTermOpen(isActive ? null : t.key)}
-                  className={`press group relative overflow-hidden rounded-sm border p-4 text-left transition-colors duration-200 ${
-                    isActive
-                      ? 'border-navy-900 bg-navy-900 text-cream-50'
-                      : 'border-navy-900/15 bg-cream-100 text-navy-900 hover:border-navy-900/30'
-                  }`}
-                >
+          <ChipPanel
+            items={RULES}
+            open={ruleOpen}
+            onToggle={setRuleOpen}
+            grid="grid-cols-3 gap-3"
+            titleClass="font-display text-xl leading-tight tracking-wide"
+          />
+          <div className="hidden gap-6 md:grid md:grid-cols-3">
+            {RULES.map((r, i) => (
+              <Reveal key={r.key} delay={i * 0.08}>
+                <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
                   <span aria-hidden className="card-accent" />
-                  <h3 className="font-display text-3xl tracking-wide">
-                    <TermTitle pre={t.pre} accent={t.accent} tone={isActive ? 'dark' : 'light'} />
-                  </h3>
-                  <span
-                    className={`mt-2 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.2em] ${
-                      isActive ? 'text-cream-50/70' : 'text-navy-700/60'
-                    }`}
-                  >
-                    {isActive ? 'Weniger' : 'Mehr'}
-                    <CaretDown
-                      size={13}
-                      weight="bold"
-                      aria-hidden
-                      className={`transition-transform duration-300 ${isActive ? 'rotate-180' : ''}`}
-                    />
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <AnimatePresence initial={false}>
-            {termOpen && (
-              <motion.div
-                key={termOpen}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-                className="overflow-hidden"
-              >
-                <div className="mt-4 rounded-sm border border-navy-900/15 bg-cream-100 p-4">
-                  <p className="leading-relaxed text-navy-700 hyphens-auto">
-                    {TERMS.find((t) => t.key === termOpen)?.text}
-                  </p>
+                  <h3 className="font-display text-3xl tracking-wide text-navy-900">{r.title}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-navy-700">{r.text}</p>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </Reveal>
+            ))}
+          </div>
         </div>
 
-        {/* Desktop: große Karten, Text immer sichtbar */}
-        <div className="mt-6 hidden gap-6 md:grid md:grid-cols-2">
-          {TERMS.map((t, i) => (
-            <Reveal key={t.key} delay={i * 0.12}>
-              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-                <span aria-hidden className="card-accent" />
-                <h3 className="font-display text-5xl tracking-wide text-navy-900">
-                  <TermTitle pre={t.pre} accent={t.accent} tone="light" />
-                </h3>
-                <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">{t.text}</p>
-              </div>
-            </Reveal>
-          ))}
+        {/* Mixed/Fastpitch: Mobile Auswahl-Kästchen + Panel, ab md die
+            großen Karten mit vollem Text. */}
+        <div className="mt-6">
+          <ChipPanel
+            items={TERMS}
+            open={termOpen}
+            onToggle={setTermOpen}
+            grid="grid-cols-2 gap-4"
+            titleClass="font-display text-3xl tracking-wide"
+          />
+          <div className="hidden gap-6 md:grid md:grid-cols-2">
+            {TERMS.map((t, i) => (
+              <Reveal key={t.key} delay={i * 0.12}>
+                <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                  <span aria-hidden className="card-accent" />
+                  <h3 className="font-display text-5xl tracking-wide text-navy-900">
+                    {t.title(false)}
+                  </h3>
+                  <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">{t.text}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </div>
       <EdgeFade edge="bottom" />
