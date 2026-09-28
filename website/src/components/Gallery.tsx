@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { CaretLeft, CaretRight, X } from '@phosphor-icons/react'
 import { Reveal, SectionTag } from '@/components/Reveal'
 import { EdgeFade } from '@/components/EdgeFade'
+import { SwipeRow } from '@/components/SwipeRow'
 
 // Emotionale Abfolge + Bento-Layout: Auftakt → Action → Spannung → Detail → Individuum → Weite
 const IMAGES = [
@@ -78,10 +79,9 @@ export function Gallery() {
       </div>
 
       {/* Full-Bleed: Die Galerie läuft über die volle Viewport-Breite — kein Box-Layout.
-          Mobile (unter sm): horizontale Wisch-Reihe mit Scroll-Snap statt 6 gestapelter
-          Bilder — spart über einen Bildschirm Scrollhöhe. */}
-      <div className="relative pb-16 md:pb-36">
-        <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain px-4 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 lg:auto-rows-[18rem]">
+          Mobile (unter sm): SwipeRow mit Pfeil-Hint statt 6 gestapelter Bilder. */}
+      <div className="pb-16 md:pb-36">
+        <SwipeRow hideAt="sm" desktop="sm:grid sm:grid-cols-2 sm:gap-2 lg:grid-cols-3 lg:auto-rows-[18rem]">
           {IMAGES.map((img, i) => (
             <Reveal
               key={img.src}
@@ -105,13 +105,7 @@ export function Gallery() {
               </button>
             </Reveal>
           ))}
-        </div>
-        {/* Scroll-Hint (Emil): Cream-Fade an der rechten Kante zeigt, dass die
-            Foto-Reihe nach rechts weiterläuft. Ab md unsichtbar, dort gibt es das Grid. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream-50 to-transparent md:hidden"
-        />
+        </SwipeRow>
       </div>
       <EdgeFade edge="bottom" />
 
