@@ -76,7 +76,10 @@ export function WhatsappStatusBanner() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 flex items-center gap-3">
         <p className="font-body text-xs sm:text-sm flex-1 min-w-0">
           {warning.text}{' '}
-          <Link to={POLL_PAGE} className="font-semibold underline decoration-2 underline-offset-2 hover:text-white/80">
+          <Link
+            to={POLL_PAGE}
+            className="font-semibold underline decoration-2 underline-offset-2 hover:text-white/80 py-1"
+          >
             {warning.action}
           </Link>
         </p>
@@ -86,10 +89,10 @@ export function WhatsappStatusBanner() {
             sessionStorage.setItem(DISMISS_KEY, '1')
             setDismissed(true)
           }}
-          className="shrink-0 p-1 rounded-md hover:bg-white/15 cursor-pointer"
+          className="shrink-0 p-2 -my-1 rounded-md hover:bg-white/15 cursor-pointer"
           aria-label="Hinweis ausblenden"
         >
-          <XMark size={16} />
+          <XMark size={20} />
         </button>
       </div>
     </div>
