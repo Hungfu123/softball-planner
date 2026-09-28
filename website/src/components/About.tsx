@@ -21,9 +21,9 @@ const FORMATE = [
 export function About() {
   return (
     <section id="ueber-uns" className="scroll-mt-24 overflow-x-clip">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
-          <Reveal className="flex flex-col justify-center">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 md:py-24">
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-16">
+          <Reveal className="order-1 flex flex-col justify-center">
             <SectionTag index="01">Wer wir sind</SectionTag>
             <h2 className="mt-6 font-display text-5xl leading-[0.95] tracking-wide md:text-6xl">
               Bei uns spielt{' '}
@@ -33,7 +33,7 @@ export function About() {
               mit, egal wie lange schon.
             </h2>
             <p className="mt-7 max-w-lg leading-relaxed text-ink-200">
-              Die Dead Sox sind die Softball-Abteilung des Düsseldorfer Hochschulsports. Auf dem
+              Die Dead Sox sind das Softball-Team des Düsseldorfer Hochschulsports. Auf dem
               Feld sind wir einfach ein Team: Studierende, Alumni und Externe.
             </p>
             <p className="mt-4 max-w-lg leading-relaxed text-ink-200">
@@ -43,8 +43,10 @@ export function About() {
             </p>
           </Reveal>
 
-          {/* Bildkollage blutet auf Desktop rechts aus dem Container — bewusster Grid-Bruch */}
-          <div className="grid grid-cols-2 gap-4 lg:-mr-24">
+          {/* Bildkollage blutet auf Desktop rechts aus dem Container — bewusster Grid-Bruch.
+              order-3: Auf Mobile liegen die Liga-Karten VOR den Fotos — "Wo wir spielen"
+              schließt direkt an "Wer wir sind" an statt hinter der Kollage zu verschwinden */}
+          <div className="order-3 grid grid-cols-2 gap-4 lg:order-2 lg:-mr-24">
             <RevealImg
               src="/img/team-portrait.webp"
               alt="Dead Sox beim Training"
@@ -63,11 +65,10 @@ export function About() {
               />
             </div>
           </div>
-        </div>
 
-        {/* Ligen-Karten: volle Breite unter dem Text-Bild-Grid —
-            vorher in der schmalen Textspalte gequetscht, lief "Hochschulmeisterschaft" über den Rand */}
-        <Reveal className="mt-10 lg:mt-14">
+          {/* Ligen-Karten: Mobile order-2 = direkt unter dem Text (statt hinter der
+              Kollage), Desktop order-3 + col-span-2 = volle Breite wie bisher */}
+          <Reveal className="order-2 lg:order-3 lg:col-span-2 lg:mt-14">
           {/* Sub-Eyebrow statt SectionTag-Kopie: bewusst OHNE Nummer — die Sektion
               ist bereits "01 — Wer wir sind", ein zweites "01" würde die Kapitel-Zählung brechen */}
           <p className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.3em] text-brand-500">
@@ -96,6 +97,7 @@ export function About() {
             ))}
           </div>
         </Reveal>
+        </div>
       </div>
     </section>
   )
