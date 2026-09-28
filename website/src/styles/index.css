@@ -167,6 +167,14 @@
     }
   }
 
+  /* Scrollbare Swipe-Reihe ohne sichtbare Scrollbar (Mobile-Galerie) */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Hover-Motion nur für echte Pointer — Touch löst sonst False-Hover aus */
   @media (hover: hover) and (pointer: fine) {
     .img-hover {

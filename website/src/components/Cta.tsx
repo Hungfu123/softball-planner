@@ -7,7 +7,7 @@ export function Cta() {
   return (
     <section id="kontakt" className="relative scroll-mt-24 bg-cream-50 text-navy-900">
       <EdgeFade edge="top" />
-      <div className="mx-auto max-w-6xl px-4 py-28 sm:px-6 md:py-44">
+      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-44">
         <Reveal className="flex flex-col items-start gap-8">
           <SectionTag index="07" tone="dark">
             Mitmachen

@@ -33,7 +33,7 @@ const CELLS: Cell[] = [
 export function Steps() {
   return (
     <section className="grain bg-navy-950">
-      <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 md:py-32">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-32">
         <Reveal>
           <SectionTag index="03">Der Einstieg</SectionTag>
           <h2 className="mt-6 font-display text-5xl leading-[0.95] tracking-wide text-cream-50 md:text-6xl">

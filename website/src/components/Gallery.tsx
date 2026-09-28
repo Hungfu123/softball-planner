@@ -10,37 +10,37 @@ const IMAGES = [
     src: '/img/gallery/batter-action.webp',
     alt: 'Batter:in im Schlagwechsel',
     span: 'sm:col-span-2 lg:col-span-3',
-    ratio: 'aspect-[16/9]',
+    ratio: 'sm:aspect-[16/9]',
   },
   {
     src: '/img/gallery/catcher-batter.webp',
     alt: 'Catcher:in und Batter:in am Heimplate',
     span: '',
-    ratio: 'aspect-[4/3]',
+    ratio: 'sm:aspect-[4/3]',
   },
   {
     src: '/img/gallery/training-detail.webp',
     alt: 'Training mit Schlägern',
     span: '',
-    ratio: 'aspect-[4/3]',
+    ratio: 'sm:aspect-[4/3]',
   },
   {
     src: '/img/gallery/player-72.webp',
     alt: 'Dead Sox Spielerin auf dem Feld',
     span: '',
-    ratio: 'aspect-[4/3]',
+    ratio: 'sm:aspect-[4/3]',
   },
   {
     src: '/img/gallery/wide-field.webp',
     alt: 'Spielfeld im Überblick',
     span: 'sm:col-span-2 lg:col-span-2',
-    ratio: 'aspect-[21/9]',
+    ratio: 'sm:aspect-[21/9]',
   },
   {
     src: '/img/gallery/batting-training.webp',
     alt: 'Schlagtraining',
     span: '',
-    ratio: 'aspect-[21/9]',
+    ratio: 'sm:aspect-[21/9]',
   },
 ]
 
@@ -66,7 +66,7 @@ export function Gallery() {
   return (
     <section id="galerie" className="relative scroll-mt-24 bg-cream-50 text-navy-900">
       <EdgeFade edge="top" />
-      <div className="mx-auto max-w-6xl px-4 pb-12 pt-24 sm:px-6 md:pt-32">
+      <div className="mx-auto max-w-6xl px-4 pb-12 pt-16 sm:px-6 md:pt-32">
         <Reveal>
           <SectionTag index="05" tone="dark">
             Eindrücke
@@ -77,14 +77,18 @@ export function Gallery() {
         </Reveal>
       </div>
 
-      {/* Full-Bleed: Die Galerie läuft über die volle Viewport-Breite — kein Box-Layout */}
-      <div className="pb-24 md:pb-36">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[18rem]">
+      {/* Full-Bleed: Die Galerie läuft über die volle Viewport-Breite — kein Box-Layout.
+          Mobile (unter sm): horizontale Wisch-Reihe mit Scroll-Snap statt 6 gestapelter
+          Bilder — spart über einen Bildschirm Scrollhöhe. */}
+      <div className="relative pb-16 md:pb-36">
+        <div className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain px-4 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-3 lg:auto-rows-[18rem]">
           {IMAGES.map((img, i) => (
             <Reveal
               key={img.src}
               delay={Math.min(i * 0.06, 0.3)}
-              className={`${img.span} ${img.span.includes('col-span') ? 'size-full' : ''}`}
+              className={`${img.span} w-[78%] shrink-0 snap-center sm:w-auto sm:shrink ${
+                img.span.includes('col-span') ? 'sm:size-full' : ''
+              }`}
             >
               <button
                 type="button"
@@ -96,12 +100,18 @@ export function Gallery() {
                   src={img.src}
                   alt={img.alt}
                   loading="lazy"
-                  className={`img-hover size-full object-cover ${img.ratio} lg:aspect-auto lg:h-full`}
+                  className={`img-hover size-full aspect-[4/3] object-cover ${img.ratio} lg:aspect-auto lg:h-full`}
                 />
               </button>
             </Reveal>
           ))}
         </div>
+        {/* Scroll-Hint (Emil): Cream-Fade an der rechten Kante zeigt, dass die
+            Foto-Reihe nach rechts weiterläuft. Ab md unsichtbar, dort gibt es das Grid. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream-50 to-transparent md:hidden"
+        />
       </div>
       <EdgeFade edge="bottom" />
 

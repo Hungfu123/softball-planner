@@ -391,7 +391,7 @@ export function Basics() {
   return (
     <section className="relative bg-cream-50 text-navy-900">
       <EdgeFade edge="top" />
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
         <Reveal>
           <SectionTag index="02" tone="dark">
             Die Basics
@@ -509,11 +509,11 @@ export function Basics() {
           </Reveal>
         </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid grid-cols-2 gap-4 md:gap-6">
           <Reveal>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-5 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50 md:p-8">
               <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-5xl tracking-wide text-navy-900">
+              <h3 className="font-display text-4xl tracking-wide text-navy-900 md:text-5xl">
                 Mi<span className="text-brand-600">xed.</span>
               </h3>
               <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">
@@ -523,9 +523,9 @@ export function Basics() {
             </div>
           </Reveal>
           <Reveal delay={0.12}>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-5 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50 md:p-8">
               <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-5xl tracking-wide text-navy-900">
+              <h3 className="font-display text-4xl tracking-wide text-navy-900 md:text-5xl">
                 Fast<span className="text-brand-600">pitch.</span>
               </h3>
               <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">
