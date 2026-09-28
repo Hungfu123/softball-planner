@@ -41,8 +41,19 @@ export function SwipeRow({ children, hideAt, desktop }: SwipeRowProps) {
 
   // Initial prüfen: Desktop-Grids haben keinen Überlauf (scrollWidth ==
   // clientWidth) — der Pfeil darf dort nie erscheinen, auch ohne Scroll-Event.
+  // ResizeObserver als Race-Absicherung: beim ersten Effekt-Durchlauf ist das
+  // Layout teils noch nicht final (Fonts, lazy-Images) — ein zu klein
+  // gemessenes scrollWidth ließ den Pfeil dauerhaft verschwinden, weil kein
+  // weiteres Event nachfeuerte. Der Observer re-checkt, sobald die
+  // Geometrie von Reihe oder Karten steht.
   useEffect(() => {
     checkEnd()
+    const el = rowRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => checkEnd())
+    ro.observe(el)
+    Array.from(el.children).forEach((child) => ro.observe(child))
+    return () => ro.disconnect()
   }, [])
 
   const next = () => {
