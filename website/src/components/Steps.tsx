@@ -39,7 +39,7 @@ export function Steps() {
         <Reveal>
           <SectionTag index="03">Der Einstieg</SectionTag>
           <h2 className="mt-6 font-display text-5xl leading-[0.95] tracking-wide text-cream-50 md:text-6xl">
-            In drei Schritten auf den Diamant.
+            Einfach Dead Sox sein.
           </h2>
         </Reveal>
 
