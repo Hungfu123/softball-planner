@@ -38,7 +38,7 @@ export function Faq() {
 
   return (
     <section id="faq" className="scroll-mt-24">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
         <Reveal>
           <SectionTag index="06">Fragen &amp; Antworten</SectionTag>
           <h2 className="mt-6 font-display text-5xl leading-[0.95] tracking-wide md:text-6xl">

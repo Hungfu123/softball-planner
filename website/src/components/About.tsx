@@ -21,7 +21,7 @@ const FORMATE = [
 export function About() {
   return (
     <section id="ueber-uns" className="scroll-mt-24 overflow-x-clip">
-      <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 md:py-32">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-32">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal className="flex flex-col justify-center">
             <SectionTag index="01">Wer wir sind</SectionTag>

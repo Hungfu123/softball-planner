@@ -47,7 +47,7 @@ export function Training() {
 
   return (
     <section id="training" className="scroll-mt-24">
-      <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 md:py-32">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-32">
         <Reveal>
           <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
             <div>
