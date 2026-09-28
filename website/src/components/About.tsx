@@ -67,7 +67,7 @@ export function About() {
 
         {/* Ligen-Karten: volle Breite unter dem Text-Bild-Grid —
             vorher in der schmalen Textspalte gequetscht, lief "Hochschulmeisterschaft" über den Rand */}
-        <Reveal className="mt-16 lg:mt-24">
+        <Reveal className="mt-12 lg:mt-24">
           <p className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-ink-200">
             <span className="text-brand-500">01</span>
             <span aria-hidden className="h-px w-6 bg-current opacity-40" />

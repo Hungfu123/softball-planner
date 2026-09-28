@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { Reveal, SectionTag } from '@/components/Reveal'
 import { EdgeFade } from '@/components/EdgeFade'
+import { SwipeRow } from '@/components/SwipeRow'
 
 const FACTS = [
   {
@@ -477,10 +478,10 @@ export function Basics() {
           </div>
         </div>
 
-        {/* Regel-Karten: Mobile als Wisch-Reihe (gleiche Sprache wie die Galerie),
-            ab md das 3er-Grid. Info bleibt komplett, nur die Scrollhöhe schrumpft. */}
-        <div className="relative mt-10 md:mt-12">
-          <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+        {/* Regel-Karten: Mobile SwipeRow mit Pfeil-Hint (gleiche Sprache wie
+            die Galerie), ab md das 3er-Grid. Info bleibt komplett. */}
+        <div className="mt-10 md:mt-12">
+          <SwipeRow hideAt="md" desktop="md:grid md:grid-cols-3 md:gap-6">
             <Reveal className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
               <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
                 <span aria-hidden className="card-accent" />
@@ -510,11 +511,7 @@ export function Basics() {
                 </p>
               </div>
             </Reveal>
-          </div>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream-50 to-transparent md:hidden"
-          />
+          </SwipeRow>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:gap-6">

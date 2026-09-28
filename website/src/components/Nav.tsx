@@ -112,7 +112,7 @@ export function Nav() {
                   key={link.href}
                   href={link.href}
                   aria-current={active === link.href ? 'location' : undefined}
-                  className={`shrink-0 rounded-sm px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
+                  className={`press shrink-0 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-colors ${
                     active === link.href
                       ? 'bg-cream-50 text-navy-950'
                       : 'text-ink-200 hover:text-cream-50'
