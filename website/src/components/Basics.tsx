@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { CaretDown } from '@phosphor-icons/react'
 import { Reveal, SectionTag } from '@/components/Reveal'
 import { EdgeFade } from '@/components/EdgeFade'
 import { SwipeRow } from '@/components/SwipeRow'
@@ -385,8 +386,34 @@ const LEGEND = [
   'LF, CF, RF = Outfield',
 ]
 
+/** Mixed/Fastpitch: gleiche Inhalte für Mobile-Kästchen und Desktop-Karten. */
+const TERMS = [
+  {
+    key: 'mixed' as const,
+    pre: 'Mi',
+    accent: 'xed.',
+    text: 'Männer und Frauen spielen bei den Dead Sox in einem Team. Im Softball kein Sonderfall, sondern Standard.',
+  },
+  {
+    key: 'fastpitch' as const,
+    pre: 'Fast',
+    accent: 'pitch.',
+    text: 'Die schnelle Variante: Der Pitch kommt mit ordentlich Tempo, nicht gemütlich wie beim Slowpitch.',
+  },
+]
+
+function TermTitle({ pre, accent, tone }: { pre: string; accent: string; tone: 'light' | 'dark' }) {
+  return (
+    <>
+      {pre}
+      <span className={tone === 'dark' ? 'text-brand-500' : 'text-brand-600'}>{accent}</span>
+    </>
+  )
+}
+
 export function Basics() {
   const [scene, setScene] = useState<Scene>('feld')
+  const [termOpen, setTermOpen] = useState<'mixed' | 'fastpitch' | null>(null)
   const active = SCENES.find((s) => s.key === scene)!
 
   return (
@@ -514,31 +541,80 @@ export function Basics() {
           </SwipeRow>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-4 md:gap-6">
-          <Reveal>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-5 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50 md:p-8">
-              <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-4xl tracking-wide text-navy-900 md:text-5xl">
-                Mi<span className="text-brand-600">xed.</span>
-              </h3>
-              <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">
-                Männer und Frauen spielen bei den Dead Sox in einem Team. Im Softball kein
-                Sonderfall, sondern Standard.
-              </p>
-            </div>
-          </Reveal>
-          <Reveal delay={0.12}>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-5 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50 md:p-8">
-              <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-4xl tracking-wide text-navy-900 md:text-5xl">
-                Fast<span className="text-brand-600">pitch.</span>
-              </h3>
-              <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">
-                Die schnelle Variante: Der Pitch kommt mit ordentlich Tempo, nicht gemütlich wie
-                beim Slowpitch.
-              </p>
-            </div>
-          </Reveal>
+        {/* Mobile: Mixed/Fastpitch als kleine Kästchen (Auswahl wie Tabs),
+            Beschreibung klappt als GEMEINSAMES Panel darunter auf — kein
+            zweites, leer stehendes Aufklapp-Kästchen daneben.
+            Ab md die zwei großen Karten mit sichtbarem Text. */}
+        <div className="mt-6 md:hidden">
+          <div className="grid grid-cols-2 gap-4">
+            {TERMS.map((t) => {
+              const isActive = termOpen === t.key
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => setTermOpen(isActive ? null : t.key)}
+                  className={`press group relative overflow-hidden rounded-sm border p-4 text-left transition-colors duration-200 ${
+                    isActive
+                      ? 'border-navy-900 bg-navy-900 text-cream-50'
+                      : 'border-navy-900/15 bg-cream-100 text-navy-900 hover:border-navy-900/30'
+                  }`}
+                >
+                  <span aria-hidden className="card-accent" />
+                  <h3 className="font-display text-3xl tracking-wide">
+                    <TermTitle pre={t.pre} accent={t.accent} tone={isActive ? 'dark' : 'light'} />
+                  </h3>
+                  <span
+                    className={`mt-2 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.2em] ${
+                      isActive ? 'text-cream-50/70' : 'text-navy-700/60'
+                    }`}
+                  >
+                    {isActive ? 'Weniger' : 'Mehr'}
+                    <CaretDown
+                      size={13}
+                      weight="bold"
+                      aria-hidden
+                      className={`transition-transform duration-300 ${isActive ? 'rotate-180' : ''}`}
+                    />
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <AnimatePresence initial={false}>
+            {termOpen && (
+              <motion.div
+                key={termOpen}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                className="overflow-hidden"
+              >
+                <div className="mt-4 rounded-sm border border-navy-900/15 bg-cream-100 p-4">
+                  <p className="leading-relaxed text-navy-700 hyphens-auto">
+                    {TERMS.find((t) => t.key === termOpen)?.text}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Desktop: große Karten, Text immer sichtbar */}
+        <div className="mt-6 hidden gap-6 md:grid md:grid-cols-2">
+          {TERMS.map((t, i) => (
+            <Reveal key={t.key} delay={i * 0.12}>
+              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                <span aria-hidden className="card-accent" />
+                <h3 className="font-display text-5xl tracking-wide text-navy-900">
+                  <TermTitle pre={t.pre} accent={t.accent} tone="light" />
+                </h3>
+                <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">{t.text}</p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </div>
       <EdgeFade edge="bottom" />
