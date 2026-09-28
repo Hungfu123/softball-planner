@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { CaretDown } from '@phosphor-icons/react'
 import { Reveal, SectionTag } from '@/components/Reveal'
 import { EdgeFade } from '@/components/EdgeFade'
+import { SwipeRow } from '@/components/SwipeRow'
 
 const FACTS = [
   {
@@ -510,9 +511,7 @@ function ChipPanel<K extends string>({
 
 export function Basics() {
   const [scene, setScene] = useState<Scene>('feld')
-  const [factOpen, setFactOpen] = useState<'ball' | 'wurf' | 'feld' | null>(null)
   const [termOpen, setTermOpen] = useState<'mixed' | 'fastpitch' | null>(null)
-  const [ruleOpen, setRuleOpen] = useState<'outs' | 'wechsel' | 'homerun' | null>(null)
   const active = SCENES.find((s) => s.key === scene)!
 
   return (
@@ -536,15 +535,23 @@ export function Basics() {
             <h3 className="font-display text-3xl tracking-wide text-navy-900">
               Softball vs. Baseball
             </h3>
-            {/* Mobile: Fakten als Auswahl-Kästchen + Panel (gleiche Sprache wie
-                Regeln und Mixed/Fastpitch), ab md die editoriale Liste. */}
-            <ChipPanel
-              items={FACTS.map((f) => ({ key: f.key, title: f.term, text: f.text }))}
-              open={factOpen}
-              onToggle={setFactOpen}
-              grid="mt-6 grid grid-cols-3 gap-3"
-              titleClass="font-display text-xl leading-tight tracking-wide"
-            />
+            {/* Mobile: Fakten als Swipe-Karten (gleiche Sprache wie Galerie und
+                Regel-Karten), ab md die editoriale Liste. */}
+            <div className="mt-6 md:hidden">
+              <SwipeRow hideAt="md" desktop="">
+                {FACTS.map((f, i) => (
+                  <Reveal key={f.key} delay={i * 0.07} className="w-[78%] shrink-0 snap-center">
+                    <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-5 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                      <span aria-hidden className="card-accent" />
+                      <h4 className="font-display text-2xl tracking-wide text-brand-600">
+                        {f.term}
+                      </h4>
+                      <p className="mt-2 text-sm leading-relaxed text-navy-700">{f.text}</p>
+                    </div>
+                  </Reveal>
+                ))}
+              </SwipeRow>
+            </div>
             <div className="mt-6 hidden divide-y divide-navy-900/15 border-t border-navy-900/15 md:block">
               {FACTS.map((fact) => (
                 <div
@@ -613,19 +620,16 @@ export function Basics() {
           </div>
         </div>
 
-        {/* Regel-Karten: Mobile Auswahl-Kästchen + Panel, ab md das 3er-Grid.
-            Info bleibt komplett, nur die Präsentation wechselt. */}
+        {/* Regel-Karten: Mobile SwipeRow mit Pfeil-Hint (gleiche Sprache wie
+            Galerie und Fakten), ab md das 3er-Grid. Info bleibt komplett. */}
         <div className="mt-10 md:mt-12">
-          <ChipPanel
-            items={RULES}
-            open={ruleOpen}
-            onToggle={setRuleOpen}
-            grid="grid-cols-3 gap-3"
-            titleClass="font-display text-xl leading-tight tracking-wide"
-          />
-          <div className="hidden gap-6 md:grid md:grid-cols-3">
+          <SwipeRow hideAt="md" desktop="md:grid md:grid-cols-3 md:gap-6">
             {RULES.map((r, i) => (
-              <Reveal key={r.key} delay={i * 0.08}>
+              <Reveal
+                key={r.key}
+                delay={i * 0.08}
+                className="w-[78%] shrink-0 snap-center md:w-auto md:shrink"
+              >
                 <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
                   <span aria-hidden className="card-accent" />
                   <h3 className="font-display text-3xl tracking-wide text-navy-900">{r.title}</h3>
@@ -633,7 +637,7 @@ export function Basics() {
                 </div>
               </Reveal>
             ))}
-          </div>
+          </SwipeRow>
         </div>
 
         {/* Mixed/Fastpitch: Mobile Auswahl-Kästchen + Panel, ab md die
