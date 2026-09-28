@@ -71,3 +71,7 @@ frontend/*.pdf
 
 # Brainstorming-Mockups (Visual Companion)
 .superpowers/
+
+# Website (Marketing-Landingpage)
+website/node_modules/
+website/dist/
