@@ -477,36 +477,44 @@ export function Basics() {
           </div>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          <Reveal>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-              <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-3xl tracking-wide text-navy-900">Outs</h3>
-              <p className="mt-3 text-sm leading-relaxed text-navy-700 hyphens-auto">
-                Die Verteidigung macht ein Out, wenn sie den Ball vor dem Runner zur Base bringt,
-                ihn mit dem Ball taggt oder einen Flugball direkt fängt.
-              </p>
-            </div>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-              <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-3xl tracking-wide text-navy-900">Wechsel</h3>
-              <p className="mt-3 text-sm leading-relaxed text-navy-700 hyphens-auto">
-                Nach drei Outs wird getauscht: Das Schlagteam geht ins Feld, das Feldteam schlägt.
-              </p>
-            </div>
-          </Reveal>
-          <Reveal delay={0.16}>
-            <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
-              <span aria-hidden className="card-accent" />
-              <h3 className="font-display text-3xl tracking-wide text-navy-900">Home Run</h3>
-              <p className="mt-3 text-sm leading-relaxed text-navy-700 hyphens-auto">
-                Fliegt der Schlag über die Feldgrenze, gibt es einen Punkt für jeden Runner und
-                einen für die Batter:in.
-              </p>
-            </div>
-          </Reveal>
+        {/* Regel-Karten: Mobile als Wisch-Reihe (gleiche Sprache wie die Galerie),
+            ab md das 3er-Grid. Info bleibt komplett, nur die Scrollhöhe schrumpft. */}
+        <div className="relative mt-10 md:mt-12">
+          <div className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-4 pb-1 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:px-0 md:pb-0">
+            <Reveal className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
+              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                <span aria-hidden className="card-accent" />
+                <h3 className="font-display text-3xl tracking-wide text-navy-900">Outs</h3>
+                <p className="mt-3 text-sm leading-relaxed text-navy-700">
+                  Die Verteidigung macht ein Out, wenn sie den Ball vor dem Runner zur Base bringt,
+                  ihn mit dem Ball taggt oder einen Flugball direkt fängt.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={0.08} className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
+              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                <span aria-hidden className="card-accent" />
+                <h3 className="font-display text-3xl tracking-wide text-navy-900">Wechsel</h3>
+                <p className="mt-3 text-sm leading-relaxed text-navy-700">
+                  Nach drei Outs wird getauscht: Das Schlagteam geht ins Feld, das Feldteam schlägt.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={0.16} className="w-[78%] shrink-0 snap-center md:w-auto md:shrink">
+              <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                <span aria-hidden className="card-accent" />
+                <h3 className="font-display text-3xl tracking-wide text-navy-900">Home Run</h3>
+                <p className="mt-3 text-sm leading-relaxed text-navy-700">
+                  Fliegt der Schlag über die Feldgrenze, gibt es einen Punkt für jeden Runner und
+                  einen für die Batter:in.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream-50 to-transparent md:hidden"
+          />
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:gap-6">
