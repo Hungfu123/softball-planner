@@ -21,7 +21,7 @@ const FORMATE = [
 export function About() {
   return (
     <section id="ueber-uns" className="scroll-mt-24 overflow-x-clip">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-32">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal className="flex flex-col justify-center">
             <SectionTag index="01">Wer wir sind</SectionTag>
@@ -67,10 +67,11 @@ export function About() {
 
         {/* Ligen-Karten: volle Breite unter dem Text-Bild-Grid —
             vorher in der schmalen Textspalte gequetscht, lief "Hochschulmeisterschaft" über den Rand */}
-        <Reveal className="mt-12 lg:mt-24">
-          <p className="flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.3em] text-ink-200">
-            <span className="text-brand-500">01</span>
-            <span aria-hidden className="h-px w-6 bg-current opacity-40" />
+        <Reveal className="mt-10 lg:mt-14">
+          {/* Sub-Eyebrow statt SectionTag-Kopie: bewusst OHNE Nummer — die Sektion
+              ist bereits "01 — Wer wir sind", ein zweites "01" würde die Kapitel-Zählung brechen */}
+          <p className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.3em] text-brand-500">
+            <span aria-hidden className="size-1.5 rotate-45 bg-current" />
             Wo wir spielen
           </p>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
