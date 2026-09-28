@@ -104,7 +104,7 @@ export function InvitationListPage() {
 
   return (
     <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
-      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline">← Zurück zur Orga</Link>
+      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline py-1.5">← Zurück zur Orga</Link>
       <div className="flex items-baseline justify-between">
         <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
           Einladungen {invitations.length > 0 && <span className="text-navy-500 font-bold">({invitations.length})</span>}
@@ -166,7 +166,7 @@ export function InvitationListPage() {
                       onClick={() => openEdit(inv)}
                       aria-label={`${inv.title} bearbeiten`}
                       title="Bearbeiten"
-                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                      className="p-2.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
                     >
                       <Pencil size={16} />
                     </button>
@@ -174,7 +174,7 @@ export function InvitationListPage() {
                       onClick={() => handleDuplicate(inv.id)}
                       aria-label={`${inv.title} duplizieren`}
                       title="Duplizieren"
-                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                      className="p-2.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
                     >
                       <ArrowsSwap size={16} />
                     </button>

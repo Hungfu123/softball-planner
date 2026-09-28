@@ -309,7 +309,7 @@ export function PlayerManager() {
                     <button
                       onClick={() => { setEditingId(p.id); setEditName(p.name) }}
                       aria-label={`${p.name} bearbeiten`}
-                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                      className="p-2.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
                       title="Bearbeiten"
                     >
                       <Pencil size={16} />

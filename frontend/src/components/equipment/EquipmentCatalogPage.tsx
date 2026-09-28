@@ -76,7 +76,7 @@ export default function EquipmentCatalogPage() {
 
   return (
     <div className="max-w-2xl lg:max-w-3xl mx-auto space-y-4">
-      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline">← Zurück zur Orga</Link>
+      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline py-1.5">← Zurück zur Orga</Link>
       <div className="flex items-center justify-between gap-2">
         <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
           Aufbau Heimspieltag
