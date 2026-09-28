@@ -25,7 +25,9 @@ const CELLS: Cell[] = [
   },
   {
     title: 'Spiel mit',
-    text: 'Funturniere, RFL, College Series: Wer will, ist dabei.',
+    // Kein zweites Mal die Ligennamen (RFL, College Series) — die stehen in 01 "Wo wir spielen".
+    // Diese Karte erzählt den Weg, nicht die Fakten.
+    text: 'Vom ersten Turnier bis in die Liga: Wer will, ist dabei — ohne Zwang.',
     variant: 'brand',
   },
 ]
