@@ -32,4 +32,4 @@ jobs:
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H 178.104.118.46 >> ~/.ssh/known_hosts 2>/dev/null
-          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key" website/dist/ root@178.104.118.46:/var/www/deadsox/
+          rsync -az --delete --rsync-path="mkdir -p /var/www/deadsox && rsync" -e "ssh -i ~/.ssh/deploy_key" website/dist/ root@178.104.118.46:/var/www/deadsox/
