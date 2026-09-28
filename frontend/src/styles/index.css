@@ -1,22 +1,32 @@
 @import "tailwindcss";
 
 /*
- * "Stadium Pocket" Design-System:
- *   Cream paper bg + Navy + Softball-Red. Saira Condensed for display/numbers, Archivo for body.
+ * Design-System: Cream paper bg + Navy (Website-Hue-Familie) + Softball-Red.
+ *   Farben = identisch zur Marketing-Website (deadsox.duckdns.org),
+ *   Schriften = Saira Condensed (Display/Nummern) + Archivo (Body) — für
+ *   ein Daten-Tool die lesbarere Wahl (größere Versalhöhe als Big Shoulders).
+ *   Skala 50–950 vollständig definiert — vorher waren navy-200 bis navy-500,
+ *   navy-950 und cream-400 No-Op-Klassen ohne Theme-Wert.
  *   Status: emerald (alles gut), amber (warnung).
  */
 @theme {
-  --color-cream-50: #FFFBF3;
-  --color-cream-100: #FBF7F0;
-  --color-cream-200: #F2EBDA;
-  --color-cream-300: #E8DEC5;
+  --color-cream-50: #FBF6EC;
+  --color-cream-100: #F3ECDB;
+  --color-cream-200: #E8E0CA;
+  --color-cream-300: #DDD2B8;
+  --color-cream-400: #CCC09E;
 
-  --color-navy-50: #F0F1FA;
-  --color-navy-100: #E8EAF6;
-  --color-navy-600: #2D3BA0;
-  --color-navy-700: #1E2A8F;
-  --color-navy-800: #111B6B;
-  --color-navy-900: #0A0F5C;
+  --color-navy-50: #F0F1F8;
+  --color-navy-100: #E2E4F1;
+  --color-navy-200: #C8CBE2;
+  --color-navy-300: #9DA3CD;
+  --color-navy-400: #6F76B0;
+  --color-navy-500: #434A8F;
+  --color-navy-600: #212559;
+  --color-navy-700: #181B4D;
+  --color-navy-800: #10133F;
+  --color-navy-900: #0A0D35;
+  --color-navy-950: #070A2E;
 
   --color-softball-red-50: #FFF5F5;
   --color-softball-red-100: #FEE2E2;
@@ -27,23 +37,50 @@
   --color-softball-red-800: #921520;
   --color-softball-red-900: #6E0F18;
 
+  /* Grau-Übersteuerung: Tailwind-Default gray-400/500 sind auf Cream zu hell
+     (Kontrast ~2.2–2.6). Komponenten nutzen sie als gedämpften Text — hier
+     abgedunkelt auf AA-Niveau (≥4.5 auf cream-100). gray-300 bleibt unberührt:
+     dort bewusst verwaschene Empty-States/Icons, teils auf Navy. */
+  --color-gray-400: #5F6774;
+  --color-gray-500: #4B5563;
+
   --font-display: "Saira Condensed", "Impact", sans-serif;
   --font-body: "Archivo", system-ui, sans-serif;
 
+  /* Design-Engineering-Tokens: starke Kurven statt Standard-Easings (wie Website) */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+
   /* Nav-Label. 11px ist die kleinste Schriftgröße, die wir setzen —
-     darunter schließen sich bei Saira Condensed in Caps die Punzen.
+     darunter schließen sich bei kondensierten Caps die Punzen.
      (Material/iOS-Empfehlung für Tab-Labels: 10–12px.) */
   --text-nav: 0.6875rem;
 }
 
 body {
   font-family: "Archivo", system-ui, -apple-system, sans-serif;
+  /* Zahlen tabellarisch: Scores, Tabellen, Statistiken bleiben bündig (Emil) */
+  font-variant-numeric: tabular-nums;
   background-color: var(--color-cream-100);
   /* Subtle paper-grain texture — gibt Cream organische Tiefe ohne Lesbarkeit zu beeinträchtigen */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.04 0 0 0 0 0.05 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-attachment: fixed;
   color: var(--color-gray-900);
   scrollbar-gutter: stable;
+}
+
+/* Emil-Typo-Politur: Headlines gleichmäßig gefüllt, Absätze ohne verwaistes Restwort */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default */
+:focus-visible {
+  outline: 2px solid var(--color-softball-red-500);
+  outline-offset: 2px;
 }
 
 .font-display {
@@ -66,7 +103,7 @@ body {
 }
 
 button, a, [role="button"] {
-  transition: transform 150ms ease, opacity 150ms ease,
+  transition: transform 150ms var(--ease-out-strong), opacity 150ms var(--ease-out-strong),
               box-shadow 150ms ease, background-color 150ms ease;
 }
 
@@ -76,11 +113,11 @@ button:active:not(:disabled), [role="button"]:active {
 }
 
 .lineup-row {
-  transition: transform 200ms ease, opacity 200ms ease;
+  transition: transform 200ms var(--ease-out-strong), opacity 200ms var(--ease-out-strong);
 }
 
 .pool-chip {
-  transition: transform 150ms ease, opacity 150ms ease;
+  transition: transform 150ms var(--ease-out-strong), opacity 150ms var(--ease-out-strong);
 }
 
 .cursor-pencil {
