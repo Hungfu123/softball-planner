@@ -107,10 +107,11 @@ export function Nav() {
             transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             className="relative border-b border-navy-800/60 bg-navy-950/90 backdrop-blur-md md:hidden"
           >
-            {/* Kompakt-Pills: 5 Einträge müssen ohne horizontales Scrollen
-                passen (Nutzerwunsch) — engeres Padding/Gap statt Wisch-Leiste.
-                overflow-x-auto bleibt als Fallback für sehr schmale Geräte. */}
-            <div className="no-scrollbar mx-auto flex max-w-6xl items-center justify-center gap-0.5 overflow-x-auto overscroll-x-contain px-3 py-2">
+            {/* Kompakt-Pills: 5 Einträge passen ohne horizontales Scrollen
+                (Nutzerwunsch) — engeres Padding/Gap statt Wisch-Leiste.
+                Rein statisch, damit justify-center exakt mittig sitzt
+                (overflow-x-auto verschiebt die Zentrierung, siehe Bug-Runde). */}
+            <div className="flex items-center justify-center gap-1 px-3 py-2">
               {LINKS.map((link) => (
                 <a
                   key={link.href}
