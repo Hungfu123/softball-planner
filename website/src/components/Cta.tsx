@@ -13,7 +13,7 @@ export function Cta() {
             Mitmachen
           </SectionTag>
           <h2 className="font-display text-5xl font-black leading-[0.95] tracking-wide sm:text-6xl md:text-8xl">
-            Komm zum <span className="text-brand-600">Probetraining.</span>
+            Sag kurz <span className="text-brand-600">Bescheid.</span>
           </h2>
           <p className="max-w-lg leading-relaxed text-navy-700">
             Eine kurze Mail reicht: sag uns, wann du kommst. Und wenn du erst mal nur

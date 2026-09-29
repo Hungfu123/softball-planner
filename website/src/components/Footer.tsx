@@ -43,6 +43,9 @@ export function Footer() {
         </nav>
 
         <div className="flex flex-col gap-2.5">
+          <p className="text-sm font-medium text-cream-50">
+            Orga: Hung Luu & Anne Steinfort
+          </p>
           <a
             href={`mailto:${KONTAKT_MAIL}`}
             className="inline-flex items-center gap-2 text-sm text-ink-200 transition-colors hover:text-cream-50"
