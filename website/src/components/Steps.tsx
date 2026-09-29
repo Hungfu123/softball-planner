@@ -27,7 +27,7 @@ const VIDEOS: { id: string; title: string; channel: string }[] = [
 const CELLS: Cell[] = [
   {
     title: 'Schau vorbei',
-    text: 'Gib vorher kurz Bescheid — Vorkenntnisse brauchst du keine: Erst zugucken, dann selbst zum Bat.',
+    text: 'Gib vorher kurz Bescheid. Vorkenntnisse brauchst du keine: Erst zugucken, dann selbst zum Bat.',
     img: '/img/gallery/group-training.webp',
     alt: 'Dead Sox beim Training auf dem Feld',
     span: 'md:col-span-2',
@@ -43,7 +43,7 @@ const CELLS: Cell[] = [
     // Kein zweites Mal die Ligennamen (RFL, College Series) — die stehen
     // in den Liga-Karten der Sektion 01 ("Wer wir sind", Sub-Eyebrow "Wo wir spielen").
     // Diese Karte erzählt den Weg, nicht die Fakten.
-    text: 'Vom ersten Turnier bis in die Liga: Wer will, ist dabei — ohne Zwang.',
+    text: 'Vom ersten Turnier bis in die Liga: Wer will, ist dabei, ganz ohne Zwang.',
     variant: 'brand',
   },
 ]
@@ -127,7 +127,7 @@ export function Steps() {
             </h3>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-200">
               Wenn du Lust hast, kannst du Werfen und Fangen schon vor dem
-              ersten Training angehen — vier kurze Videos, ganz unverbindlich.
+              ersten Training angehen: vier kurze Videos, ganz unverbindlich.
               Wenn nicht, lernst du einfach alles im Training.
             </p>
           </Reveal>
@@ -148,7 +148,7 @@ export function Steps() {
                   href={`https://www.youtube.com/watch?v=${video.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Video ansehen: ${video.title} — ${video.channel} (öffnet YouTube)`}
+                  aria-label={`Video ansehen: ${video.title} von ${video.channel} (öffnet YouTube)`}
                   className="press block"
                 >
                   <article className="group flex size-full flex-col overflow-hidden rounded-sm border border-navy-700 bg-navy-900/60 transition-colors duration-200 hover:border-cream-50/25">
