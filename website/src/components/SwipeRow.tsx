@@ -11,12 +11,21 @@ const BREAKPOINTS: Record<Breakpoint, { row: string; chrome: string }> = {
   md: { row: 'md:overflow-visible md:px-0 md:pb-0', chrome: 'md:hidden' },
 }
 
+/** Farbvariante des Chrome (Fade + Pfeil) je nach Sektions-Hintergrund. */
+type Tone = 'cream' | 'navy'
+const TONES: Record<Tone, { fade: string; arrow: string }> = {
+  cream: { fade: 'from-cream-50', arrow: 'bg-navy-900/90 text-cream-50' },
+  navy: { fade: 'from-navy-950', arrow: 'bg-cream-50 text-navy-900' },
+}
+
 type SwipeRowProps = {
   children: ReactNode
   /** Ab dieser Tailwind-Breakpoint ist das Desktop-Grid aktiv (Swipe nur darunter). */
   hideAt: Breakpoint
   /** Desktop-Grid-Zustand, z. B. "md:grid md:grid-cols-3". */
   desktop: string
+  /** Hintergrund der Sektion — steuert Fade-Richtung & Pfeil-Farben. Default: cream. */
+  tone?: Tone
 }
 
 /**
@@ -28,10 +37,11 @@ type SwipeRowProps = {
  *      sich am Ende der Reihe aus (ein Control, das nichts mehr tut,
  *      hat keinen Grund da zu sein)
  */
-export function SwipeRow({ children, hideAt, desktop }: SwipeRowProps) {
+export function SwipeRow({ children, hideAt, desktop, tone = 'cream' }: SwipeRowProps) {
   const rowRef = useRef<HTMLDivElement>(null)
   const [atEnd, setAtEnd] = useState(false)
   const bp = BREAKPOINTS[hideAt]
+  const t = TONES[tone]
 
   const checkEnd = () => {
     const el = rowRef.current
@@ -75,7 +85,7 @@ export function SwipeRow({ children, hideAt, desktop }: SwipeRowProps) {
       {/* Fade-Hinweis: Inhalt läuft unter der Kante weiter */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream-50 to-transparent ${bp.chrome}`}
+        className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l ${t.fade} to-transparent ${bp.chrome}`}
       />
 
       {/* Pfeil-Hint: sichtbar, tastbar, verschwindet am Ende */}
@@ -89,7 +99,7 @@ export function SwipeRow({ children, hideAt, desktop }: SwipeRowProps) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-            className={`press absolute right-4 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-navy-900/90 text-cream-50 shadow-lg shadow-navy-950/25 backdrop-blur-sm ${bp.chrome}`}
+            className={`press absolute right-4 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full ${t.arrow} shadow-lg shadow-navy-950/25 backdrop-blur-sm ${bp.chrome}`}
           >
             <CaretRight size={20} weight="bold" />
           </motion.button>
