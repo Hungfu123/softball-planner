@@ -50,7 +50,7 @@ const CELLS: Cell[] = [
 
 export function Steps() {
   return (
-    <section className="grain bg-navy-950">
+    <section id="einstieg" className="grain scroll-mt-24 bg-navy-950">
       <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 md:pt-32">
         <Reveal>
           <SectionTag index="03">Der Einstieg</SectionTag>
@@ -123,11 +123,11 @@ export function Steps() {
               Vorab üben
             </span>
             <h3 className="mt-3 font-display text-3xl leading-[0.95] tracking-wide text-cream-50 md:text-4xl">
-              Wer will, lernt vorher.
+              Skill-Upgrade in 2 Minuten.
             </h3>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-200">
-              Wenn du Lust hast, kannst du Werfen und Fangen schon vor dem
-              ersten Training angehen — vier kurze Videos für den Kopfstart.
+              Werfen und Fangen als kurze Videos — damit du beim ersten
+              Training nicht nur zum Zuschauen da bist.
             </p>
           </Reveal>
         </div>

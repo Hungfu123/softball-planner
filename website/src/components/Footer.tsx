@@ -3,7 +3,8 @@ import { EnvelopeSimple, InstagramLogo } from '@phosphor-icons/react'
 import { INSTAGRAM, KONTAKT_MAIL } from '@/lib/contact'
 
 const NAV_LINKS = [
-  { label: 'Wer wir sind', href: '#ueber-uns' },
+  { label: 'Über uns', href: '#ueber-uns' },
+  { label: 'Einstieg', href: '#einstieg' },
   { label: 'Training', href: '#training' },
   { label: 'Galerie', href: '#galerie' },
   { label: 'FAQ', href: '#faq' },

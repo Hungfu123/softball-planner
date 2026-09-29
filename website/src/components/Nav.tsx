@@ -3,7 +3,8 @@ import { motion, useMotionValueEvent, useScroll } from 'motion/react'
 import { PROBETRAINING_MAILTO } from '@/lib/contact'
 
 const LINKS = [
-  { label: 'Wer wir sind', href: '#ueber-uns' },
+  { label: 'Über uns', href: '#ueber-uns' },
+  { label: 'Einstieg', href: '#einstieg' },
   { label: 'Training', href: '#training' },
   { label: 'Galerie', href: '#galerie' },
   { label: 'FAQ', href: '#faq' },
@@ -106,13 +107,16 @@ export function Nav() {
             transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
             className="relative border-b border-navy-800/60 bg-navy-950/90 backdrop-blur-md md:hidden"
           >
-            <div className="no-scrollbar mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 py-2 sm:px-6">
+            {/* Kompakt-Pills: 5 Einträge müssen ohne horizontales Scrollen
+                passen (Nutzerwunsch) — engeres Padding/Gap statt Wisch-Leiste.
+                overflow-x-auto bleibt als Fallback für sehr schmale Geräte. */}
+            <div className="no-scrollbar mx-auto flex max-w-6xl items-center justify-center gap-0.5 overflow-x-auto overscroll-x-contain px-3 py-2">
               {LINKS.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
                   aria-current={active === link.href ? 'location' : undefined}
-                  className={`press shrink-0 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  className={`press shrink-0 rounded-sm px-2.5 py-1.5 text-sm font-medium transition-colors ${
                     active === link.href
                       ? 'bg-cream-50 text-navy-950'
                       : 'text-ink-200 hover:text-cream-50'
