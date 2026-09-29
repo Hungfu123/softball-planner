@@ -9,7 +9,7 @@ const HSS = 'https://hss-d.de'
 const FAQS = [
   {
     q: 'Ich habe noch nie Softball gespielt.',
-    a: 'Erstens: Das ist keine Frage. Zweitens: Das sagt hier jede:r am ersten Tag — und die Antwort ist seit Jahren dieselbe: Deshalb existiert dieses Team. Fast alle von uns haben an der Uni angefangen, die meisten ohne eine Sekunde Ballsport-Erfahrung. Alles lernst du im Training.',
+    a: 'Erstens: Das ist keine Frage. Zweitens: Das sagt hier jede:r am ersten Tag, und die Antwort ist seit Jahren dieselbe: Deshalb existiert dieses Team. Fast alle von uns haben an der Uni angefangen, die meisten ohne eine Sekunde Ballsport-Erfahrung. Alles lernst du im Training.',
   },
   {
     q: 'Brauche ich eigene Ausrüstung?',
@@ -17,11 +17,11 @@ const FAQS = [
   },
   {
     q: 'Was kostet es?',
-    a: 'Das Training läuft als Kurs des Düsseldorfer Hochschulsports, die aktuellen Teilnahmebeiträge stehen auf hss-d.de. Und nein — daran hat sich nichts geändert, seit du es das letzte Mal nachgeschlagen hast.',
+    a: 'Das Training läuft als Kurs des Düsseldorfer Hochschulsports, die aktuellen Teilnahmebeiträge stehen auf hss-d.de. Und nein, daran hat sich nichts geändert, seit du es das letzte Mal nachgeschlagen hast.',
   },
   {
     q: 'Wo und wann trainiert ihr?',
-    a: 'Steht alles auf dieser Seite — aber schön, gern auch zum hundertsten Mal: im Sommer draußen auf dem Rasenplatz, im Winter in der Halle, beim Hochschulsport Düsseldorf. Die genauen Zeiten zwei Sektionen weiter oben bei „Training“, die Anfahrt auf der Hochschulsport-Seite.',
+    a: 'Steht alles auf dieser Seite. Aber schön, gern auch zum hundertsten Mal: im Sommer draußen auf dem Rasenplatz, im Winter in der Halle, beim Hochschulsport Düsseldorf. Die genauen Zeiten zwei Sektionen weiter oben bei „Training“, die Anfahrt auf der Hochschulsport-Seite.',
   },
   {
     q: 'Ich studiere nicht in Düsseldorf. Kann ich trotzdem mitmachen?',
@@ -29,7 +29,7 @@ const FAQS = [
   },
   {
     q: 'Wie bleibe ich auf dem Laufenden?',
-    a: 'Instagram: @dusseldorf_deadsox. Ja, das ist auch die Antwort auf „Wie bleibe ich auf dem Laufenden?“ — dort posten wir Trainings, Turniere und alles, was im Team passiert.',
+    a: 'Instagram: @dusseldorf_deadsox. Ja, das ist auch die Antwort auf „Wie bleibe ich auf dem Laufenden?“ Dort posten wir Trainings, Turniere und alles, was im Team passiert.',
   },
 ]
 
@@ -112,7 +112,7 @@ export function Faq() {
         </div>
 
         <Reveal className="mt-8 text-sm text-ink-200">
-          Deine Frage fehlt? Respekt — das kommt tatsächlich selten vor. Schreib
+          Deine Frage fehlt? Respekt, das kommt tatsächlich selten vor. Schreib
           uns an{' '}
           <a
             href={`mailto:${KONTAKT_MAIL}`}
