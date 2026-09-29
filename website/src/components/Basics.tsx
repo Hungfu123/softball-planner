@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { CaretDown } from '@phosphor-icons/react'
 import { Reveal, SectionTag } from '@/components/Reveal'
 import { EdgeFade } from '@/components/EdgeFade'
+import { tapPulse } from '@/lib/tap-pulse'
 
 const FACTS = [
   {
@@ -483,20 +484,15 @@ const LEGEND = [
 const TERMS = [
   {
     key: 'mixed' as const,
-    title: (active: boolean) => (
-      <>
-        Mi<span className={active ? 'text-brand-500' : 'text-brand-600'}>xed.</span>
-      </>
-    ),
+    // Bewusst ohne rotes Teil-Highlight: Rot ist auf der Seite exklusiv
+    // den CTAs vorbehalten — Info-Karten bleiben neutral (Nutzer-Feedback:
+    // die roten Titel wirkten "random" zwischen den Cream-Karten).
+    title: 'Mixed.',
     text: 'Männer und Frauen spielen bei den Dead Sox in einem Team. Im Softball kein Sonderfall, sondern Standard.',
   },
   {
     key: 'fastpitch' as const,
-    title: (active: boolean) => (
-      <>
-        Fast<span className={active ? 'text-brand-500' : 'text-brand-600'}>pitch.</span>
-      </>
-    ),
+    title: 'Fastpitch.',
     text: 'Die schnelle Variante: Der Pitch kommt mit ordentlich Tempo, nicht gemütlich wie beim Slowpitch.',
   },
 ]
@@ -553,6 +549,7 @@ function ChipPanel<K extends string>({
               type="button"
               aria-pressed={isActive}
               onClick={() => onToggle(isActive ? null : t.key)}
+              onPointerDown={tapPulse}
               className={`press group relative flex flex-col overflow-hidden rounded-sm border p-4 text-left transition-colors duration-200 ${
                 isActive
                   ? 'border-navy-900 bg-navy-900 text-cream-50'
@@ -721,7 +718,10 @@ export function Basics() {
           <div className="hidden gap-6 md:grid md:grid-cols-3">
             {RULES.map((r, i) => (
               <Reveal key={r.key} delay={i * 0.08}>
-                <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                <div
+                  onPointerDown={tapPulse}
+                  className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-6 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50"
+                >
                   <span aria-hidden className="card-accent" />
                   <h3 className="font-display text-3xl tracking-wide text-navy-900">{r.title}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-navy-700">{r.text}</p>
@@ -744,10 +744,13 @@ export function Basics() {
           <div className="hidden gap-6 md:grid md:grid-cols-2">
             {TERMS.map((t, i) => (
               <Reveal key={t.key} delay={i * 0.12}>
-                <div className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50">
+                <div
+                  onPointerDown={tapPulse}
+                  className="group relative size-full overflow-hidden rounded-sm border border-navy-900/15 bg-cream-100 p-8 transition-colors duration-200 hover:border-navy-900/30 hover:bg-cream-50"
+                >
                   <span aria-hidden className="card-accent" />
                   <h3 className="font-display text-5xl tracking-wide text-navy-900">
-                    {t.title(false)}
+                    {t.title}
                   </h3>
                   <p className="mt-4 leading-relaxed text-navy-700 hyphens-auto">{t.text}</p>
                 </div>

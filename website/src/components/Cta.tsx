@@ -38,6 +38,12 @@ export function Cta() {
               <ArrowUpRight size={14} className="ml-1 inline" />
             </a>
           </div>
+          <p className="text-sm text-navy-700">
+            Deine Mail landet direkt bei{' '}
+            <span className="font-medium text-navy-900">Hung Luu</span> &{' '}
+            <span className="font-medium text-navy-900">Anne Steinfort</span> – wir melden
+            uns.
+          </p>
           <p className="font-mono text-xs tracking-wide text-navy-700/70">
             {KONTAKT_MAIL} · Dead Sox · Hochschulsport Düsseldorf
           </p>
