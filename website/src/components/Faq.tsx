@@ -9,27 +9,27 @@ const HSS = 'https://hss-d.de'
 const FAQS = [
   {
     q: 'Ich habe noch nie Softball gespielt.',
-    a: 'Dann gehörst du genau hierher. Die meisten von uns haben an der Uni angefangen, viele ohne Ballsport-Erfahrung. Alles, was du wissen musst, lernst du im Training.',
+    a: 'Erstens: Das ist keine Frage. Zweitens: Das sagt hier jede:r am ersten Tag — und die Antwort ist seit Jahren dieselbe: Deshalb existiert dieses Team. Fast alle von uns haben an der Uni angefangen, die meisten ohne eine Sekunde Ballsport-Erfahrung. Alles lernst du im Training.',
   },
   {
     q: 'Brauche ich eigene Ausrüstung?',
-    a: 'Nein. Bat, Bälle, Handschuhe und Helme stellt das Team. Für den Anfang reichen Sportsachen und ein bisschen Neugier.',
+    a: 'Nein. Wir haben aufgehört mitzuzählen, wie oft wir das gefragt wurden: Bat, Bälle, Handschuhe und Helme stellt das Team. Bring Sportsachen mit und ein bisschen Neugier, den Rest haben wir.',
   },
   {
     q: 'Was kostet es?',
-    a: 'Das Training läuft als Kurs des Düsseldorfer Hochschulsports. Die aktuellen Teilnahmebeiträge stehen auf hss-d.de.',
+    a: 'Das Training läuft als Kurs des Düsseldorfer Hochschulsports, die aktuellen Teilnahmebeiträge stehen auf hss-d.de. Und nein — daran hat sich nichts geändert, seit du es das letzte Mal nachgeschlagen hast.',
   },
   {
     q: 'Wo und wann trainiert ihr?',
-    a: 'Beim Hochschulsport Düsseldorf: im Sommer draußen auf dem Rasenplatz, im Winter in der Halle. Die genauen Zeiten stehen oben bei Trainingszeiten, die Anfahrt auf der Hochschulsport-Seite.',
+    a: 'Steht alles auf dieser Seite — aber schön, gern auch zum hundertsten Mal: im Sommer draußen auf dem Rasenplatz, im Winter in der Halle, beim Hochschulsport Düsseldorf. Die genauen Zeiten zwei Sektionen weiter oben bei „Training“, die Anfahrt auf der Hochschulsport-Seite.',
   },
   {
     q: 'Ich studiere nicht in Düsseldorf. Kann ich trotzdem mitmachen?',
-    a: 'Das Training ist ein Angebot des Hochschulsports, das meistens auch für externe Teilnehmende offen ist. Im Zweifel: schreib uns, wir klären das gemeinsam.',
+    a: 'Diese Frage kommt jede Woche. Die Antwort ändert sich trotzdem nicht: Das Training ist ein Angebot des Hochschulsports und meistens auch für externe Teilnehmende offen. Im Zweifel: schreib uns, wir klären das gemeinsam.',
   },
   {
     q: 'Wie bleibe ich auf dem Laufenden?',
-    a: 'Folge uns auf Instagram: @dusseldorf_deadsox. Dort posten wir Trainings, Turniere und alles, was im Team passiert.',
+    a: 'Instagram: @dusseldorf_deadsox. Ja, das ist auch die Antwort auf „Wie bleibe ich auf dem Laufenden?“ — dort posten wir Trainings, Turniere und alles, was im Team passiert.',
   },
 ]
 
@@ -54,11 +54,11 @@ export function Faq() {
                 <div className="flex gap-4 sm:gap-6">
                   <span
                     aria-hidden
-                    className="pt-5 font-display text-3xl leading-none tracking-wide text-cream-50/10 md:text-4xl"
+                    className="pt-5 font-display text-3xl leading-none tracking-wide text-cream-50/10 md:text-4xl shrink-0"
                   >
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <button
                       type="button"
                       aria-expanded={isOpen}
@@ -112,7 +112,8 @@ export function Faq() {
         </div>
 
         <Reveal className="mt-8 text-sm text-ink-200">
-          Deine Frage fehlt? Schreib uns an{' '}
+          Deine Frage fehlt? Respekt — das kommt tatsächlich selten vor. Schreib
+          uns an{' '}
           <a
             href={`mailto:${KONTAKT_MAIL}`}
             className="text-cream-50 underline decoration-brand-500 underline-offset-4 hover:text-brand-500"
