@@ -16,8 +16,9 @@ export function Cta() {
             Sag kurz <span className="text-brand-600">Bescheid.</span>
           </h2>
           <p className="max-w-lg leading-relaxed text-navy-700">
-            Eine kurze Mail reicht: sag uns, wann du kommst. Und wenn du erst mal nur
-            schauen willst: Auf Instagram zeigen wir, was bei uns los ist.
+            Eine kurze Mail reicht, ob zum Mitmachen oder für Fragen: sag uns
+            einfach, wann du kommst. Und wenn du erst mal nur schauen willst:
+            Auf Instagram zeigen wir, was bei uns los ist.
           </p>
           <div className="flex flex-wrap gap-4">
             <a
