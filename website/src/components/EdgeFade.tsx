@@ -8,12 +8,14 @@ const CREAM = '#fbf6ec'
  * Diagonale an beiden Formen anti-aliased, die Deckung fällt unter 100 %
  * und der Sektions-Hintergrund scheint als helle Naht durch.
  *
- * Naht-Fix: Alle Formen ragen um 4 Einheiten über die ViewBox hinaus
- * (vertikal UND horizontal). Die Clip-Kante liegt damit mitten in
- * Vollfarbe statt auf einer Kante — auf Hi-DPI-Geräten (DPR 2-3) konnte
- * ein 1-Subpixel-Rest der Kante sonst als weiße Linie durchscheinen.
- * Die Diagonale läuft weiterhin Ecke zu Ecke — durch das Bleed minimal
- * steiler (~7 %), visuell nicht unterscheidbar.
+ * Ecke-zu-Ecke (Fix "Linien gehen rechts/links nicht durch"): Die Diagonale
+ * läuft EXAKT durch die ViewBox-Ecken (0,0)→(1440,70). Der frühere ±4-Bleed
+ * ließ sie ~5 % vor dem Rand durch die obere/untere Box-Kante austreten —
+ * an den Bildschirmrändern blieb eine horizontale Stufe statt der Diagonalen.
+ * Der Bleed war zudem wirkungslos: SVGs clippen Content außerhalb der
+ * ViewBox standardmäßig (overflow: hidden), wurde also nie gerendert.
+ *
+ * Mobile: h-8 (32px, vorher h-12) — kompaktere Übergänge, nur Mobile.
  */
 export function EdgeFade({ edge }: { edge: 'top' | 'bottom' }) {
   return (
@@ -22,19 +24,19 @@ export function EdgeFade({ edge }: { edge: 'top' | 'bottom' }) {
         <svg
           viewBox="0 0 1440 70"
           preserveAspectRatio="none"
-          className="block h-12 w-full md:h-16"
+          className="block h-8 w-full md:h-16"
         >
-          <rect x="-4" y="-4" width="1448" height="78" fill={CREAM} />
-          <path d="M-4,-4 H1444 L-4,74 Z" fill={NAVY} />
+          <rect width="1440" height="70" fill={CREAM} />
+          <path d="M0,0 H1440 L0,70 Z" fill={NAVY} />
         </svg>
       ) : (
         <svg
           viewBox="0 0 1440 70"
           preserveAspectRatio="none"
-          className="block h-12 w-full md:h-16"
+          className="block h-8 w-full md:h-16"
         >
-          <rect x="-4" y="-4" width="1448" height="78" fill={CREAM} />
-          <path d="M-4,-4 L1444,74 H-4 Z" fill={NAVY} />
+          <rect width="1440" height="70" fill={CREAM} />
+          <path d="M0,0 L1440,70 H0 Z" fill={NAVY} />
         </svg>
       )}
     </div>
