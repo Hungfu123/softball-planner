@@ -596,7 +596,7 @@ export function GameDayPlanner() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="group flex items-baseline gap-3">
             <div>
-              <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">
+              <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
                 {gameDay.label || 'Spieltag'} <span className="text-softball-red-600">·</span> {formatDate(gameDay.date)}
               </h1>
               {gameDay.location && (

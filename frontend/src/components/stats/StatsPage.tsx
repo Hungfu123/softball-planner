@@ -211,7 +211,7 @@ export function StatsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 sm:gap-3 mb-4 pb-3 border-b border-cream-300">
-          <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h1>
+          <h1 className="font-headline text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h1>
           <button
             onClick={() => setShowGlossary(true)}
             className="font-display ml-auto text-[11px] tracking-widest uppercase text-gray-500 hover:text-navy-700 cursor-pointer flex items-center gap-1.5 font-bold"

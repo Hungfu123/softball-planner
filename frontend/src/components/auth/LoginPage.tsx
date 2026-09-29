@@ -34,13 +34,13 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
             />
           </div>
           <p className="font-display text-[10px] tracking-[0.4em] uppercase text-softball-red-600 font-bold mt-4">Dead Sox</p>
-          <h1 className="font-display text-3xl font-black text-navy-900 tracking-tight uppercase leading-none mt-1">
+          <h1 className="font-headline text-3xl font-black text-navy-900 tracking-tight uppercase leading-none mt-1">
             Lineup HQ
           </h1>
         </div>
 
         {/* Card */}
-        <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-card p-6 space-y-4">
           <div>
             <label htmlFor="username" className="sr-only">Benutzer</label>
             {/* Hidden username field for browser autofill UX */}

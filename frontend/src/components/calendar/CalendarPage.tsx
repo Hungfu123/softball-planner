@@ -123,7 +123,7 @@ export function CalendarPage() {
           <button onClick={() => goMonth(-1)} aria-label="Vorheriger Monat" className="p-2 rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer">
             <ChevronLeft size={20} />
           </button>
-          <h1 className="font-display text-lg sm:text-xl font-extrabold text-navy-900 uppercase tracking-wide tabular-nums min-w-[150px] sm:min-w-[180px] text-center">
+          <h1 className="font-headline text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-wide tabular-nums min-w-[150px] sm:min-w-[180px] text-center">
             {monthLabel}
           </h1>
           <button onClick={() => goMonth(1)} aria-label="Nächster Monat" className="p-2 rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer">

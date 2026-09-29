@@ -1,17 +1,21 @@
 @import "tailwindcss";
+@import "@fontsource/big-shoulders-display/800";
+@import "@fontsource/big-shoulders-display/900";
 
 /*
  * Design-System: Cream paper bg + Navy (Website-Hue-Familie) + Softball-Red.
  *   Farben = identisch zur Marketing-Website (deadsox.duckdns.org),
- *   Schriften = Saira Condensed (Display/Nummern) + Archivo (Body) — für
- *   ein Daten-Tool die lesbarere Wahl (größere Versalhöhe als Big Shoulders).
+ *   Schriften = Hybrid (Emil-Empfehlung): Big Shoulders Display für die
+ *   Page-Headlines (Marken-Brücke zur Website), Saira Condensed für
+ *   Display-Labels/Score-Nummern (größere Versalhöhe, besser lesbar im
+ *   Daten-Tool), Archivo für Body/Tabellen.
  *   Skala 50–950 vollständig definiert — vorher waren navy-200 bis navy-500,
  *   navy-950 und cream-400 No-Op-Klassen ohne Theme-Wert.
  *   Status: emerald (alles gut), amber (warnung).
  */
 @theme {
   --color-cream-50: #FBF6EC;
-  --color-cream-100: #F3ECDB;
+  --color-cream-100: #fbf6ec;
   --color-cream-200: #E8E0CA;
   --color-cream-300: #DDD2B8;
   --color-cream-400: #CCC09E;
@@ -46,6 +50,12 @@
 
   --font-display: "Saira Condensed", "Impact", sans-serif;
   --font-body: "Archivo", system-ui, sans-serif;
+  /* Page-Headlines (h1): identisch zur Website → eine Marken-Familie */
+  --font-headline: "Big Shoulders Display", "Bebas Neue", "Arial Narrow", sans-serif;
+
+  /* Emil: statt dünnem shadow-sm ein weicher, großflächiger Card-Schatten
+     (Navy-getönt, damit Cream-Cards vom Cream-Hintergrund plastisch abheben) */
+  --shadow-card: 0 10px 30px -12px rgb(10 13 53 / 0.14);
 
   /* Design-Engineering-Tokens: starke Kurven statt Standard-Easings (wie Website) */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
@@ -85,7 +95,16 @@ p {
 
 .font-display {
   font-family: "Saira Condensed", "Impact", sans-serif;
-  letter-spacing: 0.02em;
+  /* Emil: All-Caps-Labels etwas mehr Luft geben (0.02 → 0.03em) */
+  letter-spacing: 0.03em;
+}
+
+/* Page-Headlines: Big Shoulders Display wie auf der Website.
+   tracking-wide/leading kommt wie bisher inline per Tailwind-Klassen. */
+.font-headline {
+  font-family: "Big Shoulders Display", "Bebas Neue", "Arial Narrow", sans-serif;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Hide scrollbar (für horizontale Pill-Nav etc.) */

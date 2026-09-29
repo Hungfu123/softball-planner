@@ -163,7 +163,7 @@ export function Dashboard() {
           </div>
         </div>
         <p className="font-display text-[10px] tracking-[0.4em] uppercase text-softball-red-600 font-bold mb-2">Dead Sox · Lineup HQ</p>
-        <h1 className="font-display text-4xl sm:text-5xl font-black text-navy-900 tracking-tight uppercase mb-2 leading-none">
+        <h1 className="font-headline text-4xl sm:text-5xl font-black text-navy-900 tracking-tight uppercase mb-2 leading-none">
           Ready Up.
         </h1>
         <p className="font-display text-[12px] tracking-widest uppercase text-gray-500 font-bold mb-8 max-w-md">

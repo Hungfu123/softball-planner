@@ -320,7 +320,7 @@ export function TrainingTodayPage() {
     return (
       <div className="min-h-screen p-4">
         <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto p-4 space-y-4">
-          <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
+          <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
             Training
           </h1>
           {trainingsLoading ? (
@@ -337,7 +337,7 @@ export function TrainingTodayPage() {
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto p-4 space-y-4">
         <div className="flex items-baseline justify-between">
-          <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
+          <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
             Training
           </h1>
           <div className="flex items-center gap-2 flex-wrap justify-end">

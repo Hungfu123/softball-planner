@@ -106,7 +106,7 @@ export function InvitationListPage() {
     <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
       <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline py-1.5">← Zurück zur Orga</Link>
       <div className="flex items-baseline justify-between">
-        <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">
+        <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
           Einladungen {invitations.length > 0 && <span className="text-navy-500 font-bold">({invitations.length})</span>}
         </h1>
         <Button type="button" variant="primary" onClick={openCreate} icon={<PlusCircle size={16} />}>

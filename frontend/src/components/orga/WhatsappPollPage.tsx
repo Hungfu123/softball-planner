@@ -275,7 +275,7 @@ export function WhatsappPollPage() {
   return (
     <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
       <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline py-1.5">← Zurück zur Orga</Link>
-      <h1 className="font-display text-2xl font-extrabold text-navy-900 uppercase tracking-wide">WhatsApp-Umfragen</h1>
+      <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">WhatsApp-Umfragen</h1>
 
       {error && (
         <p className="text-sm text-softball-red-700 bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">{error}</p>
