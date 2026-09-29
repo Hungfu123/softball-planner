@@ -123,11 +123,12 @@ export function Steps() {
               Vorab üben
             </span>
             <h3 className="mt-3 font-display text-3xl leading-[0.95] tracking-wide text-cream-50 md:text-4xl">
-              Skill-Upgrade in 2 Minuten.
+              Bock auf die Basics?
             </h3>
             <p className="mt-3 max-w-md text-sm leading-relaxed text-ink-200">
-              Werfen und Fangen als kurze Videos — damit du beim ersten
-              Training nicht nur zum Zuschauen da bist.
+              Wenn du Lust hast, kannst du Werfen und Fangen schon vor dem
+              ersten Training angehen — vier kurze Videos, ganz unverbindlich.
+              Wenn nicht, lernst du einfach alles im Training.
             </p>
           </Reveal>
         </div>
