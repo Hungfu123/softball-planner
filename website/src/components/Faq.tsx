@@ -112,15 +112,13 @@ export function Faq() {
         </div>
 
         <Reveal className="mt-8 text-sm text-ink-200">
-          Deine Frage fehlt? Respekt, das kommt tatsächlich selten vor. Schreib
-          uns an{' '}
+          Noch Fragen? Schreib uns einfach:{' '}
           <a
             href={`mailto:${KONTAKT_MAIL}`}
             className="text-cream-50 underline decoration-brand-500 underline-offset-4 hover:text-brand-500"
           >
             {KONTAKT_MAIL}
           </a>
-          .
         </Reveal>
       </div>
     </section>

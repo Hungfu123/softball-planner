@@ -167,6 +167,15 @@
     }
   }
 
+  /* Tap-Puls (Touch): Mobil gibt es kein :hover — lib/tap-pulse.ts setzt
+     beim Tippen kurz .is-tapped auf die Karte, der Akzent wischt genau wie
+     beim Desktop-Hover ein und nach dem Timeout wieder heraus. */
+  @media (hover: none) {
+    .is-tapped .card-accent {
+      transform: scaleX(1);
+    }
+  }
+
   /* Scrollbare Swipe-Reihe ohne sichtbare Scrollbar (Mobile-Galerie) */
   .no-scrollbar {
     scrollbar-width: none;

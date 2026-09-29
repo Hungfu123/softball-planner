@@ -69,15 +69,10 @@ export function Nav() {
             <span className="font-display text-3xl tracking-wide">Dead Sox</span>
           </a>
 
-          {/* Mobile: kein Burger-Menü mehr — der CTA sitzt direkt im
-              Header, die Sektionen laufen unten in der Pill-Leiste.
-              Jedes Ziel mit einem Tap erreichbar. */}
-          <a
-            href={PROBETRAINING_MAILTO}
-            className="press rounded-sm bg-brand-600 px-4 py-2 text-sm font-medium text-cream-50 hover:-translate-y-0.5 hover:bg-brand-500 md:hidden"
-          >
-            Probetraining
-          </a>
+          {/* Mobile: kein Nav-CTA mehr — Hero-CTA am Anfang, Sticky-CTA
+              beim Scrollen und die Cta-Sektion unten decken den Intent ab.
+              Ein dritter roter Button oben wäre nur Redundanz
+              (CTA-Intent-Regel: eine persistente Fläche pro Intent). */}
 
           <div className="hidden items-center gap-8 md:flex">
             {LINKS.map((link) => (

@@ -1,4 +1,5 @@
 import { Reveal, RevealImg, SectionTag } from '@/components/Reveal'
+import { tapPulse } from '@/lib/tap-pulse'
 
 const FORMATE = [
   {
@@ -33,8 +34,9 @@ export function About() {
               mit, egal wie lange schon.
             </h2>
             <p className="mt-7 max-w-lg leading-relaxed text-ink-200">
-              Die Dead Sox sind das Softball-Team des Düsseldorfer Hochschulsports. Auf dem
-              Feld sind wir einfach ein Team: Studierende, Alumni und Externe.
+              Die Dead Sox sind das Softball-Team des Düsseldorfer Hochschulsports: ein
+              Mixed-Team aus Spielerinnen und Spielern. Auf dem Feld sind wir einfach ein
+              Team: Studierende, Alumni und Externe.
             </p>
             <p className="mt-4 max-w-lg leading-relaxed text-ink-200">
               Im Sommer trainieren wir zweimal pro Woche draußen, im Winter einmal in der Halle.
@@ -79,6 +81,7 @@ export function About() {
             {FORMATE.map((format) => (
               <div
                 key={format.name}
+                onPointerDown={tapPulse}
                 className="grain group relative overflow-hidden rounded-sm border border-navy-600 bg-navy-900/60 p-5 transition-colors duration-200 hover:border-cream-300/40"
               >
                 <span aria-hidden className="card-accent" />
