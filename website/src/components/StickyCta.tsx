@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'motion/react'
 import { PROBETRAINING_MAILTO } from '@/lib/contact'
 
 export function StickyCta() {
   const [visible, setVisible] = useState(false)
+  const [kontaktVisible, setKontaktVisible] = useState(false)
   const { scrollY } = useScroll()
 
   // Erst einblenden, wenn der Hero (inkl. seiner CTAs) verlassen wurde
@@ -11,9 +12,22 @@ export function StickyCta() {
     setVisible(latest > window.innerHeight * 0.9),
   )
 
+  // Ausblenden, sobald die Kontakt-Sektion (#kontakt) sichtbar ist:
+  // Dort steht der große CTA mit Mail-Button — die Sticky-Leiste würde
+  // dieselbe Botschaft doppeln (User-Feedback: CTA-Häufung).
+  useEffect(() => {
+    const el = document.getElementById('kontakt')
+    if (!el) return
+    const io = new IntersectionObserver(([entry]) => setKontaktVisible(entry.isIntersecting), {
+      threshold: 0.15,
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && !kontaktVisible && (
         <motion.div
           initial={{ y: 88 }}
           animate={{ y: 0 }}
