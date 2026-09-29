@@ -29,7 +29,7 @@ export default function SpielbogenList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-extrabold tracking-wide uppercase text-navy-900">Spielbogen</h1>
+        <h1 className="font-headline text-3xl font-extrabold tracking-wide uppercase text-navy-900">Spielbogen</h1>
         <Link to="/spielbogen/new">
           <Button variant="primary" icon={<PlusCircle size={16} />}>Neuer Spielbogen</Button>
         </Link>

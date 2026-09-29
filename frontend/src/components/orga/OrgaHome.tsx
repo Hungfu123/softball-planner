@@ -6,7 +6,7 @@ import { Mail } from 'lucide-react'
 export function OrgaHome() {
   return (
     <div className="space-y-4">
-      <h1 className="font-display text-xl sm:text-2xl font-extrabold text-navy-900 tracking-wide uppercase">Orga</h1>
+      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Orga</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link to="/orga/einladungen">
           <Card padding="lg" className="hover:border-navy-400 hover:shadow-md transition-all cursor-pointer h-full">
