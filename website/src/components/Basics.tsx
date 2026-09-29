@@ -57,13 +57,16 @@ const POP_CYCLE = { duration: 6, repeat: Infinity, ease: POP_EASE }
 type Xyf = { times: number[]; x: number[]; y: number[]; opacity?: number[] }
 type Popf = { times: number[]; opacity: number[]; scale: number[] }
 
-// Szene "Ein Play": Flugball ins Outfield, CF fängt, wirft zur 1. Base, Runner knapp OUT.
+// Szene "Infield": Groundball zur 2B, die aufnimmt und zur 1. Base wirft.
+// Der Runner läuft parallel und kommt eine Nasenlänge zu spät: OUT an der 1. Base.
 const PLAY = {
   ball: {
-    times: [0, 0.1, 0.15, 0.2, 0.42, 0.48, 0.5, 0.72, 0.74, 0.98, 1],
-    x: [0, 0, 27, 57, 57, 54, 54, 54, 0, 0, 0],
-    y: [0, 0, -198, -193, -193, -85, -85, -85, 0, 0, 0],
-    opacity: [1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
+    // Contact (0.08) → Hop zur 2B (0.2) → 2B hält kurz (0.26) → Wurf zur 1. Base
+    // (0.34) → 1B hält den Ball bis zum OUT (0.5) → Reset
+    times: [0, 0.08, 0.15, 0.2, 0.26, 0.34, 0.5, 0.52, 0.98, 1],
+    x: [0, 0, 8, 12, 12, 54, 54, 0, 0, 0],
+    y: [0, 0, -70, -128, -128, -85, -85, 0, 0, 0],
+    opacity: [1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
   } as Xyf,
   batter: {
     times: [0, 0.1, 0.48, 0.5, 0.72, 0.74, 0.98, 1],
@@ -71,18 +74,51 @@ const PLAY = {
     y: [0, 0, -92, -92, -92, 0, 0, 0],
     opacity: [1, 1, 1, 0, 0, 0, 0, 1],
   } as Xyf,
+  // 2B rückt zum Groundball raus und nach dem Wurf zurück
+  backup: {
+    times: [0, 0.12, 0.26, 0.55, 1],
+    x: [0, 0, -12, 0, 0],
+    y: [0, 0, -12, 0, 0],
+  } as Xyf,
+  out: {
+    times: [0, 0.46, 0.5, 0.62, 0.68, 1],
+    opacity: [0, 0, 1, 1, 0, 0],
+    scale: [0.6, 0.6, 1, 1, 0.6, 0.6],
+  } as Popf,
+}
+
+// Szene "Outfield": Basehit zur CF, die wirft zur 2. Base — der Runner will
+// zum Doppelten, wird aber an der 2. Base OUT.
+const OFPLAY = {
+  ball: {
+    // Flug zur CF (0.2) → CF hält (0.42) → Wurf zur 2. Base (0.5) →
+    // 2B hält den Ball bis zum OUT (0.7) → Reset
+    times: [0, 0.08, 0.14, 0.2, 0.42, 0.5, 0.7, 0.72, 0.98, 1],
+    x: [0, 0, 30, 57, 57, -38, -38, 0, 0, 0],
+    y: [0, 0, -150, -193, -193, -177, -177, 0, 0, 0],
+    opacity: [1, 1, 1, 1, 1, 1, 1, 0, 0, 1],
+  } as Xyf,
+  // CF läuft zum Ball, wirft und rückt wieder
   cf: {
     times: [0, 0.12, 0.2, 0.5, 0.6, 0.8, 1],
     x: [0, 0, 95, 95, 30, 0, 0],
     y: [0, 0, 15, 15, 10, 0, 0],
   } as Xyf,
-  backup: {
-    times: [0, 0.25, 0.4, 0.7, 1],
-    x: [0, 0, 20, 0, 0],
-    y: [0, 0, 30, 0, 0],
+  // 2B deckt die 2. Base beim Wurf aus dem Outfield
+  cover2: {
+    times: [0, 0.4, 0.48, 0.8, 1],
+    x: [0, 0, -30, 0, 0],
+    y: [0, 0, -30, 0, 0],
+  } as Xyf,
+  batter: {
+    // Home → 1. Base (0.34) → Antritt zum Doppelten → OUT an der 2. Base (0.58)
+    times: [0, 0.1, 0.34, 0.38, 0.58, 0.7, 0.72, 0.98, 1],
+    x: [0, 0, 92, 92, 0, 0, 0, 0, 0],
+    y: [0, 0, -92, -92, -184, -184, 0, 0, 0],
+    opacity: [1, 1, 1, 1, 1, 1, 0, 0, 1],
   } as Xyf,
   out: {
-    times: [0, 0.46, 0.5, 0.62, 0.68, 1],
+    times: [0, 0.56, 0.6, 0.72, 0.78, 1],
     opacity: [0, 0, 1, 1, 0, 0],
     scale: [0.6, 0.6, 1, 1, 0.6, 0.6],
   } as Popf,
@@ -145,7 +181,7 @@ function PositionDot({ pos }: { pos: (typeof POSITIONS)[number] }) {
   )
 }
 
-type Scene = 'feld' | 'play' | 'homerun'
+type Scene = 'feld' | 'play' | 'ofplay' | 'homerun'
 
 const SCENES: { key: Scene; label: string; caption: string }[] = [
   {
@@ -156,9 +192,15 @@ const SCENES: { key: Scene; label: string; caption: string }[] = [
   },
   {
     key: 'play',
-    label: 'Ein Play',
+    label: 'Infield',
     caption:
-      'Schlagen, Fangen, Werfen, Baserunning: Der Ball fliegt ins Outfield, der CF fängt ihn und wirft zur 1. Base. Der Runner kommt zu spät: OUT.',
+      'Groundball ins Infield: Die 2B nimmt den Ball auf und wirft zur 1. Base. Der Runner kommt zu spät: OUT.',
+  },
+  {
+    key: 'ofplay',
+    label: 'Outfield',
+    caption:
+      'Basehit ins Outfield: Die CF nimmt den Ball auf und wirft zur 2. Base. Der Runner will zum Doppelten und kommt zu spät: OUT.',
   },
   {
     key: 'homerun',
@@ -170,7 +212,7 @@ const SCENES: { key: Scene; label: string; caption: string }[] = [
 
 function FieldDiagram({ scene }: { scene: Scene }) {
   const reduce = useReducedMotion()
-  const cfAnim = scene === 'play' ? PLAY.cf : scene === 'homerun' ? HR.cf : null
+  const cfAnim = scene === 'ofplay' ? OFPLAY.cf : scene === 'homerun' ? HR.cf : null
 
   const xy = (k: Xyf) =>
     reduce ? undefined : { x: k.x, y: k.y, ...(k.opacity ? { opacity: k.opacity } : {}) }
@@ -180,7 +222,7 @@ function FieldDiagram({ scene }: { scene: Scene }) {
     <svg
       viewBox="0 0 400 340"
       role="img"
-      aria-label="Softballfeld mit Positionen und animierten Spielzügen: ein Play über die Verteidigung und ein Home Run"
+      aria-label="Softballfeld mit Positionen und animierten Spielzügen: Groundball-OUT an der 1. Base, Basehit-OUT an der 2. Base und ein Home Run"
       className="w-full"
     >
       {/* Rasen */}
@@ -231,29 +273,66 @@ function FieldDiagram({ scene }: { scene: Scene }) {
          </marker>
        </defs>
 
-       {/* Ballflugbahn mit Pfeil */}
-        {scene === 'play' && (
-          <path
-            d="M244,286 Q272,170 295,105"
-            fill="none"
-            stroke={NAVY_SOFT}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeDasharray="4 5"
-            markerEnd="url(#arrow-navy)"
-          />
-        )}
-        {scene === 'homerun' && (
-          <path
-            d="M244,286 Q226,90 202,18"
-            fill="none"
-            stroke={NAVY_SOFT}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeDasharray="4 5"
-            markerEnd="url(#arrow-navy)"
-          />
-        )}
+        {/* Ballflugbahn mit Pfeil */}
+         {scene === 'play' && (
+           <>
+             {/* Groundball von der Batter:in zur 2B */}
+             <path
+               d="M244,286 Q252,226 250,168"
+               fill="none"
+               stroke={NAVY_SOFT}
+               strokeWidth="2"
+               strokeLinecap="round"
+               strokeDasharray="4 5"
+               markerEnd="url(#arrow-navy)"
+             />
+             {/* Wurf 2B → 1. Base */}
+             <path
+               d="M254,158 L288,212"
+               fill="none"
+               stroke={NAVY_SOFT}
+               strokeWidth="2"
+               strokeLinecap="round"
+               strokeDasharray="4 5"
+               markerEnd="url(#arrow-navy)"
+             />
+           </>
+         )}
+         {scene === 'ofplay' && (
+           <>
+             {/* Basehit von der Batter:in zur CF */}
+             <path
+               d="M244,286 Q272,170 295,105"
+               fill="none"
+               stroke={NAVY_SOFT}
+               strokeWidth="2"
+               strokeLinecap="round"
+               strokeDasharray="4 5"
+               markerEnd="url(#arrow-navy)"
+             />
+             {/* Wurf CF → 2. Base */}
+             <path
+               d="M292,100 Q246,92 214,118"
+               fill="none"
+               stroke={NAVY_SOFT}
+               strokeWidth="2"
+               strokeLinecap="round"
+               strokeDasharray="4 5"
+               markerEnd="url(#arrow-navy)"
+             />
+           </>
+         )}
+         {scene === 'homerun' && (
+           <path
+             d="M244,286 Q226,90 202,18"
+             fill="none"
+             stroke={NAVY_SOFT}
+             strokeWidth="2"
+             strokeLinecap="round"
+             strokeDasharray="4 5"
+             markerEnd="url(#arrow-navy)"
+           />
+         )}
 
        {/* Statische Positionen */}
        {POSITIONS.filter((p) => p.abbr !== 'CF' && p.abbr !== '2B').map((p) => (
@@ -262,16 +341,22 @@ function FieldDiagram({ scene }: { scene: Scene }) {
          </g>
        ))}
 
-       {/* 2B: rückt beim Play zur 1. Base nach */}
-       {scene === 'play' ? (
-         <motion.g animate={xy(PLAY.backup)} transition={{ ...CYCLE, times: PLAY.backup.times }}>
-           <PositionDot pos={POSITIONS.find((p) => p.abbr === '2B')!} />
-         </motion.g>
-       ) : (
-         <g>
-           <PositionDot pos={POSITIONS.find((p) => p.abbr === '2B')!} />
-         </g>
-       )}
+        {/* 2B: feldet den Groundball (Infield) bzw. deckt die 2. Base (Outfield) */}
+        {(scene === 'play' || scene === 'ofplay') ? (
+          <motion.g
+            animate={xy(scene === 'play' ? PLAY.backup : OFPLAY.cover2)}
+            transition={{
+              ...CYCLE,
+              times: (scene === 'play' ? PLAY.backup : OFPLAY.cover2).times,
+            }}
+          >
+            <PositionDot pos={POSITIONS.find((p) => p.abbr === '2B')!} />
+          </motion.g>
+        ) : (
+          <g>
+            <PositionDot pos={POSITIONS.find((p) => p.abbr === '2B')!} />
+          </g>
+        )}
 
        {/* CF: läuft zum Ball bzw. schaut beim Home Run zu */}
        {cfAnim ? (
@@ -284,39 +369,45 @@ function FieldDiagram({ scene }: { scene: Scene }) {
          </g>
        )}
 
-       {(scene === 'play' || scene === 'homerun') && (
-         <>
-           {/* Batter:in als Runner */}
-           <motion.g
-             animate={xy(scene === 'play' ? PLAY.batter : HR.batter)}
-             transition={{ ...CYCLE, times: (scene === 'play' ? PLAY.batter : HR.batter).times }}
-           >
-             <circle cx="200" cy="300" r="5.5" fill={RED} />
-           </motion.g>
+        {(scene === 'play' || scene === 'ofplay' || scene === 'homerun') && (
+          <>
+            {/* Batter:in als Runner */}
+            <motion.g
+              animate={xy(scene === 'play' ? PLAY.batter : scene === 'ofplay' ? OFPLAY.batter : HR.batter)}
+              transition={{
+                ...CYCLE,
+                times: (scene === 'play' ? PLAY.batter : scene === 'ofplay' ? OFPLAY.batter : HR.batter).times,
+              }}
+            >
+              <circle cx="200" cy="300" r="5.5" fill={RED} />
+            </motion.g>
 
-            {/* Ball-Trail: zwei Nachläufer auf der Zeitachse — aus dem Punkt wird ein Vektor, Tempo wird lesbar */}
-            {!reduce &&
-              [0.02, 0.04].map((delta, idx) => {
-                const base = scene === 'play' ? PLAY.ball : HR.ball
-                const shifted: Xyf = {
-                  ...base,
-                  times: base.times.map((t) => Math.min(t + delta, 1)),
-                  opacity: base.opacity?.map((o) => o * (idx === 0 ? 0.4 : 0.18)),
-                }
-                return (
-                  <motion.g
-                    key={idx}
-                    animate={{ x: shifted.x, y: shifted.y, opacity: shifted.opacity }}
-                    transition={{ ...CYCLE, times: shifted.times }}
-                  >
-                    <circle cx="238" cy="293" r={4.5} fill={YELLOW} />
-                  </motion.g>
-                )
-              })}
+             {/* Ball-Trail: zwei Nachläufer auf der Zeitachse — aus dem Punkt wird ein Vektor, Tempo wird lesbar */}
+             {!reduce &&
+               [0.02, 0.04].map((delta, idx) => {
+                 const base = scene === 'play' ? PLAY.ball : scene === 'ofplay' ? OFPLAY.ball : HR.ball
+                 const shifted: Xyf = {
+                   ...base,
+                   times: base.times.map((t) => Math.min(t + delta, 1)),
+                   opacity: base.opacity?.map((o) => o * (idx === 0 ? 0.4 : 0.18)),
+                 }
+                 return (
+                   <motion.g
+                     key={idx}
+                     animate={{ x: shifted.x, y: shifted.y, opacity: shifted.opacity }}
+                     transition={{ ...CYCLE, times: shifted.times }}
+                   >
+                     <circle cx="238" cy="293" r={4.5} fill={YELLOW} />
+                   </motion.g>
+                 )
+               })}
             {/* Ball */}
             <motion.g
-              animate={xy(scene === 'play' ? PLAY.ball : HR.ball)}
-              transition={{ ...CYCLE, times: (scene === 'play' ? PLAY.ball : HR.ball).times }}
+              animate={xy(scene === 'play' ? PLAY.ball : scene === 'ofplay' ? OFPLAY.ball : HR.ball)}
+              transition={{
+                ...CYCLE,
+                times: (scene === 'play' ? PLAY.ball : scene === 'ofplay' ? OFPLAY.ball : HR.ball).times,
+              }}
             >
               <circle cx="238" cy="293" r="5" fill={YELLOW} stroke={NAVY} strokeWidth="1.5" />
             </motion.g>
@@ -341,22 +432,39 @@ function FieldDiagram({ scene }: { scene: Scene }) {
          </>
        )}
 
-       {scene === 'play' && (
-         <motion.text
-           x="296"
-           y="176"
-           fontSize="17"
-           fontWeight="800"
-           fontFamily="Karla, sans-serif"
-           fill={RED}
-           opacity="0"
-           style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
-            animate={pop(PLAY.out)}
-            transition={{ ...POP_CYCLE, times: PLAY.out.times }}
-          >
-            OUT!
-          </motion.text>
-       )}
+        {scene === 'play' && (
+          <motion.text
+            x="296"
+            y="176"
+            fontSize="17"
+            fontWeight="800"
+            fontFamily="Karla, sans-serif"
+            fill={RED}
+            opacity="0"
+            style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+             animate={pop(PLAY.out)}
+             transition={{ ...POP_CYCLE, times: PLAY.out.times }}
+           >
+             OUT!
+           </motion.text>
+        )}
+
+        {scene === 'ofplay' && (
+          <motion.text
+            x="138"
+            y="96"
+            fontSize="17"
+            fontWeight="800"
+            fontFamily="Karla, sans-serif"
+            fill={RED}
+            opacity="0"
+            style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+             animate={pop(OFPLAY.out)}
+             transition={{ ...POP_CYCLE, times: OFPLAY.out.times }}
+           >
+             OUT!
+           </motion.text>
+        )}
 
        {scene === 'homerun' && (
          <motion.text
