@@ -273,54 +273,30 @@ function FieldDiagram({ scene }: { scene: Scene }) {
          </marker>
        </defs>
 
-        {/* Ballflugbahn mit Pfeil */}
+        {/* Ballflugbahn mit Pfeil: nur der geschlagene Ball bekommt eine
+            statische Flugbahn — die Würfe zur Base zeigt der animierte
+            Ball selbst, ein zweiter Pfeil wäre redundant. */}
          {scene === 'play' && (
-           <>
-             {/* Groundball von der Batter:in zur 2B */}
-             <path
-               d="M244,286 Q252,226 250,168"
-               fill="none"
-               stroke={NAVY_SOFT}
-               strokeWidth="2"
-               strokeLinecap="round"
-               strokeDasharray="4 5"
-               markerEnd="url(#arrow-navy)"
-             />
-             {/* Wurf 2B → 1. Base */}
-             <path
-               d="M254,158 L288,212"
-               fill="none"
-               stroke={NAVY_SOFT}
-               strokeWidth="2"
-               strokeLinecap="round"
-               strokeDasharray="4 5"
-               markerEnd="url(#arrow-navy)"
-             />
-           </>
+           <path
+             d="M244,286 Q252,226 250,168"
+             fill="none"
+             stroke={NAVY_SOFT}
+             strokeWidth="2"
+             strokeLinecap="round"
+             strokeDasharray="4 5"
+             markerEnd="url(#arrow-navy)"
+           />
          )}
          {scene === 'ofplay' && (
-           <>
-             {/* Basehit von der Batter:in zur CF */}
-             <path
-               d="M244,286 Q272,170 295,105"
-               fill="none"
-               stroke={NAVY_SOFT}
-               strokeWidth="2"
-               strokeLinecap="round"
-               strokeDasharray="4 5"
-               markerEnd="url(#arrow-navy)"
-             />
-             {/* Wurf CF → 2. Base */}
-             <path
-               d="M292,100 Q246,92 214,118"
-               fill="none"
-               stroke={NAVY_SOFT}
-               strokeWidth="2"
-               strokeLinecap="round"
-               strokeDasharray="4 5"
-               markerEnd="url(#arrow-navy)"
-             />
-           </>
+           <path
+             d="M244,286 Q272,170 295,105"
+             fill="none"
+             stroke={NAVY_SOFT}
+             strokeWidth="2"
+             strokeLinecap="round"
+             strokeDasharray="4 5"
+             markerEnd="url(#arrow-navy)"
+           />
          )}
          {scene === 'homerun' && (
            <path
