@@ -200,7 +200,7 @@ const SCENES: { key: Scene; label: string; caption: string }[] = [
     key: 'ofplay',
     label: 'Outfield',
     caption:
-      'Basehit ins Outfield: Die CF nimmt den Ball auf und wirft zur 2. Base. Der Runner will zum Doppelten und kommt zu spät: OUT.',
+      'Basehit ins Outfield: Der Runner will zur 2. Base, doch die CF nimmt den Ball auf und ihr Wurf ist schneller: OUT.',
   },
   {
     key: 'homerun',
