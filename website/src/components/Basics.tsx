@@ -7,17 +7,17 @@ import { EdgeFade } from '@/components/EdgeFade'
 const FACTS = [
   {
     key: 'ball' as const,
-    term: 'Ball',
+    title: 'Ball',
     text: 'Größer als ein Baseball, aber genauso hart. Wer einen abbekommt, merkt den Unterschied nicht.',
   },
   {
     key: 'wurf' as const,
-    term: 'Wurf',
+    title: 'Wurf',
     text: 'Unterhand wirft nur die Pitcher:in, der Windmill-Wurf. Alle anderen werfen ganz normal überhand.',
   },
   {
     key: 'feld' as const,
-    term: 'Feld',
+    title: 'Feld',
     text: 'Kleineres Spielfeld, kürzere Wege. Die Plays kommen schneller, das Spiel ist direkter.',
   },
 ]
@@ -542,7 +542,7 @@ export function Basics() {
             {/* Mobile: Fakten als Auswahl-Kästchen + Panel (Tap auf "Ball" →
                 Erklärung darunter), ab md die editoriale Liste. */}
             <ChipPanel
-              items={FACTS.map((f) => ({ key: f.key, title: f.term, text: f.text }))}
+              items={FACTS.map((f) => ({ key: f.key, title: f.title, text: f.text }))}
               open={factOpen}
               onToggle={setFactOpen}
               grid="mt-6 grid-cols-3 gap-3"
@@ -551,11 +551,11 @@ export function Basics() {
             <div className="mt-6 hidden divide-y divide-navy-900/15 border-t border-navy-900/15 md:block">
               {FACTS.map((fact) => (
                 <div
-                  key={fact.term}
+                  key={fact.title}
                   className="grid gap-1 py-5 sm:grid-cols-[5rem_1fr] sm:gap-6"
                 >
                   <span className="font-display text-2xl tracking-wide text-brand-600">
-                    {fact.term}
+                    {fact.title}
                   </span>
                   <p className="leading-relaxed text-navy-700">{fact.text}</p>
                 </div>

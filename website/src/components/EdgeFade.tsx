@@ -12,7 +12,8 @@ const CREAM = '#fbf6ec'
  * (vertikal UND horizontal). Die Clip-Kante liegt damit mitten in
  * Vollfarbe statt auf einer Kante — auf Hi-DPI-Geräten (DPR 2-3) konnte
  * ein 1-Subpixel-Rest der Kante sonst als weiße Linie durchscheinen.
- * Die Diagonale läuft weiterhin exakt Ecke zu Ecke.
+ * Die Diagonale läuft weiterhin Ecke zu Ecke — durch das Bleed minimal
+ * steiler (~7 %), visuell nicht unterscheidbar.
  */
 export function EdgeFade({ edge }: { edge: 'top' | 'bottom' }) {
   return (
