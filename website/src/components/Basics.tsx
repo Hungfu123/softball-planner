@@ -42,10 +42,12 @@ const POSITIONS = [
 ]
 
 const CYCLE = { duration: 6, repeat: Infinity, ease: 'linear' } as const
-// Pop-Einblendungen (OUT!, HOME RUN!): Segments dazwischen mit starkem ease-out statt linear
+// Pop-Einblendungen (OUT!, HOME RUN!): Segments dazwischen mit starkem ease-out statt linear.
+// Pop-IN mit Overshoot (y=1.56 > 1): scale schwingt kurz über die Zielgröße hinaus
+// und settelt sich — mehr Impact als ein reines Ease-out (Emil-Empfehlung).
 const POP_EASE: ('linear' | [number, number, number, number])[] = [
   'linear',
-  [0.23, 1, 0.32, 1],
+  [0.34, 1.56, 0.64, 1],
   'linear',
   [0.23, 1, 0.32, 1],
   'linear',
@@ -183,8 +185,9 @@ function FieldDiagram({ scene }: { scene: Scene }) {
     >
       {/* Rasen */}
       <path d="M20,150 A234,234 0 0 1 380,150 L200,300 Z" fill={SAGE} />
-      {/* Infield */}
-      <path d="M200,300 L292,208 L200,116 L108,208 Z" fill={TAN} stroke={NAVY} strokeWidth="2" />
+      {/* Infield: Stroke minimal soften (0.9) — bricht die harte Kante,
+          bleibt klar ablesbar (Emil-Empfehlung) */}
+      <path d="M200,300 L292,208 L200,116 L108,208 Z" fill={TAN} stroke={NAVY} strokeOpacity="0.9" strokeWidth="2" />
       {/* Pitcher-Kreis */}
       <circle cx="200" cy="238" r="16" fill="none" stroke={NAVY} strokeWidth="2" />
       {/* Bases */}
@@ -192,15 +195,17 @@ function FieldDiagram({ scene }: { scene: Scene }) {
       <rect x="194" y="110" width="12" height="12" fill="#fff" stroke={NAVY} strokeWidth="1.5" />
       <rect x="102" y="202" width="12" height="12" fill="#fff" stroke={NAVY} strokeWidth="1.5" />
       <rect x="194" y="294" width="12" height="12" fill="#fff" stroke={NAVY} strokeWidth="1.5" />
-       {/* Laufweg */}
-       <path
-         d="M204,284 L282,206 L204,128 L118,206 L196,294"
-         fill="none"
-         stroke={scene === 'feld' ? RED : 'transparent'}
-         strokeWidth="2.5"
-         strokeDasharray="6 5"
-         markerEnd={scene === 'feld' ? 'url(#arrow-red)' : undefined}
-       />
+        {/* Laufweg: round caps statt Butt-Enden — gedackte Linien wirken
+            gedruckt statt PowerPoint (Emil-Empfehlung) */}
+        <path
+          d="M204,284 L282,206 L204,128 L118,206 L196,294"
+          fill="none"
+          stroke={scene === 'feld' ? RED : 'transparent'}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray="6 5"
+          markerEnd={scene === 'feld' ? 'url(#arrow-red)' : undefined}
+        />
        <defs>
          <marker
            id="arrow-red"
@@ -227,26 +232,28 @@ function FieldDiagram({ scene }: { scene: Scene }) {
        </defs>
 
        {/* Ballflugbahn mit Pfeil */}
-       {scene === 'play' && (
-         <path
-           d="M244,286 Q272,170 295,105"
-           fill="none"
-           stroke={NAVY_SOFT}
-           strokeWidth="2"
-           strokeDasharray="4 5"
-           markerEnd="url(#arrow-navy)"
-         />
-       )}
-       {scene === 'homerun' && (
-         <path
-           d="M244,286 Q226,90 202,18"
-           fill="none"
-           stroke={NAVY_SOFT}
-           strokeWidth="2"
-           strokeDasharray="4 5"
-           markerEnd="url(#arrow-navy)"
-         />
-       )}
+        {scene === 'play' && (
+          <path
+            d="M244,286 Q272,170 295,105"
+            fill="none"
+            stroke={NAVY_SOFT}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="4 5"
+            markerEnd="url(#arrow-navy)"
+          />
+        )}
+        {scene === 'homerun' && (
+          <path
+            d="M244,286 Q226,90 202,18"
+            fill="none"
+            stroke={NAVY_SOFT}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="4 5"
+            markerEnd="url(#arrow-navy)"
+          />
+        )}
 
        {/* Statische Positionen */}
        {POSITIONS.filter((p) => p.abbr !== 'CF' && p.abbr !== '2B').map((p) => (
