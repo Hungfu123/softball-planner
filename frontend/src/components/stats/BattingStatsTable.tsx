@@ -168,7 +168,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-navy-900 text-white">
-                <th className={`font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest sticky left-0 z-20 bg-navy-900 w-12`}>#</th>
+                <th className={`font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest sticky left-0 z-20 bg-navy-900 w-12 min-w-12`}>#</th>
                 {sortTh('playerName', 'Spieler', {
                   align: 'left',
                   className: `sticky left-12 z-20 bg-navy-900 ${scrolled ? 'shadow-[4px_0_8px_-4px_rgba(15,23,42,0.4)]' : ''}`,
@@ -215,7 +215,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                     } ${isUnq ? 'opacity-50' : ''}`}
                   >
                     {/* Rang — Top-1 in Softball-Red (10% Accent); unqualifizierte ohne Rang */}
-                    <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold sticky left-0 z-10 w-12 group-hover:bg-softball-red-50 ${stickyBg} ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
+                    <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold sticky left-0 z-10 w-12 min-w-12 group-hover:bg-softball-red-50 ${stickyBg} ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
                       {isUnq ? '–' : isTop ? <Trophy size={16} className="text-softball-red-600" /> : idx + 1}
                     </td>
                     {/* Spieler — Navy für Hierarchie; sticky, damit der Name beim horizontalen Scrollen sichtbar bleibt */}
