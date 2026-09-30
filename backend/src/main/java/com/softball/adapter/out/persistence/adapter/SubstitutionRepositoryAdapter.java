@@ -56,6 +56,11 @@ public class SubstitutionRepositoryAdapter implements SubstitutionRepository {
     }
 
     @Override
+    public boolean existsByPlayerId(final Long playerId) {
+        return repo.existsByPlayerId(playerId);
+    }
+
+    @Override
     public Substitution save(final Substitution substitution) {
         final GameEntity gameEntity = gameRepo.getReferenceById(substitution.getGame().getId());
         final PlayerEntity playerOutEntity = playerRepo.getReferenceById(substitution.getPlayerOut().getId());

@@ -75,4 +75,9 @@ public class BaseRunningEventRepositoryAdapter implements BaseRunningEventReposi
     public void deleteById(final Long id) {
         repo.deleteById(id);
     }
+
+    @Override
+    public boolean existsByRunnerPlayerId(final Long playerId) {
+        return repo.existsByRunnerPlayerId(playerId);
+    }
 }

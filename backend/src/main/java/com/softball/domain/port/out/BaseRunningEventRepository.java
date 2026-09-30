@@ -14,4 +14,5 @@ public interface BaseRunningEventRepository {
     Optional<BaseRunningEvent> findById(Long id);
     BaseRunningEvent save(BaseRunningEvent event);
     void deleteById(Long id);
+    boolean existsByRunnerPlayerId(Long playerId);
 }

@@ -21,4 +21,8 @@ public interface SpringTrainingAttendanceRepository extends JpaRepository<Traini
     @Modifying
     @Query("DELETE FROM TrainingAttendanceEntity ta WHERE ta.training.id IN :trainingIds")
     void deleteByTrainingIdIn(List<Long> trainingIds);
+
+    @Modifying
+    @Query("DELETE FROM TrainingAttendanceEntity ta WHERE ta.player.id = :playerId")
+    void deleteByPlayerId(Long playerId);
 }

@@ -1,8 +1,14 @@
 package com.softball.service;
 
 import com.softball.domain.model.Player;
+import com.softball.domain.port.out.AtBatRepository;
+import com.softball.domain.port.out.BaseRunningEventRepository;
 import com.softball.domain.port.out.PlayerRepository;
+import com.softball.domain.port.out.SubstitutionRepository;
+import com.softball.domain.port.out.TrainingAttendanceRepository;
+import com.softball.application.AvailabilityService;
 import com.softball.application.PlayerService;
+import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +29,21 @@ class PlayerServiceTest {
 
     @Mock
     private PlayerRepository playerRepository;
+
+    @Mock
+    private AtBatRepository atBatRepository;
+
+    @Mock
+    private BaseRunningEventRepository baseRunningEventRepository;
+
+    @Mock
+    private SubstitutionRepository substitutionRepository;
+
+    @Mock
+    private TrainingAttendanceRepository trainingAttendanceRepository;
+
+    @Mock
+    private AvailabilityService availabilityService;
 
     @InjectMocks
     private PlayerService playerService;
@@ -84,17 +105,34 @@ class PlayerServiceTest {
     }
 
     @Test
-    void delete_existingPlayer_callsRepository() {
-        when(playerRepository.existsById(1L)).thenReturn(true);
+    void delete_existingPlayer_withoutScoring_cleansUpAndDeletes() {
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(testPlayer));
+        when(atBatRepository.existsByPlayerId(1L)).thenReturn(false);
+        when(baseRunningEventRepository.existsByRunnerPlayerId(1L)).thenReturn(false);
+        when(substitutionRepository.existsByPlayerId(1L)).thenReturn(false);
 
         playerService.delete(1L);
 
+        verify(availabilityService).removeAllPlanningReferences(1L);
+        verify(trainingAttendanceRepository).deleteByPlayerId(1L);
         verify(playerRepository).deleteById(1L);
     }
 
     @Test
+    void delete_existingPlayer_withAtBatScoring_throwsBusinessValidation() {
+        when(playerRepository.findById(1L)).thenReturn(Optional.of(testPlayer));
+        when(atBatRepository.existsByPlayerId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> playerService.delete(1L))
+            .isInstanceOf(BusinessValidationException.class)
+            .hasMessageContaining("Scoring-Daten");
+
+        verify(playerRepository, never()).deleteById(any());
+    }
+
+    @Test
     void delete_nonExistingPlayer_throwsResourceNotFound() {
-        when(playerRepository.existsById(99L)).thenReturn(false);
+        when(playerRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> playerService.delete(99L))
             .isInstanceOf(ResourceNotFoundException.class);

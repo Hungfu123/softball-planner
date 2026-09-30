@@ -1,8 +1,15 @@
 package com.softball.application;
 
 import com.softball.domain.model.Player;
+import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
+import com.softball.domain.port.out.AtBatRepository;
+import com.softball.domain.port.out.BaseRunningEventRepository;
 import com.softball.domain.port.out.PlayerRepository;
+import com.softball.domain.port.out.SubstitutionRepository;
+import com.softball.domain.port.out.TrainingAttendanceRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
@@ -12,15 +19,37 @@ import java.util.List;
 @Service
 public class PlayerService {
 
-    private final PlayerRepository playerRepository;
+    private static final Logger log = LoggerFactory.getLogger(PlayerService.class);
 
-    public PlayerService(final PlayerRepository playerRepository) {
+    private final PlayerRepository playerRepository;
+    private final AtBatRepository atBatRepository;
+    private final BaseRunningEventRepository baseRunningEventRepository;
+    private final SubstitutionRepository substitutionRepository;
+    private final TrainingAttendanceRepository trainingAttendanceRepository;
+    private final AvailabilityService availabilityService;
+
+    public PlayerService(final PlayerRepository playerRepository, final AtBatRepository atBatRepository,
+                         final BaseRunningEventRepository baseRunningEventRepository,
+                         final SubstitutionRepository substitutionRepository,
+                         final TrainingAttendanceRepository trainingAttendanceRepository,
+                         final AvailabilityService availabilityService) {
         this.playerRepository = playerRepository;
+        this.atBatRepository = atBatRepository;
+        this.baseRunningEventRepository = baseRunningEventRepository;
+        this.substitutionRepository = substitutionRepository;
+        this.trainingAttendanceRepository = trainingAttendanceRepository;
+        this.availabilityService = availabilityService;
     }
 
     @Transactional(readOnly = true)
     public List<Player> findAll() {
         return playerRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Player> findAll(final boolean includeArchived) {
+        final List<Player> all = playerRepository.findAll();
+        return includeArchived ? all : all.stream().filter(p -> !p.isArchived()).toList();
     }
 
     @Transactional(readOnly = true)
@@ -44,11 +73,51 @@ public class PlayerService {
         return playerRepository.save(player);
     }
 
+    /**
+     * Löscht einen Spieler samt seiner Planungs-Referenzen (Availability, Lineups,
+     * Staff, Trainings-Anwesenheit). Hat der Spieler bereits Scoring-Daten
+     * (At-Bats, Baserunning, Spielerwechsel), wird das Löschen verweigert —
+     * sonst würde die Spielhistorie und die Statistiken anderer Spieler beschädigt.
+     */
+    @Transactional
     public void delete(final Long id) {
-        if (!playerRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Player", id);
+        final Player player = findById(id);
+
+        if (atBatRepository.existsByPlayerId(id)
+            || baseRunningEventRepository.existsByRunnerPlayerId(id)
+            || substitutionRepository.existsByPlayerId(id)) {
+            throw new BusinessValidationException(
+                "Spieler '" + player.getName() + "' hat bereits Scoring-Daten (At-Bats, Baserunning oder "
+                    + "Spielerwechsel) und kann nicht gelöscht werden — sonst würde die Spielhistorie "
+                    + "und die Statistiken anderer Spieler beschädigt.");
         }
+
+        availabilityService.removeAllPlanningReferences(id);
+        trainingAttendanceRepository.deleteByPlayerId(id);
         playerRepository.deleteById(id);
+        log.info("Spieler {} ('{}') gelöscht, Planungs- und Trainings-Referenzen bereinigt", id, player.getName());
+    }
+
+    /**
+     * Archiviert einen Spieler (ausgeschieden): Er verschwindet aus allen Auswahllisten
+     * und der Statistik, seine Historie (At-Bats, Steals) bleibt aber erhalten —
+     * im Gegensatz zum Löschen bleiben damit die über den BaseRunningReplay
+     * berechneten Runs der Mitspieler korrekt. Beim Archivieren werden seine
+     * Planungs-Referenzen (Availability, Lineups, Staff) und Trainings-Anwesenheit
+     * bereinigt, wie beim Löschen.
+     */
+    @Transactional
+    public Player setArchived(final Long id, final boolean archived) {
+        final Player player = findById(id);
+        if (archived && !player.isArchived()) {
+            availabilityService.removeAllPlanningReferences(id);
+            trainingAttendanceRepository.deleteByPlayerId(id);
+        }
+        player.setArchived(archived);
+        final Player saved = playerRepository.save(player);
+        log.info("Spieler {} ('{}') {}{}", id, saved.getName(), archived ? "archiviert" : "reaktiviert",
+            archived ? ", Planungs- und Trainings-Referenzen bereinigt" : "");
+        return saved;
     }
 
     @Transactional

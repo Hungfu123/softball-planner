@@ -115,7 +115,9 @@ public class BattingStatsService {
         for (final BaseRunningEvent e : steals) if (e.getRunner() != null) playerIds.add(e.getRunner().getId());
         if (playerIds.isEmpty()) return List.of();
 
-        final List<Player> players = playerRepository.findAllById(playerIds);
+        final List<Player> players = playerRepository.findAllById(playerIds).stream()
+            .filter(p -> !p.isArchived())
+            .toList();
         return calculator.calculateForPlayers(players, atBats, steals);
     }
 
@@ -134,7 +136,7 @@ public class BattingStatsService {
         for (final BaseRunningEvent e : steals) {
             if (e.getRunner() != null) map.putIfAbsent(e.getRunner().getId(), e.getRunner());
         }
-        return new ArrayList<>(map.values());
+        return map.values().stream().filter(p -> !p.isArchived()).toList();
     }
 
     private List<PlayerBattingStatsResponse> toResponses(final List<BattingStats> stats) {

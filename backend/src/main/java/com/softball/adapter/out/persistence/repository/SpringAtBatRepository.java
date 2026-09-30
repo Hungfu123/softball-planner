@@ -40,4 +40,13 @@ public interface SpringAtBatRepository extends JpaRepository<AtBatEntity, Long> 
 
     @Query("SELECT ab.game.id, COALESCE(SUM(ab.runsScored), 0) FROM AtBatEntity ab WHERE ab.game.id IN :gameIds GROUP BY ab.game.id")
     List<Object[]> sumRunsScoredByGameIdsRaw(List<Long> gameIds);
+
+    @Query("""
+        SELECT COUNT(ab) > 0 FROM AtBatEntity ab
+        WHERE ab.batter.id = :playerId
+           OR ab.runnerFirst.id = :playerId
+           OR ab.runnerSecond.id = :playerId
+           OR ab.runnerThird.id = :playerId
+        """)
+    boolean existsByPlayerId(Long playerId);
 }

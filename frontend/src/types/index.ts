@@ -4,6 +4,7 @@ export interface Player {
   regular: boolean
   defaultBattingOrder: number | null
   whatsappName?: string | null
+  archived?: boolean
 }
 
 export interface Season {

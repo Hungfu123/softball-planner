@@ -2,19 +2,19 @@ import { useState, useEffect, useCallback } from 'react'
 import type { Player } from '@/types'
 import * as api from '@/api/client'
 
-export function usePlayers() {
+export function usePlayers(includeArchived = false) {
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await api.getPlayers()
+      const data = await api.getPlayers(includeArchived)
       setPlayers(data.sort((a, b) => a.name.localeCompare(b.name)))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [includeArchived])
 
   useEffect(() => { load() }, [load])
 
@@ -35,6 +35,18 @@ export function usePlayers() {
     setPlayers(prev => prev.filter(x => x.id !== id))
   }
 
+  const archive = async (id: number) => {
+    const p = await api.archivePlayer(id)
+    setPlayers(prev => prev.map(x => x.id === id ? p : x).sort((a, b) => a.name.localeCompare(b.name)))
+    return p
+  }
+
+  const unarchive = async (id: number) => {
+    const p = await api.unarchivePlayer(id)
+    setPlayers(prev => prev.map(x => x.id === id ? p : x).sort((a, b) => a.name.localeCompare(b.name)))
+    return p
+  }
+
   const reorderBattingOrder = async (orderedIds: number[]) => {
     const updated = await api.updateBattingOrder(orderedIds)
     setPlayers(updated.sort((a, b) => a.name.localeCompare(b.name)))
@@ -47,5 +59,5 @@ export function usePlayers() {
     return p
   }
 
-  return { players, loading, create, update, remove, reorderBattingOrder, setWhatsappName, reload: load }
+  return { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder, setWhatsappName, reload: load }
 }

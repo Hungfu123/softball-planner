@@ -18,6 +18,7 @@ public interface AtBatRepository {
     long countByGameId(Long gameId);
     Map<Long, Long> countByGameIds(List<Long> gameIds);
     int sumRunsScoredByGameId(Long gameId);
+    boolean existsByPlayerId(Long playerId);
     Map<Long, Integer> sumRunsScoredByGameIds(List<Long> gameIds);
     AtBat save(AtBat atBat);
     void deleteById(Long id);

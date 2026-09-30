@@ -40,6 +40,8 @@ import {
   Minus,
   Share2,
   Tally5,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react'
 
 interface IconProps {
@@ -78,6 +80,8 @@ export const ChevronRight = (p: IconProps) => <LucideChevronRight size={p.size ?
 export const CoachFlagIcon = (p: IconProps) => <Flag size={p.size ?? 14} className={p.className} />
 export const ArrowsSwap = (p: IconProps) => <LucideArrowLeftRight size={p.size ?? 16} className={p.className} />
 export const RefreshIcon = (p: IconProps) => <RotateCw size={p.size ?? 16} className={p.className} />
+export const ArchiveIcon = (p: IconProps) => <Archive size={p.size ?? 16} className={p.className} />
+export const ArchiveRestoreIcon = (p: IconProps) => <ArchiveRestore size={p.size ?? 16} className={p.className} />
 export const HomeStadiumIcon = (p: IconProps) => <House size={p.size ?? 16} className={p.className} />
 export const AwayIcon = (p: IconProps) => <Building2 size={p.size ?? 16} className={p.className} />
 export const PlusMark = (p: IconProps) => <Plus size={p.size ?? 16} className={p.className} />

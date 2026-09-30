@@ -6,6 +6,7 @@ public class Player {
     private boolean regular;
     private Integer defaultBattingOrder;
     private String whatsappName;
+    private boolean archived;
 
     public Player() {}
 
@@ -36,4 +37,6 @@ public class Player {
     public void setDefaultBattingOrder(final Integer defaultBattingOrder) { this.defaultBattingOrder = defaultBattingOrder; }
     public String getWhatsappName() { return whatsappName; }
     public void setWhatsappName(final String whatsappName) { this.whatsappName = whatsappName; }
+    public boolean isArchived() { return archived; }
+    public void setArchived(final boolean archived) { this.archived = archived; }
 }

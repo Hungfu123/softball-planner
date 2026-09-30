@@ -24,6 +24,9 @@ public class PlayerEntity {
     @Column(name = "whatsapp_name")
     private String whatsappName;
 
+    @Column(nullable = false)
+    private boolean archived = false;
+
     public PlayerEntity() {}
 
     public PlayerEntity(String name) {
@@ -40,4 +43,6 @@ public class PlayerEntity {
     public void setDefaultBattingOrder(Integer defaultBattingOrder) { this.defaultBattingOrder = defaultBattingOrder; }
     public String getWhatsappName() { return whatsappName; }
     public void setWhatsappName(String whatsappName) { this.whatsappName = whatsappName; }
+    public boolean isArchived() { return archived; }
+    public void setArchived(boolean archived) { this.archived = archived; }
 }

@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public interface GameDayRepository {
     List<GameDay> findBySeasonIdOrderByDateAsc(Long seasonId);
+    List<Long> findGameDayIdsByPlayerPlanning(Long playerId);
     Optional<GameDay> findById(Long id);
     Optional<GameDay> findByIdWithPlayers(Long id);
     Optional<GameDay> findByIdWithGames(Long id);
