@@ -1,7 +1,11 @@
 package com.softball.application;
 
 import com.softball.domain.model.Player;
+import com.softball.domain.port.out.AtBatRepository;
+import com.softball.domain.port.out.BaseRunningEventRepository;
 import com.softball.domain.port.out.PlayerRepository;
+import com.softball.domain.port.out.SubstitutionRepository;
+import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +19,12 @@ import static org.mockito.Mockito.*;
 class PlayerServiceWhatsappNameTest {
 
     private final PlayerRepository repo = mock(PlayerRepository.class);
-    private final PlayerService service = new PlayerService(repo);
+    private final PlayerService service = new PlayerService(repo,
+        mock(AtBatRepository.class),
+        mock(BaseRunningEventRepository.class),
+        mock(SubstitutionRepository.class),
+        mock(TrainingAttendanceRepository.class),
+        mock(AvailabilityService.class));
 
     @Test
     void setsWhatsappName() {

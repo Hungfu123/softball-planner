@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
-import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle } from '@/icons'
+import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle, ArchiveIcon, ArchiveRestoreIcon } from '@/icons'
 import { EmptyState, ConfirmModal, Button } from '@/components/shared'
 import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
 import { WhatsappVotersTab } from './WhatsappVotersTab'
@@ -58,7 +58,7 @@ function SortablePlayerRow({ player, index }: { player: Player; index: number })
 }
 
 export function PlayerManager() {
-  const { players, loading, create, update, remove, reorderBattingOrder } = usePlayers()
+  const { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder } = usePlayers(true)
   const toast = useToastContext()
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -88,9 +88,13 @@ export function PlayerManager() {
 
   const orderMode = tab === 'batting'
 
-  // Server-Order ableiten (defaultBattingOrder asc, dann alpha)
+  // Archivierte Spieler: nicht in Batting-Reihenfolge, eigener Abschnitt unten
+  const activePlayers = useMemo(() => players.filter(p => !p.archived), [players])
+  const archivedPlayers = useMemo(() => players.filter(p => p.archived), [players])
+
+  // Server-Order ableiten (defaultBattingOrder asc, dann alpha) — nur aktive Spieler
   const serverBattingOrder = useMemo(() => {
-    return [...players]
+    return [...activePlayers]
       .sort((a, b) => {
         if (a.defaultBattingOrder != null && b.defaultBattingOrder != null)
           return a.defaultBattingOrder - b.defaultBattingOrder
@@ -99,7 +103,7 @@ export function PlayerManager() {
         return a.name.localeCompare(b.name)
       })
       .map(p => p.id)
-  }, [players])
+  }, [activePlayers])
 
   // Lokale Order initialisieren wenn Tab gewechselt oder Server-Daten neu
   useEffect(() => {
@@ -117,11 +121,11 @@ export function PlayerManager() {
   }, [localBattingOrder, serverBattingOrder])
 
   const filteredPlayers = useMemo(() => {
-    const sorted = [...players].sort((a, b) => a.name.localeCompare(b.name))
+    const sorted = [...activePlayers].sort((a, b) => a.name.localeCompare(b.name))
     if (!search.trim()) return sorted
     const q = search.toLowerCase()
     return sorted.filter(p => p.name.toLowerCase().includes(q))
-  }, [players, search])
+  }, [activePlayers, search])
 
   const handleCreate = async () => {
     const name = newName.trim()
@@ -157,6 +161,24 @@ export function PlayerManager() {
     try {
       await remove(deletePlayerId)
       toast.show('Spieler gelöscht')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleArchive = async (id: number) => {
+    try {
+      await archive(id)
+      toast.show('Spieler archiviert — verschwindet aus Lineups und Statistik, Historie bleibt erhalten')
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleUnarchive = async (id: number) => {
+    try {
+      await unarchive(id)
+      toast.show('Spieler reaktiviert')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -201,7 +223,7 @@ export function PlayerManager() {
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
         <div className="flex items-baseline justify-between">
           <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
-            Spieler {players.length > 0 && <span className="text-navy-500 font-bold">({players.length})</span>}
+            Spieler {players.length > 0 && <span className="text-navy-500 font-bold">({activePlayers.length})</span>}
           </h1>
         </div>
 
@@ -267,7 +289,7 @@ export function PlayerManager() {
           </div>
         )}
 
-        {tab === 'whatsapp' ? null : players.length === 0 ? (
+        {tab === 'whatsapp' ? null : activePlayers.length === 0 && archivedPlayers.length === 0 ? (
           <EmptyState
             title="Noch keine Spieler angelegt"
             description="Leg los!"
@@ -315,6 +337,14 @@ export function PlayerManager() {
                       <Pencil size={16} />
                     </button>
                     <button
+                      onClick={() => handleArchive(p.id)}
+                      aria-label={`${p.name} archivieren`}
+                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                      title="Archivieren — ausblenden, Historie bleibt erhalten"
+                    >
+                      <ArchiveIcon size={16} />
+                    </button>
+                    <button
                       onClick={() => handleDelete(p.id)}
                       aria-label={`${p.name} löschen`}
                       className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
@@ -326,6 +356,45 @@ export function PlayerManager() {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {/* Archiv — ausgeschiedene Spieler, reaktivierbar */}
+        {!orderMode && tab !== 'whatsapp' && archivedPlayers.length > 0 && (
+          <div className="bg-cream-100/60 border border-cream-300 rounded-2xl overflow-hidden">
+            <div className="px-4 py-2.5 bg-cream-200/70 flex items-center gap-2">
+              <ArchiveIcon size={14} className="text-navy-500" />
+              <span className="font-display text-[11px] font-bold uppercase tracking-widest text-navy-600">
+                Archiv ({archivedPlayers.length})
+              </span>
+              <span className="text-[11px] text-gray-500 ml-auto hidden sm:inline">
+                Nicht in Lineups, Training oder Statistik — Historie bleibt erhalten
+              </span>
+            </div>
+            {archivedPlayers.map(p => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 group bg-white/50">
+                <span className="flex-1 text-navy-900/70 font-medium italic">{p.name}</span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleUnarchive(p.id)}
+                    aria-label={`${p.name} reaktivieren`}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-navy-700 bg-navy-50 hover:bg-navy-100 cursor-pointer inline-flex items-center gap-1.5"
+                    title="Zurück ins Team"
+                  >
+                    <ArchiveRestoreIcon size={14} />
+                    Reaktivieren
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    aria-label={`${p.name} endgültig löschen`}
+                    className="p-2 rounded-lg text-gray-400 hover:text-softball-red-600 hover:bg-softball-red-50 cursor-pointer"
+                    title="Endgültig löschen (nur möglich ohne Scoring-Daten)"
+                  >
+                    <TrashBin size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -353,7 +422,7 @@ export function PlayerManager() {
         {deletePlayerId && (
           <ConfirmModal
             title="Spieler löschen"
-            message={`${players.find(p => p.id === deletePlayerId)?.name ?? 'Spieler'} wirklich löschen?`}
+            message={`${players.find(p => p.id === deletePlayerId)?.name ?? 'Spieler'} wirklich löschen? Spieler mit Scoring-Daten können nicht gelöscht werden — archiviere sie stattdessen.`}
             onConfirm={confirmDeletePlayer}
             onCancel={() => setDeletePlayerId(null)}
           />

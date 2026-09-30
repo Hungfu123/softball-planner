@@ -54,6 +54,12 @@ public class TrainingAttendanceRepositoryAdapter implements TrainingAttendanceRe
     }
 
     @Override
+    @Transactional
+    public void deleteByPlayerId(final Long playerId) {
+        repo.deleteByPlayerId(playerId);
+    }
+
+    @Override
     public List<TrainingAttendance> saveAll(final List<TrainingAttendance> attendances) {
         var entities = attendances.stream().map(a -> {
             TrainingEntity trainingEntity = trainingRepo.getReferenceById(a.getTraining().getId());

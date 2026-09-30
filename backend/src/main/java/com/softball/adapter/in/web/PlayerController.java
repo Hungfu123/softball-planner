@@ -22,8 +22,8 @@ public class PlayerController {
     }
 
     @GetMapping
-    public List<PlayerResponse> getAll() {
-        return playerService.findAll().stream().map(PlayerResponse::from).toList();
+    public List<PlayerResponse> getAll(@RequestParam(name = "includeArchived", required = false, defaultValue = "false") final boolean includeArchived) {
+        return playerService.findAll(includeArchived).stream().map(PlayerResponse::from).toList();
     }
 
     @PostMapping
@@ -35,6 +35,16 @@ public class PlayerController {
     @PutMapping("/{id}")
     public PlayerResponse update(@PathVariable final Long id, @Valid @RequestBody final UpdatePlayerRequest request) {
         return PlayerResponse.from(playerService.update(id, request.name(), request.regular()));
+    }
+
+    @PutMapping("/{id}/archive")
+    public PlayerResponse archive(@PathVariable final Long id) {
+        return PlayerResponse.from(playerService.setArchived(id, true));
+    }
+
+    @PutMapping("/{id}/unarchive")
+    public PlayerResponse unarchive(@PathVariable final Long id) {
+        return PlayerResponse.from(playerService.setArchived(id, false));
     }
 
     @DeleteMapping("/{id}")

@@ -2,8 +2,8 @@ package com.softball.adapter.dto;
 
 import com.softball.domain.model.Player;
 
-public record PlayerResponse(Long id, String name, boolean regular, Integer defaultBattingOrder, String whatsappName) {
+public record PlayerResponse(Long id, String name, boolean regular, Integer defaultBattingOrder, String whatsappName, boolean archived) {
     public static PlayerResponse from(Player player) {
-        return new PlayerResponse(player.getId(), player.getName(), player.isRegular(), player.getDefaultBattingOrder(), player.getWhatsappName());
+        return new PlayerResponse(player.getId(), player.getName(), player.isRegular(), player.getDefaultBattingOrder(), player.getWhatsappName(), player.isArchived());
     }
 }

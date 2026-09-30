@@ -127,4 +127,9 @@ public class AtBatRepositoryAdapter implements AtBatRepository {
     public void deleteById(final Long id) {
         repo.deleteById(id);
     }
+
+    @Override
+    public boolean existsByPlayerId(final Long playerId) {
+        return repo.existsByPlayerId(playerId);
+    }
 }

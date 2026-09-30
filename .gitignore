@@ -75,3 +75,8 @@ frontend/*.pdf
 # Website (Marketing-Landingpage)
 website/node_modules/
 website/dist/
+
+# Eclipse/JDT (LSP) metadata
+backend/.classpath
+backend/.project
+backend/.settings/

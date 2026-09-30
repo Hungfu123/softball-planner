@@ -22,4 +22,7 @@ public interface SpringBaseRunningEventRepository extends JpaRepository<BaseRunn
 
     @Query("SELECT e FROM BaseRunningEventEntity e JOIN FETCH e.runner")
     List<BaseRunningEventEntity> findAllWithRunner();
+
+    @Query("SELECT COUNT(e) > 0 FROM BaseRunningEventEntity e WHERE e.runner.id = :playerId")
+    boolean existsByRunnerPlayerId(Long playerId);
 }

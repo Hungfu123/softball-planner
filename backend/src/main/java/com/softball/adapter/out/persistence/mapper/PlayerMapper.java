@@ -11,6 +11,7 @@ public class PlayerMapper {
         if (entity == null) return null;
         final Player player = new Player(entity.getId(), entity.getName(), entity.isRegular(), entity.getDefaultBattingOrder());
         player.setWhatsappName(entity.getWhatsappName());
+        player.setArchived(entity.isArchived());
         return player;
     }
 
@@ -22,6 +23,7 @@ public class PlayerMapper {
         entity.setRegular(domain.isRegular());
         entity.setDefaultBattingOrder(domain.getDefaultBattingOrder());
         entity.setWhatsappName(domain.getWhatsappName());
+        entity.setArchived(domain.isArchived());
         return entity;
     }
 
@@ -30,5 +32,6 @@ public class PlayerMapper {
         entity.setRegular(domain.isRegular());
         entity.setDefaultBattingOrder(domain.getDefaultBattingOrder());
         entity.setWhatsappName(domain.getWhatsappName());
+        entity.setArchived(domain.isArchived());
     }
 }

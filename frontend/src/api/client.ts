@@ -101,11 +101,16 @@ import type {
 } from '@/types'
 
 // Players
-export const getPlayers = () => request<Player[]>('/players')
+export const getPlayers = (includeArchived = false) =>
+  request<Player[]>(`/players${includeArchived ? '?includeArchived=true' : ''}`)
 export const createPlayer = (name: string) =>
   request<Player>('/players', { method: 'POST', body: JSON.stringify({ name }) })
 export const updatePlayer = (id: number, data: { name?: string; regular?: boolean }) =>
   request<Player>(`/players/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const archivePlayer = (id: number) =>
+  request<Player>(`/players/${id}/archive`, { method: 'PUT' })
+export const unarchivePlayer = (id: number) =>
+  request<Player>(`/players/${id}/unarchive`, { method: 'PUT' })
 export const deletePlayer = (id: number) =>
   request<void>(`/players/${id}`, { method: 'DELETE' })
 export const updateBattingOrder = (orderedPlayerIds: number[]) =>

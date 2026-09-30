@@ -65,6 +65,32 @@ public class AvailabilityService {
             .collect(Collectors.toSet());
     }
 
+    /**
+     * Entfernt sämtliche Planungs-Referenzen eines Spielers über ALLE Spieltage hinweg:
+     * Availability (game_day_players), LineupEntries (als Spieler und als DH-Batter,
+     * inkl. Batting-Order-Neunumerierung) und GameStaff. Wird beim Löschen eines
+     * Spielers aufgerufen, bevor der Player-Datensatz entfernt wird.
+     */
+    @Transactional
+    public void removeAllPlanningReferences(final Long playerId) {
+        final List<Long> gameDayIds = gameDayRepository.findGameDayIdsByPlayerPlanning(playerId);
+        if (gameDayIds.isEmpty()) {
+            return;
+        }
+        log.info("Bereinige Planungs-Referenzen von Spieler {} in {} Spieltag(en)", playerId, gameDayIds.size());
+
+        for (final Long gameDayId : gameDayIds) {
+            cascadeRemovePlayers(gameDayId, Set.of(playerId));
+            final GameDay gameDay = gameDayRepository.findByIdWithGamesAndPlayers(gameDayId)
+                .orElseThrow(() -> new ResourceNotFoundException("GameDay", gameDayId));
+            final List<Player> remainingPlayers = gameDay.getAvailablePlayers().stream()
+                .filter(p -> !p.getId().equals(playerId))
+                .collect(Collectors.toList());
+            gameDay.setAvailablePlayersList(remainingPlayers);
+            gameDayRepository.save(gameDay);
+        }
+    }
+
     private void cascadeRemovePlayers(final Long gameDayId, final Set<Long> removedPlayerIds) {
         final GameDay gameDayWithGames = gameDayRepository.findByIdWithGames(gameDayId)
             .orElseThrow(() -> new ResourceNotFoundException("GameDay", gameDayId));

@@ -17,4 +17,7 @@ public interface SpringSubstitutionRepository extends JpaRepository<Substitution
     @Modifying
     @Query("DELETE FROM SubstitutionEntity s WHERE s.game.id = :gameId")
     void deleteByGameId(Long gameId);
+
+    @Query("SELECT COUNT(s) > 0 FROM SubstitutionEntity s WHERE s.playerOut.id = :playerId OR s.playerIn.id = :playerId")
+    boolean existsByPlayerId(Long playerId);
 }
