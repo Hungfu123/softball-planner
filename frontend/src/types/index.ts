@@ -469,6 +469,17 @@ export interface AwardResponse {
   displayValue: string
 }
 
+export interface OpponentBattingStatsResponse {
+  teamId: number
+  teamName: string
+  games: number
+  plateAppearances: number
+  atBats: number
+  hits: number
+  runs: number
+  battingAverage: number
+}
+
 export interface PlayerBattingStatsResponse {
   playerId: number
   playerName: string

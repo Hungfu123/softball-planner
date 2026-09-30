@@ -10,6 +10,7 @@ public interface GameRepository {
     List<Game> saveAll(List<Game> games);
     List<Game> findByGameDayIdOrderByGameNumberAsc(Long gameDayId);
     List<Game> findByOpponentTeamId(Long teamId);
+    List<Game> findAllWithOpponent();
     List<Game> findBySeasonIdWithScores(Long seasonId);
     void flush();
 }

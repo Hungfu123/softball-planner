@@ -57,6 +57,11 @@ public class AtBatRepositoryAdapter implements AtBatRepository {
     }
 
     @Override
+    public List<AtBat> findByOpponentTeamId(final Long teamId) {
+        return repo.findByOpponentTeamId(teamId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<AtBat> findAll() {
         return repo.findAllWithBatter().stream().map(mapper::toDomain).toList();
     }

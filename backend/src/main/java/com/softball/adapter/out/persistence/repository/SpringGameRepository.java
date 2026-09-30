@@ -14,4 +14,7 @@ public interface SpringGameRepository extends JpaRepository<GameEntity, Long> {
 
     @Query("SELECT g FROM GameEntity g JOIN g.gameDay gd JOIN gd.season s WHERE s.id = :seasonId AND g.scoreUs IS NOT NULL AND g.scoreThem IS NOT NULL")
     List<GameEntity> findBySeasonIdWithScores(Long seasonId);
+
+    @Query("SELECT g FROM GameEntity g JOIN FETCH g.opponentTeam WHERE g.opponentTeam IS NOT NULL")
+    List<GameEntity> findAllWithOpponent();
 }
