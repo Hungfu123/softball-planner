@@ -54,6 +54,11 @@ public class BaseRunningEventRepositoryAdapter implements BaseRunningEventReposi
     }
 
     @Override
+    public List<BaseRunningEvent> findByOpponentTeamId(final Long teamId) {
+        return repo.findByOpponentTeamId(teamId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<BaseRunningEvent> findAll() {
         return repo.findAllWithRunner().stream().map(mapper::toDomain).toList();
     }

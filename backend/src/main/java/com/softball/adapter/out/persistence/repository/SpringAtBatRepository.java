@@ -21,6 +21,9 @@ public interface SpringAtBatRepository extends JpaRepository<AtBatEntity, Long> 
     @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter WHERE ab.game.gameDay.season.year = :year")
     List<AtBatEntity> findByYear(int year);
 
+    @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter WHERE ab.game.opponentTeam.id = :teamId")
+    List<AtBatEntity> findByOpponentTeamId(Long teamId);
+
     @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter")
     List<AtBatEntity> findAllWithBatter();
 

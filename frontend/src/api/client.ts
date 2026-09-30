@@ -63,6 +63,7 @@ import type {
   ScoreboardResponse,
   ClockStateResponse,
   PlayerBattingStatsResponse,
+  OpponentBattingStatsResponse,
   SpielbogenResponse,
   SpielbogenLineupResponse,
   SpielbogenSlotResponse,
@@ -462,6 +463,10 @@ export const getAllTimeBattingStats = () =>
   request<PlayerBattingStatsResponse[]>('/stats/all-time/batting')
 export const getAllTimeStats = () =>
   request<SeasonPlayerStats[]>('/stats/all-time/games')
+export const getOpponentBattingOverview = () =>
+  request<OpponentBattingStatsResponse[]>('/stats/opponents')
+export const getOpponentBattingStats = (teamId: number) =>
+  request<PlayerBattingStatsResponse[]>(`/stats/opponents/${teamId}/batting`)
 export const getDistinctYears = () =>
   request<number[]>('/seasons/years')
 

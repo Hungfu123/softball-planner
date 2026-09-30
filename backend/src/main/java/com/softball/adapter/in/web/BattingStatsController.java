@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import com.softball.adapter.dto.OpponentBattingStatsResponse;
 import com.softball.adapter.dto.PlayerBattingStatsResponse;
 import com.softball.adapter.dto.SeasonPlayerStats;
 import com.softball.adapter.dto.SeasonResponse;
@@ -65,5 +66,15 @@ public class BattingStatsController {
     @GetMapping("/api/stats/all-time/games")
     public List<SeasonPlayerStats> getAllTimeStats() {
         return statsService.getAllTimeStats();
+    }
+
+    @GetMapping("/api/stats/opponents")
+    public List<OpponentBattingStatsResponse> getOpponentBattingOverview() {
+        return battingStatsService.getOpponentBattingOverview();
+    }
+
+    @GetMapping("/api/stats/opponents/{teamId}/batting")
+    public List<PlayerBattingStatsResponse> getOpponentBattingStats(@PathVariable final Long teamId) {
+        return battingStatsService.getOpponentBattingStats(teamId);
     }
 }
