@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Trophy, ChevronDown, ChevronUp, Info, Zap, Check } from 'lucide-react'
 import type { PlayerBattingStatsResponse } from '@/types'
 
@@ -26,6 +26,10 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
   const [showUnqualified, setShowUnqualified] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('battingAverage')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [scrolled, setScrolled] = useState(false)
+
+  const handleScroll = () => setScrolled((scrollRef.current?.scrollLeft ?? 0) > 0)
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -84,7 +88,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     [qualified, sorted],
   )
 
-  const sortTh = (key: SortKey, label: string, opts?: { title?: string; align?: 'left' | 'right' }) => {
+  const sortTh = (key: SortKey, label: string, opts?: { title?: string; align?: 'left' | 'right'; className?: string }) => {
     const align = opts?.align ?? 'right'
     const alignCls = align === 'right' ? 'text-right' : 'text-left'
     const active = sortKey === key
@@ -93,7 +97,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
         onClick={() => handleSort(key)}
         title={opts?.title}
         aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-        className={`font-display ${alignCls} px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-pointer select-none transition-colors ${active ? 'text-white' : 'text-white/70 hover:text-white'}`}
+        className={`font-display ${alignCls} px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-pointer select-none transition-colors ${active ? 'text-white' : 'text-white/70 hover:text-white'} ${opts?.className ?? ''}`}
       >
         <span className={`inline-flex items-center gap-0.5 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
           {label}
@@ -160,12 +164,15 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
 
       {/* Table — 60/30/10: White 60% / Navy 30% / Softball-Red 10% */}
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
+        <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-navy-900 text-white">
-                <th className="font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">#</th>
-                {sortTh('playerName', 'Spieler', { align: 'left' })}
+                <th className={`font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest sticky left-0 z-20 bg-navy-900 w-12`}>#</th>
+                {sortTh('playerName', 'Spieler', {
+                  align: 'left',
+                  className: `sticky left-12 z-20 bg-navy-900 ${scrolled ? 'shadow-[4px_0_8px_-4px_rgba(15,23,42,0.4)]' : ''}`,
+                })}
                 {sortTh('atBats', 'ABs')}
                 {sortTh('hits', 'Treffer')}
                 {sortTh('battingAverage', 'AVG', { title: 'Batting Average (AVG)' })}
@@ -197,19 +204,22 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                 const isUnq = applyQualifier && !s.qualified
                 const isTop = idx === 0 && s.atBats > 0 && !isUnq
                 const dimZero = (v: number) => v === 0 ? 'text-gray-300' : 'text-navy-900'
+                // Sticky-Spalten brauchen eigene, deckende Hintergrundfarbe (sonst scheint beim horizontalen Scrollen der Inhalt durch)
+                const stickyBg = idx % 2 === 1 ? 'bg-cream-100' : 'bg-cream-50'
+                const stickyShadow = scrolled ? 'shadow-[4px_0_8px_-4px_rgba(15,23,42,0.25)]' : ''
                 return (
                   <tr
                     key={s.playerId}
-                    className={`border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
+                    className={`group border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
                       idx % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'
                     } ${isUnq ? 'opacity-50' : ''}`}
                   >
                     {/* Rang — Top-1 in Softball-Red (10% Accent); unqualifizierte ohne Rang */}
-                    <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
+                    <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold sticky left-0 z-10 w-12 group-hover:bg-softball-red-50 ${stickyBg} ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
                       {isUnq ? '–' : isTop ? <Trophy size={16} className="text-softball-red-600" /> : idx + 1}
                     </td>
-                    {/* Spieler — Navy für Hierarchie */}
-                    <td className="px-3 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide">
+                    {/* Spieler — Navy für Hierarchie; sticky, damit der Name beim horizontalen Scrollen sichtbar bleibt */}
+                    <td className={`px-3 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide sticky left-12 z-10 group-hover:bg-softball-red-50 ${stickyBg} ${stickyShadow}`}>
                       {s.playerName}
                       {isUnq && (
                         <span className="ml-2 font-sans text-[9px] font-bold tracking-wide uppercase text-gray-500 bg-cream-200 rounded-full px-1.5 py-0.5 align-middle">
