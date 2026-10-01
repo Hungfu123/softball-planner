@@ -9,6 +9,7 @@ import com.softball.application.SeasonService;
 import com.softball.application.StatsService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -73,8 +74,8 @@ public class BattingStatsController {
         return battingStatsService.getOpponentBattingOverview();
     }
 
-    @GetMapping("/api/stats/opponents/{teamId}/batting")
-    public List<PlayerBattingStatsResponse> getOpponentBattingStats(@PathVariable final Long teamId) {
-        return battingStatsService.getOpponentBattingStats(teamId);
+    @GetMapping("/api/stats/opponents/batting")
+    public List<PlayerBattingStatsResponse> getOpponentBattingStats(@RequestParam("team") final String teamName) {
+        return battingStatsService.getOpponentBattingStats(teamName);
     }
 }

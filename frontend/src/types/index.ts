@@ -470,7 +470,6 @@ export interface AwardResponse {
 }
 
 export interface OpponentBattingStatsResponse {
-  teamId: number
   teamName: string
   games: number
   plateAppearances: number

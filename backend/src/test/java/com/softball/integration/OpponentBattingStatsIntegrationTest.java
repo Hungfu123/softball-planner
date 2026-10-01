@@ -85,55 +85,59 @@ class OpponentBattingStatsIntegrationTest {
     }
 
     @Test
-    void opponentOverview_andSplits_areSeparatedByTeam() throws Exception {
-        final SeasonEntity season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
-        final PlayerEntity p1 = playerRepository.save(new PlayerEntity("Anna"));
-        final PlayerEntity p2 = playerRepository.save(new PlayerEntity("Ben"));
-        final LeagueTeamEntity sharks = leagueTeamRepository.save(new LeagueTeamEntity(season, "Sharks", false));
-        final LeagueTeamEntity bears = leagueTeamRepository.save(new LeagueTeamEntity(season, "Bears", false));
+    void opponentOverview_andSplits_mergeSameTeamAcrossSeasons() throws Exception {
+        // Zwei "Saisons" = zwei Ligen (College Series + Indoor) — Sharks existiert in BEIDEN
+        final SeasonEntity college = seasonRepository.save(new SeasonEntity("College Series 2026", 2026));
+        final SeasonEntity indoor = seasonRepository.save(new SeasonEntity("Indoor Series 2026", 2026));
+        final PlayerEntity anna = playerRepository.save(new PlayerEntity("Anna"));
+        final LeagueTeamEntity sharksCollege = leagueTeamRepository.save(new LeagueTeamEntity(college, "Sharks", false));
+        final LeagueTeamEntity sharksIndoor = leagueTeamRepository.save(new LeagueTeamEntity(indoor, "Sharks", false));
+        final LeagueTeamEntity bears = leagueTeamRepository.save(new LeagueTeamEntity(college, "Bears", false));
 
-        final GameDayEntity gameDay = gameDayRepository.save(new GameDayEntity(LocalDate.of(2026, 5, 1), "Test", "Daheim", season));
-        final GameEntity gameVsSharks = gameVs(gameDay, sharks, 1);
-        final GameEntity gameVsBears = gameVs(gameDay, bears, 2);
+        final GameDayEntity collegeDay = gameDayRepository.save(new GameDayEntity(LocalDate.of(2026, 5, 1), "Test", "Daheim", college));
+        final GameDayEntity indoorDay = gameDayRepository.save(new GameDayEntity(LocalDate.of(2026, 1, 31), "Winter", "Halle", indoor));
+        final GameEntity gameCollege = gameVs(collegeDay, sharksCollege, 1);
+        final GameEntity gameIndoor = gameVs(indoorDay, sharksIndoor, 1);
+        final GameEntity gameVsBears = gameVs(collegeDay, bears, 2);
 
-        // vs Sharks: Anna 2 Hits aus 2 AB, Ben 1 aus 2
-        atBat(gameVsSharks, p1, 1, AtBatResult.SINGLE);
-        atBat(gameVsSharks, p1, 2, AtBatResult.HOMERUN);
-        atBat(gameVsSharks, p2, 3, AtBatResult.STRIKEOUT);
-        atBat(gameVsSharks, p2, 4, AtBatResult.DOUBLE);
+        // vs Sharks (College): Anna 2 Hits aus 2 AB
+        atBat(gameCollege, anna, 1, AtBatResult.SINGLE);
+        atBat(gameCollege, anna, 2, AtBatResult.HOMERUN);
+        // vs Sharks (Indoor): Anna 1 aus 2
+        atBat(gameIndoor, anna, 1, AtBatResult.OUT);
+        atBat(gameIndoor, anna, 2, AtBatResult.SINGLE);
         // vs Bears: Anna 1 aus 2
-        atBat(gameVsBears, p1, 1, AtBatResult.OUT);
-        atBat(gameVsBears, p1, 2, AtBatResult.SINGLE);
+        atBat(gameVsBears, anna, 1, AtBatResult.OUT);
+        atBat(gameVsBears, anna, 2, AtBatResult.SINGLE);
 
-        // Overview: Sharks = 4 AB (alle zählen), 3 Hits → AVG .750; Bears = 2 AB, 1 Hit → .500
+        // Overview: Sharks aus BEIDEN Ligen zu EINER Zeile fusioniert: 2 Spiele, 4 AB, 3 Hits → .750
         mockMvc.perform(get("/api/stats/opponents"))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[?(@.teamName == 'Sharks')].games").value(2))
             .andExpect(jsonPath("$[?(@.teamName == 'Sharks')].atBats").value(4))
             .andExpect(jsonPath("$[?(@.teamName == 'Sharks')].hits").value(3))
             .andExpect(jsonPath("$[?(@.teamName == 'Sharks')].battingAverage").value(0.750))
-            .andExpect(jsonPath("$[?(@.teamName == 'Bears')].atBats").value(2))
-            .andExpect(jsonPath("$[?(@.teamName == 'Bears')].hits").value(1))
-            .andExpect(jsonPath("$[?(@.teamName == 'Bears')].battingAverage").value(0.500))
-            .andExpect(jsonPath("$[?(@.teamName == 'Sharks')].games").value(1))
-            .andExpect(jsonPath("$[?(@.teamName == 'Bears')].games").value(1));
+            .andExpect(jsonPath("$[?(@.teamName == 'Bears')].games").value(1))
+            .andExpect(jsonPath("$[?(@.teamName == 'Bears')].battingAverage").value(0.500));
 
-        // Split vs Sharks: Annas AVG dort = 1.000, Bens = .500
-        mockMvc.perform(get("/api/stats/opponents/" + sharks.getId() + "/batting"))
+        // Split über den NAMEN: vereint beide Sharks-Team-Zeilen → 4 AB, 3 Hits → .750
+        mockMvc.perform(get("/api/stats/opponents/batting").param("team", "Sharks"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$[?(@.playerName == 'Anna')].battingAverage").value(1.000))
+            .andExpect(jsonPath("$[?(@.playerName == 'Anna')].atBats").value(4))
+            .andExpect(jsonPath("$[?(@.playerName == 'Anna')].hits").value(3))
+            .andExpect(jsonPath("$[?(@.playerName == 'Anna')].battingAverage").value(0.750));
+
+        // Bears-Split: nur die Bears-At-Bats
+        mockMvc.perform(get("/api/stats/opponents/batting").param("team", "Bears"))
+            .andExpect(status().isOk())
             .andExpect(jsonPath("$[?(@.playerName == 'Anna')].atBats").value(2))
-            .andExpect(jsonPath("$[?(@.playerName == 'Ben')].battingAverage").value(0.500));
-
-        // Split vs Bears: nur Anna mit Daten (2 AB, 1 Hit → .500)
-        mockMvc.perform(get("/api/stats/opponents/" + bears.getId() + "/batting"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$[?(@.playerName == 'Anna')].battingAverage").value(0.500))
-            .andExpect(jsonPath("$[?(@.playerName == 'Ben')]").doesNotExist());
+            .andExpect(jsonPath("$[?(@.playerName == 'Anna')].battingAverage").value(0.500));
     }
 
     @Test
     void opponentOverview_ignoresGamesWithoutOpponent() throws Exception {
-        final SeasonEntity season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
+        final SeasonEntity season = seasonRepository.save(new SeasonEntity("College Series 2026", 2026));
         final LeagueTeamEntity team = leagueTeamRepository.save(new LeagueTeamEntity(season, "Sharks", false));
         final GameDayEntity gameDay = gameDayRepository.save(new GameDayEntity(LocalDate.of(2026, 6, 1), "Test", "Daheim", season));
 

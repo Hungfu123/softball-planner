@@ -6,7 +6,6 @@ import com.softball.domain.model.AtBat;
 import com.softball.domain.model.BaseRunningEvent;
 import com.softball.domain.model.BattingStats;
 import com.softball.domain.model.Game;
-import com.softball.domain.model.LeagueTeam;
 import com.softball.domain.model.LineupEntry;
 import com.softball.domain.model.Player;
 import com.softball.domain.port.out.AtBatRepository;
@@ -116,42 +115,49 @@ public class BattingStatsService {
 
     /**
      * Gegner-Split: Schlag-Statistik aller Spieler gegen EINEN Gegner —
-     * über alle eigenen Spiele vs. dieses Team ("womit schlage ich gut gegen X?").
+     * über alle eigenen Spiele vs. dieses Team, übergreifend über alle Saisons
+     * ("womit schlage ich gut gegen X?"). Schlüssel ist der Team-NAME: League-Teams
+     * sind pro Saison angelegt, derselbe Gegner existiert über die Jahre als
+     * mehrere Zeilen mit unterschiedlichen IDs.
      */
     @Transactional(readOnly = true)
-    public List<PlayerBattingStatsResponse> getOpponentBattingStats(final Long teamId) {
+    public List<PlayerBattingStatsResponse> getOpponentBattingStats(final String teamName) {
+        final List<Long> gameIds = gameRepository.findAllWithOpponent().stream()
+            .filter(g -> g.getOpponentTeam().getName().trim().equals(teamName.trim()))
+            .map(Game::getId)
+            .toList();
+        if (gameIds.isEmpty()) {
+            return List.of();
+        }
         return toResponses(battingStatsFromEvents(
-            atBatRepository.findByOpponentTeamId(teamId), stealingRepository.findByOpponentTeamId(teamId)));
+            atBatRepository.findByGameIdInOrderBySequenceAsc(gameIds),
+            stealingRepository.findByGameIdInOrderByIdAsc(gameIds)));
     }
 
     /**
      * Gegner-Übersicht: team-aggregierte Schlag-Stats pro Gegner, absteigend nach AVG —
-     * zeigt auf einen Blick, gegen wen das Team gut schlägt.
+     * zeigt auf einen Blick, gegen wen das Team gut schlägt. Gruppiert nach Team-Namen
+     * über alle Saisons hinweg (gleiche Gegender aus verschiedenen Saisons werden
+     * zu einer Zeile zusammengefasst).
      */
     @Transactional(readOnly = true)
     public List<OpponentBattingStatsResponse> getOpponentBattingOverview() {
         final List<Game> games = gameRepository.findAllWithOpponent();
         // AtBats tragen nur die minimale Game-Referenz — Gegner-Lookup über gameId
-        final Map<Long, LeagueTeam> opponentByGameId = new HashMap<>();
+        final Map<Long, String> opponentNameByGameId = new HashMap<>();
+        final Map<String, Integer> gamesByOpponent = new HashMap<>();
         for (final Game g : games) {
-            opponentByGameId.put(g.getId(), g.getOpponentTeam());
+            final String rawName = g.getOpponentTeam().getName().trim();
+            opponentNameByGameId.put(g.getId(), rawName);
+            gamesByOpponent.merge(rawName, 1, Integer::sum);
         }
 
-        // Spiele pro Gegner zählen (auch Spiele ohne At-Bats tauchen auf)
-        final Map<Long, Integer> gamesByOpponent = new HashMap<>();
-        final Map<Long, LeagueTeam> teamById = new HashMap<>();
-        for (final Game g : games) {
-            final LeagueTeam team = g.getOpponentTeam();
-            gamesByOpponent.merge(team.getId(), 1, Integer::sum);
-            teamById.put(team.getId(), team);
-        }
-
-        // At-Bats pro Gegner aggregieren
-        final Map<Long, int[]> totalsByOpponent = new HashMap<>(); // [pa, ab, hits, runs]
+        // At-Bats pro Gegner aggregieren — [pa, ab, hits, runs]
+        final Map<String, int[]> totalsByOpponent = new HashMap<>();
         for (final AtBat ab : atBatRepository.findAll()) {
-            final LeagueTeam opponent = opponentByGameId.get(ab.getGame().getId());
+            final String opponent = opponentNameByGameId.get(ab.getGame().getId());
             if (opponent == null) continue;
-            final int[] t = totalsByOpponent.computeIfAbsent(opponent.getId(), k -> new int[4]);
+            final int[] t = totalsByOpponent.computeIfAbsent(opponent, k -> new int[4]);
             t[0]++;
             if (ab.getResult() != null && ab.getResult().countsAsAtBat()) t[1]++;
             if (ab.getResult() != null && ab.getResult().isHit()) t[2]++;
@@ -160,10 +166,9 @@ public class BattingStatsService {
 
         final List<OpponentBattingStatsResponse> result = new ArrayList<>();
         for (final var entry : gamesByOpponent.entrySet()) {
-            final LeagueTeam team = teamById.get(entry.getKey());
             final int[] t = totalsByOpponent.getOrDefault(entry.getKey(), new int[4]);
             result.add(new OpponentBattingStatsResponse(
-                team.getId(), team.getName(), entry.getValue(), t[0], t[1], t[2], t[3],
+                entry.getKey(), entry.getValue(), t[0], t[1], t[2], t[3],
                 divide(t[2], t[1])));
         }
         result.sort(Comparator.comparing(OpponentBattingStatsResponse::battingAverage).reversed()

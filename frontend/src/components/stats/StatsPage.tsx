@@ -43,9 +43,10 @@ export function StatsPage() {
   const gameIdParsed = gameIdParam ? Number(gameIdParam) : null
   const selectedGameId = gameIdParsed != null && !Number.isNaN(gameIdParsed) ? gameIdParsed : null
   const gameDayIdParam = params.get('gameDayId')
-  const opponentIdParam = params.get('opponentId')
-  const opponentIdParsed = opponentIdParam ? Number(opponentIdParam) : null
-  const selectedOpponentIdParam = opponentIdParsed != null && !Number.isNaN(opponentIdParsed) ? opponentIdParsed : null
+  const opponentParam = params.get('opponent')
+  const opponentGameParam = params.get('opponentGame')
+  const opponentGameParsed = opponentGameParam ? Number(opponentGameParam) : null
+  const selectedOpponentGameId = opponentGameParsed != null && !Number.isNaN(opponentGameParsed) ? opponentGameParsed : null
 
   const [seasons, setSeasons] = useState<Season[]>([])
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
@@ -93,10 +94,23 @@ export function StatsPage() {
     return gameDays[0]?.id ?? null
   }, [gameDayIdParam, gameDays])
 
-  const selectedOpponentId = useMemo(() => {
-    if (selectedOpponentIdParam != null) return selectedOpponentIdParam
-    return opponents[0]?.teamId ?? null
-  }, [selectedOpponentIdParam, opponents])
+  const selectedOpponent = useMemo(() => {
+    if (opponentParam) return opponentParam
+    return opponents[0]?.teamName ?? null
+  }, [opponentParam, opponents])
+
+  // Alle Spiele gegen den gewählten Gegner (über alle Ligen/Saisons) — für den Zeitraum-Filter
+  const gamesVsOpponent = useMemo(() => {
+    if (scopeKind !== 'opponent' || !selectedOpponent) return []
+    return gameDays
+      .flatMap(gd => gd.games.map(g => ({ ...g, gameDay: gd })))
+      .filter(g => g.opponentTeam?.name?.trim() === selectedOpponent)
+      .map(g => {
+        const d = new Date(g.gameDay.date + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+        const score = g.scoreUs != null && g.scoreThem != null ? ` · ${g.scoreUs}:${g.scoreThem}` : ''
+        return { gameId: g.id, label: `${d} · Spiel ${g.gameNumber}${score}` }
+      })
+  }, [scopeKind, selectedOpponent, gameDays])
 
   // Update search params
   const setScope = (kind: ScopeKind) => {
@@ -105,7 +119,10 @@ export function StatsPage() {
     if (kind === 'season' && selectedSeasonId != null) next.set('seasonId', String(selectedSeasonId))
     if (kind === 'year') next.set('year', String(selectedYear))
     if (kind === 'gameDay' && selectedGameDayId != null) next.set('gameDayId', String(selectedGameDayId))
-    if (kind === 'opponent' && selectedOpponentId != null) next.set('opponentId', String(selectedOpponentId))
+    if (kind === 'opponent') {
+      next.delete('opponentGame')
+      if (selectedOpponent != null) next.set('opponent', selectedOpponent)
+    }
     setParams(next, { replace: true })
   }
   const setView = (v: ViewKind) => {
@@ -128,9 +145,16 @@ export function StatsPage() {
     next.set('gameDayId', String(id))
     setParams(next, { replace: true })
   }
-  const setOpponentId = (id: number) => {
+  const setOpponentId = (name: string) => {
     const next = new URLSearchParams(params)
-    next.set('opponentId', String(id))
+    next.set('opponent', name)
+    next.delete('opponentGame') // Spiel-Auswahl gehört zum Gegner — beim Wechsel zurücksetzen
+    setParams(next, { replace: true })
+  }
+  const setOpponentGameId = (gameId: number | null) => {
+    const next = new URLSearchParams(params)
+    if (gameId == null) next.delete('opponentGame')
+    else next.set('opponentGame', String(gameId))
     setParams(next, { replace: true })
   }
 
@@ -145,7 +169,8 @@ export function StatsPage() {
       if (scopeKind === 'season' && selectedSeasonId != null) return api.getSeasonBattingStats(selectedSeasonId)
       if (scopeKind === 'year') return api.getYearBattingStats(selectedYear)
       if (scopeKind === 'allTime') return api.getAllTimeBattingStats()
-      if (scopeKind === 'opponent' && selectedOpponentId != null) return api.getOpponentBattingStats(selectedOpponentId)
+      if (scopeKind === 'opponent' && selectedOpponentGameId != null) return api.getGameBattingStats(selectedOpponentGameId)
+      if (scopeKind === 'opponent' && selectedOpponent != null) return api.getOpponentBattingStats(selectedOpponent)
       return Promise.resolve([])
     }
     const gamesP = (): Promise<SeasonPlayerStats[]> => {
@@ -180,7 +205,7 @@ export function StatsPage() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [scopeKind, selectedSeasonId, selectedYear, selectedGameId, selectedGameDayId, selectedOpponentId])
+  }, [scopeKind, selectedSeasonId, selectedYear, selectedGameId, selectedGameDayId, selectedOpponent, selectedOpponentGameId])
 
   // Load seasons-by-year for Kontext-Info
   useEffect(() => {
@@ -218,8 +243,13 @@ export function StatsPage() {
       return s ? `${s.name} · ${s.year}` : 'Keine Saison ausgewählt'
     }
     if (scopeKind === 'opponent') {
-      const o = opponents.find(x => x.teamId === selectedOpponentId)
-      if (!o) return 'Kein Gegner ausgewählt'
+      const o = opponents.find(x => x.teamName === selectedOpponent)
+      if (!o && selectedOpponentGameId == null) return 'Kein Gegner ausgewählt'
+      if (selectedOpponentGameId != null) {
+        const g = gamesVsOpponent.find(x => x.gameId === selectedOpponentGameId)
+        return g ? `Gegen ${selectedOpponent} · ${g.label}` : `Gegen ${selectedOpponent} · Einzelspiel`
+      }
+      if (!o) return selectedOpponent
       const avg = o.battingAverage.toFixed(3).replace(/^0\./, '.')
       return `Gegen ${o.teamName} · ${o.games} ${o.games === 1 ? 'Spiel' : 'Spiele'} · Team-AVG ${avg}`
     }
@@ -229,7 +259,7 @@ export function StatsPage() {
       return `Jahr ${selectedYear} · ${seasonsForYear.length} ${seasonsForYear.length === 1 ? 'Saison' : 'Saisons'}: ${names}`
     }
     return `Alle Jahre · ${seasons.length} ${seasons.length === 1 ? 'Saison' : 'Saisons'}`
-  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame, gameDays, selectedGameDayId, opponents, selectedOpponentId])
+  }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame, gameDays, selectedGameDayId, opponents, selectedOpponent, selectedOpponentGameId, gamesVsOpponent])
 
   return (
     <div className="space-y-6">
@@ -319,14 +349,29 @@ export function StatsPage() {
           {scopeKind === 'opponent' && opponents.length > 0 && (
             <div className="relative inline-flex items-center ml-auto sm:ml-0">
               <select
-                value={selectedOpponentId ?? ''}
-                onChange={e => setOpponentId(Number(e.target.value))}
+                value={selectedOpponent ?? ''}
+                onChange={e => setOpponentId(e.target.value)}
                 className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400 max-w-[60vw] sm:max-w-none truncate"
               >
                 {opponents.map(o => (
-                  <option key={o.teamId} value={o.teamId}>
+                  <option key={o.teamName} value={o.teamName}>
                     {o.teamName} · AVG {o.battingAverage.toFixed(3).replace(/^0\./, '.')} ({o.games} {o.games === 1 ? 'Spiel' : 'Spiele'})
                   </option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
+            </div>
+          )}
+          {scopeKind === 'opponent' && gamesVsOpponent.length > 0 && (
+            <div className="relative inline-flex items-center">
+              <select
+                value={selectedOpponentGameId ?? ''}
+                onChange={e => setOpponentGameId(e.target.value === '' ? null : Number(e.target.value))}
+                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400 max-w-[60vw] sm:max-w-none truncate"
+              >
+                <option value="">Alle Spiele ({gamesVsOpponent.length})</option>
+                {gamesVsOpponent.map(g => (
+                  <option key={g.gameId} value={g.gameId}>{g.label}</option>
                 ))}
               </select>
               <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
@@ -365,7 +410,7 @@ export function StatsPage() {
         <BattingStatsTable
           stats={battingStats}
           onOpenGlossary={() => setShowGlossary(true)}
-          applyQualifier={isAggregatedScope(scopeKind)}
+          applyQualifier={isAggregatedScope(scopeKind) && scopeKind !== 'opponent'}
           gamesByPlayerId={gamesByPlayerId}
           showPerGame={isAggregatedScope(scopeKind) && scopeKind !== 'opponent'}
         />
