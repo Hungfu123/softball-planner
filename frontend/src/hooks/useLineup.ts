@@ -402,13 +402,17 @@ export function useLineup() {
   //    immediately — no extra "Lineup speichern" click needed.
   //  - games with an empty slot (a set player is absent) are left as an UNSAVED
   //    draft so the user fills the gap, then saves that game manually.
-  // Returns the gameNumbers that were left unsaved (had gaps).
+  // Returns the gameNumbers that were left unsaved (had gaps) plus coaches from
+  // poisoned legacy sets that were skipped because they bat in the set's own lineup.
   const applySet = useCallback(async (
     setItems: LineupSetEntryResponse[],
     staffItems: LineupSetStaffEntryResponse[],
     games: { id: number; gameNumber: number }[],
     rotationItems: LineupSetGameRotationResponse[] = [],
-  ): Promise<number[]> => {
+  ): Promise<{
+    skipped: number[]
+    skippedCoaches: { gameNumber: number; playerName: string }[]
+  }> => {
     // Coach-Rotation aus dem Set. Alt-Sets (vor V57) bringen keine mit — dann wird
     // die Rotation geleert, statt die des vorher geladenen Sets stehen zu lassen.
     const rotationByGameNumber = new Map(rotationItems.map(r => [r.gameNumber, r]))
@@ -430,10 +434,10 @@ export function useLineup() {
       availableById.set(e.player.id, e.player)
       if (e.dhBatterPlayer) availableById.set(e.dhBatterPlayer.id, e.dhBatterPlayer)
     }
-    const staffByGameNumber = new Map<number, { playerId: number; role: string }[]>()
+    const staffByGameNumber = new Map<number, { playerId: number; role: string; playerName: string }[]>()
     for (const s of staffItems) {
       const arr = staffByGameNumber.get(s.gameNumber) ?? []
-      arr.push({ playerId: s.player.id, role: s.role })
+      arr.push({ playerId: s.player.id, role: s.role, playerName: s.player.name })
       staffByGameNumber.set(s.gameNumber, arr)
     }
     const byGameNumber = new Map<number, LineupSetEntryResponse[]>()
@@ -444,6 +448,7 @@ export function useLineup() {
     }
     const activeId = activeIdRef.current
     const skipped: number[] = []
+    const skippedCoaches: { gameNumber: number; playerName: string }[] = []
 
     const baselineFor = async (gameId: number): Promise<GameLineupState> => {
       const cached = cache.current.get(gameId)
@@ -495,7 +500,27 @@ export function useLineup() {
         throw new Error(`Spiel ${g.gameNumber}: ${(e as Error).message}`)
       }
       const setCoaches = staffByGameNumber.get(g.gameNumber) ?? []
-      if (setCoaches.length > 0) await api.setStaff(g.id, setCoaches)
+      // Vergiftete Alt-Sets: Ein Coach, der im Set-Lineup selbst schlägt (normaler
+      // Schläger oder DH-Batter), würde vom Backend mit 400 abgelehnt ("ist bereits
+      // im Lineup"). Solche Konflikt-Coaches überspringen statt den ganzen Apply
+      // abzubrechen — der Coach-Slot bleibt dann frei.
+      const battingIds = new Set<number>()
+      for (const e of draft) {
+        if (e.dhBatterId != null) battingIds.add(e.dhBatterId)
+        else battingIds.add(e.player.id)
+      }
+      const safeCoaches = setCoaches.filter(c => !battingIds.has(c.playerId))
+      for (const c of setCoaches) {
+        if (battingIds.has(c.playerId)) skippedCoaches.push({ gameNumber: g.gameNumber, playerName: c.playerName })
+      }
+      if (safeCoaches.length > 0) {
+        try {
+          // Nur die API-Felder schicken — playerName ist rein für die Rückmeldung.
+          await api.setStaff(g.id, safeCoaches.map(c => ({ playerId: c.playerId, role: c.role })))
+        } catch (e: unknown) {
+          throw new Error(`Spiel ${g.gameNumber}: ${(e as Error).message}`)
+        }
+      }
       const base = await baselineFor(g.id)
       cache.current.set(g.id, {
         entries: draft,
@@ -509,7 +534,7 @@ export function useLineup() {
       }
     }))
 
-    return skipped
+    return { skipped, skippedCoaches }
   }, [])
 
   const fillEmptySlot = useCallback((slotId: number, player: Player) => {

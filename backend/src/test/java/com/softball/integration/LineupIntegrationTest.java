@@ -505,6 +505,49 @@ class LineupIntegrationTest {
     }
 
     @Test
+    void setAvailablePlayers_removedDhBatterClearsHostStaffEntry() throws Exception {
+        // Setup: player1 (DH-Host) at SS with player3 as DH batter, player2 in lineup.
+        // player1 schlägt nicht selbst und DARF daher Base Coach sein (DH-Host-Regel).
+        mockMvc.perform(put("/api/games/" + gameId + "/lineup")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(List.of(
+                Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1,
+                    "dhBatterPlayerId", player3.getId()),
+                Map.of("playerId", player2.getId(), "position", "P", "battingOrder", 2)
+            ))));
+        mockMvc.perform(put("/api/games/" + gameId + "/staff")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(List.of(
+                Map.of("playerId", player1.getId(), "role", "BASE_COACH_1ST")
+            ))))
+            .andExpect(status().isOk());
+
+        // player3 (DH-Batter) fällt aus → Cascade nullt player1s DH-Referenz.
+        // player1 schlägt jetzt selbst → sein Base-Coach-Eintrag muss mitgehen,
+        // sonst steht die DB im verbotenen Zustand "schlägt UND coacht".
+        mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(Map.of("playerIds",
+                List.of(player1.getId(), player2.getId())))));
+
+        // 1) Der Staff-Eintrag des Hosts muss weg sein
+        mockMvc.perform(get("/api/games/" + gameId + "/staff"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(0));
+
+        // 2) Das eigentliche User-Symptom: das unveränderte Lineup muss sich
+        //    wieder speichern lassen — ohne den 400er "steht im Lineup und ist
+        //    gleichzeitig als Base Coach eingeteilt".
+        mockMvc.perform(put("/api/games/" + gameId + "/lineup")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(List.of(
+                Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1),
+                Map.of("playerId", player2.getId(), "position", "P", "battingOrder", 2)
+            ))))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void setLineup_nullPosition_succeeds() throws Exception {
         final String lineup = objectMapper.writeValueAsString(List.of(
             Map.of("playerId", player1.getId(), "battingOrder", 1),

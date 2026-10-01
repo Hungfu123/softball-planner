@@ -105,11 +105,27 @@ public class AvailabilityService {
     private void cascadeRemoveFromLineup(final Long gameId, final Set<Long> removedPlayerIds) {
         final List<LineupEntry> entries = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId);
 
-        // DH-Batter-Referenz auf null setzen
+        // DH-Batter-Referenz auf null setzen. Ein Host, der seinen DH verliert, schlägt
+        // wieder selbst — dann darf er nicht mehr Base Coach sein (Regel: schlagende
+        // Spieler coachen nicht). Sein Staff-Eintrag muss mitgehen, sonst steht die DB
+        // im Zustand "schlägt UND coacht" und jeder weitere Lineup-Save/Set-Apply
+        // scheitert mit einem Konflikt, den niemand sichtbar verursacht hat.
+        final Set<Long> hostsWhoNowBat = new HashSet<>();
         for (final LineupEntry entry : entries) {
             if (entry.getDhBatterPlayer() != null && removedPlayerIds.contains(entry.getDhBatterPlayer().getId())) {
                 entry.setDhBatterPlayer(null);
                 lineupEntryRepository.save(entry);
+                hostsWhoNowBat.add(entry.getPlayer().getId());
+            }
+        }
+        if (!hostsWhoNowBat.isEmpty()) {
+            final List<GameStaff> hostStaff = gameStaffRepository.findByGameId(gameId).stream()
+                .filter(s -> hostsWhoNowBat.contains(s.getPlayer().getId()))
+                .toList();
+            if (!hostStaff.isEmpty()) {
+                log.info("Base-Coach-Eintraege von Spielern {} entfernt — DH-Verlust macht sie zu Schlagern (Spiel {})",
+                    hostsWhoNowBat, gameId);
+                gameStaffRepository.deleteAll(hostStaff);
             }
         }
 

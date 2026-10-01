@@ -215,7 +215,7 @@ export function GameDayPlanner() {
           ))
       if (roster.length > 0) await setAvailablePlayers(roster)
       // 1-3. pro Spiel: Coaches leeren → Lineup → Set-Coaches (in applySet)
-      const skipped = await lineup.applySet(set.entries, set.staff, games, set.rotations ?? [])
+      const { skipped, skippedCoaches } = await lineup.applySet(set.entries, set.staff, games, set.rotations ?? [])
       setActiveSetId(set.id)
       // Staff des aktiven Spiels neu laden, damit CoachSlots stimmen
       if (activeGame) await staff.load(activeGame.id)
@@ -223,12 +223,18 @@ export function GameDayPlanner() {
       // Backend, sonst zeigt das Lineup weiter die 1B/3B-Badges des vorherigen Sets.
       if (gameDay) setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
-      if (skipped.length === 0) {
+      if (skipped.length === 0 && skippedCoaches.length === 0) {
         toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')
       } else {
-        toast.show(
-          `Set „${set.name}" angewendet. Spiel ${skipped.join(', ')}: freie Slots — bitte füllen & speichern`,
-        )
+        const notes: string[] = []
+        if (skipped.length > 0) {
+          notes.push(`Spiel ${skipped.join(', ')}: freie Slots — bitte füllen & speichern`)
+        }
+        if (skippedCoaches.length > 0) {
+          const coaches = skippedCoaches.map(c => `Spiel ${c.gameNumber}: ${c.playerName}`).join(', ')
+          notes.push(`${coaches} schlägt/schlagen im Set selbst — Base-Coach-Slot bleibt frei`)
+        }
+        toast.show(`Set „${set.name}" angewendet. ${notes.join(' · ')}`)
       }
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
@@ -352,22 +358,31 @@ export function GameDayPlanner() {
   // Der DH-Batter schlägt → darf laut Domain-Regel NICHT Base Coach sein.
   // Wie beim Hinzufügen ins Lineup den Coach-Slot direkt freiräumen, statt den
   // Konflikt erst beim Speichern als Backend-Fehler hochkommen zu lassen.
+  // Batter null = "DH entfernen" → der HOST schlägt wieder selbst → auch dann räumen.
   const handleSetDhBatter = async (fieldPlayerId: number, batter: Player | null) => {
+    const hostEntry = batter ? null : lineup.entries.find(e => e.player.id === fieldPlayerId)
     lineup.setDhBatter(fieldPlayerId, batter)
-    if (!batter || !activeGame || !staffPlayerIds.has(batter.id)) return
-    const remaining = staff.staff
-      .filter(s => s.player.id !== batter.id)
-      .map(s => ({ playerId: s.player.id, role: s.role }))
-    try {
-      await staff.save(activeGame.id, remaining)
-      await refreshStats()
-      toast.show(`${batter.name} schlägt als DH — Base-Coach-Slot geleert`)
-    } catch (e: unknown) {
-      toast.show((e as Error).message, 'error')
+    if (batter) {
+      if (!activeGame || !staffPlayerIds.has(batter.id)) return
+      const remaining = staff.staff
+        .filter(s => s.player.id !== batter.id)
+        .map(s => ({ playerId: s.player.id, role: s.role }))
+      try {
+        await staff.save(activeGame.id, remaining)
+        await refreshStats()
+        toast.show(`${batter.name} schlägt als DH — Base-Coach-Slot geleert`)
+      } catch (e: unknown) {
+        toast.show((e as Error).message, 'error')
+      }
+    } else {
+      void clearCoachesIfDhHosts([hostEntry])
     }
   }
 
   const handleSwapWithPool = (rowPlayerId: number, newPlayer: Player) => {
+    // War der neue Spieler der DH-Batter eines Hosts, verliert der Host sein DH
+    // (replacePlayer nullt die Referenz) und schlägt wieder selbst.
+    const hostsLosingDh = lineup.entries.filter(e => e.dhBatterId === newPlayer.id)
     lineup.replacePlayer(rowPlayerId, newPlayer)
     // Auto-remove from coach slot if swapped-in player was a base coach
     if (staffPlayerIds.has(newPlayer.id)) {
@@ -376,6 +391,49 @@ export function GameDayPlanner() {
         .map(s => ({ playerId: s.player.id, role: s.role }))
       handleStaffSave(remaining)
     }
+    void clearCoachesIfDhHosts(hostsLosingDh)
+  }
+
+  // DH-Hosts, die durch eine Editor-Transition (Positionswechsel, DH entfernen,
+  // Spieler entfernen/tauschen) ihre DH-Annotation verlieren, schlagen wieder
+  // selbst und dürfen nicht Base Coach bleiben (Domain-Regel). Den Coach-Slot
+  // direkt freiräumen statt den Konflikt erst beim Speichern als Backend-Fehler
+  // zu sehen. ALLE betroffenen Spieler in EINEM Save — mehrere parallele Saves
+  // aus demselben staff-Snapshot würden sich gegenseitig den Eintrag restaurieren.
+  // Die Entry-Snapshots müssen von VOR der Lineup-Änderung stammen (immutable).
+  const clearCoachesIfDhHosts = async (entrySnapshots: ({ player: Player; dhBatterId: number | null } | null | undefined)[]) => {
+    const affected = entrySnapshots.filter(
+      (e): e is { player: Player; dhBatterId: number } => e != null && e.dhBatterId != null && staffPlayerIds.has(e.player.id),
+    )
+    if (affected.length === 0 || !activeGame) return
+    const removeIds = new Set(affected.map(e => e.player.id))
+    const remaining = staff.staff
+      .filter(s => !removeIds.has(s.player.id))
+      .map(s => ({ playerId: s.player.id, role: s.role }))
+    try {
+      await staff.save(activeGame.id, remaining)
+      await refreshStats()
+      toast.show(`${affected.map(e => e.player.name).join(', ')} schlagen wieder selbst — Base-Coach-Slot geleert`)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
+  // Spieler aus dem Lineup entfernen: War er der DH-Batter eines Hosts, verliert
+  // der Host sein DH und schlägt wieder selbst → Coach-Slot mit aufräumen.
+  const handleRemovePlayer = (playerId: number) => {
+    const hostsLosingDh = lineup.entries.filter(e => e.dhBatterId === playerId)
+    lineup.removePlayer(playerId)
+    void clearCoachesIfDhHosts(hostsLosingDh)
+  }
+
+  // Zwei Lineup-Zeilen tauschen: swapEntries nimmt BEIDEN Entries das DH —
+  // beide Hosts schlagen wieder selbst → Coach-Slots mit aufräumen.
+  const handleSwapWithLineup = (rowPlayerId: number, otherRowPlayerId: number) => {
+    const a = lineup.entries.find(e => e.player.id === rowPlayerId)
+    const b = lineup.entries.find(e => e.player.id === otherRowPlayerId)
+    lineup.swapEntries(rowPlayerId, otherRowPlayerId)
+    void clearCoachesIfDhHosts([a, b])
   }
 
   const handlePositionAssign = (player: Player, position: string) => {
@@ -383,26 +441,31 @@ export function GameDayPlanner() {
     const newPlayerEntry = lineup.entries.find(e => e.player.id === player.id)
     const newPlayerOldPosition = newPlayerEntry?.position ?? null
     const replacingDifferentPlayer = !!currentEntry && currentEntry.player.id !== player.id
+    // DH-Hosts, die in dieser Transition ihr DH verlieren (Snapshots von vorher):
+    const lostDhHosts: { player: Player; dhBatterId: number | null }[] = []
 
     // Bisherigen Belegt-Spieler ZUERST verschieben/entfernen,
     // damit bei vollem Lineup (10/10) ein Pool-Pick noch Platz findet.
     if (replacingDifferentPlayer) {
-      if (newPlayerOldPosition) {
-        lineup.setPosition(currentEntry!.player.id, newPlayerOldPosition)
-      } else if (newPlayerEntry) {
-        lineup.setPosition(currentEntry!.player.id, '')
+      if (newPlayerOldPosition || newPlayerEntry) {
+        lineup.setPosition(currentEntry!.player.id, newPlayerOldPosition || '')
+        lostDhHosts.push(currentEntry!)
       } else {
-        lineup.removePlayer(currentEntry!.player.id)
+        lineup.removePlayer(currentEntry!.player.id) // fliegt raus → darf Coach bleiben
       }
     }
 
     if (!newPlayerEntry) handleAddPlayer(player)
     lineup.setPosition(player.id, position)
+    if (newPlayerEntry) lostDhHosts.push(newPlayerEntry)
+    void clearCoachesIfDhHosts(lostDhHosts)
   }
 
   const handlePositionClear = (position: string) => {
     const entry = lineup.entries.find(e => e.position === position)
-    if (entry) lineup.setPosition(entry.player.id, '')
+    if (!entry) return
+    lineup.setPosition(entry.player.id, '')
+    void clearCoachesIfDhHosts([entry])
   }
 
   const loadGameData = async () => {
@@ -883,14 +946,14 @@ export function GameDayPlanner() {
                       <LineupEditor
                         entries={lineup.entries}
                         poolPlayers={poolPlayers}
-                        onRemove={lineup.removePlayer}
+                        onRemove={handleRemovePlayer}
                         onSetPosition={lineup.setPosition}
                         onSetDhBatter={handleSetDhBatter}
                         onMoveUp={lineup.moveUp}
                         onMoveDown={lineup.moveDown}
                         onReorder={lineup.reorder}
                         onSwapWithPool={handleSwapWithPool}
-                        onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
+                        onSwapWithLineup={handleSwapWithLineup}
                         onFillSlot={lineup.fillEmptySlot}
                         onClear={() => setShowClearConfirm(true)}
                         onAutoGenerate={triggerAutoGenerate}
@@ -927,14 +990,14 @@ export function GameDayPlanner() {
                 <LineupEditor
                   entries={lineup.entries}
                   poolPlayers={poolPlayers}
-                  onRemove={lineup.removePlayer}
+                  onRemove={handleRemovePlayer}
                   onSetPosition={lineup.setPosition}
                   onSetDhBatter={handleSetDhBatter}
                   onMoveUp={lineup.moveUp}
                   onMoveDown={lineup.moveDown}
                   onReorder={lineup.reorder}
                   onSwapWithPool={handleSwapWithPool}
-                  onSwapWithLineup={(rowPlayerId, otherRowPlayerId) => lineup.swapEntries(rowPlayerId, otherRowPlayerId)}
+                  onSwapWithLineup={handleSwapWithLineup}
                   onFillSlot={lineup.fillEmptySlot}
                   onClear={() => setShowClearConfirm(true)}
                   onAutoGenerate={triggerAutoGenerate}
