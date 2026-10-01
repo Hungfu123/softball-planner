@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import type { Season } from '@/types'
-import { PlusCircle, Pencil, TrashBin } from '@/icons'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import type { Season, YearCopyResponse } from '@/types'
+import { PlusCircle, Pencil, TrashBin, ArchiveRestoreIcon } from '@/icons'
 import { ChevronDown } from 'lucide-react'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ResponsiveSheet, Button } from '@/components/shared'
@@ -11,19 +11,30 @@ interface Props {
   selectedId: number | null
   onSelect: (id: number) => void
   onCreate: (name: string, year: number) => Promise<Season>
+  onCopyYear: (templateYear: number, targetYear: number, copyTeams: boolean) => Promise<YearCopyResponse>
   onUpdate: (id: number, name: string, year: number) => Promise<Season>
   onDelete: (id: number) => Promise<void>
 }
 
-export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpdate, onDelete }: Props) {
+export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onCopyYear, onUpdate, onDelete }: Props) {
   const toast = useToastContext()
   const [showModal, setShowModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showCopyYearModal, setShowCopyYearModal] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [name, setName] = useState('')
   const [year, setYear] = useState(new Date().getFullYear())
+  const [copyTemplateYear, setCopyTemplateYear] = useState<number | null>(null)
+  const [copyTargetYear, setCopyTargetYear] = useState<number>(new Date().getFullYear() + 1)
+  const [copyTeams, setCopyTeams] = useState(true)
+  const [copyRunning, setCopyRunning] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const availableYears = useMemo(
+    () => [...new Set(seasons.map(s => s.year))].sort((a, b) => b - a),
+    [seasons],
+  )
 
   useEffect(() => {
     if (!showMenu) return
@@ -49,6 +60,25 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
       toast.show('Saison erstellt')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
+    }
+  }
+
+  const handleCopyYear = async () => {
+    if (copyTemplateYear == null) return
+    setCopyRunning(true)
+    try {
+      const result = await onCopyYear(copyTemplateYear, copyTargetYear, copyTeams)
+      setShowCopyYearModal(false)
+      const created = result.createdSeasons.length
+      const skipped = result.skippedSeasons.length
+      let msg = `${created} ${created === 1 ? 'Liga' : 'Ligen'} für ${result.targetYear} angelegt`
+      if (result.copiedTeams > 0) msg += ` · ${result.copiedTeams} Teams mitkopiert`
+      if (skipped > 0) msg += ` · ${skipped} bereits vorhanden (übersprungen)`
+      toast.show(msg)
+    } catch (e: unknown) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setCopyRunning(false)
     }
   }
 
@@ -115,6 +145,18 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
                 )}
                 <button
                   role="menuitem"
+                  onClick={() => {
+                    setCopyTemplateYear(availableYears[0] ?? null)
+                    setShowCopyYearModal(true)
+                    setShowMenu(false)
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm font-semibold text-navy-900 hover:bg-cream-100 cursor-pointer inline-flex items-center gap-2"
+                  title="Alle Ligen eines Jahres ins nächste Jahr übernehmen"
+                >
+                  <ArchiveRestoreIcon size={14} /> Neues Jahr übernehmen
+                </button>
+                <button
+                  role="menuitem"
                   onClick={() => { setShowModal(true); setShowMenu(false) }}
                   className="w-full text-left px-3 py-2 text-sm font-semibold text-navy-900 hover:bg-cream-100 cursor-pointer inline-flex items-center gap-2"
                 >
@@ -125,6 +167,79 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onUpda
           )}
         </div>
       </div>
+
+      {showCopyYearModal && (
+        <ResponsiveSheet
+          open
+          onClose={() => { if (!copyRunning) setShowCopyYearModal(false) }}
+          title="Neues Jahr übernehmen"
+          footer={
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowCopyYearModal(false)}
+                disabled={copyRunning}
+                className="font-display px-4 py-2 text-xs font-bold tracking-widest uppercase text-gray-600 rounded-lg hover:bg-cream-200 cursor-pointer disabled:opacity-50"
+              >
+                Abbrechen
+              </button>
+              <Button
+                variant="primary"
+                onClick={handleCopyYear}
+                disabled={copyTemplateYear == null || copyRunning}
+                className="font-display text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700"
+              >
+                {copyRunning ? 'Übernehme…' : 'Übernehmen'}
+              </Button>
+            </div>
+          }
+        >
+          <div className="p-5 space-y-4">
+            <p className="text-sm text-gray-600">
+              Legt alle Ligen des Vorlagen-Jahres für das Ziel-Jahr neu an — jede Liga
+              mit den Dead Sox als eigenem Team. Bereits existierende Ligen im Ziel-Jahr
+              werden übersprungen.
+            </p>
+            <div>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Vorlagen-Jahr</label>
+              <select
+                value={copyTemplateYear ?? ''}
+                onChange={e => setCopyTemplateYear(Number(e.target.value))}
+                className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none cursor-pointer"
+              >
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">Ziel-Jahr</label>
+              <input
+                type="number"
+                value={copyTargetYear}
+                onChange={e => setCopyTargetYear(Number(e.target.value))}
+                min={2020}
+                max={2050}
+                className="w-full border border-cream-300 rounded-lg px-3 py-2.5 text-sm focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none"
+              />
+            </div>
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={copyTeams}
+                onChange={e => setCopyTeams(e.target.checked)}
+                className="mt-0.5 w-4 h-4 accent-softball-red-600 cursor-pointer"
+              />
+              <span className="text-sm text-gray-700">
+                <strong className="text-navy-900">Gegner-Teams mitkopieren</strong>
+                <span className="block text-xs text-gray-500">
+                  Alle Gegner der Vorlagen-Ligen stehen dann direkt in den neuen Ligen bereit
+                  (händisch anlegen entfällt).
+                </span>
+              </span>
+            </label>
+          </div>
+        </ResponsiveSheet>
+      )}
 
       {showModal && (
         <ResponsiveSheet

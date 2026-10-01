@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Season } from '@/types'
+import type { Season, YearCopyResponse } from '@/types'
 import * as api from '@/api/client'
 
 export function useSeasons() {
@@ -23,6 +23,13 @@ export function useSeasons() {
     return s
   }
 
+  /** "Jahr übernehmen": Ligen des Vorlagen-Jahres ins Ziel-Jahr anlegen — lädt danach alle Saisons neu. */
+  const copyYear = async (templateYear: number, targetYear: number, copyTeams: boolean): Promise<YearCopyResponse> => {
+    const result = await api.copySeasonYear(templateYear, targetYear, copyTeams)
+    await load()
+    return result
+  }
+
   const update = async (id: number, name: string, year: number) => {
     const s = await api.updateSeason(id, name, year)
     setSeasons(prev => prev.map(x => x.id === id ? s : x))
@@ -34,5 +41,5 @@ export function useSeasons() {
     setSeasons(prev => prev.filter(x => x.id !== id))
   }
 
-  return { seasons, loading, create, update, remove, reload: load }
+  return { seasons, loading, create, copyYear, update, remove, reload: load }
 }

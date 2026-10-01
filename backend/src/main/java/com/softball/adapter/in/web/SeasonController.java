@@ -1,10 +1,13 @@
 package com.softball.adapter.in.web;
 
+import com.softball.adapter.dto.CopyYearRequest;
 import com.softball.adapter.dto.CreateSeasonRequest;
 import com.softball.adapter.dto.SeasonPlayerStats;
 import com.softball.adapter.dto.SeasonResponse;
+import com.softball.adapter.dto.YearCopyResponse;
 import com.softball.application.SeasonService;
 import com.softball.application.StatsService;
+import com.softball.domain.model.YearCopyResult;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +40,13 @@ public class SeasonController {
     @ResponseStatus(HttpStatus.CREATED)
     public SeasonResponse create(@Valid @RequestBody final CreateSeasonRequest request) {
         return SeasonResponse.from(seasonService.create(request.name(), request.year()));
+    }
+
+    @PostMapping("/copy-year")
+    public YearCopyResponse copyYear(@Valid @RequestBody final CopyYearRequest request) {
+        final YearCopyResult result = seasonService.copyYear(
+            request.templateYear(), request.targetYear(), request.copyTeams());
+        return YearCopyResponse.from(result);
     }
 
     @PutMapping("/{id}")

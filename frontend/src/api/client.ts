@@ -42,6 +42,7 @@ import type {
   GameStaffResponse,
   GameDayPlayerStats,
   SeasonPlayerStats,
+  YearCopyResponse,
   StandingEntry,
   LeagueResultResponse,
   TrainingResponse,
@@ -124,6 +125,11 @@ export const getSeasons = () => request<Season[]>('/seasons')
 export const getSeason = (id: number) => request<Season>(`/seasons/${id}`)
 export const createSeason = (name: string, year: number) =>
   request<Season>('/seasons', { method: 'POST', body: JSON.stringify({ name, year }) })
+export const copySeasonYear = (templateYear: number, targetYear: number, copyTeams: boolean) =>
+  request<YearCopyResponse>('/seasons/copy-year', {
+    method: 'POST',
+    body: JSON.stringify({ templateYear, targetYear, copyTeams }),
+  })
 export const updateSeason = (id: number, name: string, year: number) =>
   request<Season>(`/seasons/${id}`, { method: 'PUT', body: JSON.stringify({ name, year }) })
 export const deleteSeason = (id: number) =>
