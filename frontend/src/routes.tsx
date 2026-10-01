@@ -45,7 +45,7 @@ export const routes: RouteObject[] = [
       { path: '/orga/einladungen', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/aufbau', element: <LazyEquipmentCatalog />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/whatsapp-umfrage', element: <WhatsappPollPage />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   // Einzige Route ohne RequireAuth — der Zähler soll ohne Anmeldung laufen.

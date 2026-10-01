@@ -1,8 +1,10 @@
 import { useState, useEffect, type MouseEvent as ReactMouseEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GameResponse, LeagueTeamResponse } from '@/types'
 import { TeamCombobox } from '@/components/shared'
+import { ArrowsSwap } from '@/icons'
 import * as api from '@/api/client'
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
 }
 
 export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentChanged, onSwapped, gameCompletions }: Props) {
+  const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
   // Fixed-Position-Anker fürs Swap-Menü (Portal an document.body, damit es nicht
@@ -228,6 +231,16 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
                 <path d="M6 9l6 6 6-6" />
               </svg>
             </button>
+            {activeGame.opponentTeam && (
+              <button
+                onClick={() => navigate(`/teams?club=${encodeURIComponent(activeGame.opponentTeam!.name)}`)}
+                className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-colors font-display text-xs font-bold uppercase tracking-widest text-navy-700 bg-navy-50 hover:bg-navy-100 active:scale-95 transition-transform"
+                title={`Bisherige Bilanz gegen ${activeGame.opponentTeam.name} — Ligen, Spiele, Ergebnisse`}
+              >
+                <ArrowsSwap size={12} />
+                <span className="hidden sm:inline">Bilanz</span>
+              </button>
+            )}
             <TeamCombobox
               seasonId={seasonId}
               teams={leagueTeams}
