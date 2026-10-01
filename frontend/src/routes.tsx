@@ -9,6 +9,7 @@ import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
 import { InvitationListPage } from '@/components/orga/InvitationListPage'
 import { OrgaHome } from '@/components/orga/OrgaHome'
 import { WhatsappPollPage } from '@/components/orga/WhatsappPollPage'
+import { TeamDirectoryPage } from '@/components/orga/TeamDirectoryPage'
 import {
   LazyCalendar,
   LazyCounter,
@@ -44,6 +45,7 @@ export const routes: RouteObject[] = [
       { path: '/orga/einladungen', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/aufbau', element: <LazyEquipmentCatalog />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/whatsapp-umfrage', element: <WhatsappPollPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   // Einzige Route ohne RequireAuth — der Zähler soll ohne Anmeldung laufen.

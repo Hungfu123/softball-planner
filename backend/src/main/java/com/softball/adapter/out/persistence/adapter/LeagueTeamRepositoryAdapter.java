@@ -33,6 +33,12 @@ public class LeagueTeamRepositoryAdapter implements LeagueTeamRepository {
     }
 
     @Override
+    public List<LeagueTeam> findAll() {
+        return repo.findAll().stream()
+            .map(mapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<LeagueTeam> findById(final Long id) {
         return repo.findById(id).map(mapper::toDomain);
     }

@@ -487,6 +487,24 @@ export interface YearCopyResponse {
   copiedTeams: number
 }
 
+export interface TeamLeagueOccurrence {
+  teamId: number
+  leagueName: string
+  year: number | null
+}
+
+export interface TeamDirectoryEntry {
+  clubName: string
+  leagues: TeamLeagueOccurrence[]
+  games: number
+  wins: number
+  losses: number
+  ties: number
+  runsFor: number
+  runsAgainst: number
+  battingAverage: number | null
+}
+
 export interface PlayerBattingStatsResponse {
   playerId: number
   playerName: string
