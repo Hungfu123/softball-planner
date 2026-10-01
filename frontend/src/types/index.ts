@@ -479,6 +479,14 @@ export interface OpponentBattingStatsResponse {
   battingAverage: number
 }
 
+export interface YearCopyResponse {
+  templateYear: number
+  targetYear: number
+  createdSeasons: string[]
+  skippedSeasons: string[]
+  copiedTeams: number
+}
+
 export interface PlayerBattingStatsResponse {
   playerId: number
   playerName: string

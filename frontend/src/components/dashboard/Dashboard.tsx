@@ -24,7 +24,7 @@ import * as api from '@/api/client'
 
 
 export function Dashboard() {
-  const { seasons, loading: seasonsLoading, create: createSeason, update: updateSeason, remove: removeSeason } = useSeasons()
+  const { seasons, loading: seasonsLoading, create: createSeason, copyYear, update: updateSeason, remove: removeSeason } = useSeasons()
   const toast = useToastContext()
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
@@ -211,6 +211,7 @@ export function Dashboard() {
           selectedId={selectedSeasonId}
           onSelect={setSelectedSeasonId}
           onCreate={createSeason}
+          onCopyYear={copyYear}
           onUpdate={updateSeason}
           onDelete={async (id) => {
             await removeSeason(id)
