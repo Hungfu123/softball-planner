@@ -164,11 +164,14 @@ export function ClubTile({ entry, history, rank, onOpen }: {
   )
 }
 
-/** Detail-Sheet pro Club: Umbenennen, Stats-Link, Liga-Zeilen (Edit/Delete), Spiel-Historie. */
-export function ClubSheet({ entry, history, allClubNames, onClose, onChanged }: {
+/** Detail-Sheet pro Club: Umbenennen, Stats-Link, Liga-Zeilen (Edit/Delete), Spiel-Historie.
+ *  `loading`: Sheet-Frame bleibt, Inhalt ist Skeleton — verhindert Remount/Neu-Animation
+ *  beim Übergang Laden → Inhalt (z.B. OpponentSheet im Spieltag). */
+export function ClubSheet({ entry, history, allClubNames, loading = false, onClose, onChanged }: {
   entry: TeamDirectoryEntry
   history: ClubGame[]
   allClubNames: string[]
+  loading?: boolean
   onClose: () => void
   onChanged: () => void
 }) {
@@ -243,7 +246,7 @@ export function ClubSheet({ entry, history, allClubNames, onClose, onChanged }: 
         open
         onClose={() => { if (!renameRunning) onClose() }}
         title={entry.clubName}
-        footer={
+        footer={loading ? undefined : (
           <div className="flex flex-wrap justify-end gap-2">
             <button
               onClick={() => { setRenameValue(entry.clubName); setShowRename(true) }}
@@ -259,8 +262,19 @@ export function ClubSheet({ entry, history, allClubNames, onClose, onChanged }: 
               <ArrowsSwap size={12} /> Stats gegen sie
             </button>
           </div>
-        }
+        )}
       >
+        {loading ? (
+          <div className="p-5 space-y-3">
+            <div className="bg-cream-50 border border-cream-200 rounded-2xl p-4 space-y-3">
+              <div className="h-4 w-1/3 rounded bg-cream-200 animate-pulse" />
+              <div className="h-1.5 w-full rounded bg-cream-200 animate-pulse" />
+            </div>
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="h-9 rounded-xl bg-cream-100 animate-pulse" />
+            ))}
+          </div>
+        ) : (
         <div className="p-5 space-y-5">
           {/* Bilanz-Kopf */}
           <div className="bg-cream-50 border border-cream-200 rounded-2xl p-4 space-y-3">
@@ -348,6 +362,7 @@ export function ClubSheet({ entry, history, allClubNames, onClose, onChanged }: 
             )}
           </div>
         </div>
+        )}
       </ResponsiveSheet>
 
       {/* Club-Umbenennung */}
