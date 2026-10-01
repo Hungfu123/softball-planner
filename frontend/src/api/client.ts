@@ -465,8 +465,8 @@ export const getAllTimeStats = () =>
   request<SeasonPlayerStats[]>('/stats/all-time/games')
 export const getOpponentBattingOverview = () =>
   request<OpponentBattingStatsResponse[]>('/stats/opponents')
-export const getOpponentBattingStats = (teamId: number) =>
-  request<PlayerBattingStatsResponse[]>(`/stats/opponents/${teamId}/batting`)
+export const getOpponentBattingStats = (teamName: string) =>
+  request<PlayerBattingStatsResponse[]>(`/stats/opponents/batting?team=${encodeURIComponent(teamName)}`)
 export const getDistinctYears = () =>
   request<number[]>('/seasons/years')
 
