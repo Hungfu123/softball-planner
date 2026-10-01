@@ -1,9 +1,9 @@
 import { useState, useEffect, type MouseEvent as ReactMouseEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GameResponse, LeagueTeamResponse } from '@/types'
 import { TeamCombobox } from '@/components/shared'
+import { OpponentSheet } from '@/components/orga/OpponentSheet'
 import { ArrowsSwap } from '@/icons'
 import * as api from '@/api/client'
 
@@ -18,9 +18,10 @@ interface Props {
 }
 
 export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentChanged, onSwapped, gameCompletions }: Props) {
-  const navigate = useNavigate()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
+  // Club-Bilanz-Sheet des aktiven Gegners — öffnet direkt hier statt Navigate auf /teams
+  const [showBilanz, setShowBilanz] = useState(false)
   // Fixed-Position-Anker fürs Swap-Menü (Portal an document.body, damit es nicht
   // vom overflow-x-auto der Tab-Leiste abgeschnitten wird — Desktop-Bug).
   const [menuAnchor, setMenuAnchor] = useState<{ top: number; left: number } | null>(null)
@@ -233,7 +234,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
             </button>
             {activeGame.opponentTeam && (
               <button
-                onClick={() => navigate(`/teams?club=${encodeURIComponent(activeGame.opponentTeam!.name)}`)}
+                onClick={() => setShowBilanz(true)}
                 className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md cursor-pointer transition-colors font-display text-xs font-bold uppercase tracking-widest text-navy-700 bg-navy-50 hover:bg-navy-100 active:scale-95 transition-transform"
                 title={`Bisherige Bilanz gegen ${activeGame.opponentTeam.name} — Ligen, Spiele, Ergebnisse`}
               >
@@ -269,6 +270,10 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
             className="text-softball-red-700 hover:text-softball-red-900 cursor-pointer"
           >×</button>
         </div>
+      )}
+
+      {showBilanz && activeGame?.opponentTeam && (
+        <OpponentSheet club={activeGame.opponentTeam.name} onClose={() => setShowBilanz(false)} />
       )}
     </div>
   )
