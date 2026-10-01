@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import * as api from '@/api/client'
-import type { GameDayResponse, TeamDirectoryEntry, TeamLeagueOccurrence } from '@/types'
-import { Pencil, TrashBin, CrossBones, ArrowsSwap } from '@/icons'
+import type { GameDayResponse, Season, TeamDirectoryEntry, TeamLeagueOccurrence } from '@/types'
+import { Pencil, TrashBin, CrossBones, ArrowsSwap, PlusCircle } from '@/icons'
 import { ConfirmModal, Button, ResponsiveSheet } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
+import { CreateTeamSheet } from './CreateTeamSheet'
 
 /** Ein Spiel gegen einen Club — client-seitig aus den Spieltagen abgeleitet. */
 interface ClubGame {
@@ -416,11 +417,13 @@ export function TeamDirectoryPage() {
   const [directory, setDirectory] = useState<TeamDirectoryEntry[]>([])
   const [historyByClub, setHistoryByClub] = useState<Map<string, ClubGame[]>>(new Map())
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
+  const [seasons, setSeasons] = useState<Season[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [leagueFilter, setLeagueFilter] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name' | 'record'>('name')
   const [openClub, setOpenClub] = useState<string | null>(null)
+  const [showCreate, setShowCreate] = useState(false)
   // Deep-Link (?club=Name): öffnet das Club-Sheet direkt — genutzt vom Gegner-Chip der Spieltag-Seite
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -443,6 +446,7 @@ export function TeamDirectoryPage() {
       ])
       setDirectory(dir)
       setGameDays(gds)
+      setSeasons(seasons)
 
       const seasonById = new Map(seasons.map(s => [s.id, s]))
       const byClub = new Map<string, ClubGame[]>()
@@ -486,6 +490,31 @@ export function TeamDirectoryPage() {
     }
     return [...names.entries()].sort((a, b) => b[1] - a[1]).map(([name]) => name)
   }, [directory])
+
+  /** Vorselektierte Liga im Anlegen-Sheet: wo man sich gerade "befindet".
+   *  1. aktiver Liga-Filter der Seite (neuestes Jahr dieses Namens),
+   *  2. die auf dem Dashboard gewählte Saison (persistiert),
+   *  3. aktuelle Saison des Kalenderjahres, sonst die zuletzt angelegte. */
+  const recommendedSeasonId = useMemo(() => {
+    if (leagueFilter) {
+      const match = seasons.filter(s => s.name === leagueFilter).sort((a, b) => b.year - a.year)[0]
+      if (match) return match.id
+    }
+    const persisted = Number(localStorage.getItem('dashboard-season-id'))
+    if (!Number.isNaN(persisted) && seasons.some(s => s.id === persisted)) return persisted
+    const currentYear = new Date().getFullYear()
+    const ofCurrentYear = seasons.filter(s => s.year === currentYear)
+    if (ofCurrentYear.length > 0) return ofCurrentYear[ofCurrentYear.length - 1].id
+    return seasons.length > 0 ? seasons[seasons.length - 1].id : null
+  }, [leagueFilter, seasons])
+
+  /** Nach dem Anlegen: Liste neu laden + nur dann den Liga-Filter umschalten,
+   *  wenn ein aktiver Filter das neue Team verbergen würde. */
+  const handleTeamCreated = (season: Season) => {
+    setShowCreate(false)
+    if (leagueFilter && leagueFilter !== season.name) setLeagueFilter(season.name)
+    load()
+  }
 
   /** Nächster anstehender Gegner: erstes zukünftiges Spiel mit Gegner (Spieltage sind nach Datum sortiert). */
   const nextOpponent = useMemo(() => {
@@ -556,10 +585,22 @@ export function TeamDirectoryPage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-3xl xl:max-w-5xl mx-auto p-4 space-y-4">
-        <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
-          Gegner
-          {directory.length > 0 && <span className="text-navy-500 font-bold text-xl"> ({directory.length})</span>}
-        </h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
+            Gegner
+            {directory.length > 0 && <span className="text-navy-500 font-bold text-xl"> ({directory.length})</span>}
+          </h1>
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<PlusCircle size={13} />}
+            onClick={() => setShowCreate(true)}
+            className="font-display text-[11px] font-bold tracking-widest uppercase rounded-full px-3.5 py-2 shrink-0 active:scale-95 transition-transform"
+            title="Neues Gegner-Team anlegen"
+          >
+            Gegner anlegen
+          </Button>
+        </div>
 
         {directory.length > 6 && (
           <input
@@ -682,6 +723,16 @@ export function TeamDirectoryPage() {
           allClubNames={directory.map(d => d.clubName)}
           onClose={closeClubSheet}
           onChanged={() => { load(); closeClubSheet() }}
+        />
+      )}
+
+      {showCreate && (
+        <CreateTeamSheet
+          seasons={seasons}
+          recommendedSeasonId={recommendedSeasonId}
+          directory={directory}
+          onClose={() => setShowCreate(false)}
+          onCreated={handleTeamCreated}
         />
       )}
     </div>

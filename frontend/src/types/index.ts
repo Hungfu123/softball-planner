@@ -489,6 +489,7 @@ export interface YearCopyResponse {
 
 export interface TeamLeagueOccurrence {
   teamId: number
+  seasonId: number
   leagueName: string
   year: number | null
 }
