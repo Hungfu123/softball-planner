@@ -10,6 +10,7 @@ import { LineupEditor } from './LineupEditor'
 import { LineupSetBar } from './LineupSetBar'
 import { SaveSetModal } from './SaveSetModal'
 import { useLineupSets } from '@/hooks/useLineupSets'
+import { useOpponentBattingStats } from '@/hooks/useOpponentBattingStats'
 import { PlayerPool } from './PlayerPool'
 import { FieldView } from './FieldView'
 import { FieldPositionAssignSheet } from './FieldPositionAssignSheet'
@@ -78,6 +79,9 @@ export function GameDayPlanner() {
   const [excludedTrainingWeekdays, setExcludedTrainingWeekdays] = useState<number[]>([])
   const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
+
+  // Gegner-Splits EINMAL pro Gegner laden (PlayerPool wird mobil + desktop zweimal gerendert)
+  const opponentBatting = useOpponentBattingStats(activeGame?.opponentTeam?.name ?? null)
 
   // Block in-app navigation when there are unsaved changes
   const blocker = useBlocker(lineup.hasChanges)
@@ -970,6 +974,8 @@ export function GameDayPlanner() {
                   battingStatsYear={yearBattingStats}
                   seasonYear={season?.year ?? null}
                   gameDayDate={gameDay.date}
+                  opponentTeamName={activeGame?.opponentTeam?.name ?? null}
+                  opponentBatting={opponentBatting}
                   onAdd={handleAddPlayer}
                 />
                 <div className="hidden lg:block">
@@ -1025,6 +1031,8 @@ export function GameDayPlanner() {
                   battingStatsYear={yearBattingStats}
                   seasonYear={season?.year ?? null}
                   gameDayDate={gameDay.date}
+                  opponentTeamName={activeGame?.opponentTeam?.name ?? null}
+                  opponentBatting={opponentBatting}
                   onAdd={handleAddPlayer}
                 />
               </div>
