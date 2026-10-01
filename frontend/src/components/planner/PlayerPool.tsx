@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse, PlayerBattingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
+import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 
 interface Props {
@@ -13,6 +14,11 @@ interface Props {
   battingStatsYear?: PlayerBattingStatsResponse[]
   seasonYear?: number | null
   gameDayDate: string
+  /** Gegner des aktiven Spiels — aktiviert den Gegner-Scope (AVG/OBP/OPS vs. dieses Team). */
+  opponentTeamName?: string | null
+  /** Gegner-Splits — zentral über useOpponentBattingStats geladen (ein Request statt zwei, siehe Hook).
+   *  Required: Ohne Status (loading/failed) könnte die Empty-Zeile fälschlich laden, ohne je geladen zu haben. */
+  opponentBatting: OpponentBattingState
   onAdd: (player: Player) => void
 }
 
@@ -43,6 +49,27 @@ function gameCountBadge(gc: number): string {
 
 type TrainingFilter = '3months' | 'all'
 
+/** Ein Scope-Chip im AVG-Toggle — aktive Variante per Klasse (Gegner rot, Saison/Jahr navy). */
+function ScopeChip({ label, active, activeClass, title, onClick }: {
+  label: string
+  active: boolean
+  activeClass: string
+  title?: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer active:scale-95 ${
+        active ? activeClass : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
+      }`}
+    >
+      {label}
+    </button>
+  )
+}
+
 function sinceDate(filter: TrainingFilter, refDate: string): string | undefined {
   if (filter === 'all') return undefined
   const d = new Date(refDate + 'T00:00:00')
@@ -53,19 +80,38 @@ function sinceDate(filter: TrainingFilter, refDate: string): string | undefined 
 export function PlayerPool({
   allAvailablePlayers, lineupPlayerIds, stats,
   battingStatsSeason = [], battingStatsYear = [], seasonYear,
-  gameDayDate, onAdd,
+  gameDayDate, opponentTeamName, opponentBatting, onAdd,
 }: Props) {
-  const [battingScope, setBattingScope] = useState<'season' | 'year'>(() => {
+  const [storedScope, setStoredScope] = useState<'season' | 'year'>(() => {
     if (typeof window === 'undefined') return 'year'
     const stored = localStorage.getItem('player-pool-batting-scope')
     return stored === 'season' || stored === 'year' ? stored : 'year'
   })
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('player-pool-batting-scope', battingScope)
-    }
-  }, [battingScope])
-  const battingStats = battingScope === 'year' ? battingStatsYear : battingStatsSeason
+  const [battingScope, setBattingScope] = useState<'season' | 'year' | 'opponent'>(opponentTeamName ? 'opponent' : storedScope)
+
+  /** Saison/Jahr per Chip gewählt → Präferenz persistieren (Event-getrieben, kein Effect).
+   *  'opponent' wird bewusst nicht persistiert — es ist pro Spiel kontextuell. */
+  const chooseScope = (next: 'season' | 'year') => {
+    setBattingScope(next)
+    setStoredScope(next)
+    if (typeof window !== 'undefined') localStorage.setItem('player-pool-batting-scope', next)
+  }
+
+  // Gegner gewechselt → automatisch auf Gegner-Scope springen (die Frage ist ja "wie liefen wir gegen DIE?");
+  // Gegner entfernt → zurück auf die gespeicherte Präferenz. Anpassung während des Renders
+  // (React-Dokumentiertes Muster für "State bei Prop-Änderung korrigieren", kein Effect nötig).
+  const [prevOpponent, setPrevOpponent] = useState(opponentTeamName)
+  if (opponentTeamName !== prevOpponent) {
+    setPrevOpponent(opponentTeamName)
+    setBattingScope(opponentTeamName ? 'opponent' : storedScope)
+  }
+
+  const battingStats = useMemo(() => {
+    if (battingScope === 'year') return battingStatsYear
+    if (battingScope === 'season') return battingStatsSeason
+    return opponentBatting.stats
+  }, [battingScope, battingStatsYear, battingStatsSeason, opponentBatting])
+  const opponentScopeActive = battingScope === 'opponent' && !!opponentTeamName
   const battingMap = useMemo(() =>
     new Map(battingStats.map(b => [b.playerId, b])),
     [battingStats]
@@ -270,45 +316,78 @@ export function PlayerPool({
           const topAvg = avgValues.length > 0 ? Math.max(...avgValues) : null
           return (
         <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
-          {/* Scope-Toggle: AVG über Saison oder ganzes Jahr */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cream-50 border-b border-cream-200 text-[10px]">
-            <span className="text-gray-500 mr-1">AVG:</span>
-            <button
-              onClick={() => setBattingScope('season')}
-              className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer ${
-                battingScope === 'season'
-                  ? 'bg-navy-800 text-white'
-                  : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
-              }`}
-            >
-              Saison
-            </button>
-            <button
-              onClick={() => setBattingScope('year')}
-              className={`px-2 py-0.5 rounded-full font-semibold transition-colors cursor-pointer ${
-                battingScope === 'year'
-                  ? 'bg-navy-800 text-white'
-                  : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
-              }`}
-            >
-              Jahr {seasonYear ?? ''}
-            </button>
+          {/* Scope-Toggle: vs Gegner (falls gesetzt) · Saison · Jahr */}
+          <div className="flex flex-wrap items-center gap-1.5 px-3 py-1.5 bg-cream-50 border-b border-cream-200 text-[10px]">
+            {opponentTeamName && (
+              <ScopeChip
+                label={`vs ${opponentTeamName.length > 14 ? opponentTeamName.slice(0, 13) + '…' : opponentTeamName}`}
+                active={battingScope === 'opponent'}
+                activeClass="bg-softball-red-600 text-white"
+                title={`Schlag-Statistik gegen ${opponentTeamName} (alle Ligen, alle Spiele)`}
+                onClick={() => setBattingScope('opponent')}
+              />
+            )}
+            <ScopeChip
+              label="Saison"
+              active={battingScope === 'season'}
+              activeClass="bg-navy-800 text-white"
+              onClick={() => chooseScope('season')}
+            />
+            <ScopeChip
+              label={`Jahr ${seasonYear ?? ''}`}
+              active={battingScope === 'year'}
+              activeClass="bg-navy-800 text-white"
+              onClick={() => chooseScope('year')}
+            />
+            {battingScope === 'opponent' && opponentTeamName && (
+              <Link
+                to={`/teams?club=${encodeURIComponent(opponentTeamName)}`}
+                className="ml-auto text-navy-700 hover:text-softball-red-600 hover:underline cursor-pointer whitespace-nowrap"
+                title={`Bilanz und Spiel-Historie gegen ${opponentTeamName}`}
+              >
+                Historie →
+              </Link>
+            )}
           </div>
-          {/* Ein einziger Header mit Spalten-Labels — navy-900 für 30%-Palette */}
-          <div className="grid grid-cols-[minmax(0,1fr)_3.5rem] gap-3 px-3 py-2 bg-navy-900 text-white text-[10px] font-bold uppercase tracking-wider">
+          {/* Spalten-Header — navy-900 für 30%-Palette */}
+          <div className="grid grid-cols-[minmax(0,1fr)_2.9rem_2.9rem_3.2rem] gap-2 px-3 py-2 bg-navy-900 text-white text-[10px] font-bold uppercase tracking-wider">
             <span className="truncate">Spieler</span>
-            <span className="text-left" title={battingScope === 'year' ? 'Batting Average dieses Jahres (alle Saisons)' : 'Batting Average dieser Saison'}>AVG</span>
+            <span className="text-left" title="Batting Average — Treffer ÷ At-Bats">AVG</span>
+            <span className="text-left" title="On-Base Percentage — wie oft die Base erreicht wird">OBP</span>
+            <span className="text-left" title="On-Base + Slugging — Gesamtstärke">OPS</span>
           </div>
+          {opponentScopeActive && opponentBatting.loading && (
+            <p className="px-3 py-2 text-xs text-gray-400 italic bg-cream-50 border-b border-cream-200">
+              Stats gegen {opponentTeamName} werden geladen…
+            </p>
+          )}
+          {opponentScopeActive && !opponentBatting.loading && opponentBatting.failed && (
+            <p className="px-3 py-2 text-xs text-softball-red-700 bg-softball-red-50 border-b border-softball-red-100">
+              Stats gegen {opponentTeamName} konnten nicht geladen werden.
+            </p>
+          )}
+          {opponentScopeActive && !opponentBatting.loading && !opponentBatting.failed
+            && opponentBatting.stats.length === 0 && (
+            <p className="px-3 py-2 text-xs text-gray-400 italic bg-cream-50 border-b border-cream-200">
+              Noch keine Schlag-Daten gegen {opponentTeamName} — beim ersten gemeinsamen Spiel entstehen sie automatisch.
+            </p>
+          )}
           {allSorted.map(player => {
             const bs = battingMap.get(player.id)
-            const avgNum = bs && bs.atBats > 0 ? Number(bs.battingAverage) : null
+            const hasAbs = bs && bs.atBats > 0
+            const avgNum = hasAbs ? Number(bs.battingAverage) : null
             const avgStr = avgNum != null ? formatAvg(avgNum) : null
+            const obpStr = hasAbs ? formatAvg(Number(bs.onBasePct)) : null
+            const opsStr = hasAbs ? formatAvg(Number(bs.ops)) : null
             const isTop = avgNum != null && topAvg != null && avgNum === topAvg
+            const scopeTitle = battingScope === 'opponent' && opponentTeamName
+              ? ` gegen ${opponentTeamName}`
+              : battingScope === 'year' ? ' dieses Jahres' : ' dieser Saison'
 
             return (
               <div
                 key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_3.5rem] gap-3 items-center px-3 py-2 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
+                className="grid grid-cols-[minmax(0,1fr)_2.9rem_2.9rem_3.2rem] gap-2 items-center px-3 py-2 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
               >
                 <span className="text-sm text-gray-800 truncate">
                   {player.name}
@@ -317,8 +396,16 @@ export function PlayerPool({
                 <span className={`text-left text-sm font-display tabular-nums font-bold ${
                   isTop ? 'text-softball-red-600' : avgStr ? 'text-navy-900' : 'text-gray-300'
                 }`}
-                      title={avgStr ? `${bs?.hits}/${bs?.atBats} Treffer${isTop ? ' · Top-AVG' : ''}` : 'Noch keine At-Bats'}>
+                      title={avgStr ? `${bs?.hits}/${bs?.atBats} Treffer${isTop ? ' · Top-AVG' : ''}${scopeTitle}` : `Noch keine At-Bats${scopeTitle}`}>
                   {avgStr ?? '—'}
+                </span>
+                <span className={`text-left text-sm font-display tabular-nums ${obpStr ? 'text-gray-600' : 'text-gray-300'}`}
+                      title={`On-Base Percentage${scopeTitle}`}>
+                  {obpStr ?? '—'}
+                </span>
+                <span className={`text-left text-sm font-display tabular-nums ${opsStr ? 'text-gray-600' : 'text-gray-300'}`}
+                      title={`OBP + Slugging${scopeTitle}`}>
+                  {opsStr ?? '—'}
                 </span>
               </div>
             )
