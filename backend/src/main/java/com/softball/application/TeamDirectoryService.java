@@ -107,7 +107,7 @@ public class TeamDirectoryService {
                     final Season season = seasonById.get(t.getSeasonId());
                     final String leagueName = season != null ? season.getName() : "—";
                     final Integer year = season != null ? season.getYear() : null;
-                    return new TeamLeagueOccurrence(t.getId(), leagueName, year);
+                    return new TeamLeagueOccurrence(t.getId(), t.getSeasonId(), leagueName, year);
                 })
                 .sorted(Comparator.comparing(TeamLeagueOccurrence::leagueName)
                     .thenComparing(o -> o.year() == null ? 0 : o.year()))
