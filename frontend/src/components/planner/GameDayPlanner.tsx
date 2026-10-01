@@ -26,7 +26,7 @@ import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { EmptyState, Button } from '@/components/shared'
-import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon } from '@/icons'
+import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon, CheckCircle } from '@/icons'
 import { MapPin } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse, GameDayVotePreview } from '@/types'
@@ -79,6 +79,23 @@ export function GameDayPlanner() {
   const [excludedTrainingWeekdays, setExcludedTrainingWeekdays] = useState<number[]>([])
   const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
+
+  // FERTIG: Backend `endedAt` ist die Wahrheit (wie HeroNextGameDay) — Score-Presence
+  // allein zählt nicht (Spiel kann mid-game 0–0 stehen). Der rote Live-Button wird
+  // für beendete Spiele zum leiseren Ergebnis-Button (Klick öffnet Spielbogen/Stats).
+  const activeGameFinished = activeGame?.endedAt != null
+  const activeResult = !activeGameFinished || activeGame?.scoreUs == null || activeGame.scoreThem == null
+    ? null
+    : activeGame.scoreUs > activeGame.scoreThem ? 'W'
+    : activeGame.scoreUs < activeGame.scoreThem ? 'L' : 'T'
+  const finishedScoreBtnLabel = !activeGameFinished
+    ? null
+    : activeResult == null ? 'Beendet'
+    : `${activeResult === 'W' ? 'Sieg' : activeResult === 'L' ? 'Niederlage' : 'Unentschieden'} ${activeGame!.scoreUs}:${activeGame!.scoreThem}`
+  const finishedScoreBtnCls =
+    activeResult === 'W' ? 'bg-emerald-50 border border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+    : activeResult === 'L' ? 'bg-softball-red-50 border border-softball-red-300 text-softball-red-700 hover:bg-softball-red-100'
+    : 'bg-navy-50 border border-navy-300 text-navy-900 hover:bg-navy-100'
 
   // Gegner-Splits EINMAL pro Gegner laden (PlayerPool wird mobil + desktop zweimal gerendert)
   const opponentBatting = useOpponentBattingStats(activeGame?.opponentTeam?.name ?? null)
@@ -711,10 +728,24 @@ export function GameDayPlanner() {
               {gameDay && gameDay.games.length > 0 && (
                 <Link
                   to={`/gameday/${gameDayId}/scoring/${activeTab}`}
-                  className="px-3 py-2.5 rounded-lg bg-softball-red-600 text-white font-bold text-sm hover:bg-softball-red-700 transition-colors cursor-pointer inline-flex items-center justify-center gap-1.5"
+                  className={`px-3 py-2.5 rounded-lg font-bold text-sm cursor-pointer inline-flex items-center justify-center gap-1.5 border transition-[background-color,border-color,color,transform] active:scale-[0.98] ${
+                    activeGameFinished
+                      ? finishedScoreBtnCls
+                      : 'border-transparent bg-softball-red-600 text-white hover:bg-softball-red-700'
+                  }`}
+                  title={activeGameFinished ? 'Beendet — Spielbogen & Statistiken ansehen' : 'Live scoren'}
                 >
-                  <BallIcon size={18} />
-                  <span>Live scoren</span>
+                  {activeGameFinished ? (
+                    <>
+                      <CheckCircle size={18} />
+                      <span>{finishedScoreBtnLabel}</span>
+                    </>
+                  ) : (
+                    <>
+                      <BallIcon size={18} />
+                      <span>Live scoren</span>
+                    </>
+                  )}
                 </Link>
               )}
             </div>
@@ -771,11 +802,24 @@ export function GameDayPlanner() {
               {gameDay && gameDay.games.length > 0 && (
                 <Link
                   to={`/gameday/${gameDayId}/scoring/${activeTab}`}
-                  className="font-display px-4 py-2 rounded-lg bg-softball-red-600 text-white font-extrabold text-xs tracking-widest uppercase hover:bg-softball-red-700 shadow-sm shadow-softball-red-600/20 transition-colors cursor-pointer inline-flex items-center gap-1.5"
-                  title="Live scoren"
+                  className={`font-display px-4 py-2 rounded-lg font-extrabold text-xs tracking-widest uppercase cursor-pointer inline-flex items-center gap-1.5 border shadow-sm transition-[background-color,border-color,color,transform] active:scale-[0.98] ${
+                    activeGameFinished
+                      ? finishedScoreBtnCls
+                      : 'border-transparent bg-softball-red-600 text-white hover:bg-softball-red-700 shadow-softball-red-600/20'
+                  }`}
+                  title={activeGameFinished ? 'Beendet — Spielbogen & Statistiken ansehen' : 'Live scoren'}
                 >
-                  <BallIcon size={15} />
-                  <span>Live scoren</span>
+                  {activeGameFinished ? (
+                    <>
+                      <CheckCircle size={15} />
+                      <span>{finishedScoreBtnLabel}</span>
+                    </>
+                  ) : (
+                    <>
+                      <BallIcon size={15} />
+                      <span>Live scoren</span>
+                    </>
+                  )}
                 </Link>
               )}
               <PollSyncToolbarButton variant="desktop" pollStatus={pollStatus} onClick={() => setShowPollSync(true)} />
