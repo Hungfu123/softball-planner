@@ -3,7 +3,10 @@ package com.softball.adapter.in.web;
 import com.softball.adapter.dto.CreateLeagueTeamRequest;
 import com.softball.adapter.dto.LeagueTeamResponse;
 import com.softball.adapter.dto.StandingsEntry;
+import com.softball.adapter.dto.TeamDirectoryEntry;
+import com.softball.adapter.dto.RenameClubRequest;
 import com.softball.application.LeagueTeamService;
+import com.softball.application.TeamDirectoryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +18,23 @@ import java.util.List;
 public class LeagueTeamController {
 
     private final LeagueTeamService leagueTeamService;
+    private final TeamDirectoryService teamDirectoryService;
 
-    public LeagueTeamController(final LeagueTeamService leagueTeamService) {
+    public LeagueTeamController(final LeagueTeamService leagueTeamService,
+                                final TeamDirectoryService teamDirectoryService) {
         this.leagueTeamService = leagueTeamService;
+        this.teamDirectoryService = teamDirectoryService;
+    }
+
+    @GetMapping("/teams/directory")
+    public List<TeamDirectoryEntry> getTeamDirectory() {
+        return teamDirectoryService.getDirectory();
+    }
+
+    @PutMapping("/teams/directory/rename")
+    public List<TeamDirectoryEntry> renameClub(@Valid @RequestBody final RenameClubRequest request) {
+        teamDirectoryService.renameClub(request.currentName(), request.newName());
+        return teamDirectoryService.getDirectory();
     }
 
     @GetMapping("/seasons/{seasonId}/teams")

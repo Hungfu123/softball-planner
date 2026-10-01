@@ -6,6 +6,7 @@ import java.util.Optional;
 
 public interface LeagueTeamRepository {
     List<LeagueTeam> findBySeasonIdOrderByNameAsc(Long seasonId);
+    List<LeagueTeam> findAll();
     Optional<LeagueTeam> findById(Long id);
     Optional<LeagueTeam> findBySeasonIdAndNameIgnoreCase(Long seasonId, String name);
     LeagueTeam save(LeagueTeam team);

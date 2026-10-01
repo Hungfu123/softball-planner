@@ -38,6 +38,7 @@ import type {
   GameDayResponse,
   GameResponse,
   LeagueTeamResponse,
+  TeamDirectoryEntry,
   LineupEntryResponse,
   GameStaffResponse,
   GameDayPlayerStats,
@@ -280,6 +281,15 @@ export const updateLeagueTeam = (teamId: number, name: string) =>
   request<LeagueTeamResponse>(`/teams/${teamId}`, { method: 'PUT', body: JSON.stringify({ name }) })
 export const deleteLeagueTeam = (teamId: number) =>
   request<void>(`/teams/${teamId}`, { method: 'DELETE' })
+
+// Team-Verzeichnis (Club-Sicht über alle Ligen)
+export const getTeamDirectory = () =>
+  request<TeamDirectoryEntry[]>('/teams/directory')
+export const renameTeamClub = (currentName: string, newName: string) =>
+  request<TeamDirectoryEntry[]>('/teams/directory/rename', {
+    method: 'PUT',
+    body: JSON.stringify({ currentName, newName }),
+  })
 
 // League Results
 export const getLeagueResults = (seasonId: number) =>
