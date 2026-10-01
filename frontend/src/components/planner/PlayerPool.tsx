@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodResponse, PlayerBattingStatsResponse } from '@/types'
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
+import { OpponentSheet } from '@/components/orga/OpponentSheet'
 
 interface Props {
   allAvailablePlayers: Player[]
@@ -132,6 +133,8 @@ export function PlayerPool({
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
   /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — Montag ist P/C-Training. */
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
+  // Club-Bilanz-Sheet des Gegners — öffnet direkt hier statt Navigate auf /teams
+  const [showHistorie, setShowHistorie] = useState(false)
   const toggleWeekday = useCallback((weekday: number) => {
     setExcludedWeekdays(prev =>
       prev.includes(weekday) ? prev.filter(d => d !== weekday) : [...prev, weekday])
@@ -340,13 +343,13 @@ export function PlayerPool({
               onClick={() => chooseScope('year')}
             />
             {battingScope === 'opponent' && opponentTeamName && (
-              <Link
-                to={`/teams?club=${encodeURIComponent(opponentTeamName)}`}
+              <button
+                onClick={() => setShowHistorie(true)}
                 className="ml-auto text-navy-700 hover:text-softball-red-600 hover:underline cursor-pointer whitespace-nowrap"
                 title={`Bilanz und Spiel-Historie gegen ${opponentTeamName}`}
               >
                 Historie →
-              </Link>
+              </button>
             )}
           </div>
           {/* Spalten-Header — navy-900 für 30%-Palette */}
@@ -495,6 +498,10 @@ export function PlayerPool({
             })()
           )}
         </div>
+      )}
+
+      {showHistorie && opponentTeamName && (
+        <OpponentSheet club={opponentTeamName} onClose={() => setShowHistorie(false)} />
       )}
     </div>
   )
