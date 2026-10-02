@@ -10,6 +10,19 @@ async function client(): Promise<APIRequestContext> {
   })
 }
 
+/**
+ * API-Client für die Dauer eines Callbacks: aufbauend auf `client()`, disposed danach
+ * garantiert. Spart das try/finally-dispose-Boilerplate in jedem Spec.
+ */
+export async function withApi<T>(fn: (c: APIRequestContext) => Promise<T>): Promise<T> {
+  const c = await client()
+  try {
+    return await fn(c)
+  } finally {
+    await c.dispose()
+  }
+}
+
 type Player = { id: number; name: string; defaultBattingOrder: number | null }
 type Season = { id: number; name: string; year: number }
 type GameDay = { id: number; date: string; label?: string | null; games: { id: number; gameNumber: number }[] }

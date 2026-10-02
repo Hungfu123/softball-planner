@@ -1,5 +1,6 @@
 import { useState, useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { portalOverlayAttrs, portalOverlayClickable } from './portalOverlay'
 import { motion, AnimatePresence } from 'motion/react'
 
 interface Props {
@@ -49,7 +50,8 @@ export function HelpPopover({ title, body }: Props) {
         <AnimatePresence>
           {open && coords && (
             <>
-              <div className="fixed inset-0 z-[1000]" onClick={() => setOpen(false)} />
+              {/* portalOverlay*: Schutz vor dem body-Lock eines offenen vaul-Drawers — Details in PortalOverlay */}
+              <div {...portalOverlayAttrs} className={`fixed inset-0 z-[1000] ${portalOverlayClickable}`} onClick={() => setOpen(false)} />
               <motion.div
                 id={popoverId}
                 role="dialog"
@@ -60,7 +62,7 @@ export function HelpPopover({ title, body }: Props) {
                 exit={{ opacity: 0, y: 4, scale: 0.95 }}
                 transition={{ duration: 0.12 }}
                 style={{ position: 'fixed', top: coords.top, right: coords.right, zIndex: 1001 }}
-                className="w-72 max-w-[calc(100vw-2rem)] bg-cream-50 border border-cream-300 rounded-2xl shadow-xl p-3"
+                className={`w-72 max-w-[calc(100vw-2rem)] bg-cream-50 border border-cream-300 rounded-2xl shadow-xl p-3 ${portalOverlayClickable}`}
               >
                 <div id={`${popoverId}-title`} className="font-display text-xs font-extrabold tracking-widest uppercase text-navy-900 mb-1.5">
                   {title}

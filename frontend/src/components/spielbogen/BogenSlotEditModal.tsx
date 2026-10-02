@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { XMark } from '@/icons'
-import { Button } from '@/components/shared'
+import { Button, PortalOverlay } from '@/components/shared'
 import type { SpielbogenSlotResponse, UpdateSlotRequest } from '@/types'
 
 const POSITION_OPTIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'EH', 'DH']
@@ -56,11 +55,12 @@ export function BogenSlotEditModal({ open, onClose, slot, onSubmit }: Props) {
     }
   }
 
-  // Portal ans document.body — wird aus dem offenen Spielbogen-Drawer heraus geöffnet,
-  // der selbst ans body portalt. Ohne Portal läge dieses Modal als #root-Kind davor
-  // im DOM und damit bei gleichem z-50 unsichtbar hinter dem Drawer.
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
+  // PortalOverlay: wird aus dem offenen Spielbogen-Drawer heraus geöffnet, der selbst
+  // ans body portalt — ohne Portal läge dieses Modal als #root-Kind hinter dem Drawer.
+  // Zusätzlich die beiden Schutzmechanismen gegen den Radix-Lock eines offenen
+  // vaul-Drawers (Details in PortalOverlay).
+  return (
+    <PortalOverlay className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
@@ -128,7 +128,6 @@ export function BogenSlotEditModal({ open, onClose, slot, onSubmit }: Props) {
           </Button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </PortalOverlay>
   )
 }

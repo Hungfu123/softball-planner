@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Drawer } from 'vaul'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { portalOverlayClickable } from './portalOverlay'
 import { motion, AnimatePresence } from 'motion/react'
 import { XMark } from '@/icons'
 
@@ -43,7 +44,17 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
       <Root open={open} onOpenChange={(o) => { if (!o) onClose() }}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-50" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl overflow-hidden max-h-[90vh] flex flex-col focus:outline-none">
+          <Drawer.Content
+            // Klicks in Portal-Overlays (ConfirmModal, BogenSlotEditModal, …) liegen außerhalb
+            // dieses Layers und würden vauls Outside-Dismiss auslösen — das Sheet schliesst
+            // sich, bevor der Handler des Overlays läuft (der Klick trifft ein unmountendes
+            // Element). data-portal-overlay markiert solche Overlays; für sie nicht dismissen.
+            onPointerDownOutside={(e) => {
+              const target = e.target as HTMLElement | null
+              if (target?.closest('[data-portal-overlay]')) e.preventDefault()
+            }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl overflow-hidden max-h-[90vh] flex flex-col focus:outline-none"
+          >
             <Drawer.Title className="sr-only">{title}</Drawer.Title>
             <div className="w-12 h-1.5 bg-cream-300 rounded-full mx-auto mt-3 shrink-0" />
             <div className="flex items-center justify-between px-5 py-3 border-b border-cream-300 shrink-0">
@@ -123,13 +134,17 @@ function CenterModal({ onClose, title, maxWidth, footer, children }: { onClose: 
     }
   }, [onClose])
 
+  // portalOverlayClickable am Backdrop entkommt dem body-Lock eines offenen vaul-Drawers
+  // (Details in PortalOverlay) — nötig, wenn dieses CenterModal selbst aus einem vaul
+  // heraus geöffnet wird. data-portal-overlay braucht es hier bewusst NICHT: der Backdrop
+  // gehört zum Sheet und soll darunterliegende Sheets sehr wohl schließen.
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 ${portalOverlayClickable}`}
       onClick={onClose}
     >
       <motion.div

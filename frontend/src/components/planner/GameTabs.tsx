@@ -1,5 +1,6 @@
 import { useState, useEffect, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { portalOverlayAttrs, portalOverlayClickable } from '@/components/shared'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { GameResponse, LeagueTeamResponse } from '@/types'
 import { TeamCombobox } from '@/components/shared'
@@ -84,9 +85,9 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           der Tab-Leiste, das es auf Desktop sonst abschneidet. */}
       {menuGame && menuAnchor && createPortal(
         <div
-          data-swap-menu
+          data-swap-menu {...portalOverlayAttrs}
           style={{ position: 'fixed', top: menuAnchor.top, left: menuAnchor.left }}
-          className="bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-[60] min-w-[200px]"
+          className={`bg-cream-50 border border-cream-300 rounded-lg shadow-lg py-1 z-[60] min-w-[200px] ${portalOverlayClickable}`}
         >
           <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Lineup tauschen mit…</div>
           {games.filter(g => g.id !== menuGame.id).map(target => (
