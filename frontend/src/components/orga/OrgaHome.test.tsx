@@ -17,4 +17,14 @@ describe('OrgaHome', () => {
     expect(screen.getByRole('link', { name: /Zähler/ })).toHaveAttribute('href', '/counter')
     expect(screen.getByRole('link', { name: /Kalender/ })).toHaveAttribute('href', '/kalender')
   })
+
+  it('hat keine Gegner-Kachel mehr — der Navigations-Tab GEGNER ist der Einstieg', () => {
+    render(
+      <MemoryRouter>
+        <OrgaHome />
+      </MemoryRouter>,
+    )
+
+    expect(screen.queryByRole('link', { name: /Gegner/ })).toBeNull()
+  })
 })
