@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "lineup_set_game_rotation")
+@Table(name = "lineup_set_game_rotation",
+    uniqueConstraints = @UniqueConstraint(name = "uq_lineup_set_game_rotation",
+        columnNames = {"lineup_set_id", "game_number"}))
 public class LineupSetGameRotationEntity {
 
     @Id

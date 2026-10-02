@@ -209,6 +209,53 @@ class LineupSetIntegrationTest {
     }
 
     @Test
+    void overwriteWithUnchangedMultiGameRotationWorks() throws Exception {
+        // Dev-Reproduktion: mehrere Spiele mit Base-Coach-Rotationen, dann OHNE
+        // Zwischenänderung überschreiben. Erwartet: 200 (kein Unique-Constraint-
+        // Verletzt durch ersetzte Rotations-Zeilen).
+        mockMvc.perform(put("/api/gamedays/" + gameDayId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("numberOfGames", 3))))
+            .andExpect(status().isOk());
+        final var games = objectMapper.readTree(mockMvc.perform(get("/api/gamedays/" + gameDayId))
+            .andReturn().getResponse().getContentAsString()).get("games");
+        final Long game2 = games.get(1).get("id").asLong();
+        final Long game3 = games.get(2).get("id").asLong();
+        for (final Long g : new Long[] {game2, game3}) {
+            mockMvc.perform(put("/api/games/" + g + "/lineup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(
+                    Map.of("playerId", p1.getId(), "position", "P", "battingOrder", 1),
+                    Map.of("playerId", p2.getId(), "position", "1B", "battingOrder", 2),
+                    Map.of("playerId", p3.getId(), "position", "C", "battingOrder", 3)
+                )))).andExpect(status().isOk());
+        }
+        for (final Long g : new Long[] {gameId, game2, game3}) {
+            mockMvc.perform(put("/api/games/" + g + "/coach-rotation")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(Map.of(
+                        "firstBaseCoachRotation", "POS_2_7",
+                        "thirdBaseCoachRotation", "POS_3_8"))))
+                .andExpect(status().isOk());
+        }
+
+        final MvcResult created = mockMvc.perform(post("/api/gamedays/" + gameDayId + "/lineup-sets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Mit Rotationen"))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.rotations.length()").value(3))
+            .andReturn();
+        final Long setId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(put("/api/lineup-sets/" + setId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rotations.length()").value(3));
+        mockMvc.perform(put("/api/lineup-sets/" + setId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.rotations.length()").value(3));
+    }
+
+    @Test
     void overwriteUnknownSetIs404() throws Exception {
         mockMvc.perform(put("/api/lineup-sets/999999")).andExpect(status().isNotFound());
     }

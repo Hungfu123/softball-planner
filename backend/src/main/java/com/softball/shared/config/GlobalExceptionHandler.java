@@ -49,9 +49,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrity(final DataIntegrityViolationException ex) {
-        log.warn("Datenintegritaet verletzt (Datensatz wird noch referenziert): {}", ex.getMostSpecificCause().getMessage());
+        // Betroffen sind sowohl Löschungen (noch referenzierte Datensätze) als auch
+        // Speicherungen (doppelte Einträge) — die Meldung muss beides abdecken.
+        log.warn("Datenintegritaet verletzt: {}", ex.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(errorBody("Datensatz wird noch von anderen Daten referenziert und kann nicht gelöscht werden."));
+            .body(errorBody("Änderung nicht möglich: Sie verletzt eine Datenbankregel (doppelte Einträge oder noch referenzierte Daten)."));
     }
 
     private Map<String, Object> errorBody(final String message) {
