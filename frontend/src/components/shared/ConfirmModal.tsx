@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import { XMark, AlertCircle } from '@/icons'
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock'
+import { PortalOverlay } from './PortalOverlay'
 
 interface Props {
   title: string
@@ -39,11 +39,11 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancel
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [onCancel])
 
-  // Portal ans document.body — wie ResponsiveSheet. Sonst bliebe das Modal ein DOM-Kind
-  // von #root, während ein offenes Sheet als späteres Body-Kind daneben liegt: bei
-  // gleichem z-50 gewinnt das spätere Element, das Modal verschwände dahinter.
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onCancel}>
+  // PortalOverlay: Portal ans document.body (sonst läge das Modal als #root-Kind hinter
+  // einem späteren Body-Kind wie dem Sheet) plus der beiden Schutzmechanismen gegen den
+  // Radix-Lock eines offenen vaul-Drawers — Details dort.
+  return (
+    <PortalOverlay className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onCancel}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -54,7 +54,7 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancel
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-cream-300">
           <h2 id="confirm-modal-title" className="text-lg font-bold text-gray-900">{title}</h2>
-          <button onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
+          <button onClick={onCancel} aria-label="Schließen" className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer">
             <XMark size={20} />
           </button>
         </div>
@@ -80,7 +80,6 @@ export function ConfirmModal({ title, message, confirmLabel = 'Löschen', cancel
           </button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </PortalOverlay>
   )
 }
