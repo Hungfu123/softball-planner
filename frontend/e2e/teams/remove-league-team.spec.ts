@@ -67,11 +67,11 @@ async function leaguesOf(club: string): Promise<string[]> {
 /**
  * Club-Sheet auf dem vom User beschriebenen Pfad öffnen: Gegner-Seite, Club-Kachel
  * antippen. (Der ?club=-Deep-Link ist ein anderer Weg und würde den Klick-Pfad
- * nicht absichern.)
+ * nicht absichern.) Kein Suchfeld nutzen: Das rendert erst ab >6 Clubs im
+ * Verzeichnis — im CI-Seed gibt es nur unsere zwei Test-Clubs.
  */
 async function openClubSheet(page: Page, club: string) {
   await page.goto('/teams')
-  await page.getByPlaceholder('Gegner suchen…').fill(club)
   await page.getByRole('button', { name: new RegExp(`^${club}\\b`, 'i') }).first().click()
   // h2.font-display ist das sichtbare Sheet-Title (das vaul Drawer.Title ist sr-only)
   await expect(page.locator('h2.font-display').filter({ hasText: club })).toBeVisible()
