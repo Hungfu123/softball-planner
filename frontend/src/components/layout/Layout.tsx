@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
-import { Home, Dumbbell, Users, BarChart3, ClipboardList, Mail, Shirt, type LucideIcon } from 'lucide-react'
+import { Home, Dumbbell, Users, BarChart3, ClipboardList, Mail, type LucideIcon, LineChart } from 'lucide-react'
 import { Toast } from './Toast'
 import { WhatsappStatusBanner } from './WhatsappStatusBanner'
 import { useToast } from '@/hooks/useToast'
@@ -33,7 +33,7 @@ const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon;
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
-  { path: '/teams', label: 'Gegner', shortLabel: 'Gegner', Icon: Shirt },
+  { path: '/teams', label: 'Analyse', shortLabel: 'Analyse', Icon: LineChart, extraPaths: ['/teams/spiele'] },
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
   { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender'] },

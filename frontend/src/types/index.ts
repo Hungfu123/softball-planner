@@ -163,6 +163,67 @@ export interface SuggestAllLineupsResponse {
   newLineups: Record<string, LineupSuggestionEntry[]>
 }
 
+export interface StrandedPlayer {
+  playerName: string
+  times: number
+}
+
+export interface InningLog {
+  inning: number
+  runs: number
+  hits: number
+  onBase: number
+  walks: number
+  outs: number
+  stranded: string[]
+  /** Wessen At-Bat das Inning beendet hat (null wenn ohne Out-Ende). */
+  outMaker: string | null
+  /** Wer in diesem Inning traf (Spielername -> Hits). */
+  hitsByPlayer: Record<string, number>
+}
+
+/** Team-Offensiv-Zahlen eines Spiels ("Game Log") — die Mannschaft als Ganzes. */
+export interface TeamGameLogResponse {
+  gameId: number
+  date: string | null
+  opponent: string | null
+  league: string | null
+  year: number | null
+  scoreUs: number | null
+  scoreThem: number | null
+  hasAtBatData: boolean
+  plateAppearances: number
+  atBats: number
+  hits: number
+  doubles: number
+  triples: number
+  homeRuns: number
+  walks: number
+  strikeouts: number
+  hitByPitch: number
+  onBase: number
+  leftOnBase: number
+  stranded: StrandedPlayer[]
+  innings: InningLog[]
+}
+
+/** Was ein Batting-Platz (1..N) über alle Spiele produziert hat. */
+export interface BattingSlotStats {
+  slot: number
+  plateAppearances: number
+  atBats: number
+  hits: number
+  doubles: number
+  triples: number
+  homeRuns: number
+  walks: number
+  hitByPitch: number
+  strikeouts: number
+  outs: number
+  battingAverage: number
+  onBasePct: number
+}
+
 export interface StandingEntry {
   team: LeagueTeamResponse
   games: number

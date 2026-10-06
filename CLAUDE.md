@@ -147,6 +147,7 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 
 ## UI/UX preferences
 
+- **Dark-Only-Design (bewusst, User-Entscheidung):** Es gibt KEINEN Light-Mode und keinen geplanten. Neue Analyse-/Statistik-UI (z.B. ANALYSE-Seite) nutzt den Dark-Look: Navy-Hintergrund, Cream-Karten (TrendChart/SeasonBreakdown), Box Scores dunkel mit Cream-Linie. Rot (`softball-red`) ist NEGATIVEN Signalen vorbehalten (Niederlage, Stranding), positive Zahlen (Hits) in warmem Amber (`amber-400`). Nicht in ein Light-Theme umbauen und Rot nicht für positive Werte verwenden.
 - German throughout (labels, error messages, copy).
 - Dark navy hover on secondary buttons (navy-800 + white) — keep this; user has corrected attempts to soften it before.
 - Custom pencil cursor on editable text fields.

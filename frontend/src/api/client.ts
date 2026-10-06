@@ -39,6 +39,8 @@ import type {
   GameResponse,
   LeagueTeamResponse,
   TeamDirectoryEntry,
+  TeamGameLogResponse,
+  BattingSlotStats,
   LineupEntryResponse,
   GameStaffResponse,
   GameDayPlayerStats,
@@ -281,6 +283,12 @@ export const updateLeagueTeam = (teamId: number, name: string) =>
   request<LeagueTeamResponse>(`/teams/${teamId}`, { method: 'PUT', body: JSON.stringify({ name }) })
 export const deleteLeagueTeam = (teamId: number) =>
   request<void>(`/teams/${teamId}`, { method: 'DELETE' })
+
+// Team-Analyse: Spiel-Verlauf + Lineup-Plätze
+export const getTeamGameLogs = () =>
+  request<TeamGameLogResponse[]>('/stats/game-logs')
+export const getBattingSlots = () =>
+  request<BattingSlotStats[]>('/stats/batting-slots')
 
 // Team-Verzeichnis (Club-Sicht über alle Ligen)
 export const getTeamDirectory = () =>

@@ -1,10 +1,13 @@
 package com.softball.adapter.in.web;
 
+import com.softball.adapter.dto.BattingSlotStatsResponse;
 import com.softball.adapter.dto.OpponentBattingStatsResponse;
 import com.softball.adapter.dto.PlayerBattingStatsResponse;
 import com.softball.adapter.dto.SeasonPlayerStats;
 import com.softball.adapter.dto.SeasonResponse;
+import com.softball.adapter.dto.TeamGameLogResponse;
 import com.softball.application.BattingStatsService;
+import com.softball.application.GameAnalysisService;
 import com.softball.application.SeasonService;
 import com.softball.application.StatsService;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,13 +23,28 @@ public class BattingStatsController {
     private final BattingStatsService battingStatsService;
     private final StatsService statsService;
     private final SeasonService seasonService;
+    private final GameAnalysisService gameAnalysisService;
 
     public BattingStatsController(final BattingStatsService battingStatsService,
                                    final StatsService statsService,
-                                   final SeasonService seasonService) {
+                                   final SeasonService seasonService,
+                                   final GameAnalysisService gameAnalysisService) {
         this.battingStatsService = battingStatsService;
         this.statsService = statsService;
         this.seasonService = seasonService;
+        this.gameAnalysisService = gameAnalysisService;
+    }
+
+    /** Team-Offensiv-Verlauf pro gespieltem Spiel: Hits, Walks, On-Base, LOB, Inning-Zahlen. */
+    @GetMapping("/api/stats/game-logs")
+    public List<TeamGameLogResponse> getTeamGameLogs() {
+        return gameAnalysisService.getTeamGameLogs();
+    }
+
+    /** Was die Batting-Plätze 1..N über alle Spiele produziert haben. */
+    @GetMapping("/api/stats/batting-slots")
+    public List<BattingSlotStatsResponse> getBattingSlots() {
+        return gameAnalysisService.getBattingSlots();
     }
 
     @GetMapping("/api/games/{gameId}/batting-stats")
