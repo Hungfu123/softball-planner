@@ -10,6 +10,7 @@ import { InvitationListPage } from '@/components/orga/InvitationListPage'
 import { OrgaHome } from '@/components/orga/OrgaHome'
 import { WhatsappPollPage } from '@/components/orga/WhatsappPollPage'
 import { TeamDirectoryPage } from '@/components/orga/TeamDirectoryPage'
+import { GameLogPage } from '@/components/orga/GameLogPage'
 import {
   LazyCalendar,
   LazyCounter,
@@ -46,6 +47,7 @@ export const routes: RouteObject[] = [
       { path: '/orga/aufbau', element: <LazyEquipmentCatalog />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/whatsapp-umfrage', element: <WhatsappPollPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/teams/spiele', element: <GameLogPage />, errorElement: <ChunkErrorBoundary /> },
     ],
   },
   // Einzige Route ohne RequireAuth — der Zähler soll ohne Anmeldung laufen.

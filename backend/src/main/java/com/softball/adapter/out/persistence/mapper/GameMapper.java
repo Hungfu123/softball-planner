@@ -33,6 +33,8 @@ public class GameMapper {
         if (entity.getGameDay() != null) {
             final com.softball.domain.model.GameDay gd = new com.softball.domain.model.GameDay();
             gd.setId(entity.getGameDay().getId());
+            gd.setDate(entity.getGameDay().getDate());
+            gd.setLabel(entity.getGameDay().getLabel());
             if (entity.getGameDay().getSeason() != null) {
                 final var seasonEntity = entity.getGameDay().getSeason();
                 gd.setSeason(new com.softball.domain.model.Season(
