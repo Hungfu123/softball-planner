@@ -8,6 +8,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "qrcode": "^1.5.4",
-    "baileys": "^7.0.0-rc.13"
+    "baileys": "^7.0.0-rc.13",
+    "pino": "^9.6.0"
   }
 }
