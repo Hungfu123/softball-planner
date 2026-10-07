@@ -3,6 +3,7 @@ const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const pino = require('pino');
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -12,6 +13,9 @@ const {
   jidNormalizedUser,
   DisconnectReason,
 } = require('baileys');
+// Dasselbe En/Decoding, das useMultiFileAuthState für creds.json nutzt:
+// macht Uint8Array/Buffer (messageSecret!) JSON-safe und nach dem Laden wieder lebendig.
+const { BufferJSON } = require('baileys/lib/Utils/generics.js');
 
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.WHATSAPP_SERVICE_TOKEN || '';
@@ -19,6 +23,8 @@ const SESSION_PATH = process.env.SESSION_PATH || '/data/session';
 const STORE_FILE = path.join(SESSION_PATH, 'poll-store.json');
 
 let sock = null;
+// Modulebene, weil /send-poll den Sender-Key-Memory der Zielgruppe anfassen muss.
+let authState = null;
 let connected = false;
 let myNumber = null;
 let myName = null;
@@ -73,22 +79,70 @@ function clearAuthFiles() {
 // Persistenter Poll-Store — überlebt Container-Neustart, sonst geht der messageSecret
 // (zum Entschlüsseln der Votes) verloren und schon abgegebene Stimmen wären futsch.
 //   polls[msgId] = { title, options:[...], groupId, secret(base64), votes: { voterJid: {name, options:[...]} } }
-let store = { polls: {} };
+//   messages[msgId] = verschickte WAMessage (für getMessage → Retry-Resend nach Restart)
+let store = { polls: {}, messages: {} };
+// Obergrenze, damit der Store nicht endlos wächst. 200 Umfragen/Wochenrhythmus ≈ Jahre.
+const MAX_STORED_MESSAGES = 200;
 function loadStore() {
-  try { store = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8')); } catch { store = { polls: {} }; }
+  try { store = JSON.parse(fs.readFileSync(STORE_FILE, 'utf8'), BufferJSON.reviver); } catch { store = { polls: {}, messages: {} }; }
+  if (!store.messages) store.messages = {};
 }
 function saveStore() {
   try {
     fs.mkdirSync(SESSION_PATH, { recursive: true });
-    fs.writeFileSync(STORE_FILE, JSON.stringify(store));
+    fs.writeFileSync(STORE_FILE, JSON.stringify(store, BufferJSON.replacer));
   } catch (e) { console.error('[wa] store save failed:', e && e.message || e); }
 }
 loadStore();
 
+// getMessage-Callback für Baileys Retry-Receipts: Wenn ein Empfänger (z.B. nach
+// Handywechsel) die Poll nicht entschlüsseln kann, schickt sein Client einen Retry.
+// Baileys legt die Session neu an, muss aber die Original-Nachricht neu senden —
+// ohne diesen Callback war die Quelle nur ein In-Memory-Cache, der bei jedem
+// Container-Restart/Deploy leer ist → Retries blieben unbeantwortet und beim
+// Empfänger stand dauerhaft "Warte auf diese Nachricht".
+function getMessage(key) {
+  const m = store.messages[key.id];
+  return Promise.resolve(m ? m.message : undefined);
+}
+function rememberSentMessage(sent) {
+  if (!sent?.key?.id) return;
+  store.messages[sent.key.id] = sent;
+  const ids = Object.keys(store.messages);
+  if (ids.length > MAX_STORED_MESSAGES) {
+    for (const id of ids.slice(0, ids.length - MAX_STORED_MESSAGES)) delete store.messages[id];
+  }
+}
+
 const sha256hex = (s) => crypto.createHash('sha256').update(Buffer.from(s)).digest('hex');
 
+/**
+ * Verwirft den Sender-Key-Memory einer Gruppe (= Datei sender-key-memory-<gruppe>.json).
+ *
+ * Baileys merkt sich darin pro Gerät, ob es den Sender-Key der Gruppe schon
+ * bekommen hat (messages-send.js: hasKey = !!senderKeyMap[deviceJid]) und
+ * überspringt die Verteilung bei true. Wechselt jemand das Handy und behält
+ * die Nummer, bleiben LID und Gerätenummer gleich — der Eintrag ist stale, das
+ * neue Gerät bekommt den Key nie und sieht nur "Warte auf diese Nachricht".
+ * Vor jedem Senden leeren heisst: der Key wird an alle neu verteilt, jeder
+ * Handywechsel heilt mit der nächsten Umfrage. Der Sender-Key selbst ändert
+ * sich dadurch nicht, der Memory ist reiner Cache — Worst Case eine doppelt
+ * zugestellte Verteil-Nachricht.
+ */
+async function resetSenderKeyMemory(groupId) {
+  if (!authState) return;
+  try {
+    await authState.keys.set({ 'sender-key-memory': { [groupId]: null } });
+    console.log('[wa] sender-key-memory geleert für', groupId);
+  } catch (e) {
+    // Nicht fatal: ohne Reset wird nur nicht neu verteilt, das Senden selbst geht weiter.
+    console.error('[wa] sender-key-memory reset failed:', e && e.message || e);
+  }
+}
+
 async function startSock() {
-  const { state: authState, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
+  const { state: loadedAuthState, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
+  authState = loadedAuthState;
   const { version } = await fetchLatestBaileysVersion();
   console.log('[wa] Baileys WA-Version:', version.join('.'));
 
@@ -102,7 +156,16 @@ async function startSock() {
   }
 
   state = 'CONNECTING';
-  sock = makeWASocket({ version, auth: authState });
+  sock = makeWASocket({
+    version,
+    auth: authState,
+    // Ohne logger schluckt Baileys ALLE Meldungen zu Retry-Receipts und
+    // Session-Neuaufbau (logger.debug) — genau die Spuren, die man bei
+    // "Warte auf diese Nachricht"-Fällen braucht. Level per Env drosselbar,
+    // nach der Diagnose auf 'warn' oder 'silent' zurückdrehen.
+    logger: pino({ level: process.env.WA_LOG_LEVEL || 'debug' }),
+    getMessage,
+  });
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async (u) => {
@@ -267,15 +330,20 @@ app.post('/send-poll', async (req, res) => {
     return res.status(400).json({ error: 'invalid_request' });
   }
   try {
+    // Einmal für Text UND Poll: der Memory wird beim ersten Senden sofort neu
+    // geschrieben, ein zweiter Reset dazwischen würde nur doppelt verteilen.
+    await resetSenderKeyMemory(groupId);
     // Optionale Nachricht zuerst (z.B. Event-Details), dann ggf. die Umfrage.
     if (hasMessage) {
-      await sock.sendMessage(groupId, { text: message.trim() });
+      const sentText = await sock.sendMessage(groupId, { text: message.trim() });
+      rememberSentMessage(sentText);
     }
     let pollMessageId = null;
     if (hasPoll) {
       const sent = await sock.sendMessage(groupId, {
         poll: { name: title, values: options, selectableCount: allowMultiple === true ? options.length : 1 },
       });
+      rememberSentMessage(sent);
       pollMessageId = sent.key.id;
       const secret = sent.message?.messageContextInfo?.messageSecret;
       store.polls[pollMessageId] = {
@@ -285,9 +353,12 @@ app.post('/send-poll', async (req, res) => {
         secret: secret ? Buffer.from(secret).toString('base64') : null,
         votes: {},
       };
-      saveStore();
       console.log('[wa] Poll gesendet', pollMessageId, '| secret vorhanden:', !!secret);
     }
+    // Einmal am Ende: auch der reine Text-Fall (ohne Poll) muss persistiert werden,
+    // sonst ist die gemerkte Nachricht nach dem nächsten Restart weg und der
+    // Retry-Resend via getMessage greift genau dort nicht.
+    saveStore();
     res.json({ sent: true, pollMessageId });
   } catch (e) {
     res.status(500).json({ error: String(e && e.message || e) });
