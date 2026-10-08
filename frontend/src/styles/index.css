@@ -34,6 +34,8 @@
 
   --color-softball-red-50: #FFF5F5;
   --color-softball-red-100: #FEE2E2;
+  --color-softball-red-200: #FECACA;
+  --color-softball-red-300: #FCA5A5;
   --color-softball-red-400: #F87171;
   --color-softball-red-500: #E63946;
   --color-softball-red-600: #CC2936;
@@ -185,6 +187,20 @@ button:active:not(:disabled), [role="button"]:active {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* TrendChart-Balken: Press-Feedback überall, Zoom-Hover nur auf echten Zeigegeräten —
+   auf Touch bleibt sonst nach dem Antippen ein "sticky hover" hängen */
+.chart-bar {
+  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.chart-bar:active {
+  transform: scaleX(1.12);
+}
+@media (hover: hover) and (pointer: fine) {
+  .chart-bar:hover {
+    transform: scaleX(1.1);
+  }
 }
 
 /* Toast-Countdown: Zeitleiste läuft von voll (links) nach leer ab */

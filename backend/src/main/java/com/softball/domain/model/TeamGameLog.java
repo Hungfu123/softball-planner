@@ -58,6 +58,15 @@ public record TeamGameLog(
         int outs,
         List<String> stranded,
         String outMaker,
-        Map<String, Integer> hitsByPlayer
-    ) {}
+        Map<String, Integer> hitsByPlayer,
+        List<AtBatSnippet> atBats
+    ) {
+
+        /**
+         * Ein At-Bat in zeitlicher Folge innerhalb des Innings: Batter-Name,
+         * Ergebnis und dabei erzielte Runs. Basis für die „Wer kam zwischen
+         * Reach und Schluss-Aus"-Schlagfolge in der Analyse.
+         */
+        public record AtBatSnippet(String batter, AtBatResult result, int runsScored) {}
+    }
 }

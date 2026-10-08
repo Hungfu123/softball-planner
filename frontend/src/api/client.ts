@@ -287,8 +287,9 @@ export const deleteLeagueTeam = (teamId: number) =>
 // Team-Analyse: Spiel-Verlauf + Lineup-Plätze
 export const getTeamGameLogs = () =>
   request<TeamGameLogResponse[]>('/stats/game-logs')
-export const getBattingSlots = () =>
-  request<BattingSlotStats[]>('/stats/batting-slots')
+/** Lineup-Plätze — ohne gameIds über alle Spiele, mit gameIds nur über die Auswahl. */
+export const getBattingSlots = (gameIds?: number[]) =>
+  request<BattingSlotStats[]>(`/stats/batting-slots${gameIds?.length ? `?gameIds=${gameIds.join(',')}` : ''}`)
 
 // Team-Verzeichnis (Club-Sicht über alle Ligen)
 export const getTeamDirectory = () =>

@@ -170,7 +170,7 @@ export function TeamDirectoryPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-md md:max-w-3xl xl:max-w-5xl mx-auto p-4 space-y-4">
+      <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
             Gegner

@@ -77,19 +77,23 @@ public class GameAnalysisService {
     }
 
     /**
-     * Was die Batting-Plätze 1..N über alle Spiele hinweg produziert haben —
-     * unabhängig davon, wer dort stand. Runs pro Platz sind bewusst nicht dabei:
-     * ein Hit an Platz 9, der die Bases räumt, zahlt aufs nächste Inning, nicht auf seinen Slot.
+     * Was die Batting-Plätze 1..N produziert haben — unabhängig davon, wer dort stand.
+     * Ohne gameIds über alle Spiele; mit gameIds nur über diese Auswahl (z.B. die im
+     * Spiel-Verlauf gefilterten Spiele, um Form-Verbesserungen der letzten Spiele zu sehen).
+     * Runs pro Platz sind bewusst nicht dabei: ein Hit an Platz 9, der die Bases räumt,
+     * zahlt aufs nächste Inning, nicht auf seinen Slot.
      */
     @Transactional(readOnly = true)
-    public List<BattingSlotStatsResponse> getBattingSlots() {
-        final List<AtBat> atBats = atBatRepository.findAll();
+    public List<BattingSlotStatsResponse> getBattingSlots(final List<Long> gameIds) {
+        final List<AtBat> atBats = gameIds == null || gameIds.isEmpty()
+            ? atBatRepository.findAll()
+            : atBatRepository.findByGameIdInOrderBySequenceAsc(gameIds);
         if (atBats.isEmpty()) return List.of();
 
-        final List<Long> gameIds = atBats.stream()
+        final List<Long> atBatGameIds = atBats.stream()
             .map(AtBat::getGame).filter(Objects::nonNull).map(Game::getId).filter(Objects::nonNull)
             .distinct().toList();
-        final List<LineupEntry> lineups = lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds);
+        final List<LineupEntry> lineups = lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(atBatGameIds);
 
         return CALCULATOR.calculateBattingSlots(lineups, atBats).stream()
             .map(BattingSlotStatsResponse::from)

@@ -168,6 +168,13 @@ export interface StrandedPlayer {
   times: number
 }
 
+/** Ein At-Bat in zeitlicher Folge innerhalb eines Innings (Schlagfolge). */
+export interface InningAtBat {
+  batter: string
+  result: AtBatResult
+  runsScored: number
+}
+
 export interface InningLog {
   inning: number
   runs: number
@@ -180,6 +187,8 @@ export interface InningLog {
   outMaker: string | null
   /** Wer in diesem Inning traf (Spielername -> Hits). */
   hitsByPlayer: Record<string, number>
+  /** Geordnete At-Bat-Folge des Innings (sequence-aufsteigend). */
+  atBats: InningAtBat[]
 }
 
 /** Team-Offensiv-Zahlen eines Spiels ("Game Log") — die Mannschaft als Ganzes. */
@@ -222,6 +231,8 @@ export interface BattingSlotStats {
   outs: number
   battingAverage: number
   onBasePct: number
+  /** Wer diesen Platz besetzte (nach Häufigkeit), mit eigener On-Base-Quote dort. */
+  players: { name: string; plateAppearances: number; onBase: number }[]
 }
 
 export interface StandingEntry {
