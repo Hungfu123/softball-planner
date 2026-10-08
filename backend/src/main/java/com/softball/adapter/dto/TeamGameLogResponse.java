@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.AtBatResult;
 import com.softball.domain.model.TeamGameLog;
 
 import java.time.LocalDate;
@@ -49,11 +50,19 @@ public record TeamGameLogResponse(
      * outMaker: wessen At-Bat das Inning beendet hat (null ohne Out-Ende).
      * hitsByPlayer: wer in diesem Inning traf (Basis für den Hit-Verlauf pro Spieler).
      */
-    public record InningLogResponse(int inning, int runs, int hits, int onBase, int walks, int outs, List<String> stranded, String outMaker, Map<String, Integer> hitsByPlayer) {
+    public record InningLogResponse(int inning, int runs, int hits, int onBase, int walks, int outs, List<String> stranded, String outMaker, Map<String, Integer> hitsByPlayer, List<AtBatSnippetResponse> atBats) {
         public static InningLogResponse from(final TeamGameLog.InningLog inning) {
             return new InningLogResponse(inning.inning(), inning.runs(), inning.hits(),
                 inning.onBase(), inning.walks(), inning.outs(), inning.stranded(),
-                inning.outMaker(), inning.hitsByPlayer());
+                inning.outMaker(), inning.hitsByPlayer(),
+                inning.atBats().stream().map(AtBatSnippetResponse::from).toList());
+        }
+    }
+
+    /** Ein At-Bat in zeitlicher Folge innerhalb eines Innings (Batter, Ergebnis, Runs). */
+    public record AtBatSnippetResponse(String batter, AtBatResult result, int runsScored) {
+        public static AtBatSnippetResponse from(final TeamGameLog.InningLog.AtBatSnippet snippet) {
+            return new AtBatSnippetResponse(snippet.batter(), snippet.result(), snippet.runsScored());
         }
     }
 }

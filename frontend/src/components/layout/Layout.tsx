@@ -33,7 +33,7 @@ const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon;
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
-  { path: '/teams', label: 'Analyse', shortLabel: 'Analyse', Icon: LineChart, extraPaths: ['/teams/spiele'] },
+  { path: '/teams/spiele', label: 'Analyse', shortLabel: 'Analyse', Icon: LineChart, extraPaths: ['/teams'] },
   { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
   { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
   { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender'] },

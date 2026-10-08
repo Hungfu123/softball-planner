@@ -75,6 +75,14 @@ class TeamGameLogCalculatorTest {
         assertThat(inning1.outs()).isEqualTo(1);
         assertThat(inning1.stranded()).containsExactly("A");
 
+        // At-Bat-Folge Inning 1: A Single, B Walk, C Strikeout — sequence-geordnet
+        assertThat(inning1.atBats()).extracting(TeamGameLog.InningLog.AtBatSnippet::batter)
+            .containsExactly("A", "B", "C");
+        assertThat(inning1.atBats()).extracting(TeamGameLog.InningLog.AtBatSnippet::result)
+            .containsExactly(AtBatResult.SINGLE, AtBatResult.WALK, AtBatResult.STRIKEOUT);
+        assertThat(inning1.atBats()).extracting(TeamGameLog.InningLog.AtBatSnippet::runsScored)
+            .containsExactly(0, 0, 0);
+
         // Inning 2: 1 Run, 1 Hit, 3 Aus, niemand gestrandet
         final TeamGameLog.InningLog inning2 = log.innings().get(1);
         assertThat(inning2.runs()).isEqualTo(1);
@@ -155,6 +163,26 @@ class TeamGameLogCalculatorTest {
     }
 
     @Test
+    void gameLog_inningAtBatsSindSequenceGeordnetUndTragenRuns() {
+        final Game game = game(17L, LocalDate.of(2026, 6, 8), "Gegner", "RFL", 2026);
+        // absichtlich unsortiert uebergeben — die Folge muss sequence-aufsteigend bleiben
+        final AtBat i1c = atBat(game, c, AtBatResult.STRIKEOUT, 1, 3, new BaseState(1L, null, null), 0);
+        final AtBat i1a = atBat(game, a, AtBatResult.SINGLE, 1, 1, new BaseState(1L, null, null), 0);
+        final AtBat i1b = atBat(game, b, AtBatResult.DOUBLE, 1, 2, new BaseState(null, 1L, null), 2);
+
+        final List<TeamGameLog> logs = calculator.calculateGameLogs(
+            List.of(game), List.of(i1c, i1a, i1b), Map.of(17L, 2), Map.of(1L, "A", 2L, "B", 3L, "C"));
+
+        final TeamGameLog.InningLog inning1 = logs.get(0).innings().get(0);
+        assertThat(inning1.atBats()).extracting(TeamGameLog.InningLog.AtBatSnippet::batter)
+            .containsExactly("A", "B", "C");
+        assertThat(inning1.atBats()).extracting(TeamGameLog.InningLog.AtBatSnippet::result)
+            .containsExactly(AtBatResult.SINGLE, AtBatResult.DOUBLE, AtBatResult.STRIKEOUT);
+        assertThat(inning1.atBats()).extracting(TeamGameLog.InningLog.AtBatSnippet::runsScored)
+            .containsExactly(0, 2, 0);
+    }
+
+    @Test
     void gameLogs_neuestesSpielZuerst() {
         final Game alt = game(14L, LocalDate.of(2025, 5, 1), "X", "Liga", 2025);
         final Game neu = game(15L, LocalDate.of(2026, 6, 1), "Y", "Liga", 2026);
@@ -194,6 +222,14 @@ class TeamGameLogCalculatorTest {
         assertThat(slots.get(1).slot()).isEqualTo(2);
         assertThat(slots.get(1).hits()).isEqualTo(1);
         assertThat(slots.get(1).homeRuns()).isEqualTo(1);
+        // Spieler-Besatzung: wer den Platz wie oft besetzte und seine On-Base-Quote dort
+        assertThat(slots.get(0).players()).hasSize(1);
+        assertThat(slots.get(0).players().get(0).name()).isEqualTo("A");
+        assertThat(slots.get(0).players().get(0).plateAppearances()).isEqualTo(1);
+        assertThat(slots.get(0).players().get(0).onBase()).isEqualTo(1);
+        assertThat(slots.get(1).players()).hasSize(1);
+        assertThat(slots.get(1).players().get(0).name()).isEqualTo("C");
+        assertThat(slots.get(1).players().get(0).onBase()).isEqualTo(1);
     }
 
     @Test
@@ -213,6 +249,9 @@ class TeamGameLogCalculatorTest {
 
         assertThat(slots).hasSize(1);
         assertThat(slots.get(0).plateAppearances()).isEqualTo(1);
+        assertThat(slots.get(0).players()).hasSize(1);
+        assertThat(slots.get(0).players().get(0).name()).isEqualTo("A");
+        assertThat(slots.get(0).players().get(0).onBase()).isEqualTo(1); // Walk = On-Base
         assertThat(slots.get(0).atBats()).isZero(); // Walk ist kein At-Bat
         assertThat(slots.get(0).walks()).isEqualTo(1);
         // OBP zählt On-Base (H + BB + HBP), nicht nur Hits: Walk -> OBP 1.000

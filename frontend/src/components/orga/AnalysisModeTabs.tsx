@@ -12,8 +12,8 @@ export function AnalysisModeTabs() {
     }`
   return (
     <nav className="flex gap-2 mb-4" aria-label="Analyse-Ansichten">
-      <NavLink to="/teams" end className={tabCls}>Gegner</NavLink>
       <NavLink to="/teams/spiele" className={tabCls}>Spiel-Verlauf</NavLink>
+      <NavLink to="/teams" end className={tabCls}>Gegner</NavLink>
     </nav>
   )
 }

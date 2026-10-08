@@ -41,10 +41,10 @@ public class BattingStatsController {
         return gameAnalysisService.getTeamGameLogs();
     }
 
-    /** Was die Batting-Plätze 1..N über alle Spiele produziert haben. */
+    /** Was die Batting-Plätze 1..N produziert haben — ohne gameIds über alle Spiele, sonst nur über die Auswahl. */
     @GetMapping("/api/stats/batting-slots")
-    public List<BattingSlotStatsResponse> getBattingSlots() {
-        return gameAnalysisService.getBattingSlots();
+    public List<BattingSlotStatsResponse> getBattingSlots(@RequestParam(value = "gameIds", required = false) final List<Long> gameIds) {
+        return gameAnalysisService.getBattingSlots(gameIds);
     }
 
     @GetMapping("/api/games/{gameId}/batting-stats")

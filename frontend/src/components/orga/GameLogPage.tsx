@@ -1,19 +1,38 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Download } from 'lucide-react'
 import * as api from '@/api/client'
-import type { BattingSlotStats, LineupEntryResponse, PlayerBattingStatsResponse, TeamGameLogResponse } from '@/types'
+import type { AtBatResult, BattingSlotStats, InningLog, LineupEntryResponse, PlayerBattingStatsResponse, TeamGameLogResponse } from '@/types'
+import { AT_BAT_RESULT_LABELS } from '@/types'
 import { useToastContext } from '@/components/layout/Layout'
 import { AnalysisModeTabs } from './AnalysisModeTabs'
 import { CrossBones } from '@/icons'
 import { AnimatePresence, motion } from 'motion/react'
+import { generateGameLogPdf } from '@/utils/gameLogPdf'
 
 /** Emil-Kurve: starker ease-out für Expand — sofortige Reaktion, sanftes Auslaufen. */
 const EASE_OUT = [0.23, 1, 0.32, 1] as const
 
+/** Zeitraum-Filter: 'all' | 'lastN' (1/2/3/5/10) — exklusiv; das Jahr ist ein eigener Filter. */
+type RangeFilter = 'all' | 'last1' | 'last2' | 'last3' | 'last5' | 'last10'
+
+/** Label je Zeitraum-Filter — für den PDF-Kopf und den Dateinamen. */
+const RANGE_LABELS: Record<RangeFilter, string> = {
+  all: 'Alle Spiele',
+  last1: 'Letztes Spiel',
+  last2: 'Letzte 2 Spiele',
+  last3: 'Letzte 3 Spiele',
+  last5: 'Letzte 5 Spiele',
+  last10: 'Letzte 10 Spiele',
+}
+
+/** Chevron-Daten-URI für native Selects und Dropdown-Buttons (appearance-none). */
+const CHEVRON_DOWN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`
+
 /**
  * Spiel-Verlauf — Analyse-Dashboard der eigenen Offensiv-Historie:
- * Filter (Jahr · Liga) schneiden die Kennzahlen und den Hits-Trend zu; jeder
- * Trend-Balken ist ein Spiel (Klick öffnet seinen Box Score). Unter der Liste:
- * das Lineup-Platz-Profil (bewusst über ALLE Spiele — Slots kennen keinen Filter).
+ * Filter (Jahr · Liga · Zeitraum · Auswahl) schneiden die Kennzahlen und den
+ * Hits-Trend zu; jeder Trend-Balken ist ein Spiel (Klick öffnet seinen Box Score).
+ * Das Lineup-Platz-Profil folgt derselben Auswahl (bei „Alle Spiele" = alle).
  * Jede Zeile trägt eine Run-Sparkline, aufklappbar mit Run-Verlauf-Diagramm,
  * Spieler-Zahlen, gestrandeten Runnern und dem Lineup des Tages.
  * Quelle ist ausschließlich das Old-Scoring; Spiele mit Endstand, aber ohne
@@ -23,10 +42,12 @@ export function GameLogPage() {
   const toast = useToastContext()
   const [logs, setLogs] = useState<TeamGameLogResponse[] | null>(null)
   const [slots, setSlots] = useState<BattingSlotStats[] | null>(null)
-  /** Zeitraum: 'all' | 'last5' | 'last10' | { year } — exklusiv, ein Chip-Satz. */
-  const [range, setRange] = useState<'all' | 'last5' | 'last10' | { year: number }>('all')
-  /** Saison = Liga + Jahr (so wie überall in der App) — die natürliche Analyseeinheit. */
-  const [seasonFilter, setSeasonFilter] = useState<{ league: string; year: number } | null>(null)
+  /** Zeitraum: 'all' | 'lastN' — exklusiv. Default „Letztes Spiel": schneller Check, wie das letzte Game lief. */
+  const [range, setRange] = useState<RangeFilter>('last1')
+  /** Jahr: eigener Filter (null = alle Jahre) — ergänzt den Zeitraum, statt in ihm versteckt. */
+  const [yearFilter, setYearFilter] = useState<number | null>(null)
+  /** Saison = Liga + Jahr — Mehrfachauswahl möglich (leer = alle). */
+  const [seasonFilter, setSeasonFilter] = useState<{ league: string; year: number }[]>([])
   const [openId, setOpenId] = useState<number | null>(null)
   /** Auswahl-Modus: Klick auf Trend-Balken nimmt Spiele in die Analyse auf. */
   const [selectionMode, setSelectionMode] = useState(false)
@@ -35,8 +56,8 @@ export function GameLogPage() {
 
   useEffect(() => {
     let cancelled = false
-    Promise.all([api.getTeamGameLogs(), api.getBattingSlots()])
-      .then(([l, s]) => { if (!cancelled) { setLogs(l); setSlots(s) } })
+    api.getTeamGameLogs()
+      .then(l => { if (!cancelled) setLogs(l) })
       .catch((e: unknown) => toast.show((e as Error).message, 'error'))
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Initial-Load wie TeamDirectoryPage
@@ -53,16 +74,16 @@ export function GameLogPage() {
   }, [logs])
 
   const seasonScoped = useMemo(() => (logs ?? []).filter(l =>
-    seasonFilter == null || (l.league === seasonFilter.league && l.year === seasonFilter.year)
+    seasonFilter.length === 0 || seasonFilter.some(se => se.league === l.league && se.year === l.year)
   ), [logs, seasonFilter])
 
-  /** Zeitraum auf die Saison-Vorauswahl: logs sind neueste zuerst, "letzte N" = die neuesten N. */
+  /** Zeitraum auf die Jahr-/Saison-Vorauswahl: logs sind neueste zuerst, "letzte N" = die neuesten N. */
   const rangeScoped = useMemo(() => {
-    if (range === 'all') return seasonScoped
-    if (range === 'last5') return seasonScoped.slice(0, 5)
-    if (range === 'last10') return seasonScoped.slice(0, 10)
-    return seasonScoped.filter(l => l.year === range.year)
-  }, [seasonScoped, range])
+    const scoped = yearFilter == null ? seasonScoped : seasonScoped.filter(l => l.year === yearFilter)
+    if (range === 'all') return scoped
+    const n = Number(range.replace('last', ''))
+    return Number.isNaN(n) ? scoped : scoped.slice(0, n)
+  }, [seasonScoped, yearFilter, range])
 
   /** Im Auswahl-Modus zählt NUR die Auswahl — KPIs und Trend rechnen live mit. */
   const filtered = useMemo(() =>
@@ -72,6 +93,63 @@ export function GameLogPage() {
   , [rangeScoped, selectionMode, selectedIds])
 
   const totals = useMemo(() => summarize(filtered), [filtered])
+
+  /** Das Platz-Profil folgt der gefilterten Auswahl — bei „Alle Spiele" ohne gameIds-Param
+   *  (= Verhalten wie früher). So lassen sich Form-Fragen beantworten: „Hat sich Platz 4
+   *  in den letzten 5 Spielen verbessert?" Key als String: stabile Effekt-Abhängigkeit. */
+  const slotGameIds = useMemo(() => filtered.map(l => l.gameId), [filtered])
+  const slotIdsKey = slotGameIds.join(',')
+  /** Reale Stichprobe: nur Spiele mit At-Bat-Daten produzieren Platz-Zahlen. */
+  const slotGameCount = useMemo(() => filtered.filter(l => l.hasAtBatData).length, [filtered])
+
+  useEffect(() => {
+    if (!logs) return
+    if (slotGameIds.length === 0) { setSlots([]); return }
+    let cancelled = false
+    const allSelected = slotGameIds.length === logs.length
+    api.getBattingSlots(allSelected ? undefined : slotGameIds)
+      .then(s => { if (!cancelled) setSlots(s) })
+      .catch((e: unknown) => { if (!cancelled) toast.show((e as Error).message, 'error') })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- slotIdsKey repräsentiert slotGameIds stabil
+  }, [logs, slotIdsKey])
+
+  /** Filter-Beschreibung für den PDF-Kopf — spiegelt die Filterleiste. */
+  const exportContextLabel = useMemo(() => {
+    const parts = [RANGE_LABELS[range], yearFilter != null ? `Jahr ${yearFilter}` : 'Alle Jahre']
+    parts.push(seasonFilter.length > 0 ? seasonFilter.map(s => `${s.league} ${s.year}`).join(', ') : 'Alle Saisons')
+    if (selectionMode && selectedIds.size > 0) {
+      parts.push(`Auswahl: ${selectedIds.size} ${selectedIds.size === 1 ? 'Spiel' : 'Spiele'}`)
+    }
+    return parts.join(' · ')
+  }, [range, yearFilter, seasonFilter, selectionMode, selectedIds])
+
+  const [exporting, setExporting] = useState(false)
+
+  /** PDF-Export: lädt pro gefiltertem Spiel noch das Lineup nach, damit die KI
+   *  Aufstellung und Positionen mitbekommt — nicht nur die nackten Zahlen. */
+  const handleExportPdf = async () => {
+    if (exporting || filtered.length === 0) return
+    setExporting(true)
+    try {
+      const entries = await Promise.all(
+        filtered.map(l => api.getLineup(l.gameId).catch(() => [] as LineupEntryResponse[])),
+      )
+      const lineups = new Map<number, LineupEntryResponse[]>()
+      filtered.forEach((l, i) => lineups.set(l.gameId, entries[i]))
+      generateGameLogPdf({
+        logs: filtered,
+        lineups,
+        slots,
+        contextLabel: exportContextLabel,
+        scopeLabel: `${filtered.length} ${filtered.length === 1 ? 'Spiel' : 'Spiele'}`,
+      })
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const focusGame = (gameId: number) => {
     setOpenId(prev => prev === gameId ? null : gameId)
@@ -97,8 +175,21 @@ export function GameLogPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Spiel-Verlauf</h1>
+    <div className="space-y-5 pb-10">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Spiel-Verlauf</h1>
+        {logs && logs.length > 0 && (
+          <button
+            onClick={handleExportPdf}
+            disabled={exporting || filtered.length === 0}
+            className="font-display group relative ml-auto inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+            title="Gefilterte Daten als PDF exportieren"
+          >
+            <Download size={12} className="transition-transform group-hover:translate-y-0.5" />
+            {exporting ? 'Export …' : 'PDF'}
+          </button>
+        )}
+      </div>
       <AnalysisModeTabs />
 
       {!logs ? (
@@ -117,8 +208,8 @@ export function GameLogPage() {
         <>
           <FilterBar
             years={years} seasons={seasons}
-            range={range} seasonFilter={seasonFilter}
-            onRange={setRange} onSeason={setSeasonFilter}
+            range={range} yearFilter={yearFilter} seasonFilter={seasonFilter}
+            onRange={setRange} onYear={setYearFilter} onSeason={setSeasonFilter}
             selectionMode={selectionMode}
             onToggleSelectionMode={() => {
               if (selectionMode) resetSelection()
@@ -132,8 +223,8 @@ export function GameLogPage() {
                 {selectedIds.size > 0
                   ? selectedIds.size === 2
                     ? '2 Spiele in der Analyse — Lineup-Vergleich unten, Zahlen oben nur damit'
-                    : `${selectedIds.size} Spiele in der Analyse — Zahlen oben rechnen nur damit. Zwei wählen für den Lineup-Vergleich`
-                  : 'Auswahl-Modus: Balken im Hits-Trend antippen, um Spiele in die Analyse zu nehmen'}
+                    : `${selectedIds.size} ${selectedIds.size === 1 ? 'Spiel' : 'Spiele'} in der Analyse — Zahlen oben rechnen nur damit. Zwei wählen für den Lineup-Vergleich`
+                  : 'Auswahl-Modus: Balken oder Spielzeile antippen, um Spiele in die Analyse zu nehmen'}
               </p>
               {selectedIds.size > 0 && (
                 <button onClick={resetSelection} className="font-display text-[10px] font-bold tracking-widest uppercase rounded-full bg-white/10 hover:bg-white/20 px-3 py-1.5 cursor-pointer active:scale-95 transition-transform">
@@ -152,17 +243,34 @@ export function GameLogPage() {
 
           <SummaryStrip totals={totals} count={filtered.length} />
 
+          {/* Ab 3 Spielen zeigt der Chart einen echten Vergleich; bei 1–2 Spielen trägt
+              ein Balkendiagramm keine Information, die die Zahl nicht direkt zeigt —
+              kompakte Zeilen statt leerer Chart-Fläche (Emil-Review Runde 16). */}
           {filtered.length > 0 && (
-            <TrendChart
-              logs={rangeScoped}
-              highlightIds={selectionMode ? selectedIds : null}
-              onBarClick={selectionMode ? toggleSelected : focusGame}
-            />
+            rangeScoped.length >= 3 ? (
+              <TrendChart
+                logs={rangeScoped}
+                highlightIds={selectionMode ? selectedIds : null}
+                onBarClick={selectionMode ? toggleSelected : focusGame}
+              />
+            ) : (
+              <CompactGameStrip
+                logs={rangeScoped}
+                highlightIds={selectionMode ? selectedIds : null}
+                onBarClick={selectionMode ? toggleSelected : focusGame}
+              />
+            )
           )}
 
           {filtered.some(l => l.hasAtBatData) && <SeasonBreakdown logs={filtered} />}
 
-          {slots && slots.length > 0 && <SlotProfile slots={slots} />}
+          {slots && slots.length > 0 && (
+            <SlotProfile
+              slots={slots}
+              gameCount={slotGameCount}
+              allGames={logs.length > 0 && slotGameIds.length === logs.length}
+            />
+          )}
 
           <div className="space-y-2.5">
             {filtered.map((log, i) => {
@@ -178,7 +286,14 @@ export function GameLogPage() {
                         : 'ohne Datum'}
                     </p>
                   )}
-                  <GameRow log={log} open={openId === log.gameId} onToggle={() => focusGame(log.gameId)} />
+                  <GameRow
+                    log={log}
+                    open={openId === log.gameId}
+                    onToggle={() => focusGame(log.gameId)}
+                    selecting={selectionMode}
+                    selected={selectedIds.has(log.gameId)}
+                    onSelect={() => toggleSelected(log.gameId)}
+                  />
                 </div>
               )
             })}
@@ -191,60 +306,143 @@ export function GameLogPage() {
 
 // --- Filter: Jahr · Liga ---
 
-function FilterBar({ years, seasons, range, seasonFilter, onRange, onSeason, selectionMode, onToggleSelectionMode }: {
+function FilterBar({ years, seasons, range, yearFilter, seasonFilter, onRange, onYear, onSeason, selectionMode, onToggleSelectionMode }: {
   years: number[]
   seasons: { league: string; year: number }[]
-  range: 'all' | 'last5' | 'last10' | { year: number }
-  seasonFilter: { league: string; year: number } | null
-  onRange: (r: 'all' | 'last5' | 'last10' | { year: number }) => void
-  onSeason: (s: { league: string; year: number } | null) => void
+  range: RangeFilter
+  yearFilter: number | null
+  seasonFilter: { league: string; year: number }[]
+  onRange: (r: RangeFilter) => void
+  onYear: (y: number | null) => void
+  onSeason: (s: { league: string; year: number }[]) => void
   selectionMode: boolean
   onToggleSelectionMode: () => void
 }) {
-  const chip = (active: boolean) =>
-    `font-display text-[10px] font-bold tracking-widest uppercase rounded-full px-3 py-1.5 cursor-pointer transition-colors active:scale-95 ${
-      active ? 'bg-navy-800 text-white' : 'border border-cream-300 text-gray-600 hover:bg-cream-100'
-    }`
-  const short = (name: string) => name.replace(' Series', '').replace(' Liga', '')
-  const isYear = (y: number) => typeof range === 'object' && range.year === y
+  const parseRange = (v: string): RangeFilter => {
+    switch (v) {
+      case 'all': case 'last1': case 'last2': case 'last3': case 'last5': case 'last10': return v
+      default: return 'all'
+    }
+  }
 
   return (
-    <div className="space-y-2">
-      {/* Zeitraum: exklusiv — "letzte N" schneidet die Form ab, Jahre die Saison */}
-      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Zeitraum wählen">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* Zeitraum + Jahr + Saison: kompakte Dropdowns statt langer Pill-Reihen */}
+      <div className="flex items-center gap-1.5">
         <span className="font-display text-[9px] font-bold tracking-widest uppercase text-gray-400 w-14 shrink-0">Zeitraum</span>
-        <button className={chip(range === 'all')} onClick={() => onRange('all')}>Alle</button>
-        <button className={chip(range === 'last5')} onClick={() => onRange('last5')}>Letzte 5</button>
-        <button className={chip(range === 'last10')} onClick={() => onRange('last10')}>Letzte 10</button>
-        {years.map(y => (
-          <button key={y} className={chip(isYear(y))} onClick={() => onRange(isYear(y) ? 'all' : { year: y })}>{y}</button>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Nach Saison filtern">
-        <span className="font-display text-[9px] font-bold tracking-widest uppercase text-gray-400 w-14 shrink-0">Saison</span>
-        <button className={chip(seasonFilter == null)} onClick={() => onSeason(null)}>Alle</button>
-        {seasons.map(se => {
-          const active = seasonFilter != null && seasonFilter.league === se.league && seasonFilter.year === se.year
-          return (
-            <button
-              key={`${se.league}|${se.year}`}
-              className={chip(active)}
-              onClick={() => onSeason(active ? null : se)}
-            >{short(se.league)} {se.year}</button>
-          )
-        })}
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <button
-          className={`font-display text-[10px] font-bold tracking-widest uppercase rounded-full px-3 py-1.5 cursor-pointer transition-colors active:scale-95 ${
-            selectionMode ? 'bg-softball-red-600 text-white' : 'border border-navy-300 text-navy-700 hover:bg-navy-50'
-          }`}
-          onClick={onToggleSelectionMode}
-          aria-pressed={selectionMode}
+        <select
+          aria-label="Zeitraum wählen"
+          value={range}
+          onChange={e => onRange(parseRange(e.target.value))}
+          className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
+          style={{ backgroundImage: CHEVRON_DOWN, backgroundPosition: 'right 0.7rem center', backgroundSize: '0.65rem' }}
         >
-          {selectionMode ? 'Auswahl aktiv' : 'Spiele auswählen'}
-        </button>
+          <option value="all">Alle Spiele</option>
+          <option value="last1">Letztes Spiel</option>
+          <option value="last2">Letzte 2 Spiele</option>
+          <option value="last3">Letzte 3 Spiele</option>
+          <option value="last5">Letzte 5 Spiele</option>
+          <option value="last10">Letzte 10 Spiele</option>
+        </select>
       </div>
+      <div className="flex items-center gap-1.5">
+        <span className="font-display text-[9px] font-bold tracking-widest uppercase text-gray-400 shrink-0">Jahr</span>
+        <select
+          aria-label="Jahr wählen"
+          value={yearFilter ?? 'all'}
+          onChange={e => onYear(e.target.value === 'all' ? null : Number(e.target.value))}
+          className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
+          style={{ backgroundImage: CHEVRON_DOWN, backgroundPosition: 'right 0.7rem center', backgroundSize: '0.65rem' }}
+        >
+          <option value="all">Alle Jahre</option>
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+      </div>
+
+      <SeasonSelect seasons={seasons} value={seasonFilter} onChange={onSeason} />
+      <button
+        className={`font-display text-[10px] font-bold tracking-widest uppercase rounded-full px-3 py-2 cursor-pointer transition-colors active:scale-95 ${
+          selectionMode ? 'bg-softball-red-600 text-white' : 'border border-navy-300 text-navy-700 hover:bg-navy-50'
+        }`}
+        onClick={onToggleSelectionMode}
+        aria-pressed={selectionMode}
+      >
+        {selectionMode ? 'Auswahl aktiv' : 'Spiele auswählen'}
+      </button>
+    </div>
+  )
+}
+
+/** Saison-Filter als kompaktes Multi-Select-Dropdown mit Checkboxen (statt Pill-Reihe). */
+function SeasonSelect({ seasons, value, onChange }: {
+  seasons: { league: string; year: number }[]
+  value: { league: string; year: number }[]
+  onChange: (s: { league: string; year: number }[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
+  const short = (name: string) => name.replace(' Series', '').replace(' Liga', '')
+  const isActive = (se: { league: string; year: number }) =>
+    value.some(f => f.league === se.league && f.year === se.year)
+  const toggle = (se: { league: string; year: number }) =>
+    onChange(isActive(se) ? value.filter(f => f.league !== se.league || f.year !== se.year) : [...value, se])
+
+  const label = value.length === 0
+    ? 'Alle'
+    : value.length <= 2
+      ? value.map(s => `${short(s.league)} ${s.year}`).join(' · ')
+      : `${value.length} Saisons`
+
+  return (
+    <div ref={ref} className="relative flex items-center gap-1.5">
+      <span className="font-display text-[9px] font-bold tracking-widest uppercase text-gray-400 w-14 shrink-0">Saison</span>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
+        style={{ backgroundImage: CHEVRON_DOWN, backgroundPosition: 'right 0.7rem center', backgroundSize: '0.65rem' }}
+      >
+        <span className="inline-block max-w-48 truncate align-middle">{label}</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10 cursor-default" onClick={() => setOpen(false)} />
+          <div className="absolute left-14 top-full z-20 mt-1 w-64 max-h-64 overflow-y-auto rounded-xl border border-cream-300 bg-white p-1.5 shadow-xl">
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-cream-100 cursor-pointer text-xs font-semibold text-navy-900">
+              <input
+                type="checkbox"
+                className="accent-navy-800"
+                checked={value.length === 0}
+                onChange={() => onChange([])}
+              />
+              Alle
+            </label>
+            {seasons.map(se => (
+              <label key={`${se.league}|${se.year}`} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-cream-100 cursor-pointer text-xs text-gray-700">
+                <input
+                  type="checkbox"
+                  className="accent-navy-800"
+                  checked={isActive(se)}
+                  onChange={() => toggle(se)}
+                />
+                {short(se.league)} {se.year}
+              </label>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -276,9 +474,9 @@ function summarize(logs: TeamGameLogResponse[]) {
 
 function SummaryStrip({ totals, count }: { totals: ReturnType<typeof summarize>; count: number }) {
   const items = [
-    { value: `${totals.wins}–${totals.losses}${totals.ties > 0 ? `–${totals.ties}` : ''}`, label: `Bilanz · ${count} Spiele`, tone: 'text-white' },
+    { value: `${totals.wins}–${totals.losses}${totals.ties > 0 ? `–${totals.ties}` : ''}`, label: `Bilanz · ${count} ${count === 1 ? 'Spiel' : 'Spiele'}`, tone: 'text-white' },
     { value: totals.avgHits.toFixed(1), label: 'Ø Hits / Spiel', tone: 'text-white',
-      sub: `${totals.hitsTotal} Hits in ${totals.evaluatedCount} ausgewerteten Spielen` },
+      sub: `${totals.hitsTotal} Hits in ${totals.evaluatedCount} ${totals.evaluatedCount === 1 ? 'ausgewertetem Spiel' : 'ausgewerteten Spielen'}` },
     { value: fmtPct(totals.onBasePct), label: 'auf Base gekommen', tone: 'text-white' },
     { value: totals.avgLob.toFixed(1), label: 'Ø hängengeblieben', tone: 'text-softball-red-300' },
   ]
@@ -288,7 +486,7 @@ function SummaryStrip({ totals, count }: { totals: ReturnType<typeof summarize>;
         <div key={i.label} className="bg-navy-900 rounded-2xl px-4 py-3.5">
           <p className={`font-display text-2xl font-extrabold tabular-nums leading-tight ${i.tone}`}>{i.value}</p>
           <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mt-0.5">{i.label}</p>
-          {i.sub && <p className="text-[10px] text-white/40 mt-1 leading-snug">{i.sub}</p>}
+          {i.sub && <p className="text-[10px] text-white/60 mt-1 leading-snug">{i.sub}</p>}
         </div>
       ))}
     </div>
@@ -309,88 +507,242 @@ function TrendChart({ logs, highlightIds, onBarClick }: {
   const maxHits = Math.max(1, ...chronological.map(l => l.hits))
   const evaluated = chronological.filter(l => l.hasAtBatData)
   const selecting = highlightIds != null
+  // Hover-/Fokus-Readout: welches Spiel gerade über dem Balken steht (Datum, Gegner, Score).
+  const [hoverId, setHoverId] = useState<number | null>(null)
+  const hovered = hoverId != null ? chronological.find(l => l.gameId === hoverId) ?? null : null
+  // X-Achse: Datum unter jedem n-ten Balken — Step nach Spielzahl, damit die Labels
+  // sich nicht überlappen. Erster und letzter Balken immer beschriftet, leere Spalten
+  // behalten die Geometrie (jedes Feld sitzt genau unter seinem Balken).
+  const lastIndex = chronological.length - 1
+  const labelStep = Math.max(1, Math.ceil(chronological.length / 9))
+  const showLabel = (i: number) => i === lastIndex || (i % labelStep === 0 && lastIndex - i >= labelStep)
+  const years = new Set(chronological.map(l => l.date ? new Date(l.date).getFullYear() : null))
+  const multiYear = years.size > 1
+  const fmtDate = (date: string) => new Date(date).toLocaleDateString('de-DE',
+    multiYear ? { day: '2-digit', month: '2-digit', year: '2-digit' } : { day: '2-digit', month: '2-digit' })
 
   return (
     <div className="bg-cream-50 border border-cream-200 rounded-2xl px-4 py-3">
-      <div className="flex items-baseline justify-between mb-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 mb-2">
         <p className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">
           Hits pro Spiel <span className="text-gray-400 font-bold">— {selecting ? 'antippen nimmt in die Analyse auf' : 'Balken antippen öffnet das Spiel'}</span>
         </p>
-        <p className="text-[10px] text-gray-400 hidden sm:block">rot = Niederlage · navy = Sieg</p>
+        <p className="text-[10px] text-right">
+          {hovered ? (
+            <span className="font-semibold text-navy-800">
+              {hovered.date ? fmtDate(hovered.date) : 'ohne Datum'} vs {hovered.opponent ?? '?'}
+              {' — '}{hovered.scoreUs ?? '–'}:{hovered.scoreThem ?? '–'}
+              {' · '}{hovered.hits} H{hovered.hasAtBatData ? '' : ' · nicht ausgewertet'}
+            </span>
+          ) : (
+            <span className="text-gray-400">rot = Niederlage · navy = Sieg</span>
+          )}
+        </p>
       </div>
       {evaluated.length === 0 ? (
         <p className="text-xs text-gray-400 italic">Keine ausgewerteten Spiele im Filter.</p>
       ) : (
-        <div className="flex items-end gap-1 h-24 overflow-x-auto">
-          {chronological.map(l => {
-            const result = l.scoreUs != null && l.scoreThem != null
-              ? l.scoreUs > l.scoreThem ? 'W' : l.scoreUs < l.scoreThem ? 'L' : 'T'
-              : null
-            const h = l.hasAtBatData ? 8 + (l.hits / maxHits) * 92 : 8
-            const inSelection = selecting && highlightIds.has(l.gameId)
-            const dimmed = selecting && !inSelection
-            return (
-              <button
-                key={l.gameId}
-                onClick={() => onBarClick(l.gameId)}
-                title={`${l.date ?? ''} vs ${l.opponent ?? '?'} — ${l.scoreUs ?? '–'}:${l.scoreThem ?? '–'} · ${l.hits} Hits${l.hasAtBatData ? '' : ' · nicht ausgewertet'}`}
-                aria-label={`${l.opponent ?? 'Spiel'}: ${l.hits} Hits`}
-                aria-pressed={selecting ? inSelection : undefined}
-                className="flex-1 min-w-[10px] h-full flex flex-col justify-end group cursor-pointer"
-              >
+        <>
+          {/* Wert-Achse: Hits dauerhaft über dem Balken — Hover gibt es auf Mobile nicht.
+              Gleiche Slot-Geometrie wie Balken- und Datums-Zeile (flex-1 + max-w-12),
+              damit jedes Label exakt über seinem Balken sitzt. */}
+          <div className="flex justify-center gap-px sm:gap-1 mb-0.5" aria-hidden="true">
+            {chronological.map((l, i) => {
+              const result = l.scoreUs != null && l.scoreThem != null
+                ? l.scoreUs > l.scoreThem ? 'W' : l.scoreUs < l.scoreThem ? 'L' : 'T'
+                : null
+              const dimmed = selecting && !highlightIds.has(l.gameId)
+              const valueColour = result === 'L' ? 'text-softball-red-500'
+                : result === 'T' ? 'text-gray-400' : 'text-navy-700'
+              // Bei vielen Spielen auf schmalen Screens nur jedes n-te Label — unsichtbar
+              // statt weggelassen, damit jedes Label exakt über seinem Balken bleibt.
+              const sparseOnMobile = chronological.length > 14 && i !== lastIndex && i % (labelStep * 2) !== 0
+              return (
                 <span
-                  className={`w-full rounded-t-sm transition-all duration-150 group-hover:scale-x-110 group-active:scale-x-125 ${
-                    !l.hasAtBatData ? 'bg-cream-200'
-                    : inSelection ? `${result === 'L' ? 'bg-softball-red-500' : 'bg-navy-900'} ring-2 ring-offset-1 ring-navy-900 ring-offset-cream-50`
-                    : dimmed ? 'opacity-25 group-hover:opacity-50'
-                    : result === 'L' ? 'bg-softball-red-400'
-                    : result === 'T' ? 'bg-gray-300'
-                    : 'bg-navy-700'
-                  }`}
-                  style={{ height: `${h}%` }}
-                />
-              </button>
-            )
-          })}
-        </div>
+                  key={l.gameId}
+                  className={`flex-1 min-w-0 max-w-12 text-center text-[9px] leading-tight tabular-nums font-semibold ${
+                    l.hasAtBatData ? valueColour : ''
+                  } ${dimmed ? 'opacity-25' : ''} ${sparseOnMobile ? 'invisible sm:visible' : ''}`}
+                >
+                  {l.hasAtBatData ? l.hits : ''}
+                </span>
+              )
+            })}
+          </div>
+          <div className="flex items-end justify-center gap-px sm:gap-1 h-24">
+            {chronological.map(l => {
+              const result = l.scoreUs != null && l.scoreThem != null
+                ? l.scoreUs > l.scoreThem ? 'W' : l.scoreUs < l.scoreThem ? 'L' : 'T'
+                : null
+              const h = l.hasAtBatData ? 8 + (l.hits / maxHits) * 92 : 8
+              const inSelection = selecting && highlightIds.has(l.gameId)
+              const dimmed = selecting && !inSelection
+              // Farbe und Auswahl-Zustand getrennt: genau EINE bg-Klasse, der Ring kommt
+              // immer oben drauf — sonst überstimmt die Farb-Kette die Auswahl (z.B. Cream).
+              const barBg = !l.hasAtBatData
+                ? inSelection ? 'bg-cream-300' : 'bg-cream-200'
+                : result === 'L'
+                  ? inSelection ? 'bg-softball-red-500' : 'bg-softball-red-400'
+                  : inSelection ? 'bg-navy-900'
+                  : result === 'T' ? 'bg-gray-300'
+                  : 'bg-navy-700'
+              const barState = inSelection
+                ? 'ring-2 ring-offset-1 ring-navy-900 ring-offset-cream-50'
+                : dimmed ? 'opacity-25 group-hover:opacity-50' : ''
+              return (
+                <button
+                  key={l.gameId}
+                  onClick={() => { setHoverId(l.gameId); onBarClick(l.gameId) }}
+                  onMouseEnter={() => setHoverId(l.gameId)}
+                  onMouseLeave={() => setHoverId(h => (h === l.gameId ? null : h))}
+                  onFocus={() => setHoverId(l.gameId)}
+                  onBlur={() => setHoverId(h => (h === l.gameId ? null : h))}
+                  title={`${l.date ?? ''} vs ${l.opponent ?? '?'} — ${l.scoreUs ?? '–'}:${l.scoreThem ?? '–'} · ${l.hits} Hits${l.hasAtBatData ? '' : ' · nicht ausgewertet'}`}
+                  aria-label={`${l.opponent ?? 'Spiel'}: ${l.hits} Hits`}
+                  aria-pressed={selecting ? inSelection : undefined}
+                  className="flex-1 min-w-0 max-w-12 h-full flex flex-col justify-end group cursor-pointer"
+                >
+                  <span
+                    className={`chart-bar w-full rounded-t-sm ${barBg} ${barState}`}
+                    style={{ height: `${h}%` }}
+                  />
+                </button>
+              )
+            })}
+          </div>
+          {/* X-Achse: Datum pro Balken-Slot, nur alle n-ten beschriftet (siehe showLabel) */}
+          <div className="flex justify-center gap-px sm:gap-1 mt-1" aria-hidden="true">
+            {chronological.map((l, i) => {
+              const labelled = showLabel(i) && l.date
+              // Auf schmalen Screens nur jedes zweite Label — unsichtbar statt weggelassen,
+              // damit jedes Label exakt unter seinem Balken bleibt.
+              const sparseOnMobile = i !== lastIndex && i % (labelStep * 2) !== 0
+              return (
+                <span
+                  key={l.gameId}
+                  className={`flex-1 min-w-0 max-w-12 text-center text-[10px] leading-tight tabular-nums whitespace-nowrap overflow-hidden ${
+                    hoverId === l.gameId ? 'text-navy-900 font-bold' : 'text-gray-400'
+                  } ${labelled && sparseOnMobile ? 'invisible sm:visible' : ''}`}
+                >
+                  {labelled ? fmtDate(l.date as string) : ''}
+                </span>
+              )
+            })}
+          </div>
+        </>
       )}
+    </div>
+  )
+}
+
+// --- 1–2 Spiele: kompakte Zeilen statt Balkendiagramm ---
+
+function CompactGameStrip({ logs, highlightIds, onBarClick }: {
+  logs: TeamGameLogResponse[]
+  highlightIds: Set<number> | null
+  onBarClick: (gameId: number) => void
+}) {
+  // Ein Balkendiagramm mit <3 Balken zeigt keine Information, die die Zahl nicht
+  // direkt zeigt — also die Zahlen selbst, kompakt (Emil-Review Runde 16).
+  const chronological = [...logs].reverse()
+  const selecting = highlightIds != null
+  const fmtDate = (date: string) => new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+  return (
+    <div className="bg-cream-50 border border-cream-200 rounded-2xl px-4 py-3">
+      <p className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900 mb-2">
+        Hits pro Spiel <span className="text-gray-400 font-bold">— {selecting ? 'Zeile antippen nimmt in die Analyse auf' : 'Zeile antippen öffnet das Spiel'}</span>
+      </p>
+      <div className="space-y-1">
+        {chronological.map(l => {
+          const result = l.scoreUs != null && l.scoreThem != null
+            ? l.scoreUs > l.scoreThem ? 'W' : l.scoreUs < l.scoreThem ? 'L' : 'T'
+            : null
+          const inSelection = selecting && highlightIds.has(l.gameId)
+          return (
+            <button
+              key={l.gameId}
+              onClick={() => onBarClick(l.gameId)}
+              aria-pressed={selecting ? inSelection : undefined}
+              aria-label={`${l.opponent ?? 'Spiel'}: ${l.hits} Hits`}
+              className={`w-full flex items-center gap-3 text-left rounded-xl px-3 py-2 cursor-pointer transition-colors ${
+                inSelection ? 'bg-cream-100 ring-2 ring-inset ring-navy-900' : 'hover:bg-cream-100'
+              }`}
+            >
+              <span className="text-[11px] text-gray-400 tabular-nums shrink-0 w-10">{l.date ? fmtDate(l.date) : '–'}</span>
+              <span className="font-semibold text-sm text-navy-900 truncate">vs {l.opponent ?? '?'}</span>
+              <span className="text-xs text-gray-500 tabular-nums shrink-0">{l.scoreUs ?? '–'}:{l.scoreThem ?? '–'}</span>
+              <span className={`ml-auto font-display text-lg font-extrabold tabular-nums shrink-0 ${
+                !l.hasAtBatData ? 'text-gray-300' : result === 'L' ? 'text-softball-red-500' : 'text-navy-900'
+              }`}>
+                {l.hasAtBatData ? l.hits : '–'}
+                {l.hasAtBatData && <span className="text-[10px] font-bold text-gray-400 ml-1">H</span>}
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
 
 // --- Lineup-Platz-Profil: Balken = On-Base-Anteil pro Platz ---
 
-function SlotProfile({ slots }: { slots: BattingSlotStats[] }) {
+function SlotProfile({ slots, gameCount, allGames }: { slots: BattingSlotStats[]; gameCount: number; allGames: boolean }) {
+  const scopeLabel = allGames
+    ? 'über alle Spiele'
+    : gameCount === 1
+      ? 'über 1 Spiel'
+      : `über ${gameCount} Spiele`
   return (
     <details className="group bg-cream-50 border border-cream-200 rounded-2xl overflow-hidden">
       <summary className="cursor-pointer px-4 py-3 flex items-center justify-between select-none">
         <span className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">
-          Lineup-Plätze <span className="text-gray-400 font-bold">— funktioniert unsere Reihenfolge? (über alle Spiele)</span>
+          Lineup-Plätze <span className="text-gray-400 font-bold">— funktioniert unsere Reihenfolge? ({scopeLabel})</span>
         </span>
         <span className="text-xs text-gray-400 group-open:hidden">aufklappen</span>
       </summary>
       <div className="px-4 pb-4 space-y-1.5">
-        <p className="text-xs text-gray-500 pb-1">
-          Balken = On-Base-Anteil des Platzes (wie oft der Schlagmann dort eine Base erreichte);
-          dunkler Kern = Trefferquote. Platz für Platz lesen: sinkt der Balken nach unten,
-          produziert die Order zu wenig.
-        </p>
+        <ul className="text-xs text-gray-500 pb-2 list-disc pl-4 space-y-0.5">
+          <li>
+            <span className="font-semibold text-gray-600">Balken:</span>{' '}
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-navy-800 align-middle" /> dunkel = Hits,{' '}
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-navy-400 align-middle" /> mittel = Walks,{' '}
+            <span className="inline-block w-2.5 h-2.5 rounded-sm bg-cream-300 align-middle" /> hell = nicht auf Base
+          </li>
+          <li><span className="font-semibold text-gray-600">Gut oder schlecht?</span> Je länger der farbige Teil (dunkel + mittel), desto öfter kommt dieser Platz auf Base — die Zahl rechts (.718) ist genau dieser Anteil.</li>
+          <li><span className="font-semibold text-gray-600">Spieler:</span> „68× · 74 %" = 68 Schläge, davon 74 % auf Base</li>
+          <li>Plätze 1–3 sollten die längsten Balken haben — ein langer Balken weit hinten heißt: starker Schläger zu weit hinten</li>
+          {!allGames && gameCount < 3 && (
+            <li className="text-amber-700">Kleine Stichprobe — die Balken schwanken noch stark. Zum Vergleich: Zeitraum auf „Alle Spiele“ stellen.</li>
+          )}
+        </ul>
         {slots.map(s => {
           const obp = Math.min(s.onBasePct, 1)
           const avgShare = s.onBasePct > 0 ? (s.battingAverage / s.onBasePct) * obp : 0
           return (
-            <div key={s.slot} className="flex items-center gap-3" title={`Platz ${s.slot}: ${s.plateAppearances} PA · AVG ${fmtRate(s.battingAverage)} · OBP ${fmtRate(s.onBasePct)}`}>
-              <span className="font-display text-xs font-extrabold text-gray-400 tabular-nums w-5 text-right shrink-0">{s.slot}.</span>
-              <div className="flex-1 h-5 bg-cream-200/70 rounded-full overflow-hidden">
-                <div className="h-full flex rounded-full overflow-hidden">
-                  <div className="h-full bg-navy-800" style={{ width: `${avgShare * 100}%` }} />
-                  <div className="h-full bg-navy-400" style={{ width: `${(obp - avgShare) * 100}%` }} />
+            <div key={s.slot}>
+              <div className="flex items-center gap-3" title={`Platz ${s.slot}: ${s.plateAppearances}× am Schlag · AVG ${fmtRate(s.battingAverage)} · OBP ${fmtRate(s.onBasePct)}`}>
+                <span className="font-display text-xs font-extrabold text-gray-400 tabular-nums w-5 text-right shrink-0">{s.slot}.</span>
+                <div className="flex-1 h-5 bg-cream-200/70 rounded-full overflow-hidden">
+                  <div className="h-full flex rounded-full overflow-hidden">
+                    <div className="h-full bg-navy-800" style={{ width: `${avgShare * 100}%` }} />
+                    <div className="h-full bg-navy-400" style={{ width: `${(obp - avgShare) * 100}%` }} />
+                  </div>
                 </div>
+                <span className="font-display text-xs font-bold tabular-nums text-navy-900 w-11 text-right shrink-0">{fmtRate(s.onBasePct)}</span>
+                <span className="text-[11px] text-gray-500 tabular-nums w-24 text-right shrink-0 hidden sm:block">
+                  {s.hits} H · {s.walks} BB · {s.strikeouts} K
+                </span>
               </div>
-              <span className="font-display text-xs font-bold tabular-nums text-navy-900 w-11 text-right shrink-0">{fmtRate(s.onBasePct)}</span>
-              <span className="text-[11px] text-gray-500 tabular-nums w-24 text-right shrink-0 hidden sm:block">
-                {s.hits} H · {s.walks} BB · {s.strikeouts} K
-              </span>
+              {/* Besatzung: wer stand hier — nach Häufigkeit, mit seiner eigenen Quote am Platz */}
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 pl-8 pb-1.5">
+                {(s.players ?? []).slice(0, 4).map(pl => (
+                  <span key={pl.name} className="text-[10px] text-gray-500" title={`${pl.name}: ${pl.plateAppearances}× am Schlag auf Platz ${s.slot} · ${pl.plateAppearances > 0 ? Math.round(pl.onBase / pl.plateAppearances * 100) : 0} % auf Base`}>
+                    <span className="font-semibold text-navy-800">{pl.name}</span>
+                    {' '}{pl.plateAppearances}× · {pl.plateAppearances > 0 ? Math.round(pl.onBase / pl.plateAppearances * 100) : 0} %
+                  </span>
+                ))}
+              </div>
             </div>
           )
         })}
@@ -401,16 +753,32 @@ function SlotProfile({ slots }: { slots: BattingSlotStats[] }) {
 
 // --- Eine Spiel-Zeile mit Run-Sparkline ---
 
-function GameRow({ log, open, onToggle }: { log: TeamGameLogResponse; open: boolean; onToggle: () => void }) {
+function GameRow({ log, open, onToggle, selecting = false, selected = false, onSelect }: {
+  log: TeamGameLogResponse
+  open: boolean
+  onToggle: () => void
+  selecting?: boolean
+  selected?: boolean
+  onSelect?: () => void
+}) {
   const result = log.scoreUs != null && log.scoreThem != null
     ? log.scoreUs > log.scoreThem ? 'W' : log.scoreUs < log.scoreThem ? 'L' : 'T'
     : null
 
+  // Auswahl-Modus: die Zeile markiert statt aufzuklappen — Ring als sichtbares Signal.
+  // Offene Zeile + Auswahl: heller Ring, sonst verschwindet er im Navy.
+  const wrapperCls = open
+    ? `border-navy-300 bg-navy-900${selected ? ' outline outline-2 outline-offset-2 outline-white/70' : ''}`
+    : selected
+      ? 'border-navy-900 bg-cream-100 outline outline-2 outline-offset-2 outline-navy-900'
+      : 'border-cream-200 bg-white hover:bg-cream-50'
+
   return (
-    <div className={`rounded-2xl border transition-colors ${open ? 'border-navy-300 bg-navy-900' : 'border-cream-200 bg-white hover:bg-cream-50'}`}>
+    <div className={`rounded-2xl border transition-colors ${wrapperCls}`}>
       <button
-        onClick={onToggle}
-        aria-expanded={open}
+        onClick={() => (selecting ? onSelect?.() : onToggle())}
+        aria-expanded={selecting ? undefined : open}
+        aria-pressed={selecting ? selected : undefined}
         className="w-full text-left px-4 py-3 flex items-center gap-4 cursor-pointer active:scale-[0.995] transition-transform"
       >
         {result ? (
@@ -424,7 +792,7 @@ function GameRow({ log, open, onToggle }: { log: TeamGameLogResponse; open: bool
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <span className={`font-display text-sm font-bold truncate ${open ? 'text-white' : 'text-navy-900'}`}>{log.opponent ?? 'ohne Gegner'}</span>
-            <span className={`text-[10px] uppercase tracking-wide truncate hidden sm:inline ${open ? 'text-white/40' : 'text-gray-400'}`}>
+            <span className={`text-[10px] uppercase tracking-wide truncate hidden sm:inline ${open ? 'text-white/60' : 'text-gray-400'}`}>
               {log.date
                 ? new Date(log.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: '2-digit' }) + ' · ' + (log.league ?? '').replace(' Series', '').replace(' Liga', '')
                 : 'ohne Datum'}
@@ -433,7 +801,7 @@ function GameRow({ log, open, onToggle }: { log: TeamGameLogResponse; open: bool
           {log.hasAtBatData ? (
             <Sparkline innings={log.innings} open={open} />
           ) : (
-            <span className={`text-[10px] italic ${open ? 'text-white/40' : 'text-gray-400'}`}>nicht ausgewertet — keine Schlag-Daten</span>
+            <span className={`text-[10px] italic ${open ? 'text-white/60' : 'text-gray-400'}`}>nicht ausgewertet — keine Schlag-Daten</span>
           )}
         </div>
 
@@ -446,15 +814,23 @@ function GameRow({ log, open, onToggle }: { log: TeamGameLogResponse; open: bool
             </div>
           )}
           <span className={`font-display text-lg font-extrabold tabular-nums ${open ? 'text-white' : 'text-navy-900'}`}>
-            {log.scoreUs ?? '–'}<span className={open ? 'text-white/40' : 'text-gray-300'}>:</span>{log.scoreThem ?? '–'}
+            {log.scoreUs ?? '–'}<span className={open ? 'text-white/60' : 'text-gray-300'}>:</span>{log.scoreThem ?? '–'}
           </span>
-          <motion.span
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.2, ease: EASE_OUT }}
-            className={open ? 'text-white/50' : 'text-gray-300'}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 4 4 4-4" /></svg>
-          </motion.span>
+          {selecting ? (
+            <span className={`w-5 h-5 shrink-0 inline-flex items-center justify-center rounded-full border-2 transition-colors ${
+              selected ? 'bg-navy-900 border-navy-900 text-white' : 'border-gray-300 text-transparent'
+            }`}>
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m3 8.5 3.5 3.5L13 5" /></svg>
+            </span>
+          ) : (
+            <motion.span
+              animate={{ rotate: open ? 180 : 0 }}
+              transition={{ duration: 0.2, ease: EASE_OUT }}
+              className={open ? 'text-white/50' : 'text-gray-300'}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 4 4 4-4" /></svg>
+            </motion.span>
+          )}
         </div>
       </button>
 
@@ -497,8 +873,70 @@ function Stat({ open, value, label }: { open: boolean; value: number; label: str
   return (
     <span className="inline-flex items-baseline gap-0.5">
       <span className={open ? 'text-white' : 'text-navy-900'}>{value}</span>
-      <span className={open ? 'text-white/40' : 'text-gray-400'}>{label}</span>
+      <span className={open ? 'text-white/60' : 'text-gray-400'}>{label}</span>
     </span>
+  )
+}
+
+// --- Schlagfolge eines fokussierten Innings: wer kam wann dran, wer hing, wer machte das Aus ---
+
+/** Kurz-Notation je Ergebnis — der Tooltip zeigt das volle Label. */
+const RESULT_SHORT: Record<AtBatResult, string> = {
+  SINGLE: '1B', DOUBLE: '2B', TRIPLE: '3B', HOMERUN: 'HR', INSIDE_PARK_HR: 'HR',
+  WALK: 'BB', HIT_BY_PITCH: 'HBP', STRIKEOUT: 'K', OUT: 'Out',
+  REACHED_ON_ERROR: 'ROE', AUTOMATIC_OUT: 'AO',
+}
+
+const HIT_RESULTS: ReadonlySet<AtBatResult> = new Set(['SINGLE', 'DOUBLE', 'TRIPLE', 'HOMERUN', 'INSIDE_PARK_HR'])
+const OUT_RESULTS: ReadonlySet<AtBatResult> = new Set(['STRIKEOUT', 'OUT', 'AUTOMATIC_OUT'])
+
+/** Horizontale Schlagfolge: At-Bats in zeitlicher Reihenfolge; gestrandete Runner rot,
+ *  der Out-Macher gerahmt — beantwortet „wer stand zwischen den beiden am Schlag?". */
+function InningAtBatChain({ inning }: { inning: InningLog }) {
+  const atBats = inning.atBats ?? []
+  if (atBats.length === 0) {
+    return <p className="mt-2 text-[10px] italic text-white/40">Keine At-Bat-Daten für Inning {inning.inning}.</p>
+  }
+  const stranded = new Set(inning.stranded)
+  return (
+    <motion.div
+      className="mt-2"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4 }}
+      transition={{ duration: 0.22, ease: EASE_OUT }}
+    >
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-1" aria-label={`Schlagfolge Inning ${inning.inning}`}>
+        {atBats.map((ab, i) => {
+          const isStranded = stranded.has(ab.batter)
+          const isOutMaker = inning.outMaker != null && ab.batter === inning.outMaker && i === atBats.length - 1
+          const isHit = HIT_RESULTS.has(ab.result)
+          const isOut = OUT_RESULTS.has(ab.result)
+          return (
+            <Fragment key={i}>
+              {i > 0 && <span aria-hidden="true" className="text-white/25 text-[9px] select-none">→</span>}
+              <span
+                title={`${ab.batter}: ${AT_BAT_RESULT_LABELS[ab.result]}${ab.runsScored > 0 ? ` · ${ab.runsScored} ${ab.runsScored === 1 ? 'Run' : 'Runs'}` : ''}${isStranded ? ' · hängen geblieben' : ''}${isOutMaker ? ' · letztes Aus' : ''}`}
+                className={`inline-flex items-baseline gap-1 rounded-md px-1.5 py-0.5 text-[11px] tabular-nums ${
+                  isStranded
+                    ? 'bg-softball-red-500/15 text-softball-red-300'
+                    : isHit
+                      ? 'bg-amber-400/15 text-amber-300'
+                      : `bg-white/5 ${isOut ? 'text-white/50' : 'text-white/75'}`
+                } ${isOutMaker ? 'ring-1 ring-white/40' : ''}`}
+              >
+                <span className="font-semibold">{ab.batter}</span>
+                <span className="opacity-70">{RESULT_SHORT[ab.result]}</span>
+                {ab.runsScored > 0 && <span className="font-bold text-amber-300">+{ab.runsScored}</span>}
+              </span>
+            </Fragment>
+          )
+        })}
+      </div>
+      <p className="mt-1.5 text-[9px] text-white/35">
+        rot = hängen geblieben · Rahmen = letztes Aus{inning.outMaker == null ? ' (dieses Inning endete ohne Aus)' : ''}
+      </p>
+    </motion.div>
   )
 }
 
@@ -513,15 +951,26 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
   const [focusInning, setFocusInning] = useState<number | null>(null)
   const [focusPlayer, setFocusPlayer] = useState<string | null>(null)
 
+  /** Das per Klick fokussierte Inning — Grundlage für die Schlagfolge unter der Tabelle. */
+  const focusedInningLog = focusInning == null
+    ? null
+    : log.innings.find(i => i.inning === focusInning) ?? null
+
   useEffect(() => {
-    if (!log.hasAtBatData) return
     let cancelled = false
-    Promise.all([api.getGameBattingStats(log.gameId), api.getLineup(log.gameId)])
-      .then(([p, l]) => { if (!cancelled) { setPlayers(p); setLineup(l) } })
+    // Lineup gibt es auch für nicht ausgewertete Spiele (Spielbogen) — immer laden.
+    // Schlag-Zahlen nur, wenn At-Bat-Daten existieren.
+    api.getLineup(log.gameId)
+      .then(l => { if (!cancelled) setLineup(l) })
       .catch((e: unknown) => { if (!cancelled) toast.show((e as Error).message, 'error') })
+    if (log.hasAtBatData) {
+      api.getGameBattingStats(log.gameId)
+        .then(p => { if (!cancelled) setPlayers(p) })
+        .catch((e: unknown) => { if (!cancelled) toast.show((e as Error).message, 'error') })
+    }
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bewusster Load pro Spiel
-  }, [log.gameId])
+  }, [log.gameId, log.hasAtBatData])
 
   /** Lineup-Info pro Spieler (Slot + Position, DH-Batter auf dem Slot seines Hosts) —
    *  verschmilzt in der Spieler-Tabelle: wen wir wo stehen hatten, direkt neben seinen Zahlen. */
@@ -542,11 +991,31 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
 
   if (!log.hasAtBatData) {
     return (
-      <div className="border-t border-navy-700 px-4 py-4">
+      <div className="border-t border-navy-700 px-4 py-4 space-y-4">
         <p className="text-xs text-white/50 italic leading-relaxed">
-          Für dieses Spiel liegen keine Schlag-Daten vor (z.B. über den Spielbogen erfasst —
-          dessen Daten fließen bewusst nicht in diese Auswertung ein).
+          Keine Schlag-Daten für dieses Spiel — Spielbogen-Daten zählen hier bewusst nicht.
         </p>
+        {lineup && lineup.length > 0 && (
+          <div>
+            <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mb-2">
+              Lineup des Tages
+            </p>
+            <div className="space-y-1">
+              {[...lineup].sort((a, b) => a.battingOrder - b.battingOrder).map(e => (
+                <div key={e.id} className="flex items-baseline gap-3 text-xs">
+                  <span className="font-display font-extrabold tabular-nums text-softball-red-300/70 w-5 shrink-0 text-right">{e.battingOrder}.</span>
+                  <span className="font-semibold text-white truncate">{e.player?.name ?? '—'}</span>
+                  <span className="text-white/55 shrink-0">{e.position ?? 'nur Schlag'}</span>
+                  {e.dhBatterPlayer && (
+                    <span className="text-white/60 truncate">
+                      <span className="font-display font-bold text-softball-red-300/70 mr-1">DH</span>{e.dhBatterPlayer.name}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -556,13 +1025,13 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
       {/* Run-Verlauf + Inning-Details */}
       <motion.div {...section(0)} className="grid lg:grid-cols-[1fr_1.3fr] gap-5">
         <div>
-          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/40 mb-1">Run-Verlauf</p>
-          <p className="text-[9px] text-white/25 mb-2">Inning antippen hebt es überall hervor — Zahl = Spielstand danach</p>
+          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/55 mb-1">Run-Verlauf</p>
+          <p className="text-[10px] text-white/55 mb-2">Inning antippen hebt es überall hervor — Zahl = Spielstand danach</p>
           <RunProgress innings={log.innings} focusInning={focusInning} onToggleFocus={setFocusInning} />
           {log.stranded.length > 0 && (
             <div className="mt-3">
-              <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/40 mb-1.5">
-                Auf Base gekommen, aber nicht gescoret
+              <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mb-1.5">
+                Auf Base hängen geblieben
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {log.stranded.map(s => (
@@ -576,11 +1045,11 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
         </div>
 
         <div>
-          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/40 mb-2">Inning für Inning</p>
+          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/55 mb-2">Inning für Inning</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="font-display text-[9px] font-bold tracking-widest uppercase text-white/30 text-left border-b border-white/10">
+                <tr className="font-display text-[9px] font-bold tracking-widest uppercase text-white/55 text-left border-b border-white/10">
                   <th className="py-1 pr-2">Inn</th>
                   <th className="py-1 pr-2 text-right">R</th>
                   <th className="py-1 pr-2 text-right">H</th>
@@ -595,12 +1064,12 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
                 {log.innings.map(i => {
                   const focused = focusInning === i.inning
                   return (
-                    <tr key={i.inning} className={`text-white/80 transition-colors ${focused ? 'bg-white/[0.07]' : ''}`}>
+                    <tr key={i.inning} className={`text-white/90 transition-colors ${focused ? 'bg-white/[0.07]' : ''}`}>
                       <td className="py-1 pr-2">
                         <button
                           onClick={() => setFocusInning(focused ? null : i.inning)}
                           title={focused ? 'Fokus aufheben' : 'Inning fokussieren'}
-                          className={`font-display font-bold tabular-nums cursor-pointer px-1.5 -ml-1.5 rounded transition-colors ${focused ? 'text-white bg-white/10' : 'text-white hover:text-white hover:bg-white/5'}`}
+                          className={`font-display font-bold tabular-nums cursor-pointer px-2 py-1 -ml-2 rounded-md inline-flex items-center justify-center min-w-6 transition-all ${focused ? 'text-white bg-white/10' : 'text-white hover:text-white hover:bg-white/5 active:scale-95'}`}
                         >
                           {i.inning}
                         </button>
@@ -610,21 +1079,28 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
                       <td className="py-1 pr-2 text-right tabular-nums">{i.onBase}</td>
                       <td className="py-1 pr-2 text-right tabular-nums">{i.walks}</td>
                       <td className="py-1 pr-2 text-right tabular-nums">{i.outs}</td>
-                      <td className="py-1 pr-2 text-white/50 truncate max-w-24">{i.outMaker ?? '—'}</td>
-                      <td className="py-1 text-white/40 truncate max-w-40">{i.stranded.length > 0 ? i.stranded.join(', ') : '—'}</td>
+                      <td className="py-1 pr-2 text-white/65 truncate max-w-24">{i.outMaker ?? '—'}</td>
+                      <td className="py-1 text-white/55 truncate max-w-40">{i.stranded.length > 0 ? i.stranded.join(', ') : '—'}</td>
                     </tr>
                   )
                 })}
               </tbody>
             </table>
           </div>
+
+          {/* Schlagfolge des fokussierten Innings: wer kam zwischen Reach und Schluss-Aus dran */}
+          <AnimatePresence initial={false}>
+            {focusedInningLog && (
+              <InningAtBatChain key={focusedInningLog.inning} inning={focusedInningLog} />
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
 
       {/* Hit-Verlauf: wer trifft wann im Spiel, wer nimmt ab */}
       {log.innings.length > 0 && (
         <motion.div {...section(1)}>
-          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/40 mb-2">
+          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mb-2">
             Hit-Verlauf — wer wann traf
           </p>
           <HitTimeline innings={log.innings} lineupInfo={lineupInfo} focusInning={focusInning} focusPlayer={focusPlayer} onFocusInning={setFocusInning} onFocusPlayer={setFocusPlayer} />
@@ -634,7 +1110,7 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
       {/* Lineup des Tages mit den Zahlen daneben — in Batting-Reihenfolge */}
       {players && players.length > 0 && (
         <motion.div {...section(2)}>
-          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/40 mb-2">
+          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mb-2">
             Lineup des Tages — mit den Zahlen daneben
           </p>
           <PlayerTable players={players} lineupInfo={lineupInfo} />
@@ -648,15 +1124,18 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
 
 function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
   const innings = useMemo(() => {
-    const agg = new Map<number, { hits: number; runs: number }>()
+    // Ø pro Inning: Nenner = Spiele, die dieses Inning tatsächlich gespielt haben
+    // (Mercy Rule / vorzeitiges Ende → späte Innings haben weniger Spiele im Nenner)
+    const agg = new Map<number, { hits: number; runs: number; games: number }>()
     let games = 0
     for (const l of logs) {
       if (!l.hasAtBatData) continue
       games++
       for (const i of l.innings) {
-        const e = agg.get(i.inning) ?? { hits: 0, runs: 0 }
+        const e = agg.get(i.inning) ?? { hits: 0, runs: 0, games: 0 }
         e.hits += i.hits
         e.runs += i.runs
+        e.games++
         agg.set(i.inning, e)
       }
     }
@@ -672,7 +1151,11 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
     return [...agg.entries()].sort((a, b) => b[1] - a[1])
   }, [logs])
 
-  const maxInningHits = Math.max(1, ...innings.byInning.map(([, e]) => e.hits))
+  const maxInningHits = Math.max(0.1, ...innings.byInning.map(([, e]) => e.hits / e.games))
+  const maxInningRuns = Math.max(0.1, ...innings.byInning.map(([, e]) => e.runs / e.games))
+  const maxInningVal = Math.max(maxInningHits, maxInningRuns)
+  // Deutsche Anzeige: Komma als Dezimaltrenner
+  const fmtAvg = (v: number) => v.toFixed(1).replace('.', ',')
   const maxStranded = Math.max(1, ...stranded.map(([, n]) => n))
 
   // Wer das Inning beendet hat, während Runner auf Base standen ("Verursacher" der Strandings)
@@ -695,23 +1178,42 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
     <div className="grid lg:grid-cols-3 gap-3">
       {/* Hits pro Inning: wo im Spielverlauf entsteht unsere Offensivkraft */}
       <div className="bg-cream-50 border border-cream-200 rounded-2xl px-4 py-3">
-        <p className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900 mb-0.5">
-          Hits pro Inning
-        </p>
-        <p className="text-[10px] text-gray-400 mb-2">aus {innings.games} ausgewerteten Spielen</p>
-        <div className="flex items-end gap-2 h-28">
+        <div className="flex items-baseline justify-between mb-0.5">
+          <p className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">
+            Hits pro Inning
+          </p>
+          <p className="text-[10px] text-gray-400">
+            <span className="inline-block w-2 h-2 rounded-sm bg-navy-800 mr-1 align-middle" />Hits
+            <span className="inline-block w-2 h-2 rounded-sm bg-amber-400 ml-2.5 mr-1 align-middle" />Runs
+          </p>
+        </div>
+        <p className="text-[10px] text-gray-400 mb-2">Ø pro Spiel und Inning — aus {innings.games} {innings.games === 1 ? 'ausgewertetem Spiel' : 'ausgewerteten Spielen'} · Konversion Hits → Runs</p>
+        <div className="flex items-end gap-1.5">
           {innings.byInning.map(([inning, e]) => (
-            <div key={inning} className="flex-1 flex flex-col items-center gap-1" title={`Inning ${inning}: ${e.hits} Hits · ${e.runs} Runs`}>
-              <span className="font-display text-[10px] font-bold tabular-nums text-navy-900">{e.hits}</span>
-              <div
-                className={`w-full rounded-t-sm min-h-[3px] ${e.runs >= maxInningHits * 0.8 ? 'bg-softball-red-400' : 'bg-navy-700'}`}
-                style={{ height: `${8 + (e.hits / maxInningHits) * 92}%` }}
-              />
-              <span className="font-display text-[9px] font-bold tabular-nums text-gray-400">{inning}</span>
-              <span className="font-display text-[9px] font-bold tabular-nums text-gray-300">R {e.runs}</span>
+            <div key={inning} className="flex-1 flex flex-col items-center gap-1" title={`Inning ${inning}: Ø ${fmtAvg(e.hits / e.games)} Hits · Ø ${fmtAvg(e.runs / e.games)} Runs (${e.games} Spiele)`}>
+              <div className="w-full h-24 flex items-end justify-center gap-1">
+                <div className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full max-w-7">
+                  <span className="font-display text-[11px] font-extrabold tabular-nums text-navy-900 leading-none">{fmtAvg(e.hits / e.games)}</span>
+                  <div
+                    className="w-full rounded-t-md bg-navy-800 transition-colors"
+                    style={{ height: `${Math.max(4, Math.round((e.hits / e.games / maxInningVal) * 64))}px` }}
+                  />
+                </div>
+                <div className="flex-1 flex flex-col items-center gap-0.5 max-w-7">
+                  <span className="font-display text-[11px] font-extrabold tabular-nums text-amber-600">{fmtAvg(e.runs / e.games)}</span>
+                  <div
+                    className="w-full rounded-t-md bg-amber-400 transition-colors"
+                    style={{ height: `${Math.max(4, Math.round((e.runs / e.games / maxInningVal) * 64))}px` }}
+                  />
+                </div>
+              </div>
+              <span className={`font-display text-[10px] font-bold tabular-nums ${e.games < innings.games ? 'text-amber-600' : 'text-navy-800'}`}>{inning}{e.games < innings.games ? '*' : ''}</span>
             </div>
           ))}
         </div>
+        {innings.byInning.some(([, e]) => e.games < innings.games) && (
+          <p className="mt-1.5 text-[10px] text-gray-400">* Inning nicht in allen Spielen erreicht (z. B. Mercy Rule) — Ø über die Spiele, die dieses Inning gespielt haben</p>
+        )}
       </div>
 
       {/* Gestrandete Runner: wer kommt oft auf Base, ohne zu scoren */}
@@ -754,9 +1256,8 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
             ))}
           </div>
         )}
-        <p className="text-[9px] text-gray-400 mt-2 leading-snug">
-          Wessen At-Bat das Inning mit 3 Aus beendete, während Teamkameraden auf Base standen —
-          reine Zählung, kein Schuldspruch: der letzte Schlagmann ist oft reine Rotationslogik.
+        <p className="text-[10px] text-gray-400 mt-2 leading-snug">
+          Wessen At-Bat das Inning beendete, während Runner auf Base standen — reine Zählung, keine Wertung.
         </p>
       </div>
     </div>
@@ -794,7 +1295,7 @@ function HitTimeline({ innings, lineupInfo, focusInning, focusPlayer, onFocusInn
           <col className="w-28" />
         </colgroup>
         <thead>
-          <tr className="font-display text-[9px] font-bold tracking-widest uppercase text-white/30 text-left border-b border-white/10">
+          <tr className="font-display text-[9px] font-bold tracking-widest uppercase text-white/55 text-left border-b border-white/10">
             <th className="py-1 pr-2">Spieler</th>
             {Array.from({ length: maxInning }, (_, idx) => idx + 1).map(inn => {
               const focused = focusInning === inn
@@ -803,7 +1304,7 @@ function HitTimeline({ innings, lineupInfo, focusInning, focusPlayer, onFocusInn
                   <button
                     onClick={() => onFocusInning(focused ? null : inn)}
                     title={focused ? 'Fokus aufheben' : `Inning ${inn} fokussieren`}
-                    className={`px-2 py-0.5 rounded-md tabular-nums cursor-pointer transition-colors ${focused ? 'text-white bg-white/10' : 'text-white/30 hover:text-white/70 hover:bg-white/5'}`}
+                    className={`px-2 py-1 rounded-md tabular-nums text-[10px] cursor-pointer inline-flex items-center justify-center min-w-7 transition-all ${focused ? 'text-white bg-white/10' : 'text-white/50 hover:text-white/70 hover:bg-white/5 active:scale-95'}`}
                   >
                     {inn}
                   </button>
@@ -824,7 +1325,7 @@ function HitTimeline({ innings, lineupInfo, focusInning, focusPlayer, onFocusInn
                   <button
                     onClick={() => onFocusPlayer(playerFocused ? null : name)}
                     title={playerFocused ? 'Fokus aufheben' : `${name}: Zeile hervorheben`}
-                    className={`font-semibold cursor-pointer truncate max-w-full text-left px-1.5 -ml-1.5 rounded transition-colors ${playerFocused ? 'text-white bg-white/10' : 'text-white/80 hover:text-white hover:bg-white/5'}`}
+                    className={`font-semibold cursor-pointer truncate max-w-full text-left px-2 py-1 -ml-2 rounded-md transition-all ${playerFocused ? 'text-white bg-white/10' : 'text-white/80 hover:text-white hover:bg-white/5 active:scale-95'}`}
                   >
                     {name}
                   </button>
@@ -857,8 +1358,10 @@ function HitTimeline({ innings, lineupInfo, focusInning, focusPlayer, onFocusInn
   )
 }
 
-/** Kumulativer Run-Verlauf als Treppenlinie — Spielstand über die Innings.
- *  Steile Passagen = Big Inning, flache = Trockenheit. Inning antippen fokussiert. */
+/**
+ * Kumulativer Run-Verlauf als EINE durchgehende Linie — Spielstand über die Innings.
+ * Steile Passagen = Big Inning, flache = Trockenheit. Inning antippen fokussiert es überall.
+ */
 function RunProgress({ innings, focusInning, onToggleFocus }: {
   innings: TeamGameLogResponse['innings']
   focusInning: number | null
@@ -869,61 +1372,70 @@ function RunProgress({ innings, focusInning, onToggleFocus }: {
   let c = 0
   for (const i of innings) { c += i.runs; cum.push(c) }
   const max = Math.max(1, c)
+  const n = innings.length
   // Y-Position (in % vom Boden): 8% Grundlinie bis 88% Maximalstand
   const y = (v: number) => 8 + (v / max) * 80
+  // Linien-Punkte über ALLE Innings: x = Mitte der jeweiligen Inning-Spalte
+  const pts = innings.map((_, idx) => `${((idx + 0.5) / n) * 100},${100 - y(cum[idx])}`)
 
   return (
-    <div className="flex h-28">
-      {innings.map((i, idx) => {
-        const prevY = idx === 0 ? y(0) : y(cum[idx - 1])
-        const curY = y(cum[idx])
-        const focused = focusInning === i.inning
-        return (
-          <button
-            key={i.inning}
-            onClick={() => onToggleFocus(focused ? null : i.inning)}
-            title={`Inning ${i.inning}: +${i.runs} Runs · ${i.hits} Hits · Spielstand danach ${cum[idx]} · ${i.outs} Aus${focused ? ' — Fokus aufheben' : ''}`}
-            aria-label={`Inning ${i.inning}: ${i.runs} Runs, Spielstand ${cum[idx]}`}
-            aria-pressed={focused}
-            className={`relative flex-1 h-full cursor-pointer rounded-lg transition-colors ${focused ? 'bg-white/[0.07]' : 'hover:bg-white/5'}`}
-          >
-            {/* Verbindungsstück vom vorigen Stand zu diesem — Treppenstufe */}
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {idx === 0 && prevY !== curY && (
-                <line x1="0" y1={100 - prevY} x2="50" y2={100 - prevY} stroke="var(--color-cream-300)" strokeWidth="1.5" strokeOpacity="0.5" vectorEffect="non-scaling-stroke" />
-              )}
-              <polyline
-                points={idx === 0
-                  ? `0,${100 - prevY} 50,${100 - curY}`
-                  : `0,${100 - prevY} 50,${100 - prevY} 50,${100 - curY}`}
-                fill="none"
-                stroke="var(--color-cream-300)"
-                strokeWidth="1.5"
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
-            {/* Spielstand nach diesem Inning */}
-            <span
-              className="absolute left-1/2 -translate-x-1/2 font-display text-[10px] font-bold tabular-nums text-white/70 pointer-events-none"
-              style={{ bottom: `calc(${curY}% + 6px)` }}
+    <div className="relative h-28">
+      {/* Die EINE durchgehende Linie + dezente Fläche darunter */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="runFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-cream-300)" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="var(--color-cream-300)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={`0,100 ${pts.join(' ')} 100,100`} fill="url(#runFill)" />
+        <polyline
+          points={pts.join(' ')}
+          fill="none"
+          stroke="var(--color-cream-300)"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+      {/* Inning-Spalten: klickbar für den Fokus, tragen Spielstand-Zahl + Inning-Nummer */}
+      <div className="absolute inset-0 flex">
+        {innings.map((i, idx) => {
+          const curY = y(cum[idx])
+          const focused = focusInning === i.inning
+          return (
+            <button
+              key={i.inning}
+              onClick={() => onToggleFocus(focused ? null : i.inning)}
+              title={`Inning ${i.inning}: +${i.runs} Runs · ${i.hits} Hits · Spielstand danach ${cum[idx]} · ${i.outs} Aus${focused ? ' — Fokus aufheben' : ''}`}
+              aria-label={`Inning ${i.inning}: ${i.runs} Runs, Spielstand ${cum[idx]}`}
+              aria-pressed={focused}
+              className={`relative flex-1 h-full cursor-pointer rounded-lg transition-all active:scale-[0.98] ${focused ? 'bg-white/[0.07]' : 'hover:bg-white/5'}`}
             >
-              {cum[idx]}
-            </span>
-            {/* Punkt auf der Linie */}
-            <span
-              className={`absolute left-1/2 -translate-x-1/2 rounded-full pointer-events-none transition-all ${
-                i.runs > 0
-                  ? (focused ? 'bg-cream-50 ring-2 ring-white/50 w-2.5 h-2.5' : 'bg-cream-50 w-2 h-2')
-                  : (focused ? 'bg-white/40 ring-2 ring-white/30 w-2 h-2' : 'bg-white/25 w-1.5 h-1.5')
-              }`}
-              style={{ bottom: `calc(${curY}% - 4px)` }}
-            />
-            <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 font-display text-[9px] font-bold tabular-nums pointer-events-none ${focused ? 'text-white' : 'text-white/30'}`}>
-              {i.inning}
-            </span>
-          </button>
-        )
-      })}
+              {/* Spielstand nach diesem Inning */}
+              <span
+                className="absolute left-1/2 -translate-x-1/2 font-display text-[11px] font-extrabold tabular-nums text-white/90 pointer-events-none"
+                style={{ bottom: `calc(${curY}% + 6px)` }}
+              >
+                {cum[idx]}
+              </span>
+              {/* Punkt auf der Linie */}
+              <span
+                className={`absolute left-1/2 -translate-x-1/2 rounded-full pointer-events-none transition-all ${
+                  i.runs > 0
+                    ? (focused ? 'bg-cream-50 ring-2 ring-white/50 w-2.5 h-2.5' : 'bg-cream-50 w-2 h-2')
+                    : (focused ? 'bg-white/40 ring-2 ring-white/30 w-2 h-2' : 'bg-white/25 w-1.5 h-1.5')
+                }`}
+                style={{ bottom: `calc(${curY}% - 4px)` }}
+              />
+              <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 font-display text-[10px] font-bold tabular-nums pointer-events-none ${focused ? 'text-white' : 'text-white/60'}`}>
+                {i.inning}
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -989,7 +1501,7 @@ function LineupCompare({ gameA, gameB }: { gameA?: TeamGameLogResponse; gameB?: 
     return (
       <span className={`flex items-baseline gap-1.5 ${changed ? 'bg-softball-red-500/10 border border-softball-red-400/30 rounded-lg px-1.5 -mx-1.5' : ''}`}>
         <span className="font-semibold text-white truncate">{entry.name}</span>
-        <span className="text-white/30 shrink-0">{entry.position}</span>
+        <span className="text-white/50 shrink-0">{entry.position}</span>
         {(hits.get(entry.playerId) ?? 0) > 0 && <span className="font-display font-bold tabular-nums text-softball-red-300 shrink-0">{hits.get(entry.playerId)} H</span>}
       </span>
     )
@@ -998,10 +1510,10 @@ function LineupCompare({ gameA, gameB }: { gameA?: TeamGameLogResponse; gameB?: 
   const yieldRow = (log: TeamGameLogResponse) => log.hasAtBatData ? (
     <span className="font-display text-[11px] font-bold tabular-nums text-white/80">
       {log.scoreUs ?? '–'}:{log.scoreThem ?? '–'}
-      <span className="text-white/40 font-normal"> · {log.hits} H · {log.onBase} OB · {log.walks} BB · {log.leftOnBase} LOB</span>
+      <span className="text-white/50 font-medium"> · {log.hits} H · {log.onBase} OB · {log.walks} BB · {log.leftOnBase} LOB</span>
     </span>
   ) : (
-    <span className="text-[11px] text-white/40 italic">
+    <span className="text-[11px] text-white/60 italic">
       {log.scoreUs ?? '–'}:{log.scoreThem ?? '–'} — nicht ausgewertet (keine Schlag-Daten)
     </span>
   )
@@ -1014,7 +1526,7 @@ function LineupCompare({ gameA, gameB }: { gameA?: TeamGameLogResponse; gameB?: 
       className="bg-navy-900 rounded-2xl px-4 py-4"
     >
       <p className="font-display text-sm font-extrabold uppercase tracking-wide text-white mb-3">
-        Lineup-Vergleich <span className="text-white/40 font-bold">— rote Zellen = am Platz anders besetzt</span>
+        Lineup-Vergleich <span className="text-white/60 font-bold">— rote Zellen = am Platz anders besetzt</span>
       </p>
 
       {/* Kopf: wer spielt gegen wen */}
@@ -1032,7 +1544,7 @@ function LineupCompare({ gameA, gameB }: { gameA?: TeamGameLogResponse; gameB?: 
       <div className="grid grid-cols-[2rem_1fr_1fr] gap-x-2 gap-y-1 text-[11px]">
         {Array.from({ length: maxSlot }, (_, i) => i + 1).map(slot => (
           <Fragment key={slot}>
-            <span className="font-display font-extrabold tabular-nums text-white/30 text-right">{slot}.</span>
+            <span className="font-display font-extrabold tabular-nums text-white/50 text-right">{slot}.</span>
             <span className="min-w-0">{cell('a', slot, slotsB.get(slot))}</span>
             <span className="min-w-0">{cell('b', slot, slotsA.get(slot))}</span>
           </Fragment>
@@ -1078,10 +1590,10 @@ function PlayerTable({ players, lineupInfo }: {
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="font-display text-[9px] font-bold tracking-widest uppercase text-white/30 text-left border-b border-white/10">
+          <tr className="font-display text-[9px] font-bold tracking-widest uppercase text-white/50 text-left border-b border-white/10">
             <th className="py-1 pr-1">#</th>
             <th className="py-1 pr-2">Spieler</th>
-            <th className="py-1 pr-2 text-right">PA</th>
+            <th className="py-1 pr-2 text-right" title="Plate Appearances – wie oft der Spieler am Schlag war">Schläge</th>
             <th className="py-1 pr-2 text-right">Hits</th>
             <th className="py-1 pr-2 text-right hidden sm:table-cell">2B·3B·HR</th>
             <th className="py-1 pr-2 text-right">BB</th>
@@ -1100,11 +1612,11 @@ function PlayerTable({ players, lineupInfo }: {
                 <td className="py-1 pr-1 font-display font-extrabold tabular-nums text-softball-red-300/60">{info ? `${info.slot}.` : '·'}</td>
                 <td className="py-1 pr-2 font-semibold text-white whitespace-nowrap">
                   {p.playerName}
-                  {info && <span className="text-white/30 font-normal ml-1.5">{info.position}</span>}
+                  {info && <span className="text-white/55 font-medium ml-1.5">{info.position}</span>}
                 </td>
                 <td className="py-1 pr-2 text-right tabular-nums text-white/70">{p.plateAppearances}</td>
                 <td className="py-1 pr-2 text-right tabular-nums font-bold text-white">{p.hits}</td>
-                <td className="py-1 pr-2 text-right tabular-nums text-white/40 hidden sm:table-cell">{p.doubles}·{p.triples}·{p.homeRuns}</td>
+                <td className="py-1 pr-2 text-right tabular-nums text-white/60 hidden sm:table-cell">{p.doubles}·{p.triples}·{p.homeRuns}</td>
                 <td className="py-1 pr-2 text-right tabular-nums text-white/70">{p.walks}</td>
                 <td className="py-1 pr-2 text-right tabular-nums text-white/70">{p.strikeouts}</td>
                 <td className="py-1 pr-2 text-right tabular-nums text-white/70">{p.outs}</td>

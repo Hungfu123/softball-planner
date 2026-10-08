@@ -78,9 +78,13 @@ public class TeamGameLogCalculator {
 
             int inningRuns = 0, inningHits = 0, inningOnBase = 0, inningWalks = 0, inningOuts = 0;
             final Map<String, Integer> hitsByPlayer = new LinkedHashMap<>();
+            final List<TeamGameLog.InningLog.AtBatSnippet> atBatSnippets = new ArrayList<>();
             for (final AtBat ab : inningAtBats) {
                 final AtBatResult r = ab.getResult();
                 if (r == null) continue;
+                atBatSnippets.add(new TeamGameLog.InningLog.AtBatSnippet(
+                    ab.getBatter() != null ? playerNames.getOrDefault(ab.getBatter().getId(), "Unbekannt") : "Unbekannt",
+                    r, ab.getRunsScored() != null ? ab.getRunsScored() : 0));
                 // AUTOMATIC_OUT ist laut Domain-Regel weder At-Bat noch Plate Appearance
                 if (r != AtBatResult.AUTOMATIC_OUT) plateAppearances++;
                 if (r.countsAsAtBat()) atBats++;
@@ -114,7 +118,8 @@ public class TeamGameLogCalculator {
                 strandedByPlayer.merge(name, 1, Integer::sum);
             }
             innings.add(new TeamGameLog.InningLog(entry.getKey(), inningRuns, inningHits,
-                inningOnBase, inningWalks, inningOuts, stranded, outMakerOf(inningAtBats, playerNames), hitsByPlayer));
+                inningOnBase, inningWalks, inningOuts, stranded, outMakerOf(inningAtBats, playerNames), hitsByPlayer,
+                atBatSnippets));
         }
 
         return new TeamGameLog(
@@ -194,7 +199,14 @@ public class TeamGameLogCalculator {
 
             final SlotAccumulator a = acc.computeIfAbsent(slot, k -> new SlotAccumulator());
             final AtBatResult r = ab.getResult();
-            if (r != AtBatResult.AUTOMATIC_OUT) a.plateAppearances++; // AUTOMATIC_OUT: keine PA
+            final String batterName = ab.getBatter().getName();
+            final SlotAccumulator.PlayerPa pp =
+                a.playersByName.computeIfAbsent(batterName, k -> new SlotAccumulator.PlayerPa());
+            if (r != AtBatResult.AUTOMATIC_OUT) { // AUTOMATIC_OUT: keine PA
+                a.plateAppearances++;
+                pp.plateAppearances++;
+            }
+            if (r.reachedBase()) pp.onBase++;
             if (r.countsAsAtBat()) a.atBats++;
             if (r.isHit()) a.hits++;
             switch (r) {
@@ -213,9 +225,14 @@ public class TeamGameLogCalculator {
             .sorted(Map.Entry.comparingByKey())
             .map(e -> {
                 final SlotAccumulator a = e.getValue();
+                final List<BattingSlotStat.SlotPlayerStat> players = a.playersByName.entrySet().stream()
+                    .sorted((x, y) -> Integer.compare(y.getValue().plateAppearances, x.getValue().plateAppearances))
+                    .map(e2 -> new BattingSlotStat.SlotPlayerStat(
+                        e2.getKey(), e2.getValue().plateAppearances, e2.getValue().onBase))
+                    .toList();
                 return new BattingSlotStat(e.getKey(),
                     a.plateAppearances, a.atBats, a.hits, a.doubles, a.triples, a.homeRuns,
-                    a.walks, a.hitByPitch, a.strikeouts, a.outs);
+                    a.walks, a.hitByPitch, a.strikeouts, a.outs, players);
             })
             .toList();
     }
@@ -237,6 +254,12 @@ public class TeamGameLogCalculator {
     private static final class SlotAccumulator {
         private int plateAppearances, atBats, hits, doubles, triples, homeRuns;
         private int walks, hitByPitch, strikeouts, outs;
+        private final Map<String, PlayerPa> playersByName = new LinkedHashMap<>();
+
+        /** PA + On-Base EINES Spielers an diesem Slot. */
+        private static final class PlayerPa {
+            private int plateAppearances, onBase;
+        }
     }
 
     private Integer yearOf(final Game game) {

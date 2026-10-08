@@ -2,15 +2,15 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { PlayerBattingStatsResponse } from '@/types'
 
-const COLOR_NAVY: [number, number, number] = [30, 41, 59]
-const COLOR_NAVY_SOFT: [number, number, number] = [71, 85, 105]
-const COLOR_RED: [number, number, number] = [200, 46, 46]
-const COLOR_CREAM_TINT: [number, number, number] = [250, 246, 235]
-const COLOR_GRAY_LINE: [number, number, number] = [220, 215, 200]
-const COLOR_GRAY_TEXT: [number, number, number] = [120, 120, 120]
-const COLOR_GRAY_MUTED: [number, number, number] = [160, 160, 160]
+export const COLOR_NAVY: [number, number, number] = [30, 41, 59]
+export const COLOR_NAVY_SOFT: [number, number, number] = [71, 85, 105]
+export const COLOR_RED: [number, number, number] = [200, 46, 46]
+export const COLOR_CREAM_TINT: [number, number, number] = [250, 246, 235]
+export const COLOR_GRAY_LINE: [number, number, number] = [220, 215, 200]
+export const COLOR_GRAY_TEXT: [number, number, number] = [120, 120, 120]
+export const COLOR_GRAY_MUTED: [number, number, number] = [160, 160, 160]
 
-function formatDec(val: number): string {
+export function formatDec(val: number): string {
   return val.toFixed(3).replace(/^0\./, '.')
 }
 
@@ -20,7 +20,7 @@ function formatTimestamp(): string {
   })
 }
 
-function safeFilename(parts: (string | null | undefined)[]): string {
+export function safeFilename(parts: (string | null | undefined)[]): string {
   return parts
     .filter((p): p is string => Boolean(p))
     .map(s => s.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, ''))
@@ -28,10 +28,11 @@ function safeFilename(parts: (string | null | undefined)[]): string {
     .join('_')
 }
 
-function drawPageHeader(
+export function drawPageHeader(
   doc: jsPDF,
   title: string,
   contextLabel: string,
+  eyebrow = 'DEAD SOX · STATISTIK',
 ): number {
   const pageWidth = doc.internal.pageSize.getWidth()
   const margin = 14
@@ -41,7 +42,7 @@ function drawPageHeader(
   doc.setFontSize(7)
   doc.setTextColor(...COLOR_RED)
   doc.setCharSpace(0.8)
-  doc.text('DEAD SOX · STATISTIK', margin, 14)
+  doc.text(eyebrow, margin, 14)
   doc.setCharSpace(0)
 
   // Titel: keine Sperrung. Gesperrte Grossbuchstaben in 22pt waren der Grund, warum die
@@ -100,7 +101,7 @@ function drawFooter(doc: jsPDF, pageNumber: number, totalPages: number) {
   doc.text(`Seite ${pageNumber} / ${totalPages}`, pageWidth - margin, pageHeight - 6, { align: 'right' })
 }
 
-function applyFootersToAllPages(doc: jsPDF) {
+export function applyFootersToAllPages(doc: jsPDF) {
   const total = doc.getNumberOfPages()
   for (let i = 1; i <= total; i++) {
     doc.setPage(i)
