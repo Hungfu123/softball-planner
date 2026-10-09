@@ -233,6 +233,19 @@ button:active:not(:disabled), [role="button"]:active {
   .planner-pane { animation: none; }
 }
 
+/* Hover nur auf Geraeten, die wirklich hovern koennen. Tailwind generiert
+   `hover:`-Regeln standardmaessig ungeschuetzt — auf dem Handy bleibt der
+   Hover-Zustand nach jedem Tipp kleben, und man sieht nicht mehr, welcher
+   Knopf gerade aktiv ist. Die Variante einmal umzudefinieren erwischt alle
+   Aufrufstellen der App, statt sie einzeln zu guarden. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 /* Doppeltipp-Zoom auf Bedienelementen abschalten. Beim schnellen Scoren am
    Spielfeldrand zoomt sonst die Seite, wenn zwei Tipps dicht aufeinander folgen.
    Pinch-Zoom bleibt unberuehrt. */

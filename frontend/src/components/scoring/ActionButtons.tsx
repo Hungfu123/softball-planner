@@ -101,7 +101,7 @@ function PrimaryButton({ color, label, subtitle, onClick, disabled }: { color: C
       className={`font-display h-16 sm:h-[72px] rounded-xl font-extrabold text-base sm:text-lg tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="font-body text-[9px] sm:text-[10px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
+      {subtitle && <span className="font-body text-[10px] sm:text-[11px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
     </button>
   )
 }
@@ -114,7 +114,7 @@ function SecondaryButton({ color, label, subtitle, onClick, disabled }: { color:
       className={`font-display h-12 sm:h-[60px] rounded-xl font-extrabold text-sm sm:text-base tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 ${COLOR_CLASSES[color]}`}
     >
       <span>{label}</span>
-      {subtitle && <span className="font-body text-[9px] sm:text-[10px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
+      {subtitle && <span className="font-body text-[10px] sm:text-[11px] font-medium opacity-85 tracking-normal normal-case">{subtitle}</span>}
     </button>
   )
 }

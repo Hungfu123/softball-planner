@@ -133,7 +133,7 @@ export async function recordStealingViaUI(page: Page, runnerPlayerId: number, ty
 export async function recordSubstitutionViaUI(page: Page, playerOutId: number, playerInId: number): Promise<void> {
   const outName = await getPlayerName(playerOutId)
   const inName = await getPlayerName(playerInId)
-  await page.getByRole('button', { name: /Komplette Aufstellung anzeigen/i }).click()
+  await page.getByRole('button', { name: /Aufstellung anzeigen/i }).click()
   await page.waitForTimeout(300)
   await page.getByRole('button', { name: /^Wechseln$/i }).click()
   await page.waitForTimeout(300)
@@ -159,6 +159,19 @@ export async function advanceInningViaUI(page: Page, opponentRuns: number): Prom
 }
 
 /** Click Rückgängig button. Dismisses lingering CorrectionSheet first (CI-Flake-Guard). */
+/**
+ * Overthrow ausloesen. Faellt dabei ein Run (Runner auf 3B), fragt die UI nach —
+ * die Bestaetigung wird hier mitgeklickt.
+ */
+export async function clickOverthrow(page: Page): Promise<void> {
+  await page.getByRole('button', { name: /^Overthrow\b/i }).click()
+  const confirm = page.getByRole('button', { name: 'Ja, Overthrow', exact: true })
+  if (await confirm.first().isVisible({ timeout: 600 }).catch(() => false)) {
+    await confirm.first().click()
+  }
+  await page.waitForTimeout(500)
+}
+
 export async function clickUndo(page: Page): Promise<void> {
   await dismissCorrectionSheetIfOpen(page, 800)
   await page.getByRole('button', { name: /^Rückgängig$/i }).click()
