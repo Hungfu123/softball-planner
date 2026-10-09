@@ -39,6 +39,16 @@ public record TeamGameLog(
     int onBase,
     int leftOnBase,
     Map<String, Integer> strandedByPlayer,
+    /**
+     * Wie viele Basen ein Spieler durch gegnerische Fehler gutgemacht hat
+     * (At-Bats mit REACHED_ON_ERROR). Gezaehlt werden gewonnene Basen, nicht
+     * Vorgaenge: wer bei einem Fehler von 1B nach 3B laeuft, bekommt 2.
+     *
+     * Vorsicht bei der Deutung: ein Overthrow wird im Legacy-Scoring in das
+     * zuvor gebuchte At-Bat zurueckgeschrieben und traegt dessen Ergebnis. Er
+     * taucht hier also unter Single/Walk/… auf, nicht unter Fehler.
+     */
+    Map<String, Integer> basesGainedOnErrorByPlayer,
     List<InningLog> innings
 ) {
 
@@ -67,6 +77,16 @@ public record TeamGameLog(
          * Ergebnis und dabei erzielte Runs. Basis für die „Wer kam zwischen
          * Reach und Schluss-Aus"-Schlagfolge in der Analyse.
          */
-        public record AtBatSnippet(String batter, AtBatResult result, int runsScored) {}
+        public record AtBatSnippet(String batter, AtBatResult result, int runsScored,
+                                   List<RunnerAdvance> advances) {
+
+            /**
+             * Ein Laeufer, der bei diesem At-Bat weitergerueckt ist. {@code toBase}
+             * 4 bedeutet Home (= Run). Abgeleitet aus dem Base-State-Diff zum
+             * vorherigen At-Bat desselben Innings — das Legacy-Scoring speichert
+             * keine Laeufer-Bewegungen, nur den Zustand nach jedem At-Bat.
+             */
+            public record RunnerAdvance(String runner, int fromBase, int toBase) {}
+        }
     }
 }

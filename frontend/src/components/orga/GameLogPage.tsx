@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Download, FileJson } from 'lucide-react'
 import * as api from '@/api/client'
-import type { AtBatResult, BattingSlotStats, InningLog, LineupEntryResponse, PlayerBattingStatsResponse, TeamGameLogResponse } from '@/types'
+import type { AtBatResult, BattingSlotStats, InningAtBat, InningLog, LineupEntryResponse, PlayerBattingStatsResponse, TeamGameLogResponse } from '@/types'
 import { AT_BAT_RESULT_LABELS } from '@/types'
 import { useToastContext } from '@/components/layout/Layout'
 import { AnalysisModeTabs } from './AnalysisModeTabs'
@@ -998,6 +998,34 @@ const RESULT_SHORT: Record<AtBatResult, string> = {
 const HIT_RESULTS: ReadonlySet<AtBatResult> = new Set(['SINGLE', 'DOUBLE', 'TRIPLE', 'HOMERUN', 'INSIDE_PARK_HR'])
 const OUT_RESULTS: ReadonlySet<AtBatResult> = new Set(['STRIKEOUT', 'OUT', 'AUTOMATIC_OUT'])
 
+/** Basen-Bewegungen eines Innings: wer durch wessen At-Bat weitergerückt ist.
+ *  Das Legacy-Scoring speichert keine Bewegungen, nur den Zustand nach jedem
+ *  At-Bat — das Backend leitet sie aus dem Diff ab. Zeilen gibt es nur für
+ *  At-Bats, bei denen sich wirklich jemand bewegt hat. */
+function InningAdvances({ atBats }: { atBats: InningAtBat[] }) {
+  const withMoves = atBats.filter(ab => (ab.advances?.length ?? 0) > 0)
+  if (withMoves.length === 0) return null
+  const base = (n: number) => (n === 4 ? 'Home' : `${n}B`)
+  return (
+    <ul className="mt-1.5 space-y-0.5" aria-label="Basen-Bewegungen">
+      {withMoves.map((ab, i) => (
+        <li key={i} className="text-[10px] leading-tight text-white/55">
+          <span className="text-white/35">{ab.batter} {RESULT_SHORT[ab.result]}</span>
+          {' · '}
+          {ab.advances!.map((adv, j) => (
+            <Fragment key={j}>
+              {j > 0 && <span className="text-white/25"> · </span>}
+              <span className={adv.toBase === 4 ? 'font-semibold text-amber-300' : 'text-white/70'}>
+                {adv.runner} {base(adv.fromBase)}→{base(adv.toBase)}
+              </span>
+            </Fragment>
+          ))}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** Horizontale Schlagfolge: At-Bats in zeitlicher Reihenfolge; gestrandete Runner rot,
  *  der Out-Macher gerahmt — beantwortet „wer stand zwischen den beiden am Schlag?". */
 function InningAtBatChain({ inning }: { inning: InningLog }) {
@@ -1041,6 +1069,7 @@ function InningAtBatChain({ inning }: { inning: InningLog }) {
           )
         })}
       </div>
+      <InningAdvances atBats={atBats} />
       <p className="mt-1.5 text-[9px] text-white/35">
         rot = hängen geblieben · Rahmen = letztes Aus{inning.outMaker == null ? ' (dieses Inning endete ohne Aus)' : ''}
       </p>
@@ -1148,6 +1177,26 @@ function ScoreSheet({ log }: { log: TeamGameLogResponse }) {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+          {(log.basesGainedOnError?.length ?? 0) > 0 && (
+            <div className="mt-3">
+              <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mb-1.5">
+                Basen durch gegnerische Fehler
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {log.basesGainedOnError!.map(b => (
+                  <span key={b.player} className="inline-flex items-center gap-1 bg-amber-400/15 border border-amber-400/30 rounded-full px-2.5 py-1 text-[11px] text-amber-300 font-semibold">
+                    {b.player}<span className="font-extrabold text-amber-200">+{b.bases}</span>
+                  </span>
+                ))}
+              </div>
+              {/* Ehrlich bleiben: ein Overthrow wird ins vorherige At-Bat
+                  zurueckgeschrieben und traegt dessen Ergebnis — er taucht hier
+                  also nicht auf, obwohl er auch ein Fehler des Gegners ist. */}
+              <p className="mt-1 text-[9px] text-white/35">
+                Zählt At-Bats mit „Reached on Error". Overthrows stecken im jeweils vorherigen At-Bat und fehlen hier.
+              </p>
             </div>
           )}
         </div>

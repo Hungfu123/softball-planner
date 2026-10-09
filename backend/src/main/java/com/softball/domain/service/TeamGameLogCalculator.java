@@ -2,6 +2,7 @@ package com.softball.domain.service;
 
 import com.softball.domain.model.AtBat;
 import com.softball.domain.model.AtBatResult;
+import com.softball.domain.model.BaseState;
 import com.softball.domain.model.BattingSlotStat;
 import com.softball.domain.model.Game;
 import com.softball.domain.model.LineupEntry;
@@ -69,6 +70,7 @@ public class TeamGameLogCalculator {
         int plateAppearances = 0, atBats = 0, hits = 0, doubles = 0, triples = 0, homeRuns = 0;
         int walks = 0, strikeouts = 0, hitByPitch = 0, onBase = 0, leftOnBase = 0;
         final Map<String, Integer> strandedByPlayer = new LinkedHashMap<>();
+        final Map<String, Integer> basesGainedOnErrorByPlayer = new LinkedHashMap<>();
         final List<TeamGameLog.InningLog> innings = new ArrayList<>();
 
         for (final Map.Entry<Integer, List<AtBat>> entry : byInning.entrySet()) {
@@ -79,12 +81,25 @@ public class TeamGameLogCalculator {
             int inningRuns = 0, inningHits = 0, inningOnBase = 0, inningWalks = 0, inningOuts = 0;
             final Map<String, Integer> hitsByPlayer = new LinkedHashMap<>();
             final List<TeamGameLog.InningLog.AtBatSnippet> atBatSnippets = new ArrayList<>();
+            // Zustand vor dem jeweiligen At-Bat. Zu Inning-Beginn sind die Basen leer —
+            // haengengebliebene Laeufer des Vor-Innings laufen nicht weiter.
+            BaseState stateBefore = BaseState.empty();
             for (final AtBat ab : inningAtBats) {
                 final AtBatResult r = ab.getResult();
                 if (r == null) continue;
+                final BaseState stateAfter = ab.getBaseStateAfter() != null
+                    ? ab.getBaseStateAfter() : BaseState.empty();
+                final List<TeamGameLog.InningLog.AtBatSnippet.RunnerAdvance> advances =
+                    advancesOf(stateBefore, stateAfter, ab, playerNames);
+                if (r == AtBatResult.REACHED_ON_ERROR) {
+                    for (final var adv : advances) {
+                        basesGainedOnErrorByPlayer.merge(adv.runner(), adv.toBase() - adv.fromBase(), Integer::sum);
+                    }
+                }
                 atBatSnippets.add(new TeamGameLog.InningLog.AtBatSnippet(
                     ab.getBatter() != null ? playerNames.getOrDefault(ab.getBatter().getId(), "Unbekannt") : "Unbekannt",
-                    r, ab.getRunsScored() != null ? ab.getRunsScored() : 0));
+                    r, ab.getRunsScored() != null ? ab.getRunsScored() : 0, advances));
+                stateBefore = stateAfter;
                 // AUTOMATIC_OUT ist laut Domain-Regel weder At-Bat noch Plate Appearance
                 if (r != AtBatResult.AUTOMATIC_OUT) plateAppearances++;
                 if (r.countsAsAtBat()) atBats++;
@@ -127,8 +142,54 @@ public class TeamGameLogCalculator {
             scoreUs, game.getScoreThem(), hasAtBatData,
             plateAppearances, atBats, hits, doubles, triples, homeRuns,
             walks, strikeouts, hitByPitch, onBase, leftOnBase,
-            strandedByPlayer, innings
+            strandedByPlayer, basesGainedOnErrorByPlayer, innings
         );
+    }
+
+    /**
+     * Laeufer-Bewegungen eines At-Bats aus dem Base-State-Diff.
+     *
+     * Das Legacy-Scoring speichert keine Bewegungen, nur den Zustand nach jedem
+     * At-Bat — wer vorher auf einer Base stand und danach nicht mehr, ist
+     * entweder heimgelaufen oder aus. Aufgeloest wird das wie in
+     * {@code BaseRunningReplay}: die heimnaechsten Verschwundenen scoren, bis
+     * {@code runsScored} aufgebraucht ist, der Rest war ein Out.
+     *
+     * Der Batter bleibt aussen vor — sein Weg steht schon im Ergebnis des
+     * At-Bats. Hier geht es um die Laeufer, die er bewegt hat.
+     */
+    private List<TeamGameLog.InningLog.AtBatSnippet.RunnerAdvance> advancesOf(
+            final BaseState before, final BaseState after, final AtBat ab,
+            final Map<Long, String> playerNames) {
+        final Map<Long, Integer> beforeBases = new LinkedHashMap<>();
+        if (before.third() != null) beforeBases.put(before.third(), 3);
+        if (before.second() != null) beforeBases.put(before.second(), 2);
+        if (before.first() != null) beforeBases.put(before.first(), 1);
+        if (beforeBases.isEmpty()) return List.of();
+
+        final Map<Long, Integer> afterBases = new LinkedHashMap<>();
+        if (after.first() != null) afterBases.put(after.first(), 1);
+        if (after.second() != null) afterBases.put(after.second(), 2);
+        if (after.third() != null) afterBases.put(after.third(), 3);
+
+        int runsLeft = ab.getRunsScored() != null ? ab.getRunsScored() : 0;
+        final List<TeamGameLog.InningLog.AtBatSnippet.RunnerAdvance> advances = new ArrayList<>();
+        // beforeBases ist bereits heimnah sortiert (3B zuerst) — so bekommt der
+        // Laeufer vor Home den Run, wenn mehrere verschwunden sind.
+        for (final Map.Entry<Long, Integer> e : beforeBases.entrySet()) {
+            final Integer to = afterBases.get(e.getKey());
+            final String name = playerNames.getOrDefault(e.getKey(), "Unbekannt");
+            if (to == null) {
+                if (runsLeft > 0) {
+                    runsLeft--;
+                    advances.add(new TeamGameLog.InningLog.AtBatSnippet.RunnerAdvance(name, e.getValue(), 4));
+                }
+                // sonst: Out am Basepad, keine Bewegung
+            } else if (to > e.getValue()) {
+                advances.add(new TeamGameLog.InningLog.AtBatSnippet.RunnerAdvance(name, e.getValue(), to));
+            }
+        }
+        return advances;
     }
 
     /**

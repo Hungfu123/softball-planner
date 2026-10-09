@@ -31,6 +31,92 @@ class TeamGameLogCalculatorTest {
     private final Player b = player(2L, "B");
     private final Player c = player(3L, "C");
 
+    // --- Laeufer-Bewegungen (abgeleitet aus dem Base-State-Diff) ---
+
+    @Test
+    void advances_errorOhneForceLaesstDenLaeuferStehen() {
+        final Game game = game(10L, LocalDate.of(2026, 6, 1), "Gegner", "RFL", 2026);
+        // A auf 3B (Triple), dann ROE von B -> B auf 1B, A bleibt stehen (kein Force).
+        final AtBat t = atBat(game, a, AtBatResult.TRIPLE, 1, 1, new BaseState(null, null, 1L), 0);
+        final AtBat e = atBat(game, b, AtBatResult.REACHED_ON_ERROR, 1, 2, new BaseState(2L, null, 1L), 0);
+
+        final TeamGameLog log = calculator.calculateGameLogs(
+            List.of(game), List.of(t, e), Map.of(10L, 0), Map.of(1L, "A", 2L, "B")).get(0);
+
+        final var roe = log.innings().get(0).atBats().get(1);
+        assertThat(roe.result()).isEqualTo(AtBatResult.REACHED_ON_ERROR);
+        assertThat(roe.advances()).isEmpty();
+        assertThat(log.basesGainedOnErrorByPlayer()).isEmpty();
+    }
+
+    @Test
+    void advances_errorSchicktLaeuferVon3BNachHome() {
+        final Game game = game(10L, LocalDate.of(2026, 6, 1), "Gegner", "RFL", 2026);
+        final AtBat t = atBat(game, a, AtBatResult.TRIPLE, 1, 1, new BaseState(null, null, 1L), 0);
+        // ROE, A laeuft Home (per Korrektur-Sheet) -> runsScored 1, 3B danach leer.
+        final AtBat e = atBat(game, b, AtBatResult.REACHED_ON_ERROR, 1, 2, new BaseState(2L, null, null), 1);
+
+        final TeamGameLog log = calculator.calculateGameLogs(
+            List.of(game), List.of(t, e), Map.of(10L, 1), Map.of(1L, "A", 2L, "B")).get(0);
+
+        final var roe = log.innings().get(0).atBats().get(1);
+        assertThat(roe.advances()).hasSize(1);
+        assertThat(roe.advances().get(0).runner()).isEqualTo("A");
+        assertThat(roe.advances().get(0).fromBase()).isEqualTo(3);
+        assertThat(roe.advances().get(0).toBase()).isEqualTo(4); // Home
+        assertThat(log.basesGainedOnErrorByPlayer()).containsEntry("A", 1);
+    }
+
+    @Test
+    void advances_basesLoadedErrorSchiebtAlleDreiWeiter() {
+        final Game game = game(10L, LocalDate.of(2026, 6, 1), "Gegner", "RFL", 2026);
+        // Ausgangslage per Walk gesetzt: A auf 1B, B auf 2B, C auf 3B.
+        final AtBat w = atBat(game, a, AtBatResult.WALK, 1, 1, new BaseState(1L, 2L, 3L), 0);
+        // ROE: Force-Minimum -> C scort, B auf 3B, A auf 2B, Batter auf 1B.
+        final AtBat e = atBat(game, b, AtBatResult.REACHED_ON_ERROR, 1, 2, new BaseState(2L, 1L, 2L), 1);
+
+        final TeamGameLog log = calculator.calculateGameLogs(
+            List.of(game), List.of(w, e), Map.of(10L, 1),
+            Map.of(1L, "A", 2L, "B", 3L, "C")).get(0);
+
+        final var roe = log.innings().get(0).atBats().get(1);
+        assertThat(roe.advances()).hasSize(3);
+        // heimnah zuerst: C von 3B nach Home
+        assertThat(roe.advances().get(0).runner()).isEqualTo("C");
+        assertThat(roe.advances().get(0).toBase()).isEqualTo(4);
+        assertThat(log.basesGainedOnErrorByPlayer())
+            .containsEntry("C", 1).containsEntry("B", 1).containsEntry("A", 1);
+    }
+
+    @Test
+    void advances_verschwundenerLaeuferOhneRunIstEinOutUndKeineBewegung() {
+        final Game game = game(10L, LocalDate.of(2026, 6, 1), "Gegner", "RFL", 2026);
+        final AtBat s1 = atBat(game, a, AtBatResult.SINGLE, 1, 1, new BaseState(1L, null, null), 0);
+        // A wird am Basepad erwischt: danach steht nur noch der Batter, runsScored 0.
+        final AtBat o = atBat(game, b, AtBatResult.OUT, 1, 2, new BaseState(2L, null, null), 0);
+
+        final TeamGameLog log = calculator.calculateGameLogs(
+            List.of(game), List.of(s1, o), Map.of(10L, 0), Map.of(1L, "A", 2L, "B")).get(0);
+
+        assertThat(log.innings().get(0).atBats().get(1).advances()).isEmpty();
+    }
+
+    @Test
+    void advances_laufenNichtUeberInningGrenzen() {
+        final Game game = game(10L, LocalDate.of(2026, 6, 1), "Gegner", "RFL", 2026);
+        // Inning 1 endet mit A auf 3B (gestrandet).
+        final AtBat i1 = atBat(game, a, AtBatResult.TRIPLE, 1, 1, new BaseState(null, null, 1L), 0);
+        final AtBat i1b = atBat(game, b, AtBatResult.OUT, 1, 2, new BaseState(null, null, 1L), 0);
+        // Inning 2 beginnt leer — der erste At-Bat darf A nicht "bewegen".
+        final AtBat i2 = atBat(game, c, AtBatResult.SINGLE, 2, 1, new BaseState(3L, null, null), 0);
+
+        final TeamGameLog log = calculator.calculateGameLogs(
+            List.of(game), List.of(i1, i1b, i2), Map.of(10L, 0),
+            Map.of(1L, "A", 2L, "B", 3L, "C")).get(0);
+
+        assertThat(log.innings().get(1).atBats().get(0).advances()).isEmpty();
+    }
+
     // --- Team Game Log ---
 
     @Test
