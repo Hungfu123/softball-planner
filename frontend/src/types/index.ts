@@ -169,10 +169,21 @@ export interface StrandedPlayer {
 }
 
 /** Ein At-Bat in zeitlicher Folge innerhalb eines Innings (Schlagfolge). */
+/** Läufer-Bewegung bei einem At-Bat. `toBase` 4 bedeutet Home (= Run). */
+export interface RunnerAdvance {
+  runner: string
+  fromBase: number
+  toBase: number
+}
+
 export interface InningAtBat {
   batter: string
   result: AtBatResult
   runsScored: number
+  /** Wer bei diesem At-Bat weitergerückt ist — abgeleitet aus dem Base-State-Diff.
+   *  Optional, weil der Service-Worker API-GETs cached: eine vor diesem Feature
+   *  gecachte Antwort bringt das Feld nicht mit. */
+  advances?: RunnerAdvance[]
 }
 
 export interface InningLog {
@@ -213,6 +224,8 @@ export interface TeamGameLogResponse {
   onBase: number
   leftOnBase: number
   stranded: StrandedPlayer[]
+  /** Wie viele Basen ein Spieler durch gegnerische Fehler gutgemacht hat, absteigend. */
+  basesGainedOnError?: { player: string; bases: number }[]
   innings: InningLog[]
 }
 

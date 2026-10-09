@@ -28,6 +28,7 @@ public record TeamGameLogResponse(
     int onBase,
     int leftOnBase,
     List<StrandedPlayerResponse> stranded,
+    List<BasesGainedResponse> basesGainedOnError,
     List<InningLogResponse> innings
 ) {
     public static TeamGameLogResponse from(final TeamGameLog log) {
@@ -38,6 +39,10 @@ public record TeamGameLogResponse(
             log.walks(), log.strikeouts(), log.hitByPitch(), log.onBase(), log.leftOnBase(),
             log.strandedByPlayer().entrySet().stream()
                 .map(e -> new StrandedPlayerResponse(e.getKey(), e.getValue())).toList(),
+            log.basesGainedOnErrorByPlayer().entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()
+                    .thenComparing(Map.Entry.comparingByKey()))
+                .map(e -> new BasesGainedResponse(e.getKey(), e.getValue())).toList(),
             log.innings().stream().map(InningLogResponse::from).toList()
         );
     }
@@ -60,9 +65,22 @@ public record TeamGameLogResponse(
     }
 
     /** Ein At-Bat in zeitlicher Folge innerhalb eines Innings (Batter, Ergebnis, Runs). */
-    public record AtBatSnippetResponse(String batter, AtBatResult result, int runsScored) {
+    public record AtBatSnippetResponse(String batter, AtBatResult result, int runsScored,
+                                       List<RunnerAdvanceResponse> advances) {
         public static AtBatSnippetResponse from(final TeamGameLog.InningLog.AtBatSnippet snippet) {
-            return new AtBatSnippetResponse(snippet.batter(), snippet.result(), snippet.runsScored());
+            return new AtBatSnippetResponse(snippet.batter(), snippet.result(), snippet.runsScored(),
+                snippet.advances().stream().map(RunnerAdvanceResponse::from).toList());
         }
     }
+
+    /** Laeufer-Bewegung bei einem At-Bat. toBase 4 = Home (Run). */
+    public record RunnerAdvanceResponse(String runner, int fromBase, int toBase) {
+        public static RunnerAdvanceResponse from(
+                final TeamGameLog.InningLog.AtBatSnippet.RunnerAdvance adv) {
+            return new RunnerAdvanceResponse(adv.runner(), adv.fromBase(), adv.toBase());
+        }
+    }
+
+    /** Wie viele Basen ein Spieler durch gegnerische Fehler gutgemacht hat. */
+    public record BasesGainedResponse(String player, int bases) {}
 }

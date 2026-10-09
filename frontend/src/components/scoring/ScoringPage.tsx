@@ -531,6 +531,20 @@ export function ScoringPage() {
     }
   }
 
+  /** Hits / Walks / HBP des Spiels aus den geladenen At-Bats. */
+  const gameSummary = useMemo(() => {
+    let hits = 0, walks = 0, hbp = 0, pa = 0
+    for (const ab of atBats) {
+      if (ab.result === 'AUTOMATIC_OUT') continue
+      pa++
+      if (ab.result === 'SINGLE' || ab.result === 'DOUBLE' || ab.result === 'TRIPLE'
+          || ab.result === 'HOMERUN' || ab.result === 'INSIDE_PARK_HR') hits++
+      else if (ab.result === 'WALK') walks++
+      else if (ab.result === 'HIT_BY_PITCH') hbp++
+    }
+    return { hits, walks, hbp, pa }
+  }, [atBats])
+
   const handleRunnerTap = (_base: 1 | 2 | 3, runner: RunnerOnBase) => {
     setStealingRunner(runner)
   }
@@ -933,6 +947,23 @@ export function ScoringPage() {
                     'Unentschieden'} · Endstand ${scoreUs} : ${scoreThem ?? 0}`}
             </div>
           </div>
+          {/* Kurzbilanz direkt im Banner: die drei Zahlen, nach denen nach dem
+              Schlusspfiff als Erstes gefragt wird — ohne den Umweg ueber die
+              Stats-Seite. Aus den geladenen At-Bats gerechnet, kein Extra-Call. */}
+          {gameSummary.pa > 0 && (
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {([
+                ['Hits', gameSummary.hits],
+                ['Walks', gameSummary.walks],
+                ['HBP', gameSummary.hbp],
+              ] as const).map(([label, value]) => (
+                <div key={label} className="rounded-lg bg-white/10 py-2">
+                  <div className="font-display text-2xl font-black tabular-nums leading-none">{value}</div>
+                  <div className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mt-0.5">{label}</div>
+                </div>
+              ))}
+            </div>
+          )}
           {currentGame && gameDay && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Link
