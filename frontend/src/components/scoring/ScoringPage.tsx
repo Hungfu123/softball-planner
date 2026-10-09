@@ -76,6 +76,8 @@ export function ScoringPage() {
   const [errorFlash, setErrorFlash] = useState<{ batter: string; runsScored: number } | null>(null)
   const [strikeoutFlash, setStrikeoutFlash] = useState<string | null>(null)
   const [overthrowFlash, setOverthrowFlash] = useState<string | null>(null)
+  // Nur gesetzt, wenn der Overthrow einen Run buchen wuerde — dann fragt die UI nach.
+  const [overthrowConfirm, setOverthrowConfirm] = useState<{ scorer: string } | null>(null)
   const [stealFlash, setStealFlash] = useState<{ runner: string; type: 'BASE' | 'HOME' | 'CAUGHT' | 'PICKOFF'; toBase: number } | null>(null)
   // Runner die gerade Home erreicht haben (Array von Namen) — feiert Run-Scoring
   const [scoredFlash, setScoredFlash] = useState<{ runners: string[]; hitLabel: string | null } | null>(null)
@@ -457,12 +459,6 @@ export function ScoringPage() {
   }
 
   /**
-   * Overthrow / Dead Ball / Wild Throw: alle Runner rücken eine Base weiter.
-   * 3B → Home (scort), 2B → 3B, 1B → 2B. Direkt angewendet ohne Zwischensheet —
-   * es gibt keine Varianten bei einem Overthrow.
-   * Backend: letztes AtBat wird aktualisiert mit neuem BaseState + erhöhten Runs.
-   */
-  /**
    * Mid-Game-Sub bestätigen: API-Call + Reload von lineup/subs/scoreboard.
    */
   const handleConfirmSub = async () => {
@@ -490,9 +486,25 @@ export function ScoringPage() {
     }
   }
 
-  const handleOverthrow = async () => {
+  /**
+   * Overthrow / Dead Ball / Wild Pitch: alle Runner rücken eine Base weiter.
+   * 3B → Home (scort), 2B → 3B, 1B → 2B. Es gibt keine Varianten bei einem
+   * Overthrow, deshalb kein Zwischensheet.
+   * Backend: letztes AtBat wird aktualisiert mit neuem BaseState + erhöhten Runs.
+   *
+   * Rückfrage nur, wenn dabei ein Run fällt: ohne Runner auf 3B ist der Schritt
+   * folgenlos korrigierbar, mit Runner auf 3B ändert ein Fehltipp den Spielstand
+   * und lässt sich nur zusammen mit dem ganzen At-Bat zurücknehmen.
+   */
+  const handleOverthrow = async (confirmed = false) => {
     if (submitting) return
     if (!currentGame || atBats.length === 0) return
+    if (!confirmed && displayBaseState.third != null) {
+      const scorer = displayRunners.find(r => r.base === 3)?.playerName ?? 'Der Runner auf 3B'
+      setOverthrowConfirm({ scorer })
+      return
+    }
+    setOverthrowConfirm(null)
     const lastAtBat = atBats[atBats.length - 1]
     // Runner +1 berechnen
     const current = displayBaseState
@@ -1068,13 +1080,21 @@ export function ScoringPage() {
                 </span>
                 <span className="hidden sm:inline">am Schlag</span>
               </span>
+              {/* Beschriftet statt nacktes Icon — der Einstieg war bisher ein
+                  28px-Klemmbrett ohne Wort, und hinter ihm liegt auch der Weg
+                  zum Auswechseln. Das Label heisst "Aufstellung", nicht
+                  "Wechseln": der Knopf oeffnet die Batting-Order, das Wechseln
+                  ist darin ein eigener Schritt. */}
               <button
                 onClick={() => setShowLineupSheet(true)}
-                className="hit-44 shrink-0 text-navy-700 hover:text-navy-900 p-1 cursor-pointer"
-                aria-label="Komplette Aufstellung anzeigen"
-                title="Komplette Aufstellung anzeigen"
+                className="hit-44 shrink-0 inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-navy-700 hover:bg-navy-50 hover:text-navy-900 cursor-pointer"
+                aria-label="Aufstellung anzeigen und wechseln"
+                title="Aufstellung anzeigen und wechseln"
               >
                 <ClipboardListIcon size={20} />
+                <span className="font-display text-[10px] font-bold tracking-widest uppercase">
+                  Aufstellung
+                </span>
               </button>
             </div>
             {/* On-Deck Preview: nächste 3 Batters */}
@@ -1086,7 +1106,7 @@ export function ScoringPage() {
               const next = Array.from({ length: 4 }, (_, i) => sorted[(currentIdx + i + 1) % sorted.length])
               return (
                 <div className="flex items-center gap-2 pt-1.5 border-t border-cream-200">
-                  <span className="font-display text-[9px] tracking-widest uppercase text-gray-500 font-bold">Nächste</span>
+                  <span className="font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">Nächste</span>
                   <div className="flex items-center gap-2 flex-wrap text-[11px]">
                     {next.map((e, i) => {
                       const p = effectivePlayerForEntry(e)
@@ -1136,7 +1156,7 @@ export function ScoringPage() {
           </button>
           {displayRunners.length > 0 && (
             <button
-              onClick={handleOverthrow}
+              onClick={() => handleOverthrow()}
               disabled={submitting || atBats.length === 0}
               className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white hover:border-navy-500 text-navy-800 font-bold tracking-wider uppercase flex flex-col items-center justify-center leading-none disabled:opacity-50 cursor-pointer"
               title="Dead Ball / Wild Pitch / Overthrow: alle Runner rücken eine Base weiter"
@@ -1148,7 +1168,7 @@ export function ScoringPage() {
               {/* Die gelaeufigen Namen danebenstellen: „Overthrow" allein trifft nur
                   einen der Faelle, gemeint ist jeder tote Ball, bei dem alle Runner
                   eine Base geschenkt bekommen. */}
-              <span className="mt-0.5 text-[9px] font-semibold tracking-normal normal-case text-gray-500">
+              <span className="mt-0.5 text-[10px] font-semibold tracking-normal normal-case text-gray-500">
                 Wild Pitch · Dead Ball
               </span>
             </button>
@@ -2586,7 +2606,7 @@ export function ScoringPage() {
           >
             <button
               onClick={() => { setRecentlyScored([]); setShowCorrection(true) }}
-              className="bg-cream-50 border-2 border-softball-red-600 text-navy-900 px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 cursor-pointer hover:bg-white hover:shadow-2xl transition-all active:scale-95"
+              className="bg-cream-50 border-2 border-softball-red-600 text-navy-900 px-5 py-2.5 rounded-xl shadow-xl flex items-center gap-3 cursor-pointer hover:bg-white hover:shadow-2xl transition-[background-color,box-shadow,transform] active:scale-95"
               title="Tippen um Runner anzupassen"
             >
               {scoredFlash.runners.length > 0 ? (
@@ -2633,6 +2653,16 @@ export function ScoringPage() {
         hasStarted={clock.started}
         durationEstimate={clock.durationEstimate}
       />
+
+      {overthrowConfirm && (
+        <ConfirmModal
+          title="Overthrow buchen?"
+          message={`Alle Runner rücken eine Base vor — ${overthrowConfirm.scorer} läuft dabei nach Home und der Run zählt. Rückgängig geht das nur zusammen mit dem ganzen At-Bat.`}
+          confirmLabel="Ja, Overthrow"
+          onConfirm={() => handleOverthrow(true)}
+          onCancel={() => setOverthrowConfirm(null)}
+        />
+      )}
 
       {/* Manueller Advance: Runner-Stranding Warnung */}
       {pendingAdvanceConfirm && (

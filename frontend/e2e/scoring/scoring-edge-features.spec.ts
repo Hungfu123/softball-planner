@@ -1,4 +1,4 @@
-import { test, expect, recordHitViaUI, recordDirectViaUI, clickUndo } from '../helpers/fixtures'
+import { test, expect, recordHitViaUI, recordDirectViaUI, clickUndo, clickOverthrow } from '../helpers/fixtures'
 import { getBattingStats, getScoreboard, seedAtBat } from '../helpers/api'
 
 test.describe('Scoring — Edge Features', () => {
@@ -18,8 +18,7 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.baseState.third).toBe(ids[8])
 
     // Click Overthrow
-    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
-    await page.waitForTimeout(500)
+    await clickOverthrow(page)
 
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.scoreUs).toBe(1)                    // 3B-Runner scort
@@ -34,8 +33,7 @@ test.describe('Scoring — Edge Features', () => {
     await page.reload()
     await page.waitForTimeout(500)
 
-    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
-    await page.waitForTimeout(500)
+    await clickOverthrow(page)
 
     const sb = await getScoreboard(scoringPage.gameId)
     expect(sb.scoreUs).toBe(1)
@@ -58,8 +56,7 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.baseState.third).toBe(ids[8])
 
     // Overthrow auf denselben Spielzug: alle Runner +1 → 3B scort.
-    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
-    await page.waitForTimeout(600)
+    await clickOverthrow(page)
 
     sb = await getScoreboard(scoringPage.gameId)
     expect(sb.scoreUs).toBe(1)
@@ -78,8 +75,7 @@ test.describe('Scoring — Edge Features', () => {
     await page.waitForTimeout(500)
 
     await recordDirectViaUI(page, 'REACHED_ON_ERROR')
-    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
-    await page.waitForTimeout(600)
+    await clickOverthrow(page)
 
     let sb = await getScoreboard(scoringPage.gameId)
     expect(sb.scoreUs).toBe(1)
