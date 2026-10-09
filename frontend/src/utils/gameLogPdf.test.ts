@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
 	AGG_TABLE_WIDTH,
+	COMPARISON_TABLE_WIDTH,
+	formatSignedDiff,
 	INNING_TABLE_WIDTH,
 	inningChainText,
 	KPI_TABLE_WIDTH,
@@ -22,6 +24,7 @@ describe('gameLogPdf — Tabellenbreiten', () => {
 		['Lineup-Plätze', SLOT_TABLE_WIDTH],
 		['Inning-Details', INNING_TABLE_WIDTH],
 		['Aggregate', AGG_TABLE_WIDTH],
+		['Vorher/Nachher-Vergleich', COMPARISON_TABLE_WIDTH],
 	]
 
 	it.each(tables)('%s passt in die Seitenbreite', (_name, width) => {
@@ -102,6 +105,14 @@ describe('gameLogPdf — Ergebnis-Kürzel', () => {
 		expect(resultLetter(mkLog(7, 7))).toBe('U')
 		expect(resultLetter(mkLog(null, null))).toBe('–')
 		expect(resultLetter(mkLog(5, null))).toBe('–')
+	})
+})
+
+describe('gameLogPdf — Vorzeichen-Differenz', () => {
+	it('formatiert positive, negative und ausgeglichene Deltas', () => {
+		expect(formatSignedDiff(0, 0.250)).toBe('+.250')
+		expect(formatSignedDiff(0.250, 0)).toBe('-.250')
+		expect(formatSignedDiff(0.5, 0.5)).toBe('±.000')
 	})
 })
 

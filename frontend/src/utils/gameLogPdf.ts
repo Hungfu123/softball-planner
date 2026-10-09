@@ -52,6 +52,13 @@ export function resultLetter(log: TeamGameLogResponse): string {
   return log.scoreUs > log.scoreThem ? 'S' : log.scoreUs < log.scoreThem ? 'N' : 'U'
 }
 
+/** Signed delta im .xxx-Stil: "+.120" / "-.050" / "±.000". */
+export function formatSignedDiff(before: number, after: number): string {
+  const diff = after - before
+  if (Math.abs(diff) < 0.0005) return '±.000'
+  return (diff > 0 ? '+' : '-') + Math.abs(diff).toFixed(3).replace(/^0\./, '.')
+}
+
 /* Spaltenbreiten in mm — einzige Quelle pro Tabelle. Jede Summe muss in die Inhaltsbreite
    (PAGE_CONTENT_WIDTH = 182 mm) passen und sie weitgehend ausnutzen, siehe gameLogPdf.test.ts. */
 export const KPI_COL_WIDTHS = [70, 112] as const
@@ -69,7 +76,10 @@ export const INNING_TABLE_WIDTH = INNING_COL_WIDTHS.reduce((s, w) => s + w, 0)
 export const AGG_COL_WIDTHS = [120, 62] as const
 export const AGG_TABLE_WIDTH = AGG_COL_WIDTHS.reduce((s, w) => s + w, 0)
 
-function fmtDate(d: string | null): string {
+export const COMPARISON_COL_WIDTHS = [12, 22, 24, 24, 22, 24, 24, 30] as const
+export const COMPARISON_TABLE_WIDTH = COMPARISON_COL_WIDTHS.reduce((s, w) => s + w, 0)
+
+export function fmtDate(d: string | null): string {
   if (!d) return '–'
   return new Date(d + 'T00:00:00').toLocaleDateString('de-DE', {
     day: '2-digit',
@@ -127,15 +137,23 @@ export function lineupText(entries: LineupEntryResponse[] | undefined): string |
     .join(' · ')
 }
 
+export interface SlotComparison {
+  beforeLabel: string
+  afterLabel: string
+  before: BattingSlotStats[]
+  after: BattingSlotStats[]
+}
+
 export interface GameLogPdfOptions {
   logs: TeamGameLogResponse[]
   lineups?: Map<number, LineupEntryResponse[]>
   slots?: BattingSlotStats[] | null
+  comparison?: SlotComparison | null
   contextLabel: string
   scopeLabel: string
 }
 
-export function generateGameLogPdf({ logs, lineups, slots, contextLabel, scopeLabel }: GameLogPdfOptions): void {
+export function generateGameLogPdf({ logs, lineups, slots, comparison, contextLabel, scopeLabel }: GameLogPdfOptions): void {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
 
   let y = drawPageHeader(doc, 'Spiel-Verlauf', contextLabel, 'DEAD SOX · SPIEL-VERLAUF')
@@ -273,6 +291,59 @@ export function generateGameLogPdf({ logs, lineups, slots, contextLabel, scopeLa
         10: numericCol(SLOT_COL_WIDTHS[10], true),
         11: numericCol(SLOT_COL_WIDTHS[11], true),
         12: { cellWidth: SLOT_COL_WIDTHS[12] },
+      },
+    })
+    y = lastAutoTableY(doc, y) + 8
+  }
+
+  // --- Vorher/Nachher-Vergleich der Lineup-Plätze (Form-Check über zwei Hälften) ---
+  if (comparison && (comparison.before.length > 0 || comparison.after.length > 0)) {
+    y = ensureSpace(doc, y, 40)
+    y = sectionTitle(doc, y, 'Vorher/Nachher-Vergleich — Lineup-Plätze')
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(...COLOR_GRAY_MUTED)
+    doc.text(`Vorher: ${comparison.beforeLabel} · Nachher: ${comparison.afterLabel}`, MARGIN, y)
+    y += 4.5
+
+    const beforeMap = new Map(comparison.before.map(s => [s.slot, s]))
+    const afterMap = new Map(comparison.after.map(s => [s.slot, s]))
+    const allSlots = [...new Set([
+      ...comparison.before.map(s => s.slot),
+      ...comparison.after.map(s => s.slot),
+    ])].sort((a, b) => a - b)
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: MARGIN, right: MARGIN, bottom: 16 },
+      head: [['Platz', 'Vorher PA', 'Vorher AVG', 'Vorher OBP', 'Nachher PA', 'Nachher AVG', 'Nachher OBP', 'Δ OBP']],
+      body: allSlots.map(slot => {
+        const b = beforeMap.get(slot)
+        const a = afterMap.get(slot)
+        return [
+          `${slot}.`,
+          b ? String(b.plateAppearances) : '–',
+          b ? formatDec(Number(b.battingAverage)) : '–',
+          b ? formatDec(Number(b.onBasePct)) : '–',
+          a ? String(a.plateAppearances) : '–',
+          a ? formatDec(Number(a.battingAverage)) : '–',
+          a ? formatDec(Number(a.onBasePct)) : '–',
+          b && a ? formatSignedDiff(Number(b.onBasePct), Number(a.onBasePct)) : '–',
+        ]
+      }),
+      theme: 'plain',
+      styles: baseStyles,
+      headStyles,
+      alternateRowStyles: { fillColor: COLOR_CREAM_TINT },
+      columnStyles: {
+        0: { cellWidth: COMPARISON_COL_WIDTHS[0], halign: 'right', font: 'courier', textColor: COLOR_GRAY_MUTED },
+        1: numericCol(COMPARISON_COL_WIDTHS[1]),
+        2: numericCol(COMPARISON_COL_WIDTHS[2]),
+        3: numericCol(COMPARISON_COL_WIDTHS[3]),
+        4: numericCol(COMPARISON_COL_WIDTHS[4]),
+        5: numericCol(COMPARISON_COL_WIDTHS[5]),
+        6: numericCol(COMPARISON_COL_WIDTHS[6], true),
+        7: numericCol(COMPARISON_COL_WIDTHS[7], true),
       },
     })
     y = lastAutoTableY(doc, y) + 8
