@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, FileJson } from 'lucide-react'
 import * as api from '@/api/client'
 import type { AtBatResult, BattingSlotStats, InningLog, LineupEntryResponse, PlayerBattingStatsResponse, TeamGameLogResponse } from '@/types'
 import { AT_BAT_RESULT_LABELS } from '@/types'
@@ -7,7 +7,8 @@ import { useToastContext } from '@/components/layout/Layout'
 import { AnalysisModeTabs } from './AnalysisModeTabs'
 import { CrossBones } from '@/icons'
 import { AnimatePresence, motion } from 'motion/react'
-import { generateGameLogPdf } from '@/utils/gameLogPdf'
+import { generateGameLogPdf, formatSignedDiff, type SlotComparison } from '@/utils/gameLogPdf'
+import { exportGameLogJson } from '@/utils/gameLogExport'
 
 /** Emil-Kurve: starker ease-out für Expand — sofortige Reaktion, sanftes Auslaufen. */
 const EASE_OUT = [0.23, 1, 0.32, 1] as const
@@ -28,6 +29,25 @@ const RANGE_LABELS: Record<RangeFilter, string> = {
 /** Chevron-Daten-URI für native Selects und Dropdown-Buttons (appearance-none). */
 const CHEVRON_DOWN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`
 
+/** Ab 4 ausgewerteten Spielen: die Auswahl in eine frühere und eine neuere Hälfte teilen
+ *  (logs sind neueste zuerst) — beantwortet „Hat sich die Form je Platz verbessert?".
+ *  Genutzt von UI und Exporten, damit beide dieselbe Zahl zeigen. */
+async function fetchSlotComparison(evaluated: TeamGameLogResponse[]): Promise<SlotComparison | null> {
+  if (evaluated.length < 4) return null
+  const half = Math.ceil(evaluated.length / 2)
+  const newer = evaluated.slice(0, half)
+  const older = evaluated.slice(half)
+  const [before, after] = await Promise.all([
+    api.getBattingSlots(older.map(l => l.gameId)),
+    api.getBattingSlots(newer.map(l => l.gameId)),
+  ])
+  return {
+    beforeLabel: `ältere ${older.length} Spiele`,
+    afterLabel: `neuere ${newer.length} Spiele`,
+    before, after,
+  }
+}
+
 /**
  * Spiel-Verlauf — Analyse-Dashboard der eigenen Offensiv-Historie:
  * Filter (Jahr · Liga · Zeitraum · Auswahl) schneiden die Kennzahlen und den
@@ -42,6 +62,8 @@ export function GameLogPage() {
   const toast = useToastContext()
   const [logs, setLogs] = useState<TeamGameLogResponse[] | null>(null)
   const [slots, setSlots] = useState<BattingSlotStats[] | null>(null)
+  /** Vorher/Nachher je Platz — dieselbe Hälften-Teilung wie im PDF/JSON-Export. */
+  const [comparison, setComparison] = useState<SlotComparison | null>(null)
   /** Zeitraum: 'all' | 'lastN' — exklusiv. Default „Letztes Spiel": schneller Check, wie das letzte Game lief. */
   const [range, setRange] = useState<RangeFilter>('last1')
   /** Jahr: eigener Filter (null = alle Jahre) — ergänzt den Zeitraum, statt in ihm versteckt. */
@@ -114,6 +136,19 @@ export function GameLogPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- slotIdsKey repräsentiert slotGameIds stabil
   }, [logs, slotIdsKey])
 
+  /** UI-Formvergleich: gleiche Berechnung wie der Export, damit Badge und Tabelle dieselbe Zahl zeigen. */
+  useEffect(() => {
+    if (!logs) return
+    const evaluated = filtered.filter(l => l.hasAtBatData)
+    if (evaluated.length < 4) { setComparison(null); return }
+    let cancelled = false
+    fetchSlotComparison(evaluated)
+      .then(c => { if (!cancelled) setComparison(c) })
+      .catch(() => { if (!cancelled) setComparison(null) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- slotIdsKey repräsentiert filtered stabil (Reihenfolge + Auswahl)
+  }, [logs, slotIdsKey])
+
   /** Filter-Beschreibung für den PDF-Kopf — spiegelt die Filterleiste. */
   const exportContextLabel = useMemo(() => {
     const parts = [RANGE_LABELS[range], yearFilter != null ? `Jahr ${yearFilter}` : 'Alle Jahre']
@@ -124,32 +159,64 @@ export function GameLogPage() {
     return parts.join(' · ')
   }, [range, yearFilter, seasonFilter, selectionMode, selectedIds])
 
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting] = useState<'pdf' | 'json' | null>(null)
 
-  /** PDF-Export: lädt pro gefiltertem Spiel noch das Lineup nach, damit die KI
-   *  Aufstellung und Positionen mitbekommt — nicht nur die nackten Zahlen. */
+  /** Sammelt, was alle Exporte brauchen: Lineups der gefilterten Spiele + Vorher/Nachher-Vergleich. */
+  const collectExportData = async () => {
+    const entries = await Promise.all(
+      filtered.map(l => api.getLineup(l.gameId).catch(() => [] as LineupEntryResponse[])),
+    )
+    const lineups = new Map<number, LineupEntryResponse[]>()
+    filtered.forEach((l, i) => lineups.set(l.gameId, entries[i]))
+
+    /** Ab 4 ausgewerteten Spielen: die gefilterte Auswahl in eine frühere und eine neuere Hälfte teilen —
+     *  beantwortet „Hat sich die Form in den Platz-Statistiken verbessert?" */
+    const comparison = await fetchSlotComparison(filtered.filter(l => l.hasAtBatData))
+    return { lineups, comparison }
+  }
+
+  const scopeLabel = `${filtered.length} ${filtered.length === 1 ? 'Spiel' : 'Spiele'}`
+
   const handleExportPdf = async () => {
     if (exporting || filtered.length === 0) return
-    setExporting(true)
+    setExporting('pdf')
     try {
-      const entries = await Promise.all(
-        filtered.map(l => api.getLineup(l.gameId).catch(() => [] as LineupEntryResponse[])),
-      )
-      const lineups = new Map<number, LineupEntryResponse[]>()
-      filtered.forEach((l, i) => lineups.set(l.gameId, entries[i]))
+      const { lineups, comparison } = await collectExportData()
       generateGameLogPdf({
         logs: filtered,
         lineups,
         slots,
+        comparison,
         contextLabel: exportContextLabel,
-        scopeLabel: `${filtered.length} ${filtered.length === 1 ? 'Spiel' : 'Spiele'}`,
+        scopeLabel,
       })
     } catch (e) {
       toast.show((e as Error).message, 'error')
     } finally {
-      setExporting(false)
+      setExporting(null)
     }
   }
+
+  const handleExportJson = async () => {
+    if (exporting || filtered.length === 0) return
+    setExporting('json')
+    try {
+      const { lineups, comparison } = await collectExportData()
+      exportGameLogJson({
+        logs: filtered,
+        lineups,
+        slots,
+        comparison,
+        contextLabel: exportContextLabel,
+        scopeLabel,
+      })
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    } finally {
+      setExporting(null)
+    }
+  }
+
 
   const focusGame = (gameId: number) => {
     setOpenId(prev => prev === gameId ? null : gameId)
@@ -179,15 +246,26 @@ export function GameLogPage() {
       <div className="flex items-center gap-2 sm:gap-3">
         <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Spiel-Verlauf</h1>
         {logs && logs.length > 0 && (
-          <button
-            onClick={handleExportPdf}
-            disabled={exporting || filtered.length === 0}
-            className="font-display group relative ml-auto inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
-            title="Gefilterte Daten als PDF exportieren"
-          >
-            <Download size={12} className="transition-transform group-hover:translate-y-0.5" />
-            {exporting ? 'Export …' : 'PDF'}
-          </button>
+          <div className="ml-auto flex items-center gap-1.5">
+            <button
+              onClick={handleExportPdf}
+              disabled={exporting != null || filtered.length === 0}
+              className="font-display group relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+              title="Gefilterte Daten als PDF exportieren"
+            >
+              <Download size={12} className="transition-transform group-hover:translate-y-0.5" />
+              {exporting === 'pdf' ? 'Export …' : 'PDF'}
+            </button>
+            <button
+              onClick={handleExportJson}
+              disabled={exporting != null || filtered.length === 0}
+              className="font-display group relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+              title="Gefilterte Daten als JSON exportieren"
+            >
+              <FileJson size={12} className="transition-transform group-hover:translate-y-0.5" />
+              {exporting === 'json' ? 'Export …' : 'JSON'}
+            </button>
+          </div>
         )}
       </div>
       <AnalysisModeTabs />
@@ -269,6 +347,7 @@ export function GameLogPage() {
               slots={slots}
               gameCount={slotGameCount}
               allGames={logs.length > 0 && slotGameIds.length === logs.length}
+              comparison={comparison}
             />
           )}
 
@@ -687,12 +766,19 @@ function CompactGameStrip({ logs, highlightIds, onBarClick }: {
 
 // --- Lineup-Platz-Profil: Balken = On-Base-Anteil pro Platz ---
 
-function SlotProfile({ slots, gameCount, allGames }: { slots: BattingSlotStats[]; gameCount: number; allGames: boolean }) {
+function SlotProfile({ slots, gameCount, allGames, comparison }: {
+  slots: BattingSlotStats[]
+  gameCount: number
+  allGames: boolean
+  comparison?: SlotComparison | null
+}) {
   const scopeLabel = allGames
     ? 'über alle Spiele'
     : gameCount === 1
       ? 'über 1 Spiel'
       : `über ${gameCount} Spiele`
+  const beforeBySlot = useMemo(() => new Map((comparison?.before ?? []).map(s => [s.slot, s])), [comparison])
+  const afterBySlot = useMemo(() => new Map((comparison?.after ?? []).map(s => [s.slot, s])), [comparison])
   return (
     <details className="group bg-cream-50 border border-cream-200 rounded-2xl overflow-hidden">
       <summary className="cursor-pointer px-4 py-3 flex items-center justify-between select-none">
@@ -712,6 +798,14 @@ function SlotProfile({ slots, gameCount, allGames }: { slots: BattingSlotStats[]
           <li><span className="font-semibold text-gray-600">Gut oder schlecht?</span> Je länger der farbige Teil (dunkel + mittel), desto öfter kommt dieser Platz auf Base — die Zahl rechts (.718) ist genau dieser Anteil.</li>
           <li><span className="font-semibold text-gray-600">Spieler:</span> „68× · 74 %" = 68 Schläge, davon 74 % auf Base</li>
           <li>Plätze 1–3 sollten die längsten Balken haben — ein langer Balken weit hinten heißt: starker Schläger zu weit hinten</li>
+          {comparison && (
+            <li>
+              <span className="font-semibold text-gray-600">Formvergleich:</span>{' '}
+              die Zahl neben OBP zeigt die Veränderung {comparison.beforeLabel} → {comparison.afterLabel} —{' '}
+              <span className="font-semibold text-amber-700">positiv</span> = Verbesserung,{' '}
+              <span className="font-semibold text-softball-red-600">negativ</span> = Abwärtstrend
+            </li>
+          )}
           {!allGames && gameCount < 3 && (
             <li className="text-amber-700">Kleine Stichprobe — die Balken schwanken noch stark. Zum Vergleich: Zeitraum auf „Alle Spiele“ stellen.</li>
           )}
@@ -730,6 +824,20 @@ function SlotProfile({ slots, gameCount, allGames }: { slots: BattingSlotStats[]
                   </div>
                 </div>
                 <span className="font-display text-xs font-bold tabular-nums text-navy-900 w-11 text-right shrink-0">{fmtRate(s.onBasePct)}</span>
+                {comparison && beforeBySlot.get(s.slot) && afterBySlot.get(s.slot) && (() => {
+                  const before = beforeBySlot.get(s.slot)!
+                  const after = afterBySlot.get(s.slot)!
+                  const delta = after.onBasePct - before.onBasePct
+                  const color = Math.abs(delta) < 0.0005 ? 'text-gray-400' : delta > 0 ? 'text-amber-700' : 'text-softball-red-600'
+                  return (
+                    <span
+                      className={`font-display text-[11px] font-bold tabular-nums w-12 text-right shrink-0 ${color}`}
+                      title={`OBP ${comparison.beforeLabel}: ${fmtRate(before.onBasePct)} → ${comparison.afterLabel}: ${fmtRate(after.onBasePct)}`}
+                    >
+                      {formatSignedDiff(before.onBasePct, after.onBasePct)}
+                    </span>
+                  )
+                })()}
                 <span className="text-[11px] text-gray-500 tabular-nums w-24 text-right shrink-0 hidden sm:block">
                   {s.hits} H · {s.walks} BB · {s.strikeouts} K
                 </span>
