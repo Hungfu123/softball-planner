@@ -62,6 +62,16 @@ export function Layout() {
     return () => ro.disconnect()
   }, [])
 
+  // Der Spieltag-Planner ist das einzige echte Werkzeug-Layout der App: Bogen,
+  // Feld und Spieler-Leiste nebeneinander. Auf max-w-7xl (1280px) blieben auf einem
+  // 1920er-Monitor 640px Rand ungenutzt, während die Pool-Spalte auf 216px gequetscht
+  // war. Nur diese Route bekommt deshalb die breite Bühne — alle Lese-Seiten behalten
+  // 1280px, weil dort lange Zeilen die Lesbarkeit kosten würden.
+  const wideShell = /^\/gameday\/\d+$/.test(location.pathname)
+  const shell = wideShell
+    ? 'max-w-[1760px] mx-auto px-3 sm:px-6 lg:px-8'
+    : 'max-w-7xl mx-auto px-3 sm:px-6 lg:px-8'
+
   const matches = (path: string) =>
     path === '/' ? location.pathname === '/' : (location.pathname === path || location.pathname.startsWith(path + '/'))
   const activeTab = TABS.find(t => matches(t.path) || t.extraPaths?.some(matches))?.path
@@ -70,7 +80,7 @@ export function Layout() {
     <ToastCtx.Provider value={toast}>
       <div className="min-h-screen bg-cream-100">
         <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
+          <div className={`${shell} h-14 flex items-center gap-3`}>
             {isSubPage && (
               <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg shrink-0" aria-label="Zurück">
                 <ChevronLeft size={22} />
@@ -138,7 +148,7 @@ export function Layout() {
 
         <WhatsappStatusBanner />
 
-        <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pb-6 pt-2 sm:pt-4">
+        <main className={`${shell} pb-6 xl:pb-2 pt-2 sm:pt-4`}>
           <Outlet />
         </main>
 

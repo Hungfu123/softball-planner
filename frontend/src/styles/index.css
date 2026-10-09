@@ -50,6 +50,11 @@
   --color-gray-400: #5F6774;
   --color-gray-500: #4B5563;
 
+  /* Eigener Breakpoint für die Planner-Werkbank: vier Spalten (Bogen, Feld,
+     Coaches, Spieler) brauchen zusammen ~1300px Mindestbreite. Bei xl (1280px)
+     liefen sie quer aus dem Viewport — ab 1440px passen sie. */
+  --breakpoint-wide: 90rem;
+
   --font-display: "Saira Condensed", "Impact", sans-serif;
   --font-body: "Archivo", system-ui, sans-serif;
   /* Page-Headlines (h1): identisch zur Website → eine Marken-Familie */
@@ -207,6 +212,25 @@ button:active:not(:disabled), [role="button"]:active {
 @keyframes toastCountdown {
   from { transform: scaleX(1); }
   to { transform: scaleX(0); }
+}
+
+/* Spieltag-Planner: Bogen und Feld teilen unter xl denselben Platz. Der Wechsel
+   lief früher über AnimatePresence und brauchte dafür zwei Instanzen jeder
+   Komponente im DOM. Jetzt blendet CSS um — ein Element, das von display:none
+   sichtbar wird, startet seine Animation neu, der Schwenk bleibt also erhalten. */
+@media (max-width: 1439px) {
+  .planner-pane {
+    animation: plannerSwap 180ms var(--ease-out-strong) both;
+  }
+}
+
+@keyframes plannerSwap {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planner-pane { animation: none; }
 }
 
 @page {

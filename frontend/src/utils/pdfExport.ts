@@ -40,10 +40,10 @@ const FIELD_COORDS: Record<string, { x: number; y: number }> = {
   RF: { x: 86, y: 18 },
   SS: { x: 33, y: 28 },
   '2B': { x: 67, y: 28 },
-  '3B': { x: 16, y: 58 },
-  '1B': { x: 84, y: 58 },
+  '3B': { x: 24, y: 56 },
+  '1B': { x: 76, y: 56 },
   P:  { x: 50, y: 52 },
-  C:  { x: 50, y: 82 },
+  C:  { x: 50, y: 76 },
 }
 
 function drawFieldDiagram(

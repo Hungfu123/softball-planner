@@ -23,16 +23,15 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-cream-200">
-        <span className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
-          Training
-        </span>
+      <h2 className="flex items-center gap-2 mb-2 pb-1.5 xl:mb-1 xl:pb-0.5 border-b border-cream-200 font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
+        <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
+        Training
         <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
           {withoutMonday ? 'Basic · 3 Monate' : 'Letzte 3 Monate'}
         </span>
-      </div>
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 space-y-1.5">
-        <div className="flex items-center gap-2 pb-1">
+      </h2>
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 xl:p-1.5 space-y-1.5 xl:space-y-0">
+        <div className="flex items-center gap-2 pb-1 xl:pb-0">
           <span className="font-display text-[9px] font-bold tracking-widest uppercase text-navy-500">
             Trainingstage
           </span>
@@ -47,25 +46,28 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
         {filtered.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">Keine Trainingsdaten.</p>
         ) : (
-          filtered.map(s => {
+          // Balken liegt IN der Zeile, nicht daneben: gleiche Information,
+          // halbe Höhe. Auf der Werkbank zweispaltig.
+          <div className="space-y-0.5 xl:grid xl:grid-cols-2 xl:gap-x-3 xl:gap-y-0 xl:space-y-0">
+          {filtered.map(s => {
             const barWidth = Math.round((s.attended / maxAttended) * 100)
             return (
-              <div key={s.playerId} className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-900 w-16 truncate">
+              <div key={s.playerId} className="relative flex items-center gap-2 overflow-hidden rounded px-1.5 py-1 xl:py-0">
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-0 left-0 rounded bg-navy-200"
+                  style={{ width: `${barWidth}%` }}
+                />
+                <span className="relative flex-1 min-w-0 truncate text-xs font-medium text-navy-900">
                   {s.playerName}
                 </span>
-                <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-navy-800"
-                    style={{ width: `${barWidth}%` }}
-                  />
-                </div>
-                <span className="text-[10px] font-display tabular-nums text-gray-500 w-6 text-right shrink-0">
+                <span className="relative font-display text-[11px] font-bold tabular-nums text-gray-500">
                   {s.attended}
                 </span>
               </div>
             )
-          })
+          })}
+          </div>
         )}
       </div>
     </div>

@@ -28,7 +28,6 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { EmptyState, Button } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon, CheckCircle } from '@/icons'
 import { MapPin } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse, GameDayVotePreview } from '@/types'
 import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
@@ -676,15 +675,15 @@ export function GameDayPlanner() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm p-5">
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm p-5 xl:px-7 xl:pt-5 xl:rounded-b-none xl:pb-3 xl:pt-2.5 xl:pb-1.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="group flex items-baseline gap-3">
+          <div className="group flex items-baseline gap-3 xl:gap-4">
             <div>
-              <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
+              <h1 className="font-headline text-2xl sm:text-3xl xl:text-[2.5rem] xl:leading-[1.02] xl:text-[2.1rem] font-extrabold text-navy-900 tracking-wide uppercase">
                 {gameDay.label || 'Spieltag'} <span className="text-softball-red-600">·</span> {formatDate(gameDay.date)}
               </h1>
               {gameDay.location && (
-                <p className="font-display text-[11px] tracking-widest uppercase text-gray-500 mt-0.5 inline-flex items-center gap-1"><MapPin size={11} className="shrink-0" /> {gameDay.location}</p>
+                <p className="font-display text-[11px] tracking-widest uppercase text-gray-500 mt-0.5 xl:mt-0 inline-flex items-center gap-1"><MapPin size={11} className="shrink-0" /> {gameDay.location}</p>
               )}
             </div>
             <div className="actions-reveal flex items-center gap-0.5">
@@ -781,7 +780,7 @@ export function GameDayPlanner() {
           </div>
 
           {/* DESKTOP Layout: 2-zeilig wie Mobile — Primary-Row (Anwesend + Live) + Toolbar-Strip (Auto, Fahrten, Scoring-PDF, PDF) */}
-          <div className="hidden sm:flex flex-col gap-2 items-end">
+          <div className="hidden sm:flex flex-col gap-2 items-end xl:flex-row xl:items-center xl:gap-3">
             {/* Primary-Row: Anwesend + Live scoren */}
             <div className="flex items-center gap-2">
               <button
@@ -825,7 +824,7 @@ export function GameDayPlanner() {
               <PollSyncToolbarButton variant="desktop" pollStatus={pollStatus} onClick={() => setShowPollSync(true)} />
             </div>
             {/* Toolbar-Strip: Tertiary-Aktionen (Icon + Label) */}
-            <div className="flex items-center gap-1 border-t border-cream-200 pt-1.5">
+            <div className="flex items-center gap-1 border-t border-cream-200 pt-1.5 xl:order-first xl:border-t-0 xl:pt-0 xl:border-r xl:pr-3">
               {availablePlayers.length > 0 && (
                 <button
                   onClick={() => setShowAutoAllConfirm(true)}
@@ -870,12 +869,25 @@ export function GameDayPlanner() {
       {/* Tabs — mobil sticky unter dem App-Header (h=59px), damit der Spiel-Wechsler
           beim Lineup-Scrollen immer erreichbar bleibt (sonst nur fummeliger Swipe).
           Desktop: normaler Fluss. */}
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-2 sm:px-4 pt-2 sticky top-[59px] z-40 lg:static lg:top-auto lg:z-auto">
+      {/* Ab xl sitzt die Spiel-Leiste direkt unter dem Titel in derselben Karte —
+          zwei fast leere Bänder über dem Grid waren auf dem Desktop reine Höhe. */}
+      <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm px-2 sm:px-4 pt-2 xl:pt-0 sticky top-[59px] z-40 lg:static lg:top-auto lg:z-auto xl:-mt-4 xl:rounded-t-none xl:border-t-0 xl:px-5">
       <GameTabs
         games={gameDay.games}
         activeIndex={activeTab}
         seasonId={gameDay.seasonId}
         onSelect={(i) => setActiveTab(i)}
+        rightSlot={availablePlayers.length > 0 && gameDay.games.length > 0 ? (
+          <LineupSetBar
+            sets={lineupSets.sets}
+            activeSetId={activeSetId}
+            onApply={handleApplySet}
+            onSaveNew={() => setSaveSetOpen(true)}
+            onOverwrite={s => setOverwriteSet(s)}
+            onRename={s => setRenameSet(s)}
+            onDelete={s => setDeleteSet(s)}
+          />
+        ) : undefined}
         gameCompletions={(() => {
           const map = new Map<number, { total: number; fieldCount: number }>()
           for (const game of gameDay.games) {
@@ -934,21 +946,9 @@ export function GameDayPlanner() {
         />
       ) : (
         <>
-          {/* Lineup-Sets — gespeicherte Aufstellungs-Varianten */}
-          {gameDay.games.length > 0 && (
-            <LineupSetBar
-              sets={lineupSets.sets}
-              activeSetId={activeSetId}
-              onApply={handleApplySet}
-              onSaveNew={() => setSaveSetOpen(true)}
-              onOverwrite={s => setOverwriteSet(s)}
-              onRename={s => setRenameSet(s)}
-              onDelete={s => setDeleteSet(s)}
-            />
-          )}
-
-          {/* Lineup ↔ Feld Tab-Toggle (mobile + lg, hidden at xl since both shown side-by-side) */}
-          <div className="flex bg-cream-100 border border-cream-300 rounded-lg p-0.5 lg:max-w-md xl:hidden">
+          {/* Lineup ↔ Feld Umschalter — unter 1440px teilen sich Bogen und Feld denselben
+              Platz. Darüber stehen beide nebeneinander, der Umschalter entfällt. */}
+          <div className="flex bg-cream-100 border border-cream-300 rounded-lg p-0.5 lg:max-w-md wide:hidden">
             <button
               onClick={() => setMobileView('lineup')}
               className={`flex-1 h-9 text-xs font-bold uppercase tracking-wider rounded-md cursor-pointer transition-colors ${
@@ -967,99 +967,52 @@ export function GameDayPlanner() {
             </button>
           </div>
 
-          {/* Main Layout — 3 cols on lg, 4 cols on xl (Lineup | Field+Coaches | Pool+Bench | Training) */}
+          {/*
+            Werkbank-Layout. Jedes Panel liegt GENAU EINMAL im DOM — vorher lagen
+            Lineup/Auswechslungen doppelt und Coaches/Bank dreifach da (je ein
+            xl:hidden- und ein hidden-xl:block-Zweig), was zwei parallele
+            DndContexts und drei Coach-Formulare bedeutete. Die Spalte wechselt
+            jetzt nur noch per `order`:
+              mobil   Bogen → Spieler → Coaches/Bank   (unverändert)
+              lg      Bogen | Spieler | Coaches+Bank
+              wide    Bogen | Feld | Coaches+Bank | Spieler  (ab 1440px)
+            Bogen und Feld teilen darunter denselben Platz (eines ist display:none,
+            fällt damit aus dem Grid) — ab 1440px stehen sie nebeneinander.
+          */}
           <div
-            className="grid grid-cols-1 lg:grid-cols-[5fr_4fr_3fr] xl:grid-cols-[360px_320px_minmax(0,1fr)_260px] gap-4 lg:gap-5"
+            className="grid gap-4 lg:gap-5 grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,3fr)] wide:grid-cols-[minmax(380px,1.05fr)_minmax(400px,1.35fr)_minmax(240px,0.72fr)_minmax(290px,0.88fr)] items-start"
             onTouchStart={onSwipeStart}
             onTouchEnd={onSwipeEnd}
           >
-            {/* Col 1: Lineup (xl always, < xl tab-toggle with Field) */}
-            <div className="space-y-4 order-1">
-              {/* < xl: animated toggle between Lineup and Field */}
-              <div className="xl:hidden">
-                <AnimatePresence mode="wait" initial={false}>
-                  {mobileView === 'lineup' ? (
-                    <motion.div
-                      key="lineup"
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -8 }}
-                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                      className="space-y-4"
-                    >
-                      <LineupEditor
-                        entries={lineup.entries}
-                        poolPlayers={poolPlayers}
-                        onRemove={handleRemovePlayer}
-                        onSetPosition={lineup.setPosition}
-                        onSetDhBatter={handleSetDhBatter}
-                        onMoveUp={lineup.moveUp}
-                        onMoveDown={lineup.moveDown}
-                        onReorder={lineup.reorder}
-                        onSwapWithPool={handleSwapWithPool}
-                        onSwapWithLineup={handleSwapWithLineup}
-                        onFillSlot={lineup.fillEmptySlot}
-                        onClear={() => setShowClearConfirm(true)}
-                        onAutoGenerate={triggerAutoGenerate}
-                        autoGenerateLoading={autoSingleLoading}
-                        onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
-                        firstBaseCoachRotation={activeGame?.firstBaseCoachRotation}
-                        thirdBaseCoachRotation={activeGame?.thirdBaseCoachRotation}
-                      />
-                      <SubstitutionEditor
-                        substitutions={lineup.substitutions}
-                        lineupEntries={lineup.entries}
-                        poolPlayers={poolPlayers}
-                        staff={staff.staff}
-                        onAdd={lineup.addSubstitution}
-                        onRemove={lineup.removeSubstitution}
-                      />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="field"
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 8 }}
-                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <FieldView entries={lineup.entries} onPositionClick={setAssignPosition} />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* xl: static Lineup (Field rendered in col 2) */}
-              <div className="hidden xl:block space-y-4">
-                <LineupEditor
-                  entries={lineup.entries}
-                  poolPlayers={poolPlayers}
-                  onRemove={handleRemovePlayer}
-                  onSetPosition={lineup.setPosition}
-                  onSetDhBatter={handleSetDhBatter}
-                  onMoveUp={lineup.moveUp}
-                  onMoveDown={lineup.moveDown}
-                  onReorder={lineup.reorder}
-                  onSwapWithPool={handleSwapWithPool}
-                  onSwapWithLineup={handleSwapWithLineup}
-                  onFillSlot={lineup.fillEmptySlot}
-                  onClear={() => setShowClearConfirm(true)}
-                  onAutoGenerate={triggerAutoGenerate}
-                  autoGenerateLoading={autoSingleLoading}
-                  onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
-                  firstBaseCoachRotation={activeGame?.firstBaseCoachRotation}
-                  thirdBaseCoachRotation={activeGame?.thirdBaseCoachRotation}
-                />
-                <SubstitutionEditor
-                  substitutions={lineup.substitutions}
-                  lineupEntries={lineup.entries}
-                  poolPlayers={poolPlayers}
-                  staff={staff.staff}
-                  onAdd={lineup.addSubstitution}
-                  onRemove={lineup.removeSubstitution}
-                />
-              </div>
-
+            {/* Bogen — Schlagreihenfolge + Auswechslungen */}
+            <div className={`planner-pane space-y-4 xl:space-y-2.5 order-1 ${mobileView === 'lineup' ? '' : 'hidden'} wide:block`}>
+              <LineupEditor
+                entries={lineup.entries}
+                poolPlayers={poolPlayers}
+                onRemove={handleRemovePlayer}
+                onSetPosition={lineup.setPosition}
+                onSetDhBatter={handleSetDhBatter}
+                onMoveUp={lineup.moveUp}
+                onMoveDown={lineup.moveDown}
+                onReorder={lineup.reorder}
+                onSwapWithPool={handleSwapWithPool}
+                onSwapWithLineup={handleSwapWithLineup}
+                onFillSlot={lineup.fillEmptySlot}
+                onClear={() => setShowClearConfirm(true)}
+                onAutoGenerate={triggerAutoGenerate}
+                autoGenerateLoading={autoSingleLoading}
+                onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
+                firstBaseCoachRotation={activeGame?.firstBaseCoachRotation}
+                thirdBaseCoachRotation={activeGame?.thirdBaseCoachRotation}
+              />
+              <SubstitutionEditor
+                substitutions={lineup.substitutions}
+                lineupEntries={lineup.entries}
+                poolPlayers={poolPlayers}
+                staff={staff.staff}
+                onAdd={lineup.addSubstitution}
+                onRemove={lineup.removeSubstitution}
+              />
               <SaveButton
                 hasChanges={anyUnsaved}
                 saving={lineup.saving}
@@ -1069,94 +1022,16 @@ export function GameDayPlanner() {
               />
             </div>
 
-            {/* Col 2: Pool + Bench (mobile/lg) — at xl: Field + Coaches */}
-            <div className="space-y-4 order-2">
-              {/* < xl: Pool + Bench */}
-              <div className="xl:hidden space-y-4">
-                <PlayerPool
-                  allAvailablePlayers={availablePlayers}
-                  lineupPlayerIds={lineupUsedIds}
-                  stats={adjustedStats}
-                  battingStatsSeason={seasonBattingStats}
-                  battingStatsYear={yearBattingStats}
-                  seasonYear={season?.year ?? null}
-                  gameDayDate={gameDay.date}
-                  opponentTeamName={activeGame?.opponentTeam?.name ?? null}
-                  opponentBatting={opponentBatting}
-                  onAdd={handleAddPlayer}
-                />
-                <div className="hidden lg:block">
-                  <BenchDisplay players={benchPlayers} />
-                </div>
-              </div>
-
-              {/* xl: Field + Coaches + Bench stacked */}
-              <div className="hidden xl:block space-y-4">
-                <FieldView entries={lineup.entries} onPositionClick={setAssignPosition} />
-                <CoachSlots
-                  staff={staff.staff}
-                  availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
-                  onSave={handleStaffSave}
-                  lineup={coachRotationLineup}
-                  game={activeGame!}
-                  loading={!staff.loaded}
-                  onSaveRotation={handleRotationSave}
-                />
-                <BenchDisplay players={benchPlayers} />
-              </div>
-            </div>
-
-            {/* Col 3: Training + Coaches (lg) — at xl: Pool + Bench */}
-            <div className="hidden lg:block space-y-4 order-3">
-              {/* lg only: Training + Coaches */}
-              <div className="xl:hidden space-y-4">
-                <TrainingAttendancePanel
-                  stats={trainingStats}
-                  availablePlayers={availablePlayers}
-                  excludedWeekdays={excludedTrainingWeekdays}
-                  onToggleWeekday={toggleTrainingWeekday}
-                />
-
-                <CoachSlots
-                  staff={staff.staff}
-                  availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
-                  onSave={handleStaffSave}
-                  lineup={coachRotationLineup}
-                  game={activeGame!}
-                  loading={!staff.loaded}
-                  onSaveRotation={handleRotationSave}
-                />
-              </div>
-
-              {/* xl only: Pool */}
-              <div className="hidden xl:block space-y-4">
-                <PlayerPool
-                  allAvailablePlayers={availablePlayers}
-                  lineupPlayerIds={lineupUsedIds}
-                  stats={adjustedStats}
-                  battingStatsSeason={seasonBattingStats}
-                  battingStatsYear={yearBattingStats}
-                  seasonYear={season?.year ?? null}
-                  gameDayDate={gameDay.date}
-                  opponentTeamName={activeGame?.opponentTeam?.name ?? null}
-                  opponentBatting={opponentBatting}
-                  onAdd={handleAddPlayer}
-                />
-              </div>
-            </div>
-
-            {/* Col 4 — Training (xl only) */}
-            <div className="hidden xl:block space-y-4 order-4">
-              <TrainingAttendancePanel
-                stats={trainingStats}
-                availablePlayers={availablePlayers}
-                excludedWeekdays={excludedTrainingWeekdays}
-                onToggleWeekday={toggleTrainingWeekday}
+            {/* Feld — unter xl im Wechsel mit dem Bogen, ab xl die eigene Bühne */}
+            <div className={`planner-pane order-1 wide:sticky wide:top-4 wide:self-start ${mobileView === 'field' ? '' : 'hidden'} wide:block`}>
+              <FieldView
+                entries={lineup.entries}
+                onPositionClick={setAssignPosition}
               />
             </div>
 
-            {/* Mobile: Coaches + Bench after pool — Training steckt im Pool-Tab (PlayerPool) */}
-            <div className="lg:hidden space-y-4 order-3">
+            {/* Coaches + Bank */}
+            <div className="space-y-4 xl:space-y-2.5 order-3 wide:order-3">
               <CoachSlots
                 staff={staff.staff}
                 availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
@@ -1167,6 +1042,33 @@ export function GameDayPlanner() {
                 onSaveRotation={handleRotationSave}
               />
               <BenchDisplay players={benchPlayers} />
+            </div>
+
+            {/* Spieler-Leiste — Pool/Übersicht + Trainingsteilnahme */}
+            <div className="space-y-4 xl:space-y-2.5 order-2 wide:order-4">
+              <PlayerPool
+                allAvailablePlayers={availablePlayers}
+                lineupPlayerIds={lineupUsedIds}
+                stats={adjustedStats}
+                battingStatsSeason={seasonBattingStats}
+                battingStatsYear={yearBattingStats}
+                seasonYear={season?.year ?? null}
+                gameDayDate={gameDay.date}
+                opponentTeamName={activeGame?.opponentTeam?.name ?? null}
+                opponentBatting={opponentBatting}
+                onAdd={handleAddPlayer}
+              />
+              {/* Trainingsteilnahme sitzt bei der Spieler-Leiste — beide beantworten
+                  dieselbe Frage: wen stelle ich auf. Unter lg ausgeblendet, dort
+                  liegt sie als Tab im Spieler-Panel. */}
+              <div className="hidden lg:block">
+                <TrainingAttendancePanel
+                  stats={trainingStats}
+                  availablePlayers={availablePlayers}
+                  excludedWeekdays={excludedTrainingWeekdays}
+                  onToggleWeekday={toggleTrainingWeekday}
+                />
+              </div>
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, type MouseEvent as ReactMouseEvent } from 'react'
+import { useState, useEffect, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { portalOverlayAttrs, portalOverlayClickable } from '@/components/shared'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -13,12 +13,16 @@ interface Props {
   activeIndex: number
   seasonId: number
   onSelect: (index: number) => void
+  /** Wird rechts in die Gegner-Zeile gehängt (Lineup-Sets) — spart auf dem
+   *  Desktop eine eigene Kartenzeile über dem Grid. Unter lg bricht der Slot
+   *  auf eine eigene volle Zeile um. */
+  rightSlot?: ReactNode
   onOpponentChanged: (gameId: number, opponentTeam: LeagueTeamResponse | null) => void
   onSwapped?: (updatedGames: GameResponse[]) => void | Promise<void>
   gameCompletions?: Map<number, { total: number; fieldCount: number }>
 }
 
-export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentChanged, onSwapped, gameCompletions }: Props) {
+export function GameTabs({ games, activeIndex, onSelect, seasonId, rightSlot, onOpponentChanged, onSwapped, gameCompletions }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [menuGameId, setMenuGameId] = useState<number | null>(null)
   // Club-Bilanz-Sheet des aktiven Gegners — öffnet direkt hier statt Navigate auf /teams
@@ -168,7 +172,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
           <div key={game.id} className="relative group flex items-center">
             <button
               onClick={() => onSelect(i)}
-              className={`group/tab relative px-3 sm:px-5 py-3 font-display text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors cursor-pointer ${
+              className={`group/tab relative px-3 sm:px-5 py-3 xl:py-1 font-display text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors cursor-pointer ${
                 i === activeIndex
                   ? 'text-navy-900'
                   : 'text-gray-400 hover:text-navy-800 hover:bg-navy-50/50 rounded-t-lg'
@@ -209,7 +213,7 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
 
       {/* Active-game meta-row: Gegner */}
       {activeGame && (
-        <div className="flex flex-wrap items-center gap-2 px-1 sm:px-2 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 px-1 sm:px-2 py-2.5 xl:py-1">
           <div className="relative">
             <button
               onClick={() => setPickerOpen(!pickerOpen)}
@@ -258,6 +262,9 @@ export function GameTabs({ games, activeIndex, onSelect, seasonId, onOpponentCha
               }}
             />
           </div>
+          {rightSlot && (
+            <div className="w-full lg:w-auto lg:flex-1 lg:min-w-0 lg:ml-auto">{rightSlot}</div>
+          )}
         </div>
       )}
 
