@@ -695,14 +695,18 @@ export function ScoringPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-cream-100 flex flex-col">
+    /* h-dvh statt min-h-dvh: die Seite ist ein Werkzeug fuer die Hand am
+       Spielfeldrand und darf nicht scrollen — sonst rutscht die Schlagmann-Karte
+       unter die Aktionsleiste. Alle Bloecke ausser dem Diamond haben feste
+       Hoehe (zusammen ~444px), der Diamond nimmt per flex-1 den Rest. */
+    <div className="h-dvh overflow-hidden bg-cream-100 flex flex-col">
       {/* Header */}
       <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md">
         <div className="px-4 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 shrink-0">
             <Link
               to="/"
-              className="p-1 hover:bg-navy-700 rounded-lg flex items-center"
+              className="hit-44-y p-1 hover:bg-navy-700 rounded-lg flex items-center"
               aria-label="Zur Startseite"
               title="Zur Startseite"
             >
@@ -710,7 +714,7 @@ export function ScoringPage() {
             </Link>
             <button
               onClick={() => navigate(`/gameday/${gameDayId}`)}
-              className="p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1"
+              className="hit-44-y p-1 hover:bg-navy-700 rounded-lg flex items-center gap-1"
               aria-label="Zurück zum Spieltag"
               title="Zurück zum Spieltag"
             >
@@ -722,7 +726,7 @@ export function ScoringPage() {
             <button
               onClick={() => setShowEndGameConfirm(true)}
               disabled={atBats.length === 0 || gameOver}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              className="hit-44-y p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title="Spiel beenden und Stats zeigen"
               aria-label="Spiel beenden"
             >
@@ -732,7 +736,7 @@ export function ScoringPage() {
               onClick={() => setShowDeleteInningConfirm(true)}
               disabled={atBats.filter(a => a.inning === currentInning).length === 0
                 && stealingEvents.filter(s => s.inning === currentInning).length === 0}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              className="hit-44-y p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title={`Inning ${currentInning} löschen`}
               aria-label={`Inning ${currentInning} löschen`}
             >
@@ -741,7 +745,7 @@ export function ScoringPage() {
             <button
               onClick={() => setShowResetConfirm(true)}
               disabled={atBats.length === 0}
-              className="p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
+              className="hit-44-y p-1.5 hover:bg-navy-700 rounded-lg text-white/70 hover:text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer inline-flex items-center gap-1"
               title="Scoring zurücksetzen"
               aria-label="Scoring zurücksetzen"
             >
@@ -759,7 +763,7 @@ export function ScoringPage() {
           {battingSide && (
             <button
               onClick={() => setShowSidePrompt(true)}
-              className="font-display inline-flex items-center text-[10px] px-2 py-0.5 border border-white/20 rounded-full text-white/85 hover:bg-white/10 hover:text-white cursor-pointer transition-colors tracking-widest uppercase"
+              className="hit-44 font-display inline-flex items-center text-[10px] px-2 py-0.5 border border-white/20 rounded-full text-white/85 hover:bg-white/10 hover:text-white cursor-pointer transition-colors tracking-widest uppercase"
               title="Seite ändern (Oben/Unten)"
               aria-label="Seite (Oben/Unten) ändern"
             >
@@ -791,7 +795,7 @@ export function ScoringPage() {
         <button
           onClick={() => { if (!halfInningOver) setShowAutoOutConfirm(true) }}
           disabled={halfInningOver}
-          className="flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
+          className="hit-44 flex items-center gap-2 cursor-pointer group disabled:opacity-60 disabled:cursor-not-allowed"
           title="Automatisches Out buchen (fehlende Spielerin) — zählt als Out im Inning"
           aria-label="Automatisches Out"
         >
@@ -846,7 +850,7 @@ export function ScoringPage() {
             ) : (
               <button
                 onClick={() => { setScoreThemInput(String(scoreThem ?? 0)); setEditingScoreThem(true) }}
-                className="font-display text-4xl sm:text-5xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors leading-none"
+                className="hit-44 font-display text-4xl sm:text-5xl font-black text-navy-900 tabular-nums cursor-pointer hover:text-softball-red-600 transition-colors leading-none"
                 title="Gegner-Score tippen um zu editieren"
                 aria-label="Gegner-Score editieren"
               >
@@ -991,8 +995,8 @@ export function ScoringPage() {
 
       {/* Diamond - kompakter */}
       {(atBats.length > 0 || lineup.length > 0 || gameOver || halfInningOver) && (
-      <div className="flex-1 flex flex-col items-center justify-center py-2 px-4 min-h-0">
-        <div className="w-full max-w-[360px] sm:max-w-[420px]">
+      <div className="flex-1 flex flex-col items-center justify-center py-2 px-4 min-h-0 overflow-hidden">
+        <div className="w-full max-w-[360px] sm:max-w-[420px] flex flex-col min-h-0">
           <DiamondView
             baseState={diamondBaseState}
             runners={diamondRunners}
@@ -1035,7 +1039,7 @@ export function ScoringPage() {
               </span>
               <button
                 onClick={() => setShowLineupSheet(true)}
-                className="shrink-0 text-navy-700 hover:text-navy-900 p-1 cursor-pointer"
+                className="hit-44 shrink-0 text-navy-700 hover:text-navy-900 p-1 cursor-pointer"
                 aria-label="Komplette Aufstellung anzeigen"
                 title="Komplette Aufstellung anzeigen"
               >
@@ -1103,11 +1107,19 @@ export function ScoringPage() {
             <button
               onClick={handleOverthrow}
               disabled={submitting || atBats.length === 0}
-              className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white hover:border-navy-500 text-navy-800 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1 disabled:opacity-50 cursor-pointer"
-              title="Dead Ball / Overthrow: alle Runner rücken eine Base weiter"
+              className="font-display h-11 rounded-xl bg-cream-50 border border-cream-300 hover:bg-white hover:border-navy-500 text-navy-800 font-bold tracking-wider uppercase flex flex-col items-center justify-center leading-none disabled:opacity-50 cursor-pointer"
+              title="Dead Ball / Wild Pitch / Overthrow: alle Runner rücken eine Base weiter"
             >
-              <BoltIcon size={14} />
-              Overthrow
+              <span className="flex items-center gap-1 text-xs sm:text-sm">
+                <BoltIcon size={14} />
+                Overthrow
+              </span>
+              {/* Die gelaeufigen Namen danebenstellen: „Overthrow" allein trifft nur
+                  einen der Faelle, gemeint ist jeder tote Ball, bei dem alle Runner
+                  eine Base geschenkt bekommen. */}
+              <span className="mt-0.5 text-[9px] font-semibold tracking-normal normal-case text-gray-500">
+                Wild Pitch · Dead Ball
+              </span>
             </button>
           )}
         </div>

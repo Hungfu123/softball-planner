@@ -95,6 +95,50 @@ test.describe('Scoring — AB Recording (bases loaded)', () => {
     expect(sb.scoreUs).toBe(1)
   })
 
+  /** Runner nur auf 3B — der Fall, der NICHT geforced ist: Batter geht bei ROE
+   *  auf 1B, der Runner auf 3B steht frei. Deadball/Overthrow entscheidet der
+   *  Scorer über das Korrektur-Sheet. */
+  async function seedRunnerOnThird(gameId: number, playerIds: number[]): Promise<void> {
+    await seedAtBat(gameId, playerIds[8], 'TRIPLE', 1, {
+      first: null,
+      second: null,
+      third: playerIds[8],
+    })
+  }
+
+  test('REACHED_ON_ERROR mit Runner auf 3B: Default laesst ihn stehen (kein Force)', async ({ page, scoringPage }) => {
+    await seedRunnerOnThird(scoringPage.gameId, scoringPage.playerIds)
+    await page.reload()
+    await page.waitForTimeout(500)
+    await recordDirectViaUI(page, 'REACHED_ON_ERROR')
+    const sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(0)
+    expect(sb.baseState.third).toBe(scoringPage.playerIds[8])
+    expect(sb.baseState.first).not.toBeNull()
+  })
+
+  test('REACHED_ON_ERROR mit Runner auf 3B: ueber Korrigieren nach Home zaehlt als Run', async ({ page, scoringPage }) => {
+    await seedRunnerOnThird(scoringPage.gameId, scoringPage.playerIds)
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    await page.getByRole('button', { name: /^ERROR\b/ }).click()
+    await page.waitForTimeout(400)
+
+    // Korrektur-Sheet muss aufgehen — sonst gibt es keinen Weg, den Runner zu schicken.
+    const cycle = page.getByRole('button', { name: 'bleibt 3B', exact: true })
+    await expect(cycle).toBeVisible()
+    await cycle.click()
+    await expect(page.getByRole('button', { name: '→ Home (Run!)', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: '✓ Passt', exact: true }).click()
+    await page.waitForTimeout(600)
+
+    const sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(1)
+    expect(sb.baseState.third).toBeNull()
+    expect(sb.baseState.first).toBe(scoringPage.playerIds[0])
+  })
+
   test('SINGLE bases loaded scores 3B-Runner', async ({ page, scoringPage }) => {
     await seedBasesLoaded(scoringPage.gameId, scoringPage.playerIds)
     await page.reload()
