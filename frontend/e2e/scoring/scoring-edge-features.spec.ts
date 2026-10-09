@@ -18,7 +18,7 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.baseState.third).toBe(ids[8])
 
     // Click Overthrow
-    await page.getByRole('button', { name: /^Overthrow$/i }).click()
+    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
     await page.waitForTimeout(500)
 
     sb = await getScoreboard(scoringPage.gameId)
@@ -26,6 +26,80 @@ test.describe('Scoring — Edge Features', () => {
     expect(sb.baseState.first).toBeNull()         // 1B war besetzt von Walker → leer
     expect(sb.baseState.second).toBe(ids[6])      // 1B → 2B
     expect(sb.baseState.third).toBe(ids[7])       // 2B → 3B
+  })
+
+  test('Overthrow nur mit Runner auf 3B: 1 Run, Bases danach leer', async ({ page, scoringPage }) => {
+    const ids = scoringPage.playerIds
+    await seedAtBat(scoringPage.gameId, ids[8], 'TRIPLE', 1, { first: null, second: null, third: ids[8] })
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
+    await page.waitForTimeout(500)
+
+    const sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(1)
+    expect(sb.baseState.first).toBeNull()
+    expect(sb.baseState.second).toBeNull()
+    expect(sb.baseState.third).toBeNull()
+  })
+
+  test('ERROR dann Overthrow: Runner von 3B scort und der Run zaehlt beim Laeufer', async ({ page, scoringPage }) => {
+    const ids = scoringPage.playerIds
+    // Runner auf 3B (hat sich den Triple selbst erarbeitet) — nicht geforced.
+    await seedAtBat(scoringPage.gameId, ids[8], 'TRIPLE', 1, { first: null, second: null, third: ids[8] })
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    // ERROR: Batter auf 1B, Runner auf 3B bleibt stehen (kein Force).
+    await recordDirectViaUI(page, 'REACHED_ON_ERROR')
+    let sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(0)
+    expect(sb.baseState.third).toBe(ids[8])
+
+    // Overthrow auf denselben Spielzug: alle Runner +1 → 3B scort.
+    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
+    await page.waitForTimeout(600)
+
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(1)
+    expect(sb.baseState.third).toBeNull()
+
+    // Der Run muss dem Laeufer gutgeschrieben werden, nicht dem Batter.
+    const stats = await getBattingStats(scoringPage.gameId)
+    const runner = stats.find(p => p.playerId === ids[8])
+    expect(runner?.runs).toBe(1)
+  })
+
+  test('ERROR + Overthrow + Undo: Run verschwindet und Laeufer steht wieder auf 3B', async ({ page, scoringPage }) => {
+    const ids = scoringPage.playerIds
+    await seedAtBat(scoringPage.gameId, ids[8], 'TRIPLE', 1, { first: null, second: null, third: ids[8] })
+    await page.reload()
+    await page.waitForTimeout(500)
+
+    await recordDirectViaUI(page, 'REACHED_ON_ERROR')
+    await page.getByRole('button', { name: /^Overthrow\b/i }).click()
+    await page.waitForTimeout(600)
+
+    let sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(1)
+    let stats = await getBattingStats(scoringPage.gameId)
+    expect(stats.find(p => p.playerId === ids[8])?.runs).toBe(1)
+
+    // Undo muss den Overthrow-Run mitnehmen und den Laeufer zuruecksetzen.
+    await clickUndo(page)
+    await page.waitForTimeout(600)
+
+    sb = await getScoreboard(scoringPage.gameId)
+    expect(sb.scoreUs).toBe(0)
+    expect(sb.baseState.third).toBe(ids[8])
+    expect(sb.baseState.first).toBeNull()
+
+    stats = await getBattingStats(scoringPage.gameId)
+    expect(stats.find(p => p.playerId === ids[8])?.runs).toBe(0)
+    // Das ROE-At-Bat ist weg — der Batter darf keinen ROE mehr in den Stats haben.
+    const roeTotal = stats.reduce((n, p) => n + p.reachedOnError, 0)
+    expect(roeTotal).toBe(0)
   })
 
   test('3rd-Out OUT: kein CorrectionSheet, Runner scort nicht, Inning endet', async ({ page, scoringPage }) => {

@@ -35,7 +35,10 @@ function truncate(name: string, max = 7): string {
 
 export function DiamondView({ baseState, runners, onRunnerTap, homerunRunner, skipExitToHome, outRunnerIds, skipEntryFromHome }: Props) {
   return (
-    <svg viewBox="0 0 220 220" className="w-full max-w-[420px] mx-auto">
+    /* max-h-full: der Diamond ist der einzige flexible Block der Scoring-Seite
+       und muss sich der Resthoehe beugen, sonst scrollt die Seite auf kleinen
+       Handys. Das viewBox-Verhaeltnis bleibt erhalten (preserveAspectRatio). */
+    <svg viewBox="0 0 220 220" className="w-full max-w-[420px] max-h-full mx-auto">
       {/* Base-Paths */}
       <path
         d={`M ${POS.home.cx} ${POS.home.cy}

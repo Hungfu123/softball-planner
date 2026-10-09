@@ -233,6 +233,45 @@ button:active:not(:disabled), [role="button"]:active {
   .planner-pane { animation: none; }
 }
 
+/* Doppeltipp-Zoom auf Bedienelementen abschalten. Beim schnellen Scoren am
+   Spielfeldrand zoomt sonst die Seite, wenn zwei Tipps dicht aufeinander folgen.
+   Pinch-Zoom bleibt unberuehrt. */
+button,
+a,
+select,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* Trefferflaeche auf 44px bringen, OHNE das Layout zu veraendern — die
+   Scoring-Seite hat ein festes Hoehenbudget (siehe h-dvh), groessere Buttons
+   wuerden sie wieder zum Scrollen bringen. Das Pseudo-Element liegt zentriert
+   ueber dem Control und faengt die Tipps ab.
+   `.hit-44-y` nur vertikal: in der Kopfzeile stehen die Buttons 4px auseinander,
+   dort wuerde eine horizontale Aufweitung in den Nachbarn laufen. */
+.hit-44,
+.hit-44-y {
+  position: relative;
+}
+
+.hit-44::after,
+.hit-44-y::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  height: max(100%, 44px);
+}
+
+.hit-44::after {
+  width: max(100%, 44px);
+}
+
+.hit-44-y::after {
+  width: 100%;
+}
+
 @page {
   margin: 10mm;
 }

@@ -205,6 +205,7 @@ export type PlayerBattingStats = {
   playerName: string
   plateAppearances: number
   atBats: number
+  runs: number
   hits: number
   singles: number
   doubles: number

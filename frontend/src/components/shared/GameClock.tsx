@@ -111,7 +111,7 @@ export function GameClockReadout(props: GameClockProps) {
       <button
         type="button"
         onClick={onPress}
-        className="font-display text-[10px] font-bold tracking-widest uppercase text-white/45 hover:text-white/70 transition-colors cursor-pointer"
+        className="hit-44 font-display text-[10px] font-bold tracking-widest uppercase text-white/45 hover:text-white/70 transition-colors cursor-pointer"
         aria-label="Spielzeit starten"
       >
         Zeit
