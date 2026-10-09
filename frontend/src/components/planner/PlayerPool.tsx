@@ -239,7 +239,7 @@ export function PlayerPool({
               <button
                 key={player.id}
                 onClick={() => onAdd(player)}
-                className={`pool-chip w-full flex items-center gap-2 px-3 py-2 text-left border-b border-cream-200 last:border-0 ${
+                className={`pool-chip w-full flex items-center gap-2 px-3 py-2 xl:py-1 text-left border-b border-cream-200 last:border-0 ${
                   noGames
                     ? 'bg-softball-red-50 hover:bg-navy-100'
                     : 'hover:bg-navy-50'
@@ -273,10 +273,14 @@ export function PlayerPool({
 
           {/* Lineup players — subtle, separated */}
           {lineupPlayers.length > 0 && freePlayers.length > 0 && (
-            <div className="border-t border-cream-300 bg-cream-100 px-3 py-1.5">
+            <div className="border-t border-cream-300 bg-cream-100 px-3 py-1.5 xl:py-0.5">
               <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Im Lineup</span>
             </div>
           )}
+          {/* Bereits aufgestellt: ab wide zweispaltig und ohne Positions-Historie.
+              Diese Namen stehen zwei Spalten weiter im Bogen — hier reicht die
+              Quittung „schon drin", nicht noch eine volle Zeile pro Spieler. */}
+          <div className="xl:grid xl:grid-cols-2 bg-cream-100/50">
           {lineupPlayers.map(player => {
             const st = statsMap.get(player.id)
             const gc = st?.gameCount ?? 0
@@ -285,7 +289,7 @@ export function PlayerPool({
             return (
               <div
                 key={player.id}
-                className="w-full flex items-center gap-2 px-3 py-1.5 text-left border-b border-cream-200 last:border-0 bg-cream-100/50 cursor-not-allowed"
+                className="w-full flex items-center gap-2 px-3 py-1.5 xl:py-0.5 text-left border-b border-cream-200 last:border-0 xl:border-b-0 bg-cream-100/50 cursor-not-allowed"
               >
                 {player.defaultBattingOrder != null && (
                   <span className="text-[11px] font-display tabular-nums font-bold text-gray-300 shrink-0 lg:hidden">
@@ -297,7 +301,7 @@ export function PlayerPool({
                 </span>
 
                 {posStr && (
-                  <span className="text-[11px] font-display tabular-nums text-gray-300 shrink-0">
+                  <span className="text-[11px] font-display tabular-nums text-gray-300 shrink-0 xl:hidden">
                     {posStr}
                   </span>
                 )}
@@ -308,6 +312,7 @@ export function PlayerPool({
               </div>
             )
           })}
+          </div>
         </div>
       ) : tab === 'overview' ? (
         (() => {
@@ -390,7 +395,7 @@ export function PlayerPool({
             return (
               <div
                 key={player.id}
-                className="grid grid-cols-[minmax(0,1fr)_2.9rem_2.9rem_3.2rem] gap-2 items-center px-3 py-2 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
+                className="grid grid-cols-[minmax(0,1fr)_2.9rem_2.9rem_3.2rem] gap-2 items-center px-3 py-2 xl:py-1 border-b border-cream-200 last:border-0 hover:bg-cream-100 cursor-default select-none"
               >
                 <span className="text-sm text-gray-800 truncate">
                   {player.name}

@@ -17,7 +17,7 @@ export function LineupSetBar({ sets, activeSetId, onApply, onSaveNew, onOverwrit
   const menuSet = sets.find(s => s.id === menuId) ?? null
 
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50/60 px-3 py-2">
+    <div className="flex items-center gap-2 rounded-xl border border-cream-300 bg-cream-50/60 px-3 py-2 xl:py-1">
       <span className="font-display text-[10px] font-bold tracking-widest uppercase text-navy-700 shrink-0 inline-flex items-center gap-1.5">
         <StarIcon size={12} className="text-softball-red-500" />
         Sets

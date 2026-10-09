@@ -136,7 +136,10 @@ export function LineupEditor({
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={entries.map(e => e.player.id)} strategy={verticalListSortingStrategy}>
-            <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-sm overflow-hidden divide-y divide-gray-100">
+            {/* Der Bogen ist das Objekt, das hier bearbeitet wird — er bekommt als einziges
+                 Papier-Panel den vollen Card-Schatten und eine rote Kante, damit er sich
+                 auf dem Desktop klar von den Referenz-Panels ringsum abhebt. */}
+            <div className="bg-cream-50 border border-cream-300 border-l-[3px] border-l-softball-red-600 rounded-2xl shadow-card overflow-hidden divide-y divide-cream-200">
               {entries.map((entry, index) => {
                 const isFieldPos = !!entry.position && FIELD_POS_SET.has(entry.position)
 
