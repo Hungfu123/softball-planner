@@ -1,5 +1,6 @@
 package com.softball.adapter.out.persistence.entity;
 
+import com.softball.domain.model.PositionSlot;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
@@ -27,6 +28,18 @@ public class PlayerEntity {
     @Column(nullable = false)
     private boolean archived = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "primary_position")
+    private PositionSlot primaryPosition;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "secondary_position")
+    private PositionSlot secondaryPosition;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tertiary_position")
+    private PositionSlot tertiaryPosition;
+
     public PlayerEntity() {}
 
     public PlayerEntity(String name) {
@@ -45,4 +58,11 @@ public class PlayerEntity {
     public void setWhatsappName(String whatsappName) { this.whatsappName = whatsappName; }
     public boolean isArchived() { return archived; }
     public void setArchived(boolean archived) { this.archived = archived; }
+
+    public PositionSlot getPrimaryPosition() { return primaryPosition; }
+    public void setPrimaryPosition(PositionSlot primaryPosition) { this.primaryPosition = primaryPosition; }
+    public PositionSlot getSecondaryPosition() { return secondaryPosition; }
+    public void setSecondaryPosition(PositionSlot secondaryPosition) { this.secondaryPosition = secondaryPosition; }
+    public PositionSlot getTertiaryPosition() { return tertiaryPosition; }
+    public void setTertiaryPosition(PositionSlot tertiaryPosition) { this.tertiaryPosition = tertiaryPosition; }
 }

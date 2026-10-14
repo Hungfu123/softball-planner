@@ -5,6 +5,77 @@ export interface Player {
   defaultBattingOrder: number | null
   whatsappName?: string | null
   archived?: boolean
+  primaryPosition?: PositionSlot | null
+  secondaryPosition?: PositionSlot | null
+  tertiaryPosition?: PositionSlot | null
+}
+
+/**
+ * Positions-Profil: wo ein Spieler steht. Eigene Werte-Liste, nicht die Lineup-Position —
+ * EH gibt es hier nicht, dafür die Sammelwerte IF, OF und IF_OF.
+ * P und C stehen immer für sich und sind in keiner Gruppe enthalten.
+ */
+export type PositionSlot =
+  | 'P' | 'C' | 'FIRST_BASE' | 'SECOND_BASE' | 'THIRD_BASE' | 'SS' | 'LF' | 'CF' | 'RF'
+  | 'IF' | 'OF' | 'IF_OF'
+
+export const POSITION_SLOT_LABELS: Record<PositionSlot, string> = {
+  P: 'P', C: 'C', FIRST_BASE: '1B', SECOND_BASE: '2B', THIRD_BASE: '3B',
+  SS: 'SS', LF: 'LF', CF: 'CF', RF: 'RF',
+  IF: 'IF', OF: 'OF', IF_OF: 'IF/OF',
+}
+
+/** Langform für Selects und Tooltips — die Kürzel allein sagen Neuen nichts. */
+export const POSITION_SLOT_DESCRIPTIONS: Record<PositionSlot, string> = {
+  P: 'Pitcher', C: 'Catcher', FIRST_BASE: 'First Base', SECOND_BASE: 'Second Base',
+  THIRD_BASE: 'Third Base', SS: 'Shortstop', LF: 'Left Field', CF: 'Center Field', RF: 'Right Field',
+  IF: 'überall im Infield', OF: 'überall im Outfield', IF_OF: 'überall im Feld',
+}
+
+/** Reihenfolge in den Auswahl-Listen: erst die Posten, dann die Sammelwerte. */
+export const POSITION_SLOT_ORDER: PositionSlot[] = [
+  'P', 'C', 'FIRST_BASE', 'SECOND_BASE', 'THIRD_BASE', 'SS', 'LF', 'CF', 'RF', 'IF', 'OF', 'IF_OF',
+]
+
+/** Ein Spiel in der Form-Kurve eines Spielers (GET /api/players/{id}/batting-timeline). */
+export interface PlayerFormPoint {
+  gameId: number
+  date: string | null
+  opponent: string | null
+  seasonId: number | null
+  seasonName: string | null
+  year: number | null
+  plateAppearances: number
+  atBats: number
+  hits: number
+  walks: number
+  strikeouts: number
+  runsBattedIn: number
+  totalBases: number
+  /** H + BB + HBP dieses Spiels — Grundlage der OBP über mehrere Spiele. */
+  timesOnBase: number
+  stolenBases: number
+  caughtStealing: number
+  rollingAverage: number
+  rollingOnBase: number
+  rollingSlugging: number
+  rollingOps: number
+  rollingPlateAppearances: number
+  /** Fenster noch nicht voll — Kurve wird gestrichelt gezeichnet. */
+  provisional: boolean
+}
+
+/** Einsatz-Profil: wie verlässlich jemand da ist und wo er schlägt. */
+export interface PlayerUsage {
+  /** Vergangene Spieltage insgesamt — zukünftige zählen nicht mit. */
+  gameDaysTotal: number
+  gameDaysAvailable: number
+  gameDaysPlayed: number
+  /** Nicht abgesagte Trainings bis heute. */
+  trainingsTotal: number
+  trainingsAttended: number
+  averageBattingOrder: number | null
+  battingOrderCounts: Record<string, number>
 }
 
 export interface Season {

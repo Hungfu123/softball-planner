@@ -2,6 +2,7 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { Dashboard } from '@/components/dashboard/Dashboard'
 import { PlayerManager } from '@/components/players/PlayerManager'
+import { PlayerProfilePage } from '@/components/players/PlayerProfilePage'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
 import { LineupSheet } from '@/components/export/LineupSheet'
 import { RequireAuth } from '@/components/auth/AuthProvider'
@@ -38,6 +39,7 @@ export const routes: RouteObject[] = [
       { path: '/kalender', element: <LazyCalendar />, errorElement: <ChunkErrorBoundary /> },
       { path: '/training', element: <LazyTrainingToday />, errorElement: <ChunkErrorBoundary /> },
       { path: '/players', element: <PlayerManager />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/players/:id', element: <PlayerProfilePage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/gameday/:id', element: <GameDayPlanner />, errorElement: <ChunkErrorBoundary /> },
       { path: '/stats', element: <LazyStats />, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen', element: <LazySpielbogenList />, errorElement: <ChunkErrorBoundary /> },

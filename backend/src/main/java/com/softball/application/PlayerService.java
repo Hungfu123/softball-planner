@@ -1,6 +1,8 @@
 package com.softball.application;
 
 import com.softball.domain.model.Player;
+import com.softball.domain.model.PositionSlot;
+import com.softball.domain.service.PositionProfileValidator;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import com.softball.domain.port.out.AtBatRepository;
@@ -20,6 +22,8 @@ import java.util.List;
 public class PlayerService {
 
     private static final Logger log = LoggerFactory.getLogger(PlayerService.class);
+
+    private static final PositionProfileValidator POSITION_VALIDATOR = new PositionProfileValidator();
 
     private final PlayerRepository playerRepository;
     private final AtBatRepository atBatRepository;
@@ -71,6 +75,27 @@ public class PlayerService {
             player.setRegular(regular);
         }
         return playerRepository.save(player);
+    }
+
+    /**
+     * Setzt das Positions-Profil (Primär/Sekundär/Tertiär). null in einem Slot löscht ihn.
+     * Reine Stammdaten — die Lineup-Vorschläge lesen das Profil (noch) nicht.
+     */
+    public Player updatePositionProfile(final Long id,
+                                        final PositionSlot primary,
+                                        final PositionSlot secondary,
+                                        final PositionSlot tertiary) {
+        final List<String> errors = POSITION_VALIDATOR.validate(primary, secondary, tertiary);
+        if (!errors.isEmpty()) {
+            throw new BusinessValidationException(String.join(", ", errors));
+        }
+        final Player player = findById(id);
+        player.setPrimaryPosition(primary);
+        player.setSecondaryPosition(secondary);
+        player.setTertiaryPosition(tertiary);
+        final Player saved = playerRepository.save(player);
+        log.info("Positions-Profil für Spieler {} gesetzt: {} / {} / {}", id, primary, secondary, tertiary);
+        return saved;
     }
 
     /**

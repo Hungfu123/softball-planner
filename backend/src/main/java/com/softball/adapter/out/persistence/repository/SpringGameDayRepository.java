@@ -34,4 +34,7 @@ public interface SpringGameDayRepository extends JpaRepository<GameDayEntity, Lo
            OR st.player.id = :playerId
         """)
     List<Long> findGameDayIdsByPlayerPlanning(Long playerId);
+
+    @Query("SELECT gd.id FROM GameDayEntity gd JOIN gd.availablePlayers ap WHERE ap.id = :playerId")
+    List<Long> findGameDayIdsByAvailablePlayer(Long playerId);
 }

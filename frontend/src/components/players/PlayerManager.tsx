@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   DndContext,
   closestCenter,
@@ -16,11 +16,13 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { usePlayers } from '@/hooks/usePlayers'
+import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
-import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle, ArchiveIcon, ArchiveRestoreIcon } from '@/icons'
-import { EmptyState, ConfirmModal, Button } from '@/components/shared'
+import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle, ArchiveIcon, ArchiveRestoreIcon, ChevronRight } from '@/icons'
+import { EmptyState, ConfirmModal, Button, ResponsiveSheet } from '@/components/shared'
 import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
 import { WhatsappVotersTab } from './WhatsappVotersTab'
+import { PositionBadges } from './PositionBadges'
 import type { Player } from '@/types'
 
 function SortablePlayerRow({ player, index }: { player: Player; index: number }) {
@@ -52,11 +54,28 @@ function SortablePlayerRow({ player, index }: { player: Player; index: number })
       <span className="text-sm font-semibold text-navy-500 tabular-nums w-6 text-center shrink-0">
         {index + 1}
       </span>
-      <span className="flex-1 text-navy-900 font-medium">{player.name}</span>
+      <span className="flex-1 min-w-0 sm:flex-none sm:w-56 truncate text-navy-900 font-medium">{player.name}</span>
+      {/* Gleiche Spaltenbreite wie im Kader — die Chips sollen auch hier untereinander stehen. */}
+      <span className="hidden sm:flex w-44 shrink-0 items-center">
+        <PositionBadges player={player} size="sm" />
+      </span>
+      <span className="sm:hidden shrink-0">
+        <PositionBadges player={player} size="sm" />
+      </span>
+      <span className="hidden sm:block flex-1" aria-hidden="true" />
     </div>
   )
 }
 
+/**
+ * Kader — eine Liste statt dreier Reiter.
+ *
+ * Die Schlagreihenfolge war früher ein eigener Tab, obwohl sie dieselben Spieler
+ * in anderer Sortierung zeigt: jetzt ein Modus über derselben Liste. Die
+ * WhatsApp-Zuordnung war der dritte Tab, betrifft aber nur Namen aus der Umfrage
+ * — sie liegt jetzt in einem Sheet hinter einem Knopf. Was bleibt, ist der Kader:
+ * eine Zeile je Spieler, Positionen sichtbar, Antippen öffnet das Profil.
+ */
 export function PlayerManager() {
   const { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder } = usePlayers(true)
   const toast = useToastContext()
@@ -64,18 +83,41 @@ export function PlayerManager() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editName, setEditName] = useState('')
   const [deletePlayerId, setDeletePlayerId] = useState<number | null>(null)
-  const [searchParams] = useSearchParams()
-  const [tab, setTab] = useState<'spieler' | 'batting' | 'whatsapp'>(() => {
-    const t = searchParams.get('tab')
-    return t === 'whatsapp' || t === 'batting' ? t : 'spieler'
-  })
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [orderMode, setOrderMode] = useState(() => searchParams.get('tab') === 'batting')
+  const [whatsappOpen, setWhatsappOpen] = useState(() => searchParams.get('tab') === 'whatsapp')
   const [search, setSearch] = useState('')
+  // Spielzahl je Spieler: gibt jeder Zeile einen Grund außer dem Namen und beantwortet
+  // die Frage, die man im Kader am häufigsten hat — wer ist überhaupt regelmäßig dabei.
+  const [gamesByPlayer, setGamesByPlayer] = useState<Map<number, number>>(new Map())
 
-  // Deep-Link Support (z.B. von Training-Badge "unbekannte Wähler" → ?tab=whatsapp)
+  useEffect(() => {
+    let cancelled = false
+    api.getAllTimeStats()
+      .then(stats => {
+        if (cancelled) return
+        setGamesByPlayer(new Map(stats.map(s => [s.playerId, s.totalGames])))
+      })
+      .catch(() => { /* Spielzahl ist Beiwerk — ohne sie bleibt die Liste benutzbar */ })
+    return () => { cancelled = true }
+  }, [])
+
+  // Deep-Link bleibt bestehen (Training-Badge "unbekannte Wähler" → ?tab=whatsapp),
+  // führt aber jetzt ins Sheet statt in einen Reiter.
   useEffect(() => {
     const t = searchParams.get('tab')
-    if (t === 'spieler' || t === 'batting' || t === 'whatsapp') setTab(t)
+    if (t === 'whatsapp') setWhatsappOpen(true)
+    if (t === 'batting') setOrderMode(true)
   }, [searchParams])
+
+  const closeWhatsapp = () => {
+    setWhatsappOpen(false)
+    if (searchParams.get('tab') === 'whatsapp') {
+      const next = new URLSearchParams(searchParams)
+      next.delete('tab')
+      setSearchParams(next, { replace: true })
+    }
+  }
 
   // Local batting-order state (für Save/Cancel-Pattern)
   const [localBattingOrder, setLocalBattingOrder] = useState<number[]>([])
@@ -85,8 +127,6 @@ export function PlayerManager() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
   )
-
-  const orderMode = tab === 'batting'
 
   // Archivierte Spieler: nicht in Batting-Reihenfolge, eigener Abschnitt unten
   const activePlayers = useMemo(() => players.filter(p => !p.archived), [players])
@@ -105,10 +145,10 @@ export function PlayerManager() {
       .map(p => p.id)
   }, [activePlayers])
 
-  // Lokale Order initialisieren wenn Tab gewechselt oder Server-Daten neu
+  // Lokale Order initialisieren wenn Modus gewechselt oder Server-Daten neu
   useEffect(() => {
     setLocalBattingOrder(serverBattingOrder)
-  }, [serverBattingOrder, tab])
+  }, [serverBattingOrder, orderMode])
 
   const orderedBattingPlayers = useMemo(() => {
     const map = new Map(players.map(p => [p.id, p]))
@@ -221,44 +261,25 @@ export function PlayerManager() {
   return (
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
-        <div className="flex items-baseline justify-between">
+        <div className="flex items-end justify-between gap-3 flex-wrap">
           <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
-            Spieler {players.length > 0 && <span className="text-navy-500 font-bold">({activePlayers.length})</span>}
+            Kader {players.length > 0 && <span className="text-navy-500 font-bold">({activePlayers.length})</span>}
           </h1>
+          <div className="flex gap-1.5">
+            <ModeButton active={orderMode} onClick={() => setOrderMode(v => !v)}>
+              Schlagreihenfolge
+            </ModeButton>
+            <ModeButton active={whatsappOpen} onClick={() => setWhatsappOpen(true)}>
+              WhatsApp-Namen
+            </ModeButton>
+          </div>
         </div>
 
-        {/* Tab Bar */}
-        <div className="inline-flex bg-cream-200 rounded-lg p-0.5 w-full" role="tablist">
-          <button
-            role="tab"
-            aria-selected={tab === 'spieler'}
-            onClick={() => { setTab('spieler'); setEditingId(null) }}
-            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors whitespace-nowrap ${tab === 'spieler' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
-          >
-            Spieler
-          </button>
-          <button
-            role="tab"
-            aria-selected={tab === 'batting'}
-            onClick={() => { setTab('batting'); setEditingId(null) }}
-            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors whitespace-nowrap ${tab === 'batting' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
-          >
-            <span className="sm:hidden">Reihenfolge</span>
-            <span className="hidden sm:inline">Batting-Reihenfolge</span>
-          </button>
-          <button
-            role="tab"
-            aria-selected={tab === 'whatsapp'}
-            onClick={() => { setTab('whatsapp'); setEditingId(null) }}
-            className={`flex-1 px-3 py-2 text-sm rounded-md font-bold uppercase tracking-wide cursor-pointer transition-colors whitespace-nowrap ${tab === 'whatsapp' ? 'bg-navy-800 text-white' : 'text-navy-700'}`}
-          >
-            WhatsApp
-          </button>
-        </div>
-
-        {tab === 'whatsapp' && <WhatsappVotersTab />}
-
-        {tab !== 'whatsapp' && !orderMode && (
+        {orderMode ? (
+          <p className="text-xs text-gray-500">
+            Ziehen ändert die Reihenfolge, in der neue Lineups vorbelegt werden.
+          </p>
+        ) : (
           <div className="space-y-3">
             <div className="flex gap-2">
               <input
@@ -289,7 +310,7 @@ export function PlayerManager() {
           </div>
         )}
 
-        {tab === 'whatsapp' ? null : activePlayers.length === 0 && archivedPlayers.length === 0 ? (
+        {activePlayers.length === 0 && archivedPlayers.length === 0 ? (
           <EmptyState
             title="Noch keine Spieler angelegt"
             description="Leg los!"
@@ -307,32 +328,81 @@ export function PlayerManager() {
           </DndContext>
         ) : (
           <div className="bg-white border border-cream-300 rounded-2xl overflow-hidden">
+            {/* Spaltenköpfe statt einer erklärenden Zeile: sie beschriften die Spalte,
+                in der die Chips tatsächlich stehen — sonst sind drei Kürzel nur drei
+                Kürzel und die Rangfolge steht nirgends. */}
+            <div className="flex items-stretch bg-cream-100 border-b border-cream-300 text-[11px] text-gray-500">
+              <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-2">
+                <span className="flex-1 min-w-0 sm:flex-none sm:w-56">Spieler</span>
+                <span className="hidden sm:block w-44 shrink-0">
+                  Positionen <span className="text-gray-400">1. · 2. · 3. Wahl</span>
+                </span>
+                <span className="hidden sm:block flex-1" aria-hidden="true" />
+                <span className="w-14 text-right shrink-0">Spiele</span>
+                <span className="w-4 shrink-0" aria-hidden="true" />
+              </div>
+              <div className="w-24 sm:w-28 shrink-0" aria-hidden="true" />
+            </div>
             {filteredPlayers.length === 0 ? (
               <p className="text-center text-sm text-navy-400 italic py-6">Keine Treffer.</p>
             ) : (
               filteredPlayers.map(p => (
-                <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 group">
+                <div key={p.id} className="flex items-stretch border-b border-cream-200 last:border-b-0 group transition-colors hover:bg-cream-100">
                   {editingId === p.id ? (
-                    <input
-                      value={editName}
-                      onChange={e => setEditName(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') handleUpdate(p.id)
-                        if (e.key === 'Escape') setEditingId(null)
-                      }}
-                      onBlur={() => handleUpdate(p.id)}
-                      className="flex-1 border border-navy-600 rounded-lg px-3 py-1.5 text-sm ring-2 ring-navy-100 outline-none text-navy-900"
-                      autoFocus
-                    />
+                    <div className="flex-1 px-4 py-3">
+                      <input
+                        value={editName}
+                        onChange={e => setEditName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleUpdate(p.id)
+                          if (e.key === 'Escape') setEditingId(null)
+                        }}
+                        onBlur={() => handleUpdate(p.id)}
+                        className="w-full border border-navy-600 rounded-lg px-3 py-1.5 text-sm ring-2 ring-navy-100 outline-none text-navy-900"
+                        autoFocus
+                      />
+                    </div>
                   ) : (
-                    <span className="flex-1 text-navy-900 font-medium">{p.name}</span>
+                    <Link
+                      to={`/players/${p.id}`}
+                      className="flex-1 min-w-0 flex items-center gap-3 px-4 py-3 outline-none focus-visible:bg-cream-100 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-navy-600"
+                    >
+                      <span className="flex-1 min-w-0 sm:flex-none sm:w-56">
+                        <span className="block truncate text-navy-900 font-medium">{p.name}</span>
+                        {/* Am Handy ist für eine eigene Spalte kein Platz — dort rücken die
+                            Chips unter den Namen statt ihn zu verdrängen. */}
+                        <span className="sm:hidden mt-1 block">
+                          <PositionBadges player={p} size="sm" />
+                        </span>
+                      </span>
+                      <span className="hidden sm:flex w-44 shrink-0 items-center">
+                        {p.primaryPosition
+                          ? <PositionBadges player={p} size="sm" />
+                          : <span className="text-gray-300">—</span>}
+                      </span>
+                      <span className="hidden sm:block flex-1" aria-hidden="true" />
+                      {/* Striche statt Lücken: eine Zahlenspalte liest sich nur, wenn in
+                          jeder Zeile etwas steht. */}
+                      <span
+                        className="w-14 shrink-0 text-right text-xs text-gray-400 tabular-nums"
+                        title={gamesByPlayer.has(p.id) ? `${formatGames(gamesByPlayer.get(p.id) ?? 0)} Spiele` : 'Noch kein Spiel'}
+                      >
+                        {gamesByPlayer.has(p.id) ? formatGames(gamesByPlayer.get(p.id) ?? 0) : '–'}
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        className="w-4 shrink-0 text-gray-300 transition-transform duration-150 group-hover:translate-x-0.5"
+                      />
+                    </Link>
                   )}
-                  <div className="actions-reveal flex gap-1">
+                  {/* Feste Breite, auch wenn die Knöpfe unsichtbar sind: sonst springt die
+                      ganze Zeile beim Überfahren. */}
+                  <div className="actions-reveal flex w-24 sm:w-28 shrink-0 items-center justify-end gap-0.5 sm:gap-1 pr-2">
                     <button
                       onClick={() => { setEditingId(p.id); setEditName(p.name) }}
-                      aria-label={`${p.name} bearbeiten`}
-                      className="p-2.5 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
-                      title="Bearbeiten"
+                      aria-label={`${p.name} umbenennen`}
+                      className="p-2 rounded-lg text-gray-400 hover:text-navy-800 hover:bg-navy-50 cursor-pointer"
+                      title="Umbenennen"
                     >
                       <Pencil size={16} />
                     </button>
@@ -360,7 +430,7 @@ export function PlayerManager() {
         )}
 
         {/* Archiv — ausgeschiedene Spieler, reaktivierbar */}
-        {!orderMode && tab !== 'whatsapp' && archivedPlayers.length > 0 && (
+        {!orderMode && archivedPlayers.length > 0 && (
           <div className="bg-cream-100/60 border border-cream-300 rounded-2xl overflow-hidden">
             <div className="px-4 py-2.5 bg-cream-200/70 flex items-center gap-2">
               <ArchiveIcon size={14} className="text-navy-500" />
@@ -373,7 +443,9 @@ export function PlayerManager() {
             </div>
             {archivedPlayers.map(p => (
               <div key={p.id} className="flex items-center gap-3 px-4 py-3 border-b border-cream-200 last:border-b-0 group bg-white/50">
-                <span className="flex-1 text-navy-900/70 font-medium italic">{p.name}</span>
+                <Link to={`/players/${p.id}`} className="flex-1 min-w-0 text-navy-900/70 font-medium italic truncate hover:text-navy-900">
+                  {p.name}
+                </Link>
                 <div className="flex gap-1">
                   <button
                     onClick={() => handleUnarchive(p.id)}
@@ -419,6 +491,15 @@ export function PlayerManager() {
           </div>
         )}
 
+        <ResponsiveSheet
+          open={whatsappOpen}
+          onClose={closeWhatsapp}
+          title="WhatsApp-Namen zuordnen"
+          maxWidth="xl"
+        >
+          <WhatsappVotersTab />
+        </ResponsiveSheet>
+
         {deletePlayerId && (
           <ConfirmModal
             title="Spieler löschen"
@@ -429,5 +510,27 @@ export function PlayerManager() {
         )}
       </div>
     </div>
+  )
+}
+
+/** Spielzahlen sind gewichtet (EH und DH zählen halb) — halbe Spiele nicht als .0 zeigen. */
+function formatGames(total: number): string {
+  const rounded = Math.round(total * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+}
+
+/** Kopfzeilen-Knopf für die beiden Nebenaufgaben des Kaders. */
+function ModeButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`font-display text-[11px] font-bold uppercase tracking-widest rounded-full px-3.5 py-2 cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
+        active ? 'bg-navy-800 text-white' : 'border border-cream-300 text-gray-600 hover:bg-navy-800 hover:text-white hover:border-navy-800'
+      }`}
+    >
+      {children}
+    </button>
   )
 }

@@ -43,6 +43,13 @@
 - Farbcodierte Badges (rot=0, amber=1, blau=2, grün=3+)
 - Bench-Anzeige (verfügbar aber nicht aufgestellt)
 
+### Spielerprofil
+- Eigene Seite je Spieler (`/players/:id`): Kennzahlen, Form-Kurve, Positions-Profil
+- Form-Kurve = gleitender Schnitt über die letzten 20 Schlagversuche (AVG + OBP)
+- Positions-Profil: Erste/Zweite/Dritte Wahl, Einzelposten oder Sammelwerte (IF, OF, IF/OF)
+- Erstbefüllung aus den tatsächlich gespielten Lineups
+- Kader ohne Reiter: Schlagreihenfolge als Modus, WhatsApp-Zuordnung im Sheet
+
 ### Statistiken
 - Saison-Stats: Spiele pro Spieler, Positionsverteilung
 - Spieltag-Stats: Spielanzahl + Positionen pro Spieler

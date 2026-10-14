@@ -6,6 +6,7 @@ import java.util.List;
 public interface TrainingAttendanceRepository {
     List<TrainingAttendance> findByTrainingId(Long trainingId);
     List<TrainingAttendance> findByTrainingIdIn(List<Long> trainingIds);
+    List<TrainingAttendance> findByPlayerId(Long playerId);
     void deleteByTrainingId(Long trainingId);
     void deleteByPlayerId(Long playerId);
     void deleteByTrainingIds(List<Long> trainingIds);

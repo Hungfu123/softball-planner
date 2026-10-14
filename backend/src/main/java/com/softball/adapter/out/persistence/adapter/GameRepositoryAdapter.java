@@ -84,6 +84,13 @@ public class GameRepositoryAdapter implements GameRepository {
     }
 
     @Override
+    public List<Game> findAllByIdWithDetails(final List<Long> gameIds) {
+        if (gameIds == null || gameIds.isEmpty()) return List.of();
+        return repo.findAllByIdWithDetails(gameIds).stream()
+            .map(mapper::toDomain).toList();
+    }
+
+    @Override
     public List<Game> findBySeasonIdWithScores(final Long seasonId) {
         return repo.findBySeasonIdWithScores(seasonId).stream()
             .map(mapper::toDomain).toList();

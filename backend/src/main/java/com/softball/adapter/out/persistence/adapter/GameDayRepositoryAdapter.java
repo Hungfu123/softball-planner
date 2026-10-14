@@ -50,6 +50,11 @@ public class GameDayRepositoryAdapter implements GameDayRepository {
     }
 
     @Override
+    public List<Long> findGameDayIdsByAvailablePlayer(final Long playerId) {
+        return repo.findGameDayIdsByAvailablePlayer(playerId);
+    }
+
+    @Override
     public Optional<GameDay> findById(final Long id) {
         return loadFullOptional(id);
     }

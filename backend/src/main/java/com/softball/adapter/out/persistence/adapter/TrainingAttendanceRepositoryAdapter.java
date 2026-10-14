@@ -42,6 +42,11 @@ public class TrainingAttendanceRepositoryAdapter implements TrainingAttendanceRe
     }
 
     @Override
+    public List<TrainingAttendance> findByPlayerId(final Long playerId) {
+        return repo.findByPlayerId(playerId).stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
     @Transactional
     public void deleteByTrainingId(final Long trainingId) {
         repo.deleteByTrainingId(trainingId);

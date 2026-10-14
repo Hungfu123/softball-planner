@@ -108,6 +108,14 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
 - **Lineup constraints:** max 10 entries per game, batting order must be sequential 1..N, field positions unique (EH may repeat, position may be null = batting only). Batting players can't also be base coach in the same game — but a **DH-Host** (fielder who gave batting to a DH, so he doesn't bat) **may** be base coach. The **DH-Batter** bats and may **not** coach. All players must be in the GameDay's `availablePlayers`.
 - **Position weighting in stats:** field position = 1.0 game, EH = 0.5, DH-batter = 0.5, null position = 1.0 (counted but not in `positionCounts`).
 - **Cascade on availability change** (`AvailabilityService.setAvailablePlayers`): removing a player auto-cleans them from all games of that gameday — lineup entries deleted, dhBatterPlayer nulled, staff entries deleted, batting orders renumbered. The WhatsApp game-day poll (`GameDayVoteSyncService`) never writes `availablePlayers` itself — it only ever triggers this cascade indirectly, through the explicit preview-and-apply flow (`POST /gamedays/{id}/poll-votes/apply`), never automatically on vote fetch.
+- **Positions-Profil** (`PositionSlot` am Player, V60/V61): drei geordnete Slots (Primär/Sekundär/Tertiär). Eigenes Enum neben `Position` — kein EH, dafür die Gruppen IF, OF, IF_OF; **P und C stecken in keiner Gruppe**. Keine Lücken, kein Slot doppelt, Überlappung (SS + IF) ausdrücklich erlaubt. Die Lineup-Vorschläge lesen es noch nicht. Details: `docs/SPIELERPROFIL.md`.
+- **Einsatz-Profil** (`GET /api/players/{id}/usage`): Zusagen, Aufstellungen, Training und
+  Schlagplatz. Zählt nur Vergangenes und **erst ab dem ersten Auftauchen** des Spielers —
+  wer im Mai dazukam, hat den April nicht versäumt. Einheit sind **Spieltage**, nicht die
+  gewichteten Spiele der Statistik (EH/DH = 0,5). `?year=` / `?seasonId=` (`UsageScope`)
+  beschränken auf ein Kalenderjahr oder eine Saison — der Zeitraum-Filter des Profils
+  schaltet Teamvergleich, Positionen und Einsatz mit um. **Trainings gehören zu keiner
+  Saison** und bleiben im Saison-Zuschnitt leer.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.
@@ -121,6 +129,7 @@ Bei Arbeit an einem konkreten Feature die jeweilige Doc lesen — werden NICHT a
 - **Old Scoring / Legacy ScoringPage:** `docs/SCORING-LEGACY.md` — Game-basiertes Live-Scoring (parallel zu Spielbogen)
 - **Lineup Editor:** `docs/LINEUP.md` — DH-Annotation (kein eigener Entry!), Validation, Swap, Drag-Drop
 - **GameDay + Availability:** `docs/GAMEDAY.md` — Cascade-Regeln bei Player-Removal (destruktiv!)
+- **Spielerprofil & Positions-Profil:** `docs/SPIELERPROFIL.md` — `/players/:id`, Form-Kurve (gleitender Schnitt), PositionSlot-Enum (IF/OF/IF_OF, P und C separat), Backfill V61, Kader ohne Reiter
 - **Stats / Batting-Statistics:** `docs/STATS.md` — Position-Weighting (DH=0.5, EH=0.5), Berechnung AVG/OBP/SLG/OPS
 - **Standings / Liga-Tabelle:** `docs/STANDINGS.md` — zwei Quellen (eigene Games + LeagueResult), ownTeam-Regel
 - **Trainingsplan-Generator:** `docs/04-KI-TRAININGSPLAN.md` + `docs/trainingsplan-algorithmus.md`

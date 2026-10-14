@@ -11,6 +11,8 @@ public interface GameRepository {
     List<Game> findByGameDayIdOrderByGameNumberAsc(Long gameDayId);
     List<Game> findByOpponentTeamId(Long teamId);
     List<Game> findAllWithOpponent();
+    /** Spiele mit Spieltag, Saison und (optionalem) Gegner — für Auswertungen, die nur IDs in der Hand haben. */
+    List<Game> findAllByIdWithDetails(List<Long> gameIds);
     List<Game> findBySeasonIdWithScores(Long seasonId);
     void flush();
 }

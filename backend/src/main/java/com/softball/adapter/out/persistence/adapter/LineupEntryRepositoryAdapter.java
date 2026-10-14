@@ -44,6 +44,26 @@ public class LineupEntryRepositoryAdapter implements LineupEntryRepository {
     }
 
     @Override
+    public List<Long> findGameDayIdsByPlayerId(final Long playerId) {
+        return repo.findGameDayIdsByPlayerId(playerId);
+    }
+
+    @Override
+    public List<Integer> findBattingOrdersByPlayerId(final Long playerId) {
+        return repo.findBattingOrdersByPlayerId(playerId);
+    }
+
+    @Override
+    public List<Integer> findBattingOrdersByPlayerIdAndYear(final Long playerId, final int year) {
+        return repo.findBattingOrdersByPlayerIdAndYear(playerId, year);
+    }
+
+    @Override
+    public List<Integer> findBattingOrdersByPlayerIdAndSeason(final Long playerId, final long seasonId) {
+        return repo.findBattingOrdersByPlayerIdAndSeason(playerId, seasonId);
+    }
+
+    @Override
     @Transactional
     public void deleteByGameId(final Long gameId) {
         repo.deleteByGameId(gameId);

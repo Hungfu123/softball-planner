@@ -9,6 +9,7 @@ import { CrossBones } from '@/icons'
 import { AnimatePresence, motion } from 'motion/react'
 import { generateGameLogPdf, formatSignedDiff, type SlotComparison } from '@/utils/gameLogPdf'
 import { exportGameLogJson } from '@/utils/gameLogExport'
+import { CHEVRON_DOWN } from '@/components/shared'
 
 /** Emil-Kurve: starker ease-out für Expand — sofortige Reaktion, sanftes Auslaufen. */
 const EASE_OUT = [0.23, 1, 0.32, 1] as const
@@ -27,7 +28,6 @@ const RANGE_LABELS: Record<RangeFilter, string> = {
 }
 
 /** Chevron-Daten-URI für native Selects und Dropdown-Buttons (appearance-none). */
-const CHEVRON_DOWN = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234b5563' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`
 
 /** Ab 4 ausgewerteten Spielen: die Auswahl in eine frühere und eine neuere Hälfte teilen
  *  (logs sind neueste zuerst) — beantwortet „Hat sich die Form je Platz verbessert?".
