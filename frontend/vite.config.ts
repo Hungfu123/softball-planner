@@ -15,8 +15,11 @@ export default defineConfig({
         name: 'Softball Planner',
         short_name: 'Softball',
         description: 'Planungstool für Softball-Teams: Saisons, Spieltage, Lineups, Training.',
-        theme_color: '#172554',
-        background_color: '#ffffff',
+        // Beide Farben identisch zur App: theme_color faerbt die Systemleisten im
+        // Standalone-Modus, background_color den Splash und den Fensterhintergrund.
+        // Mit #ffffff blieb auf Android unten eine weisse Leiste unter dem Cream stehen.
+        theme_color: '#070A2E',
+        background_color: '#FBF6EC',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

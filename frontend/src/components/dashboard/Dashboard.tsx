@@ -268,15 +268,18 @@ export function Dashboard() {
                     auch erreichbar sein wenn kein anstehender Spieltag existiert. */}
                 <div>
                   <div className="flex items-center justify-between px-1 mb-2">
-                    <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
+                    <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2">
+                      <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
                       Anstehend
                     </h2>
                     <button
                       onClick={() => setShowNewGameDay(true)}
-                      className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer"
+                      className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
                     >
                       <PlusCircle size={14} />
-                      Neuer Spieltag
+                      {/* Am Handy lief „Neuer Spieltag" gesperrt ueber den rechten Rand hinaus. */}
+                      <span className="sm:hidden">Spieltag</span>
+                      <span className="hidden sm:inline">Neuer Spieltag</span>
                     </button>
                   </div>
                   {upcoming.length > 0 ? (
@@ -290,7 +293,17 @@ export function Dashboard() {
                       onDelete={id => setDeleteGameDayId(id)}
                     />
                   ) : !heroIsUpcoming && (
-                    <p className="px-1 text-[12px] text-gray-400">Kein anstehender Spieltag geplant.</p>
+                    // Ein leerer Abschnitt ist eine Einladung, kein Befund — aber erst,
+                    // wenn feststeht, dass er leer ist. Waehrend des Ladens waere es geraten.
+                    !gameDaysLoading && (
+                      <button
+                        onClick={() => setShowNewGameDay(true)}
+                        className="w-full rounded-2xl border border-dashed border-cream-300 px-4 py-5 text-center cursor-pointer hover:border-navy-400 hover:bg-cream-50 transition-colors"
+                      >
+                        <span className="block text-sm text-navy-900 font-semibold">Kein Spieltag angesetzt</span>
+                        <span className="block text-xs text-gray-500 mt-0.5">Antippen legt den nächsten an</span>
+                      </button>
+                    )
                   )}
                 </div>
 
@@ -298,7 +311,8 @@ export function Dashboard() {
                 {past.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between px-1 mb-2 mt-1">
-                      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-gray-700">
+                      <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2">
+                        <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
                         Letzte Spieltage
                       </h2>
                     </div>

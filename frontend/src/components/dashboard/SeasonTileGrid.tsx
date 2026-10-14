@@ -53,7 +53,9 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
   const heroBig = 'font-display text-3xl sm:text-4xl md:text-5xl font-extrabold text-navy-900 leading-none'
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+    // Am Handy zwei Spalten, ab lg vier: auf 1280px wurden aus vier Kennzahlen sonst
+    // vier Plakate mit viel Leerraum. Die Strip-Kacheln geben ihr col-span-2 dort auf.
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2.5">
       {/* Row 1 — Wetter (nächster Spieltag) + Liga als halbe Kacheln, wenn Forecast vorliegt.
           Sonst Liga als span-2-Hero (kein leerer halber Slot). Wetter kostet so KEINE Extra-Zeile. */}
       {weather && nextGameDay ? (
@@ -90,21 +92,21 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
                 <div className={subCls}>Bilanz</div>
               </div>
               <div className="text-right shrink-0">
-                <div className="font-display text-base sm:text-lg font-extrabold text-gray-300 leading-none">{playedGames.length}</div>
+                <div className="font-display text-base sm:text-lg font-extrabold text-gray-400 leading-none">{playedGames.length}</div>
                 <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Spiele</div>
               </div>
             </div>
           </button>
         </>
       ) : (
-        <button onClick={onOpenLiga} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
+        <button onClick={onOpenLiga} className={`${tileBase} col-span-2 lg:col-span-1 flex-row lg:flex-col items-center lg:items-stretch gap-3 lg:gap-0`}>
           <Trophy size={22} strokeWidth={2.2} className="text-navy-800 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className={labelCls}>Liga</div>
             <div className={heroBig}>{wins}–{losses}{ties > 0 ? `–${ties}` : ''}</div>
           </div>
           <div className="text-right shrink-0">
-            <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-300 leading-none">{playedGames.length}</div>
+            <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-400 leading-none">{playedGames.length}</div>
             <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Spiele</div>
           </div>
         </button>
@@ -167,7 +169,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
       </button>
 
       {/* Row 3 — ERGEBNISSE Strip (span 2 cols) */}
-      <button onClick={onOpenResults} className={`${tileBase} col-span-2 flex-row items-center gap-3`}>
+      <button onClick={onOpenResults} className={`${tileBase} col-span-2 lg:col-span-1 flex-row lg:flex-col items-center lg:items-stretch gap-3 lg:gap-0`}>
         <CalendarDays size={20} strokeWidth={2.2} className="text-navy-800 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className={labelCls}>Ergebnisse</div>
@@ -184,7 +186,7 @@ export function SeasonTileGrid({ gameDays, battingStats, weather, nextGameDay, o
         </div>
         {recentResults.length > 0 && (
           <div className="text-right shrink-0">
-            <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-300 leading-none">{recentResults.length}</div>
+            <div className="font-display text-2xl sm:text-3xl font-extrabold text-gray-400 leading-none">{recentResults.length}</div>
             <div className={`${labelCls} text-[8px] sm:text-[9px]`}>Letzte</div>
           </div>
         )}

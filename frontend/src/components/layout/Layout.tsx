@@ -79,7 +79,7 @@ export function Layout() {
   return (
     <ToastCtx.Provider value={toast}>
       <div className="min-h-screen bg-cream-100">
-        <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600">
+        <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600 safe-top">
           <div className={`${shell} h-14 flex items-center gap-3`}>
             {isSubPage && (
               <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg shrink-0" aria-label="Zurück">
@@ -148,7 +148,7 @@ export function Layout() {
 
         <WhatsappStatusBanner />
 
-        <main className={`${shell} pb-6 xl:pb-2 pt-2 sm:pt-4`}>
+        <main className={`${shell} pb-6 xl:pb-2 pt-2 sm:pt-4 safe-bottom`}>
           <Outlet />
         </main>
 
