@@ -1,9 +1,14 @@
 package com.softball.adapter.in.web;
 
 import com.softball.adapter.dto.CreatePlayerRequest;
+import com.softball.adapter.dto.PlayerFormPointResponse;
 import com.softball.adapter.dto.PlayerResponse;
+import com.softball.adapter.dto.PlayerUsageResponse;
 import com.softball.adapter.dto.SetWhatsappNameRequest;
 import com.softball.adapter.dto.UpdatePlayerRequest;
+import com.softball.adapter.dto.UpdatePositionProfileRequest;
+import com.softball.application.PlayerProfileService;
+import com.softball.domain.model.UsageScope;
 import com.softball.application.PlayerService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -16,14 +21,39 @@ import java.util.List;
 public class PlayerController {
 
     private final PlayerService playerService;
+    private final PlayerProfileService playerProfileService;
 
-    public PlayerController(final PlayerService playerService) {
+    public PlayerController(final PlayerService playerService,
+                            final PlayerProfileService playerProfileService) {
         this.playerService = playerService;
+        this.playerProfileService = playerProfileService;
     }
 
     @GetMapping
     public List<PlayerResponse> getAll(@RequestParam(name = "includeArchived", required = false, defaultValue = "false") final boolean includeArchived) {
         return playerService.findAll(includeArchived).stream().map(PlayerResponse::from).toList();
+    }
+
+    @GetMapping("/{id}")
+    public PlayerResponse getOne(@PathVariable final Long id) {
+        return PlayerResponse.from(playerService.findById(id));
+    }
+
+    /** Form-Kurve des Spielers: ein Punkt je Spiel, ältestes zuerst. */
+    @GetMapping("/{id}/batting-timeline")
+    public List<PlayerFormPointResponse> getBattingTimeline(@PathVariable final Long id) {
+        return playerProfileService.getFormTimeline(id).stream().map(PlayerFormPointResponse::from).toList();
+    }
+
+    /** Einsatz-Profil: Zusagen, Aufstellungen, Training-Anwesenheit, Schlagplatz. */
+    @GetMapping("/{id}/usage")
+    public PlayerUsageResponse getUsage(@PathVariable final Long id,
+                                        @RequestParam(name = "year", required = false) final Integer year,
+                                        @RequestParam(name = "seasonId", required = false) final Long seasonId) {
+        final UsageScope scope = seasonId != null ? UsageScope.ofSeason(seasonId)
+            : year != null ? UsageScope.ofYear(year)
+            : UsageScope.all();
+        return PlayerUsageResponse.from(playerProfileService.getUsage(id, scope));
     }
 
     @PostMapping
@@ -35,6 +65,13 @@ public class PlayerController {
     @PutMapping("/{id}")
     public PlayerResponse update(@PathVariable final Long id, @Valid @RequestBody final UpdatePlayerRequest request) {
         return PlayerResponse.from(playerService.update(id, request.name(), request.regular()));
+    }
+
+    @PutMapping("/{id}/positions")
+    public PlayerResponse updatePositions(@PathVariable final Long id,
+                                          @RequestBody final UpdatePositionProfileRequest request) {
+        return PlayerResponse.from(playerService.updatePositionProfile(
+            id, request.primary(), request.secondary(), request.tertiary()));
     }
 
     @PutMapping("/{id}/archive")

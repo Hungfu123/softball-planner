@@ -22,6 +22,16 @@ public interface SpringAtBatRepository extends JpaRepository<AtBatEntity, Long> 
     List<AtBatEntity> findByYear(int year);
 
 
+    @Query("""
+        SELECT ab FROM AtBatEntity ab
+        JOIN FETCH ab.batter
+        JOIN FETCH ab.game g
+        JOIN FETCH g.gameDay gd
+        WHERE ab.batter.id = :playerId
+        ORDER BY gd.date ASC, g.gameNumber ASC, ab.sequence ASC
+        """)
+    List<AtBatEntity> findByBatterIdOrderByGameAndSequence(Long playerId);
+
     @Query("SELECT ab FROM AtBatEntity ab JOIN FETCH ab.batter")
     List<AtBatEntity> findAllWithBatter();
 

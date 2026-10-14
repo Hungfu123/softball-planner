@@ -56,6 +56,11 @@ public class AtBatRepositoryAdapter implements AtBatRepository {
         return repo.findByYear(year).stream().map(mapper::toDomain).toList();
     }
 
+    @Override
+    public List<AtBat> findByBatterIdOrderByGameAndSequence(final Long playerId) {
+        return repo.findByBatterIdOrderByGameAndSequence(playerId).stream().map(mapper::toDomain).toList();
+    }
+
 
     @Override
     public List<AtBat> findAll() {

@@ -14,6 +14,9 @@ public interface SpringTrainingAttendanceRepository extends JpaRepository<Traini
     @Query("SELECT ta FROM TrainingAttendanceEntity ta JOIN FETCH ta.training JOIN FETCH ta.player WHERE ta.training.id IN :trainingIds")
     List<TrainingAttendanceEntity> findByTrainingIdIn(List<Long> trainingIds);
 
+    @Query("SELECT ta FROM TrainingAttendanceEntity ta JOIN FETCH ta.training JOIN FETCH ta.player WHERE ta.player.id = :playerId")
+    List<TrainingAttendanceEntity> findByPlayerId(Long playerId);
+
     @Modifying
     @Query("DELETE FROM TrainingAttendanceEntity ta WHERE ta.training.id = :trainingId")
     void deleteByTrainingId(Long trainingId);

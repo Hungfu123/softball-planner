@@ -33,6 +33,9 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 import type {
+  PlayerFormPoint,
+  PlayerUsage,
+  PositionSlot,
   Player,
   Season,
   GameDayResponse,
@@ -112,6 +115,26 @@ export const createPlayer = (name: string) =>
   request<Player>('/players', { method: 'POST', body: JSON.stringify({ name }) })
 export const updatePlayer = (id: number, data: { name?: string; regular?: boolean }) =>
   request<Player>(`/players/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+
+export const getPlayer = (id: number) =>
+  request<Player>(`/players/${id}`)
+
+export const getPlayerBattingTimeline = (id: number) =>
+  request<PlayerFormPoint[]>(`/players/${id}/batting-timeline`)
+
+/** Ohne Scope zählt alles; sonst genau ein Kalenderjahr oder genau eine Saison. */
+export const getPlayerUsage = (id: number, scope?: { year?: number; seasonId?: number }) => {
+  const query = scope?.seasonId != null ? `?seasonId=${scope.seasonId}`
+    : scope?.year != null ? `?year=${scope.year}`
+    : ''
+  return request<PlayerUsage>(`/players/${id}/usage${query}`)
+}
+
+export const updatePlayerPositions = (
+  id: number,
+  positions: { primary: PositionSlot | null; secondary: PositionSlot | null; tertiary: PositionSlot | null },
+) =>
+  request<Player>(`/players/${id}/positions`, { method: 'PUT', body: JSON.stringify(positions) })
 export const archivePlayer = (id: number) =>
   request<Player>(`/players/${id}/archive`, { method: 'PUT' })
 export const unarchivePlayer = (id: number) =>

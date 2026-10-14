@@ -11,6 +11,8 @@ public interface AtBatRepository {
     List<AtBat> findByGameIdInOrderBySequenceAsc(List<Long> gameIds);
     List<AtBat> findBySeasonId(Long seasonId);
     List<AtBat> findByYear(int year);
+    /** Alle At-Bats eines Schlagmanns, chronologisch über alle Spiele (Spieler-Profil). */
+    List<AtBat> findByBatterIdOrderByGameAndSequence(Long playerId);
     List<AtBat> findAll();
     Optional<AtBat> findById(Long id);
     Optional<AtBat> findLastByGameId(Long gameId);

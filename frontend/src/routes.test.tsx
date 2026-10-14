@@ -15,6 +15,7 @@ const PROTECTED_PATHS = [
   '/kalender',
   '/training',
   '/players',
+  '/players/1',
   '/stats',
   '/spielbogen',
   '/spielbogen/new',
