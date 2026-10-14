@@ -100,6 +100,76 @@ class LineupIntegrationTest {
     }
 
     @Test
+    void ruleCheckReportsMissingWomen() throws Exception {
+        // Ohne Zuordnung zaehlt niemand fuer die Quote — beide Hinweise kommen.
+        final List<Map<String, Object>> lineup = List.of(
+            Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1),
+            Map.of("playerId", player2.getId(), "position", "LF", "battingOrder", 2));
+
+        mockMvc.perform(post("/api/games/" + gameId + "/lineup/check")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(lineup)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.womenOnField").value(0))
+            .andExpect(jsonPath("$.warnings.length()").value(2));
+    }
+
+    @Test
+    void ruleCheckSaysWhenTooFewWomenAreAvailable() throws Exception {
+        // Nur eine Frau ist ueberhaupt dabei — dann ist nichts umzustellen.
+        setGender(player1.getId(), "FEMALE");
+
+        final List<Map<String, Object>> lineup = List.of(
+            Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1),
+            Map.of("playerId", player2.getId(), "position", "LF", "battingOrder", 2));
+
+        mockMvc.perform(post("/api/games/" + gameId + "/lineup/check")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(lineup)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.warnings[0]").value(org.hamcrest.Matchers.containsString("Heute ist nur eine Frau dabei")));
+    }
+
+    @Test
+    void ruleCheckIsSilentWhenQuotaIsMet() throws Exception {
+        setGender(player1.getId(), "FEMALE");
+        setGender(player2.getId(), "FEMALE");
+
+        final List<Map<String, Object>> lineup = List.of(
+            Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1),
+            Map.of("playerId", player2.getId(), "position", "LF", "battingOrder", 2),
+            Map.of("playerId", player3.getId(), "position", "P", "battingOrder", 3));
+
+        mockMvc.perform(post("/api/games/" + gameId + "/lineup/check")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(lineup)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.womenOnField").value(2))
+            .andExpect(jsonPath("$.womenInInfield").value(1))
+            .andExpect(jsonPath("$.warnings").isEmpty());
+    }
+
+    @Test
+    void lineupThatBreaksTheQuotaStillSaves() throws Exception {
+        // Die Regel meldet, sie verbietet nicht: an einem Spieltag mit zu wenigen
+        // Frauen muss sich trotzdem eine Aufstellung speichern lassen.
+        final List<Map<String, Object>> lineup = List.of(
+            Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1));
+
+        mockMvc.perform(put("/api/games/" + gameId + "/lineup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(lineup)))
+            .andExpect(status().isOk());
+    }
+
+    private void setGender(final Long playerId, final String gender) throws Exception {
+        mockMvc.perform(put("/api/players/" + playerId + "/gender")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gender\":\"" + gender + "\"}"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void setAndGetLineup() throws Exception {
         final List<Map<String, Object>> lineup = List.of(
             Map.of("playerId", player1.getId(), "position", "SS", "battingOrder", 1),

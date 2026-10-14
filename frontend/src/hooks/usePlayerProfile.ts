@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as api from '@/api/client'
-import type { Player, PlayerBattingStatsResponse, PlayerFormPoint, PlayerUsage, PositionSlot, SeasonPlayerStats } from '@/types'
+import type { Gender, Player, PlayerBattingStatsResponse, PlayerFormPoint, PlayerUsage, PositionSlot, SeasonPlayerStats } from '@/types'
 
 /** Zeitraum der Seite: alles, ein Kalenderjahr oder eine einzelne Saison. */
 export type ProfileScope =
@@ -118,6 +118,12 @@ export function usePlayerProfile(playerId: number, scope: ProfileScope) {
     return updated
   }
 
+  const setGender = async (gender: Gender | null) => {
+    const updated = await api.updatePlayerGender(playerId, gender)
+    setPlayer(updated)
+    return updated
+  }
+
   const setRegular = async (regular: boolean) => {
     const updated = await api.updatePlayer(playerId, { regular })
     setPlayer(updated)
@@ -139,6 +145,7 @@ export function usePlayerProfile(playerId: number, scope: ProfileScope) {
     savePositions,
     rename,
     setArchived,
+    setGender,
     setRegular,
   }
 }

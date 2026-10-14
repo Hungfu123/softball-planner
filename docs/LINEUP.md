@@ -48,3 +48,57 @@ Auto-Generation auch verfügbar: `docs/03-LINEUP-AUTO-GENERATE.md`.
 - **Cascade bei Availability-Change** siehe `docs/GAMEDAY.md`.
 - **Fehlermeldung zu einem fremden Tab:** "Lineup speichern" persistiert ALLE Games des Spieltags (`saveAllGames`), nicht nur den offenen Tab. Validierungsfehler werden deshalb mit `Spiel {n}: …` geprefixt und nennen Spielernamen (Name-Map aus `LineupService.playerNamesFor`), sonst ist die Meldung im UI nicht zuordenbar.
 - **DH-Batter vs. Base Coach:** der DH-Batter schlägt und darf nicht coachen. Der Planner räumt den Coach-Slot beim Setzen des DH automatisch frei (`handleSetDhBatter`), analog zu `handleAddPlayer` — sonst kommt der Konflikt erst als 400 beim Speichern.
+
+## Frauen-Quote der Liga (`LineupGenderRule`)
+
+Mindestens **zwei Frauen auf dem Feld**, davon mindestens **eine im Infield**. Infield ist
+alles außer Outfield — **P und C zählen dazu**. Ein EH schlägt nur und zählt nicht, ein
+DH-Batter ebenso wenig: gezählt wird, wer tatsächlich auf dem Feld steht.
+
+- Grundlage ist `Player.gender` (V62, nullable): `FEMALE`, `MALE`, `DIVERSE`.
+  **Nur `FEMALE` zählt für die Quote.** Nicht zugeordnet und `DIVERSE` zählen nicht —
+  niemand gilt stillschweigend als Mann, und was für „divers" sportrechtlich gilt,
+  entscheidet der Verband, nicht diese App. Kommt von dort eine Regelung, ist es eine
+  Zeile in `LineupGenderRule.count`. Gepflegt wird das an zwei Stellen: im Kader
+  unter „Geschlecht" (ein Sheet für alle, zwei Taps je Person) und im Spielerprofil über
+  den Knopf neben den Positions-Chips.
+- **Die Auto-Aufstellung hält die Quote ein**, solange genug Frauen da sind. Der Hinweis im
+  Editor erscheint also nur bei von Hand gebauten Aufstellungen oder wenn an diesem Spieltag
+  weniger als zwei Frauen zugesagt haben.
+- **Der Hinweis unterscheidet beide Fälle:** fehlt die zweite Frau im Kader des Tages, sagt
+  er „Heute ist nur eine Frau dabei" statt eine Umstellung zu fordern, die es nicht gibt.
+- **Die Regel meldet, sie verbietet nicht.** `POST /api/games/{id}/lineup/check` prüft auch
+  einen noch nicht gespeicherten Entwurf und liefert Hinweise; `PUT /lineup` speichert
+  weiterhin alles. An einem Spieltag mit zu wenigen Frauen muss sich eine Aufstellung
+  speichern lassen.
+- Der Lineup-Editor ruft den Check entdrosselt (400 ms) auf und zeigt die Hinweise über
+  dem Bogen. Gerechnet wird im Backend — die Regel soll nicht zweimal existieren.
+
+## Auto-Aufstellung (`LineupSuggestionEngine`)
+
+Reihenfolge der Kriterien beim Befüllen:
+
+1. **Jeder Anwesende spielt mindestens einmal** — wer an diesem Spieltag noch kein Spiel
+   hatte, kommt vor allen anderen. Erst wenn alle einmal dran waren, zählt der Rest.
+   (Base-Coaches sind raus — sie stehen am Spielfeldrand und zählen nicht als Einsatz.)
+2. **Trainingsbeteiligung** — wer öfter im Training steht, spielt mehr. Das ist der
+   eigentliche Verteilungsschlüssel, nicht die bisherige Spielzahl.
+3. **Spiele an diesem Spieltag** — verteilt die Zusatzspiele unter gleich oft Trainierenden.
+4. **Frauen-Quote — erzwungen, kein Kriterium.** Sind zwei Frauen verfügbar, stehen auch
+   zwei auf dem Feld, egal wie selten sie im Training waren. Weichen muss, wer in der
+   Reihenfolge am weitesten unten steht, und unter denen zuerst, wer an diesem Spieltag
+   schon gespielt hat — der Mindest-Einsatz der anderen bleibt so erhalten.
+5. **Positions-Profil** — verteilt werden die Posten nach Erst-/Zweit-/Drittposition. In
+   jedem Schritt kommt der Posten dran, für den es gerade die wenigsten passenden Profile
+   gibt, sonst schnappt sich ein beliebiger Posten den einzigen Pitcher.
+6. **Auffüllen** — bleiben Posten ohne Profil-Anwärter, werden sie nach obiger Reihenfolge besetzt.
+   Die Aufstellung ist immer komplett.
+7. **Infield-Quote** — steht danach keine Frau im Infield, tauscht sie mit dem Mann, bei
+   dem beide hinterher am besten passen (gemessen am Profil).
+
+Der Zufall bleibt als Tiebreaker: gleich platzierte Spieler und gleich knappe Posten werden
+gemischt, damit zweimal „Auto" nicht zweimal dasselbe liefert.
+
+Der Mindest-Einsatz ist eine Reihenfolge, keine Garantie: Sind mehr Leute da als Plätze an
+diesem Spieltag (zwei Spiele = 18 Feldplätze), kommen zwangsläufig welche nicht dran — dann
+sind es die mit der geringsten Trainingsbeteiligung.

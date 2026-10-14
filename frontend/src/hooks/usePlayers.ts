@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Player } from '@/types'
+import type { Gender, Player } from '@/types'
 import * as api from '@/api/client'
 
 export function usePlayers(includeArchived = false) {
@@ -53,11 +53,17 @@ export function usePlayers(includeArchived = false) {
     return updated
   }
 
+  const setGender = async (id: number, gender: Gender | null) => {
+    const p = await api.updatePlayerGender(id, gender)
+    setPlayers(prev => prev.map(x => x.id === id ? p : x).sort((a, b) => a.name.localeCompare(b.name)))
+    return p
+  }
+
   const setWhatsappName = async (id: number, whatsappName: string) => {
     const p = await api.setPlayerWhatsappName(id, whatsappName)
     setPlayers(prev => prev.map(x => x.id === id ? p : x).sort((a, b) => a.name.localeCompare(b.name)))
     return p
   }
 
-  return { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder, setWhatsappName, reload: load }
+  return { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder, setGender, setWhatsappName, reload: load }
 }

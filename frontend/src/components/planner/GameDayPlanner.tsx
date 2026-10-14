@@ -7,6 +7,7 @@ import { usePlayers } from '@/hooks/usePlayers'
 import { useToastContext } from '@/components/layout/Layout'
 import { GameTabs } from './GameTabs'
 import { LineupEditor } from './LineupEditor'
+import { useLineupRuleCheck } from '@/hooks/useLineupRuleCheck'
 import { LineupSetBar } from './LineupSetBar'
 import { SaveSetModal } from './SaveSetModal'
 import { useLineupSets } from '@/hooks/useLineupSets'
@@ -620,6 +621,10 @@ export function GameDayPlanner() {
     }
   }
 
+  // Liga-Regeln gegen den aktuellen Entwurf — rechnet das Backend, zeigt der Bogen.
+  // Muss vor dem Skeleton-Return stehen: Hooks laufen in jedem Render gleich oft.
+  const ruleCheck = useLineupRuleCheck(activeGame?.id ?? null, lineup.entries)
+
   if (loading || !gameDay || !ready) {
     return <GameDayPlannerSkeleton />
   }
@@ -987,6 +992,7 @@ export function GameDayPlanner() {
             {/* Bogen — Schlagreihenfolge + Auswechslungen */}
             <div className={`planner-pane space-y-4 xl:space-y-2.5 order-1 ${mobileView === 'lineup' ? '' : 'hidden'} wide:block`}>
               <LineupEditor
+                ruleWarnings={ruleCheck?.warnings}
                 entries={lineup.entries}
                 poolPlayers={poolPlayers}
                 onRemove={handleRemovePlayer}

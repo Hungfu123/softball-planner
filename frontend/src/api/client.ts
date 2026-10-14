@@ -35,6 +35,8 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 import type {
   PlayerFormPoint,
   PlayerUsage,
+  Gender,
+  LineupRuleCheck,
   PositionSlot,
   Player,
   Season,
@@ -129,6 +131,9 @@ export const getPlayerUsage = (id: number, scope?: { year?: number; seasonId?: n
     : ''
   return request<PlayerUsage>(`/players/${id}/usage${query}`)
 }
+
+export const updatePlayerGender = (id: number, gender: Gender | null) =>
+  request<Player>(`/players/${id}/gender`, { method: 'PUT', body: JSON.stringify({ gender }) })
 
 export const updatePlayerPositions = (
   id: number,
@@ -277,6 +282,13 @@ export const setSubstitutions = (
 })
 
 // Lineup Suggestions
+/** Regel-Check fuer den aktuellen Entwurf — Hinweise, kein Speichern. */
+export const checkLineupRules = (
+  gameId: number,
+  entries: { playerId: number; position: string | null; battingOrder: number; dhBatterPlayerId: number | null }[],
+) =>
+  request<LineupRuleCheck>(`/games/${gameId}/lineup/check`, { method: 'POST', body: JSON.stringify(entries) })
+
 export const suggestLineup = (gameId: number) =>
   request<LineupSuggestionEntry[]>(`/games/${gameId}/lineup/suggest`)
 export const suggestAllLineups = (gameDayId: number) =>

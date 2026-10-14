@@ -4,10 +4,12 @@ import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import type { ProfileScope } from '@/hooks/usePlayerProfile'
 import { useToastContext } from '@/components/layout/Layout'
 import { ArchiveIcon, ArchiveRestoreIcon, ChevronLeft, CrossBones, DotsVertical, Pencil } from '@/icons'
-import { EmptyState, LoadingSkeleton, SELECT_PILL_CLASS, SELECT_PILL_STYLE } from '@/components/shared'
+import { EmptyState, LoadingSkeleton, ResponsiveSheet, SELECT_PILL_CLASS, SELECT_PILL_STYLE } from '@/components/shared'
+import { GENDER_LABELS } from '@/types'
 import { FormChart } from './FormChart'
 import { CollapsibleCard } from './CollapsibleCard'
 import { GameLog } from './GameLog'
+import { GenderSheet } from './GenderSheet'
 import { SeasonTable } from './SeasonTable'
 import { UsagePanel } from './UsagePanel'
 import { PositionBadges } from './PositionBadges'
@@ -35,11 +37,12 @@ export function PlayerProfilePage() {
   const navigate = useNavigate()
   const toast = useToastContext()
   const [scope, setScope] = useState<ProfileScope>({ kind: 'all' })
-  const { player, timeline, gameStats, battingField, usage, loading, scopeLoading, error, savePositions, rename, setArchived } =
+  const { player, timeline, gameStats, battingField, usage, loading, scopeLoading, error, savePositions, rename, setArchived, setGender } =
     usePlayerProfile(playerId, scope)
   const [positionsOpen, setPositionsOpen] = useState(false)
   const [showAllPositions, setShowAllPositions] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [genderOpen, setGenderOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Klick daneben und Escape schließen das Menü — ohne das bleibt es beim Scrollen offen.
@@ -194,6 +197,21 @@ export function PlayerProfilePage() {
                     <Pencil size={14} />
                   </span>
                 </button>
+                {/* Geschlecht steht neben den Positionen, weil es dieselbe Art Angabe ist:
+                    Stammdaten, die die Aufstellung braucht. Fehlt es, sagt der Knopf das —
+                    die Frauen-Quote der Liga haengt daran. */}
+                <button
+                  onClick={() => setGenderOpen(true)}
+                  aria-label="Geschlecht festlegen"
+                  title="Grundlage der Frauen-Quote — zum Ändern tippen"
+                  className={`font-display text-[10px] font-bold uppercase tracking-widest rounded-lg px-2 py-1.5 cursor-pointer transition-colors border ${
+                    player.gender
+                      ? 'border-navy-700 text-navy-100 hover:bg-navy-800 hover:border-navy-500'
+                      : 'border-dashed border-navy-500 text-navy-200 hover:border-cream-200 hover:text-cream-100'
+                  }`}
+                >
+                  {player.gender ? GENDER_LABELS[player.gender] : 'Geschlecht festlegen'}
+                </button>
                 {player.regular && (
                   <span className="font-display text-[10px] font-bold uppercase tracking-widest text-navy-200">
                     Stammspieler
@@ -226,6 +244,9 @@ export function PlayerProfilePage() {
                       label="Umbenennen"
                       onClick={() => { setMenuOpen(false); setDraftName(player.name); setEditingName(true) }}
                     />
+                    {/* Die Quote der Liga braucht die Zuordnung — hier ist sie dort,
+                        wo man die Person gerade anschaut. Fuer den ganzen Kader auf
+                        einmal gibt es das Sheet im Kader. */}
                     <MenuItem
                       icon={player.archived ? <ArchiveRestoreIcon size={14} /> : <ArchiveIcon size={14} />}
                       label={player.archived ? 'Reaktivieren' : 'Archivieren'}
@@ -386,6 +407,14 @@ export function PlayerProfilePage() {
           )}
           </div>
         </div>
+
+        <ResponsiveSheet
+          open={genderOpen}
+          onClose={() => setGenderOpen(false)}
+          title={`Geschlecht — ${player.name}`}
+        >
+          <GenderSheet players={[player]} onSet={(_, gender) => setGender(gender)} />
+        </ResponsiveSheet>
 
         <PositionProfileSheet
           player={player}

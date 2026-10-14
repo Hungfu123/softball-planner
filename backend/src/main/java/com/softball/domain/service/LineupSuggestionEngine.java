@@ -15,6 +15,9 @@ public class LineupSuggestionEngine {
 
     private static final Set<String> MANUAL_POSITIONS = Set.of("EH");
 
+    /** Rang fuer "dieser Posten steht nicht im Profil" — schlechter als jeder Slot. */
+    private static final int NO_PROFILE = 4;
+
     public List<SuggestionResult> suggest(final List<LineupEntry> currentEntries,
                                            final Map<Long, Player> playerMap,
                                            final Set<Long> staffIds,
@@ -41,47 +44,35 @@ public class LineupSuggestionEngine {
             }
         }
 
-        // All 7 auto-positions are always re-shuffled
+        // Alle neun Feldposten werden jedes Mal neu verteilt
         final List<Position> positionsToFill = new ArrayList<>(AUTO_POSITIONS);
 
-        // Build candidate pool: available, not manual, not staff, not DH batter
+        // Kandidaten: verfuegbar, nicht manuell gesetzt, kein Base-Coach, kein DH-Batter.
+        //
+        // Reihenfolge:
+        //   1. Wer an diesem Spieltag noch gar nicht gespielt hat — jeder, der da ist,
+        //      soll mindestens einmal aufs Feld.
+        //   2. Trainingsbeteiligung, absteigend — wer oefter im Training steht, spielt mehr.
+        //   3. Spiele an diesem Spieltag, aufsteigend — verteilt die Zusatzspiele.
+        // Vorher gemischt, damit gleich Platzierte nicht immer gleich einlaufen.
         final List<Long> candidates = playerMap.keySet().stream()
             .filter(id -> !manualPlayerIds.contains(id))
             .filter(id -> !staffIds.contains(id))
-            .sorted(Comparator
-                .comparingInt((Long id) -> gamesPlayedCount.getOrDefault(id, 0))
-                .thenComparingLong((Long id) -> -attendanceByPlayer.getOrDefault(id, 0L))
-                .thenComparingLong(id -> id))
             .collect(Collectors.toCollection(ArrayList::new));
+        Collections.shuffle(candidates, random);
+        candidates.sort(Comparator
+            .comparingInt((Long id) -> gamesPlayedCount.getOrDefault(id, 0) > 0 ? 1 : 0)
+            .thenComparingLong((Long id) -> -attendanceByPlayer.getOrDefault(id, 0L))
+            .thenComparingInt((Long id) -> gamesPlayedCount.getOrDefault(id, 0)));
 
-        // Take top candidates (up to 7)
-        final List<Long> assignablePool = candidates.stream()
-            .limit(positionsToFill.size())
-            .collect(Collectors.toCollection(ArrayList::new));
+        // Wer aufs Feld kommt — danach die Frauen-Quote nachziehen
+        final List<Long> assignablePool =
+            selectFielders(candidates, playerMap, gamesPlayedCount, positionsToFill.size());
 
-        // Shuffle positions randomly, but sort players by defaultBattingOrder
-        Collections.shuffle(positionsToFill, random);
-
-        // Sort assignable pool: players with defaultBattingOrder first (ascending), then rest randomized
-        final boolean anyHasOrder = assignablePool.stream()
-            .anyMatch(id -> playerMap.get(id) != null && playerMap.get(id).getDefaultBattingOrder() != null);
-
-        if (anyHasOrder) {
-            // Shuffle first so unranked players get a random order
-            Collections.shuffle(assignablePool, random);
-            // Stable sort: ranked players bubble to front in order, unranked stay shuffled
-            assignablePool.sort(Comparator.comparingInt((Long id) -> {
-                final Player p = playerMap.get(id);
-                return (p != null && p.getDefaultBattingOrder() != null) ? p.getDefaultBattingOrder() : Integer.MAX_VALUE;
-            }));
-        } else {
-            Collections.shuffle(assignablePool, random);
-        }
-
-        final Map<Long, Position> newAssignments = new LinkedHashMap<>();
-        for (int i = 0; i < positionsToFill.size() && i < assignablePool.size(); i++) {
-            newAssignments.put(assignablePool.get(i), positionsToFill.get(i));
-        }
+        // Posten verteilen: Positions-Profil zuerst, offene Posten mit dem Rest auffuellen
+        final Map<Long, Position> newAssignments =
+            assignPositions(assignablePool, playerMap, positionsToFill, random);
+        ensureWomanInInfield(newAssignments, playerMap);
 
         // Build final result: manual entries first, then new assignments
         final List<SuggestionResult> result = new ArrayList<>();
@@ -92,7 +83,9 @@ public class LineupSuggestionEngine {
                 entry.getPosition() != null ? entry.getPosition().displayName() : null, order++));
         }
 
-        // Sort assignments by defaultBattingOrder (ranked first, unranked at end)
+        // Schlagreihenfolge: wer eine feste Nummer hat, zuerst — der Rest gemischt
+        final boolean anyHasOrder = newAssignments.keySet().stream()
+            .anyMatch(id -> playerMap.get(id) != null && playerMap.get(id).getDefaultBattingOrder() != null);
         final List<Map.Entry<Long, Position>> assignmentList = new ArrayList<>(newAssignments.entrySet());
         if (anyHasOrder) {
             // Shuffle first so unranked players get a random batting order
@@ -114,6 +107,161 @@ public class LineupSuggestionEngine {
         }
 
         return result;
+    }
+
+
+    /**
+     * Die nach Reihenfolge Besten aufs Feld — danach die Frauen-Quote erzwingen.
+     *
+     * Sind zwei Frauen da, stehen auch zwei auf dem Feld, unabhaengig von
+     * Trainingsbeteiligung: die Quote ist eine Liga-Regel, kein Kriterium. Weichen
+     * muss, wer in der Reihenfolge am weitesten unten steht — und unter denen
+     * zuerst, wer an diesem Spieltag schon gespielt hat. Sind nicht genug Frauen
+     * verfuegbar, bleibt es dabei; dann meldet es die Regel im Editor.
+     */
+    private List<Long> selectFielders(final List<Long> candidates,
+                                      final Map<Long, Player> playerMap,
+                                      final Map<Long, Integer> gamesPlayedCount,
+                                      final int slots) {
+        final List<Long> pool = new ArrayList<>(candidates.subList(0, Math.min(slots, candidates.size())));
+        long women = pool.stream().filter(id -> isFemale(playerMap, id)).count();
+        if (women >= LineupGenderRule.MIN_WOMEN_ON_FIELD) return pool;
+
+        final List<Long> waiting = candidates.stream()
+            .skip(pool.size())
+            .filter(id -> isFemale(playerMap, id))
+            .toList();
+
+        for (final Long woman : waiting) {
+            if (women >= LineupGenderRule.MIN_WOMEN_ON_FIELD) break;
+            final int replace = indexToReplace(pool, playerMap, gamesPlayedCount);
+            if (replace < 0) break;
+            pool.set(replace, woman);
+            women++;
+        }
+        return pool;
+    }
+
+    /** Von hinten: erst jemand, der heute schon gespielt hat, sonst der Letzte. */
+    private int indexToReplace(final List<Long> pool,
+                               final Map<Long, Player> playerMap,
+                               final Map<Long, Integer> gamesPlayedCount) {
+        int fallback = -1;
+        for (int i = pool.size() - 1; i >= 0; i--) {
+            final Long id = pool.get(i);
+            if (isFemale(playerMap, id)) continue;
+            if (gamesPlayedCount.getOrDefault(id, 0) > 0) return i;
+            if (fallback < 0) fallback = i;
+        }
+        return fallback;
+    }
+
+    /**
+     * Posten verteilen: Profil zuerst, Rest auffuellen.
+     *
+     * In jedem Schritt kommt der Posten dran, fuer den es gerade die wenigsten
+     * passenden Profile gibt — sonst schnappt sich ein Posten ohne Profil-Anwaerter
+     * den einzigen Pitcher, bevor P an der Reihe ist. Erst wenn fuer keinen offenen
+     * Posten mehr jemand ein Profil hat, wird nach Fairness aufgefuellt.
+     */
+    private Map<Long, Position> assignPositions(final List<Long> pool,
+                                                final Map<Long, Player> playerMap,
+                                                final List<Position> positions,
+                                                final Random random) {
+        final Map<Long, Integer> fairnessIndex = new HashMap<>();
+        for (int i = 0; i < pool.size(); i++) fairnessIndex.put(pool.get(i), i);
+
+        final List<Position> open = new ArrayList<>(positions);
+        Collections.shuffle(open, random);
+        final List<Long> free = new ArrayList<>(pool);
+        final Map<Long, Position> assignments = new LinkedHashMap<>();
+
+        while (!open.isEmpty() && !free.isEmpty()) {
+            Position scarcest = null;
+            List<Long> scarcestCandidates = null;
+            for (final Position position : open) {
+                final List<Long> fitting = free.stream()
+                    .filter(id -> profileRank(playerMap.get(id), position) < NO_PROFILE)
+                    .toList();
+                if (fitting.isEmpty()) continue;
+                if (scarcestCandidates == null || fitting.size() < scarcestCandidates.size()) {
+                    scarcest = position;
+                    scarcestCandidates = fitting;
+                }
+            }
+
+            if (scarcest == null) {
+                // Niemand hat mehr ein Profil fuer die offenen Posten — nach Fairness auffuellen.
+                for (final Position position : new ArrayList<>(open)) {
+                    if (free.isEmpty()) break;
+                    final Long next = free.stream()
+                        .min(Comparator.comparingInt(id -> fairnessIndex.getOrDefault(id, Integer.MAX_VALUE)))
+                        .orElseThrow();
+                    assignments.put(next, position);
+                    free.remove(next);
+                    open.remove(position);
+                }
+                break;
+            }
+
+            final Position position = scarcest;
+            final Long best = scarcestCandidates.stream()
+                .min(Comparator
+                    .comparingInt((Long id) -> profileRank(playerMap.get(id), position))
+                    .thenComparingInt(id -> fairnessIndex.getOrDefault(id, Integer.MAX_VALUE)))
+                .orElseThrow();
+            assignments.put(best, position);
+            free.remove(best);
+            open.remove(position);
+        }
+        return assignments;
+    }
+
+    /**
+     * Mindestens eine Frau im Infield. Steht dort keine, tauscht die Frau mit dem
+     * Mann, bei dem beide hinterher am besten passen — gemessen am Positions-Profil.
+     */
+    private void ensureWomanInInfield(final Map<Long, Position> assignments, final Map<Long, Player> playerMap) {
+        final boolean covered = assignments.entrySet().stream()
+            .anyMatch(e -> LineupGenderRule.isInfield(e.getValue()) && isFemale(playerMap, e.getKey()));
+        if (covered) return;
+
+        Long bestWoman = null;
+        Long bestMan = null;
+        int bestCost = Integer.MAX_VALUE;
+        for (final var woman : assignments.entrySet()) {
+            if (!isFemale(playerMap, woman.getKey())) continue;
+            for (final var man : assignments.entrySet()) {
+                if (!LineupGenderRule.isInfield(man.getValue()) || isFemale(playerMap, man.getKey())) continue;
+                final int cost = profileRank(playerMap.get(woman.getKey()), man.getValue())
+                    + profileRank(playerMap.get(man.getKey()), woman.getValue());
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestWoman = woman.getKey();
+                    bestMan = man.getKey();
+                }
+            }
+        }
+        if (bestWoman == null || bestMan == null) return;
+
+        final Position womanPosition = assignments.get(bestWoman);
+        assignments.put(bestWoman, assignments.get(bestMan));
+        assignments.put(bestMan, womanPosition);
+    }
+
+    private boolean isFemale(final Map<Long, Player> playerMap, final Long id) {
+        final Player player = playerMap.get(id);
+        return player != null && player.getGender() == Gender.FEMALE;
+    }
+
+    /** 1 = Erstposition, 2 = Zweit-, 3 = Drittposition, {@value #NO_PROFILE} = kein Profil dafuer. */
+    private int profileRank(final Player player, final Position position) {
+        if (player == null) return NO_PROFILE;
+        final PositionSlot[] ordered = { player.getPrimaryPosition(), player.getSecondaryPosition(), player.getTertiaryPosition() };
+        for (int i = 0; i < ordered.length; i++) {
+            if (ordered[i] != null && ordered[i].expand().contains(position)) return i + 1;
+        }
+        return NO_PROFILE;
     }
 
     public Map<Long, Integer> countGamesPlayed(final List<LineupEntry> allEntries, final Long excludeGameId) {

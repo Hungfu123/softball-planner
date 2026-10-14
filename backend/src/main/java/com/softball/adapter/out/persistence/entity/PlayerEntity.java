@@ -1,5 +1,6 @@
 package com.softball.adapter.out.persistence.entity;
 
+import com.softball.domain.model.Gender;
 import com.softball.domain.model.PositionSlot;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -27,6 +28,10 @@ public class PlayerEntity {
 
     @Column(nullable = false)
     private boolean archived = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "primary_position")
@@ -59,6 +64,8 @@ public class PlayerEntity {
     public boolean isArchived() { return archived; }
     public void setArchived(boolean archived) { this.archived = archived; }
 
+    public Gender getGender() { return gender; }
+    public void setGender(Gender gender) { this.gender = gender; }
     public PositionSlot getPrimaryPosition() { return primaryPosition; }
     public void setPrimaryPosition(PositionSlot primaryPosition) { this.primaryPosition = primaryPosition; }
     public PositionSlot getSecondaryPosition() { return secondaryPosition; }

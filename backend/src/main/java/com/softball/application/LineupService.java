@@ -1,12 +1,15 @@
 package com.softball.application;
 
 import com.softball.adapter.dto.LineupEntryRequest;
+import com.softball.adapter.dto.LineupRuleCheckResponse;
 import com.softball.adapter.dto.LineupEntryResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.service.LineupValidator;
+import com.softball.domain.service.LineupGenderRule;
 import com.softball.domain.service.LineupValidator.LineupInput;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
+import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.GameRepository;
 import com.softball.domain.port.out.GameStaffRepository;
 import com.softball.domain.port.out.LineupEntryRepository;
@@ -23,22 +26,27 @@ import java.util.stream.Collectors;
 @Service
 public class LineupService {
 
+    private static final LineupGenderRule GENDER_RULE = new LineupGenderRule();
+
     private static final Logger log = LoggerFactory.getLogger(LineupService.class);
 
     private final LineupEntryRepository lineupEntryRepository;
     private final GameStaffRepository gameStaffRepository;
     private final PlayerRepository playerRepository;
     private final GameRepository gameRepository;
+    private final GameDayRepository gameDayRepository;
     private final LineupValidator lineupValidator = new LineupValidator();
 
     public LineupService(final LineupEntryRepository lineupEntryRepository,
                          final GameStaffRepository gameStaffRepository,
                          final PlayerRepository playerRepository,
-                         final GameRepository gameRepository) {
+                         final GameRepository gameRepository,
+                         final GameDayRepository gameDayRepository) {
         this.lineupEntryRepository = lineupEntryRepository;
         this.gameStaffRepository = gameStaffRepository;
         this.playerRepository = playerRepository;
         this.gameRepository = gameRepository;
+        this.gameDayRepository = gameDayRepository;
     }
 
     @Transactional(readOnly = true)
@@ -91,6 +99,46 @@ public class LineupService {
             entry.setDhBatterPlayer(dhBatterPlayer);
             return lineupEntryRepository.save(entry);
         }).toList();
+    }
+
+    /**
+     * Prüft eine (auch noch nicht gespeicherte) Aufstellung gegen die Frauen-Quote.
+     * Reine Lesefunktion: der Editor fragt damit seinen Entwurf ab.
+     */
+    @Transactional(readOnly = true)
+    public LineupRuleCheckResponse checkRules(final Long gameId, final List<LineupEntryRequest> entries) {
+        final Game game = gameRepository.findById(gameId)
+            .orElseThrow(() -> new ResourceNotFoundException("Game", gameId));
+        final Set<Long> playerIds = entries.stream().map(LineupEntryRequest::playerId).collect(Collectors.toSet());
+        final Map<Long, Player> playerMap = playerRepository.findAllById(playerIds).stream()
+            .collect(Collectors.toMap(Player::getId, Function.identity()));
+
+        final List<LineupEntry> draft = entries.stream().map(req -> {
+            final LineupEntry entry = new LineupEntry();
+            entry.setPlayer(playerMap.get(req.playerId()));
+            entry.setPosition(req.position() != null ? parsePosition(req.position()) : null);
+            entry.setBattingOrder(req.battingOrder());
+            return entry;
+        }).toList();
+
+        final LineupGenderRule.Count count = GENDER_RULE.count(draft);
+        return new LineupRuleCheckResponse(
+            GENDER_RULE.check(draft, availableWomen(game)), count.onField(), count.inInfield());
+    }
+
+    /**
+     * Wie viele Frauen an diesem Spieltag zugesagt haben. Sind es weniger als die Quote
+     * verlangt, gibt es nichts umzustellen — der Hinweis sagt dann, woran es liegt.
+     */
+    private int availableWomen(final Game game) {
+        if (game.getGameDay() == null || game.getGameDay().getId() == null) {
+            return LineupGenderRule.UNKNOWN_AVAILABILITY;
+        }
+        return gameDayRepository.findByIdWithPlayers(game.getGameDay().getId())
+            .map(day -> (int) day.getAvailablePlayers().stream()
+                .filter(p -> p.getGender() == Gender.FEMALE)
+                .count())
+            .orElse(LineupGenderRule.UNKNOWN_AVAILABILITY);
     }
 
     private void validate(final Game game, final List<LineupEntryRequest> entries) {
