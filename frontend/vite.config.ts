@@ -15,11 +15,15 @@ export default defineConfig({
         name: 'Softball Planner',
         short_name: 'Softball',
         description: 'Planungstool für Softball-Teams: Saisons, Spieltage, Lineups, Training.',
-        // Beide Farben identisch zur App: theme_color faerbt die Systemleisten im
-        // Standalone-Modus, background_color den Splash und den Fensterhintergrund.
-        // Mit #ffffff blieb auf Android unten eine weisse Leiste unter dem Cream stehen.
+        // Die Systemleisten gehoeren dem Betriebssystem — CSS kommt da nicht ran,
+        // Android liest beim Installieren diese beiden Werte und friert sie ein.
+        // theme_color faerbt oben die Statusleiste, background_color unten die
+        // Gesten-/Navigationsleiste (und den Splash). Beide Navy: die App bekommt
+        // denselben dunklen Rahmen wie ihre eigene Navigationsleiste, die Gesten-
+        // Pille bleibt hell und sichtbar. Mit #ffffff stand dort eine weisse Leiste
+        // unter dem Cream.
         theme_color: '#070A2E',
-        background_color: '#FBF6EC',
+        background_color: '#070A2E',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
