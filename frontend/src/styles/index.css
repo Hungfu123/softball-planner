@@ -46,9 +46,17 @@
   /* Grau-Übersteuerung: Tailwind-Default gray-400/500 sind auf Cream zu hell
      (Kontrast ~2.2–2.6). Komponenten nutzen sie als gedämpften Text — hier
      abgedunkelt auf AA-Niveau (≥4.5 auf cream-100). gray-300 bleibt unberührt:
-     dort bewusst verwaschene Empty-States/Icons, teils auf Navy. */
-  --color-gray-400: #5F6774;
-  --color-gray-500: #4B5563;
+     dort bewusst verwaschene Empty-States/Icons, teils auf Navy.
+
+     Zusätzlich aus dem Blauen ins Warme gedreht: Tailwinds Grautöne sind Slate
+     (Farbton ~220°) und legten sich als kühler Schleier über das warme Cream —
+     die Seite wirkte blaustichig, obwohl nur Navy blau sein soll. Helligkeit
+     bleibt (AA-Kontrast unverändert), nur der Farbton wandert zum Papier.
+     Dasselbe für die Tinte: gray-900/950 tragen den Fließtext. */
+  --color-gray-400: #6B655C;
+  --color-gray-500: #57514A;
+  --color-gray-900: #2A2520;
+  --color-gray-950: #1C1815;
 
   /* Eigener Breakpoint für die Planner-Werkbank: vier Spalten (Bogen, Feld,
      Coaches, Spieler) brauchen zusammen ~1300px Mindestbreite. Bei xl (1280px)
@@ -72,6 +80,18 @@
      darunter schließen sich bei kondensierten Caps die Punzen.
      (Material/iOS-Empfehlung für Tab-Labels: 10–12px.) */
   --text-nav: 0.6875rem;
+}
+
+/*
+ * Der Fensterhintergrund gehoert dem html-Element: ueberscrollt man am Handy oder
+ * faerbt Android die Systemleiste aus der Seite, zieht es dessen Farbe. Ohne das
+ * blieb unten eine weisse Leiste unter der Cream-Flaeche stehen.
+ * color-scheme sagt dem System ausserdem, dass die App hell ist — sonst mischt
+ * Chrome im Dark Mode eigene Grautoene in Leisten und Formularelemente.
+ */
+html {
+  background-color: var(--color-cream-100);
+  color-scheme: light;
 }
 
 body {
@@ -113,6 +133,15 @@ p {
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Systemleisten am Handy: viewport-fit=cover zieht die Seite bis unter die
+ * Status- und Gestenleiste. Ohne diese Abstaende endet die letzte Kachel unter
+ * dem Android-Balken und die Navigation unter der Uhr. Als margin/padding mit
+ * env(), damit die Tailwind-Abstaende daneben bestehen bleiben.
+ */
+.safe-bottom { margin-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
 /* Hide scrollbar (für horizontale Pill-Nav etc.) */
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
