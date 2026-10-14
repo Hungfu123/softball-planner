@@ -39,7 +39,11 @@ Drei geordnete Slots am Spieler: **primaryPosition / secondaryPosition / tertiar
   irgendwo im Infield" — eine Aussage, keine Dublette.
 
 **Bearbeitet wird im Kopf**: die Chips neben dem Namen sind der Knopf, der das Sheet
-öffnet (Stift-Icon als Hinweis). Eine eigene Karte weiter unten zeigte dieselben drei
+öffnet (Stift-Icon als Hinweis). Daneben steht das **Geschlecht** als eigener Knopf —
+gesetzt zeigt er „Frau"/„Mann", leer „Geschlecht festlegen" (gestrichelt). Er öffnet
+dasselbe `GenderSheet` wie der Kader, nur für diese eine Person: eine Mechanik, zwei Orte.
+Die Zuordnung ist die Grundlage der Frauen-Quote (`docs/LINEUP.md`), deshalb ist sie im
+Profil sichtbar und nicht nur im Sammel-Sheet. Eine eigene Karte weiter unten zeigte dieselben drei
 Chips ein zweites Mal — die ist raus. Der Stift im Kopf gehört **nur** den Positionen;
 Umbenennen und Archivieren liegen hinter den drei Punkten oben rechts, weil ein Name
 einmal getippt und dann nie wieder angefasst wird. Zwei Stifte nebeneinander zeigten auf

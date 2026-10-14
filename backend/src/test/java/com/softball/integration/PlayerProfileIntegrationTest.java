@@ -241,6 +241,25 @@ class PlayerProfileIntegrationTest {
     }
 
     @Test
+    void genderIsStoredAndCanBeCleared() throws Exception {
+        mockMvc.perform(put("/api/players/" + player.getId() + "/gender")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gender\":\"FEMALE\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.gender").value("FEMALE"));
+
+        mockMvc.perform(get("/api/players/" + player.getId()))
+            .andExpect(jsonPath("$.gender").value("FEMALE"));
+
+        // null loescht die Zuordnung — der Spieler zaehlt dann fuer keine Quote.
+        mockMvc.perform(put("/api/players/" + player.getId() + "/gender")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gender\":null}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.gender").doesNotExist());
+    }
+
+    @Test
     void usageForUnknownPlayerReturns404() throws Exception {
         mockMvc.perform(get("/api/players/999999/usage"))
             .andExpect(status().isNotFound());

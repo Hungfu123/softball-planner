@@ -7,6 +7,8 @@ public class Player {
     private Integer defaultBattingOrder;
     private String whatsappName;
     private boolean archived;
+    /** Fuer die Frauen-Quote der Liga; null = nicht zugeordnet. */
+    private Gender gender;
     /** Positions-Profil: wo der Spieler am liebsten/zweitliebsten/drittliebsten steht. */
     private PositionSlot primaryPosition;
     private PositionSlot secondaryPosition;
@@ -31,6 +33,8 @@ public class Player {
         this.defaultBattingOrder = defaultBattingOrder;
     }
 
+    public Gender getGender() { return gender; }
+    public void setGender(final Gender gender) { this.gender = gender; }
     public Long getId() { return id; }
     public void setId(final Long id) { this.id = id; }
     public String getName() { return name; }

@@ -271,4 +271,246 @@ class LineupSuggestionEngineTest {
         }
         return map;
     }
+
+    // --- Positions-Profil und Frauen-Quote ---
+
+    private Player player(final long id, final String name, final Gender gender, final PositionSlot... slots) {
+        final Player p = new Player(id, name, true);
+        p.setGender(gender);
+        if (slots.length > 0) p.setPrimaryPosition(slots[0]);
+        if (slots.length > 1) p.setSecondaryPosition(slots[1]);
+        if (slots.length > 2) p.setTertiaryPosition(slots[2]);
+        return p;
+    }
+
+    private Map<Long, Player> map(final Player... players) {
+        final Map<Long, Player> m = new LinkedHashMap<>();
+        for (final Player p : players) m.put(p.getId(), p);
+        return m;
+    }
+
+    private String positionOf(final List<SuggestionResult> result, final long playerId) {
+        return result.stream().filter(r -> r.playerId() == playerId).findFirst().map(SuggestionResult::position).orElse(null);
+    }
+
+    @Test
+    void profileDecidesWhoPitchesAndCatches() {
+        final Map<Long, Player> players = map(
+            player(1L, "Pitcherin", Gender.FEMALE, PositionSlot.P),
+            player(2L, "Catcher", Gender.MALE, PositionSlot.C),
+            player(3L, "Shortstop", Gender.FEMALE, PositionSlot.SS),
+            player(4L, "Outfield", Gender.MALE, PositionSlot.OF),
+            player(5L, "Infield", Gender.MALE, PositionSlot.IF),
+            player(6L, "Ohne", Gender.MALE),
+            player(7L, "Ohne", Gender.MALE),
+            player(8L, "Ohne", Gender.MALE),
+            player(9L, "Ohne", Gender.MALE));
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(7));
+
+        assertThat(positionOf(result, 1L)).isEqualTo("P");
+        assertThat(positionOf(result, 2L)).isEqualTo("C");
+        assertThat(positionOf(result, 3L)).isEqualTo("SS");
+        assertThat(positionOf(result, 4L)).isIn("LF", "CF", "RF");
+        assertThat(positionOf(result, 5L)).isIn("1B", "2B", "3B", "SS");
+    }
+
+    @Test
+    void fairnessStillBeatsProfile_whenSomeoneHasPlayedFar() {
+        // Wer schon acht Spiele hat, bleibt draussen, auch wenn das Profil passt.
+        final Map<Long, Player> players = map(
+            player(1L, "Vielspieler", Gender.MALE, PositionSlot.P),
+            player(2L, "Neu", Gender.FEMALE),
+            player(3L, "Neu", Gender.FEMALE),
+            player(4L, "Neu", Gender.MALE),
+            player(5L, "Neu", Gender.MALE),
+            player(6L, "Neu", Gender.MALE),
+            player(7L, "Neu", Gender.MALE),
+            player(8L, "Neu", Gender.MALE),
+            player(9L, "Neu", Gender.MALE),
+            player(10L, "Neu", Gender.MALE));
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(1L, 8), Map.of(), new Random(3));
+
+        assertThat(result).hasSize(9);
+        assertThat(positionOf(result, 1L)).isNull();
+    }
+
+    @Test
+    void womenAreDrawnIntoTheLineupForTheQuota() {
+        // Neun Maenner haetten nach Fairness gereicht — die Quote zieht zwei Frauen rein.
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 9; id++) players.put(id, player(id, "Mann " + id, Gender.MALE));
+        players.put(10L, player(10L, "Frau A", Gender.FEMALE));
+        players.put(11L, player(11L, "Frau B", Gender.FEMALE));
+
+        final Map<Long, Integer> played = new HashMap<>();
+        for (long id = 10; id <= 11; id++) played.put(id, 3);  // haben schon mehr gespielt
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), played, Map.of(), new Random(11));
+
+        assertThat(positionOf(result, 10L)).isNotNull();
+        assertThat(positionOf(result, 11L)).isNotNull();
+    }
+
+    @Test
+    void atLeastOneWomanEndsUpInTheInfield() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 7; id++) players.put(id, player(id, "Mann " + id, Gender.MALE, PositionSlot.IF_OF));
+        players.put(8L, player(8L, "Frau OF", Gender.FEMALE, PositionSlot.OF));
+        players.put(9L, player(9L, "Frau OF", Gender.FEMALE, PositionSlot.OF));
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(5));
+
+        final Set<String> infield = Set.of("P", "C", "1B", "2B", "3B", "SS");
+        assertThat(result).anySatisfy(r -> {
+            if (r.playerId() == 8L || r.playerId() == 9L) {
+                assertThat(infield).contains(r.position());
+            }
+        });
+    }
+
+    @Test
+    void trainingAttendanceBreaksTiesAmongEqualFairness() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 10; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
+
+        // Alle gleich oft gespielt; Nummer 10 war am oeftesten im Training.
+        final Map<Long, Long> attendance = Map.of(10L, 20L);
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), attendance, new Random(9));
+
+        assertThat(positionOf(result, 10L)).isNotNull();
+    }
+
+    @Test
+    void attendanceDecidesWhoPlaysWhenThereAreMoreCandidatesThanSlots() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 12; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
+
+        // Je hoeher die Id, desto oefter im Training — die obersten neun sollen spielen.
+        final Map<Long, Long> attendance = new HashMap<>();
+        for (long id = 1; id <= 12; id++) attendance.put(id, id);
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), attendance, new Random(4));
+
+        final Set<Long> onField = result.stream().map(SuggestionResult::playerId).collect(java.util.stream.Collectors.toSet());
+        assertThat(onField).containsExactlyInAnyOrder(4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L, 12L);
+    }
+
+    @Test
+    void everyoneAvailablePlaysAtLeastOnceAcrossTheGameDay() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 12; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
+        final Map<Long, Long> attendance = new HashMap<>();
+        for (long id = 1; id <= 12; id++) attendance.put(id, id);
+
+        final Map<Long, Integer> played = new HashMap<>();
+        final Set<Long> everPlayed = new HashSet<>();
+
+        // Zwei Spiele hintereinander, wie der Spieltag es tut
+        for (int game = 0; game < 2; game++) {
+            final List<SuggestionResult> result = engine.suggest(
+                List.of(), players, Set.of(), played, attendance, new Random(game));
+            result.forEach(r -> {
+                everPlayed.add(r.playerId());
+                played.merge(r.playerId(), 1, Integer::sum);
+            });
+        }
+
+        assertThat(everPlayed).containsExactlyInAnyOrderElementsOf(players.keySet());
+    }
+
+    @Test
+    void whoAlreadyPlayedStepsBackEvenWithHighAttendance() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 10; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
+
+        // Nummer 1 war am oeftesten im Training, hat aber schon gespielt.
+        final Map<Long, Long> attendance = Map.of(1L, 99L);
+        final Map<Long, Integer> played = Map.of(1L, 1);
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), played, attendance, new Random(8));
+
+        assertThat(positionOf(result, 1L)).isNull();
+    }
+
+    @Test
+    void quotaBeatsAttendance_twoWomenAlwaysField() {
+        // Zwei Frauen sind da, trainieren aber am seltensten — sie spielen trotzdem.
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        final Map<Long, Long> attendance = new HashMap<>();
+        for (long id = 1; id <= 12; id++) {
+            players.put(id, player(id, "Mann " + id, Gender.MALE));
+            attendance.put(id, 50L);
+        }
+        players.put(20L, player(20L, "Frau A", Gender.FEMALE));
+        players.put(21L, player(21L, "Frau B", Gender.FEMALE));
+        attendance.put(20L, 1L);
+        attendance.put(21L, 1L);
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), attendance, new Random(13));
+
+        assertThat(positionOf(result, 20L)).isNotNull();
+        assertThat(positionOf(result, 21L)).isNotNull();
+
+        // Und eine davon steht im Infield.
+        final Set<String> infield = Set.of("P", "C", "1B", "2B", "3B", "SS");
+        assertThat(List.of(positionOf(result, 20L), positionOf(result, 21L)))
+            .anySatisfy(position -> assertThat(infield).contains(position));
+    }
+
+    @Test
+    void quotaDropsSomeoneWhoAlreadyPlayedToday() {
+        // Fuenf Leute haben heute noch nicht gespielt, vier Maenner und zwei Frauen schon.
+        // Die Quote holt die Frauen zurueck — raus muessen die Maenner, die schon dran
+        // waren, nicht die fuenf, die noch auf ihren ersten Einsatz warten.
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        final Map<Long, Long> attendance = new HashMap<>();
+        final Map<Long, Integer> played = new HashMap<>();
+
+        for (long id = 1; id <= 5; id++) {
+            players.put(id, player(id, "Wartet " + id, Gender.MALE));
+            attendance.put(id, 5L);
+        }
+        for (long id = 6; id <= 9; id++) {
+            players.put(id, player(id, "Hatte schon " + id, Gender.MALE));
+            attendance.put(id, 50L);
+            played.put(id, 1);
+        }
+        for (long id = 20; id <= 21; id++) {
+            players.put(id, player(id, "Frau " + id, Gender.FEMALE));
+            attendance.put(id, 1L);
+            played.put(id, 1);
+        }
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), played, attendance, new Random(17));
+
+        assertThat(positionOf(result, 20L)).isNotNull();
+        assertThat(positionOf(result, 21L)).isNotNull();
+        for (long id = 1; id <= 5; id++) {
+            assertThat(positionOf(result, id)).as("Spieler %d wartet noch auf seinen Einsatz", id).isNotNull();
+        }
+    }
+
+    @Test
+    void onlyOneWomanAvailable_lineupStillFieldsHer() {
+        final Map<Long, Player> players = new LinkedHashMap<>();
+        for (long id = 1; id <= 12; id++) players.put(id, player(id, "Mann " + id, Gender.MALE));
+        players.put(20L, player(20L, "Einzige Frau", Gender.FEMALE));
+
+        final List<SuggestionResult> result = engine.suggest(
+            List.of(), players, Set.of(), Map.of(), Map.of(), new Random(21));
+
+        assertThat(positionOf(result, 20L)).isNotNull();
+    }
 }

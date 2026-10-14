@@ -16,7 +16,7 @@ import { LineupRow } from './LineupRow'
 import { LineupRowSwapSheet } from './LineupRowSwapSheet'
 import type { CoachRotationPair, LocalLineupEntry, Player } from '@/types'
 import { POSITIONS, FIELD_POSITIONS } from '@/types'
-import { CrossBones, TrashBin, DiceIcon } from '@/icons'
+import { AlertCircle, CrossBones, TrashBin, DiceIcon } from '@/icons'
 import { EmptyState } from '@/components/shared'
 
 interface Props {
@@ -35,6 +35,8 @@ interface Props {
   onCopyOtherGame?: () => void
   onAutoGenerate?: () => void
   autoGenerateLoading?: boolean
+  /** Verstoesse gegen die Liga-Regeln (Frauen-Quote) — Hinweise, kein Speicher-Stopp. */
+  ruleWarnings?: string[]
   firstBaseCoachRotation?: CoachRotationPair | null
   thirdBaseCoachRotation?: CoachRotationPair | null
 }
@@ -46,7 +48,7 @@ const SELECTABLE_POSITIONS = (POSITIONS as readonly string[]).filter(p => p !== 
 export function LineupEditor({
   entries, poolPlayers, onRemove, onSetPosition, onSetDhBatter,
   onMoveUp, onMoveDown, onReorder, onSwapWithPool, onSwapWithLineup, onFillSlot,
-  onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading,
+  onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading, ruleWarnings,
   firstBaseCoachRotation, thirdBaseCoachRotation,
 }: Props) {
   const sensors = useSensors(
@@ -102,7 +104,7 @@ export function LineupEditor({
               onClick={onAutoGenerate}
               disabled={autoGenerateLoading}
               className="p-1 rounded text-gray-300 hover:text-navy-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Positionen zufällig befüllen — für alle Spiele gleichzeitig 'Alle aufstellen' nutzen"
+              title="Positionen vorschlagen — nach Positions-Profil, Fairness und Trainingsbeteiligung. Für alle Spiele gleichzeitig 'Alle aufstellen' nutzen."
             >
               <DiceIcon size={14} />
             </button>
@@ -118,6 +120,20 @@ export function LineupEditor({
           )}
         </div>
       </div>
+
+      {/* Liga-Regeln: Hinweis, kein Verbot. An einem Spieltag mit zu wenigen Frauen
+          muss sich trotzdem eine Aufstellung speichern lassen — deshalb Amber und nicht
+          Rot, und deshalb steht der Bogen darunter unveraendert offen. */}
+      {ruleWarnings && ruleWarnings.length > 0 && (
+        <div className="mb-2 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2">
+          <AlertCircle size={14} className="mt-px shrink-0 text-amber-600" />
+          <ul className="space-y-0.5">
+            {ruleWarnings.map(warning => (
+              <li key={warning} className="text-[11px] leading-snug text-amber-900">{warning}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {entries.length === 0 ? (
         <EmptyState

@@ -5,6 +5,7 @@ import com.softball.adapter.dto.PlayerFormPointResponse;
 import com.softball.adapter.dto.PlayerResponse;
 import com.softball.adapter.dto.PlayerUsageResponse;
 import com.softball.adapter.dto.SetWhatsappNameRequest;
+import com.softball.adapter.dto.UpdateGenderRequest;
 import com.softball.adapter.dto.UpdatePlayerRequest;
 import com.softball.adapter.dto.UpdatePositionProfileRequest;
 import com.softball.application.PlayerProfileService;
@@ -65,6 +66,12 @@ public class PlayerController {
     @PutMapping("/{id}")
     public PlayerResponse update(@PathVariable final Long id, @Valid @RequestBody final UpdatePlayerRequest request) {
         return PlayerResponse.from(playerService.update(id, request.name(), request.regular()));
+    }
+
+    @PutMapping("/{id}/gender")
+    public PlayerResponse updateGender(@PathVariable final Long id,
+                                       @RequestBody final UpdateGenderRequest request) {
+        return PlayerResponse.from(playerService.updateGender(id, request.gender()));
     }
 
     @PutMapping("/{id}/positions")

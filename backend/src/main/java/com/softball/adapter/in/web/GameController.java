@@ -97,6 +97,13 @@ public class GameController {
         return lineupService.setLineup(id, entries).stream().map(LineupEntryResponse::from).toList();
     }
 
+    /** Regel-Check fuer einen Aufstellungs-Entwurf: Hinweise, keine Fehler. */
+    @PostMapping("/{id}/lineup/check")
+    public LineupRuleCheckResponse checkLineup(@PathVariable final Long id,
+                                               @RequestBody final List<LineupEntryRequest> entries) {
+        return lineupService.checkRules(id, entries);
+    }
+
     @GetMapping("/{id}/lineup/suggest")
     public List<LineupSuggestionEntry> suggestLineup(@PathVariable final Long id) {
         return lineupSuggestionService.suggest(id);

@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.Gender;
 import com.softball.domain.model.Player;
 import com.softball.domain.model.PositionSlot;
 import com.softball.domain.service.PositionProfileValidator;
@@ -74,6 +75,17 @@ public class PlayerService {
         if (regular != null) {
             player.setRegular(regular);
         }
+        return playerRepository.save(player);
+    }
+
+    /**
+     * Setzt das Geschlecht. {@code null} löscht die Zuordnung — dann zählt der Spieler
+     * für die Frauen-Quote der Liga nicht mit, statt stillschweigend als Mann zu gelten.
+     */
+    public Player updateGender(final Long id, final Gender gender) {
+        final Player player = findById(id);
+        player.setGender(gender);
+        log.info("Geschlecht von Spieler {} gesetzt auf {}", id, gender);
         return playerRepository.save(player);
     }
 

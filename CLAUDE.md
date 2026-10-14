@@ -116,6 +116,16 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   beschränken auf ein Kalenderjahr oder eine Saison — der Zeitraum-Filter des Profils
   schaltet Teamvergleich, Positionen und Einsatz mit um. **Trainings gehören zu keiner
   Saison** und bleiben im Saison-Zuschnitt leer.
+- **Frauen-Quote** (`LineupGenderRule`, `Player.gender` seit V62): mindestens 2 Frauen auf
+  dem Feld, davon 1 im Infield (**P und C zählen als Infield**, EH und DH-Batter zählen
+  nicht). `Gender` kennt `FEMALE`, `MALE`, `DIVERSE`; für die Quote zählt
+  nur `FEMALE` — `DIVERSE` und nicht zugeordnet zählen nicht (Verbandssache, nicht App-Sache). Die Regel **warnt nur** —
+  `POST /api/games/{id}/lineup/check` liefert Hinweise, `PUT /lineup` speichert weiterhin
+  jede Aufstellung. Die Auto-Aufstellung **erzwingt** die Quote, solange genug Frauen
+  verfügbar sind — unabhängig von Trainingsbeteiligung.
+- **Auto-Aufstellung** (`LineupSuggestionEngine`): jeder Anwesende mindestens ein Spiel →
+  Trainingsbeteiligung → Spiele an diesem Spieltag → Frauen-Quote → Positions-Profil →
+  Auffüllen. Details: `docs/LINEUP.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.

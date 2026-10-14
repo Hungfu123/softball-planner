@@ -5,9 +5,25 @@ export interface Player {
   defaultBattingOrder: number | null
   whatsappName?: string | null
   archived?: boolean
+  /** Für die Frauen-Quote der Liga; null = nicht zugeordnet und zählt nirgends mit. */
+  gender?: Gender | null
   primaryPosition?: PositionSlot | null
   secondaryPosition?: PositionSlot | null
   tertiaryPosition?: PositionSlot | null
+}
+
+export type Gender = 'FEMALE' | 'MALE' | 'DIVERSE'
+
+export const GENDER_LABELS: Record<Gender, string> = { FEMALE: 'Frau', MALE: 'Mann', DIVERSE: 'Divers' }
+
+/** Reihenfolge im Schalter. */
+export const GENDER_ORDER: Gender[] = ['FEMALE', 'MALE', 'DIVERSE']
+
+/** Ergebnis von POST /games/{id}/lineup/check — Hinweise, keine Fehler. */
+export interface LineupRuleCheck {
+  warnings: string[]
+  womenOnField: number
+  womenInInfield: number
 }
 
 /**

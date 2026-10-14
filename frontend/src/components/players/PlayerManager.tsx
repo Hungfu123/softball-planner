@@ -22,6 +22,7 @@ import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle, ArchiveIcon, Arch
 import { EmptyState, ConfirmModal, Button, ResponsiveSheet } from '@/components/shared'
 import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
 import { WhatsappVotersTab } from './WhatsappVotersTab'
+import { GenderSheet } from './GenderSheet'
 import { PositionBadges } from './PositionBadges'
 import type { Player } from '@/types'
 
@@ -77,7 +78,7 @@ function SortablePlayerRow({ player, index }: { player: Player; index: number })
  * eine Zeile je Spieler, Positionen sichtbar, Antippen öffnet das Profil.
  */
 export function PlayerManager() {
-  const { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder } = usePlayers(true)
+  const { players, loading, create, update, remove, archive, unarchive, reorderBattingOrder, setGender } = usePlayers(true)
   const toast = useToastContext()
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -86,6 +87,7 @@ export function PlayerManager() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [orderMode, setOrderMode] = useState(() => searchParams.get('tab') === 'batting')
   const [whatsappOpen, setWhatsappOpen] = useState(() => searchParams.get('tab') === 'whatsapp')
+  const [genderOpen, setGenderOpen] = useState(false)
   const [search, setSearch] = useState('')
   // Spielzahl je Spieler: gibt jeder Zeile einen Grund außer dem Namen und beantwortet
   // die Frage, die man im Kader am häufigsten hat — wer ist überhaupt regelmäßig dabei.
@@ -267,10 +269,13 @@ export function PlayerManager() {
           </h1>
           <div className="flex gap-1.5">
             <ModeButton active={orderMode} onClick={() => setOrderMode(v => !v)}>
-              Schlagreihenfolge
+              Reihenfolge
+            </ModeButton>
+            <ModeButton active={genderOpen} onClick={() => setGenderOpen(true)}>
+              Geschlecht
             </ModeButton>
             <ModeButton active={whatsappOpen} onClick={() => setWhatsappOpen(true)}>
-              WhatsApp-Namen
+              WhatsApp
             </ModeButton>
           </div>
         </div>
@@ -490,6 +495,15 @@ export function PlayerManager() {
             </Button>
           </div>
         )}
+
+        <ResponsiveSheet
+          open={genderOpen}
+          onClose={() => setGenderOpen(false)}
+          title="Geschlecht zuordnen"
+          maxWidth="md"
+        >
+          <GenderSheet players={activePlayers} onSet={setGender} />
+        </ResponsiveSheet>
 
         <ResponsiveSheet
           open={whatsappOpen}
