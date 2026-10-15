@@ -100,11 +100,9 @@ export function FormChart({
   const H = width < 480 ? 190 : 240
 
   // Gezeichnet wird erst ab MIN_AT_BATS — davor sagt die laufende Quote nichts und
-  // riss die Achse auf. Reicht es nirgends, zeigen wir lieber alles als nichts.
-  const belastbar = (reihe: CumulativePoint[]) => {
-    const ab = reihe.filter(p => !p.provisional)
-    return ab.length > 1 ? ab : reihe
-  }
+  // riss die Achse auf. Wer die Schwelle nicht erreicht, bekommt keine Linie: drei
+  // At-Bats ergaben sonst einen Strich auf 1.000, der nach Fehler aussah.
+  const belastbar = (reihe: CumulativePoint[]) => reihe.filter(p => !p.provisional)
   const alle = useMemo(() => cumulativeSeries(points), [points])
   const series = useMemo(() => belastbar(alle), [alle])
   const compareLines = useMemo(
@@ -164,10 +162,24 @@ export function FormChart({
     [shown, compareLines],
   )
 
-  if (series.length === 0) {
+  if (alle.length === 0) {
     return (
       <p className="text-sm text-gray-500 italic">
         Noch nichts gescort. Sobald ein Spiel live mitgeschrieben wird, wächst hier die Kurve.
+      </p>
+    )
+  }
+
+  // Zu wenig At-Bats fuer eine Aussage: lieber sagen, wie weit es noch ist, als eine
+  // Linie zeichnen, die nur die letzte Zufallsserie zeigt.
+  if (series.length === 0) {
+    const bisher = alle[alle.length - 1].atBats
+    return (
+      <p className="text-sm text-gray-500">
+        Noch zu wenig At-Bats für eine Kurve — {bisher} von {MIN_AT_BATS}.
+        <span className="block text-[11px] mt-1">
+          Bis dahin schwankt der Schnitt bei jedem Schlag zu stark, um etwas zu zeigen.
+        </span>
       </p>
     )
   }
