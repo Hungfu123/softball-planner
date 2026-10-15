@@ -6,7 +6,7 @@ import * as api from '@/api/client'
 import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 import { PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
-import { trainingYearLabel, trainingYearStart } from '@/utils/trainingYear'
+import { trainingYearFilterLabel, trainingYearStart, trainingYearTitle } from '@/utils/trainingYear'
 import { OpponentSheet } from '@/components/orga/OpponentSheet'
 
 interface Props {
@@ -448,10 +448,16 @@ export function PlayerPool({
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            {!selectedPeriodId && ([['trainingYear', trainingYearLabel(gameDayDate)], ['all', 'Gesamt']] as const).map(([key, label]) => (
+            {!selectedPeriodId && ([
+              ['trainingYear', trainingYearFilterLabel(gameDayDate), trainingYearTitle(gameDayDate)],
+              ['all', 'Gesamt', 'Alle jemals erfassten Trainings, über alle Trainingsjahre'],
+            ] as const).map(([key, label, hint]) => (
               <button
                 key={key}
                 onClick={() => setTrainingFilter(key)}
+                title={hint}
+                aria-label={hint}
+                aria-pressed={trainingFilter === key}
                 className={`text-[11px] px-2 py-0.5 rounded-full font-medium cursor-pointer transition-colors ${
                   trainingFilter === key
                     ? 'bg-navy-800 text-white'

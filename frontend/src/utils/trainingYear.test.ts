@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { trainingYearLabel, trainingYearStart } from './trainingYear'
+import { trainingYearFilterLabel, trainingYearLabel, trainingYearStart, trainingYearTitle } from './trainingYear'
 
 describe('trainingYearStart', () => {
   it('nimmt den 1. November desselben Jahres, sobald November erreicht ist', () => {
@@ -38,5 +38,18 @@ describe('trainingYearLabel', () => {
   it('haelt die Jahrhundertwende zweistellig', () => {
     expect(trainingYearLabel('2099-11-01')).toBe('99/00')
     expect(trainingYearLabel('2100-11-01')).toBe('00/01')
+  })
+})
+
+describe('Abgrenzung zur einzelnen Trainingsperiode', () => {
+  it('stellt "Jahr" voran, damit 26/27 nicht nach der Wintersaison aussieht', () => {
+    // Blank stuende "26/27" neben Perioden wie "Wintersaison 25/26" und waere als eine
+    // einzelne Periode lesbar. Gemeint sind aber Winter UND Sommer zusammen.
+    expect(trainingYearFilterLabel('2027-02-14')).toBe('Jahr 26/27')
+  })
+
+  it('schreibt im Tooltip aus, dass beide Saisons drinstecken', () => {
+    expect(trainingYearTitle('2027-02-14'))
+      .toBe('Trainingsjahr 26/27: Winter- und Sommersaison zusammen, ab 1. November 2026')
   })
 })

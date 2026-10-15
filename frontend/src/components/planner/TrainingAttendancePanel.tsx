@@ -1,7 +1,7 @@
 import type { Player, TrainingStatsResponse } from '@/types'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 import { PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
-import { trainingYearLabel } from '@/utils/trainingYear'
+import { trainingYearFilterLabel, trainingYearTitle } from '@/utils/trainingYear'
 
 type Props = {
   stats: TrainingStatsResponse[]
@@ -30,8 +30,13 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
       <h2 className="flex items-center gap-2 mb-2 pb-1.5 xl:mb-1 xl:pb-0.5 border-b border-cream-200 font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Training
-        <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
-          {withoutPitcherCatcher ? `Basic · ${trainingYearLabel(gameDayDate)}` : trainingYearLabel(gameDayDate)}
+        <span
+          className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold"
+          title={trainingYearTitle(gameDayDate)}
+        >
+          {withoutPitcherCatcher
+            ? `Basic · ${trainingYearFilterLabel(gameDayDate)}`
+            : trainingYearFilterLabel(gameDayDate)}
         </span>
       </h2>
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 xl:p-1.5 space-y-1.5 xl:space-y-0">
