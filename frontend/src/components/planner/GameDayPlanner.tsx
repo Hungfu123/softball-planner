@@ -78,9 +78,6 @@ export function GameDayPlanner() {
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const [assignPosition, setAssignPosition] = useState<string | null>(null)
   const [pollStatus, setPollStatus] = useState<GameDayVotePreview | null>(null)
-  // Ein Wochentag trägt das P/C-Training (siehe utils/trainingWeekday). Ausgeschlossene
-  // Wochentage gehen als Query-Param mit, das Backend rechnet die Teilnahme-Zahlen ohne sie.
-  const [excludedTrainingWeekdays, setExcludedTrainingWeekdays] = useState<number[]>([])
   const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
 
@@ -166,24 +163,19 @@ export function GameDayPlanner() {
       .catch(() => setPollStatus(null))
   }, [gameDay?.id])
 
-  const toggleTrainingWeekday = useCallback((weekday: number) => {
-    setExcludedTrainingWeekdays(prev =>
-      prev.includes(weekday) ? prev.filter(d => d !== weekday) : [...prev, weekday])
-  }, [])
-
   // Trainings-Teilnahme — nach Periode oder seit Beginn des Trainingsjahres. Dasselbe
   // Fenster, nach dem die Auto-Aufstellung sortiert: die angezeigte Zahl soll die
   // Aufstellung erklaeren. Vorher waren es hier 84 Tage und in der Engine 3 Monate.
   useEffect(() => {
     if (!gameDay?.date) return
     if (selectedPeriodId) {
-      api.getTrainingStats(selectedPeriodId, undefined, undefined, excludedTrainingWeekdays).then(setTrainingStats)
+      api.getTrainingStats(selectedPeriodId, undefined, undefined, undefined, true).then(setTrainingStats)
     } else {
       const since = trainingWindow === 'all' ? undefined : trainingYearStart(gameDay.date)
-      api.getTrainingStats(undefined, since, countUntil(gameDay.date), excludedTrainingWeekdays)
+      api.getTrainingStats(undefined, since, countUntil(gameDay.date), undefined, true)
         .then(setTrainingStats)
     }
-  }, [gameDay?.date, selectedPeriodId, excludedTrainingWeekdays, trainingWindow])
+  }, [gameDay?.date, selectedPeriodId, trainingWindow])
 
   // Nur den Tab wechseln — das Laden von Lineup/Staff übernimmt zentral der
   // Effect auf activeGame?.id (verhindert doppelte, konkurrierende load()-Aufrufe).
@@ -1077,8 +1069,6 @@ export function GameDayPlanner() {
                   stats={trainingStats}
                   availablePlayers={availablePlayers}
                   gameDayDate={gameDay.date}
-                  excludedWeekdays={excludedTrainingWeekdays}
-                  onToggleWeekday={toggleTrainingWeekday}
                   periods={trainingPeriods}
                   selectedPeriodId={selectedPeriodId}
                   onSelectPeriod={setSelectedPeriodId}

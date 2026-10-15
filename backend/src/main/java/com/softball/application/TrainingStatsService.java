@@ -43,7 +43,22 @@ public class TrainingStatsService {
     @Transactional(readOnly = true)
     public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since, final LocalDate until,
                                                  final Collection<Integer> excludeWeekdays) {
-        final List<Training> nonCancelledTrainings = findHeldTrainings(periodId, since, until, excludeWeekdays);
+        return getStats(periodId, since, until, excludeWeekdays, false);
+    }
+
+    /**
+     * @param onlyOpenToAll true = nur Trainings zaehlen, zu denen der ganze Kader geladen
+     *                      war. Das ist die Menge, nach der die Auto-Aufstellung sortiert;
+     *                      der Planer fragt deshalb so an, damit die angezeigte Zahl die
+     *                      Aufstellung erklaert.
+     */
+    @Transactional(readOnly = true)
+    public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since, final LocalDate until,
+                                                 final Collection<Integer> excludeWeekdays,
+                                                 final boolean onlyOpenToAll) {
+        final List<Training> nonCancelledTrainings = findHeldTrainings(periodId, since, until, excludeWeekdays).stream()
+            .filter(t -> !onlyOpenToAll || t.isOpenToAll())
+            .toList();
 
         final long totalNonCancelled = nonCancelledTrainings.size();
 
@@ -98,9 +113,13 @@ public class TrainingStatsService {
      * {@link TrainingParticipationCalculator}.
      */
     @Transactional(readOnly = true)
-    public Map<Long, Double> getParticipationRates(final Long periodId, final LocalDate since, final LocalDate until,
-                                                    final Collection<Integer> excludeWeekdays) {
-        final List<Training> heldTrainings = findHeldTrainings(periodId, since, until, excludeWeekdays);
+    public Map<Long, Double> getParticipationRates(final Long periodId, final LocalDate since, final LocalDate until) {
+        final List<Training> heldTrainings = findHeldTrainings(periodId, since, until, List.of()).stream()
+            // Nur Termine, zu denen der ganze Kader geladen war. Wer zum Nur-P/C-Training
+            // nicht eingeladen ist, darf es nicht als versaeumt angerechnet bekommen —
+            // und der Wochentag taugt dafuer nicht: er wandert zweimal im Jahr.
+            .filter(Training::isOpenToAll)
+            .toList();
         final List<Long> trainingIds = heldTrainings.stream().map(Training::getId).toList();
         if (trainingIds.isEmpty()) return Map.of();
         return TrainingParticipationCalculator.rates(

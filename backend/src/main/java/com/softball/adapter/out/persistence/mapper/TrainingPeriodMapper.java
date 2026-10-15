@@ -21,6 +21,7 @@ public class TrainingPeriodMapper {
         domain.setTime(entity.getTime());
         domain.setLocation(entity.getLocation());
         domain.setWeekdayTimes(timesFromCsv(entity.getWeekdayTimes()));
+        domain.setPcOnlyWeekdays(fromCsv(entity.getPcOnlyWeekdays()));
         domain.setCycleWeeks(entity.getCycleWeeks());
         domain.setActiveWeeksInCycle(fromCsv(entity.getActiveWeeksInCycle()));
         return domain;
@@ -33,6 +34,7 @@ public class TrainingPeriodMapper {
         entity.setTime(domain.getTime());
         entity.setLocation(domain.getLocation());
         entity.setWeekdayTimes(timesToCsv(domain.getWeekdayTimes()));
+        entity.setPcOnlyWeekdays(toCsv(domain.getPcOnlyWeekdays()));
         entity.setCycleWeeks(domain.getCycleWeeks());
         entity.setActiveWeeksInCycle(toCsv(domain.getActiveWeeksInCycle()));
         return entity;
@@ -46,6 +48,7 @@ public class TrainingPeriodMapper {
         entity.setTime(domain.getTime());
         entity.setLocation(domain.getLocation());
         entity.setWeekdayTimes(timesToCsv(domain.getWeekdayTimes()));
+        entity.setPcOnlyWeekdays(toCsv(domain.getPcOnlyWeekdays()));
         entity.setCycleWeeks(domain.getCycleWeeks());
         entity.setActiveWeeksInCycle(toCsv(domain.getActiveWeeksInCycle()));
     }

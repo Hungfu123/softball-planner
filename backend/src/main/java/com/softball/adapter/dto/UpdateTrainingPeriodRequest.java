@@ -28,5 +28,11 @@ public record UpdateTrainingPeriodRequest(
 
     Integer cycleWeeks,
 
-    List<Integer> activeWeeksInCycle
+    List<Integer> activeWeeksInCycle,
+
+    /**
+     * ISO-Wochentage, an denen nur Pitcher und Catcher eingeladen sind. Leer = alle
+     * Termine stehen dem ganzen Kader offen und zaehlen in die Trainingsbeteiligung.
+     */
+    List<Integer> pcOnlyWeekdays
 ) {}

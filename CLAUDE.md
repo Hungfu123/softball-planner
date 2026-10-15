@@ -126,15 +126,19 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
 - **Auto-Aufstellung** (`LineupSuggestionEngine`): jeder Anwesende mindestens ein Spiel →
   Trainingsbeteiligung → Spiele an diesem Spieltag → Frauen-Quote → Positions-Profil →
   Auffüllen. Die Beteiligung ist eine **Quote** (besucht ÷ stattgefunden seit dem ersten
-  Auftauchen, Nenner mindestens 3, `TrainingParticipationCalculator`), **ohne das
-  P/C-Training** — dort sind nur Pitcher und Catcher eingeladen. Zeitraum ist das
+  Auftauchen, Nenner mindestens 3, `TrainingParticipationCalculator`), **ohne Termine mit
+  eingeschränktem Teilnehmerkreis** (siehe nächster Punkt). Zeitraum ist das
   **Trainingsjahr seit dem letzten 1. November**, kein rollendes Fenster; Engine,
   Trainings-Panel und Spielerpool benutzen denselben. Details: `docs/LINEUP.md`.
-- **P/C-Trainingstag** ist eine Konstante an zwei Stellen: `LineupSuggestionService`
-  (Backend) und `frontend/src/utils/trainingWeekday.ts` (Frontend). Seit der Winterstruktur
-  (Nov 2026) der **Donnerstag**, davor Montag. `Training.type` (`REGULAR`/`PITCHER_CATCHER`)
-  existiert in DB und API, wird aber von keiner UI gesetzt — die Filter gehen über den
-  Wochentag. Grenze davon in `docs/LINEUP.md`.
+- **Wer war eingeladen?** (`Training.openToAll`, V63): Termine, zu denen nur ein Teil des
+  Kaders geladen ist (Nur-P/C), zählen **nicht** in die Trainingsbeteiligung — niemandem
+  darf als versäumt angerechnet werden, wozu er nicht geladen war. Gesetzt wird das je
+  Wochentag an der Periode (`TrainingPeriod.pcOnlyWeekdays`, V64, Schalter „nur P/C" im
+  Perioden-Editor). **Nicht mit `Training.type` verwechseln:** der Sommer-Montag trägt
+  `PITCHER_CATCHER` und war trotzdem offen, weil Basic und P/C dort zusammen stattfanden.
+  `type` beschreibt den Inhalt, `openToAll` den Teilnehmerkreis — nur letzteres zählt für
+  die Fairness. Der P/C-Tag wandert zweimal im Jahr (Nov → Do, Apr → zurück zum Montag),
+  ein fester Wochentag taugt deshalb nicht.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.

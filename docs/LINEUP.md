@@ -85,8 +85,8 @@ Reihenfolge der Kriterien beim Befüllen:
    eigentliche Verteilungsschlüssel, nicht die bisherige Spielzahl. Gerechnet wird als
    **Quote**, nicht als Zähler: besucht ÷ stattgefunden **seit dem ersten Auftauchen**
    des Spielers (`TrainingParticipationCalculator`) — wer im Mai dazukam, hat den April
-   nicht versäumt. Das **P/C-Training zählt nicht mit**: dort sind nur Pitcher und
-   Catcher eingeladen, wer nur Basic kann läge sonst strukturell hinten. Der Nenner hat
+   nicht versäumt. Termine, zu denen **nur ein Teil des Kaders geladen** war
+   (`Training.openToAll = false`), zählen nicht mit — weder im Zähler noch im Nenner. Der Nenner hat
    eine Untergrenze von 3 (`MIN_DENOMINATOR`) — sonst stünde, wer zwei Wochen vor dem
    Spieltag neu dazukommt und beide Male da war, mit 2/2 = 1.0 vor jedem Stammspieler.
 3. **Spiele an diesem Spieltag** — verteilt die Zusatzspiele unter gleich oft Trainierenden.
@@ -133,16 +133,31 @@ ab Spieltag — auf dem Desktop sichtbar nebeneinander.
 Willst du stattdessen ein rollendes Fenster (reagiert schneller, bestraft eine lange
 Abwesenheit härter), ist es je eine Zeile an den beiden oben genannten Stellen.
 
-### Welcher Wochentag das P/C-Training trägt
+### Wer war eingeladen?
 
-Der Tag steckt an zwei Stellen als Konstante: `LineupSuggestionService.PITCHER_CATCHER_WEEKDAY`
-(Backend, für die Quote) und `frontend/src/utils/trainingWeekday.ts` (Frontend, für den
-Chip in Spielerpool und Trainings-Panel). Bis Oktober 2026 war es der Montag, seit der
-Winterstruktur der Donnerstag. **Beim nächsten Strukturwechsel müssen beide mitziehen** —
-plus die Datumsangaben in `StatsDrawer.test.tsx`, die bewusst am konkreten Label hängen.
+Entscheidend ist nicht, **was** trainiert wurde, sondern **wer kommen konnte**. Das Feld
+`Training.openToAll` (V63) trennt beides:
 
-Die Kopplung an den Wochentag hat eine bekannte Grenze: ein Zeitraum, der über einen
-Strukturwechsel reicht, lässt sich damit nicht sauber schneiden — vor dem Wechsel bedeutet
-derselbe Wochentag etwas anderes. Betroffen sind das „Gesamt"-Fenster im Spielerpool und
-Spieltage, deren 3-Monats-Fenster vor den Wechsel zurückreicht. Sauber lösen ließe sich das
-nur über `Training.type` statt über den Wochentag.
+| Zeitraum | Tag | Inhalt | `type` | `openToAll` |
+|---|---|---|---|---|
+| Jan–Mär 2026 | Mo | nur P/C | `PITCHER_CATCHER` | **false** |
+| Apr–Okt 2026 | Mo | Basic **und** P/C zusammen | `PITCHER_CATCHER` | true |
+| | Do, Sa | Team | `REGULAR` | true |
+| ab Nov 2026 | Mo | Basic | `REGULAR` | true |
+| | Do | nur P/C | `PITCHER_CATCHER` | **false** |
+| | Sa | Team | `REGULAR` | true |
+
+**`type` taugt dafür nicht**: der Sommer-Montag trägt `PITCHER_CATCHER` und stand trotzdem
+allen offen — die WhatsApp-Umfrage sagt es wörtlich („Wer kommt morgen zum P/C Training
+oder Basic Training?"). `type` beschreibt den Inhalt, `openToAll` den Teilnehmerkreis.
+
+**Ein fester Wochentag taugt erst recht nicht**: der P/C-Tag wandert zweimal im Jahr — im
+November auf den Donnerstag, im April zurück auf den Montag. Ein Trainingsjahr enthält
+damit immer beide Strukturen, ein Wochentags-Filter wäre sieben von zwölf Monaten falsch.
+
+Gesetzt wird es je Wochentag an der Periode (`TrainingPeriod.pcOnlyWeekdays`, V64) — im
+Perioden-Editor der Schalter „nur P/C" neben der Uhrzeit. Der Strukturwechsel ist damit
+eine Einstellung, kein Code. Die Auto-Aufstellung und das Trainings-Panel im Planer fragen
+beide mit `onlyOpenToAll=true` an; einen Schalter dafür gibt es bewusst nicht, weil
+Nur-P/C-Termine nie in die Fairness-Rechnung gehören.
+

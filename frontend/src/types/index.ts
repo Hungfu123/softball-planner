@@ -374,6 +374,8 @@ export interface TrainingPeriodResponse {
   location: string | null
   cycleWeeks: number
   activeWeeksInCycle: number[]
+  /** ISO-Wochentage, an denen nur Pitcher und Catcher eingeladen sind. */
+  pcOnlyWeekdays: number[]
 }
 
 export type TrainingType = 'REGULAR' | 'PITCHER_CATCHER'
@@ -387,6 +389,8 @@ export interface TrainingResponse {
   attendeeCount: number
   periodId: number | null
   type: TrainingType
+  /** War der ganze Kader eingeladen? False = Nur-P/C, zählt nicht in die Beteiligung. */
+  openToAll: boolean
 }
 
 export interface TrainingAttendanceResponse {

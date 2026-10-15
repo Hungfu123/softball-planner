@@ -82,12 +82,12 @@ describe('StatsDrawer', () => {
         attendance={new Map()} />
     )
     expect(screen.getByText('Trainingstage')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Donnerstag \(P\/C\) ausblenden/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Donnerstag ausblenden/ })).toBeInTheDocument()
   })
 
-  // Donnerstag ist seit der Winterstruktur der P/C-Tag (utils/trainingWeekday).
-  // Zieht der P/C-Tag wieder um, muessen die Datumsangaben hier mitziehen.
-  it('P/C-Tag ausblenden rechnet Trainings-Anzahl und Teilnahmen neu', () => {
+  // Die Statistik filtert nach Wochentagen, nicht nach Trainingstyp — hier stehen
+  // mehrere Tage nebeneinander, da ist der Wochentag die richtige Beschriftung.
+  it('einen Wochentag ausblenden rechnet Trainings-Anzahl und Teilnahmen neu', () => {
     const players = [mockPlayer(1, 'Khang')]
     // Do 07.05. (da), Mi 06.05. (da), Do 14.05. (nicht da)
     const trainings = [
@@ -111,10 +111,10 @@ describe('StatsDrawer', () => {
     // ungefiltert: 3 Trainings
     expect(trainingsTile()).toHaveTextContent('3')
 
-    fireEvent.click(screen.getByRole('button', { name: /Donnerstag \(P\/C\) ausblenden/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Donnerstag ausblenden/ }))
 
     // nur noch das Mittwoch-Training -> 1 Training
     expect(trainingsTile()).toHaveTextContent('1')
-    expect(screen.getByRole('button', { name: /Donnerstag \(P\/C\) einblenden/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Donnerstag einblenden/ })).toBeInTheDocument()
   })
 })

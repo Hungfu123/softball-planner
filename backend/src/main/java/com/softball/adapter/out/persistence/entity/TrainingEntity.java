@@ -28,6 +28,9 @@ public class TrainingEntity {
     @Column(nullable = false)
     private String type = "REGULAR";
 
+    @Column(name = "open_to_all", nullable = false)
+    private boolean openToAll = true;
+
     // EAGER: TrainingMapper.toDomain dereferenziert period bei JEDEM Mapping. Bei LAZY warf das
     // Mapping außerhalb einer offenen Session (z.B. WhatsappPollScheduler-Thread, kein OSIV) eine
     // LazyInitializationException. period ist ein kleines ToOne → Eager-Join ist billig.
@@ -61,6 +64,8 @@ public class TrainingEntity {
     public void setCancelled(final boolean cancelled) { this.cancelled = cancelled; }
     public TrainingPeriodEntity getPeriod() { return period; }
     public void setPeriod(final TrainingPeriodEntity period) { this.period = period; }
+    public boolean isOpenToAll() { return openToAll; }
+    public void setOpenToAll(final boolean openToAll) { this.openToAll = openToAll; }
     public String getType() { return type; }
     public void setType(final String type) { this.type = type; }
     public List<TrainingAttendanceEntity> getAttendances() { return attendances; }

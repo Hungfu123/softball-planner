@@ -32,11 +32,48 @@ class TrainingStatsServiceTest {
 
     @InjectMocks private TrainingStatsService service;
 
+    private Training trainingPcOnly(final Long id, final LocalDate date) {
+        final Training t = training(id, date, false);
+        t.setOpenToAll(false);
+        return t;
+    }
+
     private Training training(final Long id, final LocalDate date, final boolean cancelled) {
         final Training t = new Training(date, "18:00", "Feld");
         t.setId(id);
         t.setCancelled(cancelled);
         return t;
+    }
+
+    @Test
+    void getStats_onlyOpenToAll_laesstNurEingeladeneTermineZaehlen() {
+        // Vier Termine, der zweite ist Nur-P/C. Zu dem war Bob nicht geladen.
+        final List<Training> trainings = List.of(
+            training(1L, LocalDate.of(2026, 1, 5), false),
+            trainingPcOnly(2L, LocalDate.of(2026, 1, 12)),
+            training(3L, LocalDate.of(2026, 1, 19), false),
+            training(4L, LocalDate.of(2026, 1, 26), false));
+        when(trainingRepository.findAllByOrderByDateDesc()).thenReturn(trainings);
+
+        final Player alice = new Player(1L, "Alice", true);
+        final Player bob = new Player(2L, "Bob", true);
+        when(attendanceRepository.findByTrainingIdIn(anyList())).thenReturn(List.of(
+            new TrainingAttendance(trainings.get(0), alice, true),
+            new TrainingAttendance(trainings.get(1), alice, true),   // Nur-P/C
+            new TrainingAttendance(trainings.get(2), alice, true),
+            new TrainingAttendance(trainings.get(3), alice, true),
+            new TrainingAttendance(trainings.get(0), bob, true),
+            new TrainingAttendance(trainings.get(2), bob, true),
+            new TrainingAttendance(trainings.get(3), bob, true)));
+        when(playerRepository.findByRegularTrue()).thenReturn(List.of(alice, bob));
+        when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(alice, bob));
+
+        final TrainingStatsResponse bobStats = service.getStats(null, null, null, List.of(), true).stream()
+            .filter(r -> r.playerId().equals(2L)).findFirst().orElseThrow();
+
+        // Bob hat den Nur-P/C-Termin nicht versaeumt — er war nicht eingeladen.
+        assertThat(bobStats.heldSinceFirstSeen()).isEqualTo(3);
+        assertThat(bobStats.participation()).isEqualTo(1.0);
     }
 
     @Test

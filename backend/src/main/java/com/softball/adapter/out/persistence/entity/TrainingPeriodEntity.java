@@ -36,6 +36,9 @@ public class TrainingPeriodEntity {
     @Column(name = "weekday_times")
     private String weekdayTimes;
 
+    @Column(name = "pc_only_weekdays")
+    private String pcOnlyWeekdays;
+
     @Column(name = "cycle_weeks", nullable = false)
     private int cycleWeeks = 1;
 
@@ -69,6 +72,8 @@ public class TrainingPeriodEntity {
     public String getWeekdayTimes() { return weekdayTimes; }
     public void setWeekdayTimes(final String weekdayTimes) { this.weekdayTimes = weekdayTimes; }
 
+    public String getPcOnlyWeekdays() { return pcOnlyWeekdays; }
+    public void setPcOnlyWeekdays(final String pcOnlyWeekdays) { this.pcOnlyWeekdays = pcOnlyWeekdays; }
     public int getCycleWeeks() { return cycleWeeks; }
     public void setCycleWeeks(final int cycleWeeks) { this.cycleWeeks = cycleWeeks; }
     public String getActiveWeeksInCycle() { return activeWeeksInCycle; }

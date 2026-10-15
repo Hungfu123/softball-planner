@@ -5,7 +5,8 @@ import com.softball.domain.model.Training;
 import java.time.LocalDate;
 
 public record TrainingResponse(Long id, LocalDate date, String time, String location, boolean cancelled,
-                                int attendeeCount, Long periodId, String type) {
+                                int attendeeCount, Long periodId, String type,
+                                boolean openToAll) {
 
     public static TrainingResponse from(final Training training) {
         final int attendeeCount = (int) training.getAttendances().stream()
@@ -19,7 +20,8 @@ public record TrainingResponse(Long id, LocalDate date, String time, String loca
             training.isCancelled(),
             attendeeCount,
             training.getPeriod() != null ? training.getPeriod().getId() : null,
-            training.getType()
+            training.getType(),
+            training.isOpenToAll()
         );
     }
 }

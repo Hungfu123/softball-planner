@@ -15,6 +15,14 @@ public class TrainingPeriod {
     private String time;
     private String location;
     private Map<Integer, String> weekdayTimes = new LinkedHashMap<>();
+    /**
+     * ISO-Wochentage dieser Periode, an denen nur Pitcher und Catcher eingeladen sind.
+     *
+     * <p>Leer heisst: alle Termine stehen dem ganzen Kader offen. Damit ist der
+     * Strukturwechsel eine Einstellung statt Code — ab November traegt der Donnerstag
+     * das Nur-P/C-Training, ab April wandert es zurueck oder faellt weg.
+     */
+    private List<Integer> pcOnlyWeekdays = new ArrayList<>();
     private int cycleWeeks = 1;
     private List<Integer> activeWeeksInCycle = new ArrayList<>(List.of(1));
 
@@ -51,6 +59,12 @@ public class TrainingPeriod {
 
     public Map<Integer, String> getWeekdayTimes() { return weekdayTimes; }
     public void setWeekdayTimes(final Map<Integer, String> weekdayTimes) { this.weekdayTimes = weekdayTimes != null ? weekdayTimes : new LinkedHashMap<>(); }
+
+    public List<Integer> getPcOnlyWeekdays() { return pcOnlyWeekdays; }
+    public void setPcOnlyWeekdays(final List<Integer> pcOnlyWeekdays) { this.pcOnlyWeekdays = pcOnlyWeekdays != null ? pcOnlyWeekdays : new ArrayList<>(); }
+
+    /** Ist an diesem Wochentag der ganze Kader eingeladen? */
+    public boolean isOpenToAllOn(final int isoWeekday) { return !pcOnlyWeekdays.contains(isoWeekday); }
 
     public int getCycleWeeks() { return cycleWeeks; }
     public void setCycleWeeks(final int cycleWeeks) { this.cycleWeeks = cycleWeeks; }

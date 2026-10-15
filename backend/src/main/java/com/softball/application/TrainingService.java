@@ -74,7 +74,8 @@ public class TrainingService {
                                               final Map<Integer, String> weekdayTimes,
                                               final String location, final String periodName,
                                               final String type, final Integer cycleWeeksParam,
-                                              final List<Integer> activeWeeksInCycleParam) {
+                                              final List<Integer> activeWeeksInCycleParam,
+                                              final List<Integer> pcOnlyWeekdays) {
         if (startDate.isAfter(endDate)) {
             throw new IllegalArgumentException("Startdatum darf nicht nach dem Enddatum liegen");
         }
@@ -106,6 +107,10 @@ public class TrainingService {
             }
         }
 
+        // Nur-P/C-Tage: dorthin ist nur ein Teil des Kaders geladen, sie zaehlen nicht
+        // in die Trainingsbeteiligung. Leer = alle Termine stehen allen offen.
+        final List<Integer> pcOnly = pcOnlyWeekdays != null ? pcOnlyWeekdays : List.of();
+
         TrainingPeriod period = null;
         if (periodName != null && !periodName.isBlank()) {
             period = periodRepository.findByNameIgnoreCase(periodName.trim())
@@ -116,6 +121,7 @@ public class TrainingService {
             period.setLocation(location);
             period.setCycleWeeks(cycleWeeks);
             period.setActiveWeeksInCycle(activeWeeksInCycle);
+            period.setPcOnlyWeekdays(pcOnly);
             period = periodRepository.save(period);
         }
 
@@ -139,11 +145,13 @@ public class TrainingService {
                 existing.setTime(dayTime);
                 if (location != null) existing.setLocation(location);
                 if (type != null) existing.setType(type);
+                existing.setOpenToAll(!pcOnly.contains(d.getDayOfWeek().getValue()));
                 if (period != null) existing.setPeriod(period);
                 results.add(TrainingResponse.from(trainingRepository.save(existing)));
             } else {
                 Training training = new Training(d, dayTime, location);
                 if (type != null) training.setType(type);
+                training.setOpenToAll(!pcOnly.contains(d.getDayOfWeek().getValue()));
                 training.setPeriod(period);
                 training = trainingRepository.save(training);
                 autoFiller.autoFill(training);
