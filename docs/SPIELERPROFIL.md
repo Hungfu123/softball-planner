@@ -141,8 +141,19 @@ Jetzt liegt **eine** Fläche über dem ganzen Graphen: getippt wird der nächstg
 und beim Ziehen wandert die Auswahl mit, ohne neu zu zielen (`waehleBeiX`, Pointer-Capture
 wo der Browser es kennt). `touch-action: pan-y` lässt das senkrechte Scrollen in Ruhe.
 
-Eine **senkrechte Fanglinie** markiert den gewählten Punkt — die Fingerkuppe deckt ihn zu,
-die Linie ragt darüber hinaus.
+Eine **senkrechte Fanglinie** (gray-400) markiert den gewählten Punkt — die Fingerkuppe
+deckt ihn zu, die Linie ragt darüber hinaus. Der Hinweistext nennt je nach Eingabeart
+Wischen oder Maus (`[@media(hover:hover)_and_(pointer:fine)]`).
+
+**Unter der Legende steht, wie die Achse zu lesen ist** („Ein Schritt je Spiel · Monate
+zeigen, wie dicht sie lagen") — außerhalb der Legende, sonst verschwände der Satz
+ausgerechnet beim Vergleich. Er erklärt zugleich, warum ein Monat fehlen kann: dort gab
+es keine Spiele.
+
+**Zu wenig At-Bats:** erreicht kein Punkt die Schwelle, wird gar nicht gezeichnet, sondern
+„Noch zu wenig At-Bats für eine Kurve — 3 von 10" gezeigt. Vorher zeichnete der Rückfall
+genau das, was er für aussagelos erklärt: drei Treffer aus drei Versuchen ergaben einen
+Strich quer auf 1.000.
 
 **Detailzeile fest hoch**, damit beim Wandern von Punkt zu Punkt nichts springt; der
 Vergleichswert steht auf eigener Zeile statt angehängt, sonst schnitt ihn `truncate` ab.
