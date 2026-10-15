@@ -88,6 +88,30 @@ class TrainingParticipationCalculatorTest {
     }
 
     @Test
+    void futureTrainingsMustNotReachTheDenominator() {
+        // Regression: der Aufrufer begrenzt das Fenster nach oben. Reicht er trotzdem
+        // Termine herein, an denen noch niemand gewesen sein KANN, verwaessern die die
+        // Quote — und zwar kleine Nenner am haertesten, also genau die Neuzugaenge.
+        final List<Training> vergangen = weekly(LocalDate.of(2026, 1, 5), 4);
+        final List<TrainingAttendance> attendances = List.of(
+            present(vergangen.get(0), ALT),
+            present(vergangen.get(1), ALT),
+            present(vergangen.get(2), ALT),
+            present(vergangen.get(3), ALT));
+
+        final Map<Long, Double> sauber = TrainingParticipationCalculator.rates(vergangen, attendances);
+        assertThat(sauber.get(ALT.getId())).isCloseTo(1.0, within(0.001));
+
+        // Dasselbe mit vier noch nicht stattgefundenen Terminen hintendran.
+        final List<Training> mitZukunft = new ArrayList<>(vergangen);
+        mitZukunft.addAll(weekly(LocalDate.of(2026, 6, 1), 4).stream()
+            .peek(t -> t.setId(t.getId() + 100)).toList());
+
+        final Map<Long, Double> verwaessert = TrainingParticipationCalculator.rates(mitZukunft, attendances);
+        assertThat(verwaessert.get(ALT.getId())).isCloseTo(0.5, within(0.001));
+    }
+
+    @Test
     void emptyInputsYieldEmptyMap() {
         assertThat(TrainingParticipationCalculator.rates(List.of(), List.of())).isEmpty();
         assertThat(TrainingParticipationCalculator.rates(null, List.of())).isEmpty();

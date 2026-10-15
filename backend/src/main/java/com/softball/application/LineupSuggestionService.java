@@ -192,8 +192,15 @@ public class LineupSuggestionService {
         // Beteiligung als Quote, nicht als Zaehler, und ohne das P/C-Training: dorthin sind
         // nur Pitcher und Catcher eingeladen, wer nur Basic kann laege sonst strukturell
         // hinten. Zaehler und Nenner kommen beide aus derselben gefilterten Menge.
+        //
+        // Das Fenster endet AM SPIELTAG, nicht offen. Ohne obere Grenze zaehlen bereits
+        // angelegte kuenftige Trainings in den Nenner, bei denen niemand da gewesen sein
+        // kann — und sie treffen kleine Nenner am haertesten, also genau die Neuzugaenge,
+        // fuer die die Quote gebaut ist. Der Spieltag ist auch der richtige Anker: die
+        // Aufstellung fuer den 20.06. interessiert, wer bis dahin trainiert hat.
+        final LocalDate asOf = gdWithPlayers.getDate() != null ? gdWithPlayers.getDate() : LocalDate.now();
         final Map<Long, Double> participationByPlayer = trainingStatsService.getParticipationRates(
-            null, trainingYearStart(LocalDate.now()), null, Set.of(PITCHER_CATCHER_WEEKDAY));
+            null, trainingYearStart(asOf), asOf, Set.of(PITCHER_CATCHER_WEEKDAY));
 
         return new GameDayContext(games, playerMap, allEntries, entriesByGame, staffByGame, participationByPlayer);
     }
