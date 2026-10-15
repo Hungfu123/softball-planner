@@ -244,7 +244,17 @@ export function FormChart({
             ? `${fmtDate(active.date)} vs ${active.opponent ?? 'unbekannt'} · ${active.gameHits} von ${active.gameAtBats}`
               + `${active.gameWalks > 0 ? ` · ${active.gameWalks} BB` : ''}`
               + `${active.gameStolenBases > 0 ? ` · ${active.gameStolenBases} SB` : ''}`
-            : 'Punkt antippen zeigt das einzelne Spiel'}
+            : null}
+          {!active && (
+            <>
+              <span className="[@media(hover:hover)_and_(pointer:fine)]:hidden">
+                Auf der Kurve wischen zeigt das einzelne Spiel
+              </span>
+              <span className="hidden [@media(hover:hover)_and_(pointer:fine)]:inline">
+                Mit der Maus über die Kurve fahren zeigt das einzelne Spiel
+              </span>
+            </>
+          )}
         </p>
         {compareLines.map((c, i) => {
           const stand = compareAtActive[i]
@@ -327,7 +337,7 @@ export function FormChart({
         {activeIndex != null && (
           <line
             x1={xs[activeIndex]} x2={xs[activeIndex]} y1={PAD.top} y2={H - PAD.bottom}
-            stroke="var(--color-navy-400)" strokeWidth="1" pointerEvents="none"
+            stroke="var(--color-gray-400)" strokeWidth="1" pointerEvents="none"
           />
         )}
 
@@ -395,7 +405,7 @@ export function FormChart({
             ))}
           </>
         ) : (
-          <span className="whitespace-nowrap">Laufender Schnitt, ab {MIN_AT_BATS} At-Bats</span>
+          <span className="whitespace-nowrap">Laufender Schnitt ab {MIN_AT_BATS} At-Bats</span>
         )}
 
         {onComparesChange && teammates.length > 0 && compareLines.length < MAX_COMPARE && (
@@ -417,6 +427,13 @@ export function FormChart({
           </label>
         )}
       </div>
+
+      {/* Erklaert die Achse — und damit auch, warum ein Monat fehlen kann: dort gab es
+          keine Spiele. Steht ausserhalb der Legende, sonst verschwindet der Satz
+          ausgerechnet beim Vergleich. */}
+      <p className="mt-1.5 text-[11px] text-gray-400">
+        Ein Schritt je Spiel · Monate zeigen, wie dicht sie lagen
+      </p>
     </div>
   )
 }
