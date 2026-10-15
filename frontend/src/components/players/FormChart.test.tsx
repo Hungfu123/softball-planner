@@ -11,14 +11,15 @@ function point(overrides: Partial<PlayerFormPoint> = {}): PlayerFormPoint {
     seasonId: 5,
     seasonName: 'Ruhr Fun Liga',
     year: 2026,
-    plateAppearances: 4,
-    atBats: 4,
-    hits: 1,
+    // Ueber MIN_AT_BATS, sonst zeigt die Kurve zu Recht nur "zu wenig At-Bats".
+    plateAppearances: 10,
+    atBats: 10,
+    hits: 3,
     walks: 0,
     strikeouts: 1,
     runsBattedIn: 1,
-    totalBases: 1,
-    timesOnBase: 1,
+    totalBases: 3,
+    timesOnBase: 3,
     stolenBases: 0,
     caughtStealing: 0,
     // Die Kurve rechnet selbst kumulativ — die rolling-Felder des Backends
@@ -41,20 +42,31 @@ describe('FormChart', () => {
     expect(screen.getByText(/Noch nichts gescort/)).toBeInTheDocument()
   })
 
-  it('summiert über die Spiele auf statt ein Fenster mitzuziehen', () => {
-    render(<FormChart {...basis} points={[
-      point({ gameId: 1, date: '2026-04-11', atBats: 4, hits: 1, totalBases: 1, timesOnBase: 1, plateAppearances: 4 }),
-      point({ gameId: 2, date: '2026-04-18', atBats: 4, hits: 3, totalBases: 3, timesOnBase: 3, plateAppearances: 4 }),
+  it('zeichnet keine Kurve, solange zu wenig At-Bats da sind', () => {
+    const { container } = render(<FormChart {...basis} points={[
+      point({ gameId: 1, atBats: 3, hits: 3, totalBases: 3, timesOnBase: 3, plateAppearances: 3 }),
     ]} />)
 
-    // 4 Hits aus 8 Versuchen — nicht der Wert des letzten Spiels allein.
+    // Drei Treffer aus drei Versuchen waeren kumulativ 1.000 — ein Strich quer oben,
+    // der nach Fehler aussieht. Lieber sagen, wie weit es noch ist.
+    expect(screen.getByText(/Noch zu wenig At-Bats für eine Kurve — 3 von 10/)).toBeInTheDocument()
+    expect(container.querySelector('svg[role="img"]')).toBeNull()
+  })
+
+  it('summiert über die Spiele auf statt ein Fenster mitzuziehen', () => {
+    render(<FormChart {...basis} points={[
+      point({ gameId: 1, date: '2026-04-11', atBats: 10, hits: 2, totalBases: 2, timesOnBase: 2, plateAppearances: 10 }),
+      point({ gameId: 2, date: '2026-04-18', atBats: 10, hits: 8, totalBases: 8, timesOnBase: 8, plateAppearances: 10 }),
+    ]} />)
+
+    // 10 Hits aus 20 Versuchen — nicht der Wert des letzten Spiels allein.
     expect(screen.getByText('.500')).toBeInTheDocument()
-    expect(screen.getByText(/AVG aus 8 At-Bats/)).toBeInTheDocument()
+    expect(screen.getByText(/AVG aus 20 At-Bats/)).toBeInTheDocument()
   })
 
   it('waehlt den Punkt, der dem Finger am naechsten liegt', () => {
     const { container } = render(<FormChart {...basis} points={[
-      point({ gameId: 1, date: '2026-04-11', hits: 2, atBats: 3, opponent: 'Münster' }),
+      point({ gameId: 1, date: '2026-04-11', hits: 2, atBats: 10, opponent: 'Münster' }),
       point({ gameId: 2, date: '2026-04-18', opponent: 'Köln' }),
     ]} />)
 
@@ -64,7 +76,7 @@ describe('FormChart', () => {
       right: 200, bottom: 100, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
 
     fireEvent.pointerDown(flaeche, { clientX: 2 })
-    expect(screen.getByText(/vs Münster · 2 von 3/)).toBeInTheDocument()
+    expect(screen.getByText(/vs Münster · 2 von 10/)).toBeInTheDocument()
 
     // Ziehen nach rechts wandert weiter, ohne neu zu zielen.
     fireEvent.pointerMove(flaeche, { clientX: 198, buttons: 1 })
@@ -73,23 +85,23 @@ describe('FormChart', () => {
 
   it('beschriftet die Kurve für Screenreader', () => {
     render(<FormChart {...basis} points={[
-      point({ gameId: 1, date: '2026-04-11', atBats: 4, hits: 1 }),
-      point({ gameId: 2, date: '2026-04-18', atBats: 4, hits: 3 }),
+      point({ gameId: 1, date: '2026-04-11', atBats: 10, hits: 2 }),
+      point({ gameId: 2, date: '2026-04-18', atBats: 10, hits: 8 }),
     ]} />)
     expect(screen.getByRole('img', { name: /Schlagdurchschnitt über 2 Spiele, zuletzt .500/ })).toBeInTheDocument()
   })
 
   it('schaltet die Kurve auf eine andere Kennzahl um', () => {
     render(<FormChart {...basis} points={[
-      point({ gameId: 1, date: '2026-04-11', atBats: 4, hits: 1, totalBases: 2, timesOnBase: 2, plateAppearances: 5 }),
-      point({ gameId: 2, date: '2026-04-18', atBats: 4, hits: 1, totalBases: 2, timesOnBase: 2, plateAppearances: 5 }),
+      point({ gameId: 1, date: '2026-04-11', atBats: 10, hits: 3, totalBases: 5, timesOnBase: 4, plateAppearances: 10 }),
+      point({ gameId: 2, date: '2026-04-18', atBats: 10, hits: 3, totalBases: 5, timesOnBase: 4, plateAppearances: 10 }),
     ]} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'OPS' }))
 
-    // OBP = 4/10 = .400, SLG = 4/8 = .500 -> OPS .900
+    // OBP = 8/20 = .400, SLG = 10/20 = .500 -> OPS .900
     expect(screen.getByText('.900')).toBeInTheDocument()
-    expect(screen.getByText(/OPS aus 10 PA/)).toBeInTheDocument()
+    expect(screen.getByText(/OPS aus 20 PA/)).toBeInTheDocument()
   })
 
   it('zeichnet eine zweite Linie und nennt beide Namen, sobald verglichen wird', () => {
@@ -162,8 +174,8 @@ describe('FormChart', () => {
 
   it('beginnt die Achse bei null, damit zwei Spieler vergleichbar bleiben', () => {
     const { container } = render(<FormChart {...basis} points={[
-      point({ gameId: 1, date: '2026-04-11', atBats: 4, hits: 2 }),
-      point({ gameId: 2, date: '2026-04-18', atBats: 4, hits: 2 }),
+      point({ gameId: 1, date: '2026-04-11', atBats: 10, hits: 4 }),
+      point({ gameId: 2, date: '2026-04-18', atBats: 10, hits: 4 }),
     ]} />)
 
     const beschriftungen = [...container.querySelectorAll('text')].map(t => t.textContent)
