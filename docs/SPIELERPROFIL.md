@@ -72,21 +72,36 @@ zweithäufigste → Sekundär, dritthäufigste → Tertiär.
 
 ## Form-Kurve
 
-`GET /api/players/{id}/batting-timeline` → ein Punkt je Spiel mit Plate Appearance,
-ältestes zuerst.
+Gezeichnet wird die **laufende Gesamtquote** über alle Schlagversuche des gewählten
+Zeitraums, ein Punkt je Spiel (`formSeries.cumulativeSeries`). Vorher war es ein
+gleitender Schnitt über die letzten 20 Schlagversuche — der sprang bei jedem guten
+oder schlechten Spiel stark, und zwei Spieler ließen sich nicht vergleichen, weil
+hinter jedem Punkt eine andere Stichprobe stand. Gestrichelt heißt: noch keine 20
+Schlagversuche beisammen.
 
-- **Umschaltbar zwischen AVG, OBP, SLG und OPS** (`METRICS` in `FormChart`). Steals und Walks
-  sind Zählwerte, keine Quoten — sie stehen im Teamvergleich, nicht in der Kurve.
-- **Gleitender Schnitt** über die letzten `WINDOW_PLATE_APPEARANCES` (20) Plate Appearances,
-  nicht kumulativ: ein Saisonschnitt beruhigt sich mit jedem Spiel und zeigt am Ende keine
-  Formänderung mehr.
-- Gerechnet wird mit `BattingStatsCalculator` — AVG und OBP haben im Projekt genau eine Formel.
-- `provisional = true`, solange der Spieler insgesamt weniger als 20 PA hat. Die Kurve wird
-  dort **gestrichelt** gezeichnet, damit ein 1.000er-Start nicht wie Leistung aussieht.
-- `timesOnBase` (H + BB + HBP) je Spiel ist die Grundlage der OBP über mehrere Spiele —
-  die Seite rechnet ihre Kennzahlen aus der Zeitreihe und braucht dafür keinen zweiten Request.
-- **Quelle ist ausschließlich das Old-Scoring** (At-Bats), wie beim Spiel-Verlauf.
-  Spielbogen-Daten fließen nicht ein, sonst spränge die Kurve je nach Erfassungsart.
+Gerechnet wird über die **angezeigten** Punkte: schneidet der Zeitraum-Filter die Reihe
+auf ein Jahr zu, beginnt die Summe bei dessen erstem Spiel. Alles rein im Frontend, die
+Roh-Werte je Spiel (`atBats`, `hits`, `totalBases`, `timesOnBase`, `plateAppearances`)
+stehen schon in der Zeitreihe; die `rolling*`-Felder des Backends liest die Kurve nicht
+mehr.
+
+**Y-Achse beginnt immer bei 0.** Früher umschloss sie die Daten und startete irgendwo bei
+.150 — das zeigt Ausschläge größer, macht aber zwei Spieler unvergleichbar, weil derselbe
+Kurvenverlauf bei jedem etwas anderes bedeutet. Der Preis: ein frühes 1.000 aus einem
+1-aus-1-Spiel zieht die Achse hoch und drückt den belastbaren Teil zusammen, bis sich die
+Summe eingependelt hat.
+
+**X-Achse nach Datum**, nicht nach Listenposition — nur so liegen beim Spielervergleich
+zwei Reihen im selben Zeitraum übereinander. Die Achsen-Beschriftung nennt Anfang und Ende
+der Skala, die beim Vergleich über **beide** Reihen spannt.
+
+**Spielervergleich:** Auswahl „Vergleichen mit …" unter der Kurve zieht die Reihe eines
+Mitspielers nach (`getPlayerBattingTimeline`, gecacht) und zeichnet sie in Amber
+(`#B45309`) hinter der eigenen Navy-Linie. Rot bleibt negativen Signalen vorbehalten. Der
+Vergleich folgt demselben Zeitraum-Schnitt wie die eigene Reihe.
+
+**Detailzeile fest hoch:** beim Wandern von Punkt zu Punkt darf nichts springen — vorher
+verschob eine längere Gegner-Zeile den Block unter dem Finger.
 
 ## Letzte Spiele (`GameLog`) und Saison für Saison (`SeasonTable`)
 

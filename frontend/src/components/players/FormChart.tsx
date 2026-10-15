@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PlayerFormPoint } from '@/types'
+import {
+  METRICS, axis, cumulativeSeries, dateRange, fmt, fmtDate, xFractions,
+  type CumulativePoint, type Metric,
+} from './formSeries'
 
 /*
  * Die Zeichenfläche misst echte Pixel statt einer festen viewBox: ein skaliertes
@@ -7,40 +11,42 @@ import type { PlayerFormPoint } from '@/types'
  * schrumpft die Beschriftung mit. Gemessen wird der Container, die Höhe ist
  * am Handy flacher als am Desktop.
  */
-const PAD = { top: 16, right: 14, bottom: 28, left: 36 }
+const PAD = { top: 16, right: 14, bottom: 28, left: 40 }
 const FALLBACK_WIDTH = 720
 
-/** Mögliche Abstände der Hilfslinien, aufsteigend. Gewählt wird der kleinste, der
- *  höchstens fünf Linien ergibt — ein Spieler mit zwei Spielen spannt sonst von .300
- *  bis 1.100 und bekommt neun Linien. */
-const GUIDE_STEPS = [0.05, 0.1, 0.2, 0.25, 0.5]
-const MAX_GUIDES = 5
+const INK = {
+  primary: 'var(--color-navy-800)',
+  primaryFaint: 'var(--color-navy-400)',
+  compare: '#B45309',
+  last: 'var(--color-softball-red-600)',
+}
+
+type Props = {
+  points: PlayerFormPoint[]
+  playerName: string
+  /** Mitspieler, mit denen sich vergleichen lässt. */
+  teammates?: { playerId: number; playerName: string }[]
+  compareId?: number | null
+  onCompare?: (playerId: number | null) => void
+  comparePoints?: PlayerFormPoint[]
+  compareName?: string | null
+}
 
 /**
- * Die vier Quoten, die man im Verlauf lesen kann. Steals und Walks sind Zählwerte,
- * keine Quoten — sie stehen im Teamvergleich darunter, nicht in der Kurve.
- */
-const METRICS = {
-  rollingAverage: { label: 'AVG', long: 'Schlagdurchschnitt' },
-  rollingOnBase: { label: 'OBP', long: 'On-Base-Quote' },
-  rollingSlugging: { label: 'SLG', long: 'Schlagkraft' },
-  rollingOps: { label: 'OPS', long: 'OBP plus SLG' },
-} as const
-
-type Metric = keyof typeof METRICS
-
-/**
- * Form-Kurve eines Spielers: gleitender Schnitt über die letzten Plate Appearances,
- * ein Punkt je Spiel. Die dicke Navy-Linie ist der Schlagdurchschnitt, die dünne
- * darüber die On-Base-Quote.
+ * Form-Kurve eines Spielers: die **laufende Gesamtquote** über alle Schlagversuche
+ * des Zeitraums, ein Punkt je Spiel. Vorher war es ein gleitender Schnitt über die
+ * letzten 20 Schlagversuche — der sprang bei jedem Spiel und ließ sich zwischen
+ * Spielern nicht vergleichen, weil hinter jedem Punkt eine andere Stichprobe stand.
  *
- * Gestrichelt heißt: das Fenster ist noch nicht voll, der Wert schwankt noch stark.
+ * Gestrichelt heißt: noch zu wenig Schlagversuche, der Wert schwankt stark.
  *
  * Bewusst von Hand gezeichnet statt mit Chart-Library — der Spiel-Verlauf macht es
  * genauso, und eine Library brächte eigene Farben und Fonts mit.
  */
-export function FormChart({ points }: { points: PlayerFormPoint[] }) {
-  const [metric, setMetric] = useState<Metric>('rollingAverage')
+export function FormChart({
+  points, playerName, teammates = [], compareId = null, onCompare, comparePoints = [], compareName = null,
+}: Props) {
+  const [metric, setMetric] = useState<Metric>('average')
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const pathRef = useRef<SVGPathElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -59,6 +65,9 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
   const W = width
   const H = width < 480 ? 190 : 240
 
+  const series = useMemo(() => cumulativeSeries(points), [points])
+  const compareSeries = useMemo(() => cumulativeSeries(comparePoints), [comparePoints])
+
   // Ein einziger inszenierter Moment: die Kurve zeichnet sich beim ersten Rendern
   // einmal von links nach rechts. Danach bewegt sich nichts mehr von selbst.
   useEffect(() => {
@@ -74,32 +83,38 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
     void path.getBoundingClientRect()
     path.style.transition = 'stroke-dashoffset 900ms cubic-bezier(0.23, 1, 0.32, 1)'
     path.style.strokeDashoffset = '0'
-  }, [points, metric])
+  }, [series, metric])
 
-  // Die Achse umschließt die Daten statt bei .000 zu beginnen: ein Schnitt bewegt sich
-  // selten unter .150, und eine Nulllinie drückt genau die Ausschläge flach, die man
-  // sehen will. Gerundet auf ganze Hilfslinien, damit die Beschriftung aufgeht.
   const geometry = useMemo(() => {
-    const values = points.map(p => p[metric])
-    const rawMin = Math.min(...values)
-    const rawMax = Math.max(...values)
-    const step = GUIDE_STEPS.find(s => (rawMax - rawMin + 0.04) / s <= MAX_GUIDES - 1)
-      ?? GUIDE_STEPS[GUIDE_STEPS.length - 1]
-    const min = Math.max(0, Math.floor((rawMin - 0.02) / step) * step)
-    const max = Math.ceil((rawMax + 0.02) / step) * step
-    const span = Math.max(max - min, step)
+    const span = dateRange(series, compareSeries)
+    const values = [...series.map(p => p[metric]), ...compareSeries.map(p => p[metric])]
+    const { max, guides } = axis(values)
     const innerW = W - PAD.left - PAD.right
     const innerH = H - PAD.top - PAD.bottom
-    const x = (i: number) => points.length <= 1
-      ? PAD.left + innerW / 2
-      : PAD.left + (i / (points.length - 1)) * innerW
-    const y = (v: number) => PAD.top + innerH - ((v - min) / span) * innerH
-    const guides: number[] = []
-    for (let g = min; g <= max + 1e-9; g += step) guides.push(Number(g.toFixed(3)))
-    return { x, y, min, max, guides }
-  }, [points, metric, W, H])
+    const toX = (fraction: number) => PAD.left + fraction * innerW
+    const y = (v: number) => PAD.top + innerH - (v / max) * innerH
+    return {
+      y, guides, max, span,
+      xs: xFractions(series.map(p => p.date), span).map(toX),
+      compareXs: xFractions(compareSeries.map(p => p.date), span).map(toX),
+    }
+  }, [series, compareSeries, metric, W, H])
 
-  if (points.length === 0) {
+  const { y, xs, compareXs } = geometry
+
+  const active = activeIndex != null ? series[activeIndex] : null
+  const last = series[series.length - 1]
+  const shown = active ?? last
+  const firstSolid = series.findIndex(p => !p.provisional)
+
+  // Wert des Vergleichs zum selben Zeitpunkt: der letzte Stand an oder vor diesem Tag.
+  const compareAtActive = useMemo(() => {
+    if (!shown?.date || compareSeries.length === 0) return null
+    const bis = compareSeries.filter(p => p.date != null && p.date <= shown.date!)
+    return bis.length > 0 ? bis[bis.length - 1] : null
+  }, [shown, compareSeries])
+
+  if (series.length === 0) {
     return (
       <p className="text-sm text-gray-500 italic">
         Noch nichts gescort. Sobald ein Spiel live mitgeschrieben wird, wächst hier die Kurve.
@@ -107,12 +122,10 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
     )
   }
 
-  const { x, y } = geometry
-
-  const active = activeIndex != null ? points[activeIndex] : null
-  const last = points[points.length - 1]
-  const shown = active ?? last
-  const firstSolid = points.findIndex(p => !p.provisional)
+  const linie = (pts: CumulativePoint[], px: number[], von = 0, bis = pts.length) =>
+    pts.slice(von, bis)
+      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${px[i + von].toFixed(1)} ${y(p[metric]).toFixed(1)}`)
+      .join(' ')
 
   return (
     <div>
@@ -127,9 +140,7 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
             aria-pressed={metric === key}
             title={METRICS[key].long}
             className={`font-display text-[11px] font-bold uppercase tracking-widest rounded-full px-3 py-1.5 cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
-              metric === key
-                ? 'bg-navy-800 text-white'
-                : 'text-gray-600 hover:text-navy-900'
+              metric === key ? 'bg-navy-800 text-white' : 'text-gray-600 hover:text-navy-900'
             }`}
           >
             {METRICS[key].label}
@@ -137,14 +148,19 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-3">
+      {/* Feste Höhe: beim Wandern von Punkt zu Punkt soll nichts springen. Vorher
+          verschob eine längere Gegner-Zeile den ganzen Block unter dem Finger. */}
+      <div className="mb-3 min-h-[3.25rem]">
         <p className="text-sm text-navy-900">
           <span className="font-display text-2xl font-extrabold tabular-nums">{fmt(shown[metric])}</span>
-          <span className="text-gray-500"> {METRICS[metric].label} über die letzten {shown.rollingPlateAppearances} Schlagversuche</span>
+          <span className="text-gray-500"> {METRICS[metric].label} über {shown.plateAppearances} Schlagversuche</span>
         </p>
-        <p className="text-[11px] text-gray-500 tabular-nums">
+        <p className="text-[11px] text-gray-500 tabular-nums truncate">
           {active
-            ? `${fmtDate(active.date)} vs ${active.opponent ?? 'unbekannt'} · ${active.hits} von ${active.atBats}${active.walks > 0 ? ` · ${active.walks} BB` : ''}${active.stolenBases > 0 ? ` · ${active.stolenBases} SB` : ''}`
+            ? `${fmtDate(active.date)} vs ${active.opponent ?? 'unbekannt'} · ${active.gameHits} von ${active.gameAtBats}`
+              + `${active.gameWalks > 0 ? ` · ${active.gameWalks} BB` : ''}`
+              + `${active.gameStolenBases > 0 ? ` · ${active.gameStolenBases} SB` : ''}`
+              + `${compareAtActive ? ` · ${compareName}: ${fmt(compareAtActive[metric])}` : ''}`
             : 'Punkt antippen zeigt das einzelne Spiel'}
         </p>
       </div>
@@ -156,7 +172,7 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
         height={H}
         className="max-w-full touch-pan-y"
         role="img"
-        aria-label={`${METRICS[metric].long} über ${points.length} Spiele, zuletzt ${fmt(last[metric])}`}
+        aria-label={`${METRICS[metric].long} über ${series.length} Spiele, zuletzt ${fmt(last[metric])}`}
         onPointerLeave={() => setActiveIndex(null)}
       >
         {geometry.guides.map(g => (
@@ -174,31 +190,38 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
           </g>
         ))}
 
+        {/* Vergleichslinie zuerst: sie liegt hinter der eigenen Kurve. */}
+        {compareSeries.length > 0 && (
+          <path
+            d={linie(compareSeries, compareXs)}
+            fill="none" stroke={INK.compare} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            opacity="0.85"
+          />
+        )}
+
         {/* Provisorischer Anfang gestrichelt, der belastbare Teil durchgezogen. */}
         {firstSolid !== 0 && (
           <path
-            d={points.slice(0, firstSolid < 0 ? points.length : firstSolid + 1)
-              .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i).toFixed(1)} ${y(p[metric]).toFixed(1)}`).join(' ')}
-            fill="none" stroke="var(--color-navy-400)" strokeWidth="2.5" strokeDasharray="5 5"
+            d={linie(series, xs, 0, firstSolid < 0 ? series.length : firstSolid + 1)}
+            fill="none" stroke={INK.primaryFaint} strokeWidth="2.5" strokeDasharray="5 5"
             strokeLinecap="round" strokeLinejoin="round"
           />
         )}
         <path
           ref={pathRef}
-          d={firstSolid < 0 ? '' : points.slice(firstSolid)
-            .map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i + firstSolid).toFixed(1)} ${y(p[metric]).toFixed(1)}`).join(' ')}
-          fill="none" stroke="var(--color-navy-800)" strokeWidth="3"
+          d={firstSolid < 0 ? '' : linie(series, xs, firstSolid)}
+          fill="none" stroke={INK.primary} strokeWidth="3"
           strokeLinecap="round" strokeLinejoin="round"
         />
 
-        {points.map((p, i) => {
+        {series.map((p, i) => {
           // Der jüngste Punkt ist der einzige farbige: er sagt „hier steht er gerade".
-          const isLast = i === points.length - 1
-          const ink = isLast ? 'var(--color-softball-red-600)' : 'var(--color-navy-800)'
+          const isLast = i === series.length - 1
+          const ink = isLast ? INK.last : INK.primary
           return (
             <circle
               key={p.gameId}
-              cx={x(i)} cy={y(p[metric])} r={activeIndex === i ? 5 : isLast ? 4.5 : 3}
+              cx={xs[i]} cy={y(p[metric])} r={activeIndex === i ? 5 : isLast ? 4.5 : 3}
               className="transition-[r] duration-150"
               fill={activeIndex === i || isLast ? ink : 'var(--color-cream-50)'}
               stroke={ink} strokeWidth="2"
@@ -207,40 +230,64 @@ export function FormChart({ points }: { points: PlayerFormPoint[] }) {
         })}
 
         {/* Unsichtbare Trefferflächen: am Handy trifft man keinen 3px-Punkt. */}
-        {points.map((p, i) => (
-          <rect
-            key={`hit-${p.gameId}`}
-            x={x(i) - (W - PAD.left - PAD.right) / Math.max(points.length, 1) / 2}
-            y={PAD.top}
-            width={(W - PAD.left - PAD.right) / Math.max(points.length, 1)}
-            height={H - PAD.top - PAD.bottom}
-            fill="transparent"
-            onPointerEnter={() => setActiveIndex(i)}
-            onPointerDown={() => setActiveIndex(i)}
-          />
-        ))}
+        {series.map((p, i) => {
+          const links = i === 0 ? PAD.left : (xs[i - 1] + xs[i]) / 2
+          const rechts = i === series.length - 1 ? W - PAD.right : (xs[i] + xs[i + 1]) / 2
+          return (
+            <rect
+              key={`hit-${p.gameId}`}
+              x={links} y={PAD.top} width={Math.max(rechts - links, 1)} height={H - PAD.top - PAD.bottom}
+              fill="transparent"
+              onPointerEnter={() => setActiveIndex(i)}
+              onPointerDown={() => setActiveIndex(i)}
+            />
+          )
+        })}
 
-        {/* Zeitachse: erstes und letztes Spiel beschriften, dazwischen gäbe es Gedrängel. */}
-        <text x={PAD.left} y={H - 8} className="fill-gray-400 text-[10px]">{fmtDate(points[0].date)}</text>
-        <text x={W - PAD.right} y={H - 8} textAnchor="end" className="fill-gray-400 text-[10px]">{fmtDate(last.date)}</text>
+        {/* Zeitachse: Anfang und Ende der SKALA beschriften, nicht der eigenen Reihe —
+            beim Vergleich spannt sie über beide, und sonst stuende dort ein Datum, das
+            nicht zum linken Rand gehoert. */}
+        <text x={PAD.left} y={H - 8} className="fill-gray-400 text-[10px]">
+          {fmtDate(geometry.span?.from ?? series[0].date)}
+        </text>
+        <text x={W - PAD.right} y={H - 8} textAnchor="end" className="fill-gray-400 text-[10px]">
+          {fmtDate(geometry.span?.to ?? last.date)}
+        </text>
       </svg>
       </div>
 
-      <p className="mt-2 text-[11px] text-gray-500">
-        <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-          <span className="w-4 border-t-2 border-dashed border-navy-400" /> gestrichelt = noch zu wenig Schlagversuche
-        </span>
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-gray-500">
+        {compareSeries.length > 0 ? (
+          <>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span className="w-4 border-t-[3px]" style={{ borderColor: INK.primary }} /> {playerName}
+            </span>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <span className="w-4 border-t-2" style={{ borderColor: INK.compare }} /> {compareName}
+            </span>
+          </>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <span className="w-4 border-t-2 border-dashed border-navy-400" /> gestrichelt = noch zu wenig Schlagversuche
+          </span>
+        )}
+
+        {onCompare && teammates.length > 0 && (
+          <label className="inline-flex items-center gap-1.5 ml-auto">
+            <span className="sr-only">Mit Mitspieler vergleichen</span>
+            <select
+              value={compareId ?? ''}
+              onChange={e => onCompare(e.target.value ? Number(e.target.value) : null)}
+              className="text-[11px] font-medium text-gray-600 bg-transparent border border-cream-300 rounded px-1.5 py-2 sm:py-1 cursor-pointer hover:border-navy-500 transition-colors focus:outline-none focus:border-navy-600"
+            >
+              <option value="">Vergleichen mit …</option>
+              {teammates.map(t => (
+                <option key={t.playerId} value={t.playerId}>{t.playerName}</option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
     </div>
   )
-}
-
-/** Quoten im Softball ohne führende Null: .312, nicht 0.312. */
-function fmt(value: number): string {
-  return value.toFixed(3).replace(/^0/, '')
-}
-
-function fmtDate(date: string | null): string {
-  if (!date) return 'ohne Datum'
-  return new Date(date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }

@@ -6,6 +6,7 @@ import { useToastContext } from '@/components/layout/Layout'
 import { ArchiveIcon, ArchiveRestoreIcon, ChevronLeft, CrossBones, DotsVertical, Pencil } from '@/icons'
 import { EmptyState, LoadingSkeleton, ResponsiveSheet, SELECT_PILL_CLASS, SELECT_PILL_STYLE } from '@/components/shared'
 import { GENDER_LABELS } from '@/types'
+import * as api from '@/api/client'
 import { FormChart } from './FormChart'
 import { CollapsibleCard } from './CollapsibleCard'
 import { GameLog } from './GameLog'
@@ -39,6 +40,12 @@ export function PlayerProfilePage() {
   const [scope, setScope] = useState<ProfileScope>({ kind: 'all' })
   const { player, timeline, gameStats, battingField, usage, loading, scopeLoading, error, savePositions, rename, setArchived, setGender } =
     usePlayerProfile(playerId, scope)
+  // Spielervergleich in der Form-Kurve: die Reihe des anderen wird bei Bedarf
+  // nachgeladen und bleibt im Cache, damit Hin- und Herschalten nicht jedes Mal
+  // einen Request kostet.
+  const [compareId, setCompareId] = useState<number | null>(null)
+  const [compareCache, setCompareCache] = useState<Record<number, PlayerFormPoint[]>>({})
+
   const [positionsOpen, setPositionsOpen] = useState(false)
   const [showAllPositions, setShowAllPositions] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -61,6 +68,37 @@ export function PlayerProfilePage() {
   }, [menuOpen])
   const [editingName, setEditingName] = useState(false)
   const [draftName, setDraftName] = useState('')
+
+  useEffect(() => {
+    if (compareId == null || compareCache[compareId]) return
+    let abgebrochen = false
+    api.getPlayerBattingTimeline(compareId)
+      .then(reihe => { if (!abgebrochen) setCompareCache(c => ({ ...c, [compareId]: reihe })) })
+      .catch(() => { if (!abgebrochen) setCompareId(null) })
+    return () => { abgebrochen = true }
+  }, [compareId, compareCache])
+
+  /** Mitspieler zur Auswahl — ohne den Spieler selbst, alphabetisch. */
+  const teammates = useMemo(
+    () => battingField
+      .filter(b => b.playerId !== playerId)
+      .map(b => ({ playerId: b.playerId, playerName: b.playerName }))
+      .sort((a, b) => a.playerName.localeCompare(b.playerName, 'de')),
+    [battingField, playerId],
+  )
+
+  /** Die Vergleichsreihe folgt demselben Zeitraum-Schnitt wie die eigene. */
+  const comparePoints = useMemo(() => {
+    const roh = compareId != null ? compareCache[compareId] ?? [] : []
+    if (scope.kind === 'year') return roh.filter(p => p.year === scope.year)
+    if (scope.kind === 'season') return roh.filter(p => p.seasonId === scope.seasonId)
+    return roh
+  }, [compareId, compareCache, scope])
+
+  const compareName = useMemo(
+    () => teammates.find(t => t.playerId === compareId)?.playerName ?? null,
+    [teammates, compareId],
+  )
 
   const years = useMemo(
     () => [...new Set(timeline.map(p => p.year).filter((y): y is number => y != null))].sort((a, b) => b - a),
@@ -318,7 +356,15 @@ export function PlayerProfilePage() {
             <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900 mb-1">
               Form
             </h2>
-            <FormChart points={points} />
+            <FormChart
+              points={points}
+              playerName={player.name}
+              teammates={teammates}
+              compareId={compareId}
+              onCompare={setCompareId}
+              comparePoints={comparePoints}
+              compareName={compareName}
+            />
           </section>
 
           {usage && (
