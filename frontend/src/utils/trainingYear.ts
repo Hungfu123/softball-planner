@@ -32,3 +32,23 @@ export function trainingYearLabel(reference?: string): string {
   const short = (year: number) => String(year % 100).padStart(2, '0')
   return `${short(start)}/${short(start + 1)}`
 }
+
+/**
+ * Beschriftung des Zeitraum-Schalters: `Jahr 26/27`.
+ *
+ * Das vorangestellte "Jahr" ist nicht Zierde. Blank steht `26/27` neben einer
+ * Perioden-Auswahl, in der "Wintersaison 25/26" steht — und wäre dann als eine
+ * einzelne Periode lesbar. Das Trainingsjahr umfasst aber **beide**, Winter- und
+ * Sommersaison.
+ */
+export function trainingYearFilterLabel(reference?: string): string {
+  return `Jahr ${trainingYearLabel(reference)}`
+}
+
+/** Ausgeschriebene Erklärung für Tooltip und Screenreader. */
+export function trainingYearTitle(reference?: string): string {
+  const start = trainingYearStart(reference)
+  const startYear = Number(start.slice(0, 4))
+  return `Trainingsjahr ${trainingYearLabel(reference)}: Winter- und Sommersaison zusammen, `
+    + `ab 1. November ${startYear}`
+}

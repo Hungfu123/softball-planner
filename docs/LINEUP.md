@@ -118,8 +118,12 @@ Saison: im Februar schmal und aktuell (~35 Trainings), im September elf Monate b
 noch weit oben. Bewusst so entschieden: ein Trainingsjahr zählt als Ganzes, und der
 Schnitt im November fällt in die spielfreie Zeit.
 
-In der UI heißt der Zeitraum wie die Trainingsperioden: **`26/27`** für November 2026 bis
-Oktober 2027 (`trainingYearLabel`). Das Label rollt am 1. November von selbst weiter.
+In der UI heißt der Zeitraum **`Jahr 26/27`** für November 2026 bis Oktober 2027
+(`trainingYearFilterLabel`), das Label rollt am 1. November von selbst weiter. Das
+vorangestellte „Jahr" grenzt gegen die Perioden ab: blank stünde `26/27` neben einer
+Auswahl, in der „Wintersaison 25/26" steht, und wäre als *eine* Periode lesbar — gemeint
+sind aber **Winter- und Sommersaison zusammen**. Der Tooltip (`trainingYearTitle`)
+schreibt das aus.
 
 Dasselbe Fenster benutzen das Trainings-Panel im Planer und der Spielerpool, damit die
 angezeigte Zahl die Aufstellung erklärt. Vorher liefen drei verschiedene Fenster
