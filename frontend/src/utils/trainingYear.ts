@@ -45,6 +45,23 @@ export function trainingYearFilterLabel(reference?: string): string {
   return `Jahr ${trainingYearLabel(reference)}`
 }
 
+/**
+ * Obergrenze der Trainingsbeteiligung: der Spieltag, aber nie in der Zukunft.
+ *
+ * Ein Spieltag, den man plant, liegt vorn. Die Trainings zwischen heute und ihm stehen
+ * längst in der Datenbank (die Periode legt sie im Voraus an), aber niemand kann dort
+ * anwesend gewesen sein — sie würden den Nenner aufblähen und kleine Nenner am härtesten
+ * treffen, also genau die Neuzugänge. Pendant im Backend:
+ * `LineupSuggestionService.countUntil`.
+ *
+ * @param gameDayDate Spieltag als `YYYY-MM-DD`
+ * @param today Stichtag als `YYYY-MM-DD`, sonst heute
+ */
+export function countUntil(gameDayDate: string, today?: string): string {
+  const heute = today ?? new Date().toISOString().slice(0, 10)
+  return gameDayDate > heute ? heute : gameDayDate
+}
+
 /** Ausgeschriebene Erklärung für Tooltip und Screenreader. */
 export function trainingYearTitle(reference?: string): string {
   const start = trainingYearStart(reference)

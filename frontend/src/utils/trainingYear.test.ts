@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { trainingYearFilterLabel, trainingYearLabel, trainingYearStart, trainingYearTitle } from './trainingYear'
+import { countUntil, trainingYearFilterLabel, trainingYearLabel, trainingYearStart, trainingYearTitle } from './trainingYear'
 
 describe('trainingYearStart', () => {
   it('nimmt den 1. November desselben Jahres, sobald November erreicht ist', () => {
@@ -51,5 +51,21 @@ describe('Abgrenzung zur einzelnen Trainingsperiode', () => {
   it('schreibt im Tooltip aus, dass beide Saisons drinstecken', () => {
     expect(trainingYearTitle('2027-02-14'))
       .toBe('Trainingsjahr 26/27: Winter- und Sommersaison zusammen, ab 1. November 2026')
+  })
+})
+
+describe('countUntil', () => {
+  it('zählt bis zum Spieltag, wenn der schon vorbei ist', () => {
+    expect(countUntil('2026-06-20', '2026-10-15')).toBe('2026-06-20')
+  })
+
+  it('zählt nie über heute hinaus', () => {
+    // Zwischen heute und einem geplanten Spieltag stehen schon Trainings in der DB.
+    // Bei denen kann niemand gewesen sein — sie wuerden den Nenner aufblaehen.
+    expect(countUntil('2026-11-07', '2026-10-15')).toBe('2026-10-15')
+  })
+
+  it('nimmt den Spieltag selbst, wenn er heute ist', () => {
+    expect(countUntil('2026-10-15', '2026-10-15')).toBe('2026-10-15')
   })
 })
