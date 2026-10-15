@@ -48,6 +48,19 @@ public class LineupSuggestionService {
         return today.isBefore(startThisYear) ? startThisYear.minusYears(1) : startThisYear;
     }
 
+    /**
+     * Obergrenze der Trainingsbeteiligung: der Spieltag, aber nie in der Zukunft.
+     *
+     * <p>Ein Spieltag, den man plant, liegt vorn. Die Trainings zwischen heute und ihm
+     * stehen laengst in der Datenbank (die Periode legt sie im Voraus an), aber niemand
+     * kann dort anwesend gewesen sein — sie wuerden den Nenner aufblaehen und kleine
+     * Nenner am haertesten treffen, also genau die Neuzugaenge. Ohne Spieltag zaehlt
+     * heute.
+     */
+    static LocalDate countUntil(final LocalDate gameDayDate, final LocalDate today) {
+        return gameDayDate == null || gameDayDate.isAfter(today) ? today : gameDayDate;
+    }
+
     private final GameRepository gameRepository;
     private final GameDayRepository gameDayRepository;
     private final LineupEntryRepository lineupEntryRepository;
@@ -193,12 +206,8 @@ public class LineupSuggestionService {
         // nur Pitcher und Catcher eingeladen, wer nur Basic kann laege sonst strukturell
         // hinten. Zaehler und Nenner kommen beide aus derselben gefilterten Menge.
         //
-        // Das Fenster endet AM SPIELTAG, nicht offen. Ohne obere Grenze zaehlen bereits
-        // angelegte kuenftige Trainings in den Nenner, bei denen niemand da gewesen sein
-        // kann — und sie treffen kleine Nenner am haertesten, also genau die Neuzugaenge,
-        // fuer die die Quote gebaut ist. Der Spieltag ist auch der richtige Anker: die
-        // Aufstellung fuer den 20.06. interessiert, wer bis dahin trainiert hat.
-        final LocalDate asOf = gdWithPlayers.getDate() != null ? gdWithPlayers.getDate() : LocalDate.now();
+        // Das Fenster endet am Spieltag — aber nie in der Zukunft, siehe countUntil.
+        final LocalDate asOf = countUntil(gdWithPlayers.getDate(), LocalDate.now());
         final Map<Long, Double> participationByPlayer = trainingStatsService.getParticipationRates(
             null, trainingYearStart(asOf), asOf, Set.of(PITCHER_CATCHER_WEEKDAY));
 

@@ -22,7 +22,7 @@ import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { TrainingAttendancePanel, type TrainingWindow } from './TrainingAttendancePanel'
-import { trainingYearStart } from '@/utils/trainingYear'
+import { countUntil, trainingYearStart } from '@/utils/trainingYear'
 import { PollVoteSyncSheet } from './PollVoteSyncSheet'
 import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
@@ -180,7 +180,7 @@ export function GameDayPlanner() {
       api.getTrainingStats(selectedPeriodId, undefined, undefined, excludedTrainingWeekdays).then(setTrainingStats)
     } else {
       const since = trainingWindow === 'all' ? undefined : trainingYearStart(gameDay.date)
-      api.getTrainingStats(undefined, since, gameDay.date, excludedTrainingWeekdays)
+      api.getTrainingStats(undefined, since, countUntil(gameDay.date), excludedTrainingWeekdays)
         .then(setTrainingStats)
     }
   }, [gameDay?.date, selectedPeriodId, excludedTrainingWeekdays, trainingWindow])

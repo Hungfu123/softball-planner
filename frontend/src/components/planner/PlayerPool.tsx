@@ -6,7 +6,7 @@ import * as api from '@/api/client'
 import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 import { PITCHER_CATCHER_CHIP_LABELS, PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
-import { trainingYearFilterLabel, trainingYearStart, trainingYearTitle } from '@/utils/trainingYear'
+import { countUntil, trainingYearFilterLabel, trainingYearStart, trainingYearTitle } from '@/utils/trainingYear'
 import { OpponentSheet } from '@/components/orga/OpponentSheet'
 
 interface Props {
@@ -157,7 +157,7 @@ export function PlayerPool({
         setLoadedFilter(cacheKey)
       })
     } else {
-      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), gameDayDate, excluded).then(data => {
+      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), countUntil(gameDayDate), excluded).then(data => {
         setTrainingStats(data)
         setLoadedFilter(cacheKey)
       })
