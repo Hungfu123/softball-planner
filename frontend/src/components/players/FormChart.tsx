@@ -25,15 +25,21 @@ const INK = {
  * Gewählt nach Kontrast, nicht nach Geschmack — gemessen gegen Cream (lesbar?) und
  * gegen die navy-800 der Hauptlinie (unterscheidbar?):
  *
- * | Farbe      | zu Cream | zu navy-800 |
- * |------------|----------|-------------|
- * | navy-400   |   4.70   |    3.49     |
- * | teal-700   |   5.08   |    3.23     |
- * | gray-500   |   7.27   |    2.26  ✗  |
- * | navy-300   |   2.28 ✗ |    7.21     |
+ * | Farbe      | Sättigung | zu Cream | zu navy-800 |
+ * |------------|-----------|----------|-------------|
+ * | navy-800   |    59 %   |  16.42   |      —      |
+ * | #5964C5    |    48 %   |   4.81   |    3.42     |
+ * | teal-700   |    77 %   |   5.08   |    3.23     |
+ * | navy-400   |    24 %   |   4.70   |    3.49  ✗  |
+ * | navy-500   |    36 %   |   7.46   |    2.20  ✗  |
+ * | gray-500   |     3 %   |   7.27   |    2.26  ✗  |
  *
- * gray-500 war der erste Versuch und fiel durch: zu nah an der Hauptlinie, beide
- * lasen sich als dasselbe Dunkel. navy-300 ist auf Cream zu hell für eine Linie.
+ * Zwei Fehlversuche davor: gray-500 und navy-500 stehen der Hauptlinie zu nah, beide
+ * lasen sich als dasselbe Dunkel. navy-400 hat die Abstände, ist aber das
+ * ausgewaschene Glied der Leiter — mit 24 % Sättigung neben einem satten navy-800
+ * liest es sich als anderes Blau statt als dasselbe, nur heller. Deshalb hier ein
+ * eigener Ton im Hausfarbton (234°), auf Sättigung gebracht statt aus der Leiter
+ * gegriffen.
  *
  * Amber und Emerald sind im Haus belegt (positiv / Sieg), Rot ist negativen Signalen
  * vorbehalten — eine Vergleichslinie darf nicht werten, sie soll unterscheiden.
@@ -42,7 +48,7 @@ const INK = {
  * erkennt die Reihen trotzdem.
  */
 const COMPARE_STYLES = [
-  { ink: 'var(--color-navy-400)', dash: '6 4' },
+  { ink: '#5964C5', dash: '6 4' },
   { ink: '#0F766E', dash: '1.5 4' },
 ] as const
 

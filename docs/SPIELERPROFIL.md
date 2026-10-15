@@ -101,17 +101,26 @@ raus. Jede Reihe bekommt einen Endpunkt — ohne ihn liest sie sich wie Dekorati
 ein zweiter Spieler. Spiel 5 liegt über Spiel 5 („nach ebenso vielen Spielen"), die kürzere
 Reihe endet früher statt gedehnt zu werden.
 
-Farben (`COMPARE_STYLES`): **navy-400 gestrichelt** und **teal-700 gepunktet**. Gewählt
-nach Kontrast, gemessen gegen Cream (lesbar?) und gegen die navy-800 der Hauptlinie
-(unterscheidbar?):
+Farben (`COMPARE_STYLES`): **`#5964C5` gestrichelt** und **teal-700 gepunktet**. Gewählt
+nach Messung, nicht nach Geschmack — gegen Cream (lesbar?), gegen die navy-800 der
+Hauptlinie (unterscheidbar?) und auf Sättigung (sieht es nach Hausfarbe aus?):
 
-| Farbe | zu Cream | zu navy-800 | |
-|---|---|---|---|
-| navy-400 | 4.70 | 3.49 | ✓ |
-| teal-700 | 5.08 | 3.23 | ✓ |
-| gray-500 | 7.27 | **2.26** | zu nah an der Hauptlinie |
-| navy-300 | **2.28** | 7.21 | auf Cream zu hell |
-| softball-red-300 | **1.76** | — | lebt von dunklem Grund |
+| Farbe | Sättigung | zu Cream | zu navy-800 | |
+|---|---|---|---|---|
+| navy-800 (eigene Linie) | 59 % | 16.42 | — | |
+| `#5964C5` | 48 % | 4.81 | 3.42 | ✓ |
+| teal-700 | 77 % | 5.08 | 3.23 | ✓ |
+| navy-400 | **24 %** | 4.70 | 3.49 | wirkt als anderes Blau |
+| navy-500 | 36 % | 7.46 | **2.20** | zu nah an der Hauptlinie |
+| gray-500 | 3 % | 7.27 | **2.26** | zu nah an der Hauptlinie |
+| navy-300 | 32 % | **2.28** | 7.21 | auf Cream zu hell |
+| softball-red-300 | 86 % | **1.76** | — | lebt von dunklem Grund |
+
+Die Navy-Leiter gibt den Ton nicht her: wer hell genug für Abstand zur Hauptlinie ist
+(navy-400), ist mit 24 % Sättigung ausgewaschen und liest sich neben einem satten
+navy-800 als *anderes* Blau statt als dasselbe, nur heller. Wer satt genug ist
+(navy-500), steht der Hauptlinie zu nah. Deshalb ein eigener Ton im Hausfarbton 234°,
+auf Sättigung gebracht.
 
 **Amber und Emerald sind im Haus belegt** (positiv / Sieg, 35× bzw. 26× in Benutzung),
 **Rot** ist negativen Signalen vorbehalten und markiert hier schon den eigenen Endpunkt.
