@@ -5,7 +5,7 @@ import type { ProfileScope } from '@/hooks/usePlayerProfile'
 import { useToastContext } from '@/components/layout/Layout'
 import { ArchiveIcon, ArchiveRestoreIcon, ChevronLeft, CrossBones, DotsVertical, Pencil } from '@/icons'
 import { EmptyState, LoadingSkeleton, ResponsiveSheet, SELECT_PILL_CLASS, SELECT_PILL_STYLE } from '@/components/shared'
-import { GENDER_LABELS } from '@/types'
+import { GENDER_LABELS, GENDER_SHORT } from '@/types'
 import * as api from '@/api/client'
 import { FormChart } from './FormChart'
 import { CollapsibleCard } from './CollapsibleCard'
@@ -245,15 +245,17 @@ export function PlayerProfilePage() {
                     die Frauen-Quote der Liga haengt daran. */}
                 <button
                   onClick={() => setGenderOpen(true)}
-                  aria-label="Geschlecht festlegen"
-                  title="Grundlage der Frauen-Quote — zum Ändern tippen"
-                  className={`font-display text-[10px] font-bold uppercase tracking-widest rounded-lg px-2 py-1.5 cursor-pointer transition-colors border ${
+                  aria-label={player.gender ? `Geschlecht: ${GENDER_LABELS[player.gender]} — ändern` : 'Geschlecht festlegen'}
+                  title={player.gender
+                    ? `${GENDER_LABELS[player.gender]} — Grundlage der Frauen-Quote, zum Ändern tippen`
+                    : 'Grundlage der Frauen-Quote — zum Ändern tippen'}
+                  className={`font-display text-[10px] font-bold uppercase rounded-lg py-1.5 cursor-pointer transition-colors border ${
                     player.gender
-                      ? 'border-navy-700 text-navy-100 hover:bg-navy-800 hover:border-navy-500'
-                      : 'border-dashed border-navy-500 text-navy-200 hover:border-cream-200 hover:text-cream-100'
+                      ? 'w-7 text-[13px] border-navy-700 text-navy-100 hover:bg-navy-800 hover:border-navy-500'
+                      : 'px-2 tracking-widest border-dashed border-navy-500 text-navy-200 hover:border-cream-200 hover:text-cream-100'
                   }`}
                 >
-                  {player.gender ? GENDER_LABELS[player.gender] : 'Geschlecht festlegen'}
+                  {player.gender ? GENDER_SHORT[player.gender] : 'Geschlecht festlegen'}
                 </button>
                 {player.regular && (
                   <span className="font-display text-[10px] font-bold uppercase tracking-widest text-navy-200">

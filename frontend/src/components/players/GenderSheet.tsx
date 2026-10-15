@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { GENDER_LABELS, GENDER_ORDER } from '@/types'
+import { GENDER_LABELS, GENDER_ORDER, GENDER_SHORT } from '@/types'
 import type { Gender, Player } from '@/types'
 
 /**
@@ -40,7 +40,8 @@ export function GenderSheet({ players, onSet }: {
     <div className="px-5 py-4">
       <p className="text-xs text-gray-500 mb-3">
         Grundlage der Liga-Regel: mindestens zwei Frauen auf dem Feld, davon eine im Infield.
-        Für die Quote zählt nur „Frau" — was für „Divers" gilt, entscheidet der Verband.
+        Für die Quote zählt nur <span className="font-semibold text-navy-900">W</span> (Frau) —
+        was für <span className="font-semibold text-navy-900">D</span> (Divers) gilt, entscheidet der Verband.
         {!single && open > 0 && <> Noch <span className="font-semibold text-navy-900">{open}</span> ohne Zuordnung.</>}
       </p>
       {error && <p className="text-xs text-softball-red-700 mb-2">{error}</p>}
@@ -55,13 +56,15 @@ export function GenderSheet({ players, onSet }: {
                   onClick={() => choose(player, gender)}
                   disabled={busyId === player.id}
                   aria-pressed={player.gender === gender}
-                  className={`font-display text-[11px] font-bold uppercase tracking-widest rounded-full px-3 py-1.5 cursor-pointer transition-colors disabled:opacity-50 ${
+                  aria-label={GENDER_LABELS[gender]}
+                  title={GENDER_LABELS[gender]}
+                  className={`font-display text-[13px] font-bold rounded-full w-9 py-1.5 cursor-pointer transition-colors disabled:opacity-50 ${
                     player.gender === gender
                       ? 'bg-navy-800 text-white'
                       : 'text-gray-600 hover:text-navy-900'
                   }`}
                 >
-                  {GENDER_LABELS[gender]}
+                  {GENDER_SHORT[gender]}
                 </button>
               ))}
             </span>
