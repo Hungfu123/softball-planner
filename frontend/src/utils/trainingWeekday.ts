@@ -12,3 +12,14 @@ export const PITCHER_CATCHER_WEEKDAY = 4
 
 /** Beschriftung des Chips, der dieses Training aus der Zählung nimmt. */
 export const PITCHER_CATCHER_HINT = 'Donnerstag (P/C)'
+
+/**
+ * Chip-Beschriftung im Spieltags-Planer.
+ *
+ * Dort geht es nie um „Donnerstag", sondern um „P/C mitzählen oder nicht" — der
+ * Wochentag ist nur die Mechanik dahinter. In der Trainings-Statistik, wo mehrere
+ * Tage nebeneinander stehen, bleibt der Wochentag die richtige Beschriftung.
+ */
+export const PITCHER_CATCHER_CHIP_LABELS: Record<number, string> = {
+  [PITCHER_CATCHER_WEEKDAY]: 'P/C',
+}

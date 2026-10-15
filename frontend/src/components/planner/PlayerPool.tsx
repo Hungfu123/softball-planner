@@ -5,7 +5,7 @@ import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
-import { PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
+import { PITCHER_CATCHER_CHIP_LABELS, PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
 import { trainingYearFilterLabel, trainingYearStart, trainingYearTitle } from '@/utils/trainingYear'
 import { OpponentSheet } from '@/components/orga/OpponentSheet'
 
@@ -168,13 +168,15 @@ export function PlayerPool({
     if (tab === 'training') loadTrainingStats(trainingFilter, selectedPeriodId, excludedWeekdays)
   }, [tab, trainingFilter, selectedPeriodId, excludedWeekdays, loadTrainingStats])
 
-  // Filter training stats to available players only, sorted by attendance desc
+  // Nur verfuegbare Spieler, sortiert nach der QUOTE — danach sortiert auch die
+  // Auto-Aufstellung. Nach dem rohen Zaehler sortiert stuende, wer spaeter dazukam,
+  // unten und wuerde trotzdem frueh aufgestellt.
   const availableTrainingStats = useMemo(() => {
     if (!trainingStats?.length) return []
     const availableIds = new Set(allAvailablePlayers.map(p => p.id))
     return trainingStats
       .filter(s => availableIds.has(s.playerId))
-      .sort((a, b) => b.attended - a.attended)
+      .sort((a, b) => b.participation - a.participation || b.attended - a.attended)
   }, [trainingStats, allAvailablePlayers])
 
   const sortByOrder = (a: Player, b: Player) => {
@@ -468,13 +470,18 @@ export function PlayerPool({
               </button>
             ))}
             <span className="w-px h-4 bg-cream-300 mx-0.5" aria-hidden="true" />
-            <WeekdayFilter
-              weekdays={[PITCHER_CATCHER_WEEKDAY]}
-              excluded={excludedWeekdays}
-              onToggle={toggleWeekday}
-            />
-            <span className="text-[10px] text-gray-400">
-              {excludedWeekdays.includes(PITCHER_CATCHER_WEEKDAY) ? 'nur Basic' : 'inkl. P/C'}
+            {/* Hinweis klebt am Chip: bricht die Reihe am Handy um, wandert er mit,
+                statt unter dem Zeitraum-Feld zu stranden. */}
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <WeekdayFilter
+                weekdays={[PITCHER_CATCHER_WEEKDAY]}
+                labels={PITCHER_CATCHER_CHIP_LABELS}
+                excluded={excludedWeekdays}
+                onToggle={toggleWeekday}
+              />
+              <span className="text-[10px] text-gray-400">
+                {excludedWeekdays.includes(PITCHER_CATCHER_WEEKDAY) ? 'zählt nicht' : 'zählt mit'}
+              </span>
             </span>
           </div>
           {availableTrainingStats.length === 0 ? (
@@ -486,28 +493,31 @@ export function PlayerPool({
               <p className="text-sm">Keine Trainingsdaten vorhanden.</p>
             </div>
           ) : (
-            (() => {
-              const maxAttended = Math.max(...availableTrainingStats.map(st => st.attended), 1)
-              return availableTrainingStats.map(s => {
-              const barWidth = Math.round((s.attended / maxAttended) * 100)
-              return (
-                <div key={s.playerId} className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-900 w-20 truncate">
-                    {s.playerName}
-                  </span>
-                  <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-navy-800"
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-display tabular-nums text-gray-500 tabular-nums w-6 text-right shrink-0">
-                    {s.attended}
-                  </span>
+            availableTrainingStats.map(s => (
+              <div
+                key={s.playerId}
+                className="flex items-center gap-2"
+                title={`${s.attended} von ${s.heldSinceFirstSeen} Trainings seit dem ersten Mal dabei`}
+              >
+                <span className="text-xs font-medium text-gray-900 w-20 truncate">
+                  {s.playerName}
+                </span>
+                <div className="flex-1 h-4 bg-cream-200 rounded-full overflow-hidden">
+                  {/* scaleX statt width: laeuft auf dem Compositor, damit beim Umschalten
+                      nicht dreizehn Balken gleichzeitig ruckeln. */}
+                  <div
+                    className="h-full w-full origin-left rounded-full bg-navy-800 transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+                    style={{ transform: `scaleX(${s.participation})` }}
+                  />
                 </div>
-              )
-            })
-            })()
+                <span className="text-[11px] font-display font-bold tabular-nums text-navy-700 w-8 text-right shrink-0">
+                  {Math.round(s.participation * 100)}%
+                </span>
+                <span className="text-[10px] font-display tabular-nums text-gray-400 w-6 text-right shrink-0">
+                  {s.attended}
+                </span>
+              </div>
+            ))
           )}
         </div>
       )}

@@ -19,6 +19,14 @@ const HINTS: Record<number, string> = {
 type Props = {
   /** Wochentage, die in den Daten vorkommen (ISO 1–7) — sonst gibt es nichts zu filtern. */
   weekdays: number[]
+  /**
+   * Beschriftet die Chips nach dem, was dort trainiert wird, statt nach dem Wochentag.
+   *
+   * Im Spieltags-Planer geht es nie um "Donnerstag", sondern um "P/C mitzaehlen oder
+   * nicht" — der Wochentag ist nur die Mechanik dahinter. In der Trainings-Statistik,
+   * wo mehrere Tage nebeneinander stehen, bleibt der Wochentag die richtige Beschriftung.
+   */
+  labels?: Record<number, string>
   /** Aktuell ausgeschlossene Wochentage. */
   excluded: number[]
   onToggle: (weekday: number) => void
@@ -29,7 +37,7 @@ type Props = {
  * Wochentag-Chips zum Ein-/Ausblenden von Trainingstagen in Anwesenheits-Zahlen.
  * Aktiv (dunkel) = zählt mit, ausgegraut = ausgeschlossen.
  */
-export function WeekdayFilter({ weekdays, excluded, onToggle, className = '' }: Props) {
+export function WeekdayFilter({ weekdays, excluded, onToggle, labels, className = '' }: Props) {
   const days = [...new Set(weekdays)].sort((a, b) => a - b)
   if (days.length === 0) return null
 
@@ -39,6 +47,7 @@ export function WeekdayFilter({ weekdays, excluded, onToggle, className = '' }: 
     <div className={`flex items-center gap-1 flex-wrap ${className}`} role="group" aria-label="Trainingstage filtern">
       {days.map(day => {
         const active = !excludedSet.has(day)
+        const shown = labels?.[day] ?? LABELS[day]
         return (
           <button
             key={day}
@@ -53,7 +62,7 @@ export function WeekdayFilter({ weekdays, excluded, onToggle, className = '' }: 
                 : 'bg-cream-100 text-gray-400 border-cream-300 line-through hover:border-navy-400'
             }`}
           >
-            {LABELS[day]}
+            {shown}
           </button>
         )
       })}
