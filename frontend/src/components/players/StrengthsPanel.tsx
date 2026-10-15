@@ -17,15 +17,15 @@ interface Measure {
 const RATE = (value: number) => value.toFixed(3).replace(/^0/, '')
 const PERCENT = (value: number) => `${Math.round(value * 100)} %`
 const MEASURES: Measure[] = [
-  { key: 'avg', label: 'AVG', explain: 'Hits je Schlagversuch', higherIsBetter: true, format: RATE,
+  { key: 'avg', label: 'AVG', explain: 'Hits je At-Bat', higherIsBetter: true, format: RATE,
     value: s => s.battingAverage },
   { key: 'obp', label: 'OBP', explain: 'wie oft er eine Base erreicht', higherIsBetter: true, format: RATE,
     value: s => s.onBasePct },
-  { key: 'slg', label: 'SLG', explain: 'Bases je Schlagversuch', higherIsBetter: true, format: RATE,
+  { key: 'slg', label: 'SLG', explain: 'Bases je At-Bat', higherIsBetter: true, format: RATE,
     value: s => s.sluggingPct },
   { key: 'ops', label: 'OPS', explain: 'OBP plus SLG', higherIsBetter: true, format: RATE,
     value: s => s.ops },
-  { key: 'bb', label: 'Walk-Quote', explain: 'Anteil Walks an allen Auftritten', higherIsBetter: true, format: PERCENT,
+  { key: 'bb', label: 'Walk-Quote', explain: 'Anteil Walks an allen PA', higherIsBetter: true, format: PERCENT,
     value: s => s.plateAppearances > 0 ? s.walks / s.plateAppearances : 0 },
   { key: 'k', label: 'Strikeout-Quote', explain: 'Anteil Strikeouts — weniger ist besser', higherIsBetter: false, format: PERCENT,
     value: s => s.plateAppearances > 0 ? s.strikeouts / s.plateAppearances : 0 },
@@ -42,7 +42,7 @@ const MEASURES: Measure[] = [
  * Rest des Kaders schlägt. Deshalb trägt jede Zeile den Teamschnitt als Markierung
  * im Balken und die Differenz als Vorzeichen daneben.
  *
- * Der Schnitt bildet sich nur aus Spielern mit genug Schlagversuchen (`qualified`),
+ * Der Schnitt bildet sich nur aus Spielern mit genug At-Bats (`qualified`, ab 5),
  * sonst zöge ein 1-für-1 den Vergleich nach oben. Quelle ist die All-Time-Statistik,
  * damit die Zahlen zu denen der Statistik-Seite passen.
  */
@@ -109,7 +109,7 @@ export function StrengthsPanel({ playerId, allTime }: {
         </li>
       ))}
       <li className="text-[11px] text-gray-500 pt-1">
-        Kerbe = Schnitt des übrigen Kaders — nur Spieler mit mindestens 5 Schlagversuchen.
+        Kerbe = Schnitt des übrigen Kaders — nur Spieler mit mindestens 5 At-Bats.
       </li>
     </ul>
   )

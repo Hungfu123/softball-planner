@@ -66,6 +66,5 @@ export function countUntil(gameDayDate: string, today?: string): string {
 export function trainingYearTitle(reference?: string): string {
   const start = trainingYearStart(reference)
   const startYear = Number(start.slice(0, 4))
-  return `Trainingsjahr ${trainingYearLabel(reference)}: Winter- und Sommersaison zusammen, `
-    + `ab 1. November ${startYear}`
+  return `Trainingsjahr ${trainingYearLabel(reference)} — Winter und Sommer zusammen, ab 1.11.${startYear}`
 }

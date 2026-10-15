@@ -247,8 +247,8 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                             onClick={() => togglePcOnly(w.value)}
                             aria-pressed={pcOnly}
                             title={pcOnly
-                              ? 'Nur Pitcher und Catcher eingeladen — zählt nicht in die Trainingsbeteiligung'
-                              : 'Ganzer Kader eingeladen — zählt in die Trainingsbeteiligung'}
+                              ? 'Nur P/C eingeladen — zählt nicht mit'
+                              : 'Ganzer Kader — zählt mit'}
                             className={`h-10 px-2.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
                               pcOnly
                                 ? 'bg-navy-800 border-navy-900 text-white'
@@ -262,8 +262,8 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                     })}
                   </div>
                   <p className="mt-1.5 text-[11px] text-gray-500">
-                    „nur P/C" heißt: an diesem Tag ist nur ein Teil des Kaders eingeladen.
-                    Solche Termine zählen nicht in die Trainingsbeteiligung der Aufstellung.
+                    „nur P/C": an dem Tag ist nicht der ganze Kader eingeladen.
+                    Zählt dann nicht in die Trainingsbeteiligung.
                   </p>
                 </div>
               )}

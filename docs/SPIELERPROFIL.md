@@ -72,36 +72,62 @@ zweithäufigste → Sekundär, dritthäufigste → Tertiär.
 
 ## Form-Kurve
 
-Gezeichnet wird die **laufende Gesamtquote** über alle Schlagversuche des gewählten
-Zeitraums, ein Punkt je Spiel (`formSeries.cumulativeSeries`). Vorher war es ein
-gleitender Schnitt über die letzten 20 Schlagversuche — der sprang bei jedem guten
-oder schlechten Spiel stark, und zwei Spieler ließen sich nicht vergleichen, weil
-hinter jedem Punkt eine andere Stichprobe stand. Gestrichelt heißt: noch keine 20
-Schlagversuche beisammen.
+**Laufender Schnitt** über alle At-Bats des gewählten Zeitraums, ein Punkt je Spiel
+(`formSeries.cumulativeSeries`). Vorher ein gleitendes Fenster über die letzten 20
+At-Bats — das sprang bei jedem Spiel, und zwei Spieler ließen sich nicht vergleichen,
+weil hinter jedem Punkt eine andere Stichprobe stand.
 
-Gerechnet wird über die **angezeigten** Punkte: schneidet der Zeitraum-Filter die Reihe
-auf ein Jahr zu, beginnt die Summe bei dessen erstem Spiel. Alles rein im Frontend, die
-Roh-Werte je Spiel (`atBats`, `hits`, `totalBases`, `timesOnBase`, `plateAppearances`)
-stehen schon in der Zeitreihe; die `rolling*`-Felder des Backends liest die Kurve nicht
-mehr.
+Gerechnet wird über die angezeigten Punkte: schneidet der Zeitraum-Filter auf ein Jahr
+zu, beginnt die Summe bei dessen erstem Spiel. Rein im Frontend — die Roh-Werte je Spiel
+stehen in der Zeitreihe, die `rolling*`-Felder des Backends liest die Kurve nicht mehr.
 
-**Y-Achse beginnt immer bei 0.** Früher umschloss sie die Daten und startete irgendwo bei
-.150 — das zeigt Ausschläge größer, macht aber zwei Spieler unvergleichbar, weil derselbe
-Kurvenverlauf bei jedem etwas anderes bedeutet. Der Preis: ein frühes 1.000 aus einem
-1-aus-1-Spiel zieht die Achse hoch und drückt den belastbaren Teil zusammen, bis sich die
-Summe eingependelt hat.
+**Nenner je Kennzahl** (`denominator`): AVG und SLG je At-Bat, OBP und OPS je PA. Die
+Kopfzeile nennt ihn mit, damit sich der Wert nachrechnen lässt.
 
-**X-Achse nach Datum**, nicht nach Listenposition — nur so liegen beim Spielervergleich
-zwei Reihen im selben Zeitraum übereinander. Die Achsen-Beschriftung nennt Anfang und Ende
-der Skala, die beim Vergleich über **beide** Reihen spannt.
+**Die Linie beginnt ab 10 At-Bats** (`MIN_AT_BATS`). Davor sagt der laufende Schnitt
+nichts: ein 1-aus-1 im ersten Spiel ergibt kumulativ 1.000 und zöge die Achse auf 1.250
+hoch. Die Werte zählen trotzdem ab dem ersten Spiel mit, nur der Anfang der Linie wartet.
 
-**Spielervergleich:** Auswahl „Vergleichen mit …" unter der Kurve zieht die Reihe eines
-Mitspielers nach (`getPlayerBattingTimeline`, gecacht) und zeichnet sie in Amber
-(`#B45309`) hinter der eigenen Navy-Linie. Rot bleibt negativen Signalen vorbehalten. Der
-Vergleich folgt demselben Zeitraum-Schnitt wie die eigene Reihe.
+**Y-Achse ab 0**, sonst bedeutet derselbe Kurvenverlauf bei zwei Spielern etwas anderes.
 
-**Detailzeile fest hoch:** beim Wandern von Punkt zu Punkt darf nichts springen — vorher
-verschob eine längere Gegner-Zeile den Block unter dem Finger.
+**X-Achse: ein Spiel, ein Schritt.** Nach echten Datumsabständen verklumpten Spieltage
+und Saisonpausen rissen Löcher. Die Zeit kommt über **Monatsmarken** zurück
+(`monthTicks`): liegen fünf Punkte zwischen „Mai" und „Jun", war der Monat dicht; fehlt
+ein Monat, gab es dort keine Spiele.
+
+**Spielervergleich, bis zu zwei Mitspieler** (`MAX_COMPARE`): „Vergleichen mit …" zieht
+deren Reihen nach (`getPlayerBattingTimeline`, gecacht), die Legende nimmt sie per × wieder
+raus. Jede Reihe bekommt einen Endpunkt — ohne ihn liest sie sich wie Dekoration statt wie
+ein zweiter Spieler. Spiel 5 liegt über Spiel 5 („nach ebenso vielen Spielen"), die kürzere
+Reihe endet früher statt gedehnt zu werden.
+
+Farben (`COMPARE_STYLES`): **navy-400 gestrichelt** und **teal-700 gepunktet**. Gewählt
+nach Kontrast, gemessen gegen Cream (lesbar?) und gegen die navy-800 der Hauptlinie
+(unterscheidbar?):
+
+| Farbe | zu Cream | zu navy-800 | |
+|---|---|---|---|
+| navy-400 | 4.70 | 3.49 | ✓ |
+| teal-700 | 5.08 | 3.23 | ✓ |
+| gray-500 | 7.27 | **2.26** | zu nah an der Hauptlinie |
+| navy-300 | **2.28** | 7.21 | auf Cream zu hell |
+| softball-red-300 | **1.76** | — | lebt von dunklem Grund |
+
+**Amber und Emerald sind im Haus belegt** (positiv / Sieg, 35× bzw. 26× in Benutzung),
+**Rot** ist negativen Signalen vorbehalten und markiert hier schon den eigenen Endpunkt.
+Eine Vergleichslinie darf nicht werten, sie soll unterscheiden. Das Pastellrot der
+Spielverlaufs-Seite funktioniert dort auf dunklem Navy (9.86) und fällt auf Cream auf 1.76.
+
+Der Strich ist der zweite Kanal, damit die Reihen auch ohne Farbunterscheidung lesbar
+bleiben — auf Papier oder bei Farbsehschwäche.
+
+**Keine Verlaufsflächen unter den Linien.** Bei drei Reihen überlagern sich die Flächen zu
+Matsch; die Achse beginnt bei 0, eine Fläche unter einer .400-Linie füllt also zwei Drittel
+des Bildes ohne Aussage; und die Fläche unter einer Quote bedeutet nichts — ein Schnitt ist
+keine Menge, die sich aufsummiert.
+
+**Detailzeile fest hoch**, damit beim Wandern von Punkt zu Punkt nichts springt; der
+Vergleichswert steht auf eigener Zeile statt angehängt, sonst schnitt ihn `truncate` ab.
 
 ## Letzte Spiele (`GameLog`) und Saison für Saison (`SeasonTable`)
 
@@ -138,7 +164,7 @@ Der Filter schaltet **alle** Zahlen um, nicht nur die Kurve:
   werden — sonst springt die Seite bei jedem Chip-Tap.
 - **Kein Zeitraum-Text in den Karten**: der Filter steht oben und gilt für die ganze Seite.
 - Der gleitende Schnitt der Kurve bleibt der laufende Form-Wert über die letzten 20
-  Schlagversuche — er endet nicht an der Saisongrenze, auch wenn die Kurve nur die Spiele
+  At-Bats — er endet nicht an der Saisongrenze, auch wenn die Kurve nur die Spiele
   einer Saison zeigt.
 - Die Listen stammen aus der Zeitreihe: ein Jahr oder eine Saison ohne gescorte At-Bats
   taucht nicht auf.

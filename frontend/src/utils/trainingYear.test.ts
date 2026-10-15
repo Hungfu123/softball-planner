@@ -50,7 +50,7 @@ describe('Abgrenzung zur einzelnen Trainingsperiode', () => {
 
   it('schreibt im Tooltip aus, dass beide Saisons drinstecken', () => {
     expect(trainingYearTitle('2027-02-14'))
-      .toBe('Trainingsjahr 26/27: Winter- und Sommersaison zusammen, ab 1. November 2026')
+      .toBe('Trainingsjahr 26/27 — Winter und Sommer zusammen, ab 1.11.2026')
   })
 })
 
