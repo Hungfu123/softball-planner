@@ -41,12 +41,33 @@ public final class TrainingParticipationCalculator {
     private TrainingParticipationCalculator() {}
 
     /**
+     * Beteiligung eines Spielers: besucht, davon moeglich, und die Quote daraus.
+     *
+     * @param attended besuchte Trainings
+     * @param held     stattgefundene Trainings seit seinem ersten Auftauchen (ungefloort,
+     *                 damit die UI "19 von 43" schreiben kann)
+     * @param rate     besucht / max(held, {@link #MIN_DENOMINATOR})
+     */
+    public record Participation(long attended, long held, double rate) {}
+
+    /**
      * @param heldTrainings Trainings, die zaehlen sollen — bereits gefiltert.
      * @param attendances   Anwesenheiten zu genau diesen Trainings.
      * @return Quote je Spieler zwischen 0.0 und 1.0. Wer nie da war, fehlt in der Map.
      */
     public static Map<Long, Double> rates(final Collection<Training> heldTrainings,
                                           final Collection<TrainingAttendance> attendances) {
+        final Map<Long, Double> rates = new HashMap<>();
+        participation(heldTrainings, attendances).forEach((id, p) -> rates.put(id, p.rate()));
+        return rates;
+    }
+
+    /**
+     * Wie {@link #rates}, aber mit den Zahlen dahinter — die UI soll "19 von 43" zeigen
+     * koennen und nicht nur eine nackte Prozentzahl.
+     */
+    public static Map<Long, Participation> participation(final Collection<Training> heldTrainings,
+                                                          final Collection<TrainingAttendance> attendances) {
         if (heldTrainings == null || heldTrainings.isEmpty() || attendances == null) {
             return Map.of();
         }
@@ -78,13 +99,15 @@ public final class TrainingParticipationCalculator {
                 newDate.isBefore(oldDate) ? newDate : oldDate);
         }
 
-        final Map<Long, Double> rates = new HashMap<>();
+        final Map<Long, Participation> result = new HashMap<>();
         for (final Map.Entry<Long, Set<Long>> entry : attendedTrainingIdsByPlayer.entrySet()) {
             final LocalDate firstSeen = firstSeenByPlayer.get(entry.getKey());
             final long held = heldDates.stream().filter(d -> !d.isBefore(firstSeen)).count();
             if (held == 0) continue;
-            rates.put(entry.getKey(), (double) entry.getValue().size() / Math.max(held, MIN_DENOMINATOR));
+            final long attended = entry.getValue().size();
+            result.put(entry.getKey(),
+                new Participation(attended, held, (double) attended / Math.max(held, MIN_DENOMINATOR)));
         }
-        return rates;
+        return result;
     }
 }

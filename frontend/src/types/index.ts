@@ -398,7 +398,13 @@ export interface TrainingStatsResponse {
   playerId: number
   playerName: string
   attended: number
+  /** Stattgefundene Trainings im Zeitraum — für alle Spieler gleich. */
   totalTrainings: number
+  /** Stattgefundene Trainings seit dem ersten Auftauchen DIESES Spielers. */
+  heldSinceFirstSeen: number
+  /** `attended / heldSinceFirstSeen` (Nenner mindestens 3). Danach sortiert die
+   *  Auto-Aufstellung — Listen, die etwas anderes zeigen, erklären sie nicht. */
+  participation: number
   regular: boolean
 }
 

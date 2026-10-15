@@ -21,7 +21,7 @@ import { SaveButton } from './SaveButton'
 import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
-import { TrainingAttendancePanel } from './TrainingAttendancePanel'
+import { TrainingAttendancePanel, type TrainingWindow } from './TrainingAttendancePanel'
 import { trainingYearStart } from '@/utils/trainingYear'
 import { PollVoteSyncSheet } from './PollVoteSyncSheet'
 import { PollSyncToolbarButton } from './PollSyncToolbarButton'
@@ -70,8 +70,11 @@ export function GameDayPlanner() {
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const [seasonBattingStats, setSeasonBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
   const [yearBattingStats, setYearBattingStats] = useState<import('@/types').PlayerBattingStatsResponse[]>([])
-  const [, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
-  const [selectedPeriodId] = useState<number | null>(null)
+  // Zeitraum-Wahl liegt beim Trainings-Panel — vorher wurden die Perioden geladen und
+  // weggeworfen, waehlbar waren sie nur im Spieler-Panel nebenan.
+  const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
+  const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
+  const [trainingWindow, setTrainingWindow] = useState<TrainingWindow>('trainingYear')
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const [assignPosition, setAssignPosition] = useState<string | null>(null)
   const [pollStatus, setPollStatus] = useState<GameDayVotePreview | null>(null)
@@ -176,10 +179,11 @@ export function GameDayPlanner() {
     if (selectedPeriodId) {
       api.getTrainingStats(selectedPeriodId, undefined, undefined, excludedTrainingWeekdays).then(setTrainingStats)
     } else {
-      api.getTrainingStats(undefined, trainingYearStart(gameDay.date), gameDay.date, excludedTrainingWeekdays)
+      const since = trainingWindow === 'all' ? undefined : trainingYearStart(gameDay.date)
+      api.getTrainingStats(undefined, since, gameDay.date, excludedTrainingWeekdays)
         .then(setTrainingStats)
     }
-  }, [gameDay?.date, selectedPeriodId, excludedTrainingWeekdays])
+  }, [gameDay?.date, selectedPeriodId, excludedTrainingWeekdays, trainingWindow])
 
   // Nur den Tab wechseln — das Laden von Lineup/Staff übernimmt zentral der
   // Effect auf activeGame?.id (verhindert doppelte, konkurrierende load()-Aufrufe).
@@ -1075,6 +1079,11 @@ export function GameDayPlanner() {
                   gameDayDate={gameDay.date}
                   excludedWeekdays={excludedTrainingWeekdays}
                   onToggleWeekday={toggleTrainingWeekday}
+                  periods={trainingPeriods}
+                  selectedPeriodId={selectedPeriodId}
+                  onSelectPeriod={setSelectedPeriodId}
+                  window={trainingWindow}
+                  onSelectWindow={setTrainingWindow}
                 />
               </div>
             </div>

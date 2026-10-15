@@ -48,17 +48,21 @@ public class TrainingStatsService {
         final long totalNonCancelled = nonCancelledTrainings.size();
 
         final List<Long> trainingIds = nonCancelledTrainings.stream().map(Training::getId).toList();
-        final Map<Long, Long> attendedCountByPlayer;
-        if (trainingIds.isEmpty()) {
-            attendedCountByPlayer = Map.of();
-        } else {
-            attendedCountByPlayer = attendanceRepository.findByTrainingIdIn(trainingIds).stream()
-                .filter(TrainingAttendance::isPresent)
-                .collect(Collectors.groupingBy(
-                    a -> a.getPlayer().getId(),
-                    Collectors.counting()
-                ));
-        }
+        final List<TrainingAttendance> attendances = trainingIds.isEmpty()
+            ? List.of()
+            : attendanceRepository.findByTrainingIdIn(trainingIds);
+
+        final Map<Long, Long> attendedCountByPlayer = attendances.stream()
+            .filter(TrainingAttendance::isPresent)
+            .collect(Collectors.groupingBy(
+                a -> a.getPlayer().getId(),
+                Collectors.counting()
+            ));
+
+        // Dieselbe Quote, nach der die Auto-Aufstellung sortiert — damit eine Liste, die
+        // diese Zahlen anzeigt, die Aufstellung auch erklaeren kann.
+        final Map<Long, TrainingParticipationCalculator.Participation> participation =
+            TrainingParticipationCalculator.participation(nonCancelledTrainings, attendances);
 
         final Set<Long> relevantPlayerIds = new HashSet<>(attendedCountByPlayer.keySet());
         final List<Player> regularPlayers = playerRepository.findByRegularTrue();
@@ -71,13 +75,18 @@ public class TrainingStatsService {
         }
 
         return playerMap.values().stream()
-            .map(player -> new TrainingStatsResponse(
-                player.getId(),
-                player.getName(),
-                attendedCountByPlayer.getOrDefault(player.getId(), 0L),
-                totalNonCancelled,
-                player.isRegular()
-            ))
+            .map(player -> {
+                final var p = participation.get(player.getId());
+                return new TrainingStatsResponse(
+                    player.getId(),
+                    player.getName(),
+                    attendedCountByPlayer.getOrDefault(player.getId(), 0L),
+                    totalNonCancelled,
+                    p != null ? p.held() : 0L,
+                    p != null ? p.rate() : 0.0,
+                    player.isRegular()
+                );
+            })
             .toList();
     }
 

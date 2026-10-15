@@ -18,7 +18,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +37,49 @@ class TrainingStatsServiceTest {
         t.setId(id);
         t.setCancelled(cancelled);
         return t;
+    }
+
+    @Test
+    void getStats_liefertDieQuote_nachDerDieAufstellungSortiert() {
+        // Vier Trainings. Alice war ueberall, Bob taucht erst beim dritten auf und ist
+        // seitdem bei beiden gewesen. Roh gezaehlt liegt Bob mit 2 zu 4 hinten.
+        final List<Training> trainings = List.of(
+            training(1L, LocalDate.of(2026, 1, 5), false),
+            training(2L, LocalDate.of(2026, 1, 12), false),
+            training(3L, LocalDate.of(2026, 1, 19), false),
+            training(4L, LocalDate.of(2026, 1, 26), false));
+        when(trainingRepository.findAllByOrderByDateDesc()).thenReturn(trainings);
+
+        final Player alice = new Player(1L, "Alice", true);
+        final Player bob = new Player(2L, "Bob", true);
+        when(attendanceRepository.findByTrainingIdIn(anyList())).thenReturn(List.of(
+            new TrainingAttendance(trainings.get(0), alice, true),
+            new TrainingAttendance(trainings.get(1), alice, true),
+            new TrainingAttendance(trainings.get(2), alice, true),
+            new TrainingAttendance(trainings.get(3), alice, true),
+            new TrainingAttendance(trainings.get(2), bob, true),
+            new TrainingAttendance(trainings.get(3), bob, true)));
+        when(playerRepository.findByRegularTrue()).thenReturn(List.of(alice, bob));
+        when(playerRepository.findAllById(anyCollection())).thenReturn(List.of(alice, bob));
+
+        final List<TrainingStatsResponse> result = service.getStats(null, null, null);
+
+        final TrainingStatsResponse aliceStats = result.stream()
+            .filter(r -> r.playerId().equals(1L)).findFirst().orElseThrow();
+        final TrainingStatsResponse bobStats = result.stream()
+            .filter(r -> r.playerId().equals(2L)).findFirst().orElseThrow();
+
+        // Der globale Zaehler bleibt fuer beide gleich, der Nenner der Quote nicht.
+        assertThat(aliceStats.totalTrainings()).isEqualTo(4);
+        assertThat(bobStats.totalTrainings()).isEqualTo(4);
+        assertThat(aliceStats.heldSinceFirstSeen()).isEqualTo(4);
+        assertThat(bobStats.heldSinceFirstSeen()).isEqualTo(2);
+
+        // Bob verliert nur durch die Untergrenze von 3, nicht durch die vier Termine
+        // vor seiner Zeit: 2/3 statt 2/4.
+        assertThat(aliceStats.participation()).isEqualTo(1.0);
+        assertThat(bobStats.participation()).isEqualTo(2.0 / 3.0, within(0.001));
+        assertThat(bobStats.attended()).isLessThan(aliceStats.attended());
     }
 
     @Test
