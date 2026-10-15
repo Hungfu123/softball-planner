@@ -135,6 +135,15 @@ Matsch; die Achse beginnt bei 0, eine Fläche unter einer .400-Linie füllt also
 des Bildes ohne Aussage; und die Fläche unter einer Quote bedeutet nichts — ein Schnitt ist
 keine Menge, die sich aufsummiert.
 
+**Antippen und Wischen statt Zielen.** Früher hatte jeder Punkt seine eigene Trefferfläche
+— bei 17 Spielen waren die 7–14 px breit, eine Fingerkuppe deckte drei bis sechs davon.
+Jetzt liegt **eine** Fläche über dem ganzen Graphen: getippt wird der nächstgelegene Punkt,
+und beim Ziehen wandert die Auswahl mit, ohne neu zu zielen (`waehleBeiX`, Pointer-Capture
+wo der Browser es kennt). `touch-action: pan-y` lässt das senkrechte Scrollen in Ruhe.
+
+Eine **senkrechte Fanglinie** markiert den gewählten Punkt — die Fingerkuppe deckt ihn zu,
+die Linie ragt darüber hinaus.
+
 **Detailzeile fest hoch**, damit beim Wandern von Punkt zu Punkt nichts springt; der
 Vergleichswert steht auf eigener Zeile statt angehängt, sonst schnitt ihn `truncate` ab.
 

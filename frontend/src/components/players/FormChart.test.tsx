@@ -52,15 +52,23 @@ describe('FormChart', () => {
     expect(screen.getByText(/AVG aus 8 At-Bats/)).toBeInTheDocument()
   })
 
-  it('zeigt beim Antippen eines Punktes dessen einzelnes Spiel', () => {
+  it('waehlt den Punkt, der dem Finger am naechsten liegt', () => {
     const { container } = render(<FormChart {...basis} points={[
       point({ gameId: 1, date: '2026-04-11', hits: 2, atBats: 3, opponent: 'Münster' }),
-      point({ gameId: 2, date: '2026-04-18' }),
+      point({ gameId: 2, date: '2026-04-18', opponent: 'Köln' }),
     ]} />)
 
-    fireEvent.pointerEnter(container.querySelectorAll('rect')[0])
+    // Eine Flaeche statt einer pro Punkt — getroffen wird ueber die Position.
+    const flaeche = container.querySelector('rect')!
+    flaeche.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 100,
+      right: 200, bottom: 100, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
 
+    fireEvent.pointerDown(flaeche, { clientX: 2 })
     expect(screen.getByText(/vs Münster · 2 von 3/)).toBeInTheDocument()
+
+    // Ziehen nach rechts wandert weiter, ohne neu zu zielen.
+    fireEvent.pointerMove(flaeche, { clientX: 198, buttons: 1 })
+    expect(screen.getByText(/vs Köln/)).toBeInTheDocument()
   })
 
   it('beschriftet die Kurve für Screenreader', () => {
