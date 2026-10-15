@@ -7,6 +7,7 @@ import com.softball.domain.model.TrainingAttendance;
 import com.softball.domain.port.out.PlayerRepository;
 import com.softball.domain.port.out.TrainingAttendanceRepository;
 import com.softball.domain.port.out.TrainingRepository;
+import com.softball.domain.service.TrainingParticipationCalculator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,24 +37,13 @@ public class TrainingStatsService {
 
     /**
      * @param excludeWeekdays ISO-Wochentage (1 = Montag … 7 = Sonntag), die NICHT mitzaehlen sollen.
-     *                        Montag ist P/C-Training, die uebrigen Tage Basic — so laesst sich die
-     *                        Anwesenheit getrennt auswerten. Leer/null = alle Tage zaehlen.
+     *                        Ein Wochentag traegt das P/C-Training, die uebrigen Basic — so laesst
+     *                        sich die Anwesenheit getrennt auswerten. Leer/null = alle Tage zaehlen.
      */
     @Transactional(readOnly = true)
     public List<TrainingStatsResponse> getStats(final Long periodId, final LocalDate since, final LocalDate until,
                                                  final Collection<Integer> excludeWeekdays) {
-        final List<Training> allTrainings = periodId != null
-            ? trainingRepository.findByPeriodIdOrderByDateDesc(periodId)
-            : trainingRepository.findAllByOrderByDateDesc();
-
-        final Set<Integer> excluded = excludeWeekdays == null ? Set.of() : new HashSet<>(excludeWeekdays);
-
-        final List<Training> nonCancelledTrainings = allTrainings.stream()
-            .filter(t -> !t.isCancelled())
-            .filter(t -> since == null || !t.getDate().isBefore(since))
-            .filter(t -> until == null || !t.getDate().isAfter(until))
-            .filter(t -> !excluded.contains(t.getDate().getDayOfWeek().getValue()))
-            .toList();
+        final List<Training> nonCancelledTrainings = findHeldTrainings(periodId, since, until, excludeWeekdays);
 
         final long totalNonCancelled = nonCancelledTrainings.size();
 
@@ -88,6 +78,40 @@ public class TrainingStatsService {
                 totalNonCancelled,
                 player.isRegular()
             ))
+            .toList();
+    }
+
+    /**
+     * Trainingsbeteiligung als Quote je Spieler (0.0 bis 1.0) statt als Zaehler.
+     *
+     * <p>Fuer die Auto-Aufstellung: dort entscheidet die Beteiligung mit darueber, wer
+     * spielt, und ein roher Zaehler benachteiligt Neuzugaenge. Details in
+     * {@link TrainingParticipationCalculator}.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Double> getParticipationRates(final Long periodId, final LocalDate since, final LocalDate until,
+                                                    final Collection<Integer> excludeWeekdays) {
+        final List<Training> heldTrainings = findHeldTrainings(periodId, since, until, excludeWeekdays);
+        final List<Long> trainingIds = heldTrainings.stream().map(Training::getId).toList();
+        if (trainingIds.isEmpty()) return Map.of();
+        return TrainingParticipationCalculator.rates(
+            heldTrainings, attendanceRepository.findByTrainingIdIn(trainingIds));
+    }
+
+    /** Trainings, die im gewaehlten Zuschnitt wirklich stattgefunden haben. */
+    private List<Training> findHeldTrainings(final Long periodId, final LocalDate since, final LocalDate until,
+                                              final Collection<Integer> excludeWeekdays) {
+        final List<Training> allTrainings = periodId != null
+            ? trainingRepository.findByPeriodIdOrderByDateDesc(periodId)
+            : trainingRepository.findAllByOrderByDateDesc();
+
+        final Set<Integer> excluded = excludeWeekdays == null ? Set.of() : new HashSet<>(excludeWeekdays);
+
+        return allTrainings.stream()
+            .filter(t -> !t.isCancelled())
+            .filter(t -> since == null || !t.getDate().isBefore(since))
+            .filter(t -> until == null || !t.getDate().isAfter(until))
+            .filter(t -> !excluded.contains(t.getDate().getDayOfWeek().getValue()))
             .toList();
     }
 }

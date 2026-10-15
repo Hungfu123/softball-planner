@@ -1,3 +1,5 @@
+import { PITCHER_CATCHER_HINT, PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
+
 /** ISO-Wochentage: 1 = Montag … 7 = Sonntag. */
 const LABELS: Record<number, string> = {
   1: 'Mo',
@@ -9,9 +11,9 @@ const LABELS: Record<number, string> = {
   7: 'So',
 }
 
-/** Montag ist P/C-Training, alle anderen Tage Basic — Hinweis am Chip. */
+/** Ein Tag trägt das P/C-Training, alle anderen Basic — Hinweis am Chip. */
 const HINTS: Record<number, string> = {
-  1: 'Montag (P/C)',
+  [PITCHER_CATCHER_WEEKDAY]: PITCHER_CATCHER_HINT,
 }
 
 type Props = {

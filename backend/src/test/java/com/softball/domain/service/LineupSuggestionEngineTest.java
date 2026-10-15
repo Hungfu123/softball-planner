@@ -380,7 +380,7 @@ class LineupSuggestionEngineTest {
         for (long id = 1; id <= 10; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
 
         // Alle gleich oft gespielt; Nummer 10 war am oeftesten im Training.
-        final Map<Long, Long> attendance = Map.of(10L, 20L);
+        final Map<Long, Double> attendance = Map.of(10L, 1.0);
 
         final List<SuggestionResult> result = engine.suggest(
             List.of(), players, Set.of(), Map.of(), attendance, new Random(9));
@@ -394,8 +394,8 @@ class LineupSuggestionEngineTest {
         for (long id = 1; id <= 12; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
 
         // Je hoeher die Id, desto oefter im Training — die obersten neun sollen spielen.
-        final Map<Long, Long> attendance = new HashMap<>();
-        for (long id = 1; id <= 12; id++) attendance.put(id, id);
+        final Map<Long, Double> attendance = new HashMap<>();
+        for (long id = 1; id <= 12; id++) attendance.put(id, id / 12.0);
 
         final List<SuggestionResult> result = engine.suggest(
             List.of(), players, Set.of(), Map.of(), attendance, new Random(4));
@@ -408,8 +408,8 @@ class LineupSuggestionEngineTest {
     void everyoneAvailablePlaysAtLeastOnceAcrossTheGameDay() {
         final Map<Long, Player> players = new LinkedHashMap<>();
         for (long id = 1; id <= 12; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
-        final Map<Long, Long> attendance = new HashMap<>();
-        for (long id = 1; id <= 12; id++) attendance.put(id, id);
+        final Map<Long, Double> attendance = new HashMap<>();
+        for (long id = 1; id <= 12; id++) attendance.put(id, id / 12.0);
 
         final Map<Long, Integer> played = new HashMap<>();
         final Set<Long> everPlayed = new HashSet<>();
@@ -433,7 +433,7 @@ class LineupSuggestionEngineTest {
         for (long id = 1; id <= 10; id++) players.put(id, player(id, "Spieler " + id, Gender.MALE));
 
         // Nummer 1 war am oeftesten im Training, hat aber schon gespielt.
-        final Map<Long, Long> attendance = Map.of(1L, 99L);
+        final Map<Long, Double> attendance = Map.of(1L, 1.0);
         final Map<Long, Integer> played = Map.of(1L, 1);
 
         final List<SuggestionResult> result = engine.suggest(
@@ -446,15 +446,15 @@ class LineupSuggestionEngineTest {
     void quotaBeatsAttendance_twoWomenAlwaysField() {
         // Zwei Frauen sind da, trainieren aber am seltensten — sie spielen trotzdem.
         final Map<Long, Player> players = new LinkedHashMap<>();
-        final Map<Long, Long> attendance = new HashMap<>();
+        final Map<Long, Double> attendance = new HashMap<>();
         for (long id = 1; id <= 12; id++) {
             players.put(id, player(id, "Mann " + id, Gender.MALE));
-            attendance.put(id, 50L);
+            attendance.put(id, 0.5);
         }
         players.put(20L, player(20L, "Frau A", Gender.FEMALE));
         players.put(21L, player(21L, "Frau B", Gender.FEMALE));
-        attendance.put(20L, 1L);
-        attendance.put(21L, 1L);
+        attendance.put(20L, 0.01);
+        attendance.put(21L, 0.01);
 
         final List<SuggestionResult> result = engine.suggest(
             List.of(), players, Set.of(), Map.of(), attendance, new Random(13));
@@ -474,21 +474,21 @@ class LineupSuggestionEngineTest {
         // Die Quote holt die Frauen zurueck — raus muessen die Maenner, die schon dran
         // waren, nicht die fuenf, die noch auf ihren ersten Einsatz warten.
         final Map<Long, Player> players = new LinkedHashMap<>();
-        final Map<Long, Long> attendance = new HashMap<>();
+        final Map<Long, Double> attendance = new HashMap<>();
         final Map<Long, Integer> played = new HashMap<>();
 
         for (long id = 1; id <= 5; id++) {
             players.put(id, player(id, "Wartet " + id, Gender.MALE));
-            attendance.put(id, 5L);
+            attendance.put(id, 0.05);
         }
         for (long id = 6; id <= 9; id++) {
             players.put(id, player(id, "Hatte schon " + id, Gender.MALE));
-            attendance.put(id, 50L);
+            attendance.put(id, 0.5);
             played.put(id, 1);
         }
         for (long id = 20; id <= 21; id++) {
             players.put(id, player(id, "Frau " + id, Gender.FEMALE));
-            attendance.put(id, 1L);
+            attendance.put(id, 0.01);
             played.put(id, 1);
         }
 

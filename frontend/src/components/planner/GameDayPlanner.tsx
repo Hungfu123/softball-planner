@@ -22,6 +22,7 @@ import { AvailablePlayersModal } from './AvailablePlayersModal'
 import { CopyLineupModal } from './CopyLineupModal'
 import { SubstitutionEditor } from './SubstitutionEditor'
 import { TrainingAttendancePanel } from './TrainingAttendancePanel'
+import { trainingYearStart } from '@/utils/trainingYear'
 import { PollVoteSyncSheet } from './PollVoteSyncSheet'
 import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
@@ -74,8 +75,8 @@ export function GameDayPlanner() {
   const [mobileView, setMobileView] = useState<'lineup' | 'field'>('lineup')
   const [assignPosition, setAssignPosition] = useState<string | null>(null)
   const [pollStatus, setPollStatus] = useState<GameDayVotePreview | null>(null)
-  // Montag = P/C-Training. Ausgeschlossene Wochentage gehen als Query-Param mit,
-  // das Backend rechnet die Teilnahme-Zahlen ohne diese Tage.
+  // Ein Wochentag trägt das P/C-Training (siehe utils/trainingWeekday). Ausgeschlossene
+  // Wochentage gehen als Query-Param mit, das Backend rechnet die Teilnahme-Zahlen ohne sie.
   const [excludedTrainingWeekdays, setExcludedTrainingWeekdays] = useState<number[]>([])
   const [showPollSync, setShowPollSync] = useState(false)
   const activeGame = gameDay?.games[activeTab]
@@ -167,15 +168,15 @@ export function GameDayPlanner() {
       prev.includes(weekday) ? prev.filter(d => d !== weekday) : [...prev, weekday])
   }, [])
 
-  // Fetch training stats — by period or last 12 weeks
+  // Trainings-Teilnahme — nach Periode oder seit Beginn des Trainingsjahres. Dasselbe
+  // Fenster, nach dem die Auto-Aufstellung sortiert: die angezeigte Zahl soll die
+  // Aufstellung erklaeren. Vorher waren es hier 84 Tage und in der Engine 3 Monate.
   useEffect(() => {
     if (!gameDay?.date) return
     if (selectedPeriodId) {
       api.getTrainingStats(selectedPeriodId, undefined, undefined, excludedTrainingWeekdays).then(setTrainingStats)
     } else {
-      const d = new Date(gameDay.date + 'T00:00:00')
-      d.setDate(d.getDate() - 84)
-      api.getTrainingStats(undefined, d.toISOString().slice(0, 10), gameDay.date, excludedTrainingWeekdays)
+      api.getTrainingStats(undefined, trainingYearStart(gameDay.date), gameDay.date, excludedTrainingWeekdays)
         .then(setTrainingStats)
     }
   }, [gameDay?.date, selectedPeriodId, excludedTrainingWeekdays])

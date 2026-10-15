@@ -1,5 +1,3 @@
-import { useMemo } from 'react'
-
 export type AttendanceWindow = {
   attended: number
   total: number
@@ -16,7 +14,7 @@ type Args = {
   attendance: Map<number, Map<number, boolean>>
   playerId: number
   now?: Date
-  /** ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen — Montag ist P/C, Rest Basic. */
+  /** ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen — einer trägt P/C, Rest Basic. */
   excludeWeekdays?: number[]
 }
 
@@ -74,12 +72,4 @@ export function computeAttendanceStats({ trainings, attendance, playerId, now = 
       percentage: in1Y.total === 0 ? 0 : Math.round((in1Y.attended / in1Y.total) * 100),
     },
   }
-}
-
-export function useAttendanceStats(args: Args): PlayerAttendanceStats {
-  const { trainings, attendance, playerId, now } = args
-  return useMemo(
-    () => computeAttendanceStats({ trainings, attendance, playerId, now }),
-    [trainings, attendance, playerId, now],
-  )
 }

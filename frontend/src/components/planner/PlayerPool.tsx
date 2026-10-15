@@ -5,6 +5,8 @@ import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
+import { PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
+import { TRAINING_YEAR_LABEL, trainingYearStart } from '@/utils/trainingYear'
 import { OpponentSheet } from '@/components/orga/OpponentSheet'
 
 interface Props {
@@ -48,7 +50,7 @@ function gameCountBadge(gc: number): string {
   return 'bg-navy-100 text-navy-700'
 }
 
-type TrainingFilter = '3months' | 'all'
+type TrainingFilter = 'trainingYear' | 'all'
 
 /** Ein Scope-Chip im AVG-Toggle — aktive Variante per Klasse (Gegner rot, Saison/Jahr navy). */
 function ScopeChip({ label, active, activeClass, title, onClick }: {
@@ -71,11 +73,10 @@ function ScopeChip({ label, active, activeClass, title, onClick }: {
   )
 }
 
+/** Zeitraum-Grenze des gewaehlten Filters. `all` laesst sie offen. */
 function sinceDate(filter: TrainingFilter, refDate: string): string | undefined {
   if (filter === 'all') return undefined
-  const d = new Date(refDate + 'T00:00:00')
-  d.setDate(d.getDate() - 90) // 3 Monate
-  return d.toISOString().slice(0, 10)
+  return trainingYearStart(refDate)
 }
 
 export function PlayerPool({
@@ -126,12 +127,12 @@ export function PlayerPool({
     else params.set('pool', next)
     setSearchParams(params, { replace: true })
   }
-  const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('3months')
+  const [trainingFilter, setTrainingFilter] = useState<TrainingFilter>('trainingYear')
   const [trainingStats, setTrainingStats] = useState<TrainingStatsResponse[]>([])
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
-  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — Montag ist P/C-Training. */
+  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — einer davon ist P/C-Training. */
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   // Club-Bilanz-Sheet des Gegners — öffnet direkt hier statt Navigate auf /teams
   const [showHistorie, setShowHistorie] = useState(false)
@@ -447,7 +448,7 @@ export function PlayerPool({
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
-            {!selectedPeriodId && ([['3months', '3 Monate'], ['all', 'Gesamt']] as const).map(([key, label]) => (
+            {!selectedPeriodId && ([['trainingYear', TRAINING_YEAR_LABEL], ['all', 'Gesamt']] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setTrainingFilter(key)}
@@ -462,12 +463,12 @@ export function PlayerPool({
             ))}
             <span className="w-px h-4 bg-cream-300 mx-0.5" aria-hidden="true" />
             <WeekdayFilter
-              weekdays={[1]}
+              weekdays={[PITCHER_CATCHER_WEEKDAY]}
               excluded={excludedWeekdays}
               onToggle={toggleWeekday}
             />
             <span className="text-[10px] text-gray-400">
-              {excludedWeekdays.includes(1) ? 'nur Basic' : 'inkl. P/C'}
+              {excludedWeekdays.includes(PITCHER_CATCHER_WEEKDAY) ? 'nur Basic' : 'inkl. P/C'}
             </span>
           </div>
           {availableTrainingStats.length === 0 ? (

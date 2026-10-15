@@ -27,8 +27,9 @@ type Tab = 'anzahl' | 'matrix'
 
 export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTrainings, trainings, attendance }: Props) {
   const [tab, setTab] = useState<Tab>('anzahl')
-  // Montag ist P/C-Training, die übrigen Tage Basic — ausgeschlossene Wochentage
-  // fliegen aus Zahlen UND Matrix, damit die Quote zum Trainingstyp passt.
+  // Ein Wochentag trägt das P/C-Training, die übrigen Basic — ausgeschlossene Wochentage
+  // fliegen aus Zahlen UND Matrix, damit die Quote zum Trainingstyp passt. Die Chips hier
+  // kommen aus den Daten (`presentWeekdays`), nicht aus einer festen Nummer.
   const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
 
   const toggleWeekday = (day: number) =>

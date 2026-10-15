@@ -403,7 +403,7 @@ export const setAttendance = (trainingId: number, entries: { playerId: number; p
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
 export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; type?: string; cycleWeeks?: number; activeWeeksInCycle?: number[] }) =>
   request<TrainingResponse[]>('/trainings/bulk', { method: 'POST', body: JSON.stringify(data) })
-/** `excludeWeekdays`: ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen (z. B. Montag = P/C). */
+/** `excludeWeekdays`: ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen (z. B. der P/C-Tag). */
 export const getTrainingStats = (periodId?: number, since?: string, until?: string, excludeWeekdays?: number[]) => {
   const params = new URLSearchParams()
   if (periodId) params.set('periodId', String(periodId))

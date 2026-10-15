@@ -89,7 +89,7 @@ describe('computeAttendanceStats', () => {
   })
 })
 
-describe('Wochentag-Filter (Montag = P/C, Rest = Basic)', () => {
+describe('Wochentag-Filter (ein Tag traegt P/C, Rest Basic)', () => {
   // 2026-05-04 Mo, 2026-05-06 Mi, 2026-05-11 Mo
   const trainings = [
     { id: 1, date: '2026-05-04' },
@@ -112,7 +112,7 @@ describe('Wochentag-Filter (Montag = P/C, Rest = Basic)', () => {
     expect(filterByWeekday(trainings, []).map(t => t.id)).toEqual([1, 2, 3])
   })
 
-  it('computeAttendanceStats zählt ohne Montag nur das Basic-Training', () => {
+  it('computeAttendanceStats zählt ohne den ausgeschlossenen Tag nur den Rest', () => {
     const all = computeAttendanceStats({ trainings, attendance: att, playerId: 1, now: NOW })
     expect(all.last3Months.total).toBe(3)
     expect(all.last3Months.attended).toBe(2)
