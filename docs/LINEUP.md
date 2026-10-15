@@ -118,6 +118,9 @@ Saison: im Februar schmal und aktuell (~35 Trainings), im September elf Monate b
 noch weit oben. Bewusst so entschieden: ein Trainingsjahr zählt als Ganzes, und der
 Schnitt im November fällt in die spielfreie Zeit.
 
+In der UI heißt der Zeitraum wie die Trainingsperioden: **`26/27`** für November 2026 bis
+Oktober 2027 (`trainingYearLabel`). Das Label rollt am 1. November von selbst weiter.
+
 Dasselbe Fenster benutzen das Trainings-Panel im Planer und der Spielerpool, damit die
 angezeigte Zahl die Aufstellung erklärt. Vorher liefen drei verschiedene Fenster
 nebeneinander: Engine 3 Monate ab heute, Panel 84 Tage ab Spieltag, Spielerpool 90 Tage

@@ -1,7 +1,7 @@
 import type { Player, TrainingStatsResponse } from '@/types'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
 import { PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
-import { TRAINING_YEAR_LABEL } from '@/utils/trainingYear'
+import { trainingYearLabel } from '@/utils/trainingYear'
 
 type Props = {
   stats: TrainingStatsResponse[]
@@ -9,13 +9,15 @@ type Props = {
   /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — einer davon ist P/C-Training. */
   excludedWeekdays: number[]
   onToggleWeekday: (weekday: number) => void
+  /** Spieltag — bestimmt, welches Trainingsjahr in der Ueberschrift steht. */
+  gameDayDate: string
 }
 
 /**
  * Trainings-Teilnahmen der verfügbaren Spieler als Balkenliste.
  * Der Chip blendet das P/C-Training aus der Zählung aus (Backend rechnet neu).
  */
-export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekdays, onToggleWeekday }: Props) {
+export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekdays, onToggleWeekday, gameDayDate }: Props) {
   const availableIds = new Set(availablePlayers.map(p => p.id))
   const filtered = stats
     .filter(s => availableIds.has(s.playerId))
@@ -29,7 +31,7 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Training
         <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
-          {withoutPitcherCatcher ? `Basic · ${TRAINING_YEAR_LABEL}` : TRAINING_YEAR_LABEL}
+          {withoutPitcherCatcher ? `Basic · ${trainingYearLabel(gameDayDate)}` : trainingYearLabel(gameDayDate)}
         </span>
       </h2>
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 xl:p-1.5 space-y-1.5 xl:space-y-0">
