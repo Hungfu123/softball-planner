@@ -1072,6 +1072,7 @@ export function GameDayPlanner() {
                 <TrainingAttendancePanel
                   stats={trainingStats}
                   availablePlayers={availablePlayers}
+                  gameDayDate={gameDay.date}
                   excludedWeekdays={excludedTrainingWeekdays}
                   onToggleWeekday={toggleTrainingWeekday}
                 />

@@ -21,5 +21,14 @@ export function trainingYearStart(reference?: string): string {
   return `${year}-${String(TRAINING_YEAR_START_MONTH).padStart(2, '0')}-01`
 }
 
-/** Beschriftung des Zeitraums in der UI. */
-export const TRAINING_YEAR_LABEL = 'Seit Nov.'
+/**
+ * Name des Trainingsjahres zu einem Stichtag: `26/27` für November 2026 bis Oktober 2027.
+ *
+ * Gleiche Schreibweise wie bei den Trainingsperioden ("Wintersaison 25/26"). Rollt am
+ * 1. November von selbst weiter — `25/26` wird zu `26/27` wird zu `27/28`.
+ */
+export function trainingYearLabel(reference?: string): string {
+  const start = Number(trainingYearStart(reference).slice(0, 4))
+  const short = (year: number) => String(year % 100).padStart(2, '0')
+  return `${short(start)}/${short(start + 1)}`
+}
