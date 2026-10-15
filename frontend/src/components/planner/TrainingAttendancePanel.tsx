@@ -49,7 +49,7 @@ export function TrainingAttendancePanel({
             value={selectedPeriodId ?? ''}
             onChange={e => onSelectPeriod(e.target.value ? Number(e.target.value) : null)}
             aria-label="Zeitraum"
-            className="text-[11px] font-medium text-gray-600 bg-transparent border border-cream-300 rounded px-1.5 py-1 cursor-pointer hover:border-navy-500 transition-colors focus:outline-none focus:border-navy-600"
+            className="text-[11px] font-medium text-gray-600 bg-transparent border border-cream-300 rounded px-1.5 py-2 sm:py-1 cursor-pointer hover:border-navy-500 transition-colors focus:outline-none focus:border-navy-600"
           >
             <option value="">Zeitraum</option>
             {periods.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -66,7 +66,7 @@ export function TrainingAttendancePanel({
               title={hint}
               aria-label={hint}
               aria-pressed={window === key}
-              className={`text-[11px] px-2 py-1 rounded-full font-medium cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
+              className={`text-[11px] px-3 py-2 sm:px-2 sm:py-1 rounded-full font-medium cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
                 window === key ? 'bg-navy-800 text-white' : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
               }`}
             >
@@ -77,8 +77,11 @@ export function TrainingAttendancePanel({
           {/* Kein P/C-Schalter mehr: Termine, zu denen nur ein Teil des Kaders geladen
               war, gehoeren nie in die Fairness-Rechnung. Das Backend filtert sie ueber
               Training.openToAll — es gibt nichts umzuschalten. */}
-          <span className="text-[9px] text-gray-400 whitespace-nowrap">
-            ohne Nur-P/C
+          <span
+            className="text-[9px] text-gray-400 whitespace-nowrap"
+            title="Termine, zu denen nur ein Teil des Kaders geladen war, zählen nicht — niemandem wird angerechnet, wozu er nicht eingeladen war."
+          >
+            Nur-P/C zählt nicht
           </span>
         </div>
 
@@ -104,7 +107,7 @@ export function TrainingAttendancePanel({
               <span className="relative flex-1 min-w-0 truncate text-xs font-medium text-navy-900">
                 {s.playerName}
               </span>
-              <span className="relative font-display text-[11px] font-bold tabular-nums text-navy-700">
+              <span className="relative font-display text-xs font-bold tabular-nums text-navy-800">
                 {Math.round(s.participation * 100)}%
               </span>
               <span className="relative font-display text-[10px] tabular-nums text-gray-400 w-6 text-right">

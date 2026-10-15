@@ -436,7 +436,7 @@ export function PlayerPool({
                 setSelectedPeriodId(e.target.value ? Number(e.target.value) : null)
                 setLoadedFilter(null)
               }}
-              className="text-[11px] font-medium text-gray-600 bg-transparent border border-cream-300 rounded px-1.5 py-0.5 cursor-pointer hover:border-navy-500 transition-colors focus:outline-none focus:border-navy-600"
+              className="text-[11px] font-medium text-gray-600 bg-transparent border border-cream-300 rounded px-1.5 py-2 sm:py-0.5 cursor-pointer hover:border-navy-500 transition-colors focus:outline-none focus:border-navy-600"
             >
               <option value="">Zeitraum</option>
               {trainingPeriods.map(p => (
@@ -453,7 +453,7 @@ export function PlayerPool({
                 title={hint}
                 aria-label={hint}
                 aria-pressed={trainingFilter === key}
-                className={`text-[11px] px-2 py-0.5 rounded-full font-medium cursor-pointer transition-colors ${
+                className={`text-[11px] px-3 py-2 sm:px-2 sm:py-0.5 rounded-full font-medium cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
                   trainingFilter === key
                     ? 'bg-navy-800 text-white'
                     : 'bg-cream-200 text-gray-500 hover:bg-cream-300'
@@ -465,7 +465,10 @@ export function PlayerPool({
             <span className="w-px h-4 bg-cream-300 mx-0.5" aria-hidden="true" />
             {/* Kein P/C-Schalter: Termine, zu denen nur ein Teil des Kaders geladen war,
                 gehoeren nie in die Fairness-Rechnung — das Backend filtert sie. */}
-            <span className="text-[10px] text-gray-400 whitespace-nowrap">ohne Nur-P/C</span>
+            <span
+              className="text-[10px] text-gray-400 whitespace-nowrap"
+              title="Termine, zu denen nur ein Teil des Kaders geladen war, zählen nicht — niemandem wird angerechnet, wozu er nicht eingeladen war."
+            >Nur-P/C zählt nicht</span>
           </div>
           {availableTrainingStats.length === 0 ? (
             <div className="text-center py-6 text-gray-400">
@@ -493,7 +496,7 @@ export function PlayerPool({
                     style={{ transform: `scaleX(${s.participation})` }}
                   />
                 </div>
-                <span className="text-[11px] font-display font-bold tabular-nums text-navy-700 w-8 text-right shrink-0">
+                <span className="text-xs font-display font-bold tabular-nums text-navy-800 w-9 text-right shrink-0">
                   {Math.round(s.participation * 100)}%
                 </span>
                 <span className="text-[10px] font-display tabular-nums text-gray-400 w-6 text-right shrink-0">
