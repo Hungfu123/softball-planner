@@ -67,10 +67,10 @@ describe('StatsDrawer', () => {
 
   it('zeigt Wochentag-Chips nur wenn mehrere Trainingstage vorkommen', () => {
     const players = [mockPlayer(1, 'Khang')]
-    const monOnly = [{ id: 1, date: '2026-05-04' }, { id: 2, date: '2026-05-11' }]
+    const thuOnly = [{ id: 1, date: '2026-05-07' }, { id: 2, date: '2026-05-14' }]
     const { unmount } = render(
       <StatsDrawer open={true} onClose={() => {}} players={players} stats={new Map()}
-        avgPresent={1} totalTrainings={2} trainings={monOnly} attendance={new Map()} />
+        avgPresent={1} totalTrainings={2} trainings={thuOnly} attendance={new Map()} />
     )
     expect(screen.queryByText('Trainingstage')).not.toBeInTheDocument()
     unmount()
@@ -78,20 +78,22 @@ describe('StatsDrawer', () => {
     render(
       <StatsDrawer open={true} onClose={() => {}} players={players} stats={new Map()}
         avgPresent={1} totalTrainings={2}
-        trainings={[{ id: 1, date: '2026-05-04' }, { id: 2, date: '2026-05-06' }]}
+        trainings={[{ id: 1, date: '2026-05-07' }, { id: 2, date: '2026-05-06' }]}
         attendance={new Map()} />
     )
     expect(screen.getByText('Trainingstage')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Montag \(P\/C\) ausblenden/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Donnerstag \(P\/C\) ausblenden/ })).toBeInTheDocument()
   })
 
-  it('Montag ausblenden rechnet Trainings-Anzahl und Teilnahmen neu', () => {
+  // Donnerstag ist seit der Winterstruktur der P/C-Tag (utils/trainingWeekday).
+  // Zieht der P/C-Tag wieder um, muessen die Datumsangaben hier mitziehen.
+  it('P/C-Tag ausblenden rechnet Trainings-Anzahl und Teilnahmen neu', () => {
     const players = [mockPlayer(1, 'Khang')]
-    // Mo 04.05. (da), Mi 06.05. (da), Mo 11.05. (nicht da)
+    // Do 07.05. (da), Mi 06.05. (da), Do 14.05. (nicht da)
     const trainings = [
-      { id: 1, date: '2026-05-04' },
+      { id: 1, date: '2026-05-07' },
       { id: 2, date: '2026-05-06' },
-      { id: 3, date: '2026-05-11' },
+      { id: 3, date: '2026-05-14' },
     ]
     const attendance = new Map<number, Map<number, boolean>>([
       [1, new Map([[1, true]])],
@@ -109,10 +111,10 @@ describe('StatsDrawer', () => {
     // ungefiltert: 3 Trainings
     expect(trainingsTile()).toHaveTextContent('3')
 
-    fireEvent.click(screen.getByRole('button', { name: /Montag \(P\/C\) ausblenden/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Donnerstag \(P\/C\) ausblenden/ }))
 
     // nur noch das Mittwoch-Training -> 1 Training
     expect(trainingsTile()).toHaveTextContent('1')
-    expect(screen.getByRole('button', { name: /Montag \(P\/C\) einblenden/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Donnerstag \(P\/C\) einblenden/ })).toBeInTheDocument()
   })
 })

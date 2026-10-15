@@ -82,7 +82,13 @@ Reihenfolge der Kriterien beim Befüllen:
    hatte, kommt vor allen anderen. Erst wenn alle einmal dran waren, zählt der Rest.
    (Base-Coaches sind raus — sie stehen am Spielfeldrand und zählen nicht als Einsatz.)
 2. **Trainingsbeteiligung** — wer öfter im Training steht, spielt mehr. Das ist der
-   eigentliche Verteilungsschlüssel, nicht die bisherige Spielzahl.
+   eigentliche Verteilungsschlüssel, nicht die bisherige Spielzahl. Gerechnet wird als
+   **Quote**, nicht als Zähler: besucht ÷ stattgefunden **seit dem ersten Auftauchen**
+   des Spielers (`TrainingParticipationCalculator`) — wer im Mai dazukam, hat den April
+   nicht versäumt. Das **P/C-Training zählt nicht mit**: dort sind nur Pitcher und
+   Catcher eingeladen, wer nur Basic kann läge sonst strukturell hinten. Der Nenner hat
+   eine Untergrenze von 3 (`MIN_DENOMINATOR`) — sonst stünde, wer zwei Wochen vor dem
+   Spieltag neu dazukommt und beide Male da war, mit 2/2 = 1.0 vor jedem Stammspieler.
 3. **Spiele an diesem Spieltag** — verteilt die Zusatzspiele unter gleich oft Trainierenden.
 4. **Frauen-Quote — erzwungen, kein Kriterium.** Sind zwei Frauen verfügbar, stehen auch
    zwei auf dem Feld, egal wie selten sie im Training waren. Weichen muss, wer in der
@@ -102,3 +108,34 @@ gemischt, damit zweimal „Auto" nicht zweimal dasselbe liefert.
 Der Mindest-Einsatz ist eine Reihenfolge, keine Garantie: Sind mehr Leute da als Plätze an
 diesem Spieltag (zwei Spiele = 18 Feldplätze), kommen zwangsläufig welche nicht dran — dann
 sind es die mit der geringsten Trainingsbeteiligung.
+
+### Zeitraum: das Trainingsjahr, nicht ein rollendes Fenster
+
+Gezählt wird **seit dem letzten 1. November** (`LineupSuggestionService.trainingYearStart`,
+Frontend-Pendant `frontend/src/utils/trainingYear.ts`). Das Fenster wächst also über die
+Saison: im Februar schmal und aktuell (~35 Trainings), im September elf Monate breit
+(~105) und entsprechend träge — wer im Winter fleißig war und seit Mai fehlt, steht dort
+noch weit oben. Bewusst so entschieden: ein Trainingsjahr zählt als Ganzes, und der
+Schnitt im November fällt in die spielfreie Zeit.
+
+Dasselbe Fenster benutzen das Trainings-Panel im Planer und der Spielerpool, damit die
+angezeigte Zahl die Aufstellung erklärt. Vorher liefen drei verschiedene Fenster
+nebeneinander: Engine 3 Monate ab heute, Panel 84 Tage ab Spieltag, Spielerpool 90 Tage
+ab Spieltag — auf dem Desktop sichtbar nebeneinander.
+
+Willst du stattdessen ein rollendes Fenster (reagiert schneller, bestraft eine lange
+Abwesenheit härter), ist es je eine Zeile an den beiden oben genannten Stellen.
+
+### Welcher Wochentag das P/C-Training trägt
+
+Der Tag steckt an zwei Stellen als Konstante: `LineupSuggestionService.PITCHER_CATCHER_WEEKDAY`
+(Backend, für die Quote) und `frontend/src/utils/trainingWeekday.ts` (Frontend, für den
+Chip in Spielerpool und Trainings-Panel). Bis Oktober 2026 war es der Montag, seit der
+Winterstruktur der Donnerstag. **Beim nächsten Strukturwechsel müssen beide mitziehen** —
+plus die Datumsangaben in `StatsDrawer.test.tsx`, die bewusst am konkreten Label hängen.
+
+Die Kopplung an den Wochentag hat eine bekannte Grenze: ein Zeitraum, der über einen
+Strukturwechsel reicht, lässt sich damit nicht sauber schneiden — vor dem Wechsel bedeutet
+derselbe Wochentag etwas anderes. Betroffen sind das „Gesamt"-Fenster im Spielerpool und
+Spieltage, deren 3-Monats-Fenster vor den Wechsel zurückreicht. Sauber lösen ließe sich das
+nur über `Training.type` statt über den Wochentag.

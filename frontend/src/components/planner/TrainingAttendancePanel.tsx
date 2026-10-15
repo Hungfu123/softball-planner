@@ -1,17 +1,19 @@
 import type { Player, TrainingStatsResponse } from '@/types'
 import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
+import { PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
+import { TRAINING_YEAR_LABEL } from '@/utils/trainingYear'
 
 type Props = {
   stats: TrainingStatsResponse[]
   availablePlayers: Player[]
-  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — Montag ist P/C-Training. */
+  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — einer davon ist P/C-Training. */
   excludedWeekdays: number[]
   onToggleWeekday: (weekday: number) => void
 }
 
 /**
  * Trainings-Teilnahmen der verfügbaren Spieler als Balkenliste.
- * Der Mo-Chip blendet das P/C-Training aus der Zählung aus (Backend rechnet neu).
+ * Der Chip blendet das P/C-Training aus der Zählung aus (Backend rechnet neu).
  */
 export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekdays, onToggleWeekday }: Props) {
   const availableIds = new Set(availablePlayers.map(p => p.id))
@@ -19,7 +21,7 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
     .filter(s => availableIds.has(s.playerId))
     .sort((a, b) => b.attended - a.attended)
   const maxAttended = Math.max(...filtered.map(s => s.attended), 1)
-  const withoutMonday = excludedWeekdays.includes(1)
+  const withoutPitcherCatcher = excludedWeekdays.includes(PITCHER_CATCHER_WEEKDAY)
 
   return (
     <div>
@@ -27,7 +29,7 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Training
         <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-500 font-bold">
-          {withoutMonday ? 'Basic · 3 Monate' : 'Letzte 3 Monate'}
+          {withoutPitcherCatcher ? `Basic · ${TRAINING_YEAR_LABEL}` : TRAINING_YEAR_LABEL}
         </span>
       </h2>
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden p-3 xl:p-1.5 space-y-1.5 xl:space-y-0">
@@ -36,11 +38,11 @@ export function TrainingAttendancePanel({ stats, availablePlayers, excludedWeekd
             Trainingstage
           </span>
           <WeekdayFilter
-            weekdays={[1]}
+            weekdays={[PITCHER_CATCHER_WEEKDAY]}
             excluded={excludedWeekdays}
             onToggle={onToggleWeekday}
           />
-          <span className="text-[9px] text-gray-400 truncate">{withoutMonday ? 'nur Basic' : 'inkl. P/C'}</span>
+          <span className="text-[9px] text-gray-400 truncate">{withoutPitcherCatcher ? 'nur Basic' : 'inkl. P/C'}</span>
         </div>
 
         {filtered.length === 0 ? (

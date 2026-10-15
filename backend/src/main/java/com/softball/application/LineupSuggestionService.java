@@ -4,7 +4,6 @@ import com.softball.adapter.dto.LineupEntryRequest;
 import com.softball.adapter.dto.LineupEntryResponse;
 import com.softball.adapter.dto.LineupSuggestionEntry;
 import com.softball.adapter.dto.SuggestAllResponse;
-import com.softball.adapter.dto.TrainingStatsResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.service.LineupSuggestionEngine;
 import com.softball.shared.exception.ResourceNotFoundException;
@@ -21,6 +20,33 @@ import java.util.stream.Collectors;
 
 @Service
 public class LineupSuggestionService {
+
+    /**
+     * ISO-Wochentag des P/C-Trainings (1 = Montag … 7 = Sonntag).
+     *
+     * <p>Bis Oktober 2026 der Montag, seit der Winterstruktur der Donnerstag. Pendant zu
+     * {@code frontend/src/utils/trainingWeekday.ts} — beim naechsten Strukturwechsel
+     * muessen beide Stellen mitziehen.
+     */
+    private static final int PITCHER_CATCHER_WEEKDAY = 4;
+
+    /** Monat, in dem das Trainingsjahr beginnt — mit der Winterstruktur der November. */
+    private static final int TRAINING_YEAR_START_MONTH = 11;
+
+    /**
+     * Beginn des laufenden Trainingsjahres: der letzte 1. November.
+     *
+     * <p>Die Trainingsbeteiligung zaehlt ab hier, nicht ueber ein rollendes Fenster. Das
+     * Fenster waechst damit ueber die Saison — im Februar ist es schmal und aktuell, im
+     * September elf Monate breit und entsprechend traege. Bewusst so: ein Trainingsjahr
+     * zaehlt als Ganzes, und der Schnitt im November faellt in die spielfreie Zeit.
+     *
+     * <p>Pendant im Frontend: {@code frontend/src/utils/trainingYear.ts}.
+     */
+    static LocalDate trainingYearStart(final LocalDate today) {
+        final LocalDate startThisYear = LocalDate.of(today.getYear(), TRAINING_YEAR_START_MONTH, 1);
+        return today.isBefore(startThisYear) ? startThisYear.minusYears(1) : startThisYear;
+    }
 
     private final GameRepository gameRepository;
     private final GameDayRepository gameDayRepository;
@@ -129,7 +155,7 @@ public class LineupSuggestionService {
             .map(s -> s.getPlayer().getId()).collect(Collectors.toSet());
 
         return engine.suggest(currentEntries, ctx.playerMap, staffIds,
-            gamesPlayedCount, ctx.attendanceByPlayer, new Random());
+            gamesPlayedCount, ctx.participationByPlayer, new Random());
     }
 
     private List<LineupSuggestionEntry> toDto(final List<SuggestionResult> results) {
@@ -163,12 +189,13 @@ public class LineupSuggestionService {
         final Map<Long, List<GameStaff>> staffByGame = allStaff.stream()
             .collect(Collectors.groupingBy(s -> s.getGame().getId()));
 
-        final LocalDate trainingSince = LocalDate.now().minusMonths(3);
-        final List<TrainingStatsResponse> trainingStats = trainingStatsService.getStats(null, trainingSince, null);
-        final Map<Long, Long> attendanceByPlayer = trainingStats.stream()
-            .collect(Collectors.toMap(TrainingStatsResponse::playerId, TrainingStatsResponse::attended));
+        // Beteiligung als Quote, nicht als Zaehler, und ohne das P/C-Training: dorthin sind
+        // nur Pitcher und Catcher eingeladen, wer nur Basic kann laege sonst strukturell
+        // hinten. Zaehler und Nenner kommen beide aus derselben gefilterten Menge.
+        final Map<Long, Double> participationByPlayer = trainingStatsService.getParticipationRates(
+            null, trainingYearStart(LocalDate.now()), null, Set.of(PITCHER_CATCHER_WEEKDAY));
 
-        return new GameDayContext(games, playerMap, allEntries, entriesByGame, staffByGame, attendanceByPlayer);
+        return new GameDayContext(games, playerMap, allEntries, entriesByGame, staffByGame, participationByPlayer);
     }
 
     /** Holds all pre-loaded data for a game day to avoid repeated DB queries. */
@@ -178,20 +205,20 @@ public class LineupSuggestionService {
         final List<LineupEntry> allEntries;
         final Map<Long, List<LineupEntry>> entriesByGame;
         final Map<Long, List<GameStaff>> staffByGame;
-        final Map<Long, Long> attendanceByPlayer;
+        final Map<Long, Double> participationByPlayer;
 
         GameDayContext(final List<Game> games,
                        final Map<Long, Player> playerMap,
                        final List<LineupEntry> allEntries,
                        final Map<Long, List<LineupEntry>> entriesByGame,
                        final Map<Long, List<GameStaff>> staffByGame,
-                       final Map<Long, Long> attendanceByPlayer) {
+                       final Map<Long, Double> participationByPlayer) {
             this.games = games;
             this.playerMap = playerMap;
             this.allEntries = allEntries;
             this.entriesByGame = entriesByGame;
             this.staffByGame = staffByGame;
-            this.attendanceByPlayer = attendanceByPlayer;
+            this.participationByPlayer = participationByPlayer;
         }
     }
 }

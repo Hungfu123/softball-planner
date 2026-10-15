@@ -22,7 +22,7 @@ public class LineupSuggestionEngine {
                                            final Map<Long, Player> playerMap,
                                            final Set<Long> staffIds,
                                            final Map<Long, Integer> gamesPlayedCount,
-                                           final Map<Long, Long> attendanceByPlayer,
+                                           final Map<Long, Double> participationByPlayer,
                                            final Random random) {
 
         // Separate manual entries (P, C, EH only) from auto-position and unassigned entries
@@ -53,6 +53,8 @@ public class LineupSuggestionEngine {
         //   1. Wer an diesem Spieltag noch gar nicht gespielt hat — jeder, der da ist,
         //      soll mindestens einmal aufs Feld.
         //   2. Trainingsbeteiligung, absteigend — wer oefter im Training steht, spielt mehr.
+        //      Quote, nicht Zaehler: ein Neuzugang soll nicht dafuer buessen, dass er die
+        //      ersten Monate der Saison gar nicht dabei sein konnte.
         //   3. Spiele an diesem Spieltag, aufsteigend — verteilt die Zusatzspiele.
         // Vorher gemischt, damit gleich Platzierte nicht immer gleich einlaufen.
         final List<Long> candidates = playerMap.keySet().stream()
@@ -62,7 +64,7 @@ public class LineupSuggestionEngine {
         Collections.shuffle(candidates, random);
         candidates.sort(Comparator
             .comparingInt((Long id) -> gamesPlayedCount.getOrDefault(id, 0) > 0 ? 1 : 0)
-            .thenComparingLong((Long id) -> -attendanceByPlayer.getOrDefault(id, 0L))
+            .thenComparingDouble((Long id) -> -participationByPlayer.getOrDefault(id, 0.0))
             .thenComparingInt((Long id) -> gamesPlayedCount.getOrDefault(id, 0)));
 
         // Wer aufs Feld kommt — danach die Frauen-Quote nachziehen
