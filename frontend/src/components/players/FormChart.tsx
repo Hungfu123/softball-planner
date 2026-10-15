@@ -172,6 +172,28 @@ export function FormChart({
     )
   }
 
+  /** Pointer festhalten, damit das Ziehen auch außerhalb der Fläche weiterläuft.
+   *  jsdom und ältere Browser kennen die Methoden nicht — dort eben ohne. */
+  const fangePointer = (el: Element, id: number) => {
+    if (typeof el.setPointerCapture === 'function') el.setPointerCapture(id)
+  }
+  const loesePointer = (el: Element, id: number) => {
+    if (typeof el.releasePointerCapture === 'function') el.releasePointerCapture(id)
+  }
+
+  /** Nächstgelegener Punkt zur Finger- oder Mausposition. */
+  const waehleBeiX = (clientX: number, ziel: Element) => {
+    const box = ziel.getBoundingClientRect()
+    if (box.width === 0 || xs.length === 0) return
+    // Von Bildschirm- auf viewBox-Koordinaten: das SVG skaliert über max-w-full.
+    const x = PAD.left + ((clientX - box.left) / box.width) * (W - PAD.left - PAD.right)
+    let naechster = 0
+    for (let i = 1; i < xs.length; i++) {
+      if (Math.abs(xs[i] - x) < Math.abs(xs[naechster] - x)) naechster = i
+    }
+    setActiveIndex(naechster)
+  }
+
   const linie = (pts: CumulativePoint[], px: number[], von = 0, bis = pts.length) =>
     pts.slice(von, bis)
       .map((p, i) => `${i === 0 ? 'M' : 'L'} ${px[i + von].toFixed(1)} ${y(p[metric]).toFixed(1)}`)
@@ -288,20 +310,28 @@ export function FormChart({
           )
         })}
 
-        {/* Unsichtbare Trefferflächen: am Handy trifft man keinen 3px-Punkt. */}
-        {series.map((p, i) => {
-          const links = i === 0 ? PAD.left : (xs[i - 1] + xs[i]) / 2
-          const rechts = i === series.length - 1 ? W - PAD.right : (xs[i] + xs[i + 1]) / 2
-          return (
-            <rect
-              key={`hit-${p.gameId}`}
-              x={links} y={PAD.top} width={Math.max(rechts - links, 1)} height={H - PAD.top - PAD.bottom}
-              fill="transparent"
-              onPointerEnter={() => setActiveIndex(i)}
-              onPointerDown={() => setActiveIndex(i)}
-            />
-          )
-        })}
+        {/* Senkrechte Fanglinie am gewählten Punkt: die Fingerkuppe deckt den Punkt
+            zu, die Linie ragt darüber hinaus und sagt, wo man gerade steht. */}
+        {activeIndex != null && (
+          <line
+            x1={xs[activeIndex]} x2={xs[activeIndex]} y1={PAD.top} y2={H - PAD.bottom}
+            stroke="var(--color-navy-400)" strokeWidth="1" pointerEvents="none"
+          />
+        )}
+
+        {/* EINE Fläche statt einer pro Punkt: bei 17 Spielen waren die Felder 7–14 px
+            breit, eine Fingerkuppe deckte drei bis sechs davon. Jetzt zählt nur, wo
+            der Finger ist — der nächstgelegene Punkt wird gewählt, und beim Ziehen
+            wandert die Auswahl mit, statt dass man neu zielen muss. */}
+        <rect
+          x={PAD.left} y={PAD.top}
+          width={Math.max(W - PAD.left - PAD.right, 1)} height={H - PAD.top - PAD.bottom}
+          fill="transparent"
+          style={{ touchAction: 'pan-y' }}
+          onPointerDown={e => { fangePointer(e.currentTarget, e.pointerId); waehleBeiX(e.clientX, e.currentTarget) }}
+          onPointerMove={e => { if (e.buttons > 0 || e.pointerType === 'mouse') waehleBeiX(e.clientX, e.currentTarget) }}
+          onPointerUp={e => loesePointer(e.currentTarget, e.pointerId)}
+        />
 
         {/* Zeitachse: Monatswechsel statt zweier Eckdaten. Die Achse zählt Spiele,
             die Marken sagen, wie dicht sie lagen — fünf Punkte zwischen Mai und Jun
