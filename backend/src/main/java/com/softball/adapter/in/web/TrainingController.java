@@ -51,7 +51,7 @@ public class TrainingController {
         return trainingService.createBulk(
             request.weekdays(), request.startDate(), request.endDate(),
             request.time(), request.weekdayTimes(), request.location(), request.periodName(), request.type(),
-            request.cycleWeeks(), request.activeWeeksInCycle()
+            request.cycleWeeks(), request.activeWeeksInCycle(), request.pcOnlyWeekdays()
         );
     }
 
@@ -94,9 +94,11 @@ public class TrainingController {
     public List<TrainingStatsResponse> getStats(@RequestParam(required = false) final Long periodId,
                                                  @RequestParam(required = false) final java.time.LocalDate since,
                                                  @RequestParam(required = false) final java.time.LocalDate until,
-                                                 @RequestParam(required = false) final List<Integer> excludeWeekdays) {
+                                                 @RequestParam(required = false) final List<Integer> excludeWeekdays,
+                                                 @RequestParam(required = false, defaultValue = "false")
+                                                 final boolean onlyOpenToAll) {
         return statsService.getStats(periodId, since, until,
-            excludeWeekdays != null ? excludeWeekdays : List.of());
+            excludeWeekdays != null ? excludeWeekdays : List.of(), onlyOpenToAll);
     }
 
     // --- Period endpoints ---
@@ -117,7 +119,7 @@ public class TrainingController {
                                                 @Valid @RequestBody final UpdateTrainingPeriodRequest request) {
         return periodService.update(id, request.name(), request.startDate(), request.endDate(),
             request.weekdays(), request.time(), request.weekdayTimes(), request.location(),
-            request.cycleWeeks(), request.activeWeeksInCycle());
+            request.cycleWeeks(), request.activeWeeksInCycle(), request.pcOnlyWeekdays());
     }
 
     @DeleteMapping("/periods/{id}")

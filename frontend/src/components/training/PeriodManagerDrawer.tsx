@@ -23,9 +23,11 @@ type FormState = {
   location: string
   cycleWeeks: number
   activeWeeksInCycle: number[]
+  /** Wochentage, an denen nur Pitcher und Catcher eingeladen sind. */
+  pcOnlyWeekdays: number[]
 }
 
-const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, location: '', cycleWeeks: 1, activeWeeksInCycle: [1] }
+const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, location: '', cycleWeeks: 1, activeWeeksInCycle: [1], pcOnlyWeekdays: [] }
 
 type Props = {
   open: boolean
@@ -33,8 +35,8 @@ type Props = {
   periods: TrainingPeriodResponse[]
   activePeriodId: number | null
   onSelect: (id: number | null) => void
-  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; cycleWeeks?: number; activeWeeksInCycle?: number[] }) => Promise<void>
-  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null; cycleWeeks?: number; activeWeeksInCycle?: number[] }) => Promise<void>
+  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) => Promise<void>
+  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) => Promise<void>
   onDelete: (id: number) => Promise<void>
 }
 
@@ -50,6 +52,7 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     setForm({
       id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], weekdayTimes, location: p.location ?? '',
       cycleWeeks: p.cycleWeeks ?? 1, activeWeeksInCycle: p.activeWeeksInCycle?.length ? [...p.activeWeeksInCycle] : [1],
+      pcOnlyWeekdays: [...(p.pcOnlyWeekdays ?? [])],
     })
     setEditing(true)
   }
@@ -70,6 +73,16 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
         weekdayTimes: { ...f.weekdayTimes, [value]: defaultTime },
       }
     })
+  }
+
+  /** Nur-P/C an einem Tag an- oder abschalten. */
+  const togglePcOnly = (value: number) => {
+    setForm(f => ({
+      ...f,
+      pcOnlyWeekdays: f.pcOnlyWeekdays.includes(value)
+        ? f.pcOnlyWeekdays.filter(d => d !== value)
+        : [...f.pcOnlyWeekdays, value],
+    }))
   }
 
   const setWeekdayTime = (value: number, time: string) => {
@@ -101,9 +114,9 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     setSaving(true)
     try {
       if (form.id == null) {
-        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, periodName: form.name.trim(), cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle })
+        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, periodName: form.name.trim(), cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle, pcOnlyWeekdays: form.pcOnlyWeekdays })
       } else {
-        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null, cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle })
+        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null, cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle, pcOnlyWeekdays: form.pcOnlyWeekdays })
       }
       cancelEdit()
     } finally {
@@ -215,18 +228,43 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                 <div>
                   <span className="text-[11px] text-navy-500 uppercase tracking-wide">Uhrzeit je Wochentag</span>
                   <div className="space-y-1.5 mt-1">
-                    {WEEKDAYS.filter(w => form.weekdays.includes(w.value)).map(w => (
-                      <div key={w.value} className="flex items-center gap-2">
-                        <span className="w-8 text-xs font-bold text-navy-700">{w.label}</span>
-                        <input
-                          type="time"
-                          value={form.weekdayTimes[w.value] ?? ''}
-                          onChange={e => setWeekdayTime(w.value, e.target.value)}
-                          className="flex-1 h-10 px-3 rounded-lg border border-cream-300 text-sm"
-                        />
-                      </div>
-                    ))}
+                    {WEEKDAYS.filter(w => form.weekdays.includes(w.value)).map(w => {
+                      const pcOnly = form.pcOnlyWeekdays.includes(w.value)
+                      return (
+                        <div key={w.value} className="flex items-center gap-2">
+                          <span className="w-8 text-xs font-bold text-navy-700">{w.label}</span>
+                          <input
+                            type="time"
+                            value={form.weekdayTimes[w.value] ?? ''}
+                            onChange={e => setWeekdayTime(w.value, e.target.value)}
+                            className="flex-1 h-10 px-3 rounded-lg border border-cream-300 text-sm"
+                          />
+                          {/* Wer ist eingeladen? Nur-P/C-Termine zaehlen nicht in die
+                              Trainingsbeteiligung — niemandem darf als versaeumt
+                              angerechnet werden, wozu er nicht geladen war. */}
+                          <button
+                            type="button"
+                            onClick={() => togglePcOnly(w.value)}
+                            aria-pressed={pcOnly}
+                            title={pcOnly
+                              ? 'Nur Pitcher und Catcher eingeladen — zählt nicht in die Trainingsbeteiligung'
+                              : 'Ganzer Kader eingeladen — zählt in die Trainingsbeteiligung'}
+                            className={`h-10 px-2.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-colors active:scale-95 motion-reduce:active:scale-100 ${
+                              pcOnly
+                                ? 'bg-navy-800 border-navy-900 text-white'
+                                : 'bg-cream-50 border-cream-300 text-gray-400 hover:bg-cream-200'
+                            }`}
+                          >
+                            nur P/C
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
+                  <p className="mt-1.5 text-[11px] text-gray-500">
+                    „nur P/C" heißt: an diesem Tag ist nur ein Teil des Kaders eingeladen.
+                    Solche Termine zählen nicht in die Trainingsbeteiligung der Aufstellung.
+                  </p>
                 </div>
               )}
               <label className="block">

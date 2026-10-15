@@ -1,4 +1,8 @@
-import { PITCHER_CATCHER_HINT, PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
+/** Ausgeschriebene Namen für Tooltip und Screenreader — "Mo" allein sagt zu wenig. */
+const FULL: Record<number, string> = {
+  1: 'Montag', 2: 'Dienstag', 3: 'Mittwoch', 4: 'Donnerstag',
+  5: 'Freitag', 6: 'Samstag', 7: 'Sonntag',
+}
 
 /** ISO-Wochentage: 1 = Montag … 7 = Sonntag. */
 const LABELS: Record<number, string> = {
@@ -11,22 +15,9 @@ const LABELS: Record<number, string> = {
   7: 'So',
 }
 
-/** Ein Tag trägt das P/C-Training, alle anderen Basic — Hinweis am Chip. */
-const HINTS: Record<number, string> = {
-  [PITCHER_CATCHER_WEEKDAY]: PITCHER_CATCHER_HINT,
-}
-
 type Props = {
   /** Wochentage, die in den Daten vorkommen (ISO 1–7) — sonst gibt es nichts zu filtern. */
   weekdays: number[]
-  /**
-   * Beschriftet die Chips nach dem, was dort trainiert wird, statt nach dem Wochentag.
-   *
-   * Im Spieltags-Planer geht es nie um "Donnerstag", sondern um "P/C mitzaehlen oder
-   * nicht" — der Wochentag ist nur die Mechanik dahinter. In der Trainings-Statistik,
-   * wo mehrere Tage nebeneinander stehen, bleibt der Wochentag die richtige Beschriftung.
-   */
-  labels?: Record<number, string>
   /** Aktuell ausgeschlossene Wochentage. */
   excluded: number[]
   onToggle: (weekday: number) => void
@@ -37,7 +28,7 @@ type Props = {
  * Wochentag-Chips zum Ein-/Ausblenden von Trainingstagen in Anwesenheits-Zahlen.
  * Aktiv (dunkel) = zählt mit, ausgegraut = ausgeschlossen.
  */
-export function WeekdayFilter({ weekdays, excluded, onToggle, labels, className = '' }: Props) {
+export function WeekdayFilter({ weekdays, excluded, onToggle, className = '' }: Props) {
   const days = [...new Set(weekdays)].sort((a, b) => a - b)
   if (days.length === 0) return null
 
@@ -47,22 +38,21 @@ export function WeekdayFilter({ weekdays, excluded, onToggle, labels, className 
     <div className={`flex items-center gap-1 flex-wrap ${className}`} role="group" aria-label="Trainingstage filtern">
       {days.map(day => {
         const active = !excludedSet.has(day)
-        const shown = labels?.[day] ?? LABELS[day]
         return (
           <button
             key={day}
             type="button"
             onClick={() => onToggle(day)}
             aria-pressed={active}
-            aria-label={`${HINTS[day] ?? LABELS[day]} ${active ? 'ausblenden' : 'einblenden'}`}
-            title={`${HINTS[day] ?? LABELS[day]} ${active ? 'ausblenden' : 'einblenden'}`}
+            aria-label={`${FULL[day]} ${active ? 'ausblenden' : 'einblenden'}`}
+            title={`${FULL[day]} ${active ? 'ausblenden' : 'einblenden'}`}
             className={`font-display px-2 py-1 text-[10px] font-bold tracking-wider uppercase rounded-md border cursor-pointer transition-colors ${
               active
                 ? 'bg-navy-800 text-white border-navy-800'
                 : 'bg-cream-100 text-gray-400 border-cream-300 line-through hover:border-navy-400'
             }`}
           >
-            {shown}
+            {LABELS[day]}
           </button>
         )
       })}

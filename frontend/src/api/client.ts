@@ -401,14 +401,21 @@ export const getAllAttendance = (periodId?: number) =>
   request<Record<string, TrainingAttendanceResponse[]>>(periodId ? `/trainings/attendance/all?periodId=${periodId}` : '/trainings/attendance/all')
 export const setAttendance = (trainingId: number, entries: { playerId: number; present: boolean }[]) =>
   request<TrainingAttendanceResponse[]>(`/trainings/${trainingId}/attendance`, { method: 'PUT', body: JSON.stringify({ entries }) })
-export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; type?: string; cycleWeeks?: number; activeWeeksInCycle?: number[] }) =>
+export const createBulkTrainings = (data: { weekdays: number[]; startDate: string; endDate: string; time?: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; type?: string; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) =>
   request<TrainingResponse[]>('/trainings/bulk', { method: 'POST', body: JSON.stringify(data) })
-/** `excludeWeekdays`: ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen (z. B. der P/C-Tag). */
-export const getTrainingStats = (periodId?: number, since?: string, until?: string, excludeWeekdays?: number[]) => {
+/**
+ * `excludeWeekdays`: ISO-Wochentage (1 = Mo … 7 = So), die nicht mitzählen — für die
+ * Trainings-Statistik, wo man einzelne Tage ausblendet.
+ * `onlyOpenToAll`: nur Termine, zu denen der ganze Kader geladen war. Das ist die Menge,
+ * nach der die Auto-Aufstellung sortiert — der Planer fragt deshalb so an.
+ */
+export const getTrainingStats = (periodId?: number, since?: string, until?: string,
+                                 excludeWeekdays?: number[], onlyOpenToAll?: boolean) => {
   const params = new URLSearchParams()
   if (periodId) params.set('periodId', String(periodId))
   if (since) params.set('since', since)
   if (until) params.set('until', until)
+  if (onlyOpenToAll) params.set('onlyOpenToAll', 'true')
   for (const day of excludeWeekdays ?? []) params.append('excludeWeekdays', String(day))
   const qs = params.toString()
   return request<TrainingStatsResponse[]>(`/trainings/stats${qs ? `?${qs}` : ''}`)

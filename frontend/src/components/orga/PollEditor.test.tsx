@@ -6,7 +6,7 @@ import type { WhatsappPollRequest, TrainingResponse, GameDayResponse } from '@/t
 
 const groups = [{ id: 'g@g.us', name: 'Gruppe' }]
 const trainings: TrainingResponse[] = [
-  { id: 1, date: '2026-07-27', time: '20:00', location: null, cancelled: false, attendeeCount: 0, periodId: 8, type: 'REGULAR' },
+  { id: 1, date: '2026-07-27', time: '20:00', location: null, cancelled: false, attendeeCount: 0, periodId: 8, type: 'REGULAR', openToAll: true },
 ]
 const gameDays: GameDayResponse[] = [
   { id: 42, date: '2026-08-09', label: 'CoSe Spieltag', location: 'Aachen', seasonId: 1, availablePlayers: [], games: [] },

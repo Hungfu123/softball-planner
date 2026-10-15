@@ -9,7 +9,8 @@ import java.util.Map;
 public record TrainingPeriodResponse(Long id, String name, LocalDate startDate, LocalDate endDate,
                                      List<Integer> weekdays, String time,
                                      Map<Integer, String> weekdayTimes, String location,
-                                     int cycleWeeks, List<Integer> activeWeeksInCycle) {
+                                     int cycleWeeks, List<Integer> activeWeeksInCycle,
+                                     List<Integer> pcOnlyWeekdays) {
 
     public static TrainingPeriodResponse from(final TrainingPeriod period) {
         return from(period, period.getWeekdays());
@@ -18,6 +19,6 @@ public record TrainingPeriodResponse(Long id, String name, LocalDate startDate, 
     public static TrainingPeriodResponse from(final TrainingPeriod period, final List<Integer> weekdays) {
         return new TrainingPeriodResponse(period.getId(), period.getName(), period.getStartDate(),
             period.getEndDate(), weekdays, period.getTime(), period.getWeekdayTimes(), period.getLocation(),
-            period.getCycleWeeks(), period.getActiveWeeksInCycle());
+            period.getCycleWeeks(), period.getActiveWeeksInCycle(), period.getPcOnlyWeekdays());
     }
 }

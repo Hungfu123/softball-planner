@@ -21,15 +21,6 @@ import java.util.stream.Collectors;
 @Service
 public class LineupSuggestionService {
 
-    /**
-     * ISO-Wochentag des P/C-Trainings (1 = Montag … 7 = Sonntag).
-     *
-     * <p>Bis Oktober 2026 der Montag, seit der Winterstruktur der Donnerstag. Pendant zu
-     * {@code frontend/src/utils/trainingWeekday.ts} — beim naechsten Strukturwechsel
-     * muessen beide Stellen mitziehen.
-     */
-    private static final int PITCHER_CATCHER_WEEKDAY = 4;
-
     /** Monat, in dem das Trainingsjahr beginnt — mit der Winterstruktur der November. */
     private static final int TRAINING_YEAR_START_MONTH = 11;
 
@@ -202,14 +193,15 @@ public class LineupSuggestionService {
         final Map<Long, List<GameStaff>> staffByGame = allStaff.stream()
             .collect(Collectors.groupingBy(s -> s.getGame().getId()));
 
-        // Beteiligung als Quote, nicht als Zaehler, und ohne das P/C-Training: dorthin sind
-        // nur Pitcher und Catcher eingeladen, wer nur Basic kann laege sonst strukturell
-        // hinten. Zaehler und Nenner kommen beide aus derselben gefilterten Menge.
+        // Beteiligung als Quote, nicht als Zaehler, und nur ueber Trainings, zu denen der
+        // ganze Kader geladen war (Training.openToAll) — wer zum Nur-P/C-Training nicht
+        // eingeladen ist, laege sonst strukturell hinten. Zaehler und Nenner kommen beide
+        // aus derselben Menge.
         //
         // Das Fenster endet am Spieltag — aber nie in der Zukunft, siehe countUntil.
         final LocalDate asOf = countUntil(gdWithPlayers.getDate(), LocalDate.now());
         final Map<Long, Double> participationByPlayer = trainingStatsService.getParticipationRates(
-            null, trainingYearStart(asOf), asOf, Set.of(PITCHER_CATCHER_WEEKDAY));
+            null, trainingYearStart(asOf), asOf);
 
         return new GameDayContext(games, playerMap, allEntries, entriesByGame, staffByGame, participationByPlayer);
     }

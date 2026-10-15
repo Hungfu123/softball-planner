@@ -11,6 +11,16 @@ public class Training {
     private String location;
     private boolean cancelled;
     private String type;
+    /**
+     * War der ganze Kader eingeladen?
+     *
+     * <p>False heisst: nur ein Teil durfte kommen (Nur-P/C). Solche Termine zaehlen
+     * nicht in die Trainingsbeteiligung der Auto-Aufstellung — niemandem darf als
+     * versaeumt angerechnet werden, wozu er nicht geladen war. Unabhaengig von
+     * {@link #type}: der Sommer-Montag traegt PITCHER_CATCHER und war trotzdem offen,
+     * weil Basic und P/C dort zusammen stattfanden.
+     */
+    private boolean openToAll = true;
     private TrainingPeriod period;
     private List<TrainingAttendance> attendances = new ArrayList<>();
 
@@ -39,6 +49,8 @@ public class Training {
     public void setLocation(final String location) { this.location = location; }
     public boolean isCancelled() { return cancelled; }
     public void setCancelled(final boolean cancelled) { this.cancelled = cancelled; }
+    public boolean isOpenToAll() { return openToAll; }
+    public void setOpenToAll(final boolean openToAll) { this.openToAll = openToAll; }
     public String getType() { return type; }
     public void setType(final String type) { this.type = type; }
     public TrainingPeriod getPeriod() { return period; }

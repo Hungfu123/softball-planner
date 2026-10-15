@@ -1,6 +1,4 @@
 import type { Player, TrainingPeriodResponse, TrainingStatsResponse } from '@/types'
-import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
-import { PITCHER_CATCHER_CHIP_LABELS, PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
 import { trainingYearFilterLabel, trainingYearTitle } from '@/utils/trainingYear'
 
 /** Zeitraum der Zählung: das laufende Trainingsjahr oder alles, was je erfasst wurde. */
@@ -9,9 +7,6 @@ export type TrainingWindow = 'trainingYear' | 'all'
 type Props = {
   stats: TrainingStatsResponse[]
   availablePlayers: Player[]
-  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — einer davon ist P/C-Training. */
-  excludedWeekdays: number[]
-  onToggleWeekday: (weekday: number) => void
   /** Spieltag — Stichtag für Zeitraum und Beschriftung. */
   gameDayDate: string
   periods: TrainingPeriodResponse[]
@@ -31,23 +26,19 @@ type Props = {
  * aufgestellt.
  */
 export function TrainingAttendancePanel({
-  stats, availablePlayers, excludedWeekdays, onToggleWeekday, gameDayDate,
+  stats, availablePlayers, gameDayDate,
   periods, selectedPeriodId, onSelectPeriod, window, onSelectWindow,
 }: Props) {
   const availableIds = new Set(availablePlayers.map(p => p.id))
   const filtered = stats
     .filter(s => availableIds.has(s.playerId))
     .sort((a, b) => b.participation - a.participation || b.attended - a.attended)
-  const withoutPitcherCatcher = excludedWeekdays.includes(PITCHER_CATCHER_WEEKDAY)
 
   return (
     <div>
       <h2 className="flex items-center gap-2 mb-2 pb-1.5 xl:mb-1 xl:pb-0.5 border-b border-cream-200 font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900">
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Training
-        {/* Kein Zustands-Abzeichen hier: der Chip unten sagt dasselbe und steht direkt
-            neben dem Schalter, der ihn aendert. Zwei Signale fuer einen Zustand lassen
-            den Leser suchen, welches das richtige ist. */}
         <span className="ml-auto font-display text-[10px] tracking-widest uppercase text-gray-400 font-bold tabular-nums">
           {filtered.length}
         </span>
@@ -83,18 +74,11 @@ export function TrainingAttendancePanel({
             </button>
           ))}
 
-          {/* Der Hinweis klebt am Chip, nicht am Zeilenende: bricht die Reihe am Handy
-              um, wandert er mit, statt unter dem Zeitraum-Feld zu stranden. */}
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <WeekdayFilter
-              weekdays={[PITCHER_CATCHER_WEEKDAY]}
-              labels={PITCHER_CATCHER_CHIP_LABELS}
-              excluded={excludedWeekdays}
-              onToggle={onToggleWeekday}
-            />
-            <span className="text-[9px] text-gray-400">
-              {withoutPitcherCatcher ? 'zählt nicht' : 'zählt mit'}
-            </span>
+          {/* Kein P/C-Schalter mehr: Termine, zu denen nur ein Teil des Kaders geladen
+              war, gehoeren nie in die Fairness-Rechnung. Das Backend filtert sie ueber
+              Training.openToAll — es gibt nichts umzuschalten. */}
+          <span className="text-[9px] text-gray-400 whitespace-nowrap">
+            ohne Nur-P/C
           </span>
         </div>
 

@@ -4,8 +4,6 @@ import type { Player, GameDayPlayerStats, TrainingStatsResponse, TrainingPeriodR
 import { PlusCircle } from '@/icons'
 import * as api from '@/api/client'
 import type { OpponentBattingState } from '@/hooks/useOpponentBattingStats'
-import { WeekdayFilter } from '@/components/shared/WeekdayFilter'
-import { PITCHER_CATCHER_CHIP_LABELS, PITCHER_CATCHER_WEEKDAY } from '@/utils/trainingWeekday'
 import { countUntil, trainingYearFilterLabel, trainingYearStart, trainingYearTitle } from '@/utils/trainingYear'
 import { OpponentSheet } from '@/components/orga/OpponentSheet'
 
@@ -132,14 +130,8 @@ export function PlayerPool({
   const [loadedFilter, setLoadedFilter] = useState<string | null>(null)
   const [trainingPeriods, setTrainingPeriods] = useState<TrainingPeriodResponse[]>([])
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null)
-  /** Ausgeschlossene Wochentage (ISO 1 = Mo … 7 = So) — einer davon ist P/C-Training. */
-  const [excludedWeekdays, setExcludedWeekdays] = useState<number[]>([])
   // Club-Bilanz-Sheet des Gegners — öffnet direkt hier statt Navigate auf /teams
   const [showHistorie, setShowHistorie] = useState(false)
-  const toggleWeekday = useCallback((weekday: number) => {
-    setExcludedWeekdays(prev =>
-      prev.includes(weekday) ? prev.filter(d => d !== weekday) : [...prev, weekday])
-  }, [])
   const statsMap = new Map(stats.map(s => [s.playerId, s]))
 
   // Load training periods once
@@ -147,17 +139,18 @@ export function PlayerPool({
     api.getTrainingPeriods().then(setTrainingPeriods)
   }, [])
 
-  const loadTrainingStats = useCallback((filter: TrainingFilter, periodId: number | null, excluded: number[]) => {
-    const exKey = [...excluded].sort((a, b) => a - b).join(',')
-    const cacheKey = periodId ? `period-${periodId}-${exKey}` : `${filter}-${gameDayDate}-${exKey}`
+  // `onlyOpenToAll`: nur Termine, zu denen der ganze Kader geladen war — dieselbe Menge,
+  // nach der die Auto-Aufstellung sortiert.
+  const loadTrainingStats = useCallback((filter: TrainingFilter, periodId: number | null) => {
+    const cacheKey = periodId ? `period-${periodId}` : `${filter}-${gameDayDate}`
     if (loadedFilter === cacheKey) return // already loaded
     if (periodId) {
-      api.getTrainingStats(periodId, undefined, undefined, excluded).then(data => {
+      api.getTrainingStats(periodId, undefined, undefined, undefined, true).then(data => {
         setTrainingStats(data)
         setLoadedFilter(cacheKey)
       })
     } else {
-      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), countUntil(gameDayDate), excluded).then(data => {
+      api.getTrainingStats(undefined, sinceDate(filter, gameDayDate), countUntil(gameDayDate), undefined, true).then(data => {
         setTrainingStats(data)
         setLoadedFilter(cacheKey)
       })
@@ -165,8 +158,8 @@ export function PlayerPool({
   }, [gameDayDate, loadedFilter])
 
   useEffect(() => {
-    if (tab === 'training') loadTrainingStats(trainingFilter, selectedPeriodId, excludedWeekdays)
-  }, [tab, trainingFilter, selectedPeriodId, excludedWeekdays, loadTrainingStats])
+    if (tab === 'training') loadTrainingStats(trainingFilter, selectedPeriodId)
+  }, [tab, trainingFilter, selectedPeriodId, loadTrainingStats])
 
   // Nur verfuegbare Spieler, sortiert nach der QUOTE — danach sortiert auch die
   // Auto-Aufstellung. Nach dem rohen Zaehler sortiert stuende, wer spaeter dazukam,
@@ -470,19 +463,9 @@ export function PlayerPool({
               </button>
             ))}
             <span className="w-px h-4 bg-cream-300 mx-0.5" aria-hidden="true" />
-            {/* Hinweis klebt am Chip: bricht die Reihe am Handy um, wandert er mit,
-                statt unter dem Zeitraum-Feld zu stranden. */}
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-              <WeekdayFilter
-                weekdays={[PITCHER_CATCHER_WEEKDAY]}
-                labels={PITCHER_CATCHER_CHIP_LABELS}
-                excluded={excludedWeekdays}
-                onToggle={toggleWeekday}
-              />
-              <span className="text-[10px] text-gray-400">
-                {excludedWeekdays.includes(PITCHER_CATCHER_WEEKDAY) ? 'zählt nicht' : 'zählt mit'}
-              </span>
-            </span>
+            {/* Kein P/C-Schalter: Termine, zu denen nur ein Teil des Kaders geladen war,
+                gehoeren nie in die Fairness-Rechnung — das Backend filtert sie. */}
+            <span className="text-[10px] text-gray-400 whitespace-nowrap">ohne Nur-P/C</span>
           </div>
           {availableTrainingStats.length === 0 ? (
             <div className="text-center py-6 text-gray-400">

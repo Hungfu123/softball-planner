@@ -71,7 +71,9 @@ public class TrainingPeriodService {
                                           final LocalDate endDate, final List<Integer> weekdays,
                                           final String time, final Map<Integer, String> weekdayTimes,
                                           final String location, final Integer cycleWeeksParam,
-                                          final List<Integer> activeWeeksInCycleParam) {
+                                          final List<Integer> activeWeeksInCycleParam,
+                                          final List<Integer> pcOnlyWeekdays) {
+        final List<Integer> pcOnly = pcOnlyWeekdays != null ? pcOnlyWeekdays : List.of();
         final TrainingPeriod period = periodRepository.findById(periodId)
             .orElseThrow(() -> new ResourceNotFoundException("TrainingPeriod", periodId));
         if (name == null || name.isBlank()) {
@@ -112,6 +114,7 @@ public class TrainingPeriodService {
         period.setLocation(location);
         period.setCycleWeeks(cycleWeeks);
         period.setActiveWeeksInCycle(activeWeeksInCycle);
+        period.setPcOnlyWeekdays(pcOnly);
         final TrainingPeriod saved = periodRepository.save(period);
 
         final LocalDate today = LocalDate.now();
@@ -121,6 +124,7 @@ public class TrainingPeriodService {
 
         for (final LocalDate date : plan.datesToCreate()) {
             Training training = new Training(date, weekdayTimes.get(date.getDayOfWeek().getValue()), location);
+            training.setOpenToAll(saved.isOpenToAllOn(date.getDayOfWeek().getValue()));
             training.setPeriod(saved);
             training = trainingRepository.save(training);
             autoFiller.autoFill(training);
@@ -138,8 +142,10 @@ public class TrainingPeriodService {
                 continue;
             }
             final String expected = weekdayTimes.get(t.getDate().getDayOfWeek().getValue());
-            if (expected != null && !expected.equals(t.getTime())) {
-                t.setTime(expected);
+            final boolean open = saved.isOpenToAllOn(t.getDate().getDayOfWeek().getValue());
+            if ((expected != null && !expected.equals(t.getTime())) || open != t.isOpenToAll()) {
+                if (expected != null) t.setTime(expected);
+                t.setOpenToAll(open);
                 trainingRepository.save(t);
             }
         }

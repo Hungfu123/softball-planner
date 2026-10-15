@@ -19,6 +19,7 @@ public class TrainingMapper {
         final Training t = new Training(entity.getId(), entity.getDate(), entity.getTime(), entity.getLocation());
         t.setCancelled(entity.isCancelled());
         t.setType(entity.getType());
+        t.setOpenToAll(entity.isOpenToAll());
         t.setPeriod(periodMapper.toDomain(entity.getPeriod()));
         return t;
     }
@@ -28,6 +29,7 @@ public class TrainingMapper {
         entity.setId(domain.getId());
         entity.setCancelled(domain.isCancelled());
         entity.setType(domain.getType() != null ? domain.getType() : "REGULAR");
+        entity.setOpenToAll(domain.isOpenToAll());
         entity.setPeriod(periodEntity);
         return entity;
     }
@@ -38,5 +40,6 @@ public class TrainingMapper {
         entity.setLocation(domain.getLocation());
         entity.setCancelled(domain.isCancelled());
         entity.setType(domain.getType() != null ? domain.getType() : "REGULAR");
+        entity.setOpenToAll(domain.isOpenToAll());
     }
 }
