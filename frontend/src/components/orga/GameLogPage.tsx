@@ -1724,7 +1724,7 @@ function PlayerTable({ players, lineupInfo }: {
 }) {
   const topHits = Math.max(0, ...players.map(p => p.hits))
 
-  // Union: jede Lineup-Spieler (auch ohne Schlagversuch) + jeder gescorten Spieler (Subs ohne Slot)
+  // Union: jede Lineup-Spieler (auch ohne At-Bat) + jeder gescorten Spieler (Subs ohne Slot)
   const byId = new Map(players.map(p => [p.playerId, p]))
   for (const [pid, info] of lineupInfo) {
     if (!byId.has(pid)) {

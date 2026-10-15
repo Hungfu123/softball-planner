@@ -13,8 +13,15 @@ export const METRICS = {
 
 export type Metric = keyof typeof METRICS
 
-/** Ab hier trägt die Quote genug Schlagversuche, um nicht mehr wild zu springen. */
-export const PROVISIONAL_UNTIL_PA = 20
+/**
+ * Ab so vielen At-Bats trägt die laufende Quote genug, um gezeichnet zu werden.
+ *
+ * Davor sagt sie nichts: ein 1-aus-1 im ersten Spiel ergibt kumulativ 1.000 und zöge
+ * die Achse auf 1.250 hoch — der belastbare Teil läge dann gequetscht in der Mitte.
+ * Die Werte selbst zählen trotzdem ab dem ersten Spiel mit, nur der Anfang der Linie
+ * wartet.
+ */
+export const MIN_AT_BATS = 10
 
 export type CumulativePoint = {
   gameId: number
@@ -26,21 +33,29 @@ export type CumulativePoint = {
   gameWalks: number
   gameStolenBases: number
   /** Aufsummiert bis einschließlich dieses Spiels. */
+  atBats: number
   plateAppearances: number
   average: number
   onBase: number
   slugging: number
   ops: number
-  /** Noch zu wenig Schlagversuche — Kurve wird gestrichelt gezeichnet. */
+  /** Noch zu wenig At-Bats — die Linie beginnt erst danach. */
   provisional: boolean
+}
+
+/** Nenner der jeweiligen Kennzahl: AVG und SLG je At-Bat, OBP und OPS je PA. */
+export function denominator(point: CumulativePoint, metric: Metric): { value: number; label: string } {
+  return metric === 'onBase' || metric === 'ops'
+    ? { value: point.plateAppearances, label: 'PA' }
+    : { value: point.atBats, label: 'At-Bats' }
 }
 
 /**
  * Laufende Gesamtquote statt gleitendem Fenster.
  *
- * Jeder Punkt ist der Stand **nach** diesem Spiel, über alle Schlagversuche davor —
+ * Jeder Punkt ist der Stand **nach** diesem Spiel, über alle At-Bats davor —
  * so wie eine Saisonbilanz wächst. Vorher zeigte die Kurve einen Schnitt über die
- * letzten 20 Schlagversuche; der sprang bei jedem guten oder schlechten Spiel stark
+ * letzten 20 At-Bats; der sprang bei jedem guten oder schlechten Spiel stark
  * und ließ sich zwischen Spielern nicht vergleichen, weil hinter jedem Punkt eine
  * andere Stichprobe stand.
  *
@@ -73,12 +88,13 @@ export function cumulativeSeries(points: PlayerFormPoint[]): CumulativePoint[] {
       gameAtBats: p.atBats,
       gameWalks: p.walks,
       gameStolenBases: p.stolenBases,
+      atBats,
       plateAppearances,
       average,
       onBase,
       slugging,
       ops: onBase + slugging,
-      provisional: plateAppearances < PROVISIONAL_UNTIL_PA,
+      provisional: atBats < MIN_AT_BATS,
     }
   })
 }
@@ -112,31 +128,55 @@ export function axis(values: number[]): { max: number; guides: number[] } {
  * im selben Zeitraum übereinander. Ohne Datumsangaben bleibt die gleichmäßige
  * Verteilung übrig.
  */
-export function xFractions(dates: (string | null)[], range?: { from: string; to: string }): number[] {
-  const n = dates.length
-  const evenly = (i: number) => (n <= 1 ? 0.5 : i / (n - 1))
-  if (dates.some(d => d == null)) return dates.map((_, i) => evenly(i))
-
-  const times = (dates as string[]).map(d => new Date(d + 'T00:00:00').getTime())
-  if (times.some(t => Number.isNaN(t))) return dates.map((_, i) => evenly(i))
-
-  const from = range ? new Date(range.from + 'T00:00:00').getTime() : Math.min(...times)
-  const to = range ? new Date(range.to + 'T00:00:00').getTime() : Math.max(...times)
-  if (!(to > from)) return dates.map((_, i) => evenly(i))
-
-  return times.map(t => (t - from) / (to - from))
-}
-
-/** Früheste und späteste Datumsangabe mehrerer Reihen — der gemeinsame Zeitraum. */
-export function dateRange(...series: CumulativePoint[][]): { from: string; to: string } | undefined {
-  const dates = series.flat().map(p => p.date).filter((d): d is string => d != null).sort()
-  if (dates.length === 0) return undefined
-  return { from: dates[0], to: dates[dates.length - 1] }
+/**
+ * Waagerechte Lage je Punkt, als Anteil 0…1 — **ein Spiel, ein Schritt**.
+ *
+ * Nach Datum sah es ehrlicher aus, las sich aber schlecht: mehrere Spiele desselben
+ * Spieltags fielen übereinander, Saisonpausen rissen Löcher. Gleiche Schritte geben
+ * jedem Spiel dieselbe Breite. Beim Vergleich liegt Spiel 5 über Spiel 5 — „nach
+ * ebenso vielen Spielen", nicht „am selben Tag".
+ *
+ * @param count Punkte dieser Reihe
+ * @param span Längste beteiligte Reihe, damit die kürzere früher endet statt
+ *             gedehnt zu werden.
+ */
+export function xFractions(count: number, span = count): number[] {
+  const schritte = Math.max(span - 1, 1)
+  if (count === 1) return [span <= 1 ? 0.5 : 0]
+  return Array.from({ length: count }, (_, i) => i / schritte)
 }
 
 /** Quoten im Softball ohne führende Null: .312, nicht 0.312. */
 export function fmt(value: number): string {
   return value.toFixed(3).replace(/^0/, '')
+}
+
+const MONATE = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']
+
+/**
+ * Monatswechsel in der Reihe — die Zeit zurück auf eine Achse, die nach Spielen zählt.
+ *
+ * Gleiche Schritte je Spiel lesen sich besser als echte Datumsabstände, verschweigen
+ * aber, ob zwischen zwei Punkten eine Woche oder drei Monate lagen. Die Marken zeigen
+ * es wieder: liegen fünf Spiele zwischen „Mai" und „Jun", war der Monat dicht.
+ *
+ * @returns Index in der Reihe und Beschriftung, erstes Spiel immer dabei.
+ */
+export function monthTicks(points: CumulativePoint[]): { index: number; label: string }[] {
+  const ticks: { index: number; label: string }[] = []
+  let letzter = ''
+  points.forEach((p, index) => {
+    if (!p.date) return
+    const d = new Date(p.date + 'T00:00:00')
+    if (Number.isNaN(d.getTime())) return
+    const schluessel = `${d.getFullYear()}-${d.getMonth()}`
+    if (schluessel === letzter) return
+    letzter = schluessel
+    const jahrWechsel = ticks.length > 0 && !ticks[ticks.length - 1].label.endsWith(String(d.getFullYear() % 100))
+      && d.getMonth() === 0
+    ticks.push({ index, label: jahrWechsel ? `${MONATE[d.getMonth()]} ${d.getFullYear() % 100}` : MONATE[d.getMonth()] })
+  })
+  return ticks
 }
 
 export function fmtDate(date: string | null): string {

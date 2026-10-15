@@ -43,7 +43,7 @@ export function PlayerProfilePage() {
   // Spielervergleich in der Form-Kurve: die Reihe des anderen wird bei Bedarf
   // nachgeladen und bleibt im Cache, damit Hin- und Herschalten nicht jedes Mal
   // einen Request kostet.
-  const [compareId, setCompareId] = useState<number | null>(null)
+  const [compareIds, setCompareIds] = useState<number[]>([])
   const [compareCache, setCompareCache] = useState<Record<number, PlayerFormPoint[]>>({})
 
   const [positionsOpen, setPositionsOpen] = useState(false)
@@ -70,13 +70,17 @@ export function PlayerProfilePage() {
   const [draftName, setDraftName] = useState('')
 
   useEffect(() => {
-    if (compareId == null || compareCache[compareId]) return
+    const fehlend = compareIds.filter(id => !compareCache[id])
+    if (fehlend.length === 0) return
     let abgebrochen = false
-    api.getPlayerBattingTimeline(compareId)
-      .then(reihe => { if (!abgebrochen) setCompareCache(c => ({ ...c, [compareId]: reihe })) })
-      .catch(() => { if (!abgebrochen) setCompareId(null) })
+    Promise.all(fehlend.map(id => api.getPlayerBattingTimeline(id).then(reihe => [id, reihe] as const)))
+      .then(geladen => {
+        if (abgebrochen) return
+        setCompareCache(c => ({ ...c, ...Object.fromEntries(geladen) }))
+      })
+      .catch(() => { if (!abgebrochen) setCompareIds(ids => ids.filter(id => compareCache[id])) })
     return () => { abgebrochen = true }
-  }, [compareId, compareCache])
+  }, [compareIds, compareCache])
 
   /** Mitspieler zur Auswahl — ohne den Spieler selbst, alphabetisch. */
   const teammates = useMemo(
@@ -87,17 +91,18 @@ export function PlayerProfilePage() {
     [battingField, playerId],
   )
 
-  /** Die Vergleichsreihe folgt demselben Zeitraum-Schnitt wie die eigene. */
-  const comparePoints = useMemo(() => {
-    const roh = compareId != null ? compareCache[compareId] ?? [] : []
-    if (scope.kind === 'year') return roh.filter(p => p.year === scope.year)
-    if (scope.kind === 'season') return roh.filter(p => p.seasonId === scope.seasonId)
-    return roh
-  }, [compareId, compareCache, scope])
-
-  const compareName = useMemo(
-    () => teammates.find(t => t.playerId === compareId)?.playerName ?? null,
-    [teammates, compareId],
+  /** Die Vergleichsreihen folgen demselben Zeitraum-Schnitt wie die eigene. */
+  const compares = useMemo(
+    () => compareIds.flatMap(id => {
+      const roh = compareCache[id]
+      const name = teammates.find(t => t.playerId === id)?.playerName
+      if (!roh || !name) return []
+      const points = scope.kind === 'year' ? roh.filter(p => p.year === scope.year)
+        : scope.kind === 'season' ? roh.filter(p => p.seasonId === scope.seasonId)
+        : roh
+      return [{ playerId: id, playerName: name, points }]
+    }),
+    [compareIds, compareCache, teammates, scope],
   )
 
   const years = useMemo(
@@ -303,7 +308,10 @@ export function PlayerProfilePage() {
             <Kpi label="AVG" value={rate(totals.hits, totals.atBats)} />
             <Kpi label="OBP" value={rate(totals.timesOnBase, totals.plateAppearances)} />
             <Kpi label="Hits" value={String(totals.hits)} />
-            <Kpi label="Am Schlag" value={String(totals.plateAppearances)} />
+            {/* At-Bats, nicht PA: so geht die Kachel auf — 19 Hits aus 48 At-Bats
+                sind die .396 daneben. Mit den 62 PA liess sich der Schnitt nicht
+                nachrechnen. OBP rechnet weiter je PA, das steht im Glossar. */}
+            <Kpi label="At-Bats" value={String(totals.atBats)} />
           </dl>
         </header>
 
@@ -360,10 +368,8 @@ export function PlayerProfilePage() {
               points={points}
               playerName={player.name}
               teammates={teammates}
-              compareId={compareId}
-              onCompare={setCompareId}
-              comparePoints={comparePoints}
-              compareName={compareName}
+              compares={compares}
+              onComparesChange={setCompareIds}
             />
           </section>
 

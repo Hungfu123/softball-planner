@@ -49,7 +49,7 @@ describe('FormChart', () => {
 
     // 4 Hits aus 8 Versuchen — nicht der Wert des letzten Spiels allein.
     expect(screen.getByText('.500')).toBeInTheDocument()
-    expect(screen.getByText(/AVG über 8 Schlagversuche/)).toBeInTheDocument()
+    expect(screen.getByText(/AVG aus 8 At-Bats/)).toBeInTheDocument()
   })
 
   it('zeigt beim Antippen eines Punktes dessen einzelnes Spiel', () => {
@@ -81,7 +81,7 @@ describe('FormChart', () => {
 
     // OBP = 4/10 = .400, SLG = 4/8 = .500 -> OPS .900
     expect(screen.getByText('.900')).toBeInTheDocument()
-    expect(screen.getByText(/OPS über 10 Schlagversuche/)).toBeInTheDocument()
+    expect(screen.getByText(/OPS aus 10 PA/)).toBeInTheDocument()
   })
 
   it('zeichnet eine zweite Linie und nennt beide Namen, sobald verglichen wird', () => {
@@ -92,10 +92,8 @@ describe('FormChart', () => {
         point({ gameId: 2, date: '2026-04-18' }),
       ]}
       teammates={[{ playerId: 7, playerName: 'Khang' }]}
-      compareId={7}
-      compareName="Khang"
-      comparePoints={[point({ gameId: 3, date: '2026-04-11', atBats: 4, hits: 2 })]}
-      onCompare={() => {}}
+      compares={[{ playerId: 7, playerName: 'Khang', points: [point({ gameId: 3, date: '2026-04-11', atBats: 4, hits: 2 })] }]}
+      onComparesChange={() => {}}
     />)
 
     // Beide Namen stehen in der Legende — "Khang" kommt zusaetzlich in der
@@ -110,34 +108,48 @@ describe('FormChart', () => {
       {...basis}
       points={[point({ gameId: 1 })]}
       teammates={[{ playerId: 7, playerName: 'Khang' }]}
-      onCompare={() => {}}
+      onComparesChange={() => {}}
     />)
 
     expect(screen.getByRole('option', { name: 'Khang' })).toBeInTheDocument()
   })
 
-  it('beschriftet die Zeitachse nach der Skala, nicht nach der eigenen Reihe', () => {
-    // Der Vergleichspartner hat frueher angefangen und spaeter aufgehoert — die
-    // Achsenenden gehoeren ihm, sonst stuende links ein Datum, das nicht zum Rand passt.
+  it('zeichnet die Vergleichsreihe als eigene Linie', () => {
     const { container } = render(<FormChart
       {...basis}
-      points={[
-        point({ gameId: 1, date: '2026-05-01' }),
-        point({ gameId: 2, date: '2026-06-01' }),
+      points={[point({ gameId: 1, date: '2026-05-01' }), point({ gameId: 2, date: '2026-06-01' })]}
+      compares={[
+        { playerId: 7, playerName: 'Khang', points: [point({ gameId: 8, date: '2026-03-01' }), point({ gameId: 9, date: '2026-09-01' })] },
+        { playerId: 9, playerName: 'Hung', points: [point({ gameId: 10, date: '2026-04-01' }), point({ gameId: 11, date: '2026-08-01' })] },
       ]}
-      compareId={7}
-      compareName="Khang"
-      comparePoints={[
-        point({ gameId: 8, date: '2026-03-01' }),
-        point({ gameId: 9, date: '2026-09-01' }),
-      ]}
-      teammates={[{ playerId: 7, playerName: 'Khang' }]}
-      onCompare={() => {}}
+      teammates={[{ playerId: 7, playerName: 'Khang' }, { playerId: 9, playerName: 'Hung' }]}
+      onComparesChange={() => {}}
     />)
 
-    const texte = [...container.querySelectorAll('text')].map(t => t.textContent)
-    expect(texte).toContain('01.03.26')
-    expect(texte).toContain('01.09.26')
+    // Eigene Linie plus zwei Vergleichslinien.
+    expect(container.querySelectorAll('path').length).toBe(3)
+  })
+
+  it('nimmt hoechstens zwei Vergleiche und bietet dann keinen weiteren an', () => {
+    render(<FormChart
+      {...basis}
+      points={[point({ gameId: 1 })]}
+      compares={[
+        { playerId: 7, playerName: 'Khang', points: [point({ gameId: 8 })] },
+        { playerId: 9, playerName: 'Hung', points: [point({ gameId: 10 })] },
+      ]}
+      teammates={[
+        { playerId: 7, playerName: 'Khang' },
+        { playerId: 9, playerName: 'Hung' },
+        { playerId: 11, playerName: 'Kairi' },
+      ]}
+      onComparesChange={() => {}}
+    />)
+
+    // Beide Vergleiche lassen sich wieder entfernen, ein dritter wird nicht angeboten.
+    expect(screen.getByRole('button', { name: /Khang aus dem Vergleich nehmen/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Hung aus dem Vergleich nehmen/ })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Kairi' })).not.toBeInTheDocument()
   })
 
   it('beginnt die Achse bei null, damit zwei Spieler vergleichbar bleiben', () => {

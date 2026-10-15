@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { PlayerFormPoint } from '@/types'
-import { axis, cumulativeSeries, dateRange, xFractions } from './formSeries'
+import { axis, cumulativeSeries, denominator, xFractions } from './formSeries'
 
 function spiel(over: Partial<PlayerFormPoint>): PlayerFormPoint {
   return {
@@ -26,6 +26,7 @@ describe('cumulativeSeries', () => {
     // loescht ihn aber nicht. Nach Spiel 3: 4/10.
     expect(reihe.map(p => p.average)).toEqual([0.5, 0.25, 0.4])
     expect(reihe.map(p => p.plateAppearances)).toEqual([4, 8, 10])
+    expect(reihe.map(p => p.atBats)).toEqual([4, 8, 10])
     // SLG = Bases / AB, OPS = OBP + SLG
     expect(reihe[2].slugging).toBeCloseTo(7 / 10, 5)
     expect(reihe[2].onBase).toBeCloseTo(4 / 10, 5)
@@ -41,12 +42,12 @@ describe('cumulativeSeries', () => {
     expect(reihe[0].onBase).toBe(1)
   })
 
-  it('markiert die ersten Spiele als vorläufig, bis genug Schlagversuche stehen', () => {
-    const viele = Array.from({ length: 8 }, (_, i) =>
+  it('markiert die ersten Spiele als vorläufig, bis genug At-Bats stehen', () => {
+    const viele = Array.from({ length: 5 }, (_, i) =>
       spiel({ gameId: i + 1, atBats: 3, hits: 1, totalBases: 1, timesOnBase: 1, plateAppearances: 3 }))
     const reihe = cumulativeSeries(viele)
-    // 20 Schlagversuche sind nach dem 7. Spiel erreicht (21).
-    expect(reihe.map(p => p.provisional)).toEqual([true, true, true, true, true, true, false, false])
+    // 10 At-Bats sind nach dem 4. Spiel erreicht (12).
+    expect(reihe.map(p => p.provisional)).toEqual([true, true, true, false, false])
   })
 
   it('rechnet nur über die übergebenen Spiele — der Zeitraum-Filter schneidet vorher', () => {
@@ -83,40 +84,33 @@ describe('axis', () => {
 })
 
 describe('xFractions', () => {
-  it('verteilt nach Datum, nicht nach Listenposition', () => {
-    // Drei Spiele, das zweite liegt zeitlich nah am ersten.
-    const x = xFractions(['2026-04-01', '2026-04-03', '2026-07-01'])
-    expect(x[0]).toBe(0)
-    expect(x[2]).toBe(1)
-    expect(x[1]).toBeLessThan(0.1)
-  })
-
-  it('legt zwei Reihen über denselben Zeitraum übereinander', () => {
-    const spanne = { from: '2026-04-01', to: '2026-07-01' }
-    const a = xFractions(['2026-04-01', '2026-07-01'], spanne)
-    const b = xFractions(['2026-04-01'], spanne)
-    // Derselbe Tag landet in beiden Reihen an derselben Stelle.
-    expect(b[0]).toBe(a[0])
-  })
-
-  it('verteilt gleichmäßig, wenn Datumsangaben fehlen', () => {
-    const x = xFractions(['2026-04-01', null, '2026-07-01'])
-    expect(x).toEqual([0, 0.5, 1])
+  it('gibt jedem Spiel denselben Schritt', () => {
+    expect(xFractions(3)).toEqual([0, 0.5, 1])
   })
 
   it('setzt einen einzelnen Punkt in die Mitte', () => {
-    expect(xFractions(['2026-04-01'])).toEqual([0.5])
+    expect(xFractions(1)).toEqual([0.5])
+  })
+
+  it('laesst die kuerzere Reihe frueher enden statt sie zu dehnen', () => {
+    // Beim Vergleich liegt Spiel 3 ueber Spiel 3 — wer weniger Spiele hat, hoert
+    // frueher auf, statt auf dieselbe Breite gezogen zu werden.
+    const lang = xFractions(5, 5)
+    const kurz = xFractions(3, 5)
+    expect(kurz[2]).toBe(lang[2])
+    expect(kurz[kurz.length - 1]).toBeLessThan(1)
   })
 })
 
-describe('dateRange', () => {
-  it('spannt über beide Reihen', () => {
-    const a = cumulativeSeries([spiel({ gameId: 1, date: '2026-05-01' })])
-    const b = cumulativeSeries([spiel({ gameId: 2, date: '2026-03-01' })])
-    expect(dateRange(a, b)).toEqual({ from: '2026-03-01', to: '2026-05-01' })
-  })
-
-  it('gibt nichts zurück, wenn kein Datum bekannt ist', () => {
-    expect(dateRange(cumulativeSeries([spiel({ date: null })]))).toBeUndefined()
+describe('denominator', () => {
+  it('nennt den Nenner, der zur Kennzahl gehoert', () => {
+    const [p] = cumulativeSeries([
+      spiel({ atBats: 4, hits: 2, totalBases: 2, timesOnBase: 3, plateAppearances: 5 }),
+    ])
+    // AVG und SLG rechnen je At-Bat, OBP und OPS je PA.
+    expect(denominator(p, 'average')).toEqual({ value: 4, label: 'At-Bats' })
+    expect(denominator(p, 'slugging')).toEqual({ value: 4, label: 'At-Bats' })
+    expect(denominator(p, 'onBase')).toEqual({ value: 5, label: 'PA' })
+    expect(denominator(p, 'ops')).toEqual({ value: 5, label: 'PA' })
   })
 })

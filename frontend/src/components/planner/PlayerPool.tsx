@@ -445,7 +445,7 @@ export function PlayerPool({
             </select>
             {!selectedPeriodId && ([
               ['trainingYear', trainingYearFilterLabel(gameDayDate), trainingYearTitle(gameDayDate)],
-              ['all', 'Gesamt', 'Alle jemals erfassten Trainings, über alle Trainingsjahre'],
+              ['all', 'Gesamt', 'Alle Trainings, die erfasst sind'],
             ] as const).map(([key, label, hint]) => (
               <button
                 key={key}
@@ -467,7 +467,7 @@ export function PlayerPool({
                 gehoeren nie in die Fairness-Rechnung — das Backend filtert sie. */}
             <span
               className="text-[10px] text-gray-400 whitespace-nowrap"
-              title="Termine, zu denen nur ein Teil des Kaders geladen war, zählen nicht — niemandem wird angerechnet, wozu er nicht eingeladen war."
+              title="Da ist nicht der ganze Kader eingeladen — zählt deshalb nicht mit."
             >Nur-P/C zählt nicht</span>
           </div>
           {availableTrainingStats.length === 0 ? (
