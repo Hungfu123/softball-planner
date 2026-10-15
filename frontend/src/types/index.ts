@@ -14,7 +14,17 @@ export interface Player {
 
 export type Gender = 'FEMALE' | 'MALE' | 'DIVERSE'
 
+/** Ausgeschrieben — für Screenreader, Tooltips und Fließtext. */
 export const GENDER_LABELS: Record<Gender, string> = { FEMALE: 'Frau', MALE: 'Mann', DIVERSE: 'Divers' }
+
+/**
+ * Kürzel für die Anzeige: drei gleich breite Felder statt „Frau | Mann | Divers".
+ *
+ * Der Umschalter steht 31-mal untereinander — ausgeschrieben wandert er je Zeile,
+ * weil „Divers" breiter ist als „Frau". Ausgeschrieben bleibt er trotzdem im
+ * `aria-label` und im Tooltip, das Kürzel ist nur die Oberfläche.
+ */
+export const GENDER_SHORT: Record<Gender, string> = { FEMALE: 'W', MALE: 'M', DIVERSE: 'D' }
 
 /** Reihenfolge im Schalter. */
 export const GENDER_ORDER: Gender[] = ['FEMALE', 'MALE', 'DIVERSE']

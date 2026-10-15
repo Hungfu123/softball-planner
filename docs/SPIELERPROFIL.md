@@ -40,7 +40,9 @@ Drei geordnete Slots am Spieler: **primaryPosition / secondaryPosition / tertiar
 
 **Bearbeitet wird im Kopf**: die Chips neben dem Namen sind der Knopf, der das Sheet
 öffnet (Stift-Icon als Hinweis). Daneben steht das **Geschlecht** als eigener Knopf —
-gesetzt zeigt er „Frau"/„Mann", leer „Geschlecht festlegen" (gestrichelt). Er öffnet
+gesetzt zeigt er das Kürzel `W`/`M`/`D`, leer „Geschlecht festlegen" (gestrichelt). Das
+ganze Wort steht im `aria-label` und im Tooltip — sichtbar bleibt es kurz, weil der
+Umschalter im Kader 31-mal untereinander steht und „Divers" ihn je Zeile verschöbe. Er öffnet
 dasselbe `GenderSheet` wie der Kader, nur für diese eine Person: eine Mechanik, zwei Orte.
 Die Zuordnung ist die Grundlage der Frauen-Quote (`docs/LINEUP.md`), deshalb ist sie im
 Profil sichtbar und nicht nur im Sammel-Sheet. Eine eigene Karte weiter unten zeigte dieselben drei

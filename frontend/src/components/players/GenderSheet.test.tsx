@@ -68,6 +68,16 @@ describe('GenderSheet', () => {
     await waitFor(() => expect(onSet).toHaveBeenCalledWith(1, 'DIVERSE'))
   })
 
+  it('zeigt Kürzel, nennt aber das ganze Wort für Screenreader', () => {
+    render(<GenderSheet players={[player(1, 'Anne')]} onSet={vi.fn()} />)
+
+    // Sichtbar steht W/M/D, der zugängliche Name bleibt ausgeschrieben.
+    const frau = screen.getByRole('button', { name: 'Frau' })
+    expect(frau).toHaveTextContent('W')
+    expect(screen.getByRole('button', { name: 'Mann' })).toHaveTextContent('M')
+    expect(screen.getByRole('button', { name: 'Divers' })).toHaveTextContent('D')
+  })
+
   it('sagt, dass für die Quote nur „Frau“ zählt', () => {
     render(<GenderSheet players={[player(1, 'Anne')]} onSet={vi.fn()} />)
     expect(screen.getByText(/entscheidet der Verband/)).toBeInTheDocument()
