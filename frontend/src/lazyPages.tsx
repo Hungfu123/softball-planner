@@ -17,6 +17,8 @@ const SpielbogenList = lazy(() => import('@/components/spielbogen/SpielbogenList
 const SpielbogenWizard = lazy(() => import('@/components/spielbogen/SpielbogenWizard'))
 const SpielbogenPage = lazy(() => import('@/components/spielbogen/SpielbogenPage'))
 const CounterPage = lazy(() => import('@/components/counter/CounterPage'))
+// pdf-lib wiegt schwer und wird einmal im Monat gebraucht — nicht ins Hauptbundle.
+const TrainerabrechnungPage = lazy(() => import('@/components/orga/TrainerabrechnungPage'))
 
 export function LazyScoring() {
   // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
@@ -62,4 +64,8 @@ export function LazyCalendar() {
 
 export function LazyEquipmentCatalog() {
   return <Suspense fallback={<LoadingSkeleton />}><EquipmentCatalogPage /></Suspense>
+}
+
+export function LazyTrainerabrechnung() {
+  return <Suspense fallback={<LoadingSkeleton />}><TrainerabrechnungPage /></Suspense>
 }

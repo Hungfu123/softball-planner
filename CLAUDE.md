@@ -139,6 +139,13 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   `type` beschreibt den Inhalt, `openToAll` den Teilnehmerkreis — nur letzteres zählt für
   die Fairness. Der P/C-Tag wandert zweimal im Jahr (Nov → Do, Apr → zurück zum Montag),
   ein fester Wochentag taugt deshalb nicht.
+- **Trainerabrechnung** (`/orga/trainerabrechnung`, `coach_billing_profile` seit V65):
+  Der Bogen des Hochschulsports fuer einen Monat. `frontend/public/trainerabrechnung-vorlage.pdf`
+  ist das **Originalformular**, nicht nachgebaut — `pdf-lib` beschriftet es an gemessenen
+  Koordinaten. Stunden kommen aus den geplanten Trainings des Monats: Donnerstag 3 h von
+  April bis Oktober, 2 h von November bis Maerz, Rest reihum auf Montag/Samstag bis zum
+  Monatsdeckel (12 h, im Profil). Elf Zeilen, max 3 h je Tag, abgesagte Termine fallen raus.
+  Die Migration legt **keine** personenbezogenen Daten an. Details: `docs/TRAINERABRECHNUNG.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.
@@ -158,6 +165,7 @@ Bei Arbeit an einem konkreten Feature die jeweilige Doc lesen — werden NICHT a
 - **Trainingsplan-Generator:** `docs/04-KI-TRAININGSPLAN.md` + `docs/trainingsplan-algorithmus.md`
 - **Lineup Auto-Generate:** `docs/03-LINEUP-AUTO-GENERATE.md`
 - **Backend-Architektur (Stand: legacy):** `docs/02-BACKEND.md` — outdated, siehe Onion-Section oben
+- **Trainerabrechnung:** `docs/TRAINERABRECHNUNG.md` — Originalvorlage statt Nachbau, Stunden-Regel Sommer/Winter, Stammdaten ohne Daten in der Migration
 - **Deployment:** `docs/deployment.md`
 - **Neuer Drill hinzufügen:** Skill `drill-onboarding` triggert automatisch bei Phrasen wie "neuer drill" / "drill hinzufügen" / "drill aufnehmen". Phasen-Mapping + Drill-Schema in `.claude/skills/drill-onboarding/` (roter-faden.md, drill-schema.md). Workflow: User beschreibt Drill → Skill klassifiziert in Phase + Categories → fragt fehlende Pflichtfelder → appended an `backend/src/main/resources/drills.json`.
 

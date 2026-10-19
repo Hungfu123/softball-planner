@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/shared'
 import { ClipboardListIcon, SendIcon, CounterIcon, CalendarIcon } from '@/icons'
-import { Mail } from 'lucide-react'
+import { Mail, Receipt } from 'lucide-react'
 
 export function OrgaHome() {
   return (
@@ -37,6 +37,17 @@ export function OrgaHome() {
               <div>
                 <div className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-900">WhatsApp-Umfragen</div>
                 <div className="text-xs text-gray-500 mt-0.5">Wöchentliche Trainings-Abstimmungen</div>
+              </div>
+            </div>
+          </Card>
+        </Link>
+        <Link to="/orga/trainerabrechnung">
+          <Card padding="lg" className="hover:border-navy-400 hover:shadow-md transition-all cursor-pointer h-full">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-navy-800 text-white shrink-0"><Receipt size={20} /></span>
+              <div>
+                <div className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-900">Trainerabrechnung</div>
+                <div className="text-xs text-gray-500 mt-0.5">Stunden eines Monats als Bogen für den Hochschulsport</div>
               </div>
             </div>
           </Card>

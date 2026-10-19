@@ -55,6 +55,7 @@ import type {
   LeagueResultResponse,
   TrainingResponse,
   TrainingAttendanceResponse,
+  CoachBillingProfile,
   TrainingStatsResponse,
   TrainingPeriodResponse,
   GameDayLineupsResponse,
@@ -775,3 +776,12 @@ export const assignNewVoter = (voterName: string, playerName: string) =>
   request<Player>('/orga/whatsapp/assign-new', { method: 'POST', body: JSON.stringify({ voterName, playerName }) })
 export const unassignVoter = (playerId: number) =>
   request<Player>('/orga/whatsapp/unassign', { method: 'POST', body: JSON.stringify({ playerId }) })
+
+// --- Trainerabrechnung ---
+
+/** `undefined`, solange die Stammdaten nicht eingetragen sind (204 vom Backend). */
+export const getCoachBillingProfile = () =>
+  request<CoachBillingProfile | undefined>('/coach-billing/profile')
+
+export const updateCoachBillingProfile = (profile: CoachBillingProfile) =>
+  request<CoachBillingProfile>('/coach-billing/profile', { method: 'PUT', body: JSON.stringify(profile) })
