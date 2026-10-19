@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import type { TrainingResponse } from '@/types'
 import {
   amount, billedRows, clockLabel, endTime, fillToMax, isWinterMonth, monthLabel,
-  monthTrainings, primaryHours, suggestRows, totalHours, withHours, MAX_FORM_ROWS,
+  monthTrainings, primaryHours, suggestRows, totalHours, withFrom, withHours, MAX_FORM_ROWS,
 } from './coachBilling'
 
 let id = 0
@@ -161,5 +161,24 @@ describe('monthLabel', () => {
   it('nennt den Monat so, wie er auf dem Bogen steht', () => {
     expect(monthLabel('2026-09')).toBe('September')
     expect(monthLabel('2027-03')).toBe('März')
+  })
+})
+
+describe('withFrom', () => {
+  it('traegt eine fehlende Startzeit nach, ohne die anderen Zeilen anzufassen', () => {
+    const rows = [
+      { trainingId: 1, date: '2026-01-15', from: null, hours: 2 },
+      { trainingId: 2, date: '2026-01-12', from: '20:00', hours: 1 },
+    ]
+    const geaendert = withFrom(rows, 1, '19:00')
+
+    expect(geaendert[0].from).toBe('19:00')
+    expect(endTime(geaendert[0].from, geaendert[0].hours)).toBe('21:00')
+    expect(geaendert[1].from).toBe('20:00')
+  })
+
+  it('macht aus einer geleerten Eingabe wieder "keine Zeit"', () => {
+    const rows = [{ trainingId: 1, date: '2026-01-15', from: '19:00', hours: 2 }]
+    expect(withFrom(rows, 1, '')[0].from).toBeNull()
   })
 })

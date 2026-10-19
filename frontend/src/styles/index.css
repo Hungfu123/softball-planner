@@ -258,8 +258,20 @@ button:active:not(:disabled), [role="button"]:active {
   to { opacity: 1; transform: none; }
 }
 
+/* Trainerabrechnung: die Gesamtstunden sind die Zahl, nach der man steuert.
+   Ein kurzer Stups bei jeder Aenderung sagt "angekommen", ohne zu zappeln. */
+.count-pop {
+  animation: countPop 180ms var(--ease-out-strong);
+}
+
+@keyframes countPop {
+  from { transform: scale(1.14); }
+  to { transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .planner-pane { animation: none; }
+  .count-pop { animation: none; }
 }
 
 /* Hover nur auf Geraeten, die wirklich hovern koennen. Tailwind generiert
