@@ -30,10 +30,11 @@ Wie die zwölf zustande kommen, hängt an der Jahreszeit:
 | April – Oktober | 3 h | vier Donnerstage reichen |
 | November – März | 2 h | je 1 h an Montag und Samstag |
 
-`suggestRows` legt deshalb zuerst die Donnerstage mit `primaryHours(monat)` an und verteilt
-den Rest über `fillToMax` **reihum** auf die übrigen Tage: erst bekommt jeder Montag und
-Samstag eine Stunde, dann erst einer die zweite. Das entspricht dem, was tatsächlich
-passiert, wenn der Donnerstag kürzer ist oder ein Termin ausfällt.
+`suggestRows` legt deshalb zuerst die Donnerstage mit `primaryHours(monat)` an und füllt den
+Rest über `fillToMax` in **ganzen Einheiten** auf: ein Wintermontag ist von 20 bis 22 Uhr in
+der Halle, wer ihn mitnimmt, nimmt ihn ganz. Also zwei Montage à zwei Stunden statt vier
+Tage à einer — sonst stünde auf dem Bogen „von 20 bis 21" an einem Termin, der bis 22 ging.
+Bleibt am Ende weniger als eine Einheit übrig, bekommt der nächste Tag genau diesen Rest.
 
 Grenzen, die der Bogen setzt: **elf Zeilen** (`MAX_FORM_ROWS`) und höchstens
 **drei Stunden je Tag** (`MAX_HOURS_PER_DAY`). Abgesagte Trainings tauchen gar nicht erst

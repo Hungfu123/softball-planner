@@ -157,34 +157,38 @@ export function suggestRows(trainings: TrainingResponse[], yearMonth: string, ma
     return row
   })
 
-  return fillToMax(rows, maxHours)
+  return fillToMax(rows, maxHours, lang)
 }
 
 /**
- * Fehlende Stunden reihum auf die übrigen Tage verteilen, eine nach der anderen.
+ * Fehlende Stunden über die übrigen Tage auffüllen — **in ganzen Einheiten**.
  *
- * Reihum statt am Stück: so wächst erst jeder Montag und Samstag um eine Stunde,
- * bevor einer von ihnen die zweite bekommt — das entspricht dem, was tatsächlich
- * passiert, wenn der Donnerstag im Winter kürzer ist. Kein Tag geht über
- * {@link MAX_HOURS_PER_DAY}, und der Bogen traegt nie mehr als {@link MAX_FORM_ROWS}
- * beschriebene Zeilen.
+ * Ein Wintermontag ist von 20 bis 22 Uhr in der Halle. Wer ihn mitnimmt, nimmt
+ * ihn ganz: zwei Montage à zwei Stunden statt vier Tage à einer. Auf dem Bogen
+ * steht dann an jeder Zeile die Zeit, die tatsächlich trainiert wurde — „von 20
+ * bis 21" an einem Termin, der bis 22 ging, wäre schief.
+ *
+ * Bleibt am Ende weniger als eine Einheit übrig, bekommt der nächste Tag genau
+ * diesen Rest; über den Deckel geht es nie. Kein Tag nimmt mehr als
+ * {@link MAX_HOURS_PER_DAY}, und der Bogen trägt nie mehr als
+ * {@link MAX_FORM_ROWS} beschriebene Zeilen.
+ *
+ * @param sessionHours Länge einer Einheit an diesem Tag — im Winter zwei Stunden,
+ *                     im Sommer drei ({@link primaryHours}).
  */
-export function fillToMax(rows: BillingRow[], maxHours: number): BillingRow[] {
+export function fillToMax(rows: BillingRow[], maxHours: number, sessionHours: number): BillingRow[] {
   const next = rows.map(row => ({ ...row }))
-  const kandidaten = next.filter(row => isoWeekday(row.date) !== PRIMARY_WEEKDAY)
+  const einheit = Math.max(1, Math.min(sessionHours, MAX_HOURS_PER_DAY))
 
   let rest = maxHours - totalHours(next)
-  let bewegt = true
-  while (rest > 0 && bewegt) {
-    bewegt = false
-    for (const row of kandidaten) {
-      if (rest <= 0) break
-      if (row.hours >= MAX_HOURS_PER_DAY) continue
-      if (row.hours === 0 && billedRows(next).length >= MAX_FORM_ROWS) continue
-      row.hours += 1
-      rest -= 1
-      bewegt = true
-    }
+  for (const row of next) {
+    if (rest <= 0) break
+    if (isoWeekday(row.date) === PRIMARY_WEEKDAY) continue
+    if (row.hours >= MAX_HOURS_PER_DAY) continue
+    if (row.hours === 0 && billedRows(next).length >= MAX_FORM_ROWS) continue
+    const dazu = Math.min(einheit, rest, MAX_HOURS_PER_DAY - row.hours)
+    row.hours += dazu
+    rest -= dazu
   }
   return next
 }
