@@ -10,7 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'deadsox.jpeg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'deadsox.svg', 'deadsox.png'],
       manifest: {
         name: 'Softball Planner',
         short_name: 'Softball',

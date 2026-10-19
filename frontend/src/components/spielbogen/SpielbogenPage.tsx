@@ -720,7 +720,7 @@ export default function SpielbogenPage() {
             <ChevronLeftLucide size={22} />
           </Link>
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <img src="/deadsox.jpeg" alt="Dead Sox" className="w-7 h-7 rounded" />
+            <img src="/deadsox.svg" alt="Dead Sox" className="w-7 h-7 rounded" />
           </Link>
           <div className="flex-1" />
           <div className="flex items-center gap-1">
