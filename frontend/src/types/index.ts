@@ -403,6 +403,29 @@ export interface TrainingResponse {
   openToAll: boolean
 }
 
+/**
+ * Stammdaten für die Trainerabrechnung des Hochschulsports.
+ *
+ * Eine Zeile im Backend, nicht im Browser — damit sie den Gerätewechsel überlebt.
+ * `undefined` heißt: noch nie eingetragen, das Formular ist leer.
+ */
+export interface CoachBillingProfile {
+  firstName: string
+  lastName: string
+  street: string
+  zip: string
+  city: string
+  sportCourse: string
+  hourlyRate: number
+  /** Monatsdeckel aus dem Vertrag, in Stunden. */
+  maxHours: number
+  /** Anrede in der Mail; leer heißt nur „Hallo,". */
+  recipientName: string | null
+  recipientEmail: string
+  /** PNG als Data-URL, einmal gezeichnet. */
+  signaturePng: string | null
+}
+
 export interface TrainingAttendanceResponse {
   player: Player
   present: boolean
