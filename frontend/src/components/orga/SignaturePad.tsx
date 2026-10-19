@@ -4,11 +4,19 @@ import { Button } from '@/components/shared'
 /**
  * Unterschrift mit dem Finger — einmal, dann steht sie in jeder Abrechnung.
  *
- * Gezeichnet wird auf einer Leinwand in doppelter Aufloesung, damit die Linie auf
- * dem Papier nicht ausfranst. Heraus kommt ein PNG als Data-URL; wo nichts
- * gezeichnet wurde, bleibt es durchsichtig, sonst saesse ein weisser Kasten
- * ueber dem Formular.
+ * Die Leinwand hat eine **feste** Groesse (600 × 200) und wird per CSS auf die
+ * Breite gezogen; die Zeigerposition rechnet sich ueber das Verhaeltnis um. Vorher
+ * richtete sie sich nach `clientWidth` — stand sie beim Aufbau mit Breite 0 da
+ * (Sheet faehrt gerade ein, Karte noch nicht gemessen), war sie 0 Pixel breit, jeder
+ * Strich ging ins Leere und `toDataURL` lieferte ein leeres Bild. Gespeichert wurde
+ * dann nichts, ohne dass man es sah.
+ *
+ * Heraus kommt ein PNG als Data-URL, durchsichtig wo nichts gezeichnet wurde —
+ * sonst saesse ein weisser Kasten ueber dem Formular.
  */
+const BREITE = 600
+const HOEHE = 200
+
 export function SignaturePad({ value, onChange }: {
   value: string | null
   onChange: (png: string | null) => void
@@ -17,30 +25,31 @@ export function SignaturePad({ value, onChange }: {
   const zeichnet = useRef(false)
   const [leer, setLeer] = useState(!value)
 
+  // Nur beim Aufbau und wenn von aussen eine andere Unterschrift kommt. Nicht bei
+  // jedem Strich: `canvas.width` zu setzen loescht die Leinwand.
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
-    const scale = 2
-    canvas.width = canvas.clientWidth * scale
-    canvas.height = canvas.clientHeight * scale
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.scale(scale, scale)
-    ctx.lineWidth = 2
+    const ctx = canvas?.getContext('2d')
+    if (!canvas || !ctx) return
+    canvas.width = BREITE
+    canvas.height = HOEHE
+    ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.strokeStyle = '#10133F'
-
-    if (value) {
-      const bild = new Image()
-      bild.onload = () => ctx.drawImage(bild, 0, 0, canvas.clientWidth, canvas.clientHeight)
-      bild.src = value
-    }
-  }, [value])
+    if (!value) return
+    const bild = new Image()
+    bild.onload = () => ctx.drawImage(bild, 0, 0, BREITE, HOEHE)
+    bild.src = value
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const punkt = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const box = e.currentTarget.getBoundingClientRect()
-    return { x: e.clientX - box.left, y: e.clientY - box.top }
+    return {
+      x: ((e.clientX - box.left) / box.width) * BREITE,
+      y: ((e.clientY - box.top) / box.height) * HOEHE,
+    }
   }
 
   const start = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -51,6 +60,10 @@ export function SignaturePad({ value, onChange }: {
     const { x, y } = punkt(e)
     ctx.beginPath()
     ctx.moveTo(x, y)
+    // Ein Tipp ohne Zug soll auch einen Punkt setzen, nicht nur ein Zug.
+    ctx.lineTo(x, y)
+    ctx.stroke()
+    setLeer(false)
   }
 
   const zieh = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -60,7 +73,6 @@ export function SignaturePad({ value, onChange }: {
     const { x, y } = punkt(e)
     ctx.lineTo(x, y)
     ctx.stroke()
-    setLeer(false)
   }
 
   const ende = () => {
@@ -95,13 +107,16 @@ export function SignaturePad({ value, onChange }: {
         onPointerDown={start}
         onPointerMove={zieh}
         onPointerUp={ende}
+        onPointerCancel={ende}
         onPointerLeave={ende}
         // Ohne das scrollt die Seite unter dem Finger weg, statt zu zeichnen.
-        style={{ touchAction: 'none' }}
-        className="w-full h-28 rounded-xl border border-dashed border-cream-300 bg-white cursor-crosshair"
+        style={{ touchAction: 'none', aspectRatio: `${BREITE} / ${HOEHE}` }}
+        className="w-full rounded-xl border border-dashed border-cream-300 bg-white cursor-crosshair"
       />
       <p className="text-[11px] text-gray-500 mt-1">
-        {leer ? 'Mit dem Finger oder der Maus unterschreiben.' : 'Steht ab jetzt in jeder Abrechnung.'}
+        {leer
+          ? 'Mit dem Finger oder der Maus unterschreiben, dann unten speichern.'
+          : 'Sieht gut aus — jetzt unten speichern, dann steht sie in jeder Abrechnung.'}
       </p>
     </div>
   )

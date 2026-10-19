@@ -7,21 +7,13 @@ import { useCoachBilling } from '@/hooks/useCoachBilling'
 import type { TrainingResponse } from '@/types'
 import { CoachProfileSheet } from './CoachProfileSheet'
 import {
-  amount, billedRows, endTime, fillToMax, isWinterMonth, MAX_FORM_ROWS, monthLabel,
-  primaryHours, suggestRows, totalHours, weekdayName, withFrom, withHours, type BillingRow,
+  amount, billedRows, defaultMonth, endTime, fillToMax, isWinterMonth, MAX_FORM_ROWS,
+  monthLabel, monthOptions, primaryHours, suggestRows, totalHours, weekdayName, withFrom,
+  withHours, type BillingRow,
 } from './coachBilling'
 import {
   abrechnungFileName, buildTrainerabrechnungPdf, mailBody, mailSubject, pdfBlob,
 } from './trainerabrechnungPdf'
-
-/** Die letzten zwoelf Monate, der gerade vergangene zuerst — danach wird abgerechnet. */
-function monthOptions(today = new Date()): string[] {
-  const start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-  return Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(start.getFullYear(), start.getMonth() - i, 1)
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })
-}
 
 function heute(): string {
   return new Date().toISOString().slice(0, 10)
@@ -71,7 +63,7 @@ export function TrainerabrechnungPage() {
   const { profile, loading: profilLaedt, save } = useCoachBilling()
   const toast = useToastContext()
   const [trainings, setTrainings] = useState<TrainingResponse[] | null>(null)
-  const [month, setMonth] = useState(monthOptions()[0])
+  const [month, setMonth] = useState(defaultMonth())
   const [rows, setRows] = useState<BillingRow[]>([])
   const [stammdatenOffen, setStammdatenOffen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -95,6 +87,7 @@ export function TrainerabrechnungPage() {
   const satz = Number(profile?.hourlyRate ?? 0)
   const zuViele = gebucht.length > MAX_FORM_ROWS
   const ohneZeit = gebucht.filter(row => !row.from).length
+  const kuenftig = gebucht.filter(row => row.date > heute()).length
   const ueberDeckel = stunden > maxHours
 
   async function baueBogen() {
@@ -138,7 +131,11 @@ export function TrainerabrechnungPage() {
     if (!profile) return
     // Der Tab muss im Klick aufgehen. Erst bauen und dann oeffnen, laesst ihn vom
     // Popup-Blocker schlucken — das Fenster gilt dann nicht mehr als Nutzerwunsch.
-    const tab = window.open('', '_blank', 'noopener')
+    // Ohne `noopener`, weil window.open damit laut Standard **null** liefert: die
+    // PDF landete dann im aktuellen Tab und die Seite war weg. Stattdessen wird
+    // `opener` gleich danach gekappt.
+    const tab = window.open('', '_blank')
+    if (tab) tab.opener = null
     setBusy(true)
     try {
       const bytes = await baueBogen()
@@ -201,6 +198,12 @@ export function TrainerabrechnungPage() {
               {isWinterMonth(month) ? 'Winter' : 'Sommer'}: Donnerstag {primaryHours(month)} Stunden,
               der Rest verteilt sich auf Montag und Samstag.
             </p>
+            {kuenftig > 0 && (
+              <p className="text-xs text-softball-red-700">
+                {kuenftig === 1 ? 'Ein Termin liegt' : `${kuenftig} Termine liegen`} noch vor dir —
+                die Stunden sind geplant, nicht gewesen.
+              </p>
+            )}
           </Card>
 
           <Card padding="lg">
@@ -264,6 +267,14 @@ export function TrainerabrechnungPage() {
             {ueberDeckel && (
               <p className="text-xs text-softball-red-700">
                 Über dem Monatsdeckel von {maxHours} Stunden — so geht der Bogen nicht durch.
+              </p>
+            )}
+            {!profile.signaturePng && (
+              <p className="text-xs text-softball-red-700">
+                Keine Unterschrift hinterlegt — der Bogen kommt ohne.{' '}
+                <button onClick={() => setStammdatenOffen(true)} className="underline cursor-pointer">
+                  Jetzt zeichnen
+                </button>
               </p>
             )}
             {ohneZeit > 0 && (
