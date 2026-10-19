@@ -77,9 +77,11 @@ sich nach `clientWidth` — maß der Browser beim Aufbau 0 (Sheet fährt gerade 
 Gespeichert wurde dann nichts, ohne dass man es sah. Fehlt die Unterschrift, sagt die
 Zusammenfassung das jetzt auch.
 
-Die Monatsauswahl reicht drei Monate nach vorn und zwölf zurück; vorbelegt ist der
-Vormonat, weil der Normalfall „Monat ist um, jetzt abrechnen" heißt. Liegen Termine des
-gewählten Monats noch in der Zukunft, sagt die Seite, wie viele — geplant ist nicht gewesen.
+Den Monat wählt ein **Schrittschalter** (‹ September 2026 ›), keine Auswahlliste: abgerechnet
+wird der Monat davor, höchstens ein, zwei Schritte daneben — sechzehn Einträge in einer
+nativen Liste sind am Handy ein Katalog für einen Griff. Er reicht drei Monate nach vorn und
+zwölf zurück, an den Enden sind die Pfeile aus. Liegen Termine des gewählten Monats noch in
+der Zukunft, sagt die Seite, wie viele — geplant ist nicht gewesen.
 
 ## Versand
 

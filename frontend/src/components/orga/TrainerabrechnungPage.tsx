@@ -24,6 +24,9 @@ function deDate(iso: string): string {
   return `${d}.${m}.${y}`
 }
 
+const PFEIL = 'w-11 h-11 shrink-0 rounded-xl border border-cream-300 text-navy-900 text-xl leading-none '
+  + 'disabled:opacity-25 cursor-pointer hover:bg-navy-800 hover:text-white hover:border-navy-800'
+
 function euro(value: number): string {
   return `${value.toFixed(2).replace('.', ',')} EUR`
 }
@@ -74,6 +77,7 @@ export function TrainerabrechnungPage() {
 
   const maxHours = profile?.maxHours ?? 12
   const monate = useMemo(() => monthOptions(), [])
+  const monatIndex = monate.indexOf(month)
 
   // Monatswechsel wirft den Vorschlag neu — die Stunden des alten Monats sagen
   // ueber den neuen nichts aus.
@@ -180,20 +184,35 @@ export function TrainerabrechnungPage() {
       ) : (
         <>
           <Card padding="lg" className="space-y-3">
-            <label className="block space-y-1">
+            <div>
               <span className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-500">
                 Monat
               </span>
-              <select
-                value={month}
-                onChange={e => setMonth(e.target.value)}
-                className="w-full rounded-lg border border-cream-300 bg-white px-3 py-2.5 text-sm text-navy-900 cursor-pointer"
-              >
-                {monate.map(m => (
-                  <option key={m} value={m}>{monthLabel(m)} {m.slice(0, 4)}</option>
-                ))}
-              </select>
-            </label>
+              {/* Schrittschalter statt Auswahlliste: abgerechnet wird der Monat davor,
+                  hoechstens ein, zwei Schritte daneben. Sechzehn Eintraege in einer
+                  nativen Liste sind am Handy ein Katalog fuer einen Griff. */}
+              <div className="mt-1 flex max-w-[15rem] items-center justify-between gap-2">
+                <button
+                  onClick={() => setMonth(monate[monatIndex + 1])}
+                  disabled={monatIndex >= monate.length - 1}
+                  aria-label="Einen Monat zurück"
+                  className={PFEIL}
+                >
+                  ‹
+                </button>
+                <span aria-live="polite" className="font-display text-base font-bold text-navy-900 tabular-nums">
+                  {monthLabel(month)} {month.slice(0, 4)}
+                </span>
+                <button
+                  onClick={() => setMonth(monate[monatIndex - 1])}
+                  disabled={monatIndex <= 0}
+                  aria-label="Einen Monat weiter"
+                  className={PFEIL}
+                >
+                  ›
+                </button>
+              </div>
+            </div>
             <p className="text-xs text-gray-500">
               {isWinterMonth(month) ? 'Winter' : 'Sommer'}: Donnerstag {primaryHours(month)} Stunden,
               der Rest verteilt sich auf Montag und Samstag.
