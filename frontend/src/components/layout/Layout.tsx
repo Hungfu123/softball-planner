@@ -96,7 +96,7 @@ export function Layout() {
               zusätzlich ein zweiter Link aufs selbe Ziel.
             */}
             <Link to="/" className="hidden lg:flex items-center gap-2 shrink-0">
-              <img src="/deadsox.jpeg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
+              <img src="/deadsox.svg" alt="Dead Sox" className="w-8 h-8 rounded-lg" />
               <span className="font-display font-extrabold text-base tracking-wider">DEAD SOX</span>
             </Link>
             {/*

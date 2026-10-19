@@ -40,7 +40,7 @@
   page(header: none, margin: (top: 0cm, bottom: 0cm, left: 0cm, right: 0cm))[
     #rect(width: 100%, height: 100%, fill: navy)[
       #align(center + horizon)[
-        #image("logo.jpeg", width: 6cm)
+        #image("logo.svg", width: 6cm)
         #v(1cm)
         #text(size: 42pt, weight: "bold", fill: weiss)[DEAD SOX]
         #v(0.5cm)

@@ -62,7 +62,7 @@ export function Nav() {
         <nav className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 md:h-[72px]">
           <a href="#top" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
             <img
-              src="/logo.jpeg"
+              src="/logo.svg"
               alt="Dead Sox Logo"
               className="h-10 w-10 rounded-full object-cover"
             />

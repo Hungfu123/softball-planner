@@ -28,7 +28,7 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
           <div className="relative">
             <div className="absolute inset-0 bg-softball-red-600 blur-xl opacity-25 rounded-full" />
             <img
-              src="/deadsox.jpeg"
+              src="/deadsox.svg"
               alt="Dead Sox"
               className="relative h-20 w-20 rounded-2xl border-2 border-softball-red-600 shadow-lg shadow-navy-900/15"
             />

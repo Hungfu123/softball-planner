@@ -29,7 +29,7 @@ drills/
 │   └── hitting.typ      ← Hitting Stationen + Loading vom Tee
 ├── build.sh             ← Kompiliert PDF + kopiert in App
 ├── drills.pdf           ← Generierte PDF (nicht manuell editieren)
-├── logo.jpeg
+├── logo.svg
 └── file.jpeg
 ```
 

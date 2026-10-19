@@ -183,7 +183,7 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 - German throughout (labels, error messages, copy).
 - Dark navy hover on secondary buttons (navy-800 + white) — keep this; user has corrected attempts to soften it before.
 - Custom pencil cursor on editable text fields.
-- DeadSox logo (`deadsox.jpeg`) for favicon + nav.
+- DeadSox logo as vector (`frontend/public/deadsox.svg`) for favicon + nav; `deadsox.png` is the raster twin for the invitation PDF (jsPDF cannot embed SVG), the PWA icons are rendered from the same source. `drills/logo.svg` is the same mark without its background rect, for the dark cover of the drill booklet.
 
 ## Backend conventions
 

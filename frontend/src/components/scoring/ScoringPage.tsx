@@ -736,7 +736,7 @@ export function ScoringPage() {
               aria-label="Zur Startseite"
               title="Zur Startseite"
             >
-              <img src="/deadsox.jpeg" alt="Dead Sox" className="w-7 h-7 rounded" />
+              <img src="/deadsox.svg" alt="Dead Sox" className="w-7 h-7 rounded" />
             </Link>
             <button
               onClick={() => navigate(`/gameday/${gameDayId}`)}

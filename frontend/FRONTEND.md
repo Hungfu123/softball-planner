@@ -81,7 +81,7 @@ src/
 ## Design
 
 - **Farben:** Navy (#111B6B) als Primary, Softball-Red (#CC2936) als Akzent
-- **Logo:** DeadSox (deadsox.jpeg) als Favicon + Navigation
+- **Logo:** DeadSox als Vektor (deadsox.svg) für Favicon + Navigation; deadsox.png nur für das Einladungs-PDF
 - **Icons:** Eigene SVGs (CrossBones fuer Empty States, Pencil, TrashBin, etc.)
 - **Modals:** Dark Backdrop fuer alle Create/Edit/Delete-Aktionen
 - **Cursor:** Custom Pencil-Cursor fuer editierbare Textfelder

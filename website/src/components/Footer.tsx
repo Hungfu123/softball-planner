@@ -16,7 +16,7 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-14 sm:px-6 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3">
           <img
-            src="/logo.jpeg"
+            src="/logo.svg"
             alt="Dead Sox Logo"
             className="h-10 w-10 rounded-full object-cover"
           />

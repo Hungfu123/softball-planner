@@ -6,7 +6,7 @@ let cachedLogo: string | null = null
 async function loadLogo(): Promise<string | null> {
   if (cachedLogo) return cachedLogo
   try {
-    const res = await fetch('/deadsox.jpeg')
+    const res = await fetch('/deadsox.png')
     const blob = await res.blob()
     cachedLogo = await new Promise<string>((resolve, reject) => {
       const r = new FileReader()
@@ -45,7 +45,7 @@ export async function buildInvitationPdf(inv: InvitationResponse): Promise<jsPDF
   doc.text(`Düsseldorf, ${deDate(inv.letterDate)}`, left, y)
 
   const logo = await loadLogo()
-  if (logo) doc.addImage(logo, 'JPEG', pageWidth - 20 - 22, 16, 22, 22)
+  if (logo) doc.addImage(logo, 'PNG', pageWidth - 20 - 22, 16, 22, 22)
   y += 14
 
   // Titel
