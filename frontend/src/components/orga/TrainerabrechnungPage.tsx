@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as api from '@/api/client'
 import { Button, Card, EmptyState, LoadingSkeleton } from '@/components/shared'
+import { useToastContext } from '@/components/layout/Layout'
 import { useCoachBilling } from '@/hooks/useCoachBilling'
 import type { TrainingResponse } from '@/types'
 import { CoachProfileSheet } from './CoachProfileSheet'
 import {
   amount, billedRows, endTime, fillToMax, isWinterMonth, MAX_FORM_ROWS, monthLabel,
-  primaryHours, suggestRows, totalHours, weekdayName, withHours, type BillingRow,
+  primaryHours, suggestRows, totalHours, weekdayName, withFrom, withHours, type BillingRow,
 } from './coachBilling'
 import {
   abrechnungFileName, buildTrainerabrechnungPdf, mailBody, mailSubject, pdfBlob,
@@ -15,13 +16,11 @@ import {
 
 /** Die letzten zwoelf Monate, der gerade vergangene zuerst — danach wird abgerechnet. */
 function monthOptions(today = new Date()): string[] {
-  const monate: string[] = []
   const start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-  for (let i = 0; i < 12; i++) {
+  return Array.from({ length: 12 }, (_, i) => {
     const d = new Date(start.getFullYear(), start.getMonth() - i, 1)
-    monate.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-  return monate
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })
 }
 
 function heute(): string {
@@ -33,21 +32,56 @@ function deDate(iso: string): string {
   return `${d}.${m}.${y}`
 }
 
+function euro(value: number): string {
+  return `${value.toFixed(2).replace('.', ',')} EUR`
+}
+
+/** Spalte mit den Stunden einer Zeile: minus, Zahl, plus. */
+function HourStepper({ row, onChange }: { row: BillingRow; onChange: (hours: number) => void }) {
+  const knopf = 'w-11 h-11 rounded-xl border border-cream-300 text-navy-900 text-lg leading-none '
+    + 'disabled:opacity-25 cursor-pointer hover:bg-navy-800 hover:text-white hover:border-navy-800'
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <button
+        onClick={() => onChange(row.hours - 1)}
+        disabled={row.hours === 0}
+        aria-label={`Eine Stunde weniger am ${deDate(row.date)}`}
+        className={knopf}
+      >
+        –
+      </button>
+      <span
+        key={row.hours}
+        className="count-pop w-9 text-center font-display text-base font-bold text-navy-900 tabular-nums"
+      >
+        {row.hours}
+      </span>
+      <button
+        onClick={() => onChange(row.hours + 1)}
+        aria-label={`Eine Stunde mehr am ${deDate(row.date)}`}
+        className={knopf}
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
 export function TrainerabrechnungPage() {
   const { profile, loading: profilLaedt, save } = useCoachBilling()
+  const toast = useToastContext()
   const [trainings, setTrainings] = useState<TrainingResponse[] | null>(null)
   const [month, setMonth] = useState(monthOptions()[0])
   const [rows, setRows] = useState<BillingRow[]>([])
   const [stammdatenOffen, setStammdatenOffen] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [hinweis, setHinweis] = useState<string | null>(null)
-  const [fehler, setFehler] = useState<string | null>(null)
 
   useEffect(() => {
-    api.getTrainings().then(setTrainings).catch((e: Error) => setFehler(e.message))
-  }, [])
+    api.getTrainings().then(setTrainings).catch((e: Error) => toast.show(e.message, 'error'))
+  }, [toast])
 
   const maxHours = profile?.maxHours ?? 12
+  const monate = useMemo(() => monthOptions(), [])
 
   // Monatswechsel wirft den Vorschlag neu — die Stunden des alten Monats sagen
   // ueber den neuen nichts aus.
@@ -60,17 +94,19 @@ export function TrainerabrechnungPage() {
   const stunden = totalHours(rows)
   const satz = Number(profile?.hourlyRate ?? 0)
   const zuViele = gebucht.length > MAX_FORM_ROWS
+  const ohneZeit = gebucht.filter(row => !row.from).length
+  const ueberDeckel = stunden > maxHours
 
-  const setzeStunden = (trainingId: number, hours: number) =>
-    setRows(r => withHours(r, trainingId, hours))
+  async function baueBogen() {
+    if (!profile) throw new Error('Stammdaten fehlen')
+    return buildTrainerabrechnungPdf({ profile, yearMonth: month, rows, signedOn: heute() })
+  }
 
-  async function baueUndTeile() {
+  async function teilen() {
     if (!profile) return
     setBusy(true)
-    setFehler(null)
-    setHinweis(null)
     try {
-      const bytes = await buildTrainerabrechnungPdf({ profile, yearMonth: month, rows, signedOn: heute() })
+      const bytes = await baueBogen()
       const name = abrechnungFileName(profile, month)
       const blob = pdfBlob(bytes)
       const text = mailBody(profile, month)
@@ -78,12 +114,11 @@ export function TrainerabrechnungPage() {
 
       if (navigator.canShare?.({ files: [datei] })) {
         await navigator.share({ files: [datei], title: mailSubject(month), text })
-        setHinweis('Geteilt. In Gmail steht der Text schon drin.')
+        toast.show('Geteilt — der Mailtext steht schon drin')
         return
       }
 
-      // Kein Teilen-Menue (Desktop): herunterladen, Text in die Zwischenablage,
-      // Mailentwurf mit Empfaengerin oeffnen — anhaengen bleibt dann Handarbeit.
+      // Kein Teilen-Menue (Desktop): herunterladen, Text in die Zwischenablage.
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -91,10 +126,9 @@ export function TrainerabrechnungPage() {
       a.click()
       URL.revokeObjectURL(url)
       await navigator.clipboard?.writeText(text).catch(() => {})
-      setHinweis('PDF heruntergeladen, der Mailtext liegt in der Zwischenablage.')
+      toast.show('PDF geladen, Mailtext in der Zwischenablage')
     } catch (e: unknown) {
-      const message = (e as Error).message
-      if ((e as Error).name !== 'AbortError') setFehler(message)
+      if ((e as Error).name !== 'AbortError') toast.show((e as Error).message, 'error')
     } finally {
       setBusy(false)
     }
@@ -102,12 +136,18 @@ export function TrainerabrechnungPage() {
 
   async function vorschau() {
     if (!profile) return
+    // Der Tab muss im Klick aufgehen. Erst bauen und dann oeffnen, laesst ihn vom
+    // Popup-Blocker schlucken — das Fenster gilt dann nicht mehr als Nutzerwunsch.
+    const tab = window.open('', '_blank', 'noopener')
     setBusy(true)
     try {
-      const bytes = await buildTrainerabrechnungPdf({ profile, yearMonth: month, rows, signedOn: heute() })
-      window.open(URL.createObjectURL(pdfBlob(bytes)), '_blank', 'noopener')
+      const bytes = await baueBogen()
+      const url = URL.createObjectURL(pdfBlob(bytes))
+      if (tab) tab.location.href = url
+      else window.location.href = url
     } catch (e: unknown) {
-      setFehler((e as Error).message)
+      tab?.close()
+      toast.show((e as Error).message, 'error')
     } finally {
       setBusy(false)
     }
@@ -116,15 +156,16 @@ export function TrainerabrechnungPage() {
   if (profilLaedt || !trainings) return <LoadingSkeleton />
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
+    // Platz unten fuer die Leiste, die ueber dem Inhalt liegt.
+    <div className="mx-auto w-full max-w-2xl space-y-4 pb-28">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <Link to="/orga" className="text-xs text-gray-500 hover:text-navy-900">‹ Orga</Link>
           <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
             Trainerabrechnung
           </h1>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setStammdatenOffen(true)}>
+        <Button variant="secondary" size="sm" className="shrink-0 mt-4" onClick={() => setStammdatenOffen(true)}>
           Stammdaten
         </Button>
       </div>
@@ -149,9 +190,9 @@ export function TrainerabrechnungPage() {
               <select
                 value={month}
                 onChange={e => setMonth(e.target.value)}
-                className="w-full rounded-lg border border-cream-300 bg-white px-3 py-2 text-sm text-navy-900"
+                className="w-full rounded-lg border border-cream-300 bg-white px-3 py-2.5 text-sm text-navy-900 cursor-pointer"
               >
-                {monthOptions().map(m => (
+                {monate.map(m => (
                   <option key={m} value={m}>{monthLabel(m)} {m.slice(0, 4)}</option>
                 ))}
               </select>
@@ -162,16 +203,24 @@ export function TrainerabrechnungPage() {
             </p>
           </Card>
 
-          <Card padding="lg" className="space-y-1">
+          <Card padding="lg">
+            <div className="flex items-center justify-between pb-2 border-b border-cream-200">
+              <span className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                Termine im {monthLabel(month)}
+              </span>
+              <span className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                Stunden
+              </span>
+            </div>
             {rows.length === 0 && (
-              <p className="text-sm text-gray-500 py-4 text-center">
+              <p className="text-sm text-gray-500 py-6 text-center">
                 In diesem Monat stehen keine Trainings in der Planung.
               </p>
             )}
             {rows.map(row => (
               <div
                 key={row.trainingId}
-                className={`flex items-center gap-3 py-2 border-b border-cream-200 last:border-0 ${
+                className={`flex items-center gap-3 py-1.5 border-b border-cream-200 last:border-0 ${
                   row.hours === 0 ? 'opacity-45' : ''
                 }`}
               >
@@ -179,57 +228,48 @@ export function TrainerabrechnungPage() {
                   <div className="text-sm text-navy-900 truncate">
                     {weekdayName(row.date)}, {deDate(row.date)}
                   </div>
-                  <div className="text-[11px] text-gray-500">
-                    {row.hours > 0 && row.from
-                      ? `${row.from} – ${endTime(row.from, row.hours)}`
-                      : row.from ?? 'ohne Zeit'}
-                  </div>
+                  {row.hours > 0 && !row.from ? (
+                    // Aeltere Termine stehen ohne Uhrzeit in der Planung. Auf dem Bogen
+                    // muss aber eine stehen, also hier nachtragen.
+                    <label className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] text-softball-red-700">Startzeit fehlt</span>
+                      <input
+                        type="time"
+                        aria-label={`Startzeit am ${deDate(row.date)}`}
+                        onChange={e => setRows(r => withFrom(r, row.trainingId, e.target.value))}
+                        className="rounded-md border border-softball-red-300 bg-white px-1.5 py-0.5 text-[11px] text-navy-900"
+                      />
+                    </label>
+                  ) : (
+                    <div className="text-[11px] text-gray-500">
+                      {row.hours > 0 && row.from
+                        ? `${row.from} – ${endTime(row.from, row.hours)}`
+                        : row.from ?? 'ohne Zeit'}
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => setzeStunden(row.trainingId, row.hours - 1)}
-                    disabled={row.hours === 0}
-                    aria-label={`Eine Stunde weniger am ${deDate(row.date)}`}
-                    className="w-9 h-9 rounded-lg border border-cream-300 text-navy-900 disabled:opacity-30 cursor-pointer"
-                  >
-                    –
-                  </button>
-                  <span className="w-10 text-center font-display text-sm font-bold text-navy-900 tabular-nums">
-                    {row.hours}
-                  </span>
-                  <button
-                    onClick={() => setzeStunden(row.trainingId, row.hours + 1)}
-                    aria-label={`Eine Stunde mehr am ${deDate(row.date)}`}
-                    className="w-9 h-9 rounded-lg border border-cream-300 text-navy-900 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
+                <HourStepper row={row} onChange={h => setRows(r => withHours(r, row.trainingId, h))} />
               </div>
             ))}
           </Card>
 
           <Card padding="lg" className="space-y-3">
-            <div className="flex items-baseline justify-between">
-              <span className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                Gesamtstunden
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="text-gray-600">
+                {stunden} Stunden × {euro(satz)}
               </span>
-              <span className={`font-headline text-3xl font-black tabular-nums ${
-                stunden > maxHours ? 'text-softball-red-700' : 'text-navy-900'
-              }`}>
-                {stunden}<span className="text-gray-400 text-lg"> / {maxHours}</span>
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between text-sm text-gray-600">
-              <span>{stunden} × {satz.toFixed(2).replace('.', ',')} EUR</span>
-              <span className="font-semibold text-navy-900 tabular-nums">
-                {amount(stunden, satz).toFixed(2).replace('.', ',')} EUR
-              </span>
+              <span className="font-semibold text-navy-900 tabular-nums">{euro(amount(stunden, satz))}</span>
             </div>
 
-            {stunden > maxHours && (
+            {ueberDeckel && (
               <p className="text-xs text-softball-red-700">
-                Über dem Monatsdeckel — so geht der Bogen nicht durch.
+                Über dem Monatsdeckel von {maxHours} Stunden — so geht der Bogen nicht durch.
+              </p>
+            )}
+            {ohneZeit > 0 && (
+              <p className="text-xs text-softball-red-700">
+                {ohneZeit === 1 ? 'Ein Termin hat' : `${ohneZeit} Termine haben`} keine Startzeit —
+                auf dem Bogen bleiben „von" und „bis" dort leer.
               </p>
             )}
             {zuViele && (
@@ -238,28 +278,45 @@ export function TrainerabrechnungPage() {
               </p>
             )}
 
-            {stunden < maxHours && (
+            {stunden < maxHours && rows.length > 0 && (
               <Button variant="secondary" className="w-full"
                 onClick={() => setRows(r => fillToMax(r, maxHours))}>
                 Auf {maxHours} Stunden auffüllen
               </Button>
             )}
 
-            <div className="flex gap-2">
-              <Button variant="secondary" className="flex-1" onClick={vorschau} disabled={busy || stunden === 0}>
-                Vorschau
-              </Button>
-              <Button variant="primary" className="flex-1" onClick={baueUndTeile} disabled={busy || stunden === 0}>
-                {busy ? 'Baut …' : 'PDF und Mail'}
-              </Button>
-            </div>
+            <Button variant="secondary" className="w-full" onClick={vorschau} disabled={busy || stunden === 0}>
+              Vorschau
+            </Button>
 
             <p className="text-[11px] text-gray-500">
               Geht an {profile.recipientEmail}. Unten auf dem Bogen steht der {deDate(heute())}.
             </p>
-            {hinweis && <p className="text-xs text-navy-700">{hinweis}</p>}
-            {fehler && <p className="text-xs text-softball-red-700">{fehler}</p>}
           </Card>
+
+          {/* Die Zahl, nach der man steuert, und der Knopf, der schliesst — beide
+              immer sichtbar, egal wie weit die Terminliste gescrollt ist. */}
+          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-cream-300 bg-cream-100/95 backdrop-blur safe-bottom no-print">
+            <div className="mx-auto w-full max-w-2xl px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-display text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                  Gesamtstunden
+                </div>
+                <div className="flex items-baseline gap-1.5">
+                  <span key={stunden} className={`count-pop font-headline text-2xl font-black tabular-nums ${
+                    ueberDeckel ? 'text-softball-red-700' : 'text-navy-900'
+                  }`}>
+                    {stunden}
+                  </span>
+                  <span className="text-gray-400 text-sm">/ {maxHours}</span>
+                </div>
+              </div>
+              {/* Am Handy fuellt der Knopf die Breite, am Rechner reicht Knopfgroesse. */}
+              <Button variant="primary" className="flex-1 sm:flex-none sm:px-10" onClick={teilen} disabled={busy || stunden === 0}>
+                {busy ? 'Baut …' : 'PDF und Mail'}
+              </Button>
+            </div>
+          </div>
         </>
       )}
 

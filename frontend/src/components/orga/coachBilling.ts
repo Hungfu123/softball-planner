@@ -157,6 +157,17 @@ export function fillToMax(rows: BillingRow[], maxHours: number): BillingRow[] {
   return next
 }
 
+/**
+ * Startzeit einer Zeile setzen.
+ *
+ * Aeltere Trainings stehen ohne Uhrzeit in der Planung. Auf dem Bogen muessen
+ * `von` und `bis` aber stehen — deshalb laesst sich die Zeit hier nachtragen,
+ * ohne den Trainingstermin selbst anzufassen.
+ */
+export function withFrom(rows: BillingRow[], trainingId: number, from: string): BillingRow[] {
+  return rows.map(row => row.trainingId === trainingId ? { ...row, from: from || null } : row)
+}
+
 /** Stunden einer Zeile setzen, ohne die anderen anzufassen. */
 export function withHours(rows: BillingRow[], trainingId: number, hours: number): BillingRow[] {
   return rows.map(row => row.trainingId === trainingId

@@ -43,6 +43,22 @@ der Oberfläche, aber nicht auf dem Bogen.
 Weniger als zwölf Stunden sind erlaubt, mehr nicht: Die Seite warnt deutlich, blockiert
 aber nicht — ein Sonderfall soll nicht an der App scheitern.
 
+## Oberfläche
+
+Eine Spalte, höchstens `max-w-2xl` breit — der Bogen ist ein Formular, keine Werkbank.
+Auf 1440 px standen Datum und Stundenzähler sonst einen halben Bildschirm auseinander.
+
+Die **Gesamtstunden und der Absende-Knopf kleben unten am Rand**: man steuert nach der
+Zahl, während man oben in der Terminliste tippt, und die Liste ist am Handy länger als der
+Bildschirm. Die Zahl bekommt bei jeder Änderung einen kurzen Stups (`.count-pop`,
+`prefers-reduced-motion` respektiert) — Bewegung als Antwort auf die Handlung, sonst nichts.
+Die Stunden-Knöpfe sind 44 px, damit der Daumen sie trifft.
+
+**Startzeit fehlt:** ältere Termine stehen ohne Uhrzeit in der Planung. Weil auf dem Bogen
+`von` und `bis` stehen müssen, zeigt die Zeile dann ein Zeitfeld, und die Zusammenfassung
+sagt, wie viele Termine betroffen sind. Nachgetragen wird nur für die Abrechnung — der
+Trainingstermin selbst bleibt unberührt.
+
 ## Stammdaten
 
 Eine Zeile in `coach_billing_profile` (V65, `id = 1`): Anschrift, Sportkurs, Stundensatz,
