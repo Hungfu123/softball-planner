@@ -91,7 +91,7 @@ export function TrainerabrechnungPage() {
   const satz = Number(profile?.hourlyRate ?? 0)
   const zuViele = gebucht.length > MAX_FORM_ROWS
   const ohneZeit = gebucht.filter(row => !row.from).length
-  const kuenftig = gebucht.filter(row => row.date > heute()).length
+  const kuenftig = gebucht.filter(row => row.date > heute())
   const ueberDeckel = stunden > maxHours
 
   async function baueBogen() {
@@ -217,10 +217,17 @@ export function TrainerabrechnungPage() {
               {isWinterMonth(month) ? 'Winter' : 'Sommer'}: Donnerstag {primaryHours(month)} Stunden,
               der Rest verteilt sich auf Montag und Samstag.
             </p>
-            {kuenftig > 0 && (
-              <p className="text-xs text-softball-red-700">
-                {kuenftig === 1 ? 'Ein Termin liegt' : `${kuenftig} Termine liegen`} noch vor dir —
-                die Stunden sind geplant, nicht gewesen.
+            {kuenftig.length > 0 && (
+              // Welcher Termin es ist, muss dastehen: "ein Termin liegt noch vor dir"
+              // laesst einen die Liste absuchen.
+              <p className="text-xs text-gray-600">
+                <span className="font-semibold text-navy-900">
+                  {kuenftig.slice(0, 3).map(row => deDate(row.date).slice(0, 6)).join(', ')}
+                  {kuenftig.length > 3 && ` und ${kuenftig.length - 3} weitere`}
+                </span>{' '}
+                {kuenftig.length === 1 ? 'ist noch nicht gewesen' : 'sind noch nicht gewesen'} und
+                {kuenftig.length === 1 ? ' zählt' : ' zählen'} trotzdem mit. Entweder später abrechnen
+                oder die Stunden dort auf 0 stellen.
               </p>
             )}
           </Card>

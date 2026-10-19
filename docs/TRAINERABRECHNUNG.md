@@ -81,7 +81,9 @@ Den Monat wählt ein **Schrittschalter** (‹ September 2026 ›), keine Auswahl
 wird der Monat davor, höchstens ein, zwei Schritte daneben — sechzehn Einträge in einer
 nativen Liste sind am Handy ein Katalog für einen Griff. Er reicht drei Monate nach vorn und
 zwölf zurück, an den Enden sind die Pfeile aus. Liegen Termine des gewählten Monats noch in
-der Zukunft, sagt die Seite, wie viele — geplant ist nicht gewesen.
+der Zukunft, **nennt die Seite deren Datum** — „ein Termin liegt noch vor dir" ließ einen die
+Liste absuchen. Der Hinweis ist grau, nicht rot: kein Fehler, nur etwas, das man wissen muss.
+Rot bleibt dem Monatsdeckel und der fehlenden Unterschrift.
 
 ## Versand
 
