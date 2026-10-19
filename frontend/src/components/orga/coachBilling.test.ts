@@ -3,6 +3,7 @@ import type { TrainingResponse } from '@/types'
 import {
   amount, billedRows, clockLabel, endTime, fillToMax, isWinterMonth, monthLabel,
   monthTrainings, primaryHours, suggestRows, totalHours, withFrom, withHours, MAX_FORM_ROWS,
+  monthOptions, defaultMonth, MONTHS_AHEAD, MONTHS_BACK,
 } from './coachBilling'
 
 let id = 0
@@ -180,5 +181,30 @@ describe('withFrom', () => {
   it('macht aus einer geleerten Eingabe wieder "keine Zeit"', () => {
     const rows = [{ trainingId: 1, date: '2026-01-15', from: '19:00', hours: 2 }]
     expect(withFrom(rows, 1, '')[0].from).toBeNull()
+  })
+})
+
+describe('monthOptions', () => {
+  const heute = new Date(2026, 9, 19) // 19.10.2026
+
+  it('reicht in die Zukunft und nicht nur zurueck', () => {
+    const monate = monthOptions(heute)
+
+    // Spaetester zuerst, der laufende Monat ist dabei.
+    expect(monate[0]).toBe('2027-01')
+    expect(monate).toContain('2026-10')
+    expect(monate).toContain('2026-11')
+    expect(monate.at(-1)).toBe('2025-10')
+    expect(monate).toHaveLength(MONTHS_AHEAD + MONTHS_BACK + 1)
+  })
+
+  it('belegt den Vormonat vor, nicht den laufenden', () => {
+    expect(defaultMonth(heute)).toBe('2026-09')
+    expect(monthOptions(heute)).toContain(defaultMonth(heute))
+  })
+
+  it('rutscht ueber den Jahreswechsel richtig', () => {
+    expect(defaultMonth(new Date(2027, 0, 5))).toBe('2026-12')
+    expect(monthOptions(new Date(2026, 11, 1))[0]).toBe('2027-03')
   })
 })

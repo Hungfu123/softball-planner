@@ -68,8 +68,17 @@ Die Migration legt **keine Daten** an — personenbezogene Angaben gehören nich
 Skript, das in jedem Klon und jeder Testdatenbank läuft. Die Zeile entsteht beim ersten
 Speichern im Formular; `GET /api/coach-billing/profile` antwortet bis dahin mit `204`.
 
-Die Unterschrift wird einmal mit dem Finger gezeichnet (`SignaturePad`, Leinwand in
-doppelter Auflösung, transparenter Hintergrund) und sitzt danach in jedem Bogen.
+Die Unterschrift wird einmal mit dem Finger gezeichnet (`SignaturePad`) und sitzt danach in
+jedem Bogen. Die Leinwand hat eine **feste** Größe (600 × 200) und wird per CSS auf die
+Breite gezogen, die Zeigerposition rechnet sich über das Verhältnis um. Vorher richtete sie
+sich nach `clientWidth` — maß der Browser beim Aufbau 0 (Sheet fährt gerade ein), war sie
+0 Pixel breit, jeder Strich ging ins Leere und `toDataURL` lieferte ein leeres Bild.
+Gespeichert wurde dann nichts, ohne dass man es sah. Fehlt die Unterschrift, sagt die
+Zusammenfassung das jetzt auch.
+
+Die Monatsauswahl reicht drei Monate nach vorn und zwölf zurück; vorbelegt ist der
+Vormonat, weil der Normalfall „Monat ist um, jetzt abrechnen" heißt. Liegen Termine des
+gewählten Monats noch in der Zukunft, sagt die Seite, wie viele — geplant ist nicht gewesen.
 
 ## Versand
 
@@ -78,3 +87,8 @@ in Gmail, die Empfängerin wählt man einmal aus. Wo das Teilen-Menü keine Date
 (Desktop), lädt die PDF herunter und der Mailtext geht in die Zwischenablage.
 
 Das Datum unter der Unterschrift ist der Tag, an dem die Abrechnung gebaut wird.
+
+Die **Vorschau** öffnet ihren Tab im Klick und bekommt die fertige PDF nachgereicht. Erst
+bauen und dann öffnen ließe der Popup-Blocker nicht durchgehen, und `noopener` ist dabei
+tabu: damit liefert `window.open` laut Standard `null` — die PDF landete im aktuellen Tab
+und die Seite war weg. `opener` wird stattdessen gleich nach dem Öffnen gekappt.

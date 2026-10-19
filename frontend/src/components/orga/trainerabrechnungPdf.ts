@@ -48,7 +48,7 @@ const FOOTER = {
   hourlyRate: { x: 196, y: 198.3 },
   amount: { x: 440, y: 198.3 },
   signedOn: { x: 76, y: 165 },
-  signature: { x: 145, y: 157, width: 95, height: 32 },
+  signature: { x: 133, y: 156, width: 110, height: 36 },
 } as const
 
 function deDate(iso: string): string {

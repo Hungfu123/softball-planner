@@ -63,6 +63,38 @@ export function primaryHours(yearMonth: string): number {
   return isWinterMonth(yearMonth) ? 2 : 3
 }
 
+/** So viele Monate nach dem laufenden stehen zur Auswahl. */
+export const MONTHS_AHEAD = 3
+
+/** So viele Monate vor dem laufenden stehen zur Auswahl. */
+export const MONTHS_BACK = 12
+
+/**
+ * Die Monate im Auswahlfeld, der späteste zuerst.
+ *
+ * Nicht nur rückwärts: der laufende Monat gehört dazu (man rechnet ihn oft noch
+ * im Monat ab), und die Trainings der kommenden stehen ohnehin schon in der
+ * Planung. Was noch nicht stattgefunden hat, sagt die Seite dazu.
+ */
+export function monthOptions(today = new Date()): string[] {
+  const neuester = new Date(today.getFullYear(), today.getMonth() + MONTHS_AHEAD, 1)
+  return Array.from({ length: MONTHS_AHEAD + MONTHS_BACK + 1 }, (_, i) => {
+    const d = new Date(neuester.getFullYear(), neuester.getMonth() - i, 1)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  })
+}
+
+/**
+ * Vorbelegter Monat: der gerade vergangene.
+ *
+ * Der Normalfall ist "Monat ist um, jetzt abrechnen" — deshalb steht der
+ * Vormonat da und nicht der laufende, obwohl beide in der Liste sind.
+ */
+export function defaultMonth(today = new Date()): string {
+  const d = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 /** `19:00` + 3 → `22:00`. Ohne Startzeit bleibt auch das Ende leer. */
 export function endTime(from: string | null, hours: number): string | null {
   if (!from) return null
