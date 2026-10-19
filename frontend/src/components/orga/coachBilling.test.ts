@@ -47,17 +47,18 @@ describe('suggestRows', () => {
     ])
   })
 
-  it('fuellt ueber Montag und Samstag auf, wenn ein Donnerstag ausfaellt', () => {
+  it('nimmt eine ganze Einheit dazu, wenn ein Donnerstag ausfaellt', () => {
     const mitAusfall = september().map(t =>
       t.date === '2026-09-17' ? { ...t, cancelled: true } : t)
 
     const rows = suggestRows(mitAusfall, '2026-09', 12)
 
-    // Drei Donnerstage = 9 Stunden, die fehlenden drei verteilen sich reihum.
+    // Drei Donnerstage = 9 Stunden. Die fehlenden drei holt EIN weiterer Tag ganz,
+    // nicht drei Tage mit je einer Stunde.
     expect(totalHours(rows)).toBe(12)
     expect(rows.some(r => r.date === '2026-09-17')).toBe(false)
-    expect(billedRows(rows).filter(r => r.hours === 3)).toHaveLength(3)
-    expect(billedRows(rows).filter(r => r.hours === 1)).toHaveLength(3)
+    expect(billedRows(rows)).toHaveLength(4)
+    expect(billedRows(rows).every(r => r.hours === 3)).toBe(true)
   })
 
   it('kommt im Winter mit zwei Stunden am Donnerstag auf dieselben zwoelf', () => {
@@ -69,12 +70,11 @@ describe('suggestRows', () => {
 
     const rows = suggestRows(januar, '2027-01', 12)
 
-    // Vier Donnerstage à zwei Stunden, vier Montage à einer.
+    // Vier Donnerstage à zwei Stunden, dazu zwei ganze Montage — nicht vier
+    // angebrochene. Die Halle ist von 20 bis 22 offen, so steht es auch im Bogen.
     expect(totalHours(rows)).toBe(12)
-    const donnerstage = billedRows(rows).filter(r => r.hours === 2)
-    const montage = billedRows(rows).filter(r => r.hours === 1)
-    expect(donnerstage).toHaveLength(4)
-    expect(montage).toHaveLength(4)
+    expect(billedRows(rows)).toHaveLength(6)
+    expect(billedRows(rows).every(r => r.hours === 2)).toBe(true)
   })
 
   it('geht auch im Monat mit fuenf Donnerstagen nicht ueber den Deckel', () => {
@@ -112,7 +112,7 @@ describe('fillToMax', () => {
     const viele = Array.from({ length: 12 }, (_, i) =>
       ({ trainingId: i + 1, date: `2026-09-${String(i + 1).padStart(2, '0')}`, from: '19:00', hours: 0 }))
 
-    const rows = fillToMax(viele, 20)
+    const rows = fillToMax(viele, 20, 2)
 
     expect(billedRows(rows).length).toBeLessThanOrEqual(MAX_FORM_ROWS)
   })
@@ -123,7 +123,7 @@ describe('fillToMax', () => {
       { trainingId: 2, date: '2026-09-05', from: '13:00', hours: 0 },
     ]
     // Zwei Tage à hoechstens drei Stunden — zwoelf sind nicht erreichbar.
-    expect(totalHours(fillToMax(zweiTage, 12))).toBe(6)
+    expect(totalHours(fillToMax(zweiTage, 12, 3))).toBe(6)
   })
 })
 
@@ -206,5 +206,28 @@ describe('monthOptions', () => {
   it('rutscht ueber den Jahreswechsel richtig', () => {
     expect(defaultMonth(new Date(2027, 0, 5))).toBe('2026-12')
     expect(monthOptions(new Date(2026, 11, 1))[0]).toBe('2027-03')
+  })
+})
+
+describe('fillToMax in ganzen Einheiten', () => {
+  it('gibt dem letzten Tag nur den Rest, statt ueber den Deckel zu gehen', () => {
+    const rows = [
+      { trainingId: 1, date: '2027-01-07', from: '20:00', hours: 2 }, // Donnerstag
+      { trainingId: 2, date: '2027-01-11', from: '20:00', hours: 0 }, // Montag
+      { trainingId: 3, date: '2027-01-18', from: '20:00', hours: 0 }, // Montag
+    ]
+    // 2 stehen, 3 fehlen bis 5: ein ganzer Montag (2) und ein Rest (1).
+    const gefuellt = fillToMax(rows, 5, 2)
+
+    expect(totalHours(gefuellt)).toBe(5)
+    expect(gefuellt.map(r => r.hours)).toEqual([2, 2, 1])
+  })
+
+  it('laesst die Donnerstage in Ruhe', () => {
+    const rows = [
+      { trainingId: 1, date: '2027-01-07', from: '20:00', hours: 2 },
+      { trainingId: 2, date: '2027-01-11', from: '20:00', hours: 0 },
+    ]
+    expect(fillToMax(rows, 12, 2)[0].hours).toBe(2)
   })
 })

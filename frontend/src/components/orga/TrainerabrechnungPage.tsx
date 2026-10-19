@@ -291,7 +291,7 @@ export function TrainerabrechnungPage() {
 
             {stunden < maxHours && rows.length > 0 && (
               <Button variant="secondary" className="w-full"
-                onClick={() => setRows(r => fillToMax(r, maxHours))}>
+                onClick={() => setRows(r => fillToMax(r, maxHours, primaryHours(month)))}>
                 Auf {maxHours} Stunden auffüllen
               </Button>
             )}

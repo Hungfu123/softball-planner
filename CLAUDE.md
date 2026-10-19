@@ -143,8 +143,9 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   Der Bogen des Hochschulsports fuer einen Monat. `frontend/public/trainerabrechnung-vorlage.pdf`
   ist das **Originalformular**, nicht nachgebaut — `pdf-lib` beschriftet es an gemessenen
   Koordinaten. Stunden kommen aus den geplanten Trainings des Monats: Donnerstag 3 h von
-  April bis Oktober, 2 h von November bis Maerz, Rest reihum auf Montag/Samstag bis zum
-  Monatsdeckel (12 h, im Profil). Elf Zeilen, max 3 h je Tag, abgesagte Termine fallen raus.
+  April bis Oktober, 2 h von November bis Maerz, Rest in **ganzen Einheiten** auf
+  Montag/Samstag bis zum Monatsdeckel (12 h, im Profil) — ein Wintermontag ist 20-22 Uhr,
+  also zwei ganze Montage statt vier angebrochener Tage. Elf Zeilen, max 3 h je Tag, abgesagte Termine fallen raus.
   Die Migration legt **keine** personenbezogenen Daten an. Details: `docs/TRAINERABRECHNUNG.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
