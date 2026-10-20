@@ -68,7 +68,7 @@ export function PlayBoard({
   dropHint = null,
   dragging = null,
 }: Props) {
-  const { viewBox, scale, radius } = useMemo(() => {
+  const { viewBox, radius } = useMemo(() => {
     const content: Box =
       mode === 'full'
         ? FULL_FIELD
