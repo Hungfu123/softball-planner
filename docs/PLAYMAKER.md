@@ -41,6 +41,15 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
 - **`trajectory`** gilt für den Weg, der IN diesen Stand führt: `AIR` zeichnet einen Bogen,
   `GROUND` eine gerade Linie. Im Editor über Antippen des Balls.
 
+## Querformat
+
+Editor und Spieleransicht schalten bei `landscape` auf dasselbe zweispaltige Raster wie ab
+`lg` — Leisten nach rechts, Feld über die ganze Höhe. Ohne das blieben am quer gehaltenen
+Handy (844 × 390) **127 px** fürs Feld: ein Band, in dem die Raute verschwindet. Die
+Standliste braucht dabei `overflow-y-auto` am Rahmen, nicht nur an der `<ol>` — in einer
+Grid-Zeile `minmax(0,1fr)` hat ein bloßes `block`-Element keine gebundene Höhe und die
+Liste lief über die Werkzeugleiste.
+
 ## Wiedergabe
 
 `usePlayback` interpoliert zwischen zwei Ständen (`board/interpolate.ts`) und fasst die
