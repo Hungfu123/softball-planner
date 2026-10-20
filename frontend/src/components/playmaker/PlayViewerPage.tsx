@@ -15,35 +15,53 @@ export default function PlayViewerPage() {
   const navigate = useNavigate()
   const [play, setPlay] = useState<Play | null>(null)
   const [gegenstueck, setGegenstueck] = useState<Play | null>(null)
-  const [fehler, setFehler] = useState<string | null>(null)
+  // Mit id: ein Fehler von Play 3 darf nach dem Wechsel auf 7 nicht stehen bleiben, und
+  // der Effekt muss dafuer nichts synchron zuruecksetzen.
+  const [fehler, setFehler] = useState<{ id: number; text: string } | null>(null)
 
   useEffect(() => {
     if (!id) return
+    // Abbruchmarke fuer BEIDE Anfragen: das Gegenstueck kommt verschachtelt nach und
+    // haette sonst nach einem Wechsel der id das Gegenstueck des alten Plays gesetzt.
+    let abgebrochen = false
     ladePlayMitRueckfall(Number(id))
       .then(p => {
+        if (abgebrochen) return
         setPlay(p)
         if (p.counterpartPlayId) {
-          ladePlayMitRueckfall(p.counterpartPlayId).then(setGegenstueck).catch(() => setGegenstueck(null))
-        } else {
-          setGegenstueck(null)
+          ladePlayMitRueckfall(p.counterpartPlayId)
+            .then(g => {
+              if (!abgebrochen) setGegenstueck(g)
+            })
+            .catch(() => {
+              if (!abgebrochen) setGegenstueck(null)
+            })
         }
       })
-      .catch(() =>
-        setFehler(
-          'Dieses Play liegt nicht im Zwischenspeicher. Ohne Netz zeigt der Playmaker nur, ' +
+      .catch(() => {
+        if (abgebrochen) return
+        setFehler({
+          id: Number(id),
+          text:
+            'Dieses Play liegt nicht im Zwischenspeicher. Ohne Netz zeigt der Playmaker nur, ' +
             'was schon einmal geladen wurde.',
-        ),
-      )
+        })
+      })
+    return () => {
+      abgebrochen = true
+    }
   }, [id])
 
-  if (fehler) return <p className="p-6 text-sm text-gray-500">{fehler}</p>
-  if (!play) return <p className="p-6 text-sm text-gray-500">Play wird geladen …</p>
+  if (fehler?.id === Number(id)) return <p className="p-6 text-sm text-gray-500">{fehler.text}</p>
+  if (!play || play.id !== Number(id)) {
+    return <p className="p-6 text-sm text-gray-500">Play wird geladen …</p>
+  }
 
   return (
     <Viewer
       key={play.id}
       play={play}
-      gegenstueck={gegenstueck}
+      gegenstueck={gegenstueck?.id === play.counterpartPlayId ? gegenstueck : null}
       onEdit={() => navigate(`/orga/playmaker/${play.id}/bearbeiten`)}
     />
   )

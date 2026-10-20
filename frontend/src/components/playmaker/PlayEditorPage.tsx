@@ -20,19 +20,42 @@ export default function PlayEditorPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [play, setPlay] = useState<Play | null>(null)
-  const [ladefehler, setLadefehler] = useState<string | null>(null)
+  // Die id steht am Fehler mit dran: so braucht der Effekt sie nicht synchron
+  // zurueckzusetzen, und ein Fehler von Play 3 bleibt beim Wechsel auf 7 nicht stehen.
+  const [ladefehler, setLadefehler] = useState<{ id: number; text: string } | null>(null)
 
   useEffect(() => {
     if (!id) return
+    // Abbruchmarke: wechselt die id, waehrend die Anfrage laeuft, darf die alte Antwort
+    // das neue Play nicht mehr ueberschreiben.
+    let abgebrochen = false
     ladePlayMitRueckfall(Number(id))
-      .then(setPlay)
-      .catch(e => setLadefehler(e instanceof Error ? e.message : 'Play nicht gefunden.'))
+      .then(geladen => {
+        if (!abgebrochen) setPlay(geladen)
+      })
+      .catch(e => {
+        if (!abgebrochen) {
+          setLadefehler({ id: Number(id), text: e instanceof Error ? e.message : 'Play nicht gefunden.' })
+        }
+      })
+    return () => {
+      abgebrochen = true
+    }
   }, [id])
 
-  if (ladefehler) return <p className="p-6 text-sm text-gray-500">{ladefehler}</p>
-  if (!play) return <p className="p-6 text-sm text-gray-500">Play wird geladen …</p>
+  if (ladefehler?.id === Number(id)) {
+    return <p className="p-6 text-sm text-gray-500">{ladefehler.text}</p>
+  }
+  // Nicht nur "schon geladen", sondern "das RICHTIGE geladen": nach einem Wechsel der id
+  // liegt noch das alte Play im Zustand.
+  if (!play || play.id !== Number(id)) {
+    return <p className="p-6 text-sm text-gray-500">Play wird geladen …</p>
+  }
 
-  return <Editor play={play} onBack={() => navigate(`/orga/playmaker/${play.id}`)} />
+  // key: usePlayEditor liest die Staende EINMAL beim Anlegen. Ohne eigenen Baum je Play
+  // behielte ein Wechsel von Play 3 zu Play 7 die Staende von Play 3 — und sicherte sie
+  // dann unter der neuen id.
+  return <Editor key={play.id} play={play} onBack={() => navigate(`/orga/playmaker/${play.id}`)} />
 }
 
 function Editor({ play, onBack }: { play: Play; onBack: () => void }) {

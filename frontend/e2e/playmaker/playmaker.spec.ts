@@ -364,6 +364,35 @@ async function gespeicherteNotiz(page: Page) {
   })
 }
 
+test('wechselt ueber das Gegenstueck auf ein anderes Play', async ({ page }) => {
+  // Derselbe Route, nur eine andere id: die Seite wird NICHT neu aufgebaut. Ohne
+  // Abbruchmarke und eigenen Baum je Play blieb das alte Play stehen — und der Editor
+  // haette dessen Staende unter der neuen id gesichert.
+  const titel = `${TITEL_PREFIX} gegenstueck`
+  await page.goto('/orga/playmaker/neu')
+  await expect(page.getByRole('button', { name: 'Play bauen' })).toBeEnabled({ timeout: 15_000 })
+  await page.getByLabel('Titel').fill(titel)
+  await page.getByRole('button', { name: 'Knapp, spätes Inning' }).click()
+
+  const auswahl = page.getByLabel('Gegenstück')
+  await expect(auswahl).toBeVisible()
+  const gegenTitel = (await auswahl.locator('option').nth(1).textContent())!.trim()
+  await auswahl.selectOption({ index: 1 })
+
+  await page.getByRole('button', { name: 'Play bauen' }).click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+\/bearbeiten/, { timeout: 15_000 })
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+
+  await expect(page.getByRole('heading', { name: titel })).toBeVisible()
+  await page.getByRole('link', { name: new RegExp(`Gegenstück: ${gegenTitel}`) }).click()
+
+  await expect(page.getByRole('heading', { name: gegenTitel })).toBeVisible()
+  await expect(page.getByRole('heading', { name: titel })).toHaveCount(0)
+
+  await aufraeumen(page, titel)
+})
+
 test('zeigt die Start-Plays aus der Migration', async ({ page }) => {
   await page.goto('/orga/playmaker')
   await expect(page.getByRole('heading', { name: 'Playmaker' })).toBeVisible()
