@@ -35,7 +35,7 @@ export function PlayRow({
   return (
     <div className="group flex items-center gap-3 border-b border-cream-200 px-4 py-2.5">
       <Link to={`/orga/playmaker/${play.id}`} className="h-12 w-16 shrink-0 overflow-hidden rounded-lg">
-        <PlayBoard markers={play.steps[0].markers} steps={play.steps} width={64} height={48} />
+        <PlayBoard markers={play.steps[0].markers} steps={play.steps} width={64} height={48} interactive={false} />
       </Link>
       <Link to={`/orga/playmaker/${play.id}`} className="min-w-0 flex-1">
         <div className="truncate font-display text-sm font-extrabold text-navy-900">{play.title}</div>

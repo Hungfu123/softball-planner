@@ -34,6 +34,7 @@ describe('usePlayEditor', () => {
   test('legt einen neuen Stand als Kopie des aktuellen an', () => {
     const { result } = renderHook(() => usePlayEditor(play(), save));
 
+    act(() => result.current.beginGesture());
     act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, 10, 20));
     act(() => result.current.addStep());
 
@@ -48,15 +49,34 @@ describe('usePlayEditor', () => {
     const { result } = renderHook(() => usePlayEditor(play(), save));
 
     act(() => result.current.addStep());
+    act(() => result.current.beginGesture());
     act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, 99, 99));
 
     const stand1 = result.current.steps[0].markers.defenders.find(d => d.position === 'SS')!;
     expect(stand1.x).toBeCloseTo(DEFAULT_DEFENSE.SS.x, 5);
   });
 
+  test('nimmt waehrend einer Geste nur einen Schnappschuss', () => {
+    const { result } = renderHook(() => usePlayEditor(play(), save));
+
+    act(() => result.current.beginGesture());
+    for (let i = 1; i <= 20; i++) {
+      act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, i, i));
+    }
+    act(() => result.current.undo());
+
+    // Ein Undo bringt den Marker ganz zurueck, nicht nur um ein Pixel.
+    const ss = result.current.steps[0].markers.defenders.find(d => d.position === 'SS')!;
+    expect(ss.x).toBeCloseTo(DEFAULT_DEFENSE.SS.x, 5);
+    expect(result.current.canUndo).toBe(false);
+  });
+
   test('macht die letzte Bewegung rueckgaengig', () => {
     const { result } = renderHook(() => usePlayEditor(play(), save));
 
+    // Eine Geste: einmal greifen, dann beliebig viele Zwischenschritte.
+    act(() => result.current.beginGesture());
+    act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, 5, 5));
     act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, 10, 20));
     act(() => result.current.undo());
 
@@ -68,6 +88,7 @@ describe('usePlayEditor', () => {
     const { result } = renderHook(() => usePlayEditor(play(), save));
 
     for (let i = 1; i <= 7; i++) {
+      act(() => result.current.beginGesture());
       act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, i, i));
     }
     for (let i = 0; i < 5; i++) {
@@ -101,6 +122,7 @@ describe('usePlayEditor', () => {
   test('setzt die Normalaufstellung zurueck', () => {
     const { result } = renderHook(() => usePlayEditor(play(), save));
 
+    act(() => result.current.beginGesture());
     act(() => result.current.moveMarker({ kind: 'defender', position: 'CF' }, 1, 1));
     act(() => result.current.resetDefense());
 

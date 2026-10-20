@@ -4,6 +4,7 @@ import * as api from '@/api/plays'
 import { usePlayEditor, SNAP_RADIUS } from '@/hooks/usePlayEditor'
 import { PlayBoard } from './PlayBoard'
 import { StepTimeline } from './StepTimeline'
+import { StepList } from './StepList'
 import { BASES, FULL_FIELD } from './board/geometry'
 import { computeContentBox, fitViewBox, hitRadius } from './board/layout'
 import type { MarkerRef, Play, PlayStep } from './board/types'
@@ -119,6 +120,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
     const treffer = best as Treffer | null
     if (!treffer || treffer.d > reichweite) return
     e.currentTarget.setPointerCapture(e.pointerId)
+    editor.beginGesture()
     setEingefroren(berechnet)
     setDrag({ ref: treffer.ref, dx: treffer.x - p.x, dy: treffer.y - p.y })
   }
@@ -151,19 +153,31 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   const vorher = editor.cur > 0 ? editor.steps[editor.cur - 1].markers : null
 
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] overflow-hidden wide:grid-cols-[1fr_340px] wide:grid-rows-[52px_1fr_auto_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 wide:col-start-2">
-        <button type="button" onClick={onBack} className="font-display text-xs font-bold text-gray-500">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] overflow-hidden lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-200 px-4 lg:col-start-2">
+        <button
+          type="button"
+          onClick={async () => {
+            await editor.flushSave()
+            onBack()
+          }}
+          className="font-display text-xs font-bold text-gray-500"
+        >
           Zurück
         </button>
-        <h1 className="flex-1 truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
-          {play.title}
+        {/* Der Titel steht im span, nicht direkt im h1: index.css setzt ungeschichtet
+            h1 { text-wrap: balance }, und ungeschichtetes CSS schlaegt Tailwinds
+            @layer utilities — truncate waere am h1 wirkungslos und der Titel braeche um. */}
+        <h1 className="min-w-0 flex-1">
+          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
+            {play.title}
+          </span>
         </h1>
         <SaveIndicator state={editor.saveState} onRetry={editor.retrySave} />
         <Outs value={editor.step.outs} onChange={editor.setOuts} />
       </header>
 
-      <div ref={flaeche} className="min-h-0 bg-[#93B268] wide:col-start-1 wide:row-span-4 wide:row-start-1">
+      <div ref={flaeche} className="min-h-0 bg-[#93B268] lg:col-start-1 lg:row-span-5 lg:row-start-1">
         <PlayBoard
           markers={editor.step.markers}
           steps={editor.steps}
@@ -184,11 +198,15 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         value={editor.step.note ?? ''}
         onChange={e => editor.setNote(e.target.value)}
         placeholder="Notiz zu diesem Stand"
-        className="h-10 border-0 bg-transparent px-4 text-sm text-navy-900 wide:col-start-2"
+        className="h-10 border-0 bg-transparent px-4 text-sm text-navy-900 lg:col-start-2"
         aria-label="Notiz"
       />
 
-      <div className="flex items-center gap-2 px-4 pb-2.5 wide:col-start-2">
+      <div className="hidden min-h-0 lg:col-start-2 lg:block">
+        <StepList steps={editor.steps} current={editor.cur} onSelect={editor.setCur} />
+      </div>
+
+      <div className="flex items-center gap-2 px-4 pb-2.5 lg:col-start-2">
         <ToolButton onClick={editor.addRunner}>Runner +</ToolButton>
         <ToolButton onClick={editor.resetDefense}>Standard</ToolButton>
         <ToolButton onClick={() => setVollesFeld(v => !v)} active={vollesFeld}>
@@ -199,7 +217,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         </ToolButton>
       </div>
 
-      <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom wide:col-start-2">
+      <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom lg:col-start-2">
         <StepTimeline count={editor.steps.length} current={editor.cur} onSeek={editor.setCur} />
         <div className="mt-2 flex items-center gap-2">
           <ToolButton onClick={editor.addStep}>+ Stand</ToolButton>

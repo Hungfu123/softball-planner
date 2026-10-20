@@ -56,8 +56,6 @@ export const routes: RouteObject[] = [
       { path: '/orga/trainerabrechnung', element: <LazyTrainerabrechnung />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker', element: <LazyPlaymaker />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker/neu', element: <LazyPlaySetup />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga/playmaker/:id', element: <LazyPlayViewer />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga/playmaker/:id/bearbeiten', element: <LazyPlayEditor />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams/spiele', element: <GameLogPage />, errorElement: <ChunkErrorBoundary /> },
     ],
@@ -67,6 +65,11 @@ export const routes: RouteObject[] = [
   { path: '/spielbogen/:id', element: <RequireAuth><LazySpielbogenPage /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/export', element: <RequireAuth><LineupSheet /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/scoring/:gameIndex', element: <RequireAuth><LazyScoring /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  // Wie die ScoringPage ausserhalb des Layouts: beide fuellen den Bildschirm per h-dvh,
+  // innerhalb der Navigation waere der Rest zwangslaeufig ueberlang und die Seite wuerde
+  // scrollen — genau das soll sie nicht.
+  { path: '/orga/playmaker/:id', element: <RequireAuth><LazyPlayViewer /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  { path: '/orga/playmaker/:id/bearbeiten', element: <RequireAuth><LazyPlayEditor /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   // Kein Match (z.B. vertippte URL) fiele sonst auf die pfadlose Layout-Route
   // zurück und zeigte deren errorElement statt einer sinnvollen Seite —
   // abgemeldet die Anmeldung, angemeldet zurück aufs Dashboard.

@@ -5,6 +5,7 @@ import { usePlayback, type PlaybackSpeed } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
 import { PlaybackBar } from './PlaybackBar'
 import { LegendSheet } from './LegendSheet'
+import { StepList } from './StepList'
 import type { Play } from './board/types'
 
 const TEMPI: PlaybackSpeed[] = [1, 0.5, 2]
@@ -80,13 +81,18 @@ function Viewer({
   const breit = groesse.w >= 900
 
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] overflow-hidden wide:grid-cols-[1fr_340px] wide:grid-rows-[52px_1fr_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 wide:col-start-2">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] overflow-hidden lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-200 px-4 lg:col-start-2">
         <Link to="/orga/playmaker" className="font-display text-xs font-bold text-gray-500">
           Zurück
         </Link>
-        <h1 className="flex-1 truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
-          {play.title}
+        {/* Der Titel steht im span, nicht direkt im h1: index.css setzt ungeschichtet
+            h1 { text-wrap: balance }, und ungeschichtetes CSS schlaegt Tailwinds
+            @layer utilities — truncate waere am h1 wirkungslos und der Titel braeche um. */}
+        <h1 className="min-w-0 flex-1">
+          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
+            {play.title}
+          </span>
         </h1>
         <button
           type="button"
@@ -111,7 +117,7 @@ function Viewer({
 
       <div
         ref={flaeche}
-        className="min-h-0 bg-[#93B268] wide:col-start-1 wide:row-span-3 wide:row-start-1"
+        className="min-h-0 bg-[#93B268] lg:col-start-1 lg:row-span-3 lg:row-start-1"
         onClick={wiedergabe.pause}
       >
         {wiedergabe.markers && (
@@ -128,18 +134,22 @@ function Viewer({
         )}
       </div>
 
-      <p className="px-4 py-2.5 text-sm leading-snug text-navy-900 wide:col-start-2">
-        {wiedergabe.step?.note ?? ''}
-      </p>
+      <div className="min-h-0 lg:col-start-2 lg:flex lg:flex-col">
+        <p className="px-4 py-2.5 text-sm leading-snug text-navy-900">{wiedergabe.step?.note ?? ''}</p>
+        {/* Nur wo Platz ist: am Handy traegt die Zeitleiste allein. */}
+        <div className="hidden min-h-0 lg:block">
+          <StepList steps={play.steps} current={wiedergabe.index} onSelect={wiedergabe.seek} />
+        </div>
+      </div>
 
-      <div className="wide:col-start-2">
+      <div className="lg:col-start-2">
         {gegenstueck && (
           <Link
             to={`/orga/playmaker/${gegenstueck.id}`}
             className="mx-4 mb-2 flex items-center gap-3 rounded-xl border border-dashed border-cream-400 bg-white p-2.5"
           >
             <div className="h-10 w-12 shrink-0 overflow-hidden rounded-lg">
-              <PlayBoard markers={gegenstueck.steps[0].markers} steps={gegenstueck.steps} width={48} height={40} />
+              <PlayBoard markers={gegenstueck.steps[0].markers} steps={gegenstueck.steps} width={48} height={40} interactive={false} />
             </div>
             <div className="min-w-0">
               <div className="truncate font-display text-xs font-extrabold text-navy-900">
