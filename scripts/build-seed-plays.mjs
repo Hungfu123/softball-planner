@@ -80,14 +80,54 @@ function buildSteps(spec, startRunners) {
   let ball = { state: 'AT_BAT', holder: 'P', x: DEFAULT_DEFENSE.P.x, y: DEFAULT_DEFENSE.P.y, trajectory: 'AIR' };
   let outs = spec.outs ?? 0;
 
-  return spec.steps.map((step, index) => {
+  // Nennt das Play irgendwo einen eigenen Batter-Runner? Dann mischt sich hier keiner ein.
+  const eigenerBatter = spec.steps.some((st) => st.r && 'rb' in st.r);
+
+  let kontaktIndex = -1;
+  let batterRaus = false;
+  let batterAnteil = 0;
+
+  const gebaut = spec.steps.map((step, index) => {
+    const vorher = { defense: { ...defense }, runners: { ...runners } };
     if (step.d) for (const [pos, punkt] of Object.entries(step.d)) defense[pos] = punkt;
+
+    // Wer den Ball hat, nimmt ihn mit. Ohne das blieb der Ball liegen, wenn sich sein
+    // Halter bewegte — beim Squeeze lag er zwoelf Fuss neben dem Catcher.
+    if (ball.holder && step.d && step.d[ball.holder]) {
+      const halter = defense[ball.holder];
+      ball = { ...ball, x: halter.x, y: halter.y };
+    }
     if (step.r) {
       for (const [id, punkt] of Object.entries(step.r)) {
         if (punkt === null) delete runners[id];
         else runners[id] = punkt;
       }
     }
+    // Kontakt: der Ball verlaesst die Hand des Pitchers, ohne dass ihn jemand faengt —
+    // also wurde geschlagen. Dann beginnt die Flugbahn an HOME und nicht am Pitcher, und
+    // der Batter laeuft los.
+    const kontakt =
+      !step.keinSchlag &&
+      ball.state === 'AT_BAT' &&
+      step.ball &&
+      !step.ball.hold &&
+      (step.ball.at || step.ball.loose);
+    if (kontakt) kontaktIndex = index;
+
+    /**
+     * Der Batter laeuft. Ohne das stand er vier Staende lang auf der Platte, mitten im
+     * Catcher — und das Doppelspiel an der 1 hatte niemanden, den man dort ausmacht.
+     * Gezeigt wird ein Standardlauf: gut ein Drittel der Strecke je Stand bis zur 1.
+     */
+    if (step.r && 'rb' in step.r && step.r.rb === null) batterRaus = true;
+    if (!eigenerBatter && kontaktIndex >= 0 && !batterRaus) {
+      // Strecke nach Zeit, nicht nach Stand: ein 0,6-Sekunden-Stand ist ein kurzer
+      // Moment, da legt niemand ein Drittel des Base-Wegs zurueck.
+      const sekunden = (step.ms ?? 1200) / 1000;
+      batterAnteil = Math.min(1, (kontaktIndex === index ? 0.15 : batterAnteil) + sekunden * 0.29);
+      runners.rb = between(HOME, B1, batterAnteil);
+    }
+
     if (step.ball) {
       if (step.ball.hold) {
         const halter = defense[step.ball.hold];
@@ -105,9 +145,25 @@ function buildSteps(spec, startRunners) {
     }
     if (step.outs !== undefined) outs = step.outs;
 
+    // Lange Wege brauchen laenger. Alles im selben Takt zu bewegen ist Absicht — aber
+    // 80 ft in 1,2 s sehen nicht nach Laufen aus, sondern nach einem Sprung.
+    let dauer = step.ms ?? 1200;
+    if (!step.ms) {
+      let weitester = 0;
+      for (const [pos, p] of Object.entries(defense)) {
+        const alt = vorher.defense[pos];
+        if (alt) weitester = Math.max(weitester, Math.hypot(p.x - alt.x, p.y - alt.y));
+      }
+      for (const [id, p] of Object.entries(runners)) {
+        const alt = vorher.runners[id];
+        if (alt) weitester = Math.max(weitester, Math.hypot(p.x - alt.x, p.y - alt.y));
+      }
+      if (weitester > 45) dauer = 2000;
+    }
+
     return {
       ordinal: index + 1,
-      durationMs: step.ms ?? 1200,
+      durationMs: dauer,
       note: step.note,
       outs,
       markers: {
@@ -117,6 +173,25 @@ function buildSteps(spec, startRunners) {
       },
     };
   });
+
+  /**
+   * Der Stand VOR dem Kontakt zeigt den Ball an Home, nicht beim Pitcher.
+   *
+   * Sonst laeuft die abgeleitete Flugbahn im Folgestand vom Pitcher zum Fielder — und
+   * liest sich wie ein Wurf statt wie ein Schlag.
+   */
+  if (kontaktIndex > 0) {
+    const davor = gebaut[kontaktIndex - 1];
+    davor.markers.ball = {
+      state: 'AT_BAT',
+      holder: null,
+      x: HOME.x,
+      y: HOME.y - 2,
+      trajectory: 'AIR',
+    };
+  }
+
+  return gebaut;
 }
 
 // ---------------------------------------------------------------- Katalog
@@ -717,6 +792,7 @@ const KATALOG = [
         d: { '1B': between(HOME, B1, 0.75), C: HOME },
         ball: { hold: '1B' },
         r: { rb: between(HOME, B1, 0.35) },
+        keinSchlag: true,
       }),
       s('Erst wenn der Runner festgelegt ist: ein Wurf zum Catcher.', {
         ball: { hold: 'C' },
@@ -800,7 +876,7 @@ const KATALOG = [
         ball: { hold: 'RF' },
         r: { rb: between(HOME, B1, 0.7) },
       }),
-      s('RF ruft, die anderen weichen. Out.', { outs: 1, ms: 600 }),
+      s('RF ruft, die anderen weichen. Out.', { outs: 1, ms: 600, r: { rb: null } }),
     ],
   }),
 
@@ -818,7 +894,7 @@ const KATALOG = [
         ball: { at: { x: B3.x - 10, y: B3.y - 26 } },
       }),
       s('LF ruft — Outfielder vor Infielder, immer.', { ball: { hold: 'LF' } }),
-      s('Out.', { outs: 2, ms: 600 }),
+      s('Out.', { outs: 2, ms: 600, r: { rb: null } }),
     ],
   }),
 
@@ -841,6 +917,7 @@ const KATALOG = [
       }),
       s('SS und 2B drehen weg. Out.', {
         d: { SS: { x: B2.x - 20, y: B2.y - 12 }, '2B': { x: B2.x + 20, y: B2.y - 12 } },
+        r: { rb: null },
         outs: 1,
         ms: 600,
       }),
@@ -863,7 +940,7 @@ const KATALOG = [
       s('C hat ihn. Der Ball dreht zurück Richtung Feld — deshalb mit dem Rücken dorthin stehen.', {
         ball: { hold: 'C' },
       }),
-      s('Out.', { outs: 2, ms: 600 }),
+      s('Out.', { outs: 2, ms: 600, r: { rb: null } }),
     ],
   }),
 
@@ -878,6 +955,7 @@ const KATALOG = [
       }),
       s('Der Batter ist raus, egal ob gefangen wird. Die Runner bleiben stehen.', {
         ball: { hold: 'SS' },
+        r: { rb: null },
         outs: 2,
       }),
       s('Fällt der Ball: trotzdem Out, und die Runner müssen nicht laufen.', { ms: 2000 }),
@@ -947,9 +1025,9 @@ const KATALOG = [
     startRunners: { r1: { x: B1.x - 8, y: B1.y + 8 } },
     steps: [
       s('Der Runner nimmt zu viel Abstand.'),
-      s('C wirft nach dem Fangen sofort zur 1.', {
+      s('C hat den Ball und wirft sofort zur 1.', {
         d: { C: HOME, '1B': B1 },
-        ball: { at: between(HOME, B1, 0.6) },
+        ball: { hold: 'C' },
       }),
       s('1B fängt an der Base.', { ball: { hold: '1B' }, ms: 600 }),
       s('Tag, bevor der Runner zurück ist.', { r: { r1: null }, outs: 2, ms: 600 }),
