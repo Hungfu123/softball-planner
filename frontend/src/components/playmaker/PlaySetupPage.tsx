@@ -29,7 +29,7 @@ const RUNNER_BASES = [
  * Play mit genau einem Stand — die Ausgangslage IST der erste Stand.
  */
 export default function PlaySetupPage() {
-  const { categories, addCategory } = usePlays()
+  const { categories, loading, addCategory } = usePlays()
   const navigate = useNavigate()
 
   const [title, setTitle] = useState('')
@@ -66,8 +66,13 @@ export default function PlaySetupPage() {
     setRunnerIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]))
 
   const anlegen = async () => {
-    if (!title.trim() || !aktiveKategorie) {
-      setFehler('Titel und Kategorie fehlen.')
+    // Der Knopf ist waehrend des Ladens gesperrt; diese Pruefung faengt nur noch den
+    // fehlenden Titel ab. Vorher stand hier "Titel und Kategorie fehlen" auch dann, wenn
+    // beides dastand und bloss die Kategorien noch unterwegs waren — ein Vorwurf an den
+    // Benutzer fuer einen Zustand der App.
+    if (!aktiveKategorie) return
+    if (!title.trim()) {
+      setFehler('Das Play braucht einen Titel.')
       return
     }
     setSpeichert(true)
@@ -200,8 +205,8 @@ export default function PlaySetupPage() {
       {fehler && <p className="px-4 pt-3 text-sm text-softball-red-600">{fehler}</p>}
 
       <div className="px-4 pt-5">
-        <Button className="w-full" onClick={anlegen} disabled={speichert}>
-          {speichert ? 'Wird angelegt …' : 'Play bauen'}
+        <Button className="w-full" onClick={anlegen} disabled={speichert || loading || !aktiveKategorie}>
+          {speichert ? 'Wird angelegt …' : loading ? 'Kategorien werden geladen …' : 'Play bauen'}
         </Button>
       </div>
 

@@ -9,6 +9,8 @@ export const MIN_CONTENT_WIDTH = 130;
 
 const MARKER_SHARE_OF_BASE_PATH = 0.3;
 const MARKER_MIN_PX = 26;
+/** Vorschauen und Thumbnails: nur noch lesbar, nicht mehr treffbar. */
+const MARKER_MIN_PX_STATIC = 6;
 const MARKER_MAX_PX_TOUCH = 44;
 const MARKER_MAX_PX_FINE = 56;
 
@@ -92,10 +94,13 @@ export function fitViewBox(box: Box, areaWidth: number, areaHeight: number): { v
  * verschwand hinter Runner und Ball. Die Obergrenze haengt am Zeigegeraet: am Finger
  * zaehlt die Trefferflaeche, an Maus und Trackpad die Lesbarkeit.
  */
-export function markerRadius(scale: number, pointerFine: boolean): number {
+export function markerRadius(scale: number, pointerFine: boolean, interactive = true): number {
   const basePathPx = BASE_PATH * scale;
   const max = pointerFine ? MARKER_MAX_PX_FINE : MARKER_MAX_PX_TOUCH;
-  const durchmesserPx = Math.max(MARKER_MIN_PX, Math.min(max, basePathPx * MARKER_SHARE_OF_BASE_PATH));
+  // Die Untergrenze ist eine Trefferflaechen-Regel. Auf einer 64-px-Vorschau, die niemand
+  // antippt, macht sie die Marker groesser als das Infield — dort gilt sie nicht.
+  const min = interactive ? MARKER_MIN_PX : MARKER_MIN_PX_STATIC;
+  const durchmesserPx = Math.max(min, Math.min(max, basePathPx * MARKER_SHARE_OF_BASE_PATH));
   return durchmesserPx / 2 / scale;
 }
 

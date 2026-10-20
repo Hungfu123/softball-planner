@@ -104,10 +104,10 @@ export default function PlaymakerOverview() {
 function HeroPlay({ play }: { play: Play }) {
   return (
     <Link to={`/orga/playmaker/${play.id}`} className="relative block">
-      <div className="h-56 sm:h-72">
+      <div className="h-64 sm:h-80">
         <PlayBoard markers={play.steps[0].markers} steps={play.steps} />
       </div>
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/85 to-transparent px-4 pb-3 pt-10">
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/90 via-navy-900/40 to-transparent px-4 pb-3 pt-6">
         <div className="font-headline text-xl font-extrabold uppercase tracking-wide text-cream-50">
           {play.title}
         </div>

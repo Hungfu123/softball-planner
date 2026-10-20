@@ -32,9 +32,18 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     setUndoStack(prev => [...prev, kopie(steps)].slice(-UNDO_TIEFE))
   }, [steps])
 
+  /**
+   * Eine zusammenhaengende Geste beginnt — genau hier wird fuer Rueckgaengig gemerkt.
+   *
+   * Nicht in jedem Schritt der Bewegung: ein Zug ueber das Feld loest Dutzende
+   * pointermove-Ereignisse aus, und der Stapel waere danach voll Mikroschritte. Ein Undo
+   * haette dann nur ein paar Pixel zurueckgenommen.
+   */
+  const beginGesture = useCallback(() => merken(), [merken])
+
   const aendern = useCallback(
-    (fn: (entwurf: PlayStep[]) => void) => {
-      merken()
+    (fn: (entwurf: PlayStep[]) => void, mitSchnappschuss = true) => {
+      if (mitSchnappschuss) merken()
       setSteps(prev => {
         const entwurf = kopie(prev)
         fn(entwurf)
@@ -48,6 +57,7 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
   /** Verschiebt einen Marker im aktuellen Stand. Einrasten passiert beim Loslassen. */
   const moveMarker = useCallback(
     (ref: MarkerRef, x: number, y: number) => {
+      // Kein Schnappschuss: den hat beginGesture beim Greifen schon gemacht.
       aendern(entwurf => {
         const marker = entwurf[cur].markers
         if (ref.kind === 'defender') {
@@ -72,7 +82,7 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
           marker.ball.holder = null
           marker.ball.state = 'LOOSE'
         }
-      })
+      }, false)
     },
     [aendern, cur],
   )
@@ -195,6 +205,25 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     }
   }, [steps, save])
 
+  /**
+   * Sofort sichern, ohne auf die Entprellung zu warten.
+   *
+   * Noetig beim Verlassen des Editors: wer gleich nach einer Bewegung "Zurueck" tippt,
+   * ueberholt sonst das Sichern und sieht in der Spieleransicht den alten Stand.
+   */
+  const flushSave = useCallback(async () => {
+    if (timer.current) clearTimeout(timer.current)
+    if (!schmutzig.current) return
+    setSaveState('speichert')
+    try {
+      await save(steps)
+      schmutzig.current = false
+      setSaveState('gespeichert')
+    } catch {
+      setSaveState('fehler')
+    }
+  }, [save, steps])
+
   const retrySave = useCallback(async () => {
     setSaveState('speichert')
     try {
@@ -209,10 +238,12 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
   return {
     steps,
     cur,
+    beginGesture,
     setCur,
     step: steps[cur],
     saveState,
     retrySave,
+    flushSave,
     canUndo: undoStack.length > 0,
     moveMarker,
     dropMarker,

@@ -36,6 +36,8 @@ interface Props {
   width?: number;
   height?: number;
   pointerFine?: boolean;
+  /** false fuer Vorschauen: dann gilt keine Mindest-Trefferflaeche. */
+  interactive?: boolean;
   className?: string;
   onPointerDown?: (event: React.PointerEvent<SVGSVGElement>) => void;
   onPointerMove?: (event: React.PointerEvent<SVGSVGElement>) => void;
@@ -61,6 +63,7 @@ export function PlayBoard({
   width = 390,
   height = 612,
   pointerFine = false,
+  interactive = true,
   className,
   onPointerDown,
   onPointerMove,
@@ -74,8 +77,8 @@ export function PlayBoard({
         ? FULL_FIELD
         : computeContentBox(steps ?? [{ ordinal: 1, durationMs: 1200, note: null, outs: 0, markers }]);
     const fitted = fitViewBox(content, width, height);
-    return { ...fitted, radius: markerRadius(fitted.scale, pointerFine) };
-  }, [markers, steps, mode, width, height, pointerFine]);
+    return { ...fitted, radius: markerRadius(fitted.scale, pointerFine, interactive) };
+  }, [markers, steps, mode, width, height, pointerFine, interactive]);
 
   const ballPosition = ballAnchor(markers, radius);
   const ballRadius = radius * 0.42;
