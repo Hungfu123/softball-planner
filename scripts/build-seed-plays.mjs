@@ -471,6 +471,67 @@ const KATALOG = [
     ],
   }),
 
+  play('Bases Loaded — Force an Home', 'Base-Coverage', {
+    outs: 1,
+    startRunners: { r1: B1, r2: B2, r3: B3 },
+    steps: [
+      s('Bases loaded, ein Out. Der Force gilt an jeder Base — auch an der Platte.'),
+      s('Grounder zum SS. Alle drei müssen laufen.', {
+        d: { SS: { x: HOME.x - 26, y: HOME.y - 72 }, C: HOME },
+        ball: { at: { x: HOME.x - 26, y: HOME.y - 72 }, ground: true },
+        r: {
+          r3: between(B3, HOME, 0.3),
+          r2: between(B2, B3, 0.3),
+          r1: between(B1, B2, 0.3),
+        },
+      }),
+      s('Wurf nach Home — der kürzeste Weg und der teuerste Runner.', {
+        ball: { hold: 'C' },
+        r: {
+          r3: { p: HOME, status: 'OUT' },
+          r2: between(B2, B3, 0.7),
+          r1: between(B1, B2, 0.7),
+        },
+        outs: 2,
+      }),
+      s('Und weiter auf die 1 — Doppelspiel, wenn der Wurf sitzt.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' }, r2: B3, r1: B2 },
+        outs: 3,
+      }),
+    ],
+  }),
+
+  play('Bases Loaded — der 3B tritt selbst auf die 3', 'Base-Coverage', {
+    outs: 0,
+    startRunners: { r1: B1, r2: B2, r3: B3 },
+    steps: [
+      s('Bases loaded, keine Outs. Der Ball kommt scharf zum 3B.'),
+      s('Grounder zum 3B, nah an der Base.', {
+        d: { '3B': { x: B3.x + 4, y: B3.y + 14 } },
+        ball: { at: { x: B3.x + 4, y: B3.y + 14 }, ground: true },
+        r: {
+          r2: between(B2, B3, 0.35),
+          r1: between(B1, B2, 0.35),
+          r3: between(B3, HOME, 0.35),
+        },
+      }),
+      s('Er tritt selbst auf die Base — der schnellste Force, ganz ohne Wurf.', {
+        d: { '3B': B3 },
+        ball: { hold: '3B' },
+        r: { r2: { p: B3, status: 'OUT' }, r1: between(B1, B2, 0.7), r3: between(B3, HOME, 0.7) },
+        outs: 1,
+      }),
+      s('Dann der lange Wurf auf die 1. Der Run von der 3 zählt — zwei Outs sind mehr wert.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' }, r3: 'SCORED', r1: B2 },
+        outs: 2,
+      }),
+    ],
+  }),
+
   play('Überwurf an der 1 — wer sichert ab', 'Base-Coverage', {
     outs: 1,
     startRunners: {},
@@ -1367,6 +1428,30 @@ const KATALOG = [
       s('Von dort nach Home. Der Run fällt — wichtig ist, dass der Batter auf der 2 bleibt.', {
         ball: { hold: 'C' },
         r: { r1: 'SCORED' },
+      }),
+    ],
+  }),
+
+  play('Runner auf 2 und 3 — anschauen, dann werfen', 'Spielsituationen', {
+    outs: 1,
+    startRunners: { r2: B2, r3: B3 },
+    gameState: 'CLOSE_LATE',
+    gameStateNote: 'Knapp: der sichere Out ist mehr wert als der Versuch am Runner.',
+    steps: [
+      s('Runner auf 2 und 3, ein Out. Kein Force — die beiden MÜSSEN nicht laufen.'),
+      s('Grounder zum SS. Der Runner auf 3 testet ihn.', {
+        d: { SS: { x: HOME.x - 26, y: HOME.y - 72 } },
+        ball: { at: { x: HOME.x - 26, y: HOME.y - 72 }, ground: true },
+        r: { r3: toward(B3, HOME, 12), r2: toward(B2, B3, 10) },
+      }),
+      s('Anschauen. Erst wenn er steht, geht der Wurf — sonst läuft er los.', {
+        d: { '1B': B1 },
+        r: { r3: toward(B3, HOME, 6) },
+      }),
+      s('Out an der 1, der Run fällt nicht. Dafür bleiben beide, wo sie sind.', {
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' }, r3: B3, r2: B2 },
+        outs: 2,
       }),
     ],
   }),

@@ -141,7 +141,15 @@ export function PlayBoard({
 
   const ballPosition = ballAnchor(markers, radius);
   const ballRadius = radius * 0.42;
-  const runnerSide = radius * 1.414;
+  /**
+   * Der Runner ist eine Scheibe wie der Verteidiger, nur kleiner und rot.
+   *
+   * Vorher war er eine Raute: Form trug die Bedeutung, Farbe verstaerkte sie. Die Raute
+   * wirkte am Handy aber wie ein Fremdkoerper neben neun Kreisen, und sie sass auf den
+   * Bases sichtbar schief. Jetzt unterscheiden drei Dinge: Farbe, Groesse und das
+   * Kuerzel, das nur der Verteidiger traegt.
+   */
+  const runnerRadius = radius * 0.82;
 
   return (
     <div ref={huelle} style={{ width: '100%', height: '100%' }}>
@@ -260,27 +268,19 @@ export function PlayBoard({
             data-status={runner.status}
             opacity={runner.status === 'OUT' ? 0.75 : 1}
           >
-            <rect
-              x={runner.x - runnerSide / 2}
-              y={runner.y - runnerSide / 2}
-              width={runnerSide}
-              height={runnerSide}
-              rx={radius * 0.14}
-              transform={`rotate(45 ${runner.x} ${runner.y})`}
-              fill={RUNNER}
-            />
+            <circle cx={runner.x} cy={runner.y} r={runnerRadius} fill={RUNNER} />
             {/* Out: durchgestrichen. Er bleibt in DIESEM Stand sichtbar, damit man den
                 Tag noch sieht, und fehlt erst im naechsten. */}
             {runner.status === 'OUT' && (
               <>
                 <path
-                  d={`M${runner.x - radius * 0.8},${runner.y - radius * 0.8} L${runner.x + radius * 0.8},${runner.y + radius * 0.8}`}
+                  d={`M${runner.x - runnerRadius * 0.72},${runner.y - runnerRadius * 0.72} L${runner.x + runnerRadius * 0.72},${runner.y + runnerRadius * 0.72}`}
                   stroke={INVENTORY}
                   strokeWidth={radius * 0.22}
                   strokeLinecap="round"
                 />
                 <path
-                  d={`M${runner.x + radius * 0.8},${runner.y - radius * 0.8} L${runner.x - radius * 0.8},${runner.y + radius * 0.8}`}
+                  d={`M${runner.x + runnerRadius * 0.72},${runner.y - runnerRadius * 0.72} L${runner.x - runnerRadius * 0.72},${runner.y + runnerRadius * 0.72}`}
                   stroke={INVENTORY}
                   strokeWidth={radius * 0.22}
                   strokeLinecap="round"

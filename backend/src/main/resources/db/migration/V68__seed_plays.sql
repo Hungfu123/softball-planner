@@ -136,7 +136,41 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 3, 2600, 'Wurf zurück zur 1, 2B sichert im Foul-Gebiet dahinter ab.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":192.43,"y":192.57},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":215,"y":114.08}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Single ins RF — Backup hinter der 1';
 
--- 9. Überwurf an der 1 — wer sichert ab
+-- 9. Bases Loaded — Force an Home
+INSERT INTO play (title, category_id, game_state, game_state_note)
+SELECT 'Bases Loaded — Force an Home', id, 'ANY', NULL
+FROM play_category WHERE name = 'Base-Coverage';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 1, 1200, 'Bases loaded, ein Out. Der Force gilt an jeder Base — auch an der Platte.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r2","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":112.57,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — Force an Home';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 2, 1200, 'Grounder zum SS. Alle drei müssen laufen.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":184.7,"y":162.85,"status":"ACTIVE"},{"id":"r2","x":142.27,"y":145.88,"status":"ACTIVE"},{"id":"r3","x":125.3,"y":188.3,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":133.1,"y":151.67,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — Force an Home';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 3, 1800, 'Wurf nach Home — der kürzeste Weg und der teuerste Runner.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"r2","x":125.3,"y":162.85,"status":"ACTIVE"},{"id":"r3","x":155,"y":218,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — Force an Home';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 4, 1600, 'Und weiter auf die 1 — Doppelspiel, wenn der Wurf sitzt.', 3, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — Force an Home';
+
+-- 10. Bases Loaded — der 3B tritt selbst auf die 3
+INSERT INTO play (title, category_id, game_state, game_state_note)
+SELECT 'Bases Loaded — der 3B tritt selbst auf die 3', id, 'ANY', NULL
+FROM play_category WHERE name = 'Base-Coverage';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 1, 1200, 'Bases loaded, keine Outs. Der Ball kommt scharf zum 3B.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r2","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":112.57,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — der 3B tritt selbst auf die 3';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 2, 1200, 'Grounder zum 3B, nah an der Base.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":116.57,"y":189.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":182.58,"y":160.72,"status":"ACTIVE"},{"id":"r2","x":140.15,"y":148,"status":"ACTIVE"},{"id":"r3","x":127.42,"y":190.42,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":123.44,"y":188.22,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — der 3B tritt selbst auf die 3';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 3, 1800, 'Er tritt selbst auf die Base — der schnellste Force, ganz ohne Wurf.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"OUT"},{"id":"r3","x":142.27,"y":205.27,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — der 3B tritt selbst auf die 3';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 4, 1600, 'Dann der lange Wurf auf die 1. Der Run von der 3 zählt — zwei Outs sind mehr wert.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":142.27,"y":205.27,"status":"SCORED"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Bases Loaded — der 3B tritt selbst auf die 3';
+
+-- 11. Überwurf an der 1 — wer sichert ab
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Überwurf an der 1 — wer sichert ab', id, 'ANY', NULL
 FROM play_category WHERE name = 'Base-Coverage';
@@ -153,7 +187,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2000, 'RF hat ihn, der Runner bleibt auf der 2.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":233.43,"y":179.57}],"runners":[{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"RF","x":233.42640687119285,"y":179.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Überwurf an der 1 — wer sichert ab';
 
--- 10. Single ins LF, Runner auf 1 — Wurf auf die 3
+-- 12. Single ins LF, Runner auf 1 — Wurf auf die 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Single ins LF, Runner auf 1 — Wurf auf die 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -170,7 +204,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1400, 'Cut lässt durch — der Wurf geht auf die 3.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":102.91,"y":141.75},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":95,"y":114.08},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":116.82,"y":171.33,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Single ins LF, Runner auf 1 — Wurf auf die 3';
 
--- 11. Single ins CF, Runner auf 1 — Wurf auf die 3
+-- 13. Single ins CF, Runner auf 1 — Wurf auf die 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Single ins CF, Runner auf 1 — Wurf auf die 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -187,7 +221,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Wurf durch auf die 3.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":133.79,"y":136.79},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":98},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":114.69,"y":173.45,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Single ins CF, Runner auf 1 — Wurf auf die 3';
 
--- 12. Single ins RF, Runner auf 1 — Wurf auf die 3
+-- 14. Single ins RF, Runner auf 1 — Wurf auf die 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Single ins RF, Runner auf 1 — Wurf auf die 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -204,7 +238,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Der Runner war zu weit raus — Wurf auf die 3.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":168.91,"y":141.75},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":215,"y":114.08}],"runners":[{"id":"r1","x":135.91,"y":152.24,"status":"OUT"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Single ins RF, Runner auf 1 — Wurf auf die 3';
 
--- 13. Single ins LF, Runner auf 2 — Wurf nach Home
+-- 15. Single ins LF, Runner auf 2 — Wurf nach Home
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Single ins LF, Runner auf 2 — Wurf nach Home', id, 'CLOSE_LATE', 'Knapp im letzten Inning: der Run darf nicht fallen, alles geht an Home.'
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -221,7 +255,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Durchlassen, Wurf nach Home.', 1, '{"defenders":[{"position":"P","x":161,"y":244},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":112.57,"y":175.57},{"position":"3B","x":119,"y":155.65},{"position":"LF","x":95,"y":114.08},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":150.76,"y":213.76,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Single ins LF, Runner auf 2 — Wurf nach Home';
 
--- 14. Single ins RF, Runner auf 2 — Wurf nach Home
+-- 16. Single ins RF, Runner auf 2 — Wurf nach Home
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Single ins RF, Runner auf 2 — Wurf nach Home', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -238,7 +272,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Der Wurf segelt — der Cut nimmt ihn runter. Der Run zählt, der Batter bleibt auf der 1.', 1, '{"defenders":[{"position":"P","x":161,"y":244},{"position":"C","x":155,"y":218},{"position":"1B","x":188,"y":160.84},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":215,"y":114.08}],"runners":[{"id":"r2","x":135.91,"y":198.91,"status":"SCORED"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"1B","x":188,"y":160.84,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Single ins RF, Runner auf 2 — Wurf nach Home';
 
--- 15. Double in die linke Gasse — Relay über SS
+-- 17. Double in die linke Gasse — Relay über SS
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Double in die linke Gasse — Relay über SS', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -255,7 +289,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Relay dreht und wirft auf die 3.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":76.84,"y":123.9},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":41.1,"y":72.22},{"position":"CF","x":107.72,"y":49.28},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Double in die linke Gasse — Relay über SS';
 
--- 16. Double in die rechte Gasse — Relay über 2B
+-- 18. Double in die rechte Gasse — Relay über 2B
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Double in die rechte Gasse — Relay über 2B', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -272,7 +306,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Wurf auf die 2 — SS deckt ab, weil der 2B draußen ist.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":211.95,"y":102.68},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":202.28,"y":49.28},{"position":"RF","x":268.9,"y":72.22}],"runners":[{"id":"rb","x":157.12,"y":135.27,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Double in die rechte Gasse — Relay über 2B';
 
--- 17. Tiefes RF, Doppel-Relay
+-- 19. Tiefes RF, Doppel-Relay
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Tiefes RF, Doppel-Relay', id, 'ANY', NULL
 FROM play_category WHERE name = 'Cut-off & Relay';
@@ -292,7 +326,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 5, 1200, 'Von dort nach Home. Der Run fällt trotzdem — dafür bleibt der Batter auf der 2.', 0, '{"defenders":[{"position":"P","x":161,"y":244},{"position":"C","x":155,"y":218},{"position":"1B","x":193.57,"y":172.04},{"position":"2B","x":225.71,"y":133.73},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":283.56,"y":64.79}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"SCORED"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Tiefes RF, Doppel-Relay';
 
--- 18. Sac-Bunt, Runner auf 1 — sicherer Out an der 1
+-- 20. Sac-Bunt, Runner auf 1 — sicherer Out an der 1
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Sac-Bunt, Runner auf 1 — sicherer Out an der 1', id, 'ANY', NULL
 FROM play_category WHERE name = 'Bunt-Defense';
@@ -309,7 +343,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1600, 'Sicherer Wurf auf die 1 — der 2B deckt dort ab, weil der 1B vorne ist.', 1, '{"defenders":[{"position":"P","x":147,"y":204},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":197.43,"y":175.57},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":136.08,"y":190.67},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — sicherer Out an der 1';
 
--- 19. Sac-Bunt, Runner auf 1 — Wurf auf die 2
+-- 21. Sac-Bunt, Runner auf 1 — Wurf auf die 2
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Sac-Bunt, Runner auf 1 — Wurf auf die 2', id, 'CLOSE_LATE', 'Den Führungs-Runner nehmen, wenn der Bunt hart genug ist.'
 FROM play_category WHERE name = 'Bunt-Defense';
@@ -326,7 +360,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Wurf auf die 2 — SS deckt ab. Nur machen, wenn der Ball schnell in der Hand ist.', 1, '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":197.43,"y":175.57},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":139,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":171.97,"y":150.12,"status":"OUT"},{"id":"rb","x":188.6,"y":184.4,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — Wurf auf die 2';
 
--- 20. Bunt Richtung 3B, Runner auf 2 — SS deckt die 3
+-- 22. Bunt Richtung 3B, Runner auf 2 — SS deckt die 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Bunt Richtung 3B, Runner auf 2 — SS deckt die 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Bunt-Defense';
@@ -343,7 +377,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2000, 'Wurf auf die 1 — der 2B deckt, weil der 1B vorne ist. Der Runner bekommt die 3.', 1, '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":197.43,"y":175.57},{"position":"SS","x":112.57,"y":175.57},{"position":"3B","x":137,"y":202},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Bunt Richtung 3B, Runner auf 2 — SS deckt die 3';
 
--- 21. Runner auf 1 und 2 — Wheel Play
+-- 23. Runner auf 1 und 2 — Wheel Play
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Runner auf 1 und 2 — Wheel Play', id, 'ANY', NULL
 FROM play_category WHERE name = 'Bunt-Defense';
@@ -360,7 +394,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2000, 'Alternative zum Stand davor: Ist der Führungs-Runner zu schnell, geht der Wurf an die 1 — ein sicherer Out statt gar keiner.', 1, '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":197.43,"y":175.57},{"position":"SS","x":112.57,"y":175.57},{"position":"3B","x":135,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Runner auf 1 und 2 — Wheel Play';
 
--- 22. Squeeze, Runner auf 3
+-- 24. Squeeze, Runner auf 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Squeeze, Runner auf 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Bunt-Defense';
@@ -377,7 +411,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Kurzer Wurf zum Catcher, Tag — nur wenn der Ball früh genug da ist.', 2, '{"defenders":[{"position":"P","x":161,"y":208},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":146.51,"y":209.51,"status":"OUT"},{"id":"rb","x":180.2,"y":192.8,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Squeeze, Runner auf 3';
 
--- 23. Bunt direkt vor Home — Catcher übernimmt
+-- 25. Bunt direkt vor Home — Catcher übernimmt
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Bunt direkt vor Home — Catcher übernimmt', id, 'ANY', NULL
 FROM play_category WHERE name = 'Bunt-Defense';
@@ -394,7 +428,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1600, 'Wurf auf die 1.', 2, '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":197.43,"y":175.57},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Bunt direkt vor Home — Catcher übernimmt';
 
--- 24. Wurf auf die 2, Runner auf 3 startet
+-- 26. Wurf auf die 2, Runner auf 3 startet
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Wurf auf die 2, Runner auf 3 startet', id, 'ANY', NULL
 FROM play_category WHERE name = 'First-and-Third';
@@ -411,7 +445,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Zurück zur Platte — der Run ist wichtiger als der Out an der 2.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":138.03,"y":201.03,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Wurf auf die 2, Runner auf 3 startet';
 
--- 25. Catcher wirft an den Pitcher — Abfangen in der Mitte
+-- 27. Catcher wirft an den Pitcher — Abfangen in der Mitte
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Catcher wirft an den Pitcher — Abfangen in der Mitte', id, 'CLOSE_LATE', 'Wenn der Run zählt: gar nicht erst zur 2 werfen.'
 FROM play_category WHERE name = 'First-and-Third';
@@ -428,7 +462,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2000, 'Der Runner auf 1 bekommt die 2 geschenkt — der Run zählt mehr.', 1, '{"defenders":[{"position":"P","x":155,"y":169},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":112.57,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"P","x":155,"y":169,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Catcher wirft an den Pitcher — Abfangen in der Mitte';
 
--- 26. Angetäuschter Wurf auf die 2
+-- 28. Angetäuschter Wurf auf die 2
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Angetäuschter Wurf auf die 2', id, 'ANY', NULL
 FROM play_category WHERE name = 'First-and-Third';
@@ -445,7 +479,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Wurf auf die 3 — Tag-Out, wenn er nicht zurückkommt.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":178.33,"y":156.48,"status":"ACTIVE"},{"id":"r3","x":127.42,"y":190.42,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Angetäuschter Wurf auf die 2';
 
--- 27. Direkter Wurf auf die 3
+-- 29. Direkter Wurf auf die 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Direkter Wurf auf die 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'First-and-Third';
@@ -462,7 +496,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Tag — Inning vorbei.', 3, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r3","x":118.94,"y":181.94,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Direkter Wurf auf die 3';
 
--- 28. Rundown zwischen Home und 1
+-- 30. Rundown zwischen Home und 1
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Rundown zwischen Home und 1', id, 'ANY', NULL
 FROM play_category WHERE name = 'Rundown';
@@ -479,7 +513,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag. Ein Wurf reicht, wenn man ihn richtig anläuft.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":186.82,"y":186.18},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":163.49,"y":209.51,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Rundown zwischen Home und 1';
 
--- 29. Rundown zwischen 1 und 2
+-- 31. Rundown zwischen 1 und 2
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Rundown zwischen 1 und 2', id, 'ANY', NULL
 FROM play_category WHERE name = 'Rundown';
@@ -496,7 +530,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag an der 1.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":167.73,"y":145.88},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":191.06,"y":169.21,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Rundown zwischen 1 und 2';
 
--- 30. Rundown zwischen 2 und 3
+-- 32. Rundown zwischen 2 und 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Rundown zwischen 2 und 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Rundown';
@@ -513,7 +547,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":125.3,"y":162.85},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":149.91,"y":138.24,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Rundown zwischen 2 und 3';
 
--- 31. Rundown zwischen 3 und Home
+-- 33. Rundown zwischen 3 und Home
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Rundown zwischen 3 und Home', id, 'ANY', NULL
 FROM play_category WHERE name = 'Rundown';
@@ -530,7 +564,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag an der 3. P ist nachgerückt, falls der Wurf danebengeht.', 2, '{"defenders":[{"position":"P","x":154.15,"y":217.15},{"position":"C","x":142.27,"y":205.27},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":117.66,"y":180.66,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Rundown zwischen 3 und Home';
 
--- 32. Pop-up hinter der 1 — wer ruft
+-- 34. Pop-up hinter der 1 — wer ruft
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Pop-up hinter der 1 — wer ruft', id, 'ANY', NULL
 FROM play_category WHERE name = 'Pop-up-Priorities';
@@ -547,7 +581,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'RF ruft, die anderen weichen. Out.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":203.43,"y":165.57},{"position":"2B","x":191.43,"y":157.57},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":221.43,"y":135.57}],"runners":[{"id":"rb","x":184.7,"y":188.3,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"RF","x":221.42640687119285,"y":135.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Pop-up hinter der 1 — wer ruft';
 
--- 33. Pop-up hinter der 3 — wer ruft
+-- 35. Pop-up hinter der 3 — wer ruft
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Pop-up hinter der 3 — wer ruft', id, 'ANY', NULL
 FROM play_category WHERE name = 'Pop-up-Priorities';
@@ -564,7 +598,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Out.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":110.57,"y":147.57},{"position":"3B","x":100.57,"y":157.57},{"position":"LF","x":90.57,"y":137.57},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":171.8,"y":201.2,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"LF","x":90.57359312880715,"y":137.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Pop-up hinter der 3 — wer ruft';
 
--- 34. Pop-up hinterm Infield, Mitte
+-- 36. Pop-up hinterm Infield, Mitte
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Pop-up hinterm Infield, Mitte', id, 'ANY', NULL
 FROM play_category WHERE name = 'Pop-up-Priorities';
@@ -581,7 +615,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'SS und 2B drehen weg. Out.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":175,"y":121.15},{"position":"SS","x":135,"y":121.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":105.15},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":171.8,"y":201.2,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"CF","x":155,"y":105.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Pop-up hinterm Infield, Mitte';
 
--- 35. Foul-Pop hinter Home
+-- 37. Foul-Pop hinter Home
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Foul-Pop hinter Home', id, 'ANY', NULL
 FROM play_category WHERE name = 'Pop-up-Priorities';
@@ -598,7 +632,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Out.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":161,"y":234},{"position":"1B","x":181,"y":224},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":129,"y":224},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":171.8,"y":201.2,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"C","x":161,"y":234,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Foul-Pop hinter Home';
 
--- 36. Infield Fly — Lage und Verhalten
+-- 38. Infield Fly — Lage und Verhalten
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Infield Fly — Lage und Verhalten', id, 'ANY', NULL
 FROM play_category WHERE name = 'Pop-up-Priorities';
@@ -615,7 +649,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2000, 'Alternative: Fällt der Ball — trotzdem Out, und die Runner müssen nicht laufen.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":149,"y":143.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r2","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":149,"y":143.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Infield Fly — Lage und Verhalten';
 
--- 37. Steal auf die 2 — Wurf und Abdeckung
+-- 39. Steal auf die 2 — Wurf und Abdeckung
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Steal auf die 2 — Wurf und Abdeckung', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -632,7 +666,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'SS fängt und tagt.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":165.61,"y":143.75,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Steal auf die 2 — Wurf und Abdeckung';
 
--- 38. Steal auf die 3 — Wurf und Abdeckung
+-- 40. Steal auf die 3 — Wurf und Abdeckung
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Steal auf die 3 — Wurf und Abdeckung', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -649,7 +683,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, '3B tagt.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":96.57,"y":163.57},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":78.57,"y":145.57},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":121.06,"y":167.09,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Steal auf die 3 — Wurf und Abdeckung';
 
--- 39. Doppel-Steal, Runner auf 1 und 2
+-- 41. Doppel-Steal, Runner auf 1 und 2
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Doppel-Steal, Runner auf 1 und 2', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -666,7 +700,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'Out an der 3, die 2 schenken wir her.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":121.06,"y":167.09,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Doppel-Steal, Runner auf 1 und 2';
 
--- 40. Pickoff an der 1
+-- 42. Pickoff an der 1
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Pickoff an der 1', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -683,7 +717,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag, bevor der Runner zurück ist.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":189.65,"y":167.8,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Pickoff an der 1';
 
--- 41. Pickoff an der 2
+-- 43. Pickoff an der 2
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Pickoff an der 2', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -700,7 +734,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag. Timing ist alles — zu früh und der Runner sieht ihn kommen.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":133.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":147.22,"y":140.93,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Pickoff an der 2';
 
--- 42. Pickoff an der 3
+-- 44. Pickoff an der 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Pickoff an der 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -717,7 +751,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Tag. Geht der Wurf daneben, fällt der Run — nur bei sicherem Vorsprung.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":112.57,"y":175.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":120.35,"y":183.35,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":112.57359312880715,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Pickoff an der 3';
 
--- 43. Delayed Steal
+-- 45. Delayed Steal
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Delayed Steal', id, 'ANY', NULL
 FROM play_category WHERE name = 'Steal-Defense & Pickoff';
@@ -734,7 +768,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2000, 'Knapp. Dagegen hilft nur: nach jedem Wurf hinschauen.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"2B","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Delayed Steal';
 
--- 44. Standard-Aufstellung
+-- 46. Standard-Aufstellung
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Standard-Aufstellung', id, 'ANY', NULL
 FROM play_category WHERE name = 'Spielsituationen';
@@ -742,7 +776,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 1, 2000, 'So steht das Team, wenn nichts dagegen spricht. Ausgangspunkt für jedes neue Play.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[],"ball":{"state":"AT_BAT","holder":"P","x":155,"y":182,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Standard-Aufstellung';
 
--- 45. Infield In, Runner auf 3
+-- 47. Infield In, Runner auf 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Infield In, Runner auf 3', id, 'CLOSE_LATE', 'Der Run entscheidet das Spiel — wir geben Hits auf, um ihn zu halten.'
 FROM play_category WHERE name = 'Spielsituationen';
@@ -759,7 +793,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 1200, 'SS nimmt auf und wirft zum Catcher.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":218},{"position":"1B","x":191.43,"y":185.57},{"position":"2B","x":175,"y":158},{"position":"SS","x":141,"y":178},{"position":"3B","x":118.57,"y":185.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":129.54,"y":192.54,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Infield In, Runner auf 3';
 
--- 46. Outfield tief, Vorsprung halten
+-- 48. Outfield tief, Vorsprung halten
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Outfield tief, Vorsprung halten', id, 'AHEAD', 'Mit Vorsprung: kein Ball darf über die Köpfe gehen, Singles sind egal.'
 FROM play_category WHERE name = 'Spielsituationen';
@@ -776,7 +810,7 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 2600, 'Aufnehmen, kurz halten, fertig.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":54,"y":43.06},{"position":"CF","x":181.05,"y":70.28},{"position":"RF","x":256,"y":43.06}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"CF","x":181.05,"y":70.28,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Outfield tief, Vorsprung halten';
 
--- 47. Ball am Zaun — Relay-Kette
+-- 49. Ball am Zaun — Relay-Kette
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Ball am Zaun — Relay-Kette', id, 'ANY', NULL
 FROM play_category WHERE name = 'Spielsituationen';
@@ -796,7 +830,24 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 5, 1200, 'Von dort nach Home. Der Run fällt — wichtig ist, dass der Batter auf der 2 bleibt.', 1, '{"defenders":[{"position":"P","x":161,"y":244},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":164.44,"y":93.12},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"SCORED"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Ball am Zaun — Relay-Kette';
 
--- 48. Passed Ball, Runner auf 3
+-- 50. Runner auf 2 und 3 — anschauen, dann werfen
+INSERT INTO play (title, category_id, game_state, game_state_note)
+SELECT 'Runner auf 2 und 3 — anschauen, dann werfen', id, 'CLOSE_LATE', 'Knapp: der sichere Out ist mehr wert als der Versuch am Runner.'
+FROM play_category WHERE name = 'Spielsituationen';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 1, 1200, 'Runner auf 2 und 3, ein Out. Kein Force — die beiden MÜSSEN nicht laufen.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":112.57,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Runner auf 2 und 3 — anschauen, dann werfen';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 2, 1200, 'Grounder zum SS. Der Runner auf 3 testet ihn.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":147.93,"y":140.22,"status":"ACTIVE"},{"id":"r3","x":121.06,"y":184.06,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":133.1,"y":151.67,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Runner auf 2 und 3 — anschauen, dann werfen';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 3, 1200, 'Anschauen. Erst wenn er steht, geht der Wurf — sonst läuft er los.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":147.93,"y":140.22,"status":"ACTIVE"},{"id":"r3","x":116.82,"y":179.82,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":133.1,"y":151.67,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Runner auf 2 und 3 — anschauen, dann werfen';
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 4, 1600, 'Out an der 1, der Run fällt nicht. Dafür bleiben beide, wo sie sind.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":197.43,"y":175.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Runner auf 2 und 3 — anschauen, dann werfen';
+
+-- 51. Passed Ball, Runner auf 3
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Passed Ball, Runner auf 3', id, 'ANY', NULL
 FROM play_category WHERE name = 'Spielsituationen';
@@ -813,4 +864,4 @@ INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 4, 600, 'Wurf zum Pitcher an der Platte, Tag.', 2, '{"defenders":[{"position":"P","x":155,"y":218},{"position":"C","x":145,"y":240},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":144.39,"y":207.39,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"P","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Passed Ball, Runner auf 3';
 
--- 48 Plays.
+-- 51 Plays.

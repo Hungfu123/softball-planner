@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Prueft die 48 Start-Plays aus V68.
+ * Prueft die 51 Start-Plays aus V68.
  *
  * Nicht die Fachlichkeit — ob ein Cut-Mann richtig steht, entscheidet der Trainer. Hier
  * wird geprueft, was eine Maschine pruefen kann: dass jedes Play vollstaendig, validierbar
@@ -41,7 +41,7 @@ class SeedPlaysTest {
 
     @Test
     void liefertAchtundvierzigPlays() {
-        assertThat(plays.findAll()).hasSizeGreaterThanOrEqualTo(48);
+        assertThat(plays.findAll()).hasSizeGreaterThanOrEqualTo(51);
     }
 
     @Test

@@ -209,7 +209,8 @@ Drei neue Farben: Gras, Sand, Optic Yellow. Alles andere steht im Theme.
 
 ### Form-Grammatik
 
-**Kreis** = Verteidiger (mit Positionskürzel) · **Raute** = Runner · **Punkt** = Ball.
+**Kreis** = Verteidiger (mit Positionskürzel) · **kleinere rote Scheibe** = Runner · **Punkt** = Ball.
+(Der Runner war im Entwurf eine Raute; im Oktober 2026 auf eine Scheibe geändert — siehe `docs/PLAYMAKER.md`.)
 Form trägt die Bedeutung, Farbe verstärkt sie nur. Nötig, weil Rot und Gelb
 zueinander nur 2,17 messen und bei Deuteranopie auf 2,00 fallen.
 
@@ -499,7 +500,7 @@ Wiedergabeleiste: `◀` · `❚❚` · `▶` · Zählung · **`↻` Schleife** �
   abzuspielen. Vorher war das nur per Wischen erreichbar, also unsichtbar.
 - Die **Schleife** lässt das Play weiterlaufen, während der Trainer redet.
 - Im Kopf ein **„?"**, das die Legende als Sheet öffnet: Kreis ist Verteidiger,
-  Raute ist Runner, Punkt ist Ball, gestrichelt ist der Ball, durchgezogen der
+  die kleinere rote Scheibe ist der Runner, Punkt ist Ball, gestrichelt ist der Ball, durchgezogen der
   Läufer. Ein Spieler sieht das Board zum ersten Mal ohne den Trainer daneben.
 
 **Nicht** in die Leiste: Teilen, Legende, Gegenstück, Kategorie. Sie gehört der
