@@ -84,6 +84,19 @@ describe('runnerPath', () => {
     expect(mitte.y).toBeCloseTo((HOME.y + FIRST_BASE.y) / 2, 1);
   });
 
+  test('laeuft von der zweiten zur ersten Base direkt zurueck, nicht um die Raute', () => {
+    const mitte = runnerPath(SECOND_BASE, FIRST_BASE, 0.5);
+
+    const direkt = { x: (SECOND_BASE.x + FIRST_BASE.x) / 2, y: (SECOND_BASE.y + FIRST_BASE.y) / 2 };
+    expect(Math.hypot(mitte.x - direkt.x, mitte.y - direkt.y)).toBeLessThan(2);
+  });
+
+  test('laeuft von der dritten zur ersten Base ueber die zweite — kurzer Weg rueckwaerts', () => {
+    const mitte = runnerPath(THIRD_BASE, FIRST_BASE, 0.5);
+
+    expect(Math.hypot(mitte.x - SECOND_BASE.x, mitte.y - SECOND_BASE.y)).toBeLessThan(2);
+  });
+
   test('laeuft abseits der Bases geradeaus', () => {
     const von = { x: 10, y: 10 };
     const nach = { x: 30, y: 50 };

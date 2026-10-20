@@ -177,6 +177,46 @@ test('fragt vor dem Loeschen eines Stands nach und nummeriert neu', async ({ pag
   await aufraeumen(page, titel)
 })
 
+test('überlebt die Pfeiltaste an beiden Enden der Zeitleiste', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} zeitleiste`
+  await neuesPlay(page, titel)
+  await page.getByRole('button', { name: '+ Stand' }).click()
+
+  const leiste = page.getByRole('slider', { name: 'Stand' })
+  await leiste.press('ArrowLeft')
+  await leiste.press('ArrowLeft')
+  await expect(page.getByText('Stand 1 von 2')).toBeVisible()
+
+  await leiste.press('ArrowRight')
+  await leiste.press('ArrowRight')
+  await leiste.press('ArrowRight')
+  await expect(page.getByText('Stand 2 von 2')).toBeVisible()
+
+  // Nichts abgestürzt: die Marker sind noch da.
+  await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
+
+  await aufraeumen(page, titel)
+})
+
+test('setzt einen Runner per Antippen auf Out', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} runner out`
+  await neuesPlay(page, titel)
+
+  await page.getByRole('button', { name: 'Runner +' }).click()
+  const runner = page.locator('[data-marker="runner"]').first()
+  await expect(runner).toBeVisible()
+
+  const box = (await runner.boundingBox())!
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+
+  await expect(page.getByText('Out — durchgestrichen, dann weg')).toBeVisible()
+  await page.getByText('Out — durchgestrichen, dann weg').click()
+
+  await expect(page.locator('[data-marker="runner"][data-status="OUT"]')).toHaveCount(1)
+
+  await aufraeumen(page, titel)
+})
+
 test('zeigt die Legende', async ({ page }) => {
   const titel = `${TITEL_PREFIX} legende`
   await neuesPlay(page, titel)

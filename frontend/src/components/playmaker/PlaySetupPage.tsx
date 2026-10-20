@@ -6,6 +6,7 @@ import { PlayBoard } from './PlayBoard'
 import { BASES, DEFAULT_DEFENSE, HOME, POSITIONS } from './board/geometry'
 import type { GameState, PlayMarkers, PlayStep } from './board/types'
 import { Button } from '@/components/shared/Button'
+import { TextPromptModal } from './TextPromptModal'
 
 const LAGEN: { value: GameState; label: string }[] = [
   { value: 'ANY', label: 'Jede Lage' },
@@ -14,11 +15,17 @@ const LAGEN: { value: GameState; label: string }[] = [
   { value: 'BEHIND', label: 'Hinten' },
 ]
 
-/** Nur die drei Bases, an denen ein Runner stehen kann. Home ist der Batter. */
+/**
+ * Die drei Bases, an denen ein Runner stehen kann. Home ist der Batter.
+ *
+ * Reihenfolge ist die auf dem BILDSCHIRM, von links nach rechts: die dritte Base liegt
+ * links, die erste rechts. Vorher lag die Liste in Nummernfolge ueber einem Dreispalten-
+ * Raster — wer auf die sichtbare erste Base tippte, setzte den Runner auf die dritte.
+ */
 const RUNNER_BASES = [
-  { id: 'r1', label: '1', point: BASES[1] },
-  { id: 'r2', label: '2', point: BASES[2] },
   { id: 'r3', label: '3', point: BASES[3] },
+  { id: 'r2', label: '2', point: BASES[2] },
+  { id: 'r1', label: '1', point: BASES[1] },
 ]
 
 /**
@@ -29,7 +36,7 @@ const RUNNER_BASES = [
  * Play mit genau einem Stand — die Ausgangslage IST der erste Stand.
  */
 export default function PlaySetupPage() {
-  const { categories, loading, addCategory } = usePlays()
+  const { plays, categories, loading, addCategory } = usePlays()
   const navigate = useNavigate()
 
   const [title, setTitle] = useState('')
@@ -40,6 +47,8 @@ export default function PlaySetupPage() {
   const [outs, setOuts] = useState(0)
   const [speichert, setSpeichert] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
+  const [kategorieDialog, setKategorieDialog] = useState(false)
+  const [counterpartId, setCounterpartId] = useState<number | null>(null)
 
   const aktiveKategorie = categoryId ?? categories[0]?.id ?? null
 
@@ -83,7 +92,7 @@ export default function PlaySetupPage() {
         categoryId: aktiveKategorie,
         gameState,
         gameStateNote: gameState === 'ANY' ? null : gameStateNote.trim() || null,
-        counterpartPlayId: null,
+        counterpartPlayId: counterpartId,
         steps: [ersterStand],
       })
       navigate(`/orga/playmaker/${play.id}/bearbeiten`, { replace: true })
@@ -93,12 +102,11 @@ export default function PlaySetupPage() {
     }
   }
 
-  const neueKategorie = async () => {
-    const name = window.prompt('Name der neuen Kategorie')
-    if (!name?.trim()) return
+  const neueKategorie = async (name: string) => {
     try {
       const kategorie = await addCategory(name.trim())
       setCategoryId(kategorie.id)
+      setKategorieDialog(false)
     } catch (e) {
       setFehler(e instanceof Error ? e.message : 'Kategorie konnte nicht angelegt werden.')
     }
@@ -132,7 +140,7 @@ export default function PlaySetupPage() {
               </option>
             ))}
           </select>
-          <Button variant="secondary" onClick={neueKategorie}>
+          <Button variant="secondary" onClick={() => setKategorieDialog(true)}>
             Neue
           </Button>
         </div>
@@ -155,13 +163,33 @@ export default function PlaySetupPage() {
         {/* Erscheint erst, wenn die Lage vom Normalfall abweicht — sonst kostet der
             Normalfall Nachdenken, das er nicht wert ist. */}
         {gameState !== 'ANY' && (
-          <input
-            value={gameStateNote}
-            onChange={e => setGameStateNote(e.target.value)}
-            placeholder="Warum? In einem Satz"
-            className="w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm text-navy-900"
-            aria-label="Grund für die Spiellage"
-          />
+          <>
+            <input
+              value={gameStateNote}
+              onChange={e => setGameStateNote(e.target.value)}
+              placeholder="Warum? In einem Satz"
+              className="w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm text-navy-900"
+              aria-label="Grund für die Spiellage"
+            />
+            {/* Das Gegenstueck gehoert hierher und nirgendwo sonst: es ergibt nur Sinn,
+                wenn dieses Play fuer eine bestimmte Lage gilt — dieselbe Situation,
+                andere Entscheidung. */}
+            <select
+              value={counterpartId ?? ''}
+              onChange={e => setCounterpartId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full rounded-xl border border-cream-300 bg-white px-4 py-3 font-display text-sm font-bold text-navy-900"
+              aria-label="Gegenstück"
+            >
+              <option value="">Kein Gegenstück</option>
+              {plays
+                .filter(play => play.categoryId === aktiveKategorie)
+                .map(play => (
+                  <option key={play.id} value={play.id}>
+                    {play.title}
+                  </option>
+                ))}
+            </select>
+          </>
         )}
       </div>
 
@@ -209,6 +237,15 @@ export default function PlaySetupPage() {
           {speichert ? 'Wird angelegt …' : loading ? 'Kategorien werden geladen …' : 'Play bauen'}
         </Button>
       </div>
+
+      {kategorieDialog && (
+        <TextPromptModal
+          title="Neue Kategorie"
+          placeholder="z. B. Pickoff-Varianten"
+          onConfirm={neueKategorie}
+          onCancel={() => setKategorieDialog(false)}
+        />
+      )}
 
       <p className="px-4 pt-3 text-xs text-gray-400">
         Home ist {HOME.x === 155 ? 'unten' : 'gesetzt'} — von dort fängt jedes Play an.

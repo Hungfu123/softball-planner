@@ -19,6 +19,11 @@ export function StepTimeline({
   if (count < 2) return null
 
   const anteil = (current / (count - 1)) * 100
+  /**
+   * Hier wird geklemmt, nicht beim Aufrufer. Der Editor reichte den rohen Setter durch;
+   * Pfeil-links auf Stand 1 ergab cur = -1, und der Zugriff auf den Stand warf.
+   */
+  const springe = (ziel: number) => onSeek(Math.max(0, Math.min(count - 1, ziel)))
 
   return (
     <div
@@ -30,13 +35,15 @@ export function StepTimeline({
       aria-valuenow={current + 1}
       tabIndex={0}
       onKeyDown={e => {
-        if (e.key === 'ArrowLeft') onSeek(current - 1)
-        if (e.key === 'ArrowRight') onSeek(current + 1)
+        if (e.key === 'ArrowLeft') springe(current - 1)
+        if (e.key === 'ArrowRight') springe(current + 1)
+        if (e.key === 'Home') springe(0)
+        if (e.key === 'End') springe(count - 1)
       }}
       onClick={e => {
         const rect = e.currentTarget.getBoundingClientRect()
         const t = (e.clientX - rect.left) / rect.width
-        onSeek(Math.round(t * (count - 1)))
+        springe(Math.round(t * (count - 1)))
       }}
     >
       <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-cream-200">

@@ -52,11 +52,33 @@ describe('PlayBoard', () => {
     expect(Number(ball.getAttribute('cy'))).toBeCloseTo(90, 5);
   });
 
-  test('laesst Runner mit Status OUT weg', () => {
+  test('zeichnet einen Out-Runner durchgestrichen, statt ihn wegzulassen', () => {
     const raus = markers({ runners: [{ id: 'r1', x: 196, y: 174, status: 'OUT' }] });
     const { container } = render(<PlayBoard markers={raus} />);
 
+    // Er bleibt in DIESEM Stand sichtbar, damit man den Tag noch sieht.
+    const runner = container.querySelector('[data-marker="runner"]')!;
+    expect(runner.getAttribute('data-status')).toBe('OUT');
+    expect(runner.querySelectorAll('path')).toHaveLength(2);
+  });
+
+  test('laesst einen Runner, der gepunktet hat, weg', () => {
+    const run = markers({ runners: [{ id: 'r1', x: 155, y: 220, status: 'SCORED' }] });
+    const { container } = render(<PlayBoard markers={run} />);
+
     expect(container.querySelectorAll('[data-marker="runner"]')).toHaveLength(0);
+  });
+
+  test('zeichnet einen Fly im Bogen und einen Grounder gerade', () => {
+    const vorher = markers({ ball: { state: 'IN_FLIGHT', holder: null, x: 155, y: 218, trajectory: 'AIR' } });
+    const fly = markers({ ball: { state: 'IN_FLIGHT', holder: null, x: 245, y: 62, trajectory: 'AIR' } });
+    const grounder = markers({ ball: { state: 'IN_FLIGHT', holder: null, x: 245, y: 62, trajectory: 'GROUND' } });
+
+    const { container: a } = render(<PlayBoard markers={fly} previous={vorher} />);
+    const { container: b } = render(<PlayBoard markers={grounder} previous={vorher} />);
+
+    expect(a.querySelector('path[d*="Q"]')).not.toBeNull();
+    expect(b.querySelector('path[d*="Q"]')).toBeNull();
   });
 
   test('haelt alle Marker innerhalb des viewBox', () => {

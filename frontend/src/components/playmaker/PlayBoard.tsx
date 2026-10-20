@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BASES,
   CIRCLE_RADIUS,
@@ -33,6 +33,7 @@ interface Props {
   ghost?: PlayMarkers | null;
   /** 'content' schneidet nach Inhalt zu (Handy), 'full' zeigt immer das ganze Feld. */
   mode?: 'content' | 'full';
+  /** Ohne Angabe misst sich das Board selbst. */
   width?: number;
   height?: number;
   pointerFine?: boolean;
@@ -60,8 +61,8 @@ export function PlayBoard({
   previous = null,
   ghost = null,
   mode = 'content',
-  width = 390,
-  height = 612,
+  width,
+  height,
   pointerFine = false,
   interactive = true,
   className,
@@ -71,20 +72,52 @@ export function PlayBoard({
   dropHint = null,
   dragging = null,
 }: Props) {
+  /**
+   * Die viewBox wird exakt auf das Seitenverhaeltnis der Flaeche gezogen, deshalb steht
+   * preserveAspectRatio auf "none". Das setzt voraus, dass die uebergebene Groesse der
+   * echten Elementgroesse entspricht — sonst wird verzerrt statt eingepasst. In der
+   * Uebersicht und im Setup stimmte das nicht: das Hero-Feld war am Handy um Faktor 2,15
+   * und am Desktop um 5,89 flachgedrueckt. Deshalb misst sich das Board selbst, wenn ihm
+   * niemand eine Groesse gibt.
+   */
+  const huelle = useRef<HTMLDivElement>(null);
+  const [gemessen, setGemessen] = useState({ w: width ?? 390, h: height ?? 612 });
+
+  useLayoutEffect(() => {
+    if (width !== undefined && height !== undefined) {
+      setGemessen({ w: width, h: height });
+      return;
+    }
+    const element = huelle.current;
+    if (!element) return;
+    const messen = () => {
+      const rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) setGemessen({ w: rect.width, h: rect.height });
+    };
+    messen();
+    // Ohne ResizeObserver (aeltere Browser, jsdom) bleibt es bei der einmaligen Messung —
+    // besser ein Board in der richtigen Form als gar keins.
+    if (typeof ResizeObserver === 'undefined') return;
+    const beobachter = new ResizeObserver(messen);
+    beobachter.observe(element);
+    return () => beobachter.disconnect();
+  }, [width, height]);
+
   const { viewBox, radius } = useMemo(() => {
     const content: Box =
       mode === 'full'
         ? FULL_FIELD
         : computeContentBox(steps ?? [{ ordinal: 1, durationMs: 1200, note: null, outs: 0, markers }]);
-    const fitted = fitViewBox(content, width, height);
+    const fitted = fitViewBox(content, gemessen.w, gemessen.h);
     return { ...fitted, radius: markerRadius(fitted.scale, pointerFine, interactive) };
-  }, [markers, steps, mode, width, height, pointerFine, interactive]);
+  }, [markers, steps, mode, gemessen.w, gemessen.h, pointerFine, interactive]);
 
   const ballPosition = ballAnchor(markers, radius);
   const ballRadius = radius * 0.42;
   const runnerSide = radius * 1.414;
 
   return (
+    <div ref={huelle} style={{ width: '100%', height: '100%' }}>
     <svg
       viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`}
       preserveAspectRatio="none"
@@ -135,7 +168,7 @@ export function PlayBoard({
 
       {ghost && (
         <path
-          d={`M${ghost.ball.x},${ghost.ball.y} L${markers.ball.x},${markers.ball.y}`}
+          d={ballPfad(ghost.ball, markers.ball)}
           fill="none"
           stroke={BALL}
           strokeWidth={2.4}
@@ -147,7 +180,7 @@ export function PlayBoard({
       {previous && (
         <>
           <path
-            d={`M${previous.ball.x},${previous.ball.y} L${markers.ball.x},${markers.ball.y}`}
+            d={ballPfad(previous.ball, markers.ball)}
             fill="none"
             stroke={BALL}
             strokeWidth={2.4}
@@ -189,9 +222,15 @@ export function PlayBoard({
       ))}
 
       {markers.runners
-        .filter((runner) => runner.status === 'ACTIVE')
+        .filter((runner) => runner.status !== 'SCORED')
         .map((runner) => (
-          <g key={runner.id} data-marker="runner" data-id={runner.id}>
+          <g
+            key={runner.id}
+            data-marker="runner"
+            data-id={runner.id}
+            data-status={runner.status}
+            opacity={runner.status === 'OUT' ? 0.75 : 1}
+          >
             <rect
               x={runner.x - runnerSide / 2}
               y={runner.y - runnerSide / 2}
@@ -201,6 +240,24 @@ export function PlayBoard({
               transform={`rotate(45 ${runner.x} ${runner.y})`}
               fill={RUNNER}
             />
+            {/* Out: durchgestrichen. Er bleibt in DIESEM Stand sichtbar, damit man den
+                Tag noch sieht, und fehlt erst im naechsten. */}
+            {runner.status === 'OUT' && (
+              <>
+                <path
+                  d={`M${runner.x - radius * 0.8},${runner.y - radius * 0.8} L${runner.x + radius * 0.8},${runner.y + radius * 0.8}`}
+                  stroke={INVENTORY}
+                  strokeWidth={radius * 0.22}
+                  strokeLinecap="round"
+                />
+                <path
+                  d={`M${runner.x + radius * 0.8},${runner.y - radius * 0.8} L${runner.x - radius * 0.8},${runner.y + radius * 0.8}`}
+                  stroke={INVENTORY}
+                  strokeWidth={radius * 0.22}
+                  strokeLinecap="round"
+                />
+              </>
+            )}
           </g>
         ))}
 
@@ -223,7 +280,27 @@ export function PlayBoard({
       </g>
       {dragging && <g data-dragging={dragging.kind} />}
     </svg>
+    </div>
   );
+}
+
+/**
+ * Die Bahn des Balls zwischen zwei Staenden.
+ *
+ * Ein Fly fliegt im Bogen, ein Grounder laeuft gerade — sonst sehen beide gleich aus und
+ * die Unterscheidung steht nur in der Notiz. Der Bogen weicht zur Seite aus, auf der mehr
+ * Platz ist: rechtwinklig zur Verbindung, mit einem Achtel ihrer Laenge.
+ */
+function ballPfad(von: { x: number; y: number }, nach: PlayMarkers['ball']): string {
+  if (nach.trajectory === 'GROUND') return `M${von.x},${von.y} L${nach.x},${nach.y}`;
+  const dx = nach.x - von.x;
+  const dy = nach.y - von.y;
+  const laenge = Math.hypot(dx, dy);
+  if (laenge < 1) return `M${von.x},${von.y} L${nach.x},${nach.y}`;
+  const hoehe = laenge / 8;
+  const mx = (von.x + nach.x) / 2 - (dy / laenge) * hoehe;
+  const my = (von.y + nach.y) / 2 + (dx / laenge) * hoehe;
+  return `M${von.x},${von.y} Q${mx.toFixed(2)},${my.toFixed(2)} ${nach.x},${nach.y}`;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useBlocker, useNavigate, useParams } from 'react-router-dom'
 import * as api from '@/api/plays'
+import { ladePlayMitRueckfall } from './ladePlay'
 import { usePlayEditor, SNAP_RADIUS } from '@/hooks/usePlayEditor'
 import { PlayBoard } from './PlayBoard'
 import { StepTimeline } from './StepTimeline'
@@ -9,6 +10,7 @@ import { BASES, FULL_FIELD } from './board/geometry'
 import { computeContentBox, fitViewBox, hitRadius } from './board/layout'
 import type { MarkerRef, Play, PlayStep } from './board/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import { RunnerSheet } from './RunnerSheet'
 
 /** Wie weit der gegriffene Marker ueber die Fingerkuppe springt, in CSS-Pixeln. */
 const LIFT_PX = 28
@@ -21,8 +23,7 @@ export default function PlayEditorPage() {
 
   useEffect(() => {
     if (!id) return
-    api
-      .getPlay(Number(id))
+    ladePlayMitRueckfall(Number(id))
       .then(setPlay)
       .catch(e => setLadefehler(e instanceof Error ? e.message : 'Play nicht gefunden.'))
   }, [id])
@@ -60,7 +61,28 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   const [hint, setHint] = useState<{ x: number; y: number; snapped: boolean } | null>(null)
   const [vollesFeld, setVollesFeld] = useState(false)
   const [loeschen, setLoeschen] = useState(false)
+  /** Angetippter Runner — gezogen wurde nicht, also will der Benutzer etwas anderes. */
+  const [runnerSheet, setRunnerSheet] = useState<string | null>(null)
+  const bewegt = useRef(false)
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
+
+  /**
+   * Ungesichertes darf nicht lautlos verschwinden.
+   *
+   * Der Fall, um den es geht: am Platz ist kein Netz, der Kopf steht rot auf "Nicht
+   * gesichert", und der Trainer tippt auf Zurueck. Vorher navigierte die Seite
+   * bedingungslos und drei gebaute Staende waren weg. Jetzt blockiert die Navigation
+   * innerhalb der App, und das Schliessen des Tabs fragt nach — wie beim Spieltag-Planer.
+   */
+  const ungesichert = editor.saveState === 'fehler'
+  const blocker = useBlocker(ungesichert)
+
+  useEffect(() => {
+    if (!ungesichert) return
+    const handler = (e: BeforeUnloadEvent) => e.preventDefault()
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [ungesichert])
 
   useEffect(() => {
     const messen = () => {
@@ -121,6 +143,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
     if (!treffer || treffer.d > reichweite) return
     e.currentTarget.setPointerCapture(e.pointerId)
     editor.beginGesture()
+    bewegt.current = false
     setEingefroren(berechnet)
     setDrag({ ref: treffer.ref, dx: treffer.x - p.x, dy: treffer.y - p.y })
   }
@@ -128,6 +151,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!drag) return
     const p = zuBoard(e.clientX, e.clientY)
+    bewegt.current = true
     const lift = LIFT_PX / geometrie.scale
     const x = p.x + drag.dx
     const y = p.y + drag.dy - lift
@@ -144,10 +168,16 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
 
   const onPointerUp = () => {
     if (!drag) return
+    // Antippen ohne Bewegung ist keine Verschiebung, sondern eine Frage: was soll mit
+    // diesem Runner passieren?
+    if (!bewegt.current && drag.ref.kind === 'runner') {
+      setRunnerSheet(drag.ref.id)
+    }
     if (hint) editor.dropMarker(drag.ref, hint.x, hint.y)
     setDrag(null)
     setHint(null)
     setEingefroren(null)
+    editor.endGesture()
   }
 
   const vorher = editor.cur > 0 ? editor.steps[editor.cur - 1].markers : null
@@ -158,8 +188,9 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         <button
           type="button"
           onClick={async () => {
-            await editor.flushSave()
-            onBack()
+            // Nur verlassen, wenn das Sichern geklappt hat. flushSave faengt den Fehler
+            // selbst ab und meldet ihn als false — vorher ging die Seite trotzdem weiter.
+            if (await editor.flushSave()) onBack()
           }}
           className="font-display text-xs font-bold text-gray-500"
         >
@@ -237,6 +268,35 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
           </ToolButton>
         </div>
       </div>
+
+      {runnerSheet && (
+        <RunnerSheet
+          onOut={() => {
+            editor.setRunnerStatus(runnerSheet, 'OUT')
+            setRunnerSheet(null)
+          }}
+          onScored={() => {
+            editor.setRunnerStatus(runnerSheet, 'SCORED')
+            setRunnerSheet(null)
+          }}
+          onRemove={() => {
+            editor.removeRunner(runnerSheet)
+            setRunnerSheet(null)
+          }}
+          onClose={() => setRunnerSheet(null)}
+        />
+      )}
+
+      {blocker.state === 'blocked' && (
+        <ConfirmModal
+          title="Nicht gesichert"
+          message="Die letzten Änderungen konnten nicht gespeichert werden. Beim Verlassen gehen sie verloren."
+          confirmLabel="Trotzdem verlassen"
+          cancelLabel="Hierbleiben"
+          onConfirm={() => blocker.proceed()}
+          onCancel={() => blocker.reset()}
+        />
+      )}
 
       {loeschen && (
         <ConfirmModal

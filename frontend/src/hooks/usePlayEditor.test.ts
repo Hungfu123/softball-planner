@@ -140,6 +140,46 @@ describe('usePlayEditor', () => {
     expect(new Set(ids).size).toBe(2);
   });
 
+  test('verbraucht beim Tippen einer Notiz keine Rueckgaengig-Stufe', () => {
+    const { result } = renderHook(() => usePlayEditor(play(), save));
+
+    act(() => result.current.beginGesture());
+    act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, 10, 20));
+    for (const text of ['C', 'Cu', 'Cut', 'Cut-', 'Cut-M', 'Cut-Ma', 'Cut-Mann']) {
+      act(() => result.current.setNote(text));
+    }
+    act(() => result.current.undo());
+
+    // Das eine Undo muss die Markerbewegung treffen, nicht einen Buchstaben.
+    const ss = result.current.steps[0].markers.defenders.find(d => d.position === 'SS')!;
+    expect(ss.x).toBeCloseTo(DEFAULT_DEFENSE.SS.x, 5);
+  });
+
+  test('merkt sich nichts, wenn ein Marker nur angetippt und nicht bewegt wird', () => {
+    const { result } = renderHook(() => usePlayEditor(play(), save));
+
+    act(() => result.current.beginGesture());
+    act(() => result.current.endGesture());
+
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  test('meldet einen gescheiterten Sicherungsversuch an den Aufrufer', async () => {
+    const kaputt = vi.fn().mockRejectedValue(new Error('offline'));
+    const { result } = renderHook(() => usePlayEditor(play(), kaputt));
+
+    act(() => result.current.beginGesture());
+    act(() => result.current.moveMarker({ kind: 'defender', position: 'SS' }, 1, 1));
+
+    let erfolg: boolean | undefined;
+    await act(async () => {
+      erfolg = await result.current.flushSave();
+    });
+
+    expect(erfolg).toBe(false);
+    expect(result.current.saveState).toBe('fehler');
+  });
+
   test('schaltet die Dauer eines Stands durch 600, 1200 und 2000', () => {
     const { result } = renderHook(() => usePlayEditor(play(), save));
 
