@@ -107,6 +107,16 @@ die Liste. Drei Dinge, die nicht beliebig sind:
   und das Suchfeld klebt mit. 51 Plays sind rund 4000 px; vom letzten Block waren es sonst
   3400 px zurück nach oben, nur um etwas einzutippen.
 
+- **Die Blöcke klappen zu**, je Gerät in `localStorage` gemerkt (`playmaker-zugeklappt`) —
+  am Tablet im Dugout will man andere offen haben als am Rechner. Sind alle zu, ist die
+  Seite ein Inhaltsverzeichnis: dann weicht das Hero-Feld einer schmalen Zeile, und alles
+  passt ohne Scrollen auf ein Telefon ab ~810 px Höhe (iPhone X aufwärts). Auf dem SE
+  (667 px) passt es nicht — dafür müssten die Überschriften unter 44 px Trefferfläche
+  fallen, und das ist es nicht wert.
+  Ein flachgedrücktes Feld statt der Zeile wäre nutzlos: das Board zieht den Ausschnitt auf
+  das Seitenverhältnis der Fläche, bei 112 px Höhe liegt die Raute als Streifen in der
+  Mitte.
+
 Kopieren meldet sich mit einem Toast (das Ergebnis steht ganz oben und damit außer Sicht),
 Löschen fragt per Modal — es ist nicht rückgängig zu machen. Beides gibt es auch am Hero.
 
