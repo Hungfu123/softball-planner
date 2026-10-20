@@ -38,7 +38,7 @@ export function computeContentBox(steps: PlayStep[]): Box {
   }
 
   let x = minX - PADDING;
-  let y = minY - PADDING;
+  const y = minY - PADDING;
   let w = maxX - minX + 2 * PADDING;
   const h = maxY - minY + 2 * PADDING;
 
