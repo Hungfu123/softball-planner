@@ -71,10 +71,27 @@ class PlayValidatorTest {
     }
 
     @Test
-    void lehntUnbekannteDauerAb() {
+    void lehntKrummeDauerAb() {
         assertThatThrownBy(() -> validator.validate(play(step(1, 999, 0))))
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessageContaining("Dauer");
+    }
+
+    @Test
+    void lehntUnsinnigLangeDauerAb() {
+        assertThatThrownBy(() -> validator.validate(play(step(1, 20_000, 0))))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("Dauer");
+    }
+
+    @Test
+    void nimmtZwischenwerteAn() {
+        // Die Start-Plays rechnen ihre Dauer aus der Strecke. Ein Stand, in dem jemand
+        // 78 ft laeuft, dauert 3,2 s — nicht 2,0, weil das die naechste Taste waere.
+        assertThatCode(() -> validator.validate(play(step(1, 1400, 0))))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> validator.validate(play(step(1, 3200, 0))))
+                .doesNotThrowAnyException();
     }
 
     @Test

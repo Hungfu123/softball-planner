@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { FIRST_BASE, HOME, SECOND_BASE, THIRD_BASE } from './geometry';
+import { BASES, FIRST_BASE, HOME, SECOND_BASE, THIRD_BASE } from './geometry';
 import { frameAt, runnerPath } from './interpolate';
 import type { PlayStep } from './types';
 
@@ -107,3 +107,34 @@ describe('runnerPath', () => {
     expect(mitte.y).toBeCloseTo(30, 5);
   });
 });
+
+describe('runnerPath — Richtung und Base-Wege', () => {
+  const nahe = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+
+  test('laeuft von der 1 nach Home ueber die 2 und die 3, nicht rueckwaerts die Linie entlang', () => {
+    // Auf halber Strecke muss er irgendwo hinter der 2 sein. Rueckwaerts laege er
+    // zwischen 1 und Home — genau das zeigte der Prototyp.
+    const mitte = runnerPath(BASES[1], BASES[0], 0.5);
+
+    expect(nahe(mitte, BASES[2])).toBeLessThan(35);
+    expect(nahe(mitte, { x: (BASES[1].x + BASES[0].x) / 2, y: (BASES[1].y + BASES[0].y) / 2 })).toBeGreaterThan(40);
+  });
+
+  test('laesst den Rundown von der 2 zurueck auf die 1 rueckwaerts laufen', () => {
+    const mitte = runnerPath(BASES[2], BASES[1], 0.5);
+    const direkt = { x: (BASES[2].x + BASES[1].x) / 2, y: (BASES[2].y + BASES[1].y) / 2 };
+
+    expect(nahe(mitte, direkt)).toBeLessThan(1);
+  });
+
+  test('fuehrt zu einem Ziel MITTEN auf einem Base-Weg ueber die Bases', () => {
+    // Von der 1 auf einen Punkt zwischen 2 und 3: die Luftlinie schneidet die 2 ab.
+    const ziel = { x: (BASES[2].x + BASES[3].x) / 2, y: (BASES[2].y + BASES[3].y) / 2 };
+    const mitte = runnerPath(BASES[1], ziel, 0.5);
+
+    expect(nahe(mitte, BASES[2])).toBeLessThan(25);
+    const luftlinie = { x: (BASES[1].x + ziel.x) / 2, y: (BASES[1].y + ziel.y) / 2 };
+    expect(nahe(mitte, luftlinie)).toBeGreaterThan(10);
+  });
+})

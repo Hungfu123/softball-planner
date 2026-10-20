@@ -217,6 +217,95 @@ test('setzt einen Runner per Antippen auf Out', async ({ page }) => {
   await aufraeumen(page, titel)
 })
 
+/** Wo der Ball in den Daten liegt, wenn ihn jemand haelt: genau auf seinem Halter. */
+async function ballZustand(page: Page) {
+  return page.evaluate(async () => {
+    const auth = localStorage.getItem('auth')
+    const id = location.pathname.match(/playmaker\/(\d+)/)![1]
+    const play = await (await fetch(`/api/plays/${id}`, {
+      headers: { Authorization: `Basic ${auth}` },
+    })).json()
+    return play.steps[0].markers.ball
+  })
+}
+
+test('nimmt den Ball aus der Hand des Pitchers und gibt ihn einem anderen', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} ball werfen`
+  await neuesPlay(page, titel)
+
+  // Der Ball startet beim Pitcher — in den Daten auf dessen Koordinate.
+  expect((await ballZustand(page)).holder).toBe('P')
+
+  const ball = (await page.locator('[data-marker="ball"] circle').boundingBox())!
+  const ziel = (await page.locator('[data-marker="defender"][data-id="1B"] circle').boundingBox())!
+
+  await page.mouse.move(ball.x + ball.width / 2, ball.y + ball.height / 2)
+  await page.mouse.down()
+  // Der gegriffene Marker haengt 28 px ueber der Fingerkuppe, deshalb unterhalb zielen.
+  await page.mouse.move(ziel.x + ziel.width / 2, ziel.y + ziel.height / 2 + 28, { steps: 10 })
+  await page.mouse.up()
+
+  await expect.poll(async () => (await ballZustand(page)).holder, { timeout: 8000 }).toBe('1B')
+
+  await aufraeumen(page, titel)
+})
+
+test('legt den Ball frei hin, wenn kein Fielder in der Naehe ist', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} ball frei`
+  await neuesPlay(page, titel)
+
+  const ball = (await page.locator('[data-marker="ball"] circle').boundingBox())!
+  await page.mouse.move(ball.x + ball.width / 2, ball.y + ball.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(ball.x + 110, ball.y - 130, { steps: 10 })
+  await page.mouse.up()
+
+  await expect.poll(async () => (await ballZustand(page)).state, { timeout: 8000 }).toBe('LOOSE')
+  expect((await ballZustand(page)).holder).toBeNull()
+
+  await aufraeumen(page, titel)
+})
+
+test('nimmt einen Out per Antippen zurueck', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} out zurueck`
+  await neuesPlay(page, titel)
+
+  await page.getByRole('button', { name: 'Runner +' }).click()
+  const runner = page.locator('[data-marker="runner"]').first()
+  await expect(runner).toBeVisible()
+  await runner.click()
+  await page.getByText('Out — durchgestrichen, dann weg').click()
+  await expect(page.locator('[data-marker="runner"][data-status="OUT"]')).toHaveCount(1)
+
+  // Ein versehentlich ausgemachter Runner muss wieder erreichbar sein — sonst hilft nur
+  // Rueckgaengig, und nach fuenf Zuegen gar nichts mehr.
+  await page.locator('[data-marker="runner"]').first().click()
+  await page.getByText('Läuft weiter — zurücknehmen').click()
+
+  await expect(page.locator('[data-marker="runner"][data-status="ACTIVE"]')).toHaveCount(1)
+
+  await aufraeumen(page, titel)
+})
+
+test('stellt die Flugbahn des Balls auf flach', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} flugbahn`
+  await neuesPlay(page, titel)
+
+  // locator.click() statt gerechneter Koordinaten: es wartet, bis der Marker steht.
+  // Das Board misst sich beim ersten Rendern selbst, und unter Last lag der Ball beim
+  // Lesen der Box noch woanders als beim Klick.
+  await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
+  await page.locator('[data-marker="ball"] circle').click()
+
+  await expect(page.getByText('Flach — Grounder oder Liner')).toBeVisible()
+  await page.getByText('Flach — Grounder oder Liner').click()
+  await page.getByRole('button', { name: 'Fertig' }).click()
+
+  await expect.poll(async () => (await ballZustand(page)).trajectory, { timeout: 8000 }).toBe('GROUND')
+
+  await aufraeumen(page, titel)
+})
+
 test('zeigt die Legende', async ({ page }) => {
   const titel = `${TITEL_PREFIX} legende`
   await neuesPlay(page, titel)
@@ -229,6 +318,51 @@ test('zeigt die Legende', async ({ page }) => {
 
   await aufraeumen(page, titel)
 })
+
+test('laesst ein Start-Play bearbeiten und sichern', async ({ page }) => {
+  // Die Start-Plays rechnen ihre Dauer aus der Strecke und tragen deshalb Werte wie
+  // 1400 oder 2200 ms. Ein Editor, der sie beim Sichern mitschickt, lief gegen eine
+  // Pruefung, die nur 600/1200/2000 kannte — jede Aenderung an einem Start-Play
+  // scheiterte mit 400, ohne dass man je ein eigenes Play gebaut haette.
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+  await page.getByRole('link', { name: /Grounder zum SS/ }).first().click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+
+  await page.getByRole('button', { name: 'Ändern' }).click()
+  await page.waitForURL(/\/bearbeiten$/)
+
+  const notiz = page.getByLabel('Notiz')
+  const vorher = await notiz.inputValue()
+  await notiz.fill('Geprüft im Editor')
+  await expect(page.getByText('Gesichert')).toBeVisible({ timeout: 10_000 })
+
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+  await expect(page.getByText('Geprüft im Editor')).toBeVisible()
+
+  // Start-Plays gehoeren allen. Der Test gibt die Notiz zurueck, wie er sie vorfand.
+  //
+  // Geprueft wird am Server, nicht am Kopf der Seite: "Gesichert" steht dort auch, bevor
+  // die Entprellung ueberhaupt losgelaufen ist — der Test waere vorbei und die Seite zu,
+  // bevor der PUT rausgeht.
+  await page.getByRole('button', { name: 'Ändern' }).click()
+  await page.waitForURL(/\/bearbeiten$/)
+  await page.getByLabel('Notiz').fill(vorher)
+  await expect.poll(async () => gespeicherteNotiz(page), { timeout: 10_000 }).toBe(vorher)
+})
+
+/** Die Notiz des ersten Standes, wie der Server sie kennt. */
+async function gespeicherteNotiz(page: Page) {
+  return page.evaluate(async () => {
+    const auth = localStorage.getItem('auth')
+    const id = location.pathname.match(/playmaker\/(\d+)/)![1]
+    const play = await (await fetch(`/api/plays/${id}`, {
+      headers: { Authorization: `Basic ${auth}` },
+    })).json()
+    return play.steps[0].note as string
+  })
+}
 
 test('zeigt die Start-Plays aus der Migration', async ({ page }) => {
   await page.goto('/orga/playmaker')

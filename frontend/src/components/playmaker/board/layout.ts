@@ -1,5 +1,5 @@
 import { BASE_PATH, HOME, type Box } from './geometry';
-import type { PlayStep } from './types';
+import type { PlayMarkers, PlayStep } from './types';
 
 /** Rand um den Inhalt, in Fuss. */
 export const PADDING = 20;
@@ -107,4 +107,23 @@ export function markerRadius(scale: number, pointerFine: boolean, interactive = 
 /** Trefferflaeche in Board-Einheiten — immer mindestens 44 px, auch wenn der Marker kleiner ist. */
 export function hitRadius(scale: number): number {
   return 22 / scale;
+}
+
+/**
+ * Ein gehaltener Ball sitzt auf der Kante der Scheibe, nicht in ihrer Mitte.
+ *
+ * Mittig waere er unsichtbar: er traegt keine Kontur und die Scheibe ist dunkel. Auf der
+ * Kante bricht seine Silhouette den Kreis auf und man sieht, wer ihn hat.
+ *
+ * Steht hier und nicht im Board, weil der Editor dieselbe Stelle braucht: er muss den
+ * Ball dort treffen, wo er GEZEICHNET wird. Eine Datei, die Komponenten exportiert, soll
+ * daneben keine Funktionen exportieren — sonst verliert Fast Refresh den Faden.
+ */
+export function ballAnchor(markers: PlayMarkers, radius: number): { x: number; y: number } {
+  if (!markers.ball.holder) return { x: markers.ball.x, y: markers.ball.y };
+  const halter = markers.defenders.find((d) => d.position === markers.ball.holder);
+  if (!halter) return { x: markers.ball.x, y: markers.ball.y };
+  // Nach rechts oben, weil dort am seltensten ein zweiter Marker steht.
+  const winkel = -Math.PI / 4;
+  return { x: halter.x + Math.cos(winkel) * radius, y: halter.y + Math.sin(winkel) * radius };
 }

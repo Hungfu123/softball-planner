@@ -12,12 +12,15 @@ export function TextPromptModal({
   title,
   placeholder,
   confirmLabel = 'Anlegen',
+  fehler = null,
   onConfirm,
   onCancel,
 }: {
   title: string
   placeholder?: string
   confirmLabel?: string
+  /** Grund, warum das Anlegen scheiterte — steht IM Dialog, nicht dahinter. */
+  fehler?: string | null
   onConfirm: (wert: string) => void
   onCancel: () => void
 }) {
@@ -45,6 +48,11 @@ export function TextPromptModal({
           aria-label={title}
           className="mt-4 w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm text-navy-900"
         />
+        {fehler && (
+          <p role="alert" className="mt-2 text-xs font-bold text-softball-red-600">
+            {fehler}
+          </p>
+        )}
         <div className="mt-4 flex gap-2">
           <button
             type="button"

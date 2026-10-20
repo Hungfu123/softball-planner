@@ -110,6 +110,15 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
   return {
     /** Was gezeichnet werden soll: das Zwischenbild, sonst der echte Stand. */
     markers: frame ?? aktuell?.markers ?? null,
+    /**
+     * Wohin der Ball in diesem Uebergang unterwegs ist.
+     *
+     * Die Flugbahn wird aus Start und AKTUELLER Ballstelle gezeichnet; waehrend der
+     * Animation wandert diese Stelle, der Bogen wurde also in jedem Bild neu gerechnet
+     * und peitschte. Mit dem festen Ziel bleibt die Kurve stehen und der Ball laeuft auf
+     * ihr entlang.
+     */
+    ballZiel: frame && playing && index + 1 < steps.length ? steps[index + 1].markers.ball : null,
     /** Der vorige Stand — daraus entstehen Flugbahn und Laufweg. */
     previous: index > 0 ? steps[index - 1].markers : null,
     ghost: index > 1 ? steps[index - 2].markers : null,

@@ -25,7 +25,17 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
   const [cur, setCur] = useState(0)
   const [undoStack, setUndoStack] = useState<PlayStep[][]>([])
   const [saveState, setSaveState] = useState<SaveState>('gespeichert')
+  /**
+   * Zustand, nicht Ref: ein Blocker muss neu bewerten koennen, wenn sich das aendert.
+   * Vorher haftete der Schutz am Fehlerzustand — waehrend der 800-ms-Entprellung und
+   * waehrend einer haengenden Anfrage war also etwas ungesichert, ohne dass jemand
+   * gewarnt haette. Genau am Platz ohne Netz haengt ein PUT gern dreissig Sekunden.
+   */
+  const [hatUngesichertes, setHatUngesichertes] = useState(false)
   const schmutzig = useRef(false)
+  /** Fassung der Staende. Verhindert, dass eine aeltere Sicherung die neuere freispricht. */
+  const fassung = useRef(0)
+  const gesicherteFassung = useRef(0)
   const gesteMerkte = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -59,6 +69,12 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     gesteMerkte.current = false
   }, [])
 
+  const markiereSchmutzig = useCallback(() => {
+    schmutzig.current = true
+    fassung.current += 1
+    setHatUngesichertes(true)
+  }, [])
+
   const aendern = useCallback(
     (fn: (entwurf: PlayStep[]) => void, mitSchnappschuss = true) => {
       if (mitSchnappschuss) merken()
@@ -67,9 +83,9 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
         fn(entwurf)
         return entwurf
       })
-      schmutzig.current = true
+      markiereSchmutzig()
     },
-    [merken],
+    [merken, markiereSchmutzig],
   )
 
   /** Verschiebt einen Marker im aktuellen Stand. Einrasten passiert beim Loslassen. */
@@ -130,9 +146,9 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
         }
         return entwurf
       })
-      schmutzig.current = true
+      markiereSchmutzig()
     },
-    [cur],
+    [cur, markiereSchmutzig],
   )
 
   const addStep = useCallback(() => {
@@ -145,8 +161,8 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
       return entwurf.map((s, i) => ({ ...s, ordinal: i + 1 }))
     })
     setCur(c => c + 1)
-    schmutzig.current = true
-  }, [cur, merken])
+    markiereSchmutzig()
+  }, [cur, merken, markiereSchmutzig])
 
   const duplicateStep = addStep
 
@@ -156,9 +172,9 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
       merken()
       setSteps(prev => prev.filter((_, i) => i !== index).map((s, i) => ({ ...s, ordinal: i + 1 })))
       setCur(c => Math.max(0, Math.min(c, steps.length - 2)))
-      schmutzig.current = true
+      markiereSchmutzig()
     },
-    [merken, steps.length],
+    [merken, steps.length, markiereSchmutzig],
   )
 
   const undo = useCallback(() => {
@@ -167,10 +183,10 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
       const letzter = prev[prev.length - 1]
       setSteps(letzter)
       setCur(c => Math.min(c, letzter.length - 1))
-      schmutzig.current = true
+      markiereSchmutzig()
       return prev.slice(0, -1)
     })
-  }, [])
+  }, [markiereSchmutzig])
 
   const resetDefense = useCallback(() => {
     aendern(entwurf => {
@@ -199,6 +215,17 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
       aendern(entwurf => {
         const runner = entwurf[cur].markers.runners.find(r => r.id === id)
         if (runner) runner.status = status
+        if (status === 'ACTIVE') {
+          // Zuruecknehmen heisst zuruecknehmen: die Folgestaende haben ihn beim Ausmachen
+          // verloren, hier bekommen sie ihn zurueck — an der Stelle, an der er steht.
+          for (let i = cur + 1; i < entwurf.length; i++) {
+            const folge = entwurf[i].markers.runners
+            if (runner && !folge.some(r => r.id === id)) {
+              folge.push({ id, x: runner.x, y: runner.y, status: 'ACTIVE' })
+            }
+          }
+          return
+        }
         // Ab dem naechsten Stand ist er weg.
         for (let i = cur + 1; i < entwurf.length; i++) {
           entwurf[i].markers.runners = entwurf[i].markers.runners.filter(r => r.id !== id)
@@ -220,16 +247,24 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     [aendern, cur],
   )
 
+  /** Bogen oder flach. Gilt fuer den Weg, der IN diesen Stand fuehrt. */
+  const setBallTrajectory = useCallback(
+    (trajectory: 'AIR' | 'GROUND') =>
+      aendern(entwurf => void (entwurf[cur].markers.ball.trajectory = trajectory), false),
+    [aendern, cur],
+  )
+
+  /** Ohne Schnappschuss: durchschalten ist selbst die Umkehr, das kostet keine Stufe. */
   const cycleDuration = useCallback(() => {
     aendern(entwurf => {
       const aktuell = entwurf[cur].durationMs
       const index = DAUERN.indexOf(aktuell as (typeof DAUERN)[number])
       entwurf[cur].durationMs = DAUERN[(index + 1) % DAUERN.length]
-    })
+    }, false)
   }, [aendern, cur])
 
   const setOuts = useCallback(
-    (outs: number) => aendern(entwurf => void (entwurf[cur].outs = outs)),
+    (outs: number) => aendern(entwurf => void (entwurf[cur].outs = outs), false),
     [aendern, cur],
   )
 
@@ -242,24 +277,41 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     [aendern, cur],
   )
 
+  /**
+   * Sichert und raeumt die Schmutz-Marke nur auf, wenn sich seit dem Abschicken nichts
+   * geaendert hat. Ohne diesen Vergleich sprach eine aeltere, langsam zurueckkehrende
+   * Sicherung die neuere Aenderung frei — und das Verlassen meldete Erfolg, obwohl der
+   * letzte Zug nie beim Server war.
+   */
+  const sichere = useCallback(async (stand: PlayStep[]): Promise<boolean> => {
+    const abgeschickt = fassung.current
+    setSaveState('speichert')
+    try {
+      await save(stand)
+      gesicherteFassung.current = Math.max(gesicherteFassung.current, abgeschickt)
+      if (fassung.current === gesicherteFassung.current) {
+        schmutzig.current = false
+        setHatUngesichertes(false)
+        setSaveState('gespeichert')
+      }
+      return fassung.current === gesicherteFassung.current
+    } catch {
+      setSaveState('fehler')
+      return false
+    }
+  }, [save])
+
   /** Entprelltes Sichern. "speichert" steht nur, solange wirklich eine Anfrage laeuft. */
   useEffect(() => {
     if (!schmutzig.current) return
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(async () => {
-      setSaveState('speichert')
-      try {
-        await save(steps)
-        schmutzig.current = false
-        setSaveState('gespeichert')
-      } catch {
-        setSaveState('fehler')
-      }
+      await sichere(steps)
     }, 800)
     return () => {
       if (timer.current) clearTimeout(timer.current)
     }
-  }, [steps, save])
+  }, [steps, sichere])
 
   /**
    * Sofort sichern, ohne auf die Entprellung zu warten.
@@ -270,17 +322,8 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
   const flushSave = useCallback(async (): Promise<boolean> => {
     if (timer.current) clearTimeout(timer.current)
     if (!schmutzig.current) return true
-    setSaveState('speichert')
-    try {
-      await save(steps)
-      schmutzig.current = false
-      setSaveState('gespeichert')
-      return true
-    } catch {
-      setSaveState('fehler')
-      return false
-    }
-  }, [save, steps])
+    return sichere(steps)
+  }, [sichere, steps])
 
   const retrySave = useCallback(() => flushSave(), [flushSave])
 
@@ -289,10 +332,8 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     cur,
     beginGesture,
     endGesture,
-    /** true, solange noch etwas ungesichert ist. */
-    get hatUngesichertes() {
-      return schmutzig.current
-    },
+    /** true, solange etwas ungesichert ist — auch waehrend Entprellung und laufender Anfrage. */
+    hatUngesichertes,
     setCur,
     step: steps[cur],
     saveState,
@@ -309,6 +350,7 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     addRunner,
     setRunnerStatus,
     removeRunner,
+    setBallTrajectory,
     cycleDuration,
     setOuts,
     setNote,

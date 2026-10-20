@@ -5,7 +5,6 @@ import com.softball.domain.model.PlayStep;
 import com.softball.shared.exception.BusinessValidationException;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Prueft ein Play auf das, was die App selbst garantiert — und auf nichts weiter.
@@ -17,8 +16,18 @@ import java.util.Set;
  */
 public class PlayValidator {
 
-    /** Die drei Dauern, die die Oberflaeche anbietet. Alles andere ist ein Programmfehler. */
-    private static final Set<Integer> ERLAUBTE_DAUERN = Set.of(600, 1200, 2000);
+    /**
+     * Die Oberflaeche bietet drei Dauern an (600, 1200, 2000 ms), die Daten lassen mehr zu.
+     *
+     * Die Start-Plays rechnen ihre Dauer aus der laengsten Strecke des Standes: ein Runner
+     * legt rund 24 ft/s zurueck, und 78 ft in 2 Sekunden sehen nicht nach Laufen aus,
+     * sondern nach einem Sprung. Dafuer braucht es Zwischenwerte. Geprueft wird deshalb ein
+     * Bereich in Zweihundertstel-Schritten statt einer Liste — krumme Werte wie 999 ms
+     * bleiben ein Programmfehler, 1400 ms sind es nicht.
+     */
+    private static final int MIN_DAUER_MS = 200;
+    private static final int MAX_DAUER_MS = 6000;
+    private static final int DAUER_RASTER_MS = 200;
 
     private static final int MAX_OUTS = 3;
 
@@ -58,7 +67,8 @@ public class PlayValidator {
                 throw new BusinessValidationException(
                         "Stand " + erwartet + ": Outs muessen zwischen 0 und " + MAX_OUTS + " liegen.");
             }
-            if (!ERLAUBTE_DAUERN.contains(step.getDurationMs())) {
+            final int dauer = step.getDurationMs();
+            if (dauer < MIN_DAUER_MS || dauer > MAX_DAUER_MS || dauer % DAUER_RASTER_MS != 0) {
                 throw new BusinessValidationException(
                         "Stand " + erwartet + ": unzulaessige Dauer " + step.getDurationMs() + " ms.");
             }
