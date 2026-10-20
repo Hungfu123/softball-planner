@@ -73,18 +73,43 @@ export function runnerPath(von: Point, nach: Point, t: number): Point {
     return { x: lerp(von.x, nach.x, t), y: lerp(von.y, nach.y, t) };
   }
 
-  const stationen: Point[] = [BASES[vonIndex]];
-  let index = vonIndex;
-  while (index !== nachIndex) {
-    index = (index + 1) % BASES.length;
-    stationen.push(BASES[index]);
-  }
+  // Beide Richtungen pruefen. Nur vorwaerts zu zaehlen schickte einen Runner, der von
+  // der 2 zurueck auf die 1 muss (Rundown!), einmal um die ganze Raute.
+  //
+  // Entschieden wird nicht nach Laenge, sondern danach, ob der Weg UNTERWEGS ueber Home
+  // fuehrt: wer von der 3 zur 1 zurueck muss, laeuft nicht ueber die Platte — das waere
+  // ein Run und danach ein neuer Batter. Bleiben beide Wege zulaessig, gewinnt der kuerzere.
+  const vorwaerts = kette(vonIndex, nachIndex, 1);
+  const rueckwaerts = kette(vonIndex, nachIndex, -1);
+  const vorwaertsUeberHome = fuehrtUeberHome(vorwaerts);
+  const rueckwaertsUeberHome = fuehrtUeberHome(rueckwaerts);
+
+  let stationen: Point[];
+  if (vorwaertsUeberHome && !rueckwaertsUeberHome) stationen = rueckwaerts;
+  else if (rueckwaertsUeberHome && !vorwaertsUeberHome) stationen = vorwaerts;
+  else stationen = vorwaerts.length <= rueckwaerts.length ? vorwaerts : rueckwaerts;
 
   if (stationen.length === 2) {
     return { x: lerp(von.x, nach.x, t), y: lerp(von.y, nach.y, t) };
   }
 
   return entlang(stationen, t);
+}
+
+/** Beruehrt der Weg Home als Zwischenstation? Start und Ziel zaehlen nicht. */
+function fuehrtUeberHome(stationen: Point[]): boolean {
+  return stationen.slice(1, -1).some(p => p === BASES[0]);
+}
+
+/** Stationen von a nach b, in der angegebenen Laufrichtung. */
+function kette(von: number, nach: number, richtung: 1 | -1): Point[] {
+  const stationen: Point[] = [BASES[von]];
+  let index = von;
+  while (index !== nach) {
+    index = (index + richtung + BASES.length) % BASES.length;
+    stationen.push(BASES[index]);
+  }
+  return stationen;
 }
 
 /** Punkt bei Anteil t auf einem Streckenzug, laengenproportional. */

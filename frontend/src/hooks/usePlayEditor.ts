@@ -26,6 +26,7 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
   const [undoStack, setUndoStack] = useState<PlayStep[][]>([])
   const [saveState, setSaveState] = useState<SaveState>('gespeichert')
   const schmutzig = useRef(false)
+  const gesteMerkte = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const merken = useCallback(() => {
@@ -39,7 +40,24 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
    * pointermove-Ereignisse aus, und der Stapel waere danach voll Mikroschritte. Ein Undo
    * haette dann nur ein paar Pixel zurueckgenommen.
    */
-  const beginGesture = useCallback(() => merken(), [merken])
+  const beginGesture = useCallback(() => {
+    gesteMerkte.current = false
+  }, [])
+
+  /**
+   * Der Schnappschuss entsteht beim ERSTEN echten Schritt der Geste, nicht beim Greifen.
+   * Wer einen Marker nur antippt, ohne ihn zu bewegen, soll keine Rueckgaengig-Stufe
+   * verbrauchen — sonst sind nach fuenf Fehlgriffen alle fuenf Stufen leer.
+   */
+  const merkeEinmalProGeste = useCallback(() => {
+    if (gesteMerkte.current) return
+    gesteMerkte.current = true
+    merken()
+  }, [merken])
+
+  const endGesture = useCallback(() => {
+    gesteMerkte.current = false
+  }, [])
 
   const aendern = useCallback(
     (fn: (entwurf: PlayStep[]) => void, mitSchnappschuss = true) => {
@@ -57,7 +75,7 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
   /** Verschiebt einen Marker im aktuellen Stand. Einrasten passiert beim Loslassen. */
   const moveMarker = useCallback(
     (ref: MarkerRef, x: number, y: number) => {
-      // Kein Schnappschuss: den hat beginGesture beim Greifen schon gemacht.
+      merkeEinmalProGeste()
       aendern(entwurf => {
         const marker = entwurf[cur].markers
         if (ref.kind === 'defender') {
@@ -84,7 +102,7 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
         }
       }, false)
     },
-    [aendern, cur],
+    [aendern, cur, merkeEinmalProGeste],
   )
 
   /**
@@ -168,6 +186,40 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     })
   }, [aendern, cur])
 
+  /**
+   * Setzt einen Runner auf OUT oder SCORED oder entfernt ihn ganz.
+   *
+   * Ohne das liess sich kein Rundown, keine Bunt-Defense und kein First-and-Third zu Ende
+   * bauen — also jede Kategorie, deren Plays mit einem Out enden. Der Marker bleibt im
+   * Stand stehen (durchgestrichen) und fehlt erst im naechsten: so sieht man den Tag noch,
+   * statt dass der Runner eine halbe Sekunde vorher verschwindet.
+   */
+  const setRunnerStatus = useCallback(
+    (id: string, status: 'ACTIVE' | 'OUT' | 'SCORED') => {
+      aendern(entwurf => {
+        const runner = entwurf[cur].markers.runners.find(r => r.id === id)
+        if (runner) runner.status = status
+        // Ab dem naechsten Stand ist er weg.
+        for (let i = cur + 1; i < entwurf.length; i++) {
+          entwurf[i].markers.runners = entwurf[i].markers.runners.filter(r => r.id !== id)
+        }
+      })
+    },
+    [aendern, cur],
+  )
+
+  /** Entfernt einen Runner aus diesem und allen folgenden Staenden. */
+  const removeRunner = useCallback(
+    (id: string) => {
+      aendern(entwurf => {
+        for (let i = cur; i < entwurf.length; i++) {
+          entwurf[i].markers.runners = entwurf[i].markers.runners.filter(r => r.id !== id)
+        }
+      })
+    },
+    [aendern, cur],
+  )
+
   const cycleDuration = useCallback(() => {
     aendern(entwurf => {
       const aktuell = entwurf[cur].durationMs
@@ -181,8 +233,12 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     [aendern, cur],
   )
 
+  /**
+   * Ohne Schnappschuss: eine Notiz von zwoelf Zeichen haette sonst zwoelf Tiefenkopien
+   * auf den Stapel gelegt und die fuenf Stufen komplett geleert.
+   */
   const setNote = useCallback(
-    (note: string) => aendern(entwurf => void (entwurf[cur].note = note)),
+    (note: string) => aendern(entwurf => void (entwurf[cur].note = note), false),
     [aendern, cur],
   )
 
@@ -211,34 +267,32 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
    * Noetig beim Verlassen des Editors: wer gleich nach einer Bewegung "Zurueck" tippt,
    * ueberholt sonst das Sichern und sieht in der Spieleransicht den alten Stand.
    */
-  const flushSave = useCallback(async () => {
+  const flushSave = useCallback(async (): Promise<boolean> => {
     if (timer.current) clearTimeout(timer.current)
-    if (!schmutzig.current) return
+    if (!schmutzig.current) return true
     setSaveState('speichert')
     try {
       await save(steps)
       schmutzig.current = false
       setSaveState('gespeichert')
+      return true
     } catch {
       setSaveState('fehler')
+      return false
     }
   }, [save, steps])
 
-  const retrySave = useCallback(async () => {
-    setSaveState('speichert')
-    try {
-      await save(steps)
-      schmutzig.current = false
-      setSaveState('gespeichert')
-    } catch {
-      setSaveState('fehler')
-    }
-  }, [save, steps])
+  const retrySave = useCallback(() => flushSave(), [flushSave])
 
   return {
     steps,
     cur,
     beginGesture,
+    endGesture,
+    /** true, solange noch etwas ungesichert ist. */
+    get hatUngesichertes() {
+      return schmutzig.current
+    },
     setCur,
     step: steps[cur],
     saveState,
@@ -253,6 +307,8 @@ export function usePlayEditor(play: Play, save: (steps: PlayStep[]) => Promise<v
     undo,
     resetDefense,
     addRunner,
+    setRunnerStatus,
+    removeRunner,
     cycleDuration,
     setOuts,
     setNote,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import * as api from '@/api/plays'
+import { ladePlayMitRueckfall } from './ladePlay'
 import { usePlayback, type PlaybackSpeed } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
 import { PlaybackBar } from './PlaybackBar'
@@ -19,12 +19,11 @@ export default function PlayViewerPage() {
 
   useEffect(() => {
     if (!id) return
-    api
-      .getPlay(Number(id))
+    ladePlayMitRueckfall(Number(id))
       .then(p => {
         setPlay(p)
         if (p.counterpartPlayId) {
-          api.getPlay(p.counterpartPlayId).then(setGegenstueck).catch(() => setGegenstueck(null))
+          ladePlayMitRueckfall(p.counterpartPlayId).then(setGegenstueck).catch(() => setGegenstueck(null))
         } else {
           setGegenstueck(null)
         }
