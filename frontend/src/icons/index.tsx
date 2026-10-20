@@ -9,6 +9,7 @@ import {
   CirclePlus,
   Pencil as LucidePencil,
   Trash2,
+  Copy,
   ChevronLeft as LucideChevronLeft,
   ChevronUp as LucideChevronUp,
   ChevronDown as LucideChevronDown,
@@ -53,6 +54,7 @@ interface IconProps {
 export const PlusCircle = (p: IconProps) => <CirclePlus size={p.size ?? 20} className={p.className} />
 export const Pencil = (p: IconProps) => <LucidePencil size={p.size ?? 20} className={p.className} />
 export const TrashBin = (p: IconProps) => <Trash2 size={p.size ?? 20} className={p.className} />
+export const CopyIcon = (p: IconProps) => <Copy size={p.size ?? 20} className={p.className} />
 export const ChevronLeft = (p: IconProps) => <LucideChevronLeft size={p.size ?? 20} className={p.className} />
 export const ChevronUp = (p: IconProps) => <LucideChevronUp size={p.size ?? 16} className={p.className} />
 export const ChevronDown = (p: IconProps) => <LucideChevronDown size={p.size ?? 16} className={p.className} />

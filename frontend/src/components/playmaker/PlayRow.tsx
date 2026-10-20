@@ -3,8 +3,16 @@ import { Link } from 'react-router-dom'
 import { PlayBoard } from './PlayBoard'
 import { beschreibung } from './beschreibung'
 import type { Play } from './board/types'
+import type { Treffer } from './suche'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
-import { TrashBin } from '@/icons'
+import { CopyIcon, TrashBin } from '@/icons'
+
+/** Woher der Treffer kommt — ein Wort, damit die Zeile einzeilig bleibt. */
+const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
+  kategorie: 'Kategorie:',
+  lage: 'Lage:',
+  notiz: 'Notiz:',
+}
 
 const LAGE_TEXT: Record<Play['gameState'], string | null> = {
   ANY: null,
@@ -22,10 +30,13 @@ const LAGE_TEXT: Record<Play['gameState'], string | null> = {
  */
 export function PlayRow({
   play,
+  treffer = null,
   onDuplicate,
   onDelete,
 }: {
   play: Play
+  /** Fundstelle der Suche — steht statt der Ausgangslage, wenn sie woanders liegt. */
+  treffer?: Treffer | null
   onDuplicate: () => void
   onDelete: () => void
 }) {
@@ -39,21 +50,30 @@ export function PlayRow({
       </Link>
       <Link to={`/orga/playmaker/${play.id}`} className="min-w-0 flex-1">
         <div className="truncate font-display text-sm font-extrabold text-navy-900">{play.title}</div>
-        <div className="mt-0.5 text-xs tabular-nums text-gray-500">{beschreibung(play)}</div>
+        {/* Bei einem Treffer abseits des Titels zeigt die Zeile, WARUM das Play dasteht —
+            sonst muesste man es aufmachen, um es zu sehen. */}
+        {treffer && treffer.feld !== 'titel' ? (
+          <div className="mt-0.5 truncate text-xs text-gray-500">
+            <span className="font-display font-bold text-navy-900">{FELD_TEXT[treffer.feld]}</span>{' '}
+            {treffer.text}
+          </div>
+        ) : (
+          <div className="mt-0.5 truncate text-xs tabular-nums text-gray-500">{beschreibung(play)}</div>
+        )}
       </Link>
       {lage && (
-        <span className="rounded-full bg-navy-800 px-2.5 py-1 font-display text-[10px] font-bold text-cream-50">
+        <span className="shrink-0 whitespace-nowrap rounded-full bg-navy-800 px-2.5 py-1 font-display text-[10px] font-bold text-cream-50">
           {lage}
         </span>
       )}
-      <div className="actions-reveal flex items-center gap-1">
+      <div className="actions-reveal flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={onDuplicate}
           className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-navy-800 hover:text-white"
           aria-label="Play duplizieren"
         >
-          <span className="font-display text-xs font-bold">Kopie</span>
+          <CopyIcon size={16} />
         </button>
         <button
           type="button"

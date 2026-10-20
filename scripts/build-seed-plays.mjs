@@ -569,8 +569,8 @@ const KATALOG = [
         d: { LF: SHORT_LEFT },
         r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS geht als Cut-Mann auf die Linie LF–3B, der 2B rückt auf die 2.', {
-        d: { SS: between(SHORT_LEFT, B3, 0.45), '3B': B3, '2B': B2 },
+      s('SS geht als Cut-Mann auf die Linie LF–3B, der 2B rückt auf die 2, der P hinter die 3.', {
+        d: { SS: between(SHORT_LEFT, B3, 0.45), '3B': B3, '2B': B2, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { at: between(SHORT_LEFT, B3, 0.45) },
         r: { r1: between(B2, B3, 0.4), rb: B1 },
       }),
@@ -591,8 +591,8 @@ const KATALOG = [
         ball: { at: UP_MIDDLE, ground: true },
         r: { r1: between(B1, B2, 0.55), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS stellt sich zwischen CF und 3B, der 2B deckt die 2.', {
-        d: { SS: between(UP_MIDDLE, B3, 0.5), '3B': B3, '2B': B2 },
+      s('SS stellt sich zwischen CF und 3B, der 2B deckt die 2, der P sichert hinter der 3 ab.', {
+        d: { SS: between(UP_MIDDLE, B3, 0.5), '3B': B3, '2B': B2, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { at: between(UP_MIDDLE, B3, 0.5) },
         r: { r1: between(B2, B3, 0.5), rb: B1 },
       }),
@@ -610,8 +610,8 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS zieht als Cut-Mann heraus — er, nicht der 2B. Der deckt die 2.', {
-        d: { SS: between(SHORT_RIGHT, B3, 0.45), '3B': B3, '2B': B2 },
+      s('SS zieht als Cut-Mann heraus — er, nicht der 2B. Der deckt die 2, der P sichert hinter der 3 ab.', {
+        d: { SS: between(SHORT_RIGHT, B3, 0.45), '3B': B3, '2B': B2, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { at: between(SHORT_RIGHT, B3, 0.45) },
         r: { r1: between(B2, B3, 0.45), rb: B1 },
       }),
@@ -686,8 +686,8 @@ const KATALOG = [
         ball: { at: between(DEEP_LEFT, B3, 0.5) },
         r: { rb: between(B1, B2, 0.6) },
       }),
-      s('Relay dreht und wirft auf die 3.', {
-        d: { '3B': B3 },
+      s('Relay dreht und wirft auf die 3 — der P steht dahinter.', {
+        d: { '3B': B3, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { hold: '3B' },
         r: { rb: B2 },
       }),
