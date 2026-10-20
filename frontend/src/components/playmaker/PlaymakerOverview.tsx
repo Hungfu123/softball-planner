@@ -6,7 +6,7 @@ import { PlayRow } from './PlayRow'
 import type { Play } from './board/types'
 import { beschreibung } from './beschreibung'
 import { trefferIn, type Treffer } from './suche'
-import { CopyIcon, CrossBones, TrashBin } from '@/icons'
+import { ChevronDown, CopyIcon, CrossBones, TrashBin } from '@/icons'
 import { Button } from '@/components/shared/Button'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { useToastContext } from '@/components/layout/Layout'
@@ -22,6 +22,7 @@ export default function PlaymakerOverview() {
   const { plays, categories, loading, error, duplicate, remove } = usePlays()
   const [categoryId, setCategoryId] = useState<number | 'alle'>('alle')
   const [suche, setSuche] = useState('')
+  const [zugeklappt, setZugeklappt] = useState<Set<number>>(leseZugeklappt)
   /**
    * Die Liste haengt an der NACHLAUFENDEN Eingabe, das Eingabefeld an der sofortigen.
    *
@@ -42,6 +43,16 @@ export default function PlaymakerOverview() {
    * Und ein gescheitertes Loeschen war still: die Zeile blieb stehen, ohne Grund. Der
    * Fehler wurde nicht einmal abgefangen.
    */
+  const klappe = (id: number) => {
+    setZugeklappt(vorher => {
+      const neu = new Set(vorher)
+      if (neu.has(id)) neu.delete(id)
+      else neu.add(id)
+      schreibeZugeklappt(neu)
+      return neu
+    })
+  }
+
   const kopieren = async (play: Play) => {
     try {
       const kopie = await duplicate(play.id)
@@ -112,13 +123,19 @@ export default function PlaymakerOverview() {
    */
   const gruppen = useMemo(() => {
     if (sucht || categoryId !== 'alle') return null
+    // Hier zaehlt die GANZE Kategorie, nicht die Liste ohne das Hero-Play: sonst sagt die
+    // Auswahl oben "Base-Coverage · 11" und die Ueberschrift darunter 10. Das Hero ist
+    // eine Hervorhebung, kein Ersatz fuer seine Zeile — es steht zusaetzlich gross oben.
     return categories
       .map(kategorie => ({
         kategorie,
-        plays: rest.filter(p => p.categoryId === kategorie.id),
+        plays: nachKategorie.filter(p => p.categoryId === kategorie.id),
       }))
       .filter(g => g.plays.length > 0)
-  }, [categories, rest, sucht, categoryId])
+  }, [categories, nachKategorie, sucht, categoryId])
+
+  /** Sind alle Bloecke zu? Dann ist die Seite ein Inhaltsverzeichnis und das Feld darf kleiner sein. */
+  const allesZu = Boolean(gruppen && gruppen.length > 0 && gruppen.every(g => zugeklappt.has(g.kategorie.id)))
   const kategorieName =
     categoryId === 'alle' ? 'Alle Kategorien' : (categories.find(c => c.id === categoryId)?.name ?? '')
 
@@ -138,7 +155,7 @@ export default function PlaymakerOverview() {
   }
 
   return (
-    <div className="pb-8">
+    <div className={allesZu ? 'pb-2' : 'pb-8'}>
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <h1 className="flex-1 font-headline text-2xl font-extrabold uppercase tracking-wide text-navy-900">
           Playmaker
@@ -161,6 +178,7 @@ export default function PlaymakerOverview() {
             <HeroPlay
               play={hero}
               treffer={heroTreffer}
+              kompakt={allesZu}
               onDuplicate={() => kopieren(hero)}
               onDelete={() => loeschen(hero)}
             />
@@ -180,8 +198,8 @@ export default function PlaymakerOverview() {
             </div>
           )}
 
-          <div className="px-4 pt-4">
-            <label className="block">
+          <div className="flex items-stretch gap-2 px-4 pt-4">
+            <label className="block min-w-0 flex-1">
               <span className="sr-only">Kategorie</span>
               <select
                 value={categoryId}
@@ -197,6 +215,23 @@ export default function PlaymakerOverview() {
                 ))}
               </select>
             </label>
+
+            {/* Alles zu: dann sind die acht Ueberschriften das Inhaltsverzeichnis, das
+                bei einundfuenfzig Plays sonst fehlt. Erscheint nur, wenn es ueberhaupt
+                etwas zu klappen gibt. */}
+            {gruppen && gruppen.length > 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const neu = allesZu ? new Set<number>() : new Set(gruppen.map(g => g.kategorie.id))
+                  schreibeZugeklappt(neu)
+                  setZugeklappt(neu)
+                }}
+                className="shrink-0 rounded-xl border border-cream-300 bg-white px-3 font-display text-xs font-bold text-navy-900 hover:bg-navy-800 hover:text-white"
+              >
+                {allesZu ? 'Alle auf' : 'Alle zu'}
+              </button>
+            )}
             <p className="sr-only">{kategorieName}</p>
           </div>
 
@@ -252,22 +287,40 @@ export default function PlaymakerOverview() {
                 />
               ))
             ) : gruppen ? (
-              gruppen.map(({ kategorie, plays: inGruppe }) => (
-                <section key={kategorie.id}>
-                  {/* top-28: unter der Navigation UND unter der klebenden Suchzeile. */}
-                  <h2 className="sticky top-28 z-10 bg-cream-100/95 px-4 py-1.5 font-display text-[11px] font-bold uppercase tracking-widest text-gray-500 backdrop-blur">
-                    {kategorie.name} · {inGruppe.length}
-                  </h2>
-                  {inGruppe.map(play => (
-                    <PlayRow
-                      key={play.id}
-                      play={play}
-                      onDuplicate={() => kopieren(play)}
-                      onDelete={() => loeschen(play)}
-                    />
-                  ))}
-                </section>
-              ))
+              gruppen.map(({ kategorie, plays: inGruppe }) => {
+                const offen = !zugeklappt.has(kategorie.id)
+                return (
+                  <section key={kategorie.id}>
+                    {/* top-28: unter der Navigation UND unter der klebenden Suchzeile. */}
+                    <h2 className="sticky top-28 z-10 bg-cream-100/95 backdrop-blur">
+                      <button
+                        type="button"
+                        onClick={() => klappe(kategorie.id)}
+                        aria-expanded={offen}
+                        className="flex h-11 w-full items-center gap-2 px-4 text-left font-display text-[11px] font-bold uppercase tracking-widest text-gray-500"
+                      >
+                        {/* Das Zeichen dreht sich, statt zu wechseln — eine Bewegung
+                            sagt, dass es dieselbe Sache in zwei Zustaenden ist. */}
+                        <ChevronDown
+                          size={14}
+                          className={`transition-transform duration-150 ${offen ? '' : '-rotate-90'}`}
+                        />
+                        <span className="flex-1 truncate">{kategorie.name}</span>
+                        <span className="tabular-nums">{inGruppe.length}</span>
+                      </button>
+                    </h2>
+                    {offen &&
+                      inGruppe.map(play => (
+                        <PlayRow
+                          key={play.id}
+                          play={play}
+                          onDuplicate={() => kopieren(play)}
+                          onDelete={() => loeschen(play)}
+                        />
+                      ))}
+                  </section>
+                )
+              })
             ) : (
               rest.map(play => (
                 <PlayRow
@@ -286,15 +339,47 @@ export default function PlaymakerOverview() {
   )
 }
 
+/**
+ * Welche Kategorien zugeklappt sind, bleibt auf DIESEM Geraet gemerkt.
+ *
+ * Es ist eine Bequemlichkeit, kein Inhalt: am Tablet im Dugout will man andere Bloecke
+ * offen haben als am Rechner zu Hause, und niemand soll das fuer andere entscheiden.
+ * Deshalb localStorage und nicht der Server — und deshalb traegt ein leerer oder
+ * blockierter Speicher nichts weiter als "alles offen".
+ */
+const SPEICHER = 'playmaker-zugeklappt'
+
+function leseZugeklappt(): Set<number> {
+  try {
+    const roh = localStorage.getItem(SPEICHER)
+    if (!roh) return new Set()
+    const ids: unknown = JSON.parse(roh)
+    return Array.isArray(ids) ? new Set(ids.filter((x): x is number => typeof x === 'number')) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
+function schreibeZugeklappt(ids: Set<number>) {
+  try {
+    localStorage.setItem(SPEICHER, JSON.stringify([...ids]))
+  } catch {
+    // Privates Fenster oder gesperrter Speicher: dann merkt es sich eben nichts.
+  }
+}
+
 /** Das zuletzt bearbeitete Play, gross, mit Verlauf und Meta-Zeile darueber. */
 function HeroPlay({
   play,
   treffer,
+  kompakt,
   onDuplicate,
   onDelete,
 }: {
   play: Play
   treffer: Treffer | null
+  /** Alles zugeklappt: dann schrumpft das Feld, damit die Uebersicht auf einen Blick passt. */
+  kompakt: boolean
   onDuplicate: () => void
   onDelete: () => void
 }) {
@@ -302,16 +387,48 @@ function HeroPlay({
 
   return (
     <div className="relative">
+      {/* EIN Link ueber Feld und Beschriftung. Vorher waren es zwei, und der zweite
+          enthielt nur den absolut gesetzten Titel — ein Anker ohne eigene Hoehe, den
+          kein Browser als Flaeche anbietet. */}
       <Link to={`/orga/playmaker/${play.id}`} className="block">
-        <div className="h-64 sm:h-80">
+        {/*
+          Zugeklappt kein Feld, sondern eine Zeile.
+
+          Ein flach gedruecktes Feld waere hier nutzlos: das Board zieht den Ausschnitt auf
+          das Seitenverhaeltnis der Flaeche, und bei 112 px Hoehe auf 390 px Breite liegt
+          die Raute als Streifen in der Mitte — man erkennt nichts. Wenn die Seite ein
+          Inhaltsverzeichnis ist, gehoert das zuletzt bearbeitete Play auch nur als Zeile
+          hinein.
+        */}
+        <div className={kompakt ? 'h-0 overflow-hidden' : 'h-64 sm:h-80'}>
           <PlayBoard markers={play.steps[0].markers} steps={play.steps} />
+        </div>
+        <div
+          className={
+            kompakt
+              ? 'bg-navy-900 px-4 py-2.5 pr-28'
+              : 'absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/90 via-navy-900/40 to-transparent px-4 pb-3 pt-6'
+          }
+        >
+          <div
+            className={`truncate font-headline font-extrabold uppercase tracking-wide text-cream-50 ${
+              kompakt ? 'text-base' : 'text-xl'
+            }`}
+          >
+            {play.title}
+          </div>
+          <div className="truncate font-display text-xs font-bold text-cream-200">
+            {treffer && treffer.feld !== 'titel'
+              ? treffer.text
+              : `${beschreibung(play)}${treffer ? '' : ' · zuletzt bearbeitet'}`}
+          </div>
         </div>
       </Link>
 
       {/* Kopieren und Loeschen gibt es auch hier. Vorher war ausgerechnet das zuletzt
           bearbeitete Play das einzige, das man aus der Uebersicht weder kopieren noch
           loeschen konnte — man musste es erst wegfiltern. */}
-      <div className="absolute right-2 top-2 flex gap-1">
+      <div className={`absolute right-2 z-10 flex gap-1 ${kompakt ? 'inset-y-0 items-center' : 'top-2'}`}>
         <button
           type="button"
           onClick={onDuplicate}
@@ -329,19 +446,6 @@ function HeroPlay({
           <TrashBin size={16} />
         </button>
       </div>
-
-      <Link to={`/orga/playmaker/${play.id}`} className="block">
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/90 via-navy-900/40 to-transparent px-4 pb-3 pt-6">
-          <div className="font-headline text-xl font-extrabold uppercase tracking-wide text-cream-50">
-            {play.title}
-          </div>
-          <div className="truncate font-display text-xs font-bold text-cream-200">
-            {treffer && treffer.feld !== 'titel'
-              ? treffer.text
-              : `${beschreibung(play)}${treffer ? '' : ' · zuletzt bearbeitet'}`}
-          </div>
-        </div>
-      </Link>
 
       {loeschenOffen && (
         <ConfirmModal

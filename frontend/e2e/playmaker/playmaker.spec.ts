@@ -440,8 +440,8 @@ test('gliedert die ungefilterte Liste nach Kategorie', async ({ page }) => {
   await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
 
   // Ohne Filter: Ueberschriften, damit einundfuenfzig Plays navigierbar bleiben.
-  await expect(page.getByRole('heading', { name: /Bunt-Defense · \d+/ })).toBeVisible()
-  await expect(page.getByRole('heading', { name: /Rundown · \d+/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Bunt-Defense/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Rundown/ })).toBeVisible()
 
   // Mit Filter ist die Liste selbst schon die Antwort — dann gliedert nichts.
   const wert = await page
@@ -449,8 +449,8 @@ test('gliedert die ungefilterte Liste nach Kategorie', async ({ page }) => {
     .locator('option', { hasText: 'Rundown' })
     .getAttribute('value')
   await page.getByLabel('Kategorie').selectOption(wert!)
-  await expect(page.getByRole('heading', { name: /Bunt-Defense · \d+/ })).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: /Rundown · \d+/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /Bunt-Defense/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /Rundown/ })).toHaveCount(0)
 })
 
 test('sagt beim Kopieren, dass es geklappt hat, und fragt vorm Löschen', async ({ page }) => {
@@ -478,6 +478,34 @@ test('sagt beim Kopieren, dass es geklappt hat, und fragt vorm Löschen', async 
   await expect(page.getByText(/gelöscht/)).toBeVisible({ timeout: 10_000 })
 
   await aufraeumen(page, titel)
+})
+
+test('klappt Kategorien zu und merkt sich das', async ({ page }) => {
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+  const rundown = page.getByRole('button', { name: /^Rundown/ })
+  await expect(rundown).toHaveAttribute('aria-expanded', 'true')
+  await rundown.click()
+  await expect(rundown).toHaveAttribute('aria-expanded', 'false')
+
+  // Zugeklappt sind die Ueberschriften das Inhaltsverzeichnis: alles zu, Seite kurz.
+  await page.getByRole('button', { name: 'Alle zu' }).click()
+  const kurz = await page.evaluate(() => document.body.scrollHeight)
+  await page.getByRole('button', { name: 'Alle auf' }).click()
+  const lang = await page.evaluate(() => document.body.scrollHeight)
+  expect(lang).toBeGreaterThan(kurz * 2)
+
+  // Es ist eine Bequemlichkeit je Geraet — sie ueberlebt das Neuladen.
+  await page.getByRole('button', { name: 'Alle zu' }).click()
+  await page.reload()
+  await expect(page.getByRole('button', { name: /^Rundown/ })).toHaveAttribute('aria-expanded', 'false', {
+    timeout: 15_000,
+  })
+
+  // Aufraeumen, damit der naechste Test eine offene Liste vorfindet.
+  await page.getByRole('button', { name: 'Alle auf' }).click()
+  await expect(page.getByRole('button', { name: /^Rundown/ })).toHaveAttribute('aria-expanded', 'true')
 })
 
 test('zeigt die Start-Plays aus der Migration', async ({ page }) => {
