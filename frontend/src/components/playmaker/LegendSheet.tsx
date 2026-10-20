@@ -3,9 +3,11 @@ import { createPortal } from 'react-dom'
 /**
  * Was die Formen bedeuten.
  *
- * Ein Spieler sieht das Board zum ersten Mal ohne den Trainer daneben. Form traegt die
- * Bedeutung, Farbe verstaerkt sie nur — Rot und Gelb messen zueinander 2,17 und fallen bei
- * Gruenblindheit auf 2,00, deshalb ist Punkt gegen Raute keine Spielerei.
+ * Ein Spieler sieht das Board zum ersten Mal ohne den Trainer daneben. Verteidiger und
+ * Runner sind beide Scheiben und unterscheiden sich durch drei Dinge gleichzeitig: Farbe,
+ * Groesse und das Kuerzel, das nur der Verteidiger traegt. Der Ball ist deutlich kleiner —
+ * Rot und Gelb messen zueinander nur 2,17 und fallen bei Gruenblindheit auf 2,00, Groesse
+ * ist hier also kein Schmuck.
  */
 export function LegendSheet({ onClose }: { onClose: () => void }) {
   return createPortal(
@@ -25,8 +27,8 @@ export function LegendSheet({ onClose }: { onClose: () => void }) {
               SS
             </text>
           </Zeile>
-          <Zeile beschreibung="Runner">
-            <rect x="6" y="6" width="16" height="16" rx="2" transform="rotate(45 14 14)" fill="#B91C2A" />
+          <Zeile beschreibung="Runner — kleiner als ein Verteidiger und ohne Kürzel">
+            <circle cx="14" cy="14" r="9" fill="#B91C2A" />
           </Zeile>
           <Zeile beschreibung="Ball">
             <circle cx="14" cy="14" r="6" fill="#E6F03C" />

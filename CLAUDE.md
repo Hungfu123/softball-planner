@@ -153,7 +153,7 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   unten, Home (155, 218). Die Wiedergabe interpoliert und fasst die Stände nie an; Runner
   folgen den Base-Wegen und laufen **nie rückwärts nach Home**. `PlayValidator` prüft nur
   Datenintegrität (Nummerierung, Outs 0–3, Dauer 200–6000 ms im 200er-Raster) — Softball-
-  Regeln ausdrücklich nicht. Die 48 Start-Plays kommen aus `scripts/build-seed-plays.mjs`,
+  Regeln ausdrücklich nicht. Die 51 Start-Plays kommen aus `scripts/build-seed-plays.mjs`,
   nicht aus der Hand. Details: `docs/PLAYMAKER.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.

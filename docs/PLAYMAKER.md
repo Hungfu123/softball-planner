@@ -31,8 +31,11 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   und in `scripts/build-seed-plays.mjs` — wer eine ändert, ändert beide.
 - **Fastpitch-Maße:** Base-Weg 60 ft, Pitching 43 ft, Circle 8 ft Radius, Sandbogen 60 ft
   um die Platte, Zaun 215 ft, Backstop 25 ft.
-- **Grammatik:** Kreis = Verteidiger (navy, mit Kürzel), Raute = Runner (rot), Punkt =
-  Ball (Optic Yellow, flach, ohne Kontur und ohne Schatten).
+- **Grammatik:** Verteidiger und Runner sind beide Scheiben; drei Dinge unterscheiden sie
+  gleichzeitig — Farbe (navy / rot), Größe (der Runner misst 0,82) und das Kürzel, das nur
+  der Verteidiger trägt. Der Ball ist ein deutlich kleinerer Punkt (Optic Yellow, flach,
+  ohne Kontur und ohne Schatten). Der Runner war bis Oktober 2026 eine Raute — sie wirkte
+  neben neun Kreisen wie ein Fremdkörper und saß auf den Bases sichtbar schief.
 - **`status`** am Runner: `ACTIVE`, `OUT` (durchgestrichen, im Folgestand weg), `SCORED`
   (gar nicht mehr gezeichnet). Ein Out und ein Run dürfen nicht gleich aussehen.
 - **`trajectory`** gilt für den Weg, der IN diesen Stand führt: `AIR` zeichnet einen Bogen,
@@ -61,7 +64,7 @@ Sprung — deshalb ein Bereich und keine Liste.
 
 ## Start-Plays
 
-48 Stück, 8 Kategorien, erzeugt aus `scripts/build-seed-plays.mjs`:
+51 Stück, 8 Kategorien, erzeugt aus `scripts/build-seed-plays.mjs`:
 
 ```bash
 node scripts/build-seed-plays.mjs > backend/src/main/resources/db/migration/V68__seed_plays.sql
