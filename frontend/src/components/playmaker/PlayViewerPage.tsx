@@ -124,6 +124,7 @@ function Viewer({
             markers={wiedergabe.markers}
             steps={play.steps}
             previous={wiedergabe.previous}
+          bahnZiel={wiedergabe.ballZiel}
             ghost={wiedergabe.ghost}
             mode={breit ? 'full' : 'content'}
             width={groesse.w}

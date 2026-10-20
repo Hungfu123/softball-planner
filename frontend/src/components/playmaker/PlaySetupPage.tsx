@@ -48,6 +48,7 @@ export default function PlaySetupPage() {
   const [speichert, setSpeichert] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
   const [kategorieDialog, setKategorieDialog] = useState(false)
+  const [kategorieFehler, setKategorieFehler] = useState<string | null>(null)
   const [counterpartId, setCounterpartId] = useState<number | null>(null)
 
   const aktiveKategorie = categoryId ?? categories[0]?.id ?? null
@@ -106,9 +107,13 @@ export default function PlaySetupPage() {
     try {
       const kategorie = await addCategory(name.trim())
       setCategoryId(kategorie.id)
+      setCounterpartId(null)
       setKategorieDialog(false)
+      setKategorieFehler(null)
     } catch (e) {
-      setFehler(e instanceof Error ? e.message : 'Kategorie konnte nicht angelegt werden.')
+      // Der Dialog bleibt offen und zeigt den Grund selbst. Vorher schloss er sich nicht,
+      // und die Meldung stand am Seitenende hinter dem Backdrop — unsichtbar.
+      setKategorieFehler(e instanceof Error ? e.message : 'Kategorie konnte nicht angelegt werden.')
     }
   }
 
@@ -130,7 +135,12 @@ export default function PlaySetupPage() {
         <div className="flex gap-2">
           <select
             value={aktiveKategorie ?? ''}
-            onChange={e => setCategoryId(Number(e.target.value))}
+            onChange={e => {
+              setCategoryId(Number(e.target.value))
+              // Gegenstuecke werden nach Kategorie angeboten; eine Wahl aus der alten
+              // Kategorie passt nicht mehr.
+              setCounterpartId(null)
+            }}
             className="flex-1 rounded-xl border border-cream-300 bg-white px-4 py-3 font-display text-sm font-bold text-navy-900"
             aria-label="Kategorie"
           >
@@ -150,7 +160,13 @@ export default function PlaySetupPage() {
             <button
               key={l.value}
               type="button"
-              onClick={() => setGameState(l.value)}
+              onClick={() => {
+                setGameState(l.value)
+                // Das Gegenstueck haengt an der Lage und wird nur dort gezeigt. Blieb es
+                // beim Rueckwechsel auf "Jede Lage" gesetzt, speicherte das Play eine
+                // Verknuepfung, die niemand mehr sehen konnte.
+                if (l.value === 'ANY') setCounterpartId(null)
+              }}
               className={`rounded-full px-3 py-2 font-display text-xs font-bold ${
                 gameState === l.value ? 'bg-navy-800 text-cream-50' : 'bg-cream-200 text-gray-900'
               }`}
@@ -196,8 +212,11 @@ export default function PlaySetupPage() {
       <p className="px-4 pb-2 pt-5 font-display text-[11px] font-bold uppercase tracking-widest text-gray-400">
         Ausgangslage — Base antippen
       </p>
+      {/* Ohne width/height misst sich das Board selbst. Fest eingetragene 390x224 galten
+          auch auf dem Desktop, wo die Flaeche dreimal so breit ist — das Feld war dort
+          um Faktor 3,1 flachgedrueckt. */}
       <div className="relative h-56">
-        <PlayBoard markers={markers} mode="full" width={390} height={224} />
+        <PlayBoard markers={markers} mode="full" interactive={false} />
         <div className="absolute inset-0 grid grid-cols-3">
           {RUNNER_BASES.map(b => (
             <button
@@ -242,8 +261,12 @@ export default function PlaySetupPage() {
         <TextPromptModal
           title="Neue Kategorie"
           placeholder="z. B. Pickoff-Varianten"
+          fehler={kategorieFehler}
           onConfirm={neueKategorie}
-          onCancel={() => setKategorieDialog(false)}
+          onCancel={() => {
+            setKategorieDialog(false)
+            setKategorieFehler(null)
+          }}
         />
       )}
 

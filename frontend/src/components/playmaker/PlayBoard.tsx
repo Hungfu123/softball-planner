@@ -11,7 +11,7 @@ import {
   SKIN_PATH,
   type Box,
 } from './board/geometry';
-import { computeContentBox, fitViewBox, markerRadius } from './board/layout';
+import { ballAnchor, computeContentBox, fitViewBox, markerRadius } from './board/layout';
 import type { MarkerRef, PlayMarkers, PlayStep } from './board/types';
 
 /** Die Farben des Boards. Gras, Sand und Optic Yellow sind die drei neuen im Theme. */
@@ -37,12 +37,25 @@ interface Props {
   width?: number;
   height?: number;
   pointerFine?: boolean;
+  /**
+   * Fester Ausschnitt von aussen. Der Editor friert ihn beim Greifen ein; ohne das
+   * rechnete das Board bei jedem pointermove neu und zoomte unter dem Finger heraus,
+   * waehrend die Koordinatenrechnung beim alten Massstab blieb.
+   */
+  viewBoxOverride?: Box | null;
+  /**
+   * Endpunkt der Flugbahn waehrend einer Animation. Ohne ihn wird der Bogen in jedem
+   * Bild aus der aktuellen Sehne neu gerechnet und die schon gezeichnete Spur biegt
+   * sich mit — es sieht aus, als peitsche die Linie.
+   */
+  bahnZiel?: { x: number; y: number } | null;
   /** false fuer Vorschauen: dann gilt keine Mindest-Trefferflaeche. */
   interactive?: boolean;
   className?: string;
   onPointerDown?: (event: React.PointerEvent<SVGSVGElement>) => void;
   onPointerMove?: (event: React.PointerEvent<SVGSVGElement>) => void;
   onPointerUp?: (event: React.PointerEvent<SVGSVGElement>) => void;
+  onPointerCancel?: (event: React.PointerEvent<SVGSVGElement>) => void;
   /** Heller Ring an der echten Ablegestelle, waehrend ein Marker am Finger haengt. */
   dropHint?: { x: number; y: number; snapped: boolean } | null;
   dragging?: MarkerRef | null;
@@ -65,10 +78,13 @@ export function PlayBoard({
   height,
   pointerFine = false,
   interactive = true,
+  viewBoxOverride = null,
+  bahnZiel = null,
   className,
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onPointerCancel,
   dropHint = null,
   dragging = null,
 }: Props) {
@@ -85,14 +101,23 @@ export function PlayBoard({
 
   useLayoutEffect(() => {
     if (width !== undefined && height !== undefined) {
-      setGemessen({ w: width, h: height });
+      setGemessen(alt => (alt.w === width && alt.h === height ? alt : { w: width, h: height }));
       return;
     }
     const element = huelle.current;
     if (!element) return;
     const messen = () => {
       const rect = element.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) setGemessen({ w: rect.width, h: rect.height });
+      if (rect.width <= 0 || rect.height <= 0) return;
+      // Nur setzen, wenn sich wirklich etwas geaendert hat. Ein neues Objekt mit
+      // denselben Zahlen loest trotzdem einen Render aus — der Beobachter feuert dann
+      // erneut, und die Seite laeuft in eine Schleife. Gemessen: die Wiedergabe fiel
+      // dadurch von 120 auf 1 Bild je Sekunde, ohne eine einzige lange Aufgabe.
+      setGemessen(alt =>
+        Math.abs(alt.w - rect.width) < 0.5 && Math.abs(alt.h - rect.height) < 0.5
+          ? alt
+          : { w: rect.width, h: rect.height },
+      );
     };
     messen();
     // Ohne ResizeObserver (aeltere Browser, jsdom) bleibt es bei der einmaligen Messung —
@@ -108,9 +133,11 @@ export function PlayBoard({
       mode === 'full'
         ? FULL_FIELD
         : computeContentBox(steps ?? [{ ordinal: 1, durationMs: 1200, note: null, outs: 0, markers }]);
-    const fitted = fitViewBox(content, gemessen.w, gemessen.h);
+    const fitted = viewBoxOverride
+      ? { viewBox: viewBoxOverride, scale: gemessen.w / viewBoxOverride.w }
+      : fitViewBox(content, gemessen.w, gemessen.h);
     return { ...fitted, radius: markerRadius(fitted.scale, pointerFine, interactive) };
-  }, [markers, steps, mode, gemessen.w, gemessen.h, pointerFine, interactive]);
+  }, [markers, steps, mode, gemessen.w, gemessen.h, pointerFine, interactive, viewBoxOverride]);
 
   const ballPosition = ballAnchor(markers, radius);
   const ballRadius = radius * 0.42;
@@ -126,6 +153,8 @@ export function PlayBoard({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onLostPointerCapture={onPointerCancel}
     >
       {/* Gras bis an jede Kante — das Board hat keinen Rand, es ist Platz. */}
       <rect x={viewBox.x} y={viewBox.y} width={viewBox.w} height={viewBox.h} fill={GRASS} />
@@ -180,7 +209,7 @@ export function PlayBoard({
       {previous && (
         <>
           <path
-            d={ballPfad(previous.ball, markers.ball)}
+            d={ballPfad(previous.ball, bahnZiel ? { ...markers.ball, ...bahnZiel } : markers.ball)}
             fill="none"
             stroke={BALL}
             strokeWidth={2.4}
@@ -301,21 +330,6 @@ function ballPfad(von: { x: number; y: number }, nach: PlayMarkers['ball']): str
   const mx = (von.x + nach.x) / 2 - (dy / laenge) * hoehe;
   const my = (von.y + nach.y) / 2 + (dx / laenge) * hoehe;
   return `M${von.x},${von.y} Q${mx.toFixed(2)},${my.toFixed(2)} ${nach.x},${nach.y}`;
-}
-
-/**
- * Ein gehaltener Ball sitzt auf der Kante der Scheibe, nicht in ihrer Mitte.
- *
- * Mittig waere er unsichtbar: er traegt keine Kontur und die Scheibe ist dunkel. Auf der
- * Kante bricht seine Silhouette den Kreis auf und man sieht, wer ihn hat.
- */
-function ballAnchor(markers: PlayMarkers, radius: number): { x: number; y: number } {
-  if (!markers.ball.holder) return { x: markers.ball.x, y: markers.ball.y };
-  const halter = markers.defenders.find((d) => d.position === markers.ball.holder);
-  if (!halter) return { x: markers.ball.x, y: markers.ball.y };
-  // Nach rechts oben, weil dort am seltensten ein zweiter Marker steht.
-  const winkel = -Math.PI / 4;
-  return { x: halter.x + Math.cos(winkel) * radius, y: halter.y + Math.sin(winkel) * radius };
 }
 
 /**

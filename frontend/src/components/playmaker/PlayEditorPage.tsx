@@ -7,10 +7,11 @@ import { PlayBoard } from './PlayBoard'
 import { StepTimeline } from './StepTimeline'
 import { StepList } from './StepList'
 import { BASES, FULL_FIELD } from './board/geometry'
-import { computeContentBox, fitViewBox, hitRadius } from './board/layout'
+import { ballAnchor, computeContentBox, fitViewBox, hitRadius, markerRadius } from './board/layout'
 import type { MarkerRef, Play, PlayStep } from './board/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { RunnerSheet } from './RunnerSheet'
+import { BallSheet } from './BallSheet'
 
 /** Wie weit der gegriffene Marker ueber die Fingerkuppe springt, in CSS-Pixeln. */
 const LIFT_PX = 28
@@ -63,7 +64,11 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   const [loeschen, setLoeschen] = useState(false)
   /** Angetippter Runner — gezogen wurde nicht, also will der Benutzer etwas anderes. */
   const [runnerSheet, setRunnerSheet] = useState<string | null>(null)
+  /** Angetippter Ball — dahinter steckt die Frage nach Bogen oder flach. */
+  const [ballSheet, setBallSheet] = useState(false)
   const bewegt = useRef(false)
+  /** Nur ein Finger zieht. Ein zweiter wuerde sonst den ersten uebernehmen. */
+  const zeigerId = useRef<number | null>(null)
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
 
   /**
@@ -74,8 +79,18 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
    * bedingungslos und drei gebaute Staende waren weg. Jetzt blockiert die Navigation
    * innerhalb der App, und das Schliessen des Tabs fragt nach — wie beim Spieltag-Planer.
    */
-  const ungesichert = editor.saveState === 'fehler'
-  const blocker = useBlocker(ungesichert)
+  // Nicht nur bei Fehler: auch waehrend Entprellung und laufender Anfrage ist etwas
+  // ungesichert. Dieselbe Groesse benutzt der Spieltag-Planer.
+  const ungesichert = editor.hatUngesichertes
+  /**
+   * Das eigene Zurueck ist kein Weglaufen.
+   *
+   * Der Knopf sichert erst und navigiert dann. Der Blocker liest in demselben Tick aber
+   * noch den alten Wert — die Seite blieb stehen und fragte, ob man ungesicherte
+   * Aenderungen verwerfen will, obwohl gerade erfolgreich gesichert wurde.
+   */
+  const verlaesstAbsichtlich = useRef(false)
+  const blocker = useBlocker(() => ungesichert && !verlaesstAbsichtlich.current)
 
   useEffect(() => {
     if (!ungesichert) return
@@ -123,6 +138,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   }
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (zeigerId.current !== null) return
     const p = zuBoard(e.clientX, e.clientY)
     const marker = editor.step.markers
     const reichweite = Math.max(hitRadius(geometrie.scale), 1)
@@ -134,14 +150,28 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
       if (best === null || d < best.d) best = { ref, d, x, y } satisfies Treffer
     }
     marker.defenders.forEach(d => pruefe({ kind: 'defender', position: d.position }, d.x, d.y))
+    // Auch OUT-Runner: sie sind in diesem Stand gezeichnet. Wer sich vertippt hat, muss
+    // sie wieder erreichen koennen — vorher war ein versehentliches Out nur per
+    // Rueckgaengig zu heilen, und nach fuenf Zuegen gar nicht mehr.
     marker.runners
-      .filter(r => r.status === 'ACTIVE')
+      .filter(r => r.status !== 'SCORED')
       .forEach(r => pruefe({ kind: 'runner', id: r.id }, r.x, r.y))
-    pruefe({ kind: 'ball' }, marker.ball.x, marker.ball.y)
+
+    // Der Ball wird dort geprueft, wo er GEZEICHNET wird — bei einem gehaltenen Ball ist
+    // das die Kante der Scheibe, nicht ihr Mittelpunkt. In den Daten liegt er genau auf
+    // seinem Halter; ohne das hier gewinnt immer der Verteidiger mit Abstand 0, und der
+    // Ball liesse sich nie aus der Hand nehmen — man koennte keinen Wurf zeigen.
+    const r = markerRadius(geometrie.scale, pointerFine)
+    const ballStelle = ballAnchor(marker, r)
+    const ballAbstand = Math.hypot(p.x - ballStelle.x, p.y - ballStelle.y)
+    if (!best || ballAbstand < (best as Treffer).d + r * 0.9) {
+      best = { ref: { kind: 'ball' }, d: ballAbstand, x: ballStelle.x, y: ballStelle.y } satisfies Treffer
+    }
 
     const treffer = best as Treffer | null
     if (!treffer || treffer.d > reichweite) return
     e.currentTarget.setPointerCapture(e.pointerId)
+    zeigerId.current = e.pointerId
     editor.beginGesture()
     bewegt.current = false
     setEingefroren(berechnet)
@@ -149,7 +179,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   }
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!drag) return
+    if (!drag || e.pointerId !== zeigerId.current) return
     const p = zuBoard(e.clientX, e.clientY)
     bewegt.current = true
     const lift = LIFT_PX / geometrie.scale
@@ -166,6 +196,15 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
     setHint({ x: ziel?.x ?? x, y: ziel?.y ?? y, snapped: Boolean(ziel) })
   }
 
+  /** Abbruch (zweiter Finger, Rand-Geste, Kontextmenue): aufraeumen wie beim Loslassen. */
+  const onPointerCancel = () => {
+    setDrag(null)
+    setHint(null)
+    setEingefroren(null)
+    zeigerId.current = null
+    editor.endGesture()
+  }
+
   const onPointerUp = () => {
     if (!drag) return
     // Antippen ohne Bewegung ist keine Verschiebung, sondern eine Frage: was soll mit
@@ -173,10 +212,14 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
     if (!bewegt.current && drag.ref.kind === 'runner') {
       setRunnerSheet(drag.ref.id)
     }
+    if (!bewegt.current && drag.ref.kind === 'ball') {
+      setBallSheet(true)
+    }
     if (hint) editor.dropMarker(drag.ref, hint.x, hint.y)
     setDrag(null)
     setHint(null)
     setEingefroren(null)
+    zeigerId.current = null
     editor.endGesture()
   }
 
@@ -190,7 +233,10 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
           onClick={async () => {
             // Nur verlassen, wenn das Sichern geklappt hat. flushSave faengt den Fehler
             // selbst ab und meldet ihn als false — vorher ging die Seite trotzdem weiter.
-            if (await editor.flushSave()) onBack()
+            if (await editor.flushSave()) {
+              verlaesstAbsichtlich.current = true
+              onBack()
+            }
           }}
           className="font-display text-xs font-bold text-gray-500"
         >
@@ -219,9 +265,11 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
           pointerFine={pointerFine}
           dropHint={hint}
           dragging={drag?.ref ?? null}
+          viewBoxOverride={eingefroren?.viewBox ?? null}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
         />
       </div>
 
@@ -271,6 +319,11 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
 
       {runnerSheet && (
         <RunnerSheet
+          status={editor.step.markers.runners.find(r => r.id === runnerSheet)?.status ?? 'ACTIVE'}
+          onActive={() => {
+            editor.setRunnerStatus(runnerSheet, 'ACTIVE')
+            setRunnerSheet(null)
+          }}
           onOut={() => {
             editor.setRunnerStatus(runnerSheet, 'OUT')
             setRunnerSheet(null)
@@ -287,10 +340,18 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         />
       )}
 
+      {ballSheet && (
+        <BallSheet
+          trajectory={editor.step.markers.ball.trajectory}
+          onChange={editor.setBallTrajectory}
+          onClose={() => setBallSheet(false)}
+        />
+      )}
+
       {blocker.state === 'blocked' && (
         <ConfirmModal
           title="Nicht gesichert"
-          message="Die letzten Änderungen konnten nicht gespeichert werden. Beim Verlassen gehen sie verloren."
+          message="Die letzten Änderungen sind noch nicht gespeichert. Beim Verlassen gehen sie verloren."
           confirmLabel="Trotzdem verlassen"
           cancelLabel="Hierbleiben"
           onConfirm={() => blocker.proceed()}

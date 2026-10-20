@@ -147,6 +147,14 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   Montag/Samstag bis zum Monatsdeckel (12 h, im Profil) — ein Wintermontag ist 20-22 Uhr,
   also zwei ganze Montage statt vier angebrochener Tage. Elf Zeilen, max 3 h je Tag, abgesagte Termine fallen raus.
   Die Migration legt **keine** personenbezogenen Daten an. Details: `docs/TRAINERABRECHNUNG.md`.
+- **Playmaker** (`/orga/playmaker`, `play`/`play_step`/`play_category` seit V66–V68): ein
+  Feld zum Zeigen, kein Regelwerk. Ein Play ist eine Folge von **Ständen**, jeder Stand ein
+  vollständiger `markers`-Schnappschuss (neun Verteidiger, Runner, Ball) in **Fuß**, y nach
+  unten, Home (155, 218). Die Wiedergabe interpoliert und fasst die Stände nie an; Runner
+  folgen den Base-Wegen und laufen **nie rückwärts nach Home**. `PlayValidator` prüft nur
+  Datenintegrität (Nummerierung, Outs 0–3, Dauer 200–6000 ms im 200er-Raster) — Softball-
+  Regeln ausdrücklich nicht. Die 48 Start-Plays kommen aus `scripts/build-seed-plays.mjs`,
+  nicht aus der Hand. Details: `docs/PLAYMAKER.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.
@@ -160,6 +168,7 @@ Bei Arbeit an einem konkreten Feature die jeweilige Doc lesen — werden NICHT a
 - **Old Scoring / Legacy ScoringPage:** `docs/SCORING-LEGACY.md` — Game-basiertes Live-Scoring (parallel zu Spielbogen)
 - **Lineup Editor:** `docs/LINEUP.md` — DH-Annotation (kein eigener Entry!), Validation, Swap, Drag-Drop
 - **GameDay + Availability:** `docs/GAMEDAY.md` — Cascade-Regeln bei Player-Removal (destruktiv!)
+- **Playmaker (2D-Play-Board):** `docs/PLAYMAKER.md` — Koordinaten und Grammatik des Boards, Wiedergabe/Interpolation, Dauer-Raster, Generator der 48 Start-Plays
 - **Spielerprofil & Positions-Profil:** `docs/SPIELERPROFIL.md` — `/players/:id`, Form-Kurve (gleitender Schnitt), PositionSlot-Enum (IF/OF/IF_OF, P und C separat), Backfill V61, Kader ohne Reiter
 - **Stats / Batting-Statistics:** `docs/STATS.md` — Position-Weighting (DH=0.5, EH=0.5), Berechnung AVG/OBP/SLG/OPS
 - **Standings / Liga-Tabelle:** `docs/STANDINGS.md` — zwei Quellen (eigene Games + LeagueResult), ownTeam-Regel

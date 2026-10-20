@@ -74,14 +74,40 @@ const play = (title, category, spec) => ({ title, category, ...spec });
  */
 const s = (note, opts = {}) => ({ note, ...opts });
 
+/**
+ * Ein Runner-Eintrag im Katalog:
+ *   punkt                 verschiebt ihn
+ *   'OUT' | 'SCORED'      laesst ihn stehen und markiert ihn — ab dem naechsten Stand weg
+ *   { p, status }         beides zusammen: dort ist er, und dort ist er raus
+ *   null                  entfernt ihn sofort (Versehen, nicht Out und nicht Run)
+ */
+function runnerEintrag(vorher, wert) {
+  if (wert === null) return null;
+  if (wert === 'OUT' || wert === 'SCORED') {
+    if (!vorher) return null;
+    return { ...vorher, status: wert };
+  }
+  if (wert.status) return { x: r2(wert.p.x), y: r2(wert.p.y), status: wert.status };
+  return { x: r2(wert.x), y: r2(wert.y), status: 'ACTIVE' };
+}
+
+/** Ein Lauf von 60 ft braucht rund 2,5 s. Daran haengt die Dauer eines Stands. */
+const LAUFTEMPO = 24; // ft/s
+const FELDTEMPO = 22; // ft/s
+
+function dauerAusWegen(weiteste, weitesterWurf) {
+  void weitesterWurf;
+  const sekunden = weiteste / LAUFTEMPO;
+  const ms = Math.ceil((sekunden * 1000) / 200) * 200;
+  return Math.max(1200, Math.min(3000, ms));
+}
+
 function buildSteps(spec, startRunners) {
   const defense = { ...DEFAULT_DEFENSE };
-  const runners = { ...startRunners };
+  const runners = {};
+  for (const [id, p] of Object.entries(startRunners)) runners[id] = { x: r2(p.x), y: r2(p.y), status: 'ACTIVE' };
   let ball = { state: 'AT_BAT', holder: 'P', x: DEFAULT_DEFENSE.P.x, y: DEFAULT_DEFENSE.P.y, trajectory: 'AIR' };
   let outs = spec.outs ?? 0;
-
-  // Nennt das Play irgendwo einen eigenen Batter-Runner? Dann mischt sich hier keiner ein.
-  const eigenerBatter = spec.steps.some((st) => st.r && 'rb' in st.r);
 
   let kontaktIndex = -1;
   let batterRaus = false;
@@ -97,16 +123,21 @@ function buildSteps(spec, startRunners) {
       const halter = defense[ball.holder];
       ball = { ...ball, x: halter.x, y: halter.y };
     }
+    // Wer im VORIGEN Stand out war oder gepunktet hat, ist jetzt weg.
+    for (const [id, r] of Object.entries(runners)) if (r.status !== 'ACTIVE') delete runners[id];
     if (step.r) {
-      for (const [id, punkt] of Object.entries(step.r)) {
-        if (punkt === null) delete runners[id];
-        else runners[id] = punkt;
+      for (const [id, wert] of Object.entries(step.r)) {
+        const eintrag = runnerEintrag(runners[id], wert);
+        if (eintrag === null) delete runners[id];
+        else runners[id] = eintrag;
       }
     }
     // Kontakt: der Ball verlaesst die Hand des Pitchers, ohne dass ihn jemand faengt —
     // also wurde geschlagen. Dann beginnt die Flugbahn an HOME und nicht am Pitcher, und
-    // der Batter laeuft los.
+    // der Batter laeuft los. `keinSchlag` schaltet das ab: ein Passed Ball, ein Pickoff
+    // und jeder Wurf des Catchers sind kein Schlag, und es gibt keinen Batter-Runner.
     const kontakt =
+      !spec.keinSchlag &&
       !step.keinSchlag &&
       ball.state === 'AT_BAT' &&
       step.ball &&
@@ -117,17 +148,38 @@ function buildSteps(spec, startRunners) {
     /**
      * Der Batter laeuft. Ohne das stand er vier Staende lang auf der Platte, mitten im
      * Catcher — und das Doppelspiel an der 1 hatte niemanden, den man dort ausmacht.
-     * Gezeigt wird ein Standardlauf: gut ein Drittel der Strecke je Stand bis zur 1.
+     * Er erscheint IM Kontaktstand bei Anteil 0, also an der Platte: wer ihn erst auf
+     * halber Strecke auftauchen sieht, haelt ihn fuer einen zweiten Runner.
      */
-    if (step.r && 'rb' in step.r && step.r.rb === null) batterRaus = true;
-    if (!eigenerBatter && kontaktIndex >= 0 && !batterRaus) {
+    const setztBatter = Boolean(step.r && 'rb' in step.r);
+    if (kontaktIndex === index) {
+      // Im Moment des Kontakts steht er an der Platte. Ein Play, das ihn hier schon
+      // achtzehn Fuss weiter setzt, zeigt keinen Batter, sondern einen zweiten Runner.
+      batterAnteil = 0;
+      runners.rb = { x: HOME.x, y: HOME.y, status: 'ACTIVE' };
+    } else if (setztBatter) {
+      // Ab hier fuehrt das Play selbst — ausser es ist ein Ende (OUT, SCORED, weg).
+      const wert = step.r.rb;
+      batterRaus = wert === null || typeof wert === 'string' || Boolean(wert.status);
+      if (!batterRaus) {
+        // Steht er noch auf dem Weg zur 1? Dann laeuft er von dort weiter. Steht er schon
+        // auf der 2, hat das Play ihn weitergeschickt und der Automat hat nichts mehr zu
+        // suchen — sonst zog er ihn im Folgestand zurueck auf die 1.
+        const anteil = ((wert.x - HOME.x) * (B1.x - HOME.x) + (wert.y - HOME.y) * (B1.y - HOME.y)) / (BASE_PATH * BASE_PATH);
+        const auf = between(HOME, B1, Math.max(0, Math.min(1, anteil)));
+        if (anteil <= 1.01 && Math.hypot(wert.x - auf.x, wert.y - auf.y) <= 3) batterAnteil = Math.max(0, anteil);
+        else batterRaus = true;
+      }
+    } else if (kontaktIndex >= 0 && !batterRaus && runners.rb) {
       // Strecke nach Zeit, nicht nach Stand: ein 0,6-Sekunden-Stand ist ein kurzer
       // Moment, da legt niemand ein Drittel des Base-Wegs zurueck.
       const sekunden = (step.ms ?? 1200) / 1000;
-      batterAnteil = Math.min(1, (kontaktIndex === index ? 0.15 : batterAnteil) + sekunden * 0.29);
-      runners.rb = between(HOME, B1, batterAnteil);
+      batterAnteil = Math.min(1, batterAnteil + sekunden * 0.33);
+      const q = between(HOME, B1, batterAnteil);
+      runners.rb = { x: q.x, y: q.y, status: 'ACTIVE' };
     }
 
+    const vorherBall = { x: ball.x, y: ball.y };
     if (step.ball) {
       if (step.ball.hold) {
         const halter = defense[step.ball.hold];
@@ -143,22 +195,38 @@ function buildSteps(spec, startRunners) {
         };
       }
     }
+    // Ein fliegender Ball, der GENAU auf einem Verteidiger liegt, verdeckt dessen
+    // Kuerzel — die Scheibe bleibt, aber man liest nicht mehr, wer dort steht. Genau in
+    // den Faengen ("RF nimmt auf") ist das die Stelle, auf die es ankommt. Also legt er
+    // sich kurz vor ihn, dorthin, woher er kommt: ankommend statt angekommen.
+    if (!ball.holder) {
+      const auf = Object.values(defense).find((q) => Math.hypot(q.x - ball.x, q.y - ball.y) < 2);
+      if (auf) {
+        const her = vorherBall;
+        const dx = her.x - ball.x;
+        const dy = her.y - ball.y;
+        const l = Math.hypot(dx, dy);
+        if (l > 8) ball = { ...ball, x: r2(ball.x + (dx / l) * 7), y: r2(ball.y + (dy / l) * 7) };
+      }
+    }
     if (step.outs !== undefined) outs = step.outs;
 
     // Lange Wege brauchen laenger. Alles im selben Takt zu bewegen ist Absicht — aber
-    // 80 ft in 1,2 s sehen nicht nach Laufen aus, sondern nach einem Sprung.
+    // 80 ft in 1,2 s sehen nicht nach Laufen aus, sondern nach einem Sprung: ein Runner
+    // schafft keine 30 ft/s, und genau daran erkennt man, dass ein Bild nicht stimmt.
     let dauer = step.ms ?? 1200;
     if (!step.ms) {
-      let weitester = 0;
+      let weitesterLauf = 0;
+      let weitesterWeg = 0;
       for (const [pos, p] of Object.entries(defense)) {
         const alt = vorher.defense[pos];
-        if (alt) weitester = Math.max(weitester, Math.hypot(p.x - alt.x, p.y - alt.y));
+        if (alt) weitesterWeg = Math.max(weitesterWeg, Math.hypot(p.x - alt.x, p.y - alt.y));
       }
       for (const [id, p] of Object.entries(runners)) {
         const alt = vorher.runners[id];
-        if (alt) weitester = Math.max(weitester, Math.hypot(p.x - alt.x, p.y - alt.y));
+        if (alt) weitesterLauf = Math.max(weitesterLauf, laufweg(alt, p));
       }
-      if (weitester > 45) dauer = 2000;
+      dauer = dauerAusWegen(Math.max(weitesterLauf, (weitesterWeg * LAUFTEMPO) / FELDTEMPO), 0);
     }
 
     return {
@@ -168,7 +236,7 @@ function buildSteps(spec, startRunners) {
       outs,
       markers: {
         defenders: Object.entries(defense).map(([position, p]) => ({ position, x: r2(p.x), y: r2(p.y) })),
-        runners: Object.entries(runners).map(([id, p]) => ({ id, x: r2(p.x), y: r2(p.y), status: 'ACTIVE' })),
+        runners: Object.entries(runners).map(([id, r]) => ({ id, x: r2(r.x), y: r2(r.y), status: r.status })),
         ball,
       },
     };
@@ -194,6 +262,41 @@ function buildSteps(spec, startRunners) {
   return gebaut;
 }
 
+/**
+ * Wie weit ein Runner wirklich laeuft. Wer von der 1 auf einen Punkt zwischen 2 und 3
+ * zieht, nimmt nicht die Luftlinie quer durchs Infield, sondern den Base-Weg ueber die 2
+ * — die Wiedergabe zeichnet es so, also muss die Dauer dasselbe annehmen.
+ */
+function laufweg(von, nach) {
+  const BASEN = [HOME, B1, B2, B3];
+  const nahe = (p) => BASEN.findIndex((b) => Math.hypot(p.x - b.x, p.y - b.y) <= 3);
+  const direkt = Math.hypot(nach.x - von.x, nach.y - von.y);
+  const a = nahe(von);
+  if (a < 0) return direkt;
+  let b = nahe(nach);
+  let zusatz = 0;
+  if (b < 0) {
+    // Liegt das Ziel auf einem Base-Weg? Dann ist der Anfang dieses Wegs die letzte Base.
+    for (let i = 0; i < 4; i++) {
+      const p1 = BASEN[i];
+      const p2 = BASEN[(i + 1) % 4];
+      const l2 = (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2;
+      const t = ((nach.x - p1.x) * (p2.x - p1.x) + (nach.y - p1.y) * (p2.y - p1.y)) / l2;
+      if (t <= 0.02 || t >= 0.98) continue;
+      const q = { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+      if (Math.hypot(nach.x - q.x, nach.y - q.y) <= 4) {
+        b = i;
+        zusatz = Math.hypot(nach.x - BASEN[i].x, nach.y - BASEN[i].y);
+        break;
+      }
+    }
+    if (b < 0) return direkt;
+  }
+  let schritte = (b - a + 4) % 4;
+  if (schritte === 0) return zusatz || direkt;
+  return schritte * BASE_PATH + zusatz;
+}
+
 // ---------------------------------------------------------------- Katalog
 
 const KATALOG = [
@@ -210,13 +313,14 @@ const KATALOG = [
       }),
       s('Wurf auf die 2, Force Out.', {
         ball: { hold: '2B' },
-        r: { r1: null },
+        r: { r1: 'OUT' },
         outs: 1,
         ms: 600,
       }),
       s('2B dreht und wirft weiter auf die 1 — Doppelspiel, wenn der Batter langsam ist.', {
         d: { '1B': B1 },
         ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
         outs: 2,
       }),
     ],
@@ -232,8 +336,13 @@ const KATALOG = [
         ball: { at: { x: HOME.x + 26, y: HOME.y - 74 }, ground: true },
         r: { r1: between(B1, B2, 0.5) },
       }),
-      s('Kurzer Wurf auf die 2.', { ball: { hold: 'SS' }, r: { r1: null }, outs: 1, ms: 600 }),
-      s('Weiter auf die 1.', { d: { '1B': B1 }, ball: { hold: '1B' }, outs: 2 }),
+      s('Kurzer Wurf auf die 2.', { ball: { hold: 'SS' }, r: { r1: 'OUT' }, outs: 1, ms: 600 }),
+      s('Weiter auf die 1.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 2,
+      }),
     ],
   }),
 
@@ -242,17 +351,15 @@ const KATALOG = [
     startRunners: {},
     steps: [
       s('Harter Grounder die Linie entlang.'),
-      s('3B fängt im Rückwärtsgehen.', {
+      s('3B greift ihn an der Linie ab.', {
         d: { '3B': { x: HOME.x - 44, y: HOME.y - 46 } },
         ball: { at: { x: HOME.x - 44, y: HOME.y - 46 }, ground: true },
-        r: { rb: between(HOME, B1, 0.35) },
       }),
-      s('Langer Wurf quer rüber, 1B steht an der Base.', {
-        d: { '1B': B1 },
+      s('Langer Wurf quer rüber, 1B an der Base — der C geht hinter die 1.', {
+        d: { '1B': B1, C: between(HOME, B1, 0.42) },
         ball: { hold: '1B' },
-        r: { rb: between(HOME, B1, 0.8) },
       }),
-      s('Out an der 1.', { r: { rb: null }, outs: 2, ms: 600 }),
+      s('Out an der 1.', { r: { rb: { p: B1, status: 'OUT' } }, outs: 2 }),
     ],
   }),
 
@@ -261,17 +368,21 @@ const KATALOG = [
     startRunners: {},
     steps: [
       s('Grounder zum ersten Baseman. Er verlässt die Base — also muss jemand hin.'),
-      s('1B fängt, P läuft zur Base. Das ist seine Aufgabe, nicht die des 2B.', {
-        d: { '1B': { x: HOME.x + 44, y: HOME.y - 46 }, P: toward(MOUND, B1, 30) },
-        ball: { at: { x: HOME.x + 44, y: HOME.y - 46 }, ground: true },
-        r: { rb: between(HOME, B1, 0.4) },
+      s('1B holt ihn weit vor der Base — jetzt muss jemand an die 1.', {
+        // Der P laeuft NICHT auf geradem Weg zum 1B — dort steht der 1B mit dem Ball.
+        // Er bricht zur Linie aus und laeuft sie parallel an.
+        d: {
+          '1B': { x: HOME.x + 30, y: HOME.y - 32 },
+          P: { x: HOME.x + 18, y: HOME.y - 54 },
+          C: between(HOME, B1, 0.42),
+        },
+        ball: { at: { x: HOME.x + 30, y: HOME.y - 32 }, ground: true },
       }),
       s('Wurf zum laufenden Pitcher, er trifft die Base mit dem Fuß.', {
         d: { P: B1 },
         ball: { hold: 'P' },
-        r: { rb: between(HOME, B1, 0.85) },
       }),
-      s('Out.', { r: { rb: null }, outs: 1, ms: 600 }),
+      s('Out.', { r: { rb: { p: B1, status: 'OUT' } }, outs: 1 }),
     ],
   }),
 
@@ -279,14 +390,22 @@ const KATALOG = [
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
-      s('Der Ball kommt zurück zum Pitcher.'),
-      s('P fängt und dreht sich sofort zur 2.', {
+      s('Runner auf 1. Der Schlag kommt hart zurück zum Pitcher.'),
+      s('Comebacker — der P fängt ihn selbst.', {
+        ball: { at: { x: DEFAULT_DEFENSE.P.x, y: DEFAULT_DEFENSE.P.y }, ground: true },
+      }),
+      s('P dreht sich zur 2. Wer dort deckt, ist abgesprochen — hier der 2B.', {
         ball: { hold: 'P' },
         d: { '2B': B2 },
-        r: { r1: between(B1, B2, 0.45) },
+        r: { r1: between(B1, B2, 0.55) },
       }),
-      s('Wurf auf die 2.', { ball: { hold: '2B' }, r: { r1: null }, outs: 1, ms: 600 }),
-      s('Und weiter auf die 1.', { d: { '1B': B1 }, ball: { hold: '1B' }, outs: 2 }),
+      s('Wurf auf die 2.', { ball: { hold: '2B' }, r: { r1: 'OUT' }, outs: 1, ms: 600 }),
+      s('Und weiter auf die 1.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 2,
+      }),
     ],
   }),
 
@@ -303,11 +422,16 @@ const KATALOG = [
       s('Wurf zur 2, der 2B nimmt im Lauf an.', {
         d: { '2B': B2 },
         ball: { hold: '2B' },
-        r: { r1: null },
+        r: { r1: 'OUT' },
         outs: 1,
         ms: 600,
       }),
-      s('Abdrehen vom Runner weg, dann auf die 1.', { d: { '1B': B1 }, ball: { hold: '1B' }, outs: 2 }),
+      s('Abdrehen vom Runner weg, dann auf die 1.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 2,
+      }),
     ],
   }),
 
@@ -321,8 +445,8 @@ const KATALOG = [
         ball: { at: SHORT_LEFT, ground: true },
         r: { rb: between(HOME, B1, 0.6) },
       }),
-      s('Wurf auf die 2, SS nimmt an — P geht hinter die Base als Absicherung.', {
-        d: { SS: B2, P: { x: B2.x + 3, y: B2.y - 22 } },
+      s('Wurf auf die 2: SS nimmt an, der 2B steht dahinter. Der P sichert die 3 ab.', {
+        d: { SS: B2, '2B': { x: B2.x + 23, y: B2.y + 8 }, P: { x: B3.x - 16, y: B3.y + 12 } },
         ball: { hold: 'SS' },
         r: { rb: B1 },
       }),
@@ -339,8 +463,8 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { rb: between(HOME, B1, 0.9) },
       }),
-      s('Wurf zurück zur 1, 2B sichert dahinter ab.', {
-        d: { '2B': { x: B1.x + 18, y: B1.y - 12 } },
+      s('Wurf zurück zur 1, 2B sichert im Foul-Gebiet dahinter ab.', {
+        d: { '2B': { x: B1.x - 5, y: B1.y + 17 } },
         ball: { hold: '1B' },
         r: { rb: B1 },
       }),
@@ -350,16 +474,20 @@ const KATALOG = [
   play('Überwurf an der 1 — wer sichert ab', 'Base-Coverage', {
     outs: 1,
     startRunners: {},
+    keinSchlag: true,
     steps: [
-      s('Wurf vom SS geht zu hoch.'),
-      s('Der Ball fliegt über den 1B hinweg.', {
-        d: { '1B': B1 },
-        ball: { at: { x: B1.x + 26, y: B1.y - 18 } },
+      s('Der SS hat den Grounder, der Wurf auf die 1 geht zu hoch.', {
+        ball: { hold: 'SS' },
+        r: { rb: between(HOME, B1, 0.4) },
+      }),
+      s('Der Ball fliegt über den 1B hinweg ins Foul-Gebiet.', {
+        d: { '1B': B1, RF: { x: B1.x + 34, y: B1.y - 30 } },
+        ball: { at: { x: B1.x + 26, y: B1.y + 14 } },
         r: { rb: between(HOME, B1, 0.9) },
       }),
       s('RF war von Anfang an unterwegs — ohne ihn läuft der Runner bis zur 3.', {
-        d: { RF: { x: B1.x + 40, y: B1.y - 30 } },
-        ball: { loose: { x: B1.x + 34, y: B1.y - 24 } },
+        d: { RF: { x: B1.x + 36, y: B1.y + 4 } },
+        ball: { loose: { x: B1.x + 22, y: B1.y + 10 } },
         r: { rb: between(B1, B2, 0.25) },
       }),
       s('RF hat ihn, der Runner bleibt auf der 2.', {
@@ -380,8 +508,8 @@ const KATALOG = [
         d: { LF: SHORT_LEFT },
         r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS geht als Cut-Mann auf die Linie LF–3B.', {
-        d: { SS: between(SHORT_LEFT, B3, 0.45), '3B': B3 },
+      s('SS geht als Cut-Mann auf die Linie LF–3B, der 2B rückt auf die 2.', {
+        d: { SS: between(SHORT_LEFT, B3, 0.45), '3B': B3, '2B': B2 },
         ball: { at: between(SHORT_LEFT, B3, 0.45) },
         r: { r1: between(B2, B3, 0.4), rb: B1 },
       }),
@@ -402,8 +530,8 @@ const KATALOG = [
         ball: { at: UP_MIDDLE, ground: true },
         r: { r1: between(B1, B2, 0.55), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS stellt sich zwischen CF und 3B.', {
-        d: { SS: between(UP_MIDDLE, B3, 0.5), '3B': B3 },
+      s('SS stellt sich zwischen CF und 3B, der 2B deckt die 2.', {
+        d: { SS: between(UP_MIDDLE, B3, 0.5), '3B': B3, '2B': B2 },
         ball: { at: between(UP_MIDDLE, B3, 0.5) },
         r: { r1: between(B2, B3, 0.5), rb: B1 },
       }),
@@ -421,14 +549,14 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS zieht als Cut-Mann heraus — er, nicht der 2B.', {
-        d: { SS: between(SHORT_RIGHT, B3, 0.45), '3B': B3 },
+      s('SS zieht als Cut-Mann heraus — er, nicht der 2B. Der deckt die 2.', {
+        d: { SS: between(SHORT_RIGHT, B3, 0.45), '3B': B3, '2B': B2 },
         ball: { at: between(SHORT_RIGHT, B3, 0.45) },
         r: { r1: between(B2, B3, 0.45), rb: B1 },
       }),
       s('Der Runner war zu weit raus — Wurf auf die 3.', {
         ball: { hold: '3B' },
-        r: { r1: null },
+        r: { r1: 'OUT' },
         outs: 2,
       }),
     ],
@@ -446,8 +574,13 @@ const KATALOG = [
         ball: { at: SHORT_LEFT, ground: true },
         r: { r2: between(B2, B3, 0.8), rb: between(HOME, B1, 0.3) },
       }),
-      s('3B ist der Cut-Mann für Home — er stellt sich auf die Linie.', {
-        d: { '3B': between(SHORT_LEFT, HOME, 0.4), C: HOME },
+      s('3B ist der Cut-Mann für Home, SS füllt die 3, P geht hinter die Platte.', {
+        d: {
+          '3B': between(SHORT_LEFT, HOME, 0.4),
+          C: HOME,
+          SS: B3,
+          P: { x: HOME.x + 6, y: HOME.y + 26 },
+        },
         ball: { at: between(SHORT_LEFT, HOME, 0.4) },
         r: { r2: between(B3, HOME, 0.5), rb: B1 },
       }),
@@ -465,14 +598,14 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r2: between(B2, B3, 0.85), rb: between(HOME, B1, 0.3) },
       }),
-      s('1B auf die Linie RF–Home.', {
-        d: { '1B': between(SHORT_RIGHT, HOME, 0.45), C: HOME },
+      s('1B auf die Linie RF–Home, P hinter die Platte.', {
+        d: { '1B': between(SHORT_RIGHT, HOME, 0.45), C: HOME, P: { x: HOME.x + 6, y: HOME.y + 26 } },
         ball: { at: between(SHORT_RIGHT, HOME, 0.45) },
         r: { r2: between(B3, HOME, 0.55), rb: B1 },
       }),
-      s('Der Wurf ist zu hoch — der Cut fängt ab und hält den Batter auf der 1.', {
+      s('Der Wurf segelt — der Cut nimmt ihn runter. Der Run zählt, der Batter bleibt auf der 1.', {
         ball: { hold: '1B' },
-        r: { r2: null, rb: B1 },
+        r: { r2: 'SCORED', rb: B1 },
       }),
     ],
   }),
@@ -531,21 +664,22 @@ const KATALOG = [
       s('RF am Zaun.', {
         d: { RF: fromHome(40, 200) },
         ball: { at: fromHome(40, 200), ground: true },
-        r: { r1: between(B2, B3, 0.3), rb: between(HOME, B1, 0.7) },
+        r: { r1: between(B1, B2, 0.9), rb: between(HOME, B1, 0.7) },
       }),
       s('2B als erster Relay, 1B als zweiter dahinter.', {
         d: { '2B': between(fromHome(40, 200), HOME, 0.45), '1B': between(fromHome(40, 200), HOME, 0.7) },
         ball: { at: between(fromHome(40, 200), HOME, 0.45) },
-        r: { r1: between(B3, HOME, 0.4), rb: between(B1, B2, 0.5) },
+        r: { r1: between(B2, B3, 0.6), rb: B1 },
       }),
-      s('Erster Relay wirft zum zweiten.', {
+      s('Erster Relay wirft zum zweiten, P geht hinter die Platte.', {
         ball: { hold: '1B' },
-        r: { r1: between(B3, HOME, 0.8), rb: B2 },
+        d: { P: { x: HOME.x + 6, y: HOME.y + 26 } },
+        r: { r1: between(B3, HOME, 0.5), rb: B2 },
       }),
       s('Von dort nach Home. Der Run fällt trotzdem — dafür bleibt der Batter auf der 2.', {
         d: { C: HOME },
         ball: { hold: 'C' },
-        r: { r1: null },
+        r: { r1: 'SCORED' },
       }),
     ],
   }),
@@ -562,18 +696,19 @@ const KATALOG = [
           '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 30),
           '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 30),
           '2B': B1,
+          SS: B2,
         },
         ball: { loose: { x: HOME.x - 8, y: HOME.y - 14 } },
-        r: { r1: between(B1, B2, 0.3), rb: between(HOME, B1, 0.2) },
+        r: { r1: between(B1, B2, 0.3) },
       }),
       s('P nimmt den Ball auf — er ist am nächsten dran.', {
         d: { P: { x: HOME.x - 8, y: HOME.y - 14 } },
         ball: { hold: 'P' },
-        r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.5) },
+        r: { r1: between(B1, B2, 0.6) },
       }),
       s('Sicherer Wurf auf die 1 — der 2B deckt dort ab, weil der 1B vorne ist.', {
         ball: { hold: '2B' },
-        r: { rb: null },
+        r: { r1: B2, rb: { p: B1, status: 'OUT' } },
         outs: 1,
       }),
     ],
@@ -587,9 +722,15 @@ const KATALOG = [
     steps: [
       s('Derselbe Bunt, andere Entscheidung: wir wollen den vorderen Runner.'),
       s('Bunt rollt hart genug zum 3B.', {
-        d: { '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 34), P: toward(MOUND, HOME, 20), SS: B2 },
+        d: {
+          '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 34),
+          P: toward(MOUND, HOME, 20),
+          SS: B2,
+          '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28),
+          '2B': B1,
+        },
         ball: { loose: { x: HOME.x - 16, y: HOME.y - 18 } },
-        r: { r1: between(B1, B2, 0.3), rb: between(HOME, B1, 0.2) },
+        r: { r1: between(B1, B2, 0.3) },
       }),
       s('3B nimmt auf und schaut sofort zur 2.', {
         d: { '3B': { x: HOME.x - 16, y: HOME.y - 18 } },
@@ -598,7 +739,7 @@ const KATALOG = [
       }),
       s('Wurf auf die 2 — SS deckt ab. Nur machen, wenn der Ball schnell in der Hand ist.', {
         ball: { hold: 'SS' },
-        r: { r1: null },
+        r: { r1: 'OUT' },
         outs: 1,
       }),
     ],
@@ -610,19 +751,24 @@ const KATALOG = [
     steps: [
       s('Runner auf 2. Der Bunt soll ihn auf die 3 bringen.'),
       s('3B muss vor — damit ist die 3 offen.', {
-        d: { '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 36), SS: B3, P: toward(MOUND, HOME, 18) },
+        d: {
+          '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 36),
+          SS: B3,
+          P: toward(MOUND, HOME, 18),
+          '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28),
+        },
         ball: { loose: { x: HOME.x - 18, y: HOME.y - 16 } },
-        r: { r2: between(B2, B3, 0.35), rb: between(HOME, B1, 0.2) },
+        r: { r2: between(B2, B3, 0.35) },
       }),
       s('SS füllt die Lücke an der 3. Ohne ihn läuft der Runner einfach durch.', {
         d: { '3B': { x: HOME.x - 18, y: HOME.y - 16 } },
         ball: { hold: '3B' },
         r: { r2: between(B2, B3, 0.7) },
       }),
-      s('Wurf auf die 1, der Runner bekommt die 3.', {
+      s('Wurf auf die 1 — der 2B deckt, weil der 1B vorne ist. Der Runner bekommt die 3.', {
         d: { '2B': B1 },
         ball: { hold: '2B' },
-        r: { r2: B3, rb: null },
+        r: { r2: B3, rb: { p: B1, status: 'OUT' } },
         outs: 1,
       }),
     ],
@@ -647,11 +793,15 @@ const KATALOG = [
       s('3B nimmt auf und wirft zur 3 — der Führungs-Runner ist das Ziel.', {
         d: { '3B': { x: HOME.x - 20, y: HOME.y - 18 } },
         ball: { hold: 'SS' },
-        r: { r2: null, r1: between(B1, B2, 0.7) },
+        r: { r2: { p: B3, status: 'OUT' }, r1: between(B1, B2, 0.7) },
         outs: 1,
       }),
-      s('Klappt das nicht, geht der Wurf an die 1 und man nimmt den sicheren Out.', {
+      // Eine Alternative zum Stand davor, keine Fortsetzung: derselbe eine Out, nur an
+      // einer anderen Base. Deshalb bleibt die Zaehlung bei 1.
+      s('Alternative zum Stand davor: Ist der Führungs-Runner zu schnell, geht der Wurf an die 1 — ein sicherer Out statt gar keiner.', {
         ball: { hold: '2B' },
+        r: { r1: B2, rb: { p: B1, status: 'OUT' } },
+        outs: 1,
         ms: 2000,
       }),
     ],
@@ -667,14 +817,14 @@ const KATALOG = [
         ball: { loose: { x: HOME.x + 6, y: HOME.y - 10 } },
         r: { r3: between(B3, HOME, 0.5) },
       }),
-      s('C nimmt den Ball selbst auf, weil er vor ihm liegt.', {
-        d: { C: { x: HOME.x + 6, y: HOME.y - 10 } },
-        ball: { hold: 'C' },
+      s('Der P nimmt den Ball — der C bleibt an der Platte, sonst deckt sie niemand.', {
+        d: { P: { x: HOME.x + 6, y: HOME.y - 10 } },
+        ball: { hold: 'P' },
         r: { r3: between(B3, HOME, 0.8) },
       }),
-      s('Zurück zur Platte und tag — nur wenn der Ball früh genug da ist.', {
-        d: { C: HOME },
-        r: { r3: null },
+      s('Kurzer Wurf zum Catcher, Tag — nur wenn der Ball früh genug da ist.', {
+        ball: { hold: 'C' },
+        r: { r3: 'OUT' },
         outs: 2,
         ms: 600,
       }),
@@ -687,15 +837,22 @@ const KATALOG = [
     steps: [
       s('Der Bunt bleibt direkt vor der Platte liegen.'),
       s('P stürmt, bleibt aber stehen: der Ball gehört dem Catcher.', {
-        d: { P: toward(MOUND, HOME, 22), C: { x: HOME.x, y: HOME.y - 6 }, '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28), '2B': B1 },
+        d: {
+          P: { x: HOME.x - 14, y: HOME.y - 20 },
+          C: { x: HOME.x, y: HOME.y - 6 },
+          '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28),
+          '2B': B1,
+        },
         ball: { loose: { x: HOME.x, y: HOME.y - 8 } },
-        r: { rb: between(HOME, B1, 0.25) },
       }),
-      s('C hat freie Sicht auf die 1 — der P hätte sich drehen müssen.', {
+      s('C hat freie Sicht auf die 1 — der P ist aus der Wurflinie gegangen.', {
         ball: { hold: 'C' },
-        r: { rb: between(HOME, B1, 0.6) },
       }),
-      s('Wurf auf die 1.', { ball: { hold: '2B' }, r: { rb: null }, outs: 2, ms: 600 }),
+      s('Wurf auf die 1.', {
+        ball: { hold: '2B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 2,
+      }),
     ],
   }),
 
@@ -703,10 +860,14 @@ const KATALOG = [
   play('Wurf auf die 2, Runner auf 3 startet', 'First-and-Third', {
     outs: 1,
     startRunners: { r1: B1, r3: B3 },
+    keinSchlag: true,
     steps: [
-      s('Runner auf 1 und 3. Der auf 1 läuft — und will genau das.'),
+      s('Runner auf 1 und 3. Der auf 1 läuft — und will genau das.', {
+        d: { C: HOME },
+        ball: { hold: 'C' },
+      }),
       s('C wirft auf die 2, der Runner von der 3 startet sofort.', {
-        d: { C: HOME, SS: B2 },
+        d: { SS: B2 },
         ball: { at: between(HOME, B2, 0.6) },
         r: { r1: between(B1, B2, 0.6), r3: between(B3, HOME, 0.35) },
       }),
@@ -716,7 +877,7 @@ const KATALOG = [
       }),
       s('Zurück zur Platte — der Run ist wichtiger als der Out an der 2.', {
         ball: { hold: 'C' },
-        r: { r3: null, r1: B2 },
+        r: { r3: 'OUT', r1: B2 },
         outs: 2,
       }),
     ],
@@ -727,10 +888,14 @@ const KATALOG = [
     startRunners: { r1: B1, r3: B3 },
     gameState: 'CLOSE_LATE',
     gameStateNote: 'Wenn der Run zählt: gar nicht erst zur 2 werfen.',
+    keinSchlag: true,
     steps: [
-      s('Dieselbe Lage, knapper Spielstand.'),
+      s('Dieselbe Lage, knapper Spielstand. Der Ball ist beim Catcher.', {
+        d: { C: HOME },
+        ball: { hold: 'C' },
+      }),
       s('C wirft scheinbar zur 2 — der P fängt den Ball ab.', {
-        d: { C: HOME, P: { x: MOUND.x, y: MOUND.y - 6 } },
+        d: { P: { x: MOUND.x, y: MOUND.y - 6 } },
         ball: { hold: 'P' },
         r: { r1: between(B1, B2, 0.5), r3: between(B3, HOME, 0.3) },
       }),
@@ -748,6 +913,7 @@ const KATALOG = [
   play('Angetäuschter Wurf auf die 2', 'First-and-Third', {
     outs: 0,
     startRunners: { r1: B1, r3: B3 },
+    keinSchlag: true,
     steps: [
       s('Der Catcher täuscht den Wurf nur an.'),
       s('Arm hoch, Ball bleibt in der Hand.', {
@@ -762,7 +928,7 @@ const KATALOG = [
       }),
       s('Wurf auf die 3 — Tag-Out, wenn er nicht zurückkommt.', {
         ball: { hold: '3B' },
-        r: { r3: null },
+        r: { r3: 'OUT' },
         outs: 1,
       }),
     ],
@@ -771,14 +937,20 @@ const KATALOG = [
   play('Direkter Wurf auf die 3', 'First-and-Third', {
     outs: 2,
     startRunners: { r1: B1, r3: B3 },
+    keinSchlag: true,
     steps: [
       s('Zwei Outs. Jetzt zählt nur noch der dritte, egal wo.'),
-      s('Der Runner auf 3 nimmt zu viel Abstand.', {
+      s('Der C hat den Ball, der Runner auf 3 nimmt zu viel Abstand.', {
         d: { C: HOME, '3B': B3 },
+        ball: { hold: 'C' },
         r: { r3: between(B3, HOME, 0.25) },
       }),
-      s('Schneller Wurf auf die 3.', { ball: { hold: '3B' }, r: { r3: between(B3, HOME, 0.15) }, ms: 600 }),
-      s('Tag — Inning vorbei.', { r: { r3: null }, outs: 3 }),
+      s('Schneller Wurf auf die 3 — vom Catcher, nicht vom Pitcher.', {
+        ball: { hold: '3B' },
+        r: { r3: between(B3, HOME, 0.15) },
+        ms: 600,
+      }),
+      s('Tag — Inning vorbei.', { r: { r3: 'OUT' }, outs: 3 }),
     ],
   }),
 
@@ -786,26 +958,27 @@ const KATALOG = [
   play('Rundown zwischen Home und 1', 'Rundown', {
     outs: 1,
     startRunners: { rb: between(HOME, B1, 0.5) },
+    keinSchlag: true,
     steps: [
       s('Der Batter hängt zwischen Home und der 1.'),
       s('1B hat den Ball und läuft ihn an — nicht werfen, laufen.', {
         d: { '1B': between(HOME, B1, 0.75), C: HOME },
         ball: { hold: '1B' },
         r: { rb: between(HOME, B1, 0.35) },
-        keinSchlag: true,
       }),
       s('Erst wenn der Runner festgelegt ist: ein Wurf zum Catcher.', {
         ball: { hold: 'C' },
         r: { rb: between(HOME, B1, 0.2) },
         ms: 600,
       }),
-      s('Tag. Ein Wurf reicht, wenn man ihn richtig anläuft.', { r: { rb: null }, outs: 2, ms: 600 }),
+      s('Tag. Ein Wurf reicht, wenn man ihn richtig anläuft.', { r: { rb: 'OUT' }, outs: 2, ms: 600 }),
     ],
   }),
 
   play('Rundown zwischen 1 und 2', 'Rundown', {
     outs: 0,
     startRunners: { r1: between(B1, B2, 0.5) },
+    keinSchlag: true,
     steps: [
       s('Runner steckt zwischen 1 und 2.'),
       s('2B läuft ihn Richtung 1 zurück.', {
@@ -818,13 +991,14 @@ const KATALOG = [
         r: { r1: between(B1, B2, 0.15) },
         ms: 600,
       }),
-      s('Tag an der 1.', { r: { r1: null }, outs: 1, ms: 600 }),
+      s('Tag an der 1.', { r: { r1: 'OUT' }, outs: 1, ms: 600 }),
     ],
   }),
 
   play('Rundown zwischen 2 und 3', 'Rundown', {
     outs: 1,
     startRunners: { r2: between(B2, B3, 0.5) },
+    keinSchlag: true,
     steps: [
       s('Zwischen 2 und 3 — hier sind SS und 3B zuständig.'),
       s('SS treibt ihn zurück zur 2.', {
@@ -833,23 +1007,24 @@ const KATALOG = [
         r: { r2: between(B2, B3, 0.3) },
       }),
       s('Wurf zum 2B an der Base.', { ball: { hold: '2B' }, r: { r2: between(B2, B3, 0.12) }, ms: 600 }),
-      s('Tag.', { r: { r2: null }, outs: 2, ms: 600 }),
+      s('Tag.', { r: { r2: 'OUT' }, outs: 2, ms: 600 }),
     ],
   }),
 
   play('Rundown zwischen 3 und Home', 'Rundown', {
     outs: 1,
     startRunners: { r3: between(B3, HOME, 0.5) },
+    keinSchlag: true,
     steps: [
       s('Der teuerste Rundown: hier geht es um einen Run.'),
       s('C läuft ihn zur 3 zurück. Der Runner darf nicht nach Home.', {
-        d: { C: between(B3, HOME, 0.7), '3B': B3, P: between(B3, HOME, 0.85) },
+        d: { C: between(B3, HOME, 0.7), '3B': B3, P: between(B3, HOME, 0.98) },
         ball: { hold: 'C' },
         r: { r3: between(B3, HOME, 0.3) },
       }),
       s('Wurf zum 3B.', { ball: { hold: '3B' }, r: { r3: between(B3, HOME, 0.12) }, ms: 600 }),
       s('Tag an der 3. P ist nachgerückt, falls der Wurf danebengeht.', {
-        r: { r3: null },
+        r: { r3: 'OUT' },
         outs: 2,
         ms: 600,
       }),
@@ -876,7 +1051,7 @@ const KATALOG = [
         ball: { hold: 'RF' },
         r: { rb: between(HOME, B1, 0.7) },
       }),
-      s('RF ruft, die anderen weichen. Out.', { outs: 1, ms: 600, r: { rb: null } }),
+      s('RF ruft, die anderen weichen. Out.', { outs: 1, ms: 600, r: { rb: 'OUT' } }),
     ],
   }),
 
@@ -894,7 +1069,7 @@ const KATALOG = [
         ball: { at: { x: B3.x - 10, y: B3.y - 26 } },
       }),
       s('LF ruft — Outfielder vor Infielder, immer.', { ball: { hold: 'LF' } }),
-      s('Out.', { outs: 2, ms: 600, r: { rb: null } }),
+      s('Out.', { outs: 2, ms: 600, r: { rb: 'OUT' } }),
     ],
   }),
 
@@ -917,7 +1092,7 @@ const KATALOG = [
       }),
       s('SS und 2B drehen weg. Out.', {
         d: { SS: { x: B2.x - 20, y: B2.y - 12 }, '2B': { x: B2.x + 20, y: B2.y - 12 } },
-        r: { rb: null },
+        r: { rb: 'OUT' },
         outs: 1,
         ms: 600,
       }),
@@ -940,7 +1115,7 @@ const KATALOG = [
       s('C hat ihn. Der Ball dreht zurück Richtung Feld — deshalb mit dem Rücken dorthin stehen.', {
         ball: { hold: 'C' },
       }),
-      s('Out.', { outs: 2, ms: 600, r: { rb: null } }),
+      s('Out.', { outs: 2, ms: 600, r: { rb: 'OUT' } }),
     ],
   }),
 
@@ -955,10 +1130,10 @@ const KATALOG = [
       }),
       s('Der Batter ist raus, egal ob gefangen wird. Die Runner bleiben stehen.', {
         ball: { hold: 'SS' },
-        r: { rb: null },
+        r: { rb: 'OUT' },
         outs: 2,
       }),
-      s('Fällt der Ball: trotzdem Out, und die Runner müssen nicht laufen.', { ms: 2000 }),
+      s('Alternative: Fällt der Ball — trotzdem Out, und die Runner müssen nicht laufen.', { ms: 2000 }),
     ],
   }),
 
@@ -966,6 +1141,7 @@ const KATALOG = [
   play('Steal auf die 2 — Wurf und Abdeckung', 'Steal-Defense & Pickoff', {
     outs: 0,
     startRunners: { r1: B1 },
+    keinSchlag: true,
     steps: [
       s('Runner auf 1 startet mit dem Wurf.'),
       s('C steht auf, SS geht zur Base. Wer deckt, ist vorher abgesprochen.', {
@@ -973,33 +1149,39 @@ const KATALOG = [
         ball: { hold: 'C' },
         r: { r1: between(B1, B2, 0.4) },
       }),
-      s('Wurf auf die 2.', { ball: { at: between(HOME, B2, 0.7) }, r: { r1: between(B1, B2, 0.75) }, ms: 600 }),
-      s('SS fängt und tagt.', { ball: { hold: 'SS' }, r: { r1: null }, outs: 1, ms: 600 }),
+      s('Wurf auf die 2.', { ball: { at: between(HOME, B2, 0.7) }, r: { r1: between(B1, B2, 0.75) } }),
+      s('SS fängt und tagt.', { ball: { hold: 'SS' }, r: { r1: 'OUT' }, outs: 1, ms: 600 }),
     ],
   }),
 
   play('Steal auf die 3 — Wurf und Abdeckung', 'Steal-Defense & Pickoff', {
     outs: 1,
     startRunners: { r2: B2 },
+    keinSchlag: true,
     steps: [
       s('Steal auf die 3 kommt seltener — und überrascht deshalb öfter.'),
-      s('3B zur Base, SS rückt nach.', {
-        d: { C: HOME, '3B': B3, SS: { x: B2.x - 14, y: B2.y + 8 } },
+      s('3B zur Base, SS und LF sichern hinter der 3 ab.', {
+        d: {
+          C: HOME,
+          '3B': B3,
+          SS: { x: B3.x - 16, y: B3.y - 12 },
+          LF: { x: B3.x - 34, y: B3.y - 30 },
+        },
         ball: { hold: 'C' },
         r: { r2: between(B2, B3, 0.4) },
       }),
       s('Wurf die Linie entlang — am Runner vorbei.', {
         ball: { at: between(HOME, B3, 0.7) },
         r: { r2: between(B2, B3, 0.8) },
-        ms: 600,
       }),
-      s('3B tagt.', { ball: { hold: '3B' }, r: { r2: null }, outs: 2, ms: 600 }),
+      s('3B tagt.', { ball: { hold: '3B' }, r: { r2: 'OUT' }, outs: 2, ms: 600 }),
     ],
   }),
 
   play('Doppel-Steal, Runner auf 1 und 2', 'Steal-Defense & Pickoff', {
     outs: 0,
     startRunners: { r1: B1, r2: B2 },
+    keinSchlag: true,
     steps: [
       s('Beide laufen. Man kann nur einen bekommen.'),
       s('Der Führungs-Runner geht auf die 3.', {
@@ -1007,14 +1189,13 @@ const KATALOG = [
         ball: { hold: 'C' },
         r: { r1: between(B1, B2, 0.4), r2: between(B2, B3, 0.4) },
       }),
-      s('Wurf auf die 3 — der vordere Runner ist der wertvollere Out.', {
+      s('Wurf auf die 3 — der vordere Runner zählt mehr.', {
         ball: { at: between(HOME, B3, 0.7) },
         r: { r2: between(B2, B3, 0.8), r1: between(B1, B2, 0.8) },
-        ms: 600,
       }),
       s('Out an der 3, die 2 schenken wir her.', {
         ball: { hold: '3B' },
-        r: { r2: null, r1: B2 },
+        r: { r2: 'OUT', r1: B2 },
         outs: 1,
       }),
     ],
@@ -1022,7 +1203,8 @@ const KATALOG = [
 
   play('Pickoff an der 1', 'Steal-Defense & Pickoff', {
     outs: 1,
-    startRunners: { r1: { x: B1.x - 8, y: B1.y + 8 } },
+    startRunners: { r1: toward(B1, B2, 11) },
+    keinSchlag: true,
     steps: [
       s('Der Runner nimmt zu viel Abstand.'),
       s('C hat den Ball und wirft sofort zur 1.', {
@@ -1030,13 +1212,14 @@ const KATALOG = [
         ball: { hold: 'C' },
       }),
       s('1B fängt an der Base.', { ball: { hold: '1B' }, ms: 600 }),
-      s('Tag, bevor der Runner zurück ist.', { r: { r1: null }, outs: 2, ms: 600 }),
+      s('Tag, bevor der Runner zurück ist.', { r: { r1: 'OUT' }, outs: 2, ms: 600 }),
     ],
   }),
 
   play('Pickoff an der 2', 'Steal-Defense & Pickoff', {
     outs: 1,
-    startRunners: { r2: { x: B2.x + 6, y: B2.y + 10 } },
+    startRunners: { r2: toward(B2, B3, 11) },
+    keinSchlag: true,
     steps: [
       s('An der 2 braucht es ein Zeichen — der Runner sieht den Deckenden nicht.'),
       s('SS schleicht hinter dem Runner zur Base.', {
@@ -1049,7 +1232,7 @@ const KATALOG = [
         ms: 600,
       }),
       s('Tag. Timing ist alles — zu früh und der Runner sieht ihn kommen.', {
-        r: { r2: null },
+        r: { r2: 'OUT' },
         outs: 2,
         ms: 600,
       }),
@@ -1058,7 +1241,8 @@ const KATALOG = [
 
   play('Pickoff an der 3', 'Steal-Defense & Pickoff', {
     outs: 1,
-    startRunners: { r3: { x: B3.x + 8, y: B3.y + 8 } },
+    startRunners: { r3: toward(B3, HOME, 11) },
+    keinSchlag: true,
     steps: [
       s('Der riskanteste Pickoff: hinter der 3 steht niemand, der absichert.'),
       s('3B geht zurück zur Base, sobald der Wurf durch ist.', {
@@ -1067,7 +1251,7 @@ const KATALOG = [
       }),
       s('Schneller Wurf.', { ball: { hold: '3B' }, ms: 600 }),
       s('Tag. Geht der Wurf daneben, fällt der Run — nur bei sicherem Vorsprung.', {
-        r: { r3: null },
+        r: { r3: 'OUT' },
         outs: 2,
         ms: 600,
       }),
@@ -1077,10 +1261,13 @@ const KATALOG = [
   play('Delayed Steal', 'Steal-Defense & Pickoff', {
     outs: 0,
     startRunners: { r1: B1 },
+    keinSchlag: true,
     steps: [
-      s('Der Runner läuft nicht mit dem Wurf, sondern erst, wenn der C zurückwirft.'),
-      s('C wirft lässig zum Pitcher zurück — genau da startet der Runner.', {
+      s('Der Runner läuft nicht mit dem Wurf, sondern erst, wenn der C zurückwirft.', {
         d: { C: HOME },
+        ball: { hold: 'C' },
+      }),
+      s('C wirft lässig zum Pitcher zurück — genau da startet der Runner.', {
         ball: { hold: 'P' },
         r: { r1: between(B1, B2, 0.3) },
       }),
@@ -1127,7 +1314,7 @@ const KATALOG = [
       s('SS nimmt auf und wirft zum Catcher.', {
         d: { SS: { x: HOME.x - 14, y: HOME.y - 40 }, C: HOME },
         ball: { hold: 'C' },
-        r: { r3: null },
+        r: { r3: 'OUT' },
         outs: 2,
       }),
     ],
@@ -1142,9 +1329,9 @@ const KATALOG = [
       s('Wir führen. Jetzt zählt nur, dass nichts über die Köpfe geht.'),
       s('Das Outfield geht zwanzig Fuß tiefer als sonst.', {
         d: {
-          LF: fromHome(-36, 180),
+          LF: fromHome(-30, 202),
           CF: fromHome(0, 205),
-          RF: fromHome(36, 180),
+          RF: fromHome(30, 202),
         },
         ms: 2000,
       }),
@@ -1165,17 +1352,21 @@ const KATALOG = [
       s('CF jagt ihm nach, SS geht als Relay raus.', {
         d: { CF: fromHome(8, 212), SS: between(fromHome(8, 212), B2, 0.5) },
         ball: { at: fromHome(8, 212), ground: true },
-        r: { r1: between(B2, B3, 0.4), rb: between(HOME, B1, 0.8) },
+        r: { r1: between(B1, B2, 0.9), rb: between(HOME, B1, 0.8) },
       }),
       s('2B stellt sich hinter den SS — falls der Wurf daneben geht.', {
         d: { '2B': between(fromHome(8, 212), B2, 0.68) },
         ball: { hold: 'SS' },
-        r: { r1: between(B3, HOME, 0.3), rb: between(B1, B2, 0.6) },
+        r: { r1: between(B2, B3, 0.6), rb: B1 },
       }),
-      s('Der Run fällt. Wichtig ist, dass der Batter auf der 2 bleibt.', {
-        d: { C: HOME },
+      s('SS wirft zum 2B, nicht quer übers halbe Feld — und der P geht hinter die Platte.', {
+        d: { P: { x: HOME.x + 6, y: HOME.y + 26 }, C: HOME },
+        ball: { hold: '2B' },
+        r: { r1: between(B3, HOME, 0.5), rb: B2 },
+      }),
+      s('Von dort nach Home. Der Run fällt — wichtig ist, dass der Batter auf der 2 bleibt.', {
         ball: { hold: 'C' },
-        r: { r1: null, rb: B2 },
+        r: { r1: 'SCORED' },
       }),
     ],
   }),
@@ -1183,6 +1374,7 @@ const KATALOG = [
   play('Passed Ball, Runner auf 3', 'Spielsituationen', {
     outs: 1,
     startRunners: { r3: B3 },
+    keinSchlag: true,
     steps: [
       s('Der Ball geht am Catcher vorbei. Der Runner auf 3 startet.'),
       s('C dreht sich um und sucht, P startet Richtung Home.', {
@@ -1197,7 +1389,7 @@ const KATALOG = [
       }),
       s('Wurf zum Pitcher an der Platte, Tag.', {
         ball: { hold: 'P' },
-        r: { r3: null },
+        r: { r3: 'OUT' },
         outs: 2,
         ms: 600,
       }),

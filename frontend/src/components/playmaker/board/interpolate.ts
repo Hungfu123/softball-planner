@@ -69,6 +69,17 @@ export function runnerPath(von: Point, nach: Point, t: number): Point {
   const vonIndex = baseIndex(von);
   const nachIndex = baseIndex(nach);
 
+  if (vonIndex !== null && nachIndex === null) {
+    // Ziel liegt nicht auf einer Base, aber auf einem Base-WEG: dann endet der Lauf
+    // unterwegs, und der Weg dahin fuehrt trotzdem ueber die Bases. Ohne das sprang ein
+    // Runner von der 1 quer durchs Infield auf einen Punkt zwischen 2 und 3.
+    const auf = aufBaseWeg(nach);
+    if (auf !== null && auf !== vonIndex) {
+      const weg = [...bisBase(vonIndex, auf), nach];
+      if (weg.length > 2) return entlang(weg, t);
+    }
+  }
+
   if (vonIndex === null || nachIndex === null || vonIndex === nachIndex) {
     return { x: lerp(von.x, nach.x, t), y: lerp(von.y, nach.y, t) };
   }
@@ -81,12 +92,16 @@ export function runnerPath(von: Point, nach: Point, t: number): Point {
   // ein Run und danach ein neuer Batter. Bleiben beide Wege zulaessig, gewinnt der kuerzere.
   const vorwaerts = kette(vonIndex, nachIndex, 1);
   const rueckwaerts = kette(vonIndex, nachIndex, -1);
-  const vorwaertsUeberHome = fuehrtUeberHome(vorwaerts);
-  const rueckwaertsUeberHome = fuehrtUeberHome(rueckwaerts);
+  //
+  // Und: rueckwaerts geht niemand nach HOME. Wer von der 1 zur Platte will, punktet —
+  // er laeuft ueber die 2 und die 3. Ohne diese Regel gewann der kuerzere Weg, und der
+  // Runner spazierte die First-Base-Linie zurueck in den Catcher.
+  const vorwaertsZulaessig = !fuehrtUeberHome(vorwaerts);
+  const rueckwaertsZulaessig = !fuehrtUeberHome(rueckwaerts) && nachIndex !== 0;
 
   let stationen: Point[];
-  if (vorwaertsUeberHome && !rueckwaertsUeberHome) stationen = rueckwaerts;
-  else if (rueckwaertsUeberHome && !vorwaertsUeberHome) stationen = vorwaerts;
+  if (vorwaertsZulaessig && !rueckwaertsZulaessig) stationen = vorwaerts;
+  else if (rueckwaertsZulaessig && !vorwaertsZulaessig) stationen = rueckwaerts;
   else stationen = vorwaerts.length <= rueckwaerts.length ? vorwaerts : rueckwaerts;
 
   if (stationen.length === 2) {
@@ -94,6 +109,29 @@ export function runnerPath(von: Point, nach: Point, t: number): Point {
   }
 
   return entlang(stationen, t);
+}
+
+/**
+ * Von welcher Base aus laeuft man auf diesen Punkt zu? Liegt er dicht an einem Base-Weg,
+ * ist das dessen Anfang; sonst null.
+ */
+function aufBaseWeg(p: Point): number | null {
+  for (let i = 0; i < BASES.length; i++) {
+    const a = BASES[i];
+    const b = BASES[(i + 1) % BASES.length];
+    const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+    const anteil = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+    if (anteil <= 0.02 || anteil >= 0.98) continue;
+    const nah = { x: a.x + anteil * (b.x - a.x), y: a.y + anteil * (b.y - a.y) };
+    if (Math.hypot(p.x - nah.x, p.y - nah.y) <= 4) return i;
+  }
+  return null;
+}
+
+/** Stationen von Base a bis Base b, vorwaerts und ohne ueber Home zu laufen. */
+function bisBase(von: number, nach: number): Point[] {
+  const vorwaerts = kette(von, nach, 1);
+  return fuehrtUeberHome(vorwaerts) ? [BASES[von], BASES[nach]] : vorwaerts;
 }
 
 /** Beruehrt der Weg Home als Zwischenstation? Start und Ziel zaehlen nicht. */

@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import type { RunnerStatus } from './board/types'
 
 /**
  * Was mit einem Runner passiert, wenn man ihn antippt statt zieht.
@@ -8,11 +9,15 @@ import { createPortal } from 'react-dom'
  * Ziehen ist die Geste, die sonst nichts tut; sie kostet keine eigene Werkzeugleiste.
  */
 export function RunnerSheet({
+  status,
+  onActive,
   onOut,
   onScored,
   onRemove,
   onClose,
 }: {
+  status: RunnerStatus
+  onActive: () => void
   onOut: () => void
   onScored: () => void
   onRemove: () => void
@@ -29,11 +34,16 @@ export function RunnerSheet({
       >
         <h2 className="font-headline text-xl font-extrabold uppercase tracking-wide text-navy-900">Runner</h2>
         <p className="mt-1 text-xs text-gray-500">
-          Out und Run bleiben in diesem Stand sichtbar und fehlen ab dem nächsten.
+          {status === 'ACTIVE'
+            ? 'Out und Run bleiben in diesem Stand stehen und fehlen ab dem nächsten.'
+            : status === 'OUT'
+              ? 'Dieser Runner ist in diesem Stand out. Ab dem nächsten fehlt er.'
+              : 'Dieser Runner hat in diesem Stand gepunktet. Ab dem nächsten fehlt er.'}
         </p>
         <div className="mt-4 space-y-2">
-          <Knopf onClick={onOut}>Out — durchgestrichen, dann weg</Knopf>
-          <Knopf onClick={onScored}>Run — läuft über Home hinaus</Knopf>
+          {status !== 'ACTIVE' && <Knopf onClick={onActive}>Läuft weiter — zurücknehmen</Knopf>}
+          {status !== 'OUT' && <Knopf onClick={onOut}>Out — durchgestrichen, dann weg</Knopf>}
+          {status !== 'SCORED' && <Knopf onClick={onScored}>Run — läuft über Home hinaus</Knopf>}
           <Knopf onClick={onRemove} warnend>
             Entfernen — war ein Versehen
           </Knopf>

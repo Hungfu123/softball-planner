@@ -1,5 +1,5 @@
-import { act, renderHook } from '@testing-library/react';
-import { describe, expect, test, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { usePlayEditor } from './usePlayEditor';
 import { DEFAULT_DEFENSE, POSITIONS } from '@/components/playmaker/board/geometry';
 import type { Play } from '@/components/playmaker/board/types';
@@ -188,5 +188,88 @@ describe('usePlayEditor', () => {
 
     act(() => result.current.cycleDuration());
     expect(result.current.steps[0].durationMs).toBe(600);
+  });
+});
+
+describe('usePlayEditor — Sicherung', () => {
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+  afterEach(() => vi.useRealTimers());
+
+  test('meldet schon waehrend der Entprellung etwas Ungesichertes', async () => {
+    const sichern = vi.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() => usePlayEditor(play(), sichern));
+
+    expect(result.current.hatUngesichertes).toBe(false);
+    act(() => result.current.setNote('Grounder'));
+
+    // Die Anfrage laeuft erst in 800 ms. Vorher haftete der Schutz vorm Verlassen am
+    // Fehlerzustand — genau in diesem Fenster ging alles verloren.
+    expect(result.current.hatUngesichertes).toBe(true);
+    expect(sichern).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+    await waitFor(() => expect(result.current.hatUngesichertes).toBe(false));
+  });
+
+  test('eine spaet zurueckkehrende Sicherung spricht die neuere Aenderung nicht frei', async () => {
+    let loesen: (() => void) | null = null;
+    const sichern = vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<void>(res => (loesen = () => res())))
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => usePlayEditor(play(), sichern));
+
+    act(() => result.current.setNote('erste'));
+    await act(async () => {
+      vi.advanceTimersByTime(800);
+    });
+    await waitFor(() => expect(sichern).toHaveBeenCalledTimes(1));
+
+    // Waehrend die erste Anfrage haengt, kommt eine zweite Aenderung.
+    act(() => result.current.setNote('zweite'));
+    await act(async () => {
+      loesen!();
+    });
+
+    expect(result.current.hatUngesichertes).toBe(true);
+  });
+});
+
+describe('usePlayEditor — Runner und Ball', () => {
+  test('Dauer und Outs verbrauchen keine Rueckgaengig-Stufe', () => {
+    const { result } = renderHook(() => usePlayEditor(play(), save));
+
+    act(() => result.current.cycleDuration());
+    act(() => result.current.setOuts(2));
+
+    // Fuenf Stufen sind knapp. Durchschalten ist selbst die Umkehr.
+    expect(result.current.canUndo).toBe(false);
+  });
+
+  test('Out nimmt den Runner aus den Folgestaenden, Zuruecknehmen gibt ihn zurueck', () => {
+    const { result } = renderHook(() => usePlayEditor(play(), save));
+
+    act(() => result.current.addRunner());
+    const id = result.current.step.markers.runners[0].id;
+    act(() => result.current.addStep());
+    act(() => result.current.setCur(0));
+
+    act(() => result.current.setRunnerStatus(id, 'OUT'));
+    expect(result.current.steps[0].markers.runners[0].status).toBe('OUT');
+    expect(result.current.steps[1].markers.runners).toHaveLength(0);
+
+    act(() => result.current.setRunnerStatus(id, 'ACTIVE'));
+    expect(result.current.steps[0].markers.runners[0].status).toBe('ACTIVE');
+    expect(result.current.steps[1].markers.runners).toHaveLength(1);
+  });
+
+  test('die Flugbahn laesst sich auf flach stellen', () => {
+    const { result } = renderHook(() => usePlayEditor(play(), save));
+
+    act(() => result.current.setBallTrajectory('GROUND'));
+
+    expect(result.current.step.markers.ball.trajectory).toBe('GROUND');
   });
 });
