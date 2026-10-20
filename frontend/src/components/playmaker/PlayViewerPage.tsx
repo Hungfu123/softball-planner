@@ -97,9 +97,11 @@ function Viewer({
   const pointerFine = typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
   const breit = groesse.w >= 900
 
+  // Querformat zaehlt wie Desktop — sonst bleibt am quer gehaltenen Handy ein
+  // 182 px hohes Band fuers Feld.
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] overflow-hidden lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 lg:col-start-2">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
         <Link to="/orga/playmaker" className="font-display text-xs font-bold text-gray-500">
           Zurück
         </Link>
@@ -134,7 +136,7 @@ function Viewer({
 
       <div
         ref={flaeche}
-        className="min-h-0 bg-[#93B268] lg:col-start-1 lg:row-span-3 lg:row-start-1"
+        className="min-h-0 bg-[#93B268] landscape:col-start-1 landscape:row-span-3 landscape:row-start-1 lg:col-start-1 lg:row-span-3 lg:row-start-1"
         onClick={wiedergabe.pause}
       >
         {wiedergabe.markers && (
@@ -152,15 +154,15 @@ function Viewer({
         )}
       </div>
 
-      <div className="min-h-0 lg:col-start-2 lg:flex lg:flex-col">
+      <div className="min-h-0 landscape:col-start-2 landscape:flex landscape:flex-col lg:col-start-2 lg:flex lg:flex-col">
         <p className="px-4 py-2.5 text-sm leading-snug text-navy-900">{wiedergabe.step?.note ?? ''}</p>
         {/* Nur wo Platz ist: am Handy traegt die Zeitleiste allein. */}
-        <div className="hidden min-h-0 lg:block">
+        <div className="hidden min-h-0 overflow-y-auto landscape:block lg:block">
           <StepList steps={play.steps} current={wiedergabe.index} onSelect={wiedergabe.seek} />
         </div>
       </div>
 
-      <div className="lg:col-start-2">
+      <div className="landscape:col-start-2 lg:col-start-2">
         {gegenstueck && (
           <Link
             to={`/orga/playmaker/${gegenstueck.id}`}

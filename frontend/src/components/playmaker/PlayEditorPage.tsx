@@ -248,9 +248,12 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
 
   const vorher = editor.cur > 0 ? editor.steps[editor.cur - 1].markers : null
 
+  // Querformat zaehlt wie Desktop: die Leisten gehen nach rechts, das Feld bekommt
+  // die ganze Hoehe. Ohne das blieben am quer gehaltenen Handy 127 px fuers Feld —
+  // ein Band, in dem die Raute verschwindet.
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] overflow-hidden lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 lg:col-start-2">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
         <button
           type="button"
           onClick={async () => {
@@ -277,7 +280,10 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         <Outs value={editor.step.outs} onChange={editor.setOuts} />
       </header>
 
-      <div ref={flaeche} className="min-h-0 bg-[#93B268] lg:col-start-1 lg:row-span-5 lg:row-start-1">
+      <div
+        ref={flaeche}
+        className="min-h-0 bg-[#93B268] landscape:col-start-1 landscape:row-span-5 landscape:row-start-1 lg:col-start-1 lg:row-span-5 lg:row-start-1"
+      >
         <PlayBoard
           markers={editor.step.markers}
           steps={editor.steps}
@@ -300,15 +306,18 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         value={editor.step.note ?? ''}
         onChange={e => editor.setNote(e.target.value)}
         placeholder="Notiz zu diesem Stand"
-        className="h-10 border-0 bg-transparent px-4 text-sm text-navy-900 lg:col-start-2"
+        className="h-10 border-0 bg-transparent px-4 text-sm text-navy-900 landscape:col-start-2 lg:col-start-2"
         aria-label="Notiz"
       />
 
-      <div className="hidden min-h-0 lg:col-start-2 lg:block">
+      {/* Der Rahmen scrollt, nicht die Liste: in einer Grid-Zeile minmax(0,1fr) hat ein
+          blosses block-Element keine gebundene Hoehe, und die Liste lief am quer
+          gehaltenen Handy ueber die Werkzeugleiste darunter. */}
+      <div className="hidden min-h-0 overflow-y-auto landscape:col-start-2 landscape:block lg:col-start-2 lg:block">
         <StepList steps={editor.steps} current={editor.cur} onSelect={editor.setCur} />
       </div>
 
-      <div className="flex items-center gap-2 px-4 pb-2.5 lg:col-start-2">
+      <div className="flex items-center gap-2 px-4 pb-2.5 landscape:col-start-2 lg:col-start-2">
         <ToolButton onClick={editor.addRunner}>Runner +</ToolButton>
         <ToolButton onClick={editor.resetDefense}>Standard</ToolButton>
         <ToolButton onClick={() => setVollesFeld(v => !v)} active={vollesFeld}>
@@ -319,7 +328,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         </ToolButton>
       </div>
 
-      <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom lg:col-start-2">
+      <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom landscape:col-start-2 lg:col-start-2">
         <StepTimeline count={editor.steps.length} current={editor.cur} onSeek={editor.setCur} />
         <div className="mt-2 flex items-center gap-2">
           <ToolButton onClick={editor.addStep}>+ Stand</ToolButton>

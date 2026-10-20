@@ -454,19 +454,24 @@ test('gliedert die ungefilterte Liste nach Kategorie', async ({ page }) => {
 })
 
 test('sagt beim Kopieren, dass es geklappt hat, und fragt vorm Löschen', async ({ page }) => {
-  const titel = `${TITEL_PREFIX} kopie-toast`
+  const titel = `${TITEL_PREFIX} kopie-${Date.now().toString(36)}`
   await neuesPlay(page, titel)
   await page.getByRole('button', { name: 'Zurück' }).click()
   await page.waitForURL(/\/orga\/playmaker\/\d+$/)
   await page.goto('/orga/playmaker')
   await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
 
-  // Das zuletzt bearbeitete Play ist das Hero — genau dort gab es die beiden Knoepfe
-  // vorher nicht, man musste es erst wegfiltern.
+  // Erst suchen: dann ist GENAU dieses Play das Hero, egal was parallel laufende Tests
+  // sonst gerade anlegen. Das Hero ist die Stelle, an der es die beiden Knoepfe vorher
+  // nicht gab — man musste es erst wegfiltern.
+  await page.getByLabel('Plays durchsuchen').fill(titel)
+  await expect(page.getByRole('button', { name: 'Play duplizieren' })).toHaveCount(1)
   await page.getByRole('button', { name: 'Play duplizieren' }).first().click()
   await expect(page.getByText(new RegExp(`Kopie von .${titel}`))).toBeVisible({ timeout: 10_000 })
 
   // Loeschen fragt nach — es ist nicht rueckgaengig zu machen. Ein Toast waere zu wenig.
+  await page.getByLabel('Plays durchsuchen').fill(`${titel} (Kopie)`)
+  await expect(page.getByRole('button', { name: 'Play löschen' })).toHaveCount(1)
   await page.getByRole('button', { name: 'Play löschen' }).first().click()
   await expect(page.getByText('Play löschen?')).toBeVisible()
   await page.getByRole('button', { name: 'Abbrechen' }).click()
@@ -506,6 +511,28 @@ test('klappt Kategorien zu und merkt sich das', async ({ page }) => {
   // Aufraeumen, damit der naechste Test eine offene Liste vorfindet.
   await page.getByRole('button', { name: 'Alle auf' }).click()
   await expect(page.getByRole('button', { name: /^Rundown/ })).toHaveAttribute('aria-expanded', 'true')
+})
+
+test('gibt dem Feld auch quer gehalten die ganze Höhe', async ({ page }) => {
+  // Quer ist der Bildschirm 390 px hoch. Ohne eigenes Raster blieb fuers Feld ein
+  // 127 px hohes Band — gemessen —, in dem die Raute verschwindet. Querformat zaehlt
+  // deshalb wie Desktop: Leisten nach rechts.
+  const titel = `${TITEL_PREFIX} quer`
+  await neuesPlay(page, titel)
+
+  await page.setViewportSize({ width: 844, height: 390 })
+  await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
+
+  const board = (await page.locator('svg').first().boundingBox())!
+  expect(board.height).toBeGreaterThan(300)
+  expect(board.width / board.height).toBeLessThan(2)
+
+  // Und es wird trotzdem nicht gescrollt.
+  const scrollt = await page.evaluate(() => document.body.scrollHeight > window.innerHeight + 2)
+  expect(scrollt).toBe(false)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await aufraeumen(page, titel)
 })
 
 test('zeigt die Start-Plays aus der Migration', async ({ page }) => {
