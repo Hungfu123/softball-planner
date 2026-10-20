@@ -1405,7 +1405,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Ball am Zaun — Relay-Kette', 'Spielsituationen', {
+  play('Ball am Zaun — Relay-Kette', 'Cut-off & Relay', {
     outs: 1,
     startRunners: { r1: B1 },
     steps: [

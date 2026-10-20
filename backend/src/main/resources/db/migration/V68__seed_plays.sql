@@ -813,7 +813,7 @@ FROM play WHERE title = 'Outfield tief, Vorsprung halten';
 -- 49. Ball am Zaun — Relay-Kette
 INSERT INTO play (title, category_id, game_state, game_state_note)
 SELECT 'Ball am Zaun — Relay-Kette', id, 'ANY', NULL
-FROM play_category WHERE name = 'Spielsituationen';
+FROM play_category WHERE name = 'Cut-off & Relay';
 INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
 SELECT id, 1, 1200, 'Der Ball springt an den Zaun. Jetzt zählt die Kette.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
 FROM play WHERE title = 'Ball am Zaun — Relay-Kette';
