@@ -88,6 +88,28 @@ Zwei Prüfskripte liegen im Scratchpad-Muster und lohnen sich bei jeder Katalog�
 Laufwege/Tempo/Out-Buchführung gegen `/api/plays`, und Marker, die sich überdecken.
 `SeedPlaysTest` prüft jedes Start-Play gegen `PlayValidator`.
 
+## Übersicht
+
+Hero (das zuletzt bearbeitete Play, groß als Feld), darunter Kategorie-Auswahl, Suche und
+die Liste. Drei Dinge, die nicht beliebig sind:
+
+- **Die Suche läuft im Browser**, nicht im Backend — entgegen der Hausregel und mit
+  Absicht: die Übersicht lädt ohnehin alle Plays samt Ständen (daran hängt das
+  Offline-Versprechen), ein Suchendpunkt wäre am Platz ohne Netz tot. Gesucht wird in
+  Titel, Kategoriename, Begründung der Spiellage und **jeder** Notiz; die Zeile sagt
+  dazu, wo der Treffer sitzt. Umlaute zählen in beide Richtungen („ueberwurf" findet
+  „Überwurf").
+- **Der beste Treffer übernimmt das Hero-Feld**, statt dass es verschwindet. Das Hero ist
+  256 px hoch und steht ÜBER dem Suchfeld: ließ man es beim ersten Buchstaben weg, sprang
+  das Eingabefeld um genau diese 256 px nach oben — am Handy genau dann, wenn die Tastatur
+  hochkommt. Dieselbe Fläche trägt deshalb auch die Auskunft „nichts gefunden".
+- **Die ungefilterte Liste ist nach Kategorie gegliedert**, mit klebenden Überschriften,
+  und das Suchfeld klebt mit. 51 Plays sind rund 4000 px; vom letzten Block waren es sonst
+  3400 px zurück nach oben, nur um etwas einzutippen.
+
+Kopieren meldet sich mit einem Toast (das Ergebnis steht ganz oben und damit außer Sicht),
+Löschen fragt per Modal — es ist nicht rückgängig zu machen. Beides gibt es auch am Hero.
+
 ## Was der Playmaker NICHT tut
 
 Er rechnet keine Softball-Regeln nach. Zwei Runner auf einer Base, ein Out ohne Ball in der

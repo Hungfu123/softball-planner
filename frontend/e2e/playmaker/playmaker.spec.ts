@@ -376,8 +376,11 @@ test('wechselt ueber das Gegenstueck auf ein anderes Play', async ({ page }) => 
 
   const auswahl = page.getByLabel('Gegenstück')
   await expect(auswahl).toBeVisible()
-  const gegenTitel = (await auswahl.locator('option').nth(1).textContent())!.trim()
-  await auswahl.selectOption({ index: 1 })
+  // Ein Start-Play als Gegenstueck, nie eines aus einem frueheren Lauf: zwei Plays mit
+  // demselben Titel machen die Pruefung am Ende sinnlos.
+  const option = auswahl.locator('option').filter({ hasNotText: TITEL_PREFIX }).nth(1)
+  const gegenTitel = (await option.textContent())!.trim()
+  await auswahl.selectOption(await option.getAttribute('value'))
 
   await page.getByRole('button', { name: 'Play bauen' }).click()
   await page.waitForURL(/\/orga\/playmaker\/\d+\/bearbeiten/, { timeout: 15_000 })
@@ -389,6 +392,90 @@ test('wechselt ueber das Gegenstueck auf ein anderes Play', async ({ page }) => 
 
   await expect(page.getByRole('heading', { name: gegenTitel })).toBeVisible()
   await expect(page.getByRole('heading', { name: titel })).toHaveCount(0)
+
+  await aufraeumen(page, titel)
+})
+
+test('findet ein Play ueber eine Notiz und sagt, warum es dasteht', async ({ page }) => {
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+  // "Foul-Gebiet" steht in keinem Titel, nur in Notizen.
+  await page.getByLabel('Plays durchsuchen').fill('foul-gebiet')
+
+  // Beide Treffer stehen auf der Seite: der beste als Hero, der zweite als Zeile. Die
+  // Zeile sagt dazu, WARUM sie dasteht — der Titel enthaelt das Wort naemlich nicht.
+  await expect(page.getByText('Überwurf an der 1 — wer sichert ab')).toBeVisible()
+  await expect(page.getByText('Single ins RF — Backup hinter der 1')).toBeVisible()
+  await expect(page.locator('.group').filter({ hasText: 'Notiz:' })).toHaveCount(1)
+})
+
+test('sagt, wenn nichts zu finden ist, ohne dass die Seite springt', async ({ page }) => {
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+  const feld = page.getByLabel('Plays durchsuchen')
+  await feld.scrollIntoViewIfNeeded()
+  const vorher = (await feld.boundingBox())!.y
+
+  await feld.fill('f')
+  await expect(page.getByLabel('Plays durchsuchen')).toHaveValue('f')
+  const mitTreffern = (await feld.boundingBox())!.y
+
+  await feld.fill('gibtesnicht')
+  await expect(page.getByText(/Nichts zu/)).toBeVisible()
+  const ohneTreffer = (await feld.boundingBox())!.y
+
+  // Das Suchfeld darf sich beim Tippen nicht bewegen — am Handy tippt man sonst neben
+  // die Zeile, sobald die Tastatur hochkommt. Gemessen waren es vorher 256 px.
+  expect(Math.abs(mitTreffern - vorher)).toBeLessThanOrEqual(1)
+  expect(Math.abs(ohneTreffer - vorher)).toBeLessThanOrEqual(1)
+
+  await page.getByRole('button', { name: 'Suche leeren' }).click()
+  await expect(feld).toHaveValue('')
+})
+
+test('gliedert die ungefilterte Liste nach Kategorie', async ({ page }) => {
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+  // Ohne Filter: Ueberschriften, damit einundfuenfzig Plays navigierbar bleiben.
+  await expect(page.getByRole('heading', { name: /Bunt-Defense · \d+/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Rundown · \d+/ })).toBeVisible()
+
+  // Mit Filter ist die Liste selbst schon die Antwort — dann gliedert nichts.
+  const wert = await page
+    .getByLabel('Kategorie')
+    .locator('option', { hasText: 'Rundown' })
+    .getAttribute('value')
+  await page.getByLabel('Kategorie').selectOption(wert!)
+  await expect(page.getByRole('heading', { name: /Bunt-Defense · \d+/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /Rundown · \d+/ })).toHaveCount(0)
+})
+
+test('sagt beim Kopieren, dass es geklappt hat, und fragt vorm Löschen', async ({ page }) => {
+  const titel = `${TITEL_PREFIX} kopie-toast`
+  await neuesPlay(page, titel)
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+  // Das zuletzt bearbeitete Play ist das Hero — genau dort gab es die beiden Knoepfe
+  // vorher nicht, man musste es erst wegfiltern.
+  await page.getByRole('button', { name: 'Play duplizieren' }).first().click()
+  await expect(page.getByText(new RegExp(`Kopie von .${titel}`))).toBeVisible({ timeout: 10_000 })
+
+  // Loeschen fragt nach — es ist nicht rueckgaengig zu machen. Ein Toast waere zu wenig.
+  await page.getByRole('button', { name: 'Play löschen' }).first().click()
+  await expect(page.getByText('Play löschen?')).toBeVisible()
+  await page.getByRole('button', { name: 'Abbrechen' }).click()
+  await expect(page.getByText('Play löschen?')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Play löschen' }).first().click()
+  // Der Bestaetigungsknopf heisst auch "Löschen" — im Modal, nicht in der Liste.
+  await page.getByRole('button', { name: 'Löschen', exact: true }).click()
+  await expect(page.getByText(/gelöscht/)).toBeVisible({ timeout: 10_000 })
 
   await aufraeumen(page, titel)
 })
