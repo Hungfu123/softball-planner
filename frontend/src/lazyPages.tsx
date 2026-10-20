@@ -19,6 +19,10 @@ const SpielbogenPage = lazy(() => import('@/components/spielbogen/SpielbogenPage
 const CounterPage = lazy(() => import('@/components/counter/CounterPage'))
 // pdf-lib wiegt schwer und wird einmal im Monat gebraucht — nicht ins Hauptbundle.
 const TrainerabrechnungPage = lazy(() => import('@/components/orga/TrainerabrechnungPage'))
+const PlaymakerOverview = lazy(() => import('@/components/playmaker/PlaymakerOverview'))
+const PlaySetupPage = lazy(() => import('@/components/playmaker/PlaySetupPage'))
+const PlayEditorPage = lazy(() => import('@/components/playmaker/PlayEditorPage'))
+const PlayViewerPage = lazy(() => import('@/components/playmaker/PlayViewerPage'))
 
 export function LazyScoring() {
   // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
@@ -64,6 +68,22 @@ export function LazyCalendar() {
 
 export function LazyEquipmentCatalog() {
   return <Suspense fallback={<LoadingSkeleton />}><EquipmentCatalogPage /></Suspense>
+}
+
+export function LazyPlaymaker() {
+  return <Suspense fallback={<LoadingSkeleton />}><PlaymakerOverview /></Suspense>
+}
+
+export function LazyPlaySetup() {
+  return <Suspense fallback={<LoadingSkeleton />}><PlaySetupPage /></Suspense>
+}
+
+export function LazyPlayEditor() {
+  return <Suspense fallback={<LoadingSkeleton />}><PlayEditorPage /></Suspense>
+}
+
+export function LazyPlayViewer() {
+  return <Suspense fallback={<LoadingSkeleton />}><PlayViewerPage /></Suspense>
 }
 
 export function LazyTrainerabrechnung() {
