@@ -20,6 +20,7 @@ import {
   LazyPlaymaker,
   LazyPlaySetup,
   LazyPlayEditor,
+  LazyFreiesFeld,
   LazyPlayViewer,
   LazyScoring,
   LazySpielbogenList,
@@ -69,6 +70,8 @@ export const routes: RouteObject[] = [
   // innerhalb der Navigation waere der Rest zwangslaeufig ueberlang und die Seite wuerde
   // scrollen — genau das soll sie nicht.
   { path: '/orga/playmaker/:id', element: <RequireAuth><LazyPlayViewer /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  // Vor der :id-Route, sonst wird "frei" als id gelesen.
+  { path: '/orga/playmaker/frei', element: <RequireAuth><LazyFreiesFeld /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/orga/playmaker/:id/bearbeiten', element: <RequireAuth><LazyPlayEditor /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   // Kein Match (z.B. vertippte URL) fiele sonst auf die pfadlose Layout-Route
   // zurück und zeigte deren errorElement statt einer sinnvollen Seite —

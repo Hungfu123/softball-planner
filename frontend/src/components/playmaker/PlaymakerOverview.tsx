@@ -6,6 +6,7 @@ import { PlayRow } from './PlayRow'
 import type { Play } from './board/types'
 import { beschreibung } from './beschreibung'
 import { trefferIn, type Treffer } from './suche'
+import { standardfeld } from '@/hooks/useFreiesFeld'
 import { ChevronDown, CopyIcon, CrossBones, TrashBin } from '@/icons'
 import { Button } from '@/components/shared/Button'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
@@ -162,6 +163,22 @@ export default function PlaymakerOverview() {
         </h1>
         <Button onClick={() => navigate('/orga/playmaker/neu')}>Neues Play</Button>
       </div>
+
+      {/* Das freie Feld steht ueber allem anderen: in der Pause will man es mit einem
+          Tipp haben, nicht nach dem Scrollen durch einundfuenfzig Plays. Es legt nichts
+          an — deshalb keine Kachel neben den Plays, sondern eine Zeile mit eigener Kante. */}
+      <Link
+        to="/orga/playmaker/frei"
+        className="mx-4 mb-3 flex items-center gap-3 rounded-xl border border-dashed border-cream-400 bg-white p-3 hover:bg-navy-800 hover:text-white"
+      >
+        <div className="h-12 w-16 shrink-0 overflow-hidden rounded-lg">
+          <PlayBoard markers={standardfeld()} mode="full" width={64} height={48} interactive={false} />
+        </div>
+        <div className="min-w-0">
+          <div className="font-display text-sm font-extrabold">Freies Feld</div>
+          <div className="truncate text-xs opacity-70">Schnell was zeigen — wird nicht gespeichert</div>
+        </div>
+      </Link>
 
       {plays.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">

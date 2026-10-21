@@ -22,6 +22,7 @@ const TrainerabrechnungPage = lazy(() => import('@/components/orga/Trainerabrech
 const PlaymakerOverview = lazy(() => import('@/components/playmaker/PlaymakerOverview'))
 const PlaySetupPage = lazy(() => import('@/components/playmaker/PlaySetupPage'))
 const PlayEditorPage = lazy(() => import('@/components/playmaker/PlayEditorPage'))
+const FreiesFeldPage = lazy(() => import('@/components/playmaker/FreiesFeldPage'))
 const PlayViewerPage = lazy(() => import('@/components/playmaker/PlayViewerPage'))
 
 export function LazyScoring() {
@@ -80,6 +81,10 @@ export function LazyPlaySetup() {
 
 export function LazyPlayEditor() {
   return <Suspense fallback={<LoadingSkeleton />}><PlayEditorPage /></Suspense>
+}
+
+export function LazyFreiesFeld() {
+  return <Suspense fallback={<LoadingSkeleton />}><FreiesFeldPage /></Suspense>
 }
 
 export function LazyPlayViewer() {
