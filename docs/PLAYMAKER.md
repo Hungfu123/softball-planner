@@ -201,6 +201,10 @@ welches gilt, hängt an Alignment und Altersklasse. Für die Dead Sox gilt:
 - **Die Corner bleiben an ihren Bases.** Der 1B hält die 1, der 3B die 3.
 - Der **Pitcher** sichert ab: hinter der 3 oder hinter der Platte, nie an der 1 (das macht
   der Catcher) und nie an der 2.
+- **Der Cut-Mann steht auch beim kurzen Single.** Auf 120 ft könnte der Outfielder direkt
+  auf die 3 werfen — der Cut geht trotzdem raus. Er ist die Absicherung gegen den schlechten
+  Wurf, nicht bloß eine Abkürzung für die Distanz. Also nicht „wegoptimieren", nur weil der
+  Ball kurz liegt (ausdrückliche Entscheidung des Users).
 
 Die Start-Plays hatten zuerst die Baseball-Variante (1B als Cut für Home aus Center/Rechts,
 3B aus Links). Bei 60-ft-Bases und 215-ft-Zaun trägt die nicht: sobald der Ball weiter liegt,
