@@ -1,4 +1,3 @@
-import { runnerPath } from './interpolate';
 import type { Point } from './geometry';
 import type { Trajectory } from './types';
 
@@ -61,25 +60,4 @@ export function teilPfad(k: Flugkurve, t: number): string {
   const c = { x: k.p0.x + (k.c.x - k.p0.x) * anteil, y: k.p0.y + (k.c.y - k.p0.y) * anteil };
   const ende = punktAuf(k, anteil);
   return `M${k.p0.x},${k.p0.y} Q${c.x.toFixed(2)},${c.y.toFixed(2)} ${ende.x.toFixed(2)},${ende.y.toFixed(2)}`;
-}
-
-/** Wie viele Stuetzpunkte die Laufspur bekommt. Mehr braucht es bei 60 ft nicht. */
-const STUETZEN = 16;
-
-/**
- * Die Laufspur eines Runners bis t — entlang der Base-Wege, nicht als Sehne.
- *
- * Eine gerade Linie waere eine Luege: der Runner laeuft ueber die Base, die Spur schnitt
- * die Ecke ab. Gezeichnet wird deshalb derselbe Weg, auf dem er sich bewegt.
- */
-export function laufspur(von: Point, nach: Point, t: number): string {
-  const anteil = Math.max(0, Math.min(1, t));
-  if (anteil <= 0) return '';
-  const punkte: Point[] = [];
-  for (let i = 0; i <= STUETZEN; i++) {
-    punkte.push(runnerPath(von, nach, (anteil * i) / STUETZEN));
-  }
-  return punkte
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(2)},${p.y.toFixed(2)}`)
-    .join(' ');
 }

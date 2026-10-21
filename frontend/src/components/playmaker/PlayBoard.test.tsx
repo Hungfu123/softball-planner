@@ -117,7 +117,7 @@ describe('PlayBoard — die Spur waehrend der Wiedergabe', () => {
     ball: { state: 'IN_FLIGHT', holder: null, x: 245, y: 62, trajectory: 'AIR' },
   });
 
-  test('zeichnet Ball- und Laufspur auch beim ERSTEN Uebergang, wo es kein Davor gibt', () => {
+  test('zeichnet die Ballspur auch beim ERSTEN Uebergang, wo es kein Davor gibt', () => {
     // Genau hier fehlte vorher jede Linie: gezeichnet wurde aus `previous`, und das ist
     // beim ersten Uebergang null.
     const { container } = render(
@@ -125,7 +125,12 @@ describe('PlayBoard — die Spur waehrend der Wiedergabe', () => {
     );
 
     expect(container.querySelector('path[stroke="#E6F03C"]')).not.toBeNull();
-    expect(container.querySelector('path[stroke="#B91C2A"]')).not.toBeNull();
+  });
+
+  test('der Runner bekommt keine Linie — er bewegt sich sichtbar genug', () => {
+    const { container } = render(<PlayBoard markers={nach} spur={{ von, nach, t: 0.5 }} />);
+
+    expect(container.querySelector('path[stroke="#B91C2A"]')).toBeNull();
   });
 
   test('die Ballspur waechst mit t', () => {
@@ -140,12 +145,4 @@ describe('PlayBoard — die Spur waehrend der Wiedergabe', () => {
     expect(laenge(0.1)).toBeLessThan(laenge(0.3));
   });
 
-  test('die Laufspur folgt den Bases, statt die Ecke abzuschneiden', () => {
-    const { container } = render(<PlayBoard markers={nach} spur={{ von, nach, t: 1 }} />);
-    const d = container.querySelector('path[stroke="#B91C2A"]')!.getAttribute('d')!;
-    const punkte = [...d.matchAll(/[ML]([-\d.]+),([-\d.]+)/g)].map(m => ({ x: Number(m[1]), y: Number(m[2]) }));
-
-    // Von der 1 zur 3 fuehrt der Weg ueber die 2 (155, 133.15).
-    expect(punkte.some(p => Math.hypot(p.x - 155, p.y - 133.15) < 4)).toBe(true);
-  });
 });

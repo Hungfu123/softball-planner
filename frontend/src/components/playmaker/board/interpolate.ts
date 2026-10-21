@@ -1,4 +1,4 @@
-import { BASES, type Point } from './geometry';
+import { BASES, BASE_PATH, type Point } from './geometry';
 import { flugkurve, punktAuf } from './spur';
 import type { PlayMarkers, PlayStep } from './types';
 
@@ -15,8 +15,6 @@ const easeInOut = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 2);
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
-
-const BASE_SNAP = 3;
 
 /**
  * Ein Zwischenbild zwischen zwei Staenden.
@@ -68,123 +66,92 @@ export function frameAt(steps: PlayStep[], from: number, to: number, t: number):
 /**
  * Wo ein Runner zum Zeitpunkt t steht.
  *
- * Laeuft er von einer Base zu einer anderen, folgt er den Base-Wegen: von der ersten zur
- * dritten geht es ueber die zweite. Luftlinie wuerde die Ecke abschneiden und etwas
- * zeigen, was es im Spiel nicht gibt. Abseits der Bases wird geradeaus interpoliert.
+ * Die Raute wird als RING gerechnet: Home liegt bei 0, die 1 bei 60, die 2 bei 120, die 3
+ * bei 180 Fuss. Jeder Punkt, der nahe genug an einem Base-Weg liegt, bekommt so eine
+ * einzige Zahl — und zwischen zwei Zahlen laeuft man den Ring entlang, nie quer.
+ *
+ * Das ist der Grund fuer den Umbau: vorher wurde nur dann ueber die Bases geroutet, wenn
+ * mindestens ein Ende GENAU auf einer Base lag. In den Plays stehen Runner aber meist auf
+ * Bruchteilen — von 60 % zwischen 1 und 2 nach 40 % zwischen 2 und 3. Beide Enden lagen
+ * also daneben, und der Runner schnitt die 2 ab, statt sie zu beruehren.
+ *
+ * Wer gar nicht auf dem Ring steht (nach einem Rundown quer im Feld, ein frei gesetzter
+ * Marker), laeuft geradeaus — dort gibt es keinen Weg, dem man folgen koennte.
  */
 export function runnerPath(von: Point, nach: Point, t: number): Point {
-  const vonIndex = baseIndex(von);
-  const nachIndex = baseIndex(nach);
-
-  if (vonIndex !== null && nachIndex === null) {
-    // Ziel liegt nicht auf einer Base, aber auf einem Base-WEG: dann endet der Lauf
-    // unterwegs, und der Weg dahin fuehrt trotzdem ueber die Bases. Ohne das sprang ein
-    // Runner von der 1 quer durchs Infield auf einen Punkt zwischen 2 und 3.
-    const auf = aufBaseWeg(nach);
-    if (auf !== null && auf !== vonIndex) {
-      const weg = [...bisBase(vonIndex, auf), nach];
-      if (weg.length > 2) return entlang(weg, t);
-    }
-  }
-
-  if (vonIndex === null || nachIndex === null || vonIndex === nachIndex) {
+  const a = ringStelle(von);
+  const b = ringStelle(nach);
+  if (a === null || b === null) {
     return { x: lerp(von.x, nach.x, t), y: lerp(von.y, nach.y, t) };
   }
 
-  // Beide Richtungen pruefen. Nur vorwaerts zu zaehlen schickte einen Runner, der von
-  // der 2 zurueck auf die 1 muss (Rundown!), einmal um die ganze Raute.
-  //
-  // Entschieden wird nicht nach Laenge, sondern danach, ob der Weg UNTERWEGS ueber Home
-  // fuehrt: wer von der 3 zur 1 zurueck muss, laeuft nicht ueber die Platte — das waere
-  // ein Run und danach ein neuer Batter. Bleiben beide Wege zulaessig, gewinnt der kuerzere.
-  const vorwaerts = kette(vonIndex, nachIndex, 1);
-  const rueckwaerts = kette(vonIndex, nachIndex, -1);
-  //
-  // Und: rueckwaerts geht niemand nach HOME. Wer von der 1 zur Platte will, punktet —
-  // er laeuft ueber die 2 und die 3. Ohne diese Regel gewann der kuerzere Weg, und der
-  // Runner spazierte die First-Base-Linie zurueck in den Catcher.
-  const vorwaertsZulaessig = !fuehrtUeberHome(vorwaerts);
-  const rueckwaertsZulaessig = !fuehrtUeberHome(rueckwaerts) && nachIndex !== 0;
+  const vorwaerts = (b - a + RING) % RING;
+  const rueckwaerts = (a - b + RING) % RING;
 
-  let stationen: Point[];
-  if (vorwaertsZulaessig && !rueckwaertsZulaessig) stationen = vorwaerts;
-  else if (rueckwaertsZulaessig && !vorwaertsZulaessig) stationen = rueckwaerts;
-  else stationen = vorwaerts.length <= rueckwaerts.length ? vorwaerts : rueckwaerts;
+  /**
+   * Beruehrt der Weg Home UNTERWEGS? Dann ist er keiner: wer von der 3 zur 1 zurueck muss,
+   * laeuft nicht ueber die Platte — das waere ein Run und danach ein neuer Batter. Nach
+   * Home zu laufen ist erlaubt, rueckwaerts hinein nicht.
+   */
+  const vorwaertsOk = a + vorwaerts <= RING;
+  const rueckwaertsOk = a - rueckwaerts >= 0 && b > 0;
 
-  if (stationen.length === 2) {
+  let richtung: 1 | -1;
+  let strecke: number;
+  if (vorwaertsOk && !rueckwaertsOk) [richtung, strecke] = [1, vorwaerts];
+  else if (rueckwaertsOk && !vorwaertsOk) [richtung, strecke] = [-1, rueckwaerts];
+  else if (!vorwaertsOk && !rueckwaertsOk) {
     return { x: lerp(von.x, nach.x, t), y: lerp(von.y, nach.y, t) };
-  }
+  } else [richtung, strecke] = vorwaerts <= rueckwaerts ? [1, vorwaerts] : [-1, rueckwaerts];
 
-  return entlang(stationen, t);
+  return ringPunkt(a + richtung * strecke * t);
 }
+
+/** Umfang der Raute in Fuss: vier Wege zu sechzig. */
+const RING = 4 * BASE_PATH;
 
 /**
- * Von welcher Base aus laeuft man auf diesen Punkt zu? Liegt er dicht an einem Base-Weg,
- * ist das dessen Anfang; sonst null.
+ * Wie weit ein Marker neben dem Base-Weg liegen darf und trotzdem darauf laeuft.
+ * Drei Fuss (der alte Base-Fang) waren zu knapp: ein Lead ist absichtlich ein Stueck
+ * neben der Linie gezeichnet, laeuft aber selbstverstaendlich auf ihr.
  */
-function aufBaseWeg(p: Point): number | null {
+const RING_TOLERANZ = 6;
+
+/**
+ * Die Stelle eines Punktes auf dem Ring, oder null, wenn er nicht darauf liegt.
+ * Gemessen ab Home gegen den Uhrzeigersinn: Home 0, 1 bei 60, 2 bei 120, 3 bei 180.
+ */
+function ringStelle(p: Point): number | null {
+  let beste: number | null = null;
+  let bestAbstand = RING_TOLERANZ;
   for (let i = 0; i < BASES.length; i++) {
-    const a = BASES[i];
-    const b = BASES[(i + 1) % BASES.length];
-    const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
-    const anteil = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
-    if (anteil <= 0.02 || anteil >= 0.98) continue;
-    const nah = { x: a.x + anteil * (b.x - a.x), y: a.y + anteil * (b.y - a.y) };
-    if (Math.hypot(p.x - nah.x, p.y - nah.y) <= 4) return i;
-  }
-  return null;
-}
-
-/** Stationen von Base a bis Base b, vorwaerts und ohne ueber Home zu laufen. */
-function bisBase(von: number, nach: number): Point[] {
-  const vorwaerts = kette(von, nach, 1);
-  return fuehrtUeberHome(vorwaerts) ? [BASES[von], BASES[nach]] : vorwaerts;
-}
-
-/** Beruehrt der Weg Home als Zwischenstation? Start und Ziel zaehlen nicht. */
-function fuehrtUeberHome(stationen: Point[]): boolean {
-  return stationen.slice(1, -1).some(p => p === BASES[0]);
-}
-
-/** Stationen von a nach b, in der angegebenen Laufrichtung. */
-function kette(von: number, nach: number, richtung: 1 | -1): Point[] {
-  const stationen: Point[] = [BASES[von]];
-  let index = von;
-  while (index !== nach) {
-    index = (index + richtung + BASES.length) % BASES.length;
-    stationen.push(BASES[index]);
-  }
-  return stationen;
-}
-
-/** Punkt bei Anteil t auf einem Streckenzug, laengenproportional. */
-function entlang(punkte: Point[], t: number): Point {
-  const laengen: number[] = [];
-  let gesamt = 0;
-  for (let i = 1; i < punkte.length; i++) {
-    const l = Math.hypot(punkte[i].x - punkte[i - 1].x, punkte[i].y - punkte[i - 1].y);
-    laengen.push(l);
-    gesamt += l;
-  }
-  if (gesamt === 0) return punkte[0];
-
-  let rest = t * gesamt;
-  for (let i = 0; i < laengen.length; i++) {
-    if (rest <= laengen[i]) {
-      const anteil = laengen[i] === 0 ? 0 : rest / laengen[i];
-      return {
-        x: lerp(punkte[i].x, punkte[i + 1].x, anteil),
-        y: lerp(punkte[i].y, punkte[i + 1].y, anteil),
-      };
+    const von = BASES[i];
+    const nach = BASES[(i + 1) % BASES.length];
+    const dx = nach.x - von.x;
+    const dy = nach.y - von.y;
+    const l2 = dx * dx + dy * dy;
+    const anteil = Math.max(0, Math.min(1, ((p.x - von.x) * dx + (p.y - von.y) * dy) / l2));
+    const auf = { x: von.x + anteil * dx, y: von.y + anteil * dy };
+    const abstand = Math.hypot(p.x - auf.x, p.y - auf.y);
+    // Strikt kleiner, damit Home bei 0 landet und nicht bei 240: der Punkt liegt auf dem
+    // Ende des letzten Wegs genauso wie auf dem Anfang des ersten. Bei 240 greift die
+    // Regel "nie rueckwaerts nach Home" nicht, und der Runner spaziert die First-Base-
+    // Linie zurueck in den Catcher.
+    if (abstand < bestAbstand) {
+      bestAbstand = abstand;
+      beste = i * BASE_PATH + anteil * BASE_PATH;
     }
-    rest -= laengen[i];
   }
-  return punkte[punkte.length - 1];
+  return beste;
 }
 
-function baseIndex(p: Point): number | null {
-  for (let i = 0; i < BASES.length; i++) {
-    if (Math.hypot(p.x - BASES[i].x, p.y - BASES[i].y) <= BASE_SNAP) return i;
-  }
-  return null;
+/** Zurueck zu Koordinaten. Werte ausserhalb [0, RING] werden umgeschlagen. */
+function ringPunkt(s: number): Point {
+  const gesamt = ((s % RING) + RING) % RING;
+  const abschnitt = Math.min(BASES.length - 1, Math.floor(gesamt / BASE_PATH));
+  const anteil = (gesamt - abschnitt * BASE_PATH) / BASE_PATH;
+  const von = BASES[abschnitt];
+  const nach = BASES[(abschnitt + 1) % BASES.length];
+  return { x: lerp(von.x, nach.x, anteil), y: lerp(von.y, nach.y, anteil) };
 }
+

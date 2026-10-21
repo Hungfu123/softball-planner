@@ -12,7 +12,7 @@ import {
   type Box,
 } from './board/geometry';
 import { ballAnchor, computeContentBox, fitViewBox, markerRadius } from './board/layout';
-import { flugkurve, laufspur, teilPfad } from './board/spur';
+import { flugkurve, teilPfad } from './board/spur';
 import type { MarkerRef, PlayMarkers, PlayStep } from './board/types';
 
 /** Die Farben des Boards. Gras, Sand und Optic Yellow sind die drei neuen im Theme. */
@@ -194,63 +194,30 @@ export function PlayBoard({
           />
         );
       })()}
+      {/*
+        Nur die Ballbahn. Der Runner bekommt keine Linie: er bewegt sich sichtbar, und eine
+        zweite Spur daneben machte das Bild voll, ohne etwas zu sagen, was die Bewegung
+        nicht schon zeigt.
+      */}
       {spur ? (
-        <>
+        <path
+          d={teilPfad(flugkurve(spur.von.ball, spur.nach.ball, spur.nach.ball.trajectory), spur.t)}
+          fill="none"
+          stroke={BALL}
+          strokeWidth={2.4}
+          strokeDasharray="5 4"
+          strokeLinecap="round"
+        />
+      ) : (
+        previous && (
           <path
-            d={teilPfad(flugkurve(spur.von.ball, spur.nach.ball, spur.nach.ball.trajectory), spur.t)}
+            d={teilPfad(flugkurve(previous.ball, markers.ball, markers.ball.trajectory), 1)}
             fill="none"
             stroke={BALL}
             strokeWidth={2.4}
             strokeDasharray="5 4"
             strokeLinecap="round"
           />
-          {spur.nach.runners.map((ziel) => {
-            const start = spur.von.runners.find((r) => r.id === ziel.id);
-            if (!start) return null;
-            const d = laufspur(start, ziel, spur.t);
-            if (!d) return null;
-            return (
-              <path
-                key={`rp-${ziel.id}`}
-                d={d}
-                fill="none"
-                stroke={RUNNER}
-                strokeWidth={2.6}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            );
-          })}
-        </>
-      ) : (
-        previous && (
-          <>
-            <path
-              d={teilPfad(flugkurve(previous.ball, markers.ball, markers.ball.trajectory), 1)}
-              fill="none"
-              stroke={BALL}
-              strokeWidth={2.4}
-              strokeDasharray="5 4"
-              strokeLinecap="round"
-            />
-            {markers.runners.map((runner) => {
-              const vorher = previous.runners.find((r) => r.id === runner.id);
-              if (!vorher) return null;
-              const d = laufspur(vorher, runner, 1);
-              if (!d) return null;
-              return (
-                <path
-                  key={`rp-${runner.id}`}
-                  d={d}
-                  fill="none"
-                  stroke={RUNNER}
-                  strokeWidth={2.6}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              );
-            })}
-          </>
         )
       )}
 

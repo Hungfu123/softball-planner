@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { flugkurve, laufspur, punktAuf, teilPfad } from './spur';
-import { BASES } from './geometry';
+import { flugkurve, punktAuf, teilPfad } from './spur';
 import { frameAt } from './interpolate';
 import { DEFAULT_DEFENSE, POSITIONS } from './geometry';
 import type { PlayStep } from './types';
@@ -45,28 +44,6 @@ describe('teilPfad', () => {
     const d = teilPfad(flugkurve(A, B, 'AIR'), 0);
     expect(d).toContain(`M${A.x},${A.y}`);
     expect(d).toContain(`${A.x.toFixed(2)},${A.y.toFixed(2)}`);
-  });
-});
-
-describe('laufspur', () => {
-  test('fuehrt von der 1 zur 3 ueber die 2, nicht quer durchs Infield', () => {
-    const d = laufspur(BASES[1], BASES[3], 1);
-    const punkte = [...d.matchAll(/[ML]([-\d.]+),([-\d.]+)/g)].map(m => ({ x: Number(m[1]), y: Number(m[2]) }));
-    const naheZwei = punkte.some(p => Math.hypot(p.x - BASES[2].x, p.y - BASES[2].y) < 4);
-    const sehne = { x: (BASES[1].x + BASES[3].x) / 2, y: (BASES[1].y + BASES[3].y) / 2 };
-    const naheSehne = punkte.some(p => Math.hypot(p.x - sehne.x, p.y - sehne.y) < 4);
-
-    expect(naheZwei).toBe(true);
-    expect(naheSehne).toBe(false);
-  });
-
-  test('waechst mit t und faengt bei nichts an', () => {
-    expect(laufspur(BASES[1], BASES[2], 0)).toBe('');
-    const kurz = laufspur(BASES[1], BASES[2], 0.3);
-    const lang = laufspur(BASES[1], BASES[2], 0.9);
-    expect(lang.length).toBeGreaterThan(0);
-    // Beide fangen an derselben Stelle an.
-    expect(kurz.slice(0, kurz.indexOf(' '))).toBe(lang.slice(0, lang.indexOf(' ')));
   });
 });
 

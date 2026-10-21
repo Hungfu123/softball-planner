@@ -66,8 +66,6 @@ gespeicherten Stände dabei **nie** an — es gibt ein abgeleitetes Zwischenbild
   beim Wachsen stehen bleibt.
 - **Der Ball fliegt auf seiner Bahn**, nicht daneben. Vorher lief er auf der geraden
   Verbindung, während der Bogen danebenlag.
-- **Die Laufspur folgt den Base-Wegen**, wie die Bewegung selbst — eine Sehne von der 1 zur 3
-  würde die 2 abschneiden.
 - **Die Zeitleiste bekommt den Bruchteil** (`fortschritt`), sonst steht ihr Knopf zwei
   Sekunden still und springt dann.
 - Der Platz (Gras, Sand, Linien, Bases) ist eine gemerkte Komponente: er ändert sich nie,
@@ -75,10 +73,18 @@ gespeicherten Stände dabei **nie** an — es gibt ein abgeleitetes Zwischenbild
 - **Ein Tipp aufs Feld schaltet um**, er pausiert nicht nur. Das Feld füllt am Handy den
   halben Bildschirm; ein Streiftipp hielt die Wiedergabe lautlos an, und der nächste Druck
   auf den Knopf startete sie wieder — er stand ja inzwischen auf ▶.
-- **Runner folgen den Base-Wegen**, nicht der Luftlinie: von der 1 nach Home geht es über
-  die 2 und die 3. Rückwärts läuft nur, wer zurück muss (Rundown) — **nie rückwärts nach
-  Home**, das wäre ein Run auf dem Rückweg. Liegt das Ziel mitten auf einem Base-Weg, führt
-  der Weg trotzdem über die Base davor.
+- **Runner folgen den Base-Wegen**, nicht der Luftlinie. Die Raute ist dafür ein **Ring**:
+  Home liegt bei 0, die 1 bei 60, die 2 bei 120, die 3 bei 180 Fuß. Jeder Punkt innerhalb
+  von 6 ft an einem Base-Weg bekommt so eine einzige Zahl, und zwischen zwei Zahlen läuft
+  man den Ring entlang. Das ist nötig, weil in den Plays fast nie exakt auf einer Base
+  gestanden wird: 210 von 210 Runner-Bewegungen der Start-Plays liegen auf dem Weg, 49
+  davon führen über eine Base hinweg. Eine Routenwahl, die nur exakte Bases kennt, schnitt
+  die genau dort ab.
+  Rückwärts läuft nur, wer zurück muss (Rundown) — **nie rückwärts nach Home**, das wäre ein
+  Run auf dem Rückweg. Home muss dafür auf 0 abgebildet werden und nicht auf 240, sonst
+  greift die Regel nicht. Wer gar nicht auf dem Ring steht, läuft geradeaus.
+- **Der Runner bekommt keine Linie.** Er bewegt sich sichtbar; eine zweite Spur neben der
+  Ballbahn machte das Bild voll, ohne etwas zu sagen, was die Bewegung nicht schon zeigt.
 - `prefers-reduced-motion`: es wird gesprungen statt interpoliert, der Halt bleibt.
 
 ## Dauer
