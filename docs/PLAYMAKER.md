@@ -41,6 +41,30 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
 - **`trajectory`** gilt für den Weg, der IN diesen Stand führt: `AIR` zeichnet einen Bogen,
   `GROUND` eine gerade Linie. Im Editor über Antippen des Balls.
 
+## Trefferflächen: 44 px, auch in der Kopfzeile
+
+Gemessen über fünf Seiten × sieben Geräteformate (Handy hoch/quer, SE hoch/quer, Tablet
+hoch/quer, Desktop): kein Scrollen auf den `h-dvh`-Seiten, nichts aus dem Bild geschoben,
+Board-Seitenverhältnis überall zwischen 0,45 und 2,2. Die Trefferflächen waren es nicht —
+„Zurück" und „Ändern" maßen **31 × 16 px**, die Outs-Punkte **10 × 10**, das Fragezeichen
+28 × 28. Jetzt ist die Fläche überall ≥ 44 px hoch, während die Schrift und die Punkte
+klein bleiben: der Knopf wächst, nicht sein Aussehen.
+
+Offen und **nicht** vom Playmaker zu entscheiden: der gemeinsame `Button` ist 36 px hoch
+(„Neues Play", „Play bauen"). Das betrifft die ganze App.
+
+### Finger prüft man nur mit echtem Touch
+
+`page.mouse` bleibt auch in einem `hasTouch`-Kontext eine Maus, und `page.touchscreen` kann
+nur tippen. Selbstgebaute Pointer-Ereignisse scheitern an `setPointerCapture`, weil die
+erfundene Zeiger-Nummer nicht existiert — das sah einmal aus wie „Ziehen am Handy kaputt"
+und war das Messwerkzeug. Echte Finger gibt es nur über CDP (`Input.dispatchTouchEvent`);
+`e2e/playmaker/finger.spec.ts` macht das, hochkant und quer. Gegenprobe: mit abgeschalteten
+Touch-Gesten fallen alle vier um.
+
+`setPointerCapture` steht deshalb in einem `try/catch`: wirft es, startete der Zug sonst
+gar nicht erst.
+
 ## Die Kopfzeile braucht eine definierte Spalte
 
 Editor und Spieleransicht setzen `grid-cols-1` im Hochformat. Ohne das hat das Raster

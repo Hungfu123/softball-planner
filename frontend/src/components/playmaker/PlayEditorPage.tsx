@@ -171,7 +171,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
               onBack()
             }
           }}
-          className="font-display text-xs font-bold text-gray-500"
+          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
         >
           Zurück
         </button>
@@ -188,7 +188,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
             // heisst die Ueberschrift der Seite fuer einen Screenreader "Play ändern"
             // und das Play selbst kommt gar nicht mehr vor.
             aria-label={`${stamm.title} ändern`}
-            className="block w-full truncate text-left font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900 cursor-pencil"
+            className="flex h-11 w-full items-center truncate text-left font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900 cursor-pencil"
           >
             {stamm.title}
           </button>
@@ -391,15 +391,19 @@ function SaveIndicator({ state, onRetry }: { state: string; onRetry: () => void 
 
 function Outs({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
-    <div className="flex gap-1.5" role="group" aria-label="Outs">
+    <div className="flex shrink-0" role="group" aria-label="Outs">
       {[0, 1, 2].map(i => (
+        // Die Flaeche ist 24x44, der Punkt bleibt 10: am Finger trifft man sonst zwischen
+        // die Punkte, und die Outs springen auf den falschen Wert.
         <button
           key={i}
           type="button"
           onClick={() => onChange(value === i + 1 ? i : i + 1)}
-          className={`h-2.5 w-2.5 rounded-full ${i < value ? 'bg-navy-800' : 'bg-cream-300'}`}
+          className="flex h-11 w-6 items-center justify-center"
           aria-label={`${i + 1} Outs`}
-        />
+        >
+          <span className={`h-2.5 w-2.5 rounded-full ${i < value ? 'bg-navy-800' : 'bg-cream-300'}`} />
+        </button>
       ))}
     </div>
   )

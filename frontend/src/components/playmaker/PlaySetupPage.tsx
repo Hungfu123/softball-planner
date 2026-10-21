@@ -167,7 +167,7 @@ export default function PlaySetupPage() {
                 // Verknuepfung, die niemand mehr sehen konnte.
                 if (l.value === 'ANY') setCounterpartId(null)
               }}
-              className={`rounded-full px-3 py-2 font-display text-xs font-bold ${
+              className={`flex h-11 items-center rounded-full px-3.5 font-display text-xs font-bold ${
                 gameState === l.value ? 'bg-navy-800 text-cream-50' : 'bg-cream-200 text-gray-900'
               }`}
             >

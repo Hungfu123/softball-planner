@@ -111,7 +111,20 @@ export function useBoardGesten({
 
     const treffer = best as Treffer | null
     if (!treffer || treffer.d > reichweite) return
-    e.currentTarget.setPointerCapture(e.pointerId)
+    /**
+     * Der Griff darf am Einfangen nicht scheitern.
+     *
+     * setPointerCapture wirft NotFoundError, wenn der Zeiger nicht (mehr) aktiv ist — in
+     * Safari-Randfaellen und immer dann, wenn das Ereignis nicht von einem echten Finger
+     * kommt. Ohne das try/catch fliegt der Fehler mitten aus pointerdown heraus und der
+     * Zug faengt gar nicht erst an. Ohne Einfangen zieht es sich etwas schlechter, wenn
+     * der Finger das Board verlaesst — aber es zieht.
+     */
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      // Weiter ohne Einfangen.
+    }
     zeigerId.current = e.pointerId
     beginGesture()
     bewegt.current = false
