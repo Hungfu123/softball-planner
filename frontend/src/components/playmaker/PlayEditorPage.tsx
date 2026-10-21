@@ -252,7 +252,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   // die ganze Hoehe. Ohne das blieben am quer gehaltenen Handy 127 px fuers Feld —
   // ein Band, in dem die Raute verschwindet.
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] grid-cols-1 overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
       <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
         <button
           type="button"

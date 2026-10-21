@@ -41,6 +41,14 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
 - **`trajectory`** gilt für den Weg, der IN diesen Stand führt: `AIR` zeichnet einen Bogen,
   `GROUND` eine gerade Linie. Im Editor über Antippen des Balls.
 
+## Die Kopfzeile braucht eine definierte Spalte
+
+Editor und Spieleransicht setzen `grid-cols-1` im Hochformat. Ohne das hat das Raster
+keine definierte Spalte, sie wächst auf die breiteste Inhaltsbreite — der lange Titel in
+der Kopfzeile zog sie auf 596 px bei 390 px Bildschirm und schob „Legende", „Ändern" und
+die Outs hinaus, wo `overflow-hidden` sie abschnitt. Sie waren da, nur nicht zu sehen.
+`truncate` am Titel half nicht: es begrenzt den Text, nicht die Spalte.
+
 ## Querformat
 
 Editor und Spieleransicht schalten bei `landscape` auf dasselbe zweispaltige Raster wie ab
