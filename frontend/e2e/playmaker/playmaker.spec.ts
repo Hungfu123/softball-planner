@@ -542,3 +542,25 @@ test('zeigt die Start-Plays aus der Migration', async ({ page }) => {
   // deshalb wird der Wert geprueft, nicht die Sichtbarkeit.
   await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
 })
+
+test('zeigt "Ändern" auch bei langem Titel am Handy', async ({ page }) => {
+  // Das Hochformat-Raster hatte keine definierte Spalte: sie wuchs auf die breiteste
+  // Inhaltsbreite, der Titel schob Legende, Ändern und Outs aus dem Bild, und
+  // overflow-hidden schnitt sie ab. Gemessen: Kopfzeile bis x=596 bei 390 px Bildschirm.
+  const titel = `${TITEL_PREFIX} ein sehr langer Titel, der die Kopfzeile sprengt`
+  await neuesPlay(page, titel)
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  const aendern = page.getByRole('button', { name: 'Ändern' })
+  await expect(aendern).toBeVisible()
+
+  // Gemessen wird gegen den BILDSCHIRM, nicht gegen die Kopfzeile: die war beim Fehler
+  // selbst zu breit, der Knopf lag brav in ihr drin — nur eben neben dem Bild.
+  const knopf = (await aendern.boundingBox())!
+  const breite = await page.evaluate(() => window.innerWidth)
+  expect(knopf.x + knopf.width).toBeLessThanOrEqual(breite)
+
+  await aufraeumen(page, titel)
+})

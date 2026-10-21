@@ -104,7 +104,7 @@ function Viewer({
   // halben Bildschirm; ein Streiftipp hielt die Wiedergabe lautlos an, und der naechste
   // Druck auf den Knopf startete sie wieder — er stand ja inzwischen auf ▶.
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] grid-cols-1 overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
       <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
         <Link to="/orga/playmaker" className="font-display text-xs font-bold text-gray-500">
           Zurück
