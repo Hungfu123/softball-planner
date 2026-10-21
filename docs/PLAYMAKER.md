@@ -58,6 +58,41 @@ Standliste braucht dabei `overflow-y-auto` am Rahmen, nicht nur an der `<ol>` �
 Grid-Zeile `minmax(0,1fr)` hat ein bloßes `block`-Element keine gebundene Höhe und die
 Liste lief über die Werkzeugleiste.
 
+## Freies Feld
+
+`/orga/playmaker/frei` — ein Board zum Draufzeigen, **kein Play**. Für die Pause: aufmachen,
+schieben, reden. Es entsteht nichts im Katalog — kein Titel, keine Kategorie, keine Stände.
+
+- **Ausgangslage:** neun Verteidiger in Standardaufstellung, **Ball an Home** (nicht beim
+  Pitcher wie in einem Play — das freie Feld fängt beim Schlag an), keine Runner.
+- **Runner:** Base in der Leiste antippen setzt oder nimmt; der Marker selbst antippen
+  nimmt ihn weg. Keine Outs, keine Runs — dafür gibt es Plays.
+- **Ballbahn:** die gestrichelte Linie läuft von dort, wo der Ball lag, **als die Geste
+  anfing**, bis dorthin, wo er jetzt liegt. Der Wurf davor bleibt blass stehen, damit eine
+  Kette aus zwei Würfen lesbar ist.
+- **Der Stand bleibt**, im Gerät (`localStorage`, Schlüssel `playmaker-freies-feld`).
+  „Nicht gespeichert" heißt **nicht im Katalog**, nicht *weg beim Zumachen*.
+  Zurücksetzen fragt nach und ist per Rückgängig umkehrbar.
+- **Marker werden ins Feld geklemmt.** Ohne das ließ sich der Ball hinter den Zaun ziehen
+  und war danach nicht mehr greifbar. Im Editor fällt das nicht auf, weil der Zuschnitt
+  dort dem Inhalt folgt und mitwächst.
+- **Zuschnitt nach Inhalt**, nicht ganzes Feld: das ganze Feld ist breiter als hoch, auf
+  einem hochkant gehaltenen Handy bliebe darüber fast die Hälfte leeres Gras.
+- **Kein `/api`.** Die Seite ruft nichts ab und sendet nichts — auch beim ersten Aufmachen
+  nicht. Ein E2E-Test blockiert alle Pfade unter `/api/` und prüft, dass trotzdem alles
+  geht. (Das Muster muss `url.pathname` prüfen; `**/api/**` trifft im Dev-Server auch
+  `/src/api/client.ts`, dann startet die App gar nicht und der Test prüft sich selbst.)
+
+Die Zieh-Logik teilt es sich mit dem Editor (`useBoardGesten`): Griff über der Fingerkuppe,
+eingefrorener Zuschnitt, Trefferfläche des gehaltenen Balls, zweiter Finger, abgebrochene
+Geste. Diese Feinheiten will man nicht zweimal pflegen.
+
+**React-Updater müssen rein bleiben.** Die Ballbahn war zuerst unsichtbar, weil ein `ref`
+INNERHALB der State-Updater-Funktion gesetzt wurde: React ruft die im Entwicklungsmodus
+doppelt auf, der erste Durchlauf setzte das Flag, der zweite übersprang deshalb die
+Zuweisung — und der zweite ist der, dessen Ergebnis React behält. Die Tests rendern den
+Hook deshalb in `StrictMode`, sonst fällt so etwas nicht auf.
+
 ## Wiedergabe
 
 `usePlayback` interpoliert zwischen zwei Ständen (`board/interpolate.ts`) und fasst die
