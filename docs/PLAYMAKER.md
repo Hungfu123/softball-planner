@@ -102,6 +102,21 @@ drei an (600 / 1200 / 2000), die Start-Plays rechnen ihre Dauer aus der längste
 Standes (~24 ft/s). 78 ft in 2 Sekunden sehen nicht nach Laufen aus, sondern nach einem
 Sprung — deshalb ein Bereich und keine Liste.
 
+## Migrationen der Start-Plays sind unveränderlich
+
+**V68 ist in Produktion angewandt. Wer sie nachträglich ändert, erzeugt eine
+Flyway-Prüfsummen-Kollision — die Migration bricht ab und das Backend startet nicht mehr.**
+Korrekturen am Katalog kommen deshalb als neue Migration. Den Unterschied dafür liefert der
+Generator selbst:
+
+```bash
+node scripts/build-seed-plays.mjs --seit backend/src/main/resources/db/migration/V68__seed_plays.sql   > backend/src/main/resources/db/migration/V70__....sql
+```
+
+Das vergleicht den Katalog mit einer schon angewandten Migration und gibt `UPDATE`-Anweisungen
+für genau die Stände aus, die sich geändert haben — verglichen wird der ganze Stand, weil eine
+verschobene Scheibe im `markers`-JSON steckt. V69 ist auf diesem Weg entstanden (Cut-off).
+
 ## Start-Plays
 
 51 Stück, 8 Kategorien, erzeugt aus `scripts/build-seed-plays.mjs`:
@@ -159,6 +174,19 @@ die Liste. Drei Dinge, die nicht beliebig sind:
 
 Kopieren meldet sich mit einem Toast (das Ergebnis steht ganz oben und damit außer Sicht),
 Löschen fragt per Modal — es ist nicht rückgängig zu machen. Beides gibt es auch am Hero.
+
+## Play ändern
+
+Titel, Kategorie, Spiellage und Gegenstück ändert man im Editor über den **Titel in der
+Kopfzeile** (`PlayDetailsSheet`) — dieselben Felder wie beim Anlegen, in derselben
+Reihenfolge. Vorher ging das gar nicht: der Editor schickte diese Felder beim Sichern
+unverändert mit, änderbar waren sie nur im Anlege-Dialog. Die Stammdaten liegen deshalb im
+Zustand des Editors und nicht am Prop — sonst überschreibt der nächste Zug eine gerade
+geänderte Kategorie wieder mit der alten.
+
+Der zugängliche Name des Knopfs enthält den Titel (`"<Titel> ändern"`), nicht nur die
+Handlung: sonst heißt die Überschrift der Seite für einen Screenreader „Play ändern" und das
+Play selbst kommt nicht mehr vor.
 
 ## Cut-off und Relay: die Konvention der Dead Sox
 

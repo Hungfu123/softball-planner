@@ -12,6 +12,7 @@ import type { MarkerRef, Play, PlayStep } from './board/types'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { RunnerSheet } from './RunnerSheet'
 import { BallSheet } from './BallSheet'
+import { PlayDetailsSheet, type Stammdaten } from './PlayDetailsSheet'
 
 /** Wie weit der gegriffene Marker ueber die Fingerkuppe springt, in CSS-Pixeln. */
 const LIFT_PX = 28
@@ -59,14 +60,25 @@ export default function PlayEditorPage() {
 }
 
 function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
+  /**
+   * Titel, Kategorie, Lage und Gegenstueck liegen im Zustand, nicht nur im Prop.
+   *
+   * Das Autosichern schickt sie bei jeder Standaenderung mit. Blieben sie am Prop haengen,
+   * ueberschriebe der naechste Zug eine gerade geaenderte Kategorie wieder mit der alten.
+   */
+  const [stamm, setStamm] = useState<Stammdaten>({
+    title: play.title,
+    categoryId: play.categoryId,
+    gameState: play.gameState,
+    gameStateNote: play.gameStateNote,
+    counterpartPlayId: play.counterpartPlayId,
+  })
+  const [aendern, setAendern] = useState(false)
+
   const speichern = useCallback(
     async (steps: PlayStep[]) => {
       await api.updatePlay(play.id, {
-        title: play.title,
-        categoryId: play.categoryId,
-        gameState: play.gameState,
-        gameStateNote: play.gameStateNote,
-        counterpartPlayId: play.counterpartPlayId,
+        ...stamm,
         steps: steps.map(stand => ({
           ordinal: stand.ordinal,
           durationMs: stand.durationMs,
@@ -76,7 +88,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         })),
       })
     },
-    [play],
+    [play.id, stamm],
   )
 
   const editor = usePlayEditor(play, speichern)
@@ -272,9 +284,19 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
             h1 { text-wrap: balance }, und ungeschichtetes CSS schlaegt Tailwinds
             @layer utilities — truncate waere am h1 wirkungslos und der Titel braeche um. */}
         <h1 className="min-w-0 flex-1">
-          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
-            {play.title}
-          </span>
+          {/* Der Titel ist der Knopf: so ist das Aendern dort, wo das Ding steht, das man
+              aendern will — und es kostet keinen weiteren Platz in der engen Kopfzeile. */}
+          <button
+            type="button"
+            onClick={() => setAendern(true)}
+            // Der zugaengliche Name enthaelt den Titel, nicht nur die Handlung: sonst
+            // heisst die Ueberschrift der Seite fuer einen Screenreader "Play ändern"
+            // und das Play selbst kommt gar nicht mehr vor.
+            aria-label={`${stamm.title} ändern`}
+            className="block w-full truncate text-left font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900 cursor-pencil"
+          >
+            {stamm.title}
+          </button>
         </h1>
         <SaveIndicator state={editor.saveState} onRetry={editor.retrySave} />
         <Outs value={editor.step.outs} onChange={editor.setOuts} />
@@ -369,6 +391,26 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
             setRunnerSheet(null)
           }}
           onClose={() => setRunnerSheet(null)}
+        />
+      )}
+
+      {aendern && (
+        <PlayDetailsSheet
+          play={{ ...play, ...stamm }}
+          onSpeichern={async neueStamm => {
+            await api.updatePlay(play.id, {
+              ...neueStamm,
+              steps: editor.steps.map(stand => ({
+                ordinal: stand.ordinal,
+                durationMs: stand.durationMs,
+                note: stand.note,
+                outs: stand.outs,
+                markers: stand.markers,
+              })),
+            })
+            setStamm(neueStamm)
+          }}
+          onClose={() => setAendern(false)}
         />
       )}
 
