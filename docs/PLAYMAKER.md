@@ -160,6 +160,25 @@ die Liste. Drei Dinge, die nicht beliebig sind:
 Kopieren meldet sich mit einem Toast (das Ergebnis steht ganz oben und damit außer Sicht),
 Löschen fragt per Modal — es ist nicht rückgängig zu machen. Beides gibt es auch am Hero.
 
+## Cut-off und Relay: die Konvention der Dead Sox
+
+Es gibt kein allgemeingültiges System — die Softball-Literatur kennt mindestens zwei, und
+welches gilt, hängt an Alignment und Altersklasse. Für die Dead Sox gilt:
+
+- **Der Cut-Mann ist immer ein Mittelinfielder**, nie ein Corner. Welcher, entscheidet die
+  Seite, auf der der Ball liegt: **links und Mitte → SS, rechts → 2B**. Der andere
+  Mittelinfielder deckt dafür die 2.
+- **Der Mann an der Zielbase stellt ihn.** Wurf nach Home: der **Catcher** — er sieht das
+  ganze Feld. Wurf auf die 3: der **3B** an der Base.
+- **Die Corner bleiben an ihren Bases.** Der 1B hält die 1, der 3B die 3.
+- Der **Pitcher** sichert ab: hinter der 3 oder hinter der Platte, nie an der 1 (das macht
+  der Catcher) und nie an der 2.
+
+Die Start-Plays hatten zuerst die Baseball-Variante (1B als Cut für Home aus Center/Rechts,
+3B aus Links). Bei 60-ft-Bases und 215-ft-Zaun trägt die nicht: sobald der Ball weiter liegt,
+als ein Outfielder direkt nach Home werfen kann, übernimmt der Mittelinfielder — und das ist
+hier fast jeder Ball, der hinten ankommt.
+
 ## Was der Playmaker NICHT tut
 
 Er rechnet keine Softball-Regeln nach. Zwei Runner auf einer Base, ein Out ohne Ball in der

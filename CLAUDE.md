@@ -154,7 +154,10 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   folgen den Base-Wegen und laufen **nie rückwärts nach Home**. `PlayValidator` prüft nur
   Datenintegrität (Nummerierung, Outs 0–3, Dauer 200–6000 ms im 200er-Raster) — Softball-
   Regeln ausdrücklich nicht. Die 51 Start-Plays kommen aus `scripts/build-seed-plays.mjs`,
-  nicht aus der Hand. Details: `docs/PLAYMAKER.md`.
+  nicht aus der Hand. **Cut-off/Relay ist Teamkonvention, nicht Lehrbuch:** der Cut-Mann ist
+  immer ein Mittelinfielder (links/Mitte → SS, rechts → 2B), der andere deckt die 2, der Mann
+  an der Zielbase stellt ihn (Home → Catcher, 3 → 3B), die Corner bleiben an ihren Bases. Die
+  Baseball-Variante (1B/3B als Cut für Home) gilt hier NICHT. Details: `docs/PLAYMAKER.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.

@@ -610,8 +610,8 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS zieht als Cut-Mann heraus — er, nicht der 2B. Der deckt die 2, der P sichert hinter der 3 ab.', {
-        d: { SS: between(SHORT_RIGHT, B3, 0.45), '3B': B3, '2B': B2, P: { x: B3.x - 16, y: B3.y + 14 } },
+      s('Ball rechts, also zieht der 2B als Cut heraus. Der SS deckt die 2, der 3B stellt ihn, der P sichert hinter der 3 ab.', {
+        d: { '2B': between(SHORT_RIGHT, B3, 0.45), '3B': B3, SS: B2, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { at: between(SHORT_RIGHT, B3, 0.45) },
         r: { r1: between(B2, B3, 0.45), rb: B1 },
       }),
@@ -635,11 +635,12 @@ const KATALOG = [
         ball: { at: SHORT_LEFT, ground: true },
         r: { r2: between(B2, B3, 0.8), rb: between(HOME, B1, 0.3) },
       }),
-      s('3B ist der Cut-Mann für Home, SS füllt die 3, P geht hinter die Platte.', {
+      s('Der C stellt den SS auf die Linie LF–Home — Ball links, also er. Der 3B bleibt an der 3, der 2B deckt die 2, der P geht hinter die Platte.', {
         d: {
-          '3B': between(SHORT_LEFT, HOME, 0.4),
+          SS: between(SHORT_LEFT, HOME, 0.4),
           C: HOME,
-          SS: B3,
+          '3B': B3,
+          '2B': B2,
           P: { x: HOME.x + 6, y: HOME.y + 26 },
         },
         ball: { at: between(SHORT_LEFT, HOME, 0.4) },
@@ -653,19 +654,25 @@ const KATALOG = [
     outs: 1,
     startRunners: { r2: B2 },
     steps: [
-      s('Dasselbe von rechts — hier ist der 1B der Cut-Mann.'),
+      s('Dasselbe von rechts — hier ist der 2B der Relay.'),
       s('RF nimmt auf.', {
         d: { RF: SHORT_RIGHT },
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r2: between(B2, B3, 0.85), rb: between(HOME, B1, 0.3) },
       }),
-      s('1B auf die Linie RF–Home, P hinter die Platte.', {
-        d: { '1B': between(SHORT_RIGHT, HOME, 0.45), C: HOME, P: { x: HOME.x + 6, y: HOME.y + 26 } },
+      s('Der C stellt den 2B auf die Linie RF–Home. Der 1B bleibt an der 1, der SS deckt die 2, der P geht hinter die Platte.', {
+        d: {
+          '2B': between(SHORT_RIGHT, HOME, 0.45),
+          C: HOME,
+          '1B': B1,
+          SS: B2,
+          P: { x: HOME.x + 6, y: HOME.y + 26 },
+        },
         ball: { at: between(SHORT_RIGHT, HOME, 0.45) },
         r: { r2: between(B3, HOME, 0.55), rb: B1 },
       }),
-      s('Der Wurf segelt — der Cut nimmt ihn runter. Der Run zählt, der Batter bleibt auf der 1.', {
-        ball: { hold: '1B' },
+      s('Der Wurf segelt — der Relay nimmt ihn runter. Der Run zählt, der Batter bleibt auf der 1.', {
+        ball: { hold: '2B' },
         r: { r2: 'SCORED', rb: B1 },
       }),
     ],
