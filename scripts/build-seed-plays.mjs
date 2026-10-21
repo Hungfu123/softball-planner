@@ -8,6 +8,15 @@
  * und verhindert, dass sich in 48 Plays mal eben ein Zahlendreher versteckt.
  *
  *   node scripts/build-seed-plays.mjs > backend/src/main/resources/db/migration/V68__seed_plays.sql
+ *
+ * ACHTUNG: V68 ist in Produktion angewandt und damit unveraenderlich. Wer sie neu erzeugt
+ * und die Aenderung pusht, loest eine Pruefsummen-Kollision aus — Flyway bricht ab und das
+ * Backend startet nicht mehr. Korrekturen am Katalog kommen als NEUE Migration; den
+ * Unterschied dafuer liefert:
+ *
+ *   node scripts/build-seed-plays.mjs --seit backend/src/main/resources/db/migration/V68__seed_plays.sql
+ *
+ * Das gibt UPDATE-Anweisungen fuer genau die Staende aus, die sich geaendert haben.
  */
 
 // ---------------------------------------------------------------- Geometrie
@@ -1527,4 +1536,61 @@ for (const eintrag of KATALOG) {
 }
 
 zeilen.push(`-- ${n} Plays.`);
-process.stdout.write(zeilen.join('\n'));
+const ausgabe = zeilen.join('\n');
+
+/**
+ * Liest eine Seed-Migration als (Titel, Stand) -> Inhalt.
+ *
+ * Verglichen wird der ganze Stand, nicht einzelne Felder: eine verschobene Scheibe steckt
+ * im markers-JSON, und Dauer oder Notiz koennen gleichzeitig wandern.
+ */
+function staende(text) {
+  const muster =
+    /SELECT id, (\d+), (\d+), (NULL|'(?:[^']|'')*'), (\d+), '(\{[\s\S]*?\})'::jsonb\s*\nFROM play WHERE title = '((?:[^']|'')+)';/g;
+  const raus = new Map();
+  for (const m of text.matchAll(muster)) {
+    const [, ordinal, dauer, note, outs, markers, titel] = m;
+    raus.set(`${titel}\u0000${ordinal}`, { ordinal, dauer, note, outs, markers, titel });
+  }
+  return raus;
+}
+
+const seit = process.argv.indexOf('--seit');
+if (seit > 0 && process.argv[seit + 1]) {
+  const { readFileSync } = await import('node:fs');
+  const alt = staende(readFileSync(process.argv[seit + 1], 'utf8'));
+  const neu = staende(ausgabe);
+
+  const stuecke = [];
+  for (const [schluessel, n] of neu) {
+    const a = alt.get(schluessel);
+    if (!a) continue;
+    if (a.dauer === n.dauer && a.note === n.note && a.outs === n.outs && a.markers === n.markers) continue;
+    stuecke.push(
+      `-- ${n.titel} – Stand ${n.ordinal}`,
+      'UPDATE play_step SET',
+      `    duration_ms = ${n.dauer},`,
+      `    note = ${n.note},`,
+      `    outs = ${n.outs},`,
+      `    markers = '${n.markers}'::jsonb`,
+      `WHERE ordinal = ${n.ordinal} AND play_id = (SELECT id FROM play WHERE title = '${n.titel}');`,
+      '',
+    );
+  }
+  if (stuecke.length === 0) {
+    process.stderr.write('Keine Unterschiede — es gibt nichts zu korrigieren.\n');
+    process.exit(1);
+  }
+  process.stdout.write(
+    [
+      '-- Korrektur der Start-Plays. Erzeugt von scripts/build-seed-plays.mjs --seit <migration>.',
+      '--',
+      '-- Eine schon angewandte Migration wird NICHT geaendert: das waere eine Pruefsummen-',
+      '-- Kollision, Flyway braeche ab und das Backend startete nicht mehr.',
+      '',
+      ...stuecke,
+    ].join('\n'),
+  );
+} else {
+  process.stdout.write(ausgabe);
+}

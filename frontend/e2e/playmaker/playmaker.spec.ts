@@ -557,10 +557,63 @@ test('zeigt "Ändern" auch bei langem Titel am Handy', async ({ page }) => {
   await expect(aendern).toBeVisible()
 
   // Gemessen wird gegen den BILDSCHIRM, nicht gegen die Kopfzeile: die war beim Fehler
-  // selbst zu breit, der Knopf lag brav in ihr drin — nur eben neben dem Bild.
-  const knopf = (await aendern.boundingBox())!
-  const breite = await page.evaluate(() => window.innerWidth)
-  expect(knopf.x + knopf.width).toBeLessThanOrEqual(breite)
+  // selbst zu breit, der Knopf lag brav in ihr drin — nur eben neben dem Bild. Gepollt,
+  // weil das Umstellen der Fenstergroesse die Seite neu aufbaut.
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const b = [...document.querySelectorAll('button')].find(e => e.textContent?.trim() === 'Ändern')
+          if (!b) return null
+          return Math.round(b.getBoundingClientRect().right - window.innerWidth)
+        }),
+      { timeout: 10_000 },
+    )
+    .toBeLessThanOrEqual(0)
+
+  await aufraeumen(page, titel)
+})
+
+test('ändert Titel und Kategorie eines bestehenden Plays', async ({ page }) => {
+  // Ging vorher gar nicht: der Editor schickte Titel, Kategorie, Lage und Gegenstück
+  // beim Sichern unverändert mit — änderbar waren sie nur im Anlege-Dialog.
+  const titel = `${TITEL_PREFIX} umbenennen-${Date.now().toString(36)}`
+  await neuesPlay(page, titel)
+
+  await page.getByRole('button', { name: `${titel} ändern` }).click()
+  await expect(page.getByRole('heading', { level: 2, name: 'Play ändern' })).toBeVisible()
+
+  const neuerTitel = `${titel} geändert`
+  await page.getByLabel('Titel').fill(neuerTitel)
+  const kategorie = page.getByLabel('Kategorie')
+  await expect(kategorie.locator('option')).not.toHaveCount(1, { timeout: 15_000 })
+  const zielwert = await kategorie.locator('option', { hasText: 'Rundown' }).getAttribute('value')
+  await kategorie.selectOption(zielwert!)
+  await page.getByRole('button', { name: 'Übernehmen' }).click()
+
+  await expect(page.getByRole('heading', { level: 2, name: 'Play ändern' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: `${neuerTitel} ändern` })).toBeVisible()
+
+  // Und es steht auch wirklich so auf dem Server — samt neuer Kategorie.
+  const gespeichert = await page.evaluate(async () => {
+    const auth = localStorage.getItem('auth')
+    const id = location.pathname.match(/playmaker\/(\d+)/)![1]
+    const p = await (await fetch(`/api/plays/${id}`, { headers: { Authorization: `Basic ${auth}` } })).json()
+    return { title: p.title as string, categoryId: p.categoryId as number }
+  })
+  expect(gespeichert.title).toBe(neuerTitel)
+  expect(String(gespeichert.categoryId)).toBe(zielwert)
+
+  // Eine Standänderung danach darf die neuen Stammdaten nicht überschreiben.
+  await page.getByRole('button', { name: 'Runner +' }).click()
+  await expect(page.getByText('Gesichert')).toBeVisible({ timeout: 10_000 })
+  const danach = await page.evaluate(async () => {
+    const auth = localStorage.getItem('auth')
+    const id = location.pathname.match(/playmaker\/(\d+)/)![1]
+    const p = await (await fetch(`/api/plays/${id}`, { headers: { Authorization: `Basic ${auth}` } })).json()
+    return p.title as string
+  })
+  expect(danach).toBe(neuerTitel)
 
   await aufraeumen(page, titel)
 })
