@@ -99,6 +99,10 @@ function Viewer({
 
   // Querformat zaehlt wie Desktop — sonst bleibt am quer gehaltenen Handy ein
   // 182 px hohes Band fuers Feld.
+  //
+  // Ein Tipp aufs Feld SCHALTET UM, er pausiert nicht nur. Das Feld fuellt am Handy den
+  // halben Bildschirm; ein Streiftipp hielt die Wiedergabe lautlos an, und der naechste
+  // Druck auf den Knopf startete sie wieder — er stand ja inzwischen auf ▶.
   return (
     <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
       <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
@@ -137,14 +141,15 @@ function Viewer({
       <div
         ref={flaeche}
         className="min-h-0 bg-[#93B268] landscape:col-start-1 landscape:row-span-3 landscape:row-start-1 lg:col-start-1 lg:row-span-3 lg:row-start-1"
-        onClick={wiedergabe.pause}
+        // Umschalten, nicht nur pausieren: siehe Kommentar vor dem return.
+        onClick={wiedergabe.toggle}
       >
         {wiedergabe.markers && (
           <PlayBoard
             markers={wiedergabe.markers}
             steps={play.steps}
             previous={wiedergabe.previous}
-          bahnZiel={wiedergabe.ballZiel}
+            spur={wiedergabe.spur}
             ghost={wiedergabe.ghost}
             mode={breit ? 'full' : 'content'}
             width={groesse.w}
@@ -182,6 +187,7 @@ function Viewer({
         <PlaybackBar
           count={play.steps.length}
           index={wiedergabe.index}
+          fortschritt={wiedergabe.fortschritt}
           playing={wiedergabe.playing}
           canPlay={wiedergabe.canPlay}
           loop={loop}
