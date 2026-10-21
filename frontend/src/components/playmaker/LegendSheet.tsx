@@ -36,9 +36,6 @@ export function LegendSheet({ onClose }: { onClose: () => void }) {
           <Zeile beschreibung="Flugbahn des Balls">
             <path d="M2,14 L26,14" stroke="#E6F03C" strokeWidth="3" strokeDasharray="5 4" strokeLinecap="round" />
           </Zeile>
-          <Zeile beschreibung="Laufweg des Runners">
-            <path d="M2,14 L26,14" stroke="#B91C2A" strokeWidth="3" strokeLinecap="round" />
-          </Zeile>
           <Zeile beschreibung="Blass: der Wurf davor — bei Cut-off-Ketten ist die Kette der Inhalt">
             <path
               d="M2,14 L26,14"

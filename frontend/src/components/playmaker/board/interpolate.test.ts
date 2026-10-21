@@ -138,3 +138,49 @@ describe('runnerPath — Richtung und Base-Wege', () => {
     expect(nahe(mitte, luftlinie)).toBeGreaterThan(10);
   });
 })
+
+describe('runnerPath — der Ring, auch zwischen den Bases', () => {
+  const nahe = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+  const zwischen = (a: { x: number; y: number }, b: { x: number; y: number }, t: number) => ({
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+  });
+
+  test('beruehrt die 2, auch wenn BEIDE Enden zwischen den Bases liegen', () => {
+    // Genau der Fall aus den Start-Plays: 60 % zwischen 1 und 2 nach 40 % zwischen 2 und 3.
+    // Vorher lief der Runner die Sehne und schnitt die 2 ab.
+    const von = zwischen(BASES[1], BASES[2], 0.6);
+    const nach = zwischen(BASES[2], BASES[3], 0.4);
+
+    let dichtesteAnZwei = Infinity;
+    for (let i = 0; i <= 20; i++) {
+      dichtesteAnZwei = Math.min(dichtesteAnZwei, nahe(runnerPath(von, nach, i / 20), BASES[2]));
+    }
+    expect(dichtesteAnZwei).toBeLessThan(1);
+  });
+
+  test('laeuft von der 1 zur 3 ueber die 2', () => {
+    let dichteste = Infinity;
+    for (let i = 0; i <= 20; i++) {
+      dichteste = Math.min(dichteste, nahe(runnerPath(BASES[1], BASES[3], i / 20), BASES[2]));
+    }
+    expect(dichteste).toBeLessThan(1);
+  });
+
+  test('bleibt im Rundown zwischen 1 und 2 auf der Strecke', () => {
+    const von = zwischen(BASES[1], BASES[2], 0.7);
+    const nach = zwischen(BASES[1], BASES[2], 0.2);
+    const mitte = runnerPath(von, nach, 0.5);
+
+    expect(nahe(mitte, zwischen(BASES[1], BASES[2], 0.45))).toBeLessThan(1);
+  });
+
+  test('wer gar nicht auf dem Weg steht, laeuft geradeaus', () => {
+    const frei = { x: 200, y: 100 };
+    const ziel = { x: 120, y: 90 };
+    const mitte = runnerPath(frei, ziel, 0.5);
+
+    expect(nahe(mitte, { x: 160, y: 95 })).toBeLessThan(0.001);
+  });
+})
