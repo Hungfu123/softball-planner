@@ -10,15 +10,23 @@
 export function StepTimeline({
   count,
   current,
+  fortschritt = 0,
   onSeek,
 }: {
   count: number
   current: number
+  /**
+   * Wie weit der laufende Uebergang ist, 0..1. Ohne ihn stand der Knopf waehrend der
+   * ganzen Bewegung still und sprang dann — bei zwei Sekunden Stand sieht das aus, als
+   * haenge die Wiedergabe.
+   */
+  fortschritt?: number
   onSeek: (index: number) => void
 }) {
   if (count < 2) return null
 
-  const anteil = (current / (count - 1)) * 100
+  const stelle = Math.min(count - 1, current + Math.max(0, Math.min(1, fortschritt)))
+  const anteil = (stelle / (count - 1)) * 100
   /**
    * Hier wird geklemmt, nicht beim Aufrufer. Der Editor reichte den rohen Setter durch;
    * Pfeil-links auf Stand 1 ergab cur = -1, und der Zugriff auf den Stand warf.

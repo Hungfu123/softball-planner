@@ -1,4 +1,5 @@
 import { BASES, type Point } from './geometry';
+import { flugkurve, punktAuf } from './spur';
 import type { PlayMarkers, PlayStep } from './types';
 
 /**
@@ -43,6 +44,12 @@ export function frameAt(steps: PlayStep[], from: number, to: number, t: number):
     return { id: ziel.id, x: punkt.x, y: punkt.y, status: ziel.status };
   });
 
+  // Der Ball folgt GENAU der Kurve, die als Flugbahn gezeichnet wird. Vorher lief er auf
+  // der geraden Verbindung, waehrend der Bogen danebenlag — er flog sichtbar neben seiner
+  // eigenen Flugbahn her, und genau das sah unrund aus.
+  const kurve = flugkurve(a.ball, b.ball, b.ball.trajectory);
+  const ballPunkt = punktAuf(kurve, tBall);
+
   return {
     defenders,
     runners,
@@ -51,8 +58,8 @@ export function frameAt(steps: PlayStep[], from: number, to: number, t: number):
       // Erst am Ende in die Hand: waehrend des Flugs gehoert der Ball niemandem, sonst
       // klebt er schon auf halber Strecke an der Scheibe des Faengers.
       holder: t >= 1 ? b.ball.holder : null,
-      x: lerp(a.ball.x, b.ball.x, tBall),
-      y: lerp(a.ball.y, b.ball.y, tBall),
+      x: ballPunkt.x,
+      y: ballPunkt.y,
       trajectory: b.ball.trajectory,
     },
   };

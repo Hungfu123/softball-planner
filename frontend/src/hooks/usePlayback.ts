@@ -26,6 +26,15 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [frame, setFrame] = useState<PlayMarkers | null>(null);
+  /**
+   * Fortschritt des laufenden Uebergangs, 0..1 — und von welchem Stand aus.
+   *
+   * Ohne das zeichnete das Board die Spur vom Stand DAVOR: waehrend der Bewegung von N
+   * nach N+1 steht `index` noch auf N, und `previous` war N-1. Man sah also die alte
+   * Linie, und die richtige erschien erst beim Umspringen. Beim allerersten Uebergang
+   * gab es gar keine, weil es kein N-1 gibt — deshalb hinterliessen die Runner nichts.
+   */
+  const [spur, setSpur] = useState<{ von: number; t: number } | null>(null);
   const raf = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,6 +52,7 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
     abbrechen();
     setPlaying(false);
     setFrame(null);
+    setSpur(null);
   }, [abbrechen]);
 
   const seek = useCallback(
@@ -50,6 +60,7 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
       abbrechen();
       setPlaying(false);
       setFrame(null);
+      setSpur(null);
       setIndex(Math.max(0, Math.min(steps.length - 1, ziel)));
     },
     [abbrechen, steps.length],
@@ -73,6 +84,7 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
       }
       setPlaying(false);
       setFrame(null);
+      setSpur(null);
       return;
     }
 
@@ -89,11 +101,13 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
     const tick = (jetzt: number) => {
       const t = Math.min(1, (jetzt - start) / dauer);
       setFrame(frameAt(steps, von, nach, t));
+      setSpur({ von, t });
       if (t < 1) {
         raf.current = requestAnimationFrame(tick);
       } else {
         timer.current = setTimeout(() => {
           setFrame(null);
+          setSpur(null);
           setIndex(nach);
         }, HOLD_MS);
       }
@@ -118,12 +132,27 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Opti
      * und peitschte. Mit dem festen Ziel bleibt die Kurve stehen und der Ball laeuft auf
      * ihr entlang.
      */
-    ballZiel: frame && playing && index + 1 < steps.length ? steps[index + 1].markers.ball : null,
+    /**
+     * Die wachsende Spur des laufenden Uebergangs: von welchem Stand, wohin, wie weit.
+     * Steht sie, zeichnet das Board stattdessen den fertigen Weg aus `previous`.
+     */
+    spur:
+      spur && playing && spur.von + 1 < steps.length
+        ? { von: steps[spur.von].markers, nach: steps[spur.von + 1].markers, t: spur.t }
+        : null,
     /** Der vorige Stand — daraus entstehen Flugbahn und Laufweg. */
     previous: index > 0 ? steps[index - 1].markers : null,
+    /**
+     * Der Stand davor. Er traegt die blasse Bahn des Wurfs, der in den vorigen Stand
+     * fuehrte — bei Cut-off-Ketten ist genau diese Kette der Inhalt. Waehrend einer
+     * Bewegung uebernimmt das Board `previous` dafuer, damit die alte Linie verblasst,
+     * statt im Moment des Starts einfach zu verschwinden.
+     */
     ghost: index > 1 ? steps[index - 2].markers : null,
     step: aktuell,
     index,
+    /** Linearer Fortschritt im laufenden Uebergang, 0..1 — fuer die Zeitleiste. */
+    fortschritt: spur && playing ? spur.t : 0,
     playing,
     canPlay: steps.length >= 2,
     play,

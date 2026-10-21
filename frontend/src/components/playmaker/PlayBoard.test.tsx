@@ -77,8 +77,18 @@ describe('PlayBoard', () => {
     const { container: a } = render(<PlayBoard markers={fly} previous={vorher} />);
     const { container: b } = render(<PlayBoard markers={grounder} previous={vorher} />);
 
-    expect(a.querySelector('path[d*="Q"]')).not.toBeNull();
-    expect(b.querySelector('path[d*="Q"]')).toBeNull();
+    // Geprueft wird die Form, nicht der Buchstabe: beide Bahnen sind quadratische
+    // Bezier-Kurven, aber beim Grounder liegt der Steuerpunkt AUF der Sehne.
+    const steuerpunkt = (c: HTMLElement) => {
+      const d = c.querySelector('path[stroke="#E6F03C"]')!.getAttribute('d')!;
+      const [, x, y] = d.match(/Q([-\d.]+),([-\d.]+)/)!;
+      return { x: Number(x), y: Number(y) };
+    };
+    const sehnenMitte = { x: (155 + 245) / 2, y: (218 + 62) / 2 };
+    const abstand = (p: { x: number; y: number }) => Math.hypot(p.x - sehnenMitte.x, p.y - sehnenMitte.y);
+
+    expect(abstand(steuerpunkt(a))).toBeGreaterThan(10);
+    expect(abstand(steuerpunkt(b))).toBeLessThan(0.5);
   });
 
   test('haelt alle Marker innerhalb des viewBox', () => {
@@ -94,5 +104,48 @@ describe('PlayBoard', () => {
       expect(cy).toBeGreaterThanOrEqual(vy);
       expect(cy).toBeLessThanOrEqual(vy + vh);
     }
+  });
+});
+
+describe('PlayBoard — die Spur waehrend der Wiedergabe', () => {
+  const von: PlayMarkers = markers({
+    runners: [{ id: 'r1', x: 197.43, y: 175.57, status: 'ACTIVE' }],
+    ball: { state: 'IN_FLIGHT', holder: null, x: 155, y: 218, trajectory: 'AIR' },
+  });
+  const nach: PlayMarkers = markers({
+    runners: [{ id: 'r1', x: 112.57, y: 175.57, status: 'ACTIVE' }],
+    ball: { state: 'IN_FLIGHT', holder: null, x: 245, y: 62, trajectory: 'AIR' },
+  });
+
+  test('zeichnet Ball- und Laufspur auch beim ERSTEN Uebergang, wo es kein Davor gibt', () => {
+    // Genau hier fehlte vorher jede Linie: gezeichnet wurde aus `previous`, und das ist
+    // beim ersten Uebergang null.
+    const { container } = render(
+      <PlayBoard markers={von} previous={null} spur={{ von, nach, t: 0.5 }} />,
+    );
+
+    expect(container.querySelector('path[stroke="#E6F03C"]')).not.toBeNull();
+    expect(container.querySelector('path[stroke="#B91C2A"]')).not.toBeNull();
+  });
+
+  test('die Ballspur waechst mit t', () => {
+    const laenge = (t: number) => {
+      const { container } = render(<PlayBoard markers={von} spur={{ von, nach, t }} />);
+      const d = container.querySelector('path[stroke="#E6F03C"]')!.getAttribute('d')!;
+      const [, x, y] = d.match(/Q[-\d.]+,[-\d.]+ ([-\d.]+),([-\d.]+)/)!;
+      return Math.hypot(Number(x) - von.ball.x, Number(y) - von.ball.y);
+    };
+
+    expect(laenge(0.8)).toBeGreaterThan(laenge(0.3));
+    expect(laenge(0.1)).toBeLessThan(laenge(0.3));
+  });
+
+  test('die Laufspur folgt den Bases, statt die Ecke abzuschneiden', () => {
+    const { container } = render(<PlayBoard markers={nach} spur={{ von, nach, t: 1 }} />);
+    const d = container.querySelector('path[stroke="#B91C2A"]')!.getAttribute('d')!;
+    const punkte = [...d.matchAll(/[ML]([-\d.]+),([-\d.]+)/g)].map(m => ({ x: Number(m[1]), y: Number(m[2]) }));
+
+    // Von der 1 zur 3 fuehrt der Weg ueber die 2 (155, 133.15).
+    expect(punkte.some(p => Math.hypot(p.x - 155, p.y - 133.15) < 4)).toBe(true);
   });
 });

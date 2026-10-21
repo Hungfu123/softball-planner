@@ -12,6 +12,7 @@ import type { PlaybackSpeed } from '@/hooks/usePlayback'
 export function PlaybackBar({
   count,
   index,
+  fortschritt,
   playing,
   canPlay,
   loop,
@@ -25,6 +26,8 @@ export function PlaybackBar({
 }: {
   count: number
   index: number
+  /** Fortschritt im laufenden Uebergang, 0..1 — fuer den Knopf der Zeitleiste. */
+  fortschritt: number
   playing: boolean
   canPlay: boolean
   loop: boolean
@@ -38,7 +41,7 @@ export function PlaybackBar({
 }) {
   return (
     <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom">
-      <StepTimeline count={count} current={index} onSeek={onSeek} />
+      <StepTimeline count={count} current={index} fortschritt={fortschritt} onSeek={onSeek} />
       <div className="mt-2 flex items-center gap-2">
         <Knopf onClick={onPrev} disabled={index === 0} aria-label="Vorheriger Stand">
           ◀

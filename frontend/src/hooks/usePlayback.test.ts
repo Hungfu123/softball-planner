@@ -161,3 +161,76 @@ describe('usePlayback — Zeitplan', () => {
     expect(result.current.playing).toBe(true);
   });
 });
+
+describe('usePlayback — die Spur haengt am laufenden Uebergang', () => {
+  const steps = [stand(1, 1200, 0), stand(2, 1200, 100), stand(3, 1200, 200)];
+
+  test('zeigt die Spur vom AKTUELLEN Stand aus, nicht vom Stand davor', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.play());
+    act(() => frame(0));
+    act(() => frame(400));
+
+    // Waehrend der Bewegung 1 → 2 ist der Startpunkt Stand 1, nicht "nichts".
+    // Vorher zeichnete das Board aus `previous`, und das war beim ersten Uebergang null:
+    // deshalb hinterliessen Ball und Runner keine Linie.
+    expect(result.current.spur).not.toBeNull();
+    expect(result.current.spur!.von).toBe(steps[0].markers);
+    expect(result.current.spur!.nach).toBe(steps[1].markers);
+    expect(result.current.spur!.t).toBeGreaterThan(0);
+    expect(result.current.spur!.t).toBeLessThan(1);
+  });
+
+  test('die Spur waechst mit der Zeit', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.play());
+    act(() => frame(0));
+    act(() => frame(300));
+    const frueh = result.current.spur!.t;
+    act(() => frame(600));
+    const spaet = result.current.spur!.t;
+
+    expect(spaet).toBeGreaterThan(frueh);
+  });
+
+  test('die Zeitleiste steht nicht still, waehrend sich etwas bewegt', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.play());
+    act(() => frame(0));
+    act(() => frame(300));
+    const a = result.current.fortschritt;
+    act(() => frame(600));
+    const b = result.current.fortschritt;
+
+    // Der Stand ist derselbe — der Knopf muss sich trotzdem bewegen.
+    expect(result.current.index).toBe(0);
+    expect(b).toBeGreaterThan(a);
+  });
+
+  test('Pause raeumt die Spur weg, damit kein halber Weg stehen bleibt', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.play());
+    act(() => frame(0));
+    act(() => frame(400));
+    expect(result.current.spur).not.toBeNull();
+
+    act(() => result.current.pause());
+    expect(result.current.spur).toBeNull();
+    expect(result.current.fortschritt).toBe(0);
+  });
+
+  test('toggle haelt an und startet nicht neu', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.toggle());
+    expect(result.current.playing).toBe(true);
+    act(() => result.current.toggle());
+    expect(result.current.playing).toBe(false);
+    act(() => result.current.toggle());
+    expect(result.current.playing).toBe(true);
+  });
+});

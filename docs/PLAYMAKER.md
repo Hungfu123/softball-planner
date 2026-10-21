@@ -58,6 +58,23 @@ gespeicherten Stände dabei **nie** an — es gibt ein abgeleitetes Zwischenbild
 - Verteidiger und Runner laufen mit ease-in-out, der Ball mit ease-out: er ist zur Halbzeit
   sichtbar weiter, und genau das macht Gleichzeitigkeit lesbar.
 - Dauer steht **je Stand** (`duration_ms`), danach 400 ms Halt. Tempo 0,5× / 1× / 2×.
+- **Die Spur wächst mit.** Ball- und Laufweg werden aus dem LAUFENDEN Übergang gezeichnet
+  (`spur: {von, nach, t}`), nicht aus `previous`. Während der Bewegung von Stand N nach N+1
+  steht `index` noch auf N und `previous` war N−1 — man sah die alte Linie, und die richtige
+  erschien erst beim Umspringen; beim ersten Übergang gab es gar keine. Der Teilweg wird mit
+  de Casteljau exakt aus derselben Kurve geschnitten, auf der der Ball fliegt, damit die Form
+  beim Wachsen stehen bleibt.
+- **Der Ball fliegt auf seiner Bahn**, nicht daneben. Vorher lief er auf der geraden
+  Verbindung, während der Bogen danebenlag.
+- **Die Laufspur folgt den Base-Wegen**, wie die Bewegung selbst — eine Sehne von der 1 zur 3
+  würde die 2 abschneiden.
+- **Die Zeitleiste bekommt den Bruchteil** (`fortschritt`), sonst steht ihr Knopf zwei
+  Sekunden still und springt dann.
+- Der Platz (Gras, Sand, Linien, Bases) ist eine gemerkte Komponente: er ändert sich nie,
+  React rechnete ihn aber in jedem Bild nach.
+- **Ein Tipp aufs Feld schaltet um**, er pausiert nicht nur. Das Feld füllt am Handy den
+  halben Bildschirm; ein Streiftipp hielt die Wiedergabe lautlos an, und der nächste Druck
+  auf den Knopf startete sie wieder — er stand ja inzwischen auf ▶.
 - **Runner folgen den Base-Wegen**, nicht der Luftlinie: von der 1 nach Home geht es über
   die 2 und die 3. Rückwärts läuft nur, wer zurück muss (Rundown) — **nie rückwärts nach
   Home**, das wäre ein Run auf dem Rückweg. Liegt das Ziel mitten auf einem Base-Weg, führt

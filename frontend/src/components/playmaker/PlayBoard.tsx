@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BASES,
   CIRCLE_RADIUS,
@@ -12,6 +12,7 @@ import {
   type Box,
 } from './board/geometry';
 import { ballAnchor, computeContentBox, fitViewBox, markerRadius } from './board/layout';
+import { flugkurve, laufspur, teilPfad } from './board/spur';
 import type { MarkerRef, PlayMarkers, PlayStep } from './board/types';
 
 /** Die Farben des Boards. Gras, Sand und Optic Yellow sind die drei neuen im Theme. */
@@ -44,11 +45,13 @@ interface Props {
    */
   viewBoxOverride?: Box | null;
   /**
-   * Endpunkt der Flugbahn waehrend einer Animation. Ohne ihn wird der Bogen in jedem
-   * Bild aus der aktuellen Sehne neu gerechnet und die schon gezeichnete Spur biegt
-   * sich mit — es sieht aus, als peitsche die Linie.
+   * Der laufende Uebergang: von welchem Stand, wohin, wie weit (0..1).
+   *
+   * Damit waechst die Spur MIT dem Ball, statt fertig dazustehen oder — schlimmer — vom
+   * Stand davor aus gezeichnet zu werden. Die Form bleibt dabei stehen, weil der Teilweg
+   * exakt aus derselben Kurve geschnitten wird, auf der der Ball fliegt.
    */
-  bahnZiel?: { x: number; y: number } | null;
+  spur?: { von: PlayMarkers; nach: PlayMarkers; t: number } | null;
   /** false fuer Vorschauen: dann gilt keine Mindest-Trefferflaeche. */
   interactive?: boolean;
   className?: string;
@@ -79,7 +82,7 @@ export function PlayBoard({
   pointerFine = false,
   interactive = true,
   viewBoxOverride = null,
-  bahnZiel = null,
+  spur = null,
   className,
   onPointerDown,
   onPointerMove,
@@ -164,81 +167,91 @@ export function PlayBoard({
       onPointerCancel={onPointerCancel}
       onLostPointerCapture={onPointerCancel}
     >
-      {/* Gras bis an jede Kante — das Board hat keinen Rand, es ist Platz. */}
-      <rect x={viewBox.x} y={viewBox.y} width={viewBox.w} height={viewBox.h} fill={GRASS} />
-      <path d={FAIR_TERRITORY_PATH} fill={GRASS} />
-      <path d={SKIN_PATH} fill={SKIN} />
-      <path d={FOUL_LINES_PATH} fill="none" stroke={CHALK} strokeWidth={1.8} strokeLinecap="round" />
-      <path d={FENCE_PATH} fill="none" stroke={CHALK} strokeWidth={1.8} strokeLinecap="round" />
+      <Feld viewBox={viewBox} />
 
-      <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r={CIRCLE_RADIUS} fill={INVENTORY} opacity={0.22} />
-      <rect
-        x={PITCHING_PLATE.x - 2}
-        y={PITCHING_PLATE.y - 0.75}
-        width={4}
-        height={1.5}
-        rx={0.3}
-        fill={INVENTORY}
-        stroke={INK}
-        strokeWidth={0.4}
-      />
-      {BASES.slice(1).map((base, index) => (
-        <rect
-          key={index}
-          x={base.x - 2 + innerOffset(index).dx}
-          y={base.y - 2 + innerOffset(index).dy}
-          width={4}
-          height={4}
-          transform={`rotate(45 ${base.x + innerOffset(index).dx} ${base.y + innerOffset(index).dy})`}
-          fill={INVENTORY}
-          stroke={INK}
-          strokeWidth={0.4}
-        />
-      ))}
-      <path
-        d={`M${HOME.x - 2.4},${HOME.y - 4.4} L${HOME.x + 2.4},${HOME.y - 4.4} L${HOME.x + 2.4},${HOME.y - 2} ` +
-          `L${HOME.x},${HOME.y + 0.8} L${HOME.x - 2.4},${HOME.y - 2} Z`}
-        fill={INVENTORY}
-        stroke={INK}
-        strokeWidth={0.4}
-      />
+      {/*
+        Die blasse Bahn davor.
 
-      {ghost && (
-        <path
-          d={ballPfad(ghost.ball, markers.ball)}
-          fill="none"
-          stroke={BALL}
-          strokeWidth={2.4}
-          strokeDasharray="5 4"
-          strokeLinecap="round"
-          opacity={0.35}
-        />
-      )}
-      {previous && (
+        Waehrend einer Bewegung ist das der Weg, der IN den Startstand fuehrte — sonst
+        verschwaende die alte Linie in dem Moment, in dem die neue bei null anfaengt, und
+        es ruckt. Steht die Wiedergabe, ist es der Wurf davor: bei Cut-off-Ketten ist die
+        Kette der Inhalt.
+      */}
+      {(() => {
+        const blass = spur
+          ? previous && { von: previous.ball, nach: spur.von.ball }
+          : ghost && previous && { von: ghost.ball, nach: previous.ball };
+        if (!blass) return null;
+        return (
+          <path
+            d={teilPfad(flugkurve(blass.von, blass.nach, blass.nach.trajectory), 1)}
+            fill="none"
+            stroke={BALL}
+            strokeWidth={2.4}
+            strokeDasharray="5 4"
+            strokeLinecap="round"
+            opacity={0.35}
+          />
+        );
+      })()}
+      {spur ? (
         <>
           <path
-            d={ballPfad(previous.ball, bahnZiel ? { ...markers.ball, ...bahnZiel } : markers.ball)}
+            d={teilPfad(flugkurve(spur.von.ball, spur.nach.ball, spur.nach.ball.trajectory), spur.t)}
             fill="none"
             stroke={BALL}
             strokeWidth={2.4}
             strokeDasharray="5 4"
             strokeLinecap="round"
           />
-          {markers.runners.map((runner) => {
-            const vorher = previous.runners.find((r) => r.id === runner.id);
-            if (!vorher) return null;
+          {spur.nach.runners.map((ziel) => {
+            const start = spur.von.runners.find((r) => r.id === ziel.id);
+            if (!start) return null;
+            const d = laufspur(start, ziel, spur.t);
+            if (!d) return null;
             return (
               <path
-                key={`rp-${runner.id}`}
-                d={`M${vorher.x},${vorher.y} L${runner.x},${runner.y}`}
+                key={`rp-${ziel.id}`}
+                d={d}
                 fill="none"
                 stroke={RUNNER}
                 strokeWidth={2.6}
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             );
           })}
         </>
+      ) : (
+        previous && (
+          <>
+            <path
+              d={teilPfad(flugkurve(previous.ball, markers.ball, markers.ball.trajectory), 1)}
+              fill="none"
+              stroke={BALL}
+              strokeWidth={2.4}
+              strokeDasharray="5 4"
+              strokeLinecap="round"
+            />
+            {markers.runners.map((runner) => {
+              const vorher = previous.runners.find((r) => r.id === runner.id);
+              if (!vorher) return null;
+              const d = laufspur(vorher, runner, 1);
+              if (!d) return null;
+              return (
+                <path
+                  key={`rp-${runner.id}`}
+                  d={d}
+                  fill="none"
+                  stroke={RUNNER}
+                  strokeWidth={2.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              );
+            })}
+          </>
+        )
       )}
 
       {markers.defenders.map((defender) => (
@@ -314,25 +327,6 @@ export function PlayBoard({
 }
 
 /**
- * Die Bahn des Balls zwischen zwei Staenden.
- *
- * Ein Fly fliegt im Bogen, ein Grounder laeuft gerade — sonst sehen beide gleich aus und
- * die Unterscheidung steht nur in der Notiz. Der Bogen weicht zur Seite aus, auf der mehr
- * Platz ist: rechtwinklig zur Verbindung, mit einem Achtel ihrer Laenge.
- */
-function ballPfad(von: { x: number; y: number }, nach: PlayMarkers['ball']): string {
-  if (nach.trajectory === 'GROUND') return `M${von.x},${von.y} L${nach.x},${nach.y}`;
-  const dx = nach.x - von.x;
-  const dy = nach.y - von.y;
-  const laenge = Math.hypot(dx, dy);
-  if (laenge < 1) return `M${von.x},${von.y} L${nach.x},${nach.y}`;
-  const hoehe = laenge / 8;
-  const mx = (von.x + nach.x) / 2 - (dy / laenge) * hoehe;
-  const my = (von.y + nach.y) / 2 + (dx / laenge) * hoehe;
-  return `M${von.x},${von.y} Q${mx.toFixed(2)},${my.toFixed(2)} ${nach.x},${nach.y}`;
-}
-
-/**
  * 1B und 3B liegen komplett im Fair Territory, die Aussenkante buendig an der Linie.
  * Die als Raute gedrehten Symbole haben Kanten parallel zur Foul-Linie, deshalb reicht
  * eine Verschiebung um die halbe Kantenlaenge nach innen.
@@ -342,3 +336,56 @@ function innerOffset(index: number): { dx: number; dy: number } {
   if (index === 2) return { dx: 1.41, dy: -1.41 }; // 3B nach innen
   return { dx: 0, dy: 0 }; // 2B liegt ohnehin im Fair
 }
+
+/**
+ * Der Platz: Gras, Sand, Linien, Bases, Platte, Circle.
+ *
+ * Eigene, gemerkte Komponente, weil nichts davon sich je aendert — ausser dem Gras, das
+ * bis an die Kanten des Ausschnitts reicht. Waehrend einer Animation rechnet React sonst
+ * sechzigmal je Sekunde ein Dutzend Pfade nach, die alle gleich bleiben. Das ist die
+ * einzige Stelle im Board, an der sich Merken ueberhaupt lohnt: die Marker aendern sich
+ * in jedem Bild, der Platz nie.
+ */
+const Feld = memo(function Feld({ viewBox }: { viewBox: Box }) {
+  return (
+    <>
+        <rect x={viewBox.x} y={viewBox.y} width={viewBox.w} height={viewBox.h} fill={GRASS} />
+        <path d={FAIR_TERRITORY_PATH} fill={GRASS} />
+        <path d={SKIN_PATH} fill={SKIN} />
+        <path d={FOUL_LINES_PATH} fill="none" stroke={CHALK} strokeWidth={1.8} strokeLinecap="round" />
+        <path d={FENCE_PATH} fill="none" stroke={CHALK} strokeWidth={1.8} strokeLinecap="round" />
+
+        <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r={CIRCLE_RADIUS} fill={INVENTORY} opacity={0.22} />
+        <rect
+          x={PITCHING_PLATE.x - 2}
+          y={PITCHING_PLATE.y - 0.75}
+          width={4}
+          height={1.5}
+          rx={0.3}
+          fill={INVENTORY}
+          stroke={INK}
+          strokeWidth={0.4}
+        />
+        {BASES.slice(1).map((base, index) => (
+          <rect
+            key={index}
+            x={base.x - 2 + innerOffset(index).dx}
+            y={base.y - 2 + innerOffset(index).dy}
+            width={4}
+            height={4}
+            transform={`rotate(45 ${base.x + innerOffset(index).dx} ${base.y + innerOffset(index).dy})`}
+            fill={INVENTORY}
+            stroke={INK}
+            strokeWidth={0.4}
+          />
+        ))}
+        <path
+          d={`M${HOME.x - 2.4},${HOME.y - 4.4} L${HOME.x + 2.4},${HOME.y - 4.4} L${HOME.x + 2.4},${HOME.y - 2} ` +
+            `L${HOME.x},${HOME.y + 0.8} L${HOME.x - 2.4},${HOME.y - 2} Z`}
+          fill={INVENTORY}
+          stroke={INK}
+          strokeWidth={0.4}
+        />
+    </>
+  );
+});
