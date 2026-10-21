@@ -84,7 +84,10 @@ export default function FreiesFeldPage() {
     // die breiteste Inhaltsbreite und schiebt die Kopfzeile aus dem Bild.
     <div className="grid h-dvh grid-cols-1 grid-rows-[52px_1fr_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
       <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
-        <Link to="/orga/playmaker" className="font-display text-xs font-bold text-gray-500">
+        <Link
+          to="/orga/playmaker"
+          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
+        >
           Zurück
         </Link>
         <h1 className="min-w-0 flex-1">
@@ -95,10 +98,12 @@ export default function FreiesFeldPage() {
         <button
           type="button"
           onClick={() => setLegende(true)}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-cream-300 font-display text-xs font-bold text-gray-500"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-gray-500"
           aria-label="Legende"
         >
-          ?
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-cream-300 font-display text-xs font-bold">
+            ?
+          </span>
         </button>
       </header>
 
