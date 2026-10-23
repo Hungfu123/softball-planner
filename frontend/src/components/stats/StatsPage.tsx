@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, Download } from 'lucide-react'
+import { Download } from 'lucide-react'
 import * as api from '@/api/client'
 import type { AwardResponse, GameDayResponse, GameResponse, OpponentBattingStatsResponse, PlayerBattingStatsResponse, Season, SeasonPlayerStats } from '@/types'
 import { AwardsCard } from '@/components/dashboard/AwardsCard'
@@ -9,11 +9,12 @@ import { GamesStatsTable } from './GamesStatsTable'
 import { GamesNeedRangeNotice } from './GamesNeedRangeNotice'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
 import { parseStatsView } from '@/components/analysis/statsView'
+import { ZeitraumKnopf } from './ZeitraumKnopf'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
 import { StatsTableSkeleton } from './StatsTableSkeleton'
 import { generateBattingStatsPdf } from '@/utils/statsPdf'
 
-type ScopeKind = 'season' | 'year' | 'allTime' | 'gameDay' | 'game' | 'opponent'
+import type { ScopeKind } from './ZeitraumKnopf'
 const SCOPE_LABEL_MAP: Record<ScopeKind, string> = {
   season: 'Saison',
   year: 'Jahr',
@@ -257,6 +258,21 @@ export function StatsPage() {
     return `Alle Jahre · ${seasons.length} ${seasons.length === 1 ? 'Saison' : 'Saisons'}`
   }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame, gameDays, selectedGameDayId, opponents, selectedOpponent, selectedOpponentGameId, gamesVsOpponent])
 
+  const zeitraumLabel = (() => {
+    if (scopeKind === 'game') return 'Dieses Spiel'
+    if (scopeKind === 'gameDay') {
+      const gd = gameDays.find(x => x.id === selectedGameDayId)
+      return gd ? `Spieltag ${formatGameDayLabel(gd)}` : 'Spieltag'
+    }
+    if (scopeKind === 'season') {
+      const s = seasons.find(x => x.id === selectedSeasonId)
+      return s ? `Saison ${s.name} · ${s.year}` : 'Saison'
+    }
+    if (scopeKind === 'opponent') return selectedOpponent ? `Nach Gegner: ${selectedOpponent}` : 'Nach Gegner'
+    if (scopeKind === 'year') return `Jahr ${selectedYear}`
+    return SCOPE_LABEL_MAP.allTime
+  })()
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -290,91 +306,26 @@ export function StatsPage() {
 
         <AnalysisModeTabs />
 
-        {/* Compact Filter-Row: Scope-Pills + Selector inline */}
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          {scopeKind === 'game' && (
-            <ScopeChip active={true} onClick={() => { /* noop */ }}>Dieses Spiel</ScopeChip>
-          )}
-          <ScopeChip active={scopeKind === 'gameDay'} onClick={() => setScope('gameDay')}>Spieltag</ScopeChip>
-          <ScopeChip active={scopeKind === 'season'} onClick={() => setScope('season')}>Saison</ScopeChip>
-          <ScopeChip active={scopeKind === 'year'} onClick={() => setScope('year')}>Jahr</ScopeChip>
-          <ScopeChip active={scopeKind === 'opponent'} onClick={() => setScope('opponent')}>Nach Gegner</ScopeChip>
-          <ScopeChip active={scopeKind === 'allTime'} onClick={() => setScope('allTime')}>Alle Zeit</ScopeChip>
-
-          {/* Selector inline rechts daneben statt eigene Reihe */}
-          {scopeKind === 'gameDay' && gameDays.length > 0 && (
-            <div className="relative inline-flex items-center ml-auto sm:ml-0">
-              <select
-                value={selectedGameDayId ?? ''}
-                onChange={e => setGameDayId(Number(e.target.value))}
-                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400 max-w-[60vw] sm:max-w-none truncate"
-              >
-                {gameDays.map(gd => (
-                  <option key={gd.id} value={gd.id}>{formatGameDayLabel(gd)}</option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
-            </div>
-          )}
-          {scopeKind === 'season' && seasons.length > 0 && (
-            <div className="relative inline-flex items-center ml-auto sm:ml-0">
-              <select
-                value={selectedSeasonId ?? ''}
-                onChange={e => setSeasonId(Number(e.target.value))}
-                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400"
-              >
-                {seasons.map(s => (
-                  <option key={s.id} value={s.id}>{s.name} · {s.year}</option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
-            </div>
-          )}
-          {scopeKind === 'year' && years.length > 0 && (
-            <div className="relative inline-flex items-center ml-auto sm:ml-0">
-              <select
-                value={selectedYear}
-                onChange={e => setYear(Number(e.target.value))}
-                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400"
-              >
-                {years.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
-            </div>
-          )}
-          {scopeKind === 'opponent' && opponents.length > 0 && (
-            <div className="relative inline-flex items-center ml-auto sm:ml-0">
-              <select
-                value={selectedOpponent ?? ''}
-                onChange={e => setOpponentId(e.target.value)}
-                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400 max-w-[60vw] sm:max-w-none truncate"
-              >
-                {opponents.map(o => (
-                  <option key={o.teamName} value={o.teamName}>
-                    {o.teamName} · AVG {o.battingAverage.toFixed(3).replace(/^0\./, '.')} ({o.games} {o.games === 1 ? 'Spiel' : 'Spiele'})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
-            </div>
-          )}
-          {scopeKind === 'opponent' && gamesVsOpponent.length > 0 && (
-            <div className="relative inline-flex items-center">
-              <select
-                value={selectedOpponentGameId ?? ''}
-                onChange={e => setOpponentGameId(e.target.value === '' ? null : Number(e.target.value))}
-                className="font-display appearance-none bg-cream-50 border border-cream-300 rounded-full pl-3 pr-8 py-1.5 text-xs font-bold tracking-wide text-navy-900 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none cursor-pointer hover:border-navy-400 max-w-[60vw] sm:max-w-none truncate"
-              >
-                <option value="">Alle Spiele ({gamesVsOpponent.length})</option>
-                {gamesVsOpponent.map(g => (
-                  <option key={g.gameId} value={g.gameId}>{g.label}</option>
-                ))}
-              </select>
-              <ChevronDown size={12} className="text-gray-400 absolute right-2.5 pointer-events-none" />
-            </div>
-          )}
+        <div className="mb-3">
+          <ZeitraumKnopf
+            scopeKind={scopeKind}
+            label={zeitraumLabel}
+            onScope={setScope}
+            gameDays={gameDays.map(gd => ({ value: gd.id, label: formatGameDayLabel(gd) }))}
+            seasons={seasons.map(s => ({ value: s.id, label: `${s.name} · ${s.year}` }))}
+            years={years.map(y => ({ value: y, label: String(y) }))}
+            opponents={opponents.map(o => ({
+              value: o.teamName,
+              label: `${o.teamName} · AVG ${o.battingAverage.toFixed(3).replace(/^0\./, '.')} (${o.games} ${o.games === 1 ? 'Spiel' : 'Spiele'})`,
+            }))}
+            opponentGames={gamesVsOpponent.map(g => ({ value: g.gameId, label: g.label }))}
+            selected={{ gameDay: selectedGameDayId, season: selectedSeasonId, year: selectedYear, opponent: selectedOpponent, opponentGame: selectedOpponentGameId }}
+            onGameDay={setGameDayId}
+            onSeason={setSeasonId}
+            onYear={setYear}
+            onOpponent={setOpponentId}
+            onOpponentGame={setOpponentGameId}
+          />
         </div>
       </div>
 
@@ -412,18 +363,5 @@ export function StatsPage() {
 
       <StatsGlossarySheet open={showGlossary} onClose={() => setShowGlossary(false)} />
     </div>
-  )
-}
-
-function ScopeChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`font-display px-3 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full cursor-pointer transition-colors ${
-        active ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
-      }`}
-    >
-      {children}
-    </button>
   )
 }
