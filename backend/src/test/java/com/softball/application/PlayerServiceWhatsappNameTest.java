@@ -1,6 +1,7 @@
 package com.softball.application;
 
 import com.softball.domain.model.Player;
+import com.softball.domain.port.out.AppUserRepository;
 import com.softball.domain.port.out.AtBatRepository;
 import com.softball.domain.port.out.BaseRunningEventRepository;
 import com.softball.domain.port.out.PlayerRepository;
@@ -24,7 +25,9 @@ class PlayerServiceWhatsappNameTest {
         mock(BaseRunningEventRepository.class),
         mock(SubstitutionRepository.class),
         mock(TrainingAttendanceRepository.class),
-        mock(AvailabilityService.class));
+        mock(AvailabilityService.class),
+        mock(AppUserRepository.class),
+        mock(SuperadminGuard.class));
 
     @Test
     void setsWhatsappName() {

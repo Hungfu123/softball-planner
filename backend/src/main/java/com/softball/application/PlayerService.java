@@ -6,6 +6,7 @@ import com.softball.domain.model.PositionSlot;
 import com.softball.domain.service.PositionProfileValidator;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
+import com.softball.domain.port.out.AppUserRepository;
 import com.softball.domain.port.out.AtBatRepository;
 import com.softball.domain.port.out.BaseRunningEventRepository;
 import com.softball.domain.port.out.PlayerRepository;
@@ -32,18 +33,23 @@ public class PlayerService {
     private final SubstitutionRepository substitutionRepository;
     private final TrainingAttendanceRepository trainingAttendanceRepository;
     private final AvailabilityService availabilityService;
+    private final AppUserRepository appUserRepository;
+    private final SuperadminGuard superadminGuard;
 
     public PlayerService(final PlayerRepository playerRepository, final AtBatRepository atBatRepository,
                          final BaseRunningEventRepository baseRunningEventRepository,
                          final SubstitutionRepository substitutionRepository,
                          final TrainingAttendanceRepository trainingAttendanceRepository,
-                         final AvailabilityService availabilityService) {
+                         final AvailabilityService availabilityService,
+                         final AppUserRepository appUserRepository, final SuperadminGuard superadminGuard) {
         this.playerRepository = playerRepository;
         this.atBatRepository = atBatRepository;
         this.baseRunningEventRepository = baseRunningEventRepository;
         this.substitutionRepository = substitutionRepository;
         this.trainingAttendanceRepository = trainingAttendanceRepository;
         this.availabilityService = availabilityService;
+        this.appUserRepository = appUserRepository;
+        this.superadminGuard = superadminGuard;
     }
 
     @Transactional(readOnly = true)
@@ -129,6 +135,11 @@ public class PlayerService {
                     + "und die Statistiken anderer Spieler beschädigt.");
         }
 
+        // app_user.player_id kaskadiert: mit dem Spieler ginge der Account lautlos mit, und der naechste
+        // Start legte einen neuen Superadmin mit dem Standardpasswort an.
+        superadminGuard.pruefeSpielerNichtLetzter(id, "Spieler '" + player.getName()
+            + "' ist der letzte Superadmin und kann nicht gelöscht werden: sein Account ginge mit.");
+
         availabilityService.removeAllPlanningReferences(id);
         trainingAttendanceRepository.deleteByPlayerId(id);
         playerRepository.deleteById(id);
@@ -141,14 +152,23 @@ public class PlayerService {
      * im Gegensatz zum Löschen bleiben damit die über den BaseRunningReplay
      * berechneten Runs der Mitspieler korrekt. Beim Archivieren werden seine
      * Planungs-Referenzen (Availability, Lineups, Staff) und Trainings-Anwesenheit
-     * bereinigt, wie beim Löschen.
+     * bereinigt, wie beim Löschen. Ein vorhandener Account wird dabei gesperrt und beim
+     * Reaktivieren wieder entsperrt.
      */
     @Transactional
     public Player setArchived(final Long id, final boolean archived) {
         final Player player = findById(id);
         if (archived && !player.isArchived()) {
+            superadminGuard.pruefeSpielerNichtLetzter(id, "Spieler '" + player.getName()
+                + "' ist der letzte Superadmin und kann nicht archiviert werden: sein Account würde gesperrt.");
             availabilityService.removeAllPlanningReferences(id);
             trainingAttendanceRepository.deleteByPlayerId(id);
+        }
+        if (archived != player.isArchived()) {
+            appUserRepository.findByPlayerId(id).ifPresent(account -> {
+                appUserRepository.updateLocked(account.getId(), archived);
+                log.info("Account '{}' von Spieler {} {}", account.getUsername(), id, archived ? "gesperrt" : "entsperrt");
+            });
         }
         player.setArchived(archived);
         final Player saved = playerRepository.save(player);

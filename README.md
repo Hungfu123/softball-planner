@@ -160,7 +160,7 @@ Die App laeuft auf einem **Hetzner VPS** (Docker Compose) unter https://softball
 - Deploy-Script: `git pull` → `docker build` → `docker compose up -d backend`
 - Dockerfile baut Frontend + Backend in ein JAR
 - Flyway migriert die Datenbank beim Start
-- Umgebungsvariablen in `/opt/softball/docker-compose.yml`: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`, `GEMINI_API_KEY`
+- Umgebungsvariablen in `/opt/softball/docker-compose.yml`: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`, `APP_PLAYER_PASSWORD`, `GEMINI_API_KEY`
 
 ### Produktions-Build lokal testen
 

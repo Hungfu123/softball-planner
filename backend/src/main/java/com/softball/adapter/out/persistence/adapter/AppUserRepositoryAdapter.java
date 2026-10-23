@@ -39,13 +39,15 @@ public class AppUserRepositoryAdapter implements AppUserRepository {
     }
 
     @Override
+    public Optional<AppUser> findById(final Long id) {
+        return repo.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
     public AppUser save(final AppUser user) {
         if (user.getId() != null) {
-            final var existing = repo.findById(user.getId()).orElse(null);
-            if (existing != null) {
-                mapper.updateEntity(existing, user);
-                return mapper.toDomain(repo.save(existing));
-            }
+            throw new IllegalArgumentException(
+                "save legt nur an; bestehende Accounts werden ueber die gezielten update*-Methoden geaendert");
         }
         return mapper.toDomain(repo.save(mapper.toEntity(user)));
     }
@@ -66,6 +68,11 @@ public class AppUserRepositoryAdapter implements AppUserRepository {
     }
 
     @Override
+    public long countUnlockedByRole(final Role role) {
+        return repo.countByRoleAndLocked(role, false);
+    }
+
+    @Override
     public boolean existsByUsername(final String username) {
         return repo.existsByUsernameIgnoreCase(username);
     }
@@ -80,5 +87,35 @@ public class AppUserRepositoryAdapter implements AppUserRepository {
     @Transactional
     public void touchLastLogin(final String username, final Instant zeitpunkt) {
         repo.updateLastLoginAt(username, zeitpunkt);
+    }
+
+    @Override
+    @Transactional
+    public void updateLocked(final Long id, final boolean locked) {
+        repo.updateLocked(id, locked);
+    }
+
+    @Override
+    @Transactional
+    public void updateRole(final Long id, final Role role) {
+        repo.updateRole(id, role);
+    }
+
+    @Override
+    @Transactional
+    public void updateMayScore(final Long id, final boolean mayScore) {
+        repo.updateMayScore(id, mayScore);
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(final Long id, final String passwordHash, final boolean passwordChanged) {
+        repo.updatePassword(id, passwordHash, passwordChanged);
+    }
+
+    @Override
+    @Transactional
+    public void updateUsername(final Long id, final String username) {
+        repo.updateUsername(id, username);
     }
 }

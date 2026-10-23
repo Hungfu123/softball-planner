@@ -39,6 +39,13 @@ class MethodSecurityCoverageTest {
     private static final String SCORER_REGEL = "hasRole('ADMIN') or @scoring.darfSchreiben(authentication)";
 
     /**
+     * Strenger als die Klassenregel {@code hasRole('ADMIN')}: nur der Superadmin (Rollenvergabe).
+     * Sie nimmt Admins eine Erlaubnis weg und gibt niemandem eine; deshalb ist sie neben den
+     * lockernden Regeln zugelassen.
+     */
+    private static final String SUPERADMIN_REGEL = "hasRole('SUPERADMIN')";
+
+    /**
      * Klasse#Methode. Eine Zeile je geoeffneter Methode: lesend fuer jeden Angemeldeten, oder
      * schreibend mit der Scorer-Regel (Abschnitt Scoring).
      */
@@ -119,7 +126,9 @@ class MethodSecurityCoverageTest {
         "GameController#endGame",
         "GameController#setBattingSide",
         "GameController#reopenGame",
-        "GameController#addSubstitution"
+        "GameController#addSubstitution",
+        // Nur Superadmin (strenger als die Klassenregel): Rollenvergabe
+        "UserAccountController#setRole"
     ));
 
     @Test
@@ -140,6 +149,7 @@ class MethodSecurityCoverageTest {
                 final PreAuthorize regel = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
                 if (regel != null && !OFFEN_FUER_ANGEMELDETE.equals(normiert(regel.value()))
                         && !normiert(SCORER_REGEL).equals(normiert(regel.value()))
+                        && !normiert(SUPERADMIN_REGEL).equals(normiert(regel.value()))
                         && !normiert(regel.value()).equals(klassenregel(type))) {
                     falscheRegeln.add(type.getSimpleName() + "#" + method.getName() + " -> " + regel.value());
                 }
@@ -147,7 +157,7 @@ class MethodSecurityCoverageTest {
         }
         assertThat(falscheRegeln)
                 .as("Methodenregeln, die weder die Klassenregel wiederholen noch isAuthenticated() "
-                        + "noch exakt die Scorer-Regel sind")
+                        + "noch exakt die Scorer- oder die Superadmin-Regel sind")
                 .isEmpty();
     }
 
