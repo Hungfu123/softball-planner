@@ -155,6 +155,7 @@ export function useAuth(): AuthValue {
 }
 
 /** Wie useAuth, aber ohne Wurf: für öffentliche Seiten, die auch ohne Provider laufen müssen. */
+// eslint-disable-next-line react-refresh/only-export-components -- wie useAuth: Hook neben dem Provider, der den Kontext besitzt
 export function useOptionalAuth(): AuthValue | null {
   return useContext(AuthContext)
 }

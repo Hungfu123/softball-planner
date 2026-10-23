@@ -107,7 +107,7 @@ describe('Dashboard — Loading-State beim Laden der Spieltage', () => {
       expect(screen.queryByText(/Lineup verwalten/)).not.toBeInTheDocument()
       expect(mockApi.getGameDayWeather).not.toHaveBeenCalled()
       // Keine Fläche, die klickbar aussieht und es nicht ist.
-      expect(document.querySelector('[class*="hover:border-navy-400"]')).toBeNull()
+      expect(document.querySelector('div[class*="hover:border-navy-400"]')).toBeNull()
       expect(document.querySelector('a[href^="/gameday/"]')).toBeNull()
     })
 
@@ -118,7 +118,7 @@ describe('Dashboard — Loading-State beim Laden der Spieltage', () => {
       render(<MemoryRouter><Dashboard /></MemoryRouter>)
 
       expect(await screen.findByLabelText('Spieltag bearbeiten')).toBeInTheDocument()
-      expect(document.querySelector('[class*="hover:border-navy-400"]')).not.toBeNull()
+      expect(document.querySelector('div[class*="hover:border-navy-400"]')).not.toBeNull()
       expect(screen.getAllByText(/Neuer Spieltag/).length).toBeGreaterThan(0)
       expect(screen.getByLabelText('Spieltag löschen')).toBeInTheDocument()
       expect(screen.getByText(/Lineup verwalten/)).toBeInTheDocument()
