@@ -11,6 +11,7 @@ import { ChevronDown, CopyIcon, CrossBones, TrashBin } from '@/icons'
 import { Button } from '@/components/shared/Button'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { useToastContext } from '@/components/layout/Layout'
+import { useRolle } from '@/hooks/useRolle'
 
 /**
  * Einstieg in den Playmaker.
@@ -35,6 +36,7 @@ export default function PlaymakerOverview() {
   const gesucht = useDeferredValue(suche)
   const navigate = useNavigate()
   const toast = useToastContext()
+  const { istAdmin } = useRolle()
 
   /**
    * Kopieren und Loeschen sagen, was passiert ist.
@@ -161,7 +163,7 @@ export default function PlaymakerOverview() {
         <h1 className="flex-1 font-headline text-2xl font-extrabold uppercase tracking-wide text-navy-900">
           Playmaker
         </h1>
-        <Button onClick={() => navigate('/orga/playmaker/neu')}>Neues Play</Button>
+        {istAdmin && <Button onClick={() => navigate('/orga/playmaker/neu')}>Neues Play</Button>}
       </div>
 
       {/* Das freie Feld steht ueber allem anderen: in der Pause will man es mit einem
@@ -184,7 +186,7 @@ export default function PlaymakerOverview() {
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
           <CrossBones size={48} className="text-gray-300" />
           <p className="text-sm text-gray-500">Noch kein Play gebaut.</p>
-          <Button onClick={() => navigate('/orga/playmaker/neu')}>Erstes Play anlegen</Button>
+          {istAdmin && <Button onClick={() => navigate('/orga/playmaker/neu')}>Erstes Play anlegen</Button>}
         </div>
       ) : (
         <>
@@ -400,6 +402,7 @@ function HeroPlay({
   onDuplicate: () => void
   onDelete: () => void
 }) {
+  const { istAdmin } = useRolle()
   const [loeschenOffen, setLoeschenOffen] = useState(false)
 
   return (
@@ -445,7 +448,7 @@ function HeroPlay({
       {/* Kopieren und Loeschen gibt es auch hier. Vorher war ausgerechnet das zuletzt
           bearbeitete Play das einzige, das man aus der Uebersicht weder kopieren noch
           loeschen konnte — man musste es erst wegfiltern. */}
-      <div className={`absolute right-2 z-10 flex gap-1 ${kompakt ? 'inset-y-0 items-center' : 'top-2'}`}>
+      {istAdmin && <div className={`absolute right-2 z-10 flex gap-1 ${kompakt ? 'inset-y-0 items-center' : 'top-2'}`}>
         <button
           type="button"
           onClick={onDuplicate}
@@ -462,7 +465,7 @@ function HeroPlay({
         >
           <TrashBin size={16} />
         </button>
-      </div>
+      </div>}
 
       {loeschenOffen && (
         <ConfirmModal

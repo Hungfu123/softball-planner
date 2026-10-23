@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { MapPin, Check, ClipboardList } from 'lucide-react'
 import type { GameDayResponse } from '@/types'
+import { GatedLink } from '@/components/shared/GatedLink'
+import { useRolle } from '@/hooks/useRolle'
 
 interface Props {
   gameDay: GameDayResponse
@@ -15,6 +17,7 @@ function formatHeroDate(dateStr: string) {
 }
 
 export function HeroNextGameDay({ gameDay, variant }: Props) {
+  const { istAdmin, darfScoren } = useRolle()
   const stripeLabel = variant === 'today' ? 'Heute · Nächster Spieltag' : variant === 'upcoming' ? 'Nächster Spieltag' : 'Letzter Spieltag'
   const stripeBg = variant === 'past' ? 'bg-navy-700' : 'bg-softball-red-600'
 
@@ -70,7 +73,8 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                   key={g.id}
                   className={`flex items-stretch gap-1 rounded-lg border transition-colors ${cls}`}
                 >
-                  <Link
+                  <GatedLink
+                    erlaubt={istAdmin}
                     to={`/gameday/${gameDay.id}?game=${routeIdx}`}
                     className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-l-lg hover:bg-white/5"
                     aria-label={`Lineup für Spiel ${displayNum}`}
@@ -88,8 +92,9 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                         </div>
                       )}
                     </div>
-                  </Link>
-                  <Link
+                  </GatedLink>
+                  <GatedLink
+                    erlaubt={darfScoren}
                     to={`/gameday/${gameDay.id}/scoring/${routeIdx}`}
                     className="shrink-0 flex items-center px-1.5 my-0.5 rounded-md hover:bg-white/10"
                     aria-label={`${finished ? 'Stats' : 'Live-Scoring'} für Spiel ${displayNum}`}
@@ -115,18 +120,20 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                         Offen
                       </span>
                     )}
-                  </Link>
+                  </GatedLink>
                 </div>
               )
             })}
           </div>
         )}
-        <Link
-          to={`/gameday/${gameDay.id}`}
-          className="font-display mt-2 sm:mt-3 w-full h-9 sm:h-10 rounded-lg bg-white/95 hover:bg-white text-navy-900 font-extrabold text-[11px] sm:text-xs tracking-widest uppercase flex items-center justify-center gap-1.5 transition-colors"
-        >
-          <ClipboardList size={13} /> Lineup verwalten
-        </Link>
+        {istAdmin && (
+          <Link
+            to={`/gameday/${gameDay.id}`}
+            className="font-display mt-2 sm:mt-3 w-full h-9 sm:h-10 rounded-lg bg-white/95 hover:bg-white text-navy-900 font-extrabold text-[11px] sm:text-xs tracking-widest uppercase flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <ClipboardList size={13} /> Lineup verwalten
+          </Link>
+        )}
       </div>
     </div>
   )

@@ -20,12 +20,15 @@ import {
   ConfirmModal, LoadingSkeleton, ResponsiveSheet,
 } from '@/components/shared'
 import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse, WeatherResponse, AwardResponse } from '@/types'
+import { GatedLink } from '@/components/shared/GatedLink'
+import { useRolle } from '@/hooks/useRolle'
 import * as api from '@/api/client'
 
 
 export function Dashboard() {
   const { seasons, loading: seasonsLoading, create: createSeason, copyYear, update: updateSeason, remove: removeSeason } = useSeasons()
   const toast = useToastContext()
+  const { istAdmin } = useRolle()
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
   // true bis der erste Spieltag-Fetch der aktuellen Saison fertig ist —
@@ -107,6 +110,8 @@ export function Dashboard() {
   // Wetter für den nächsten/heutigen Spieltag (≤16 Tage) — Open-Meteo via Backend.
   // Wird als Bento-Tile angezeigt; nice-to-have, Fehler still.
   useEffect(() => {
+    // Das Wetter-Endpoint ist Admin-Sache; Spieler bekommen die Kachel gar nicht erst angefragt.
+    if (!istAdmin) { setWeather(null); return }
     const today = new Date().toISOString().slice(0, 10)
     const upcoming = gameDays.find(gd => gd.date >= today)
     if (!upcoming) { setWeather(null); return }
@@ -118,7 +123,7 @@ export function Dashboard() {
       .then(w => { if (!cancelled) setWeather(w) })
       .catch(() => { /* silent */ })
     return () => { cancelled = true }
-  }, [gameDays])
+  }, [gameDays, istAdmin])
 
   const handleCreateGameDay = async () => {
     if (!selectedSeasonId || !newGdDate || !newGdGameCount) return
@@ -175,7 +180,10 @@ export function Dashboard() {
           <p className="text-sm text-gray-600 mb-5 leading-relaxed">
             Saison gruppiert Spieltage, Lineups + Stats. Tap unten um zu starten.
           </p>
-          <Button
+          {!istAdmin && (
+            <p className="text-sm text-gray-600">Es ist noch keine Saison angelegt.</p>
+          )}
+          {istAdmin && <Button
             variant="primary"
             onClick={() => {
               const yr = new Date().getFullYear()
@@ -185,8 +193,8 @@ export function Dashboard() {
             className="font-display w-full py-3 gap-2 rounded-xl text-sm font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-softball-red-600/20"
           >
             Saison {new Date().getFullYear()} erstellen
-          </Button>
-          <p className="text-[11px] text-gray-400 mt-3">Name + Jahr später änderbar.</p>
+          </Button>}
+          {istAdmin && <p className="text-[11px] text-gray-400 mt-3">Name + Jahr später änderbar.</p>}
         </div>
       </div>
     )
@@ -242,16 +250,18 @@ export function Dashboard() {
           </div>
           <h2 className="font-display text-lg sm:text-xl font-extrabold text-navy-900 tracking-wide uppercase mb-2">Noch kein Spieltag</h2>
           <p className="text-sm text-gray-600 mb-5 max-w-md mx-auto leading-relaxed">
-            Lege einen Spieltag mit Datum + Anzahl Spielen an. Danach Spieler-Anwesenheit setzen und Lineups vorbereiten.
+            {istAdmin
+              ? 'Lege einen Spieltag mit Datum + Anzahl Spielen an. Danach Spieler-Anwesenheit setzen und Lineups vorbereiten.'
+              : 'In dieser Saison ist noch kein Spieltag angesetzt.'}
           </p>
-          <Button
+          {istAdmin && <Button
             variant="primary"
             onClick={() => setShowNewGameDay(true)}
             icon={<PlusCircle size={14} />}
             className="font-display py-2.5 gap-2 rounded-xl text-xs font-extrabold tracking-widest uppercase hover:bg-softball-red-700 shadow-softball-red-600/20"
           >
             Ersten Spieltag erstellen
-          </Button>
+          </Button>}
         </div>
       )}
 
@@ -272,7 +282,7 @@ export function Dashboard() {
                       <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
                       Anstehend
                     </h2>
-                    <button
+                    {istAdmin && <button
                       onClick={() => setShowNewGameDay(true)}
                       className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 hover:text-navy-900 inline-flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
                     >
@@ -280,7 +290,7 @@ export function Dashboard() {
                       {/* Am Handy lief „Neuer Spieltag" gesperrt ueber den rechten Rand hinaus. */}
                       <span className="sm:hidden">Spieltag</span>
                       <span className="hidden sm:inline">Neuer Spieltag</span>
-                    </button>
+                    </button>}
                   </div>
                   {upcoming.length > 0 ? (
                     <UpcomingList
@@ -289,13 +299,13 @@ export function Dashboard() {
                       onShowAll={() => setShowAllGameDays(true)}
                       onShowLess={() => setShowAllGameDays(false)}
                       visibleCount={3}
-                      onEdit={id => setEditGameDayId(id)}
-                      onDelete={id => setDeleteGameDayId(id)}
+                      onEdit={istAdmin ? id => setEditGameDayId(id) : undefined}
+                      onDelete={istAdmin ? id => setDeleteGameDayId(id) : undefined}
                     />
                   ) : !heroIsUpcoming && (
                     // Ein leerer Abschnitt ist eine Einladung, kein Befund — aber erst,
                     // wenn feststeht, dass er leer ist. Waehrend des Ladens waere es geraten.
-                    !gameDaysLoading && (
+                    !gameDaysLoading && istAdmin && (
                       <button
                         onClick={() => setShowNewGameDay(true)}
                         className="w-full rounded-2xl border border-dashed border-cream-300 px-4 py-5 text-center cursor-pointer hover:border-navy-400 hover:bg-cream-50 transition-colors"
@@ -322,8 +332,8 @@ export function Dashboard() {
                       onShowAll={() => setShowAllPastGameDays(true)}
                       onShowLess={() => setShowAllPastGameDays(false)}
                       visibleCount={1}
-                      onEdit={id => setEditGameDayId(id)}
-                      onDelete={id => setDeleteGameDayId(id)}
+                      onEdit={istAdmin ? id => setEditGameDayId(id) : undefined}
+                      onDelete={istAdmin ? id => setDeleteGameDayId(id) : undefined}
                     />
                   </div>
                 )}
@@ -558,8 +568,9 @@ export function Dashboard() {
                     const opponent = g.opponentTeam?.name ?? 'Gegner offen'
                     const context = [gd.label, gd.location].filter(Boolean).join(' · ')
                     return (
-                      <Link
+                      <GatedLink
                         key={g.id}
+                        erlaubt={istAdmin}
                         to={`/gameday/${gd.id}`}
                         onClick={() => setOpenSheet(null)}
                         className="flex items-center gap-3 px-3 py-2.5 bg-white border border-cream-300 rounded-xl hover:border-navy-400"
@@ -574,7 +585,7 @@ export function Dashboard() {
                           </div>
                         </div>
                         <span className="font-display text-base font-extrabold tabular-nums text-navy-900 shrink-0">{us}–{them}</span>
-                      </Link>
+                      </GatedLink>
                     )
                   })}
                 </div>

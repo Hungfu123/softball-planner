@@ -5,6 +5,8 @@ import * as api from '@/api/client'
 import type { GameDayResponse, Season, TrainingResponse } from '@/types'
 import { useToastContext } from '@/components/layout/Layout'
 import { Button } from '@/components/shared'
+import { GatedLink } from '@/components/shared/GatedLink'
+import { useRolle } from '@/hooks/useRolle'
 import { CalendarPageSkeleton } from './CalendarPageSkeleton'
 
 // Season-Farb-Palette (Brand-Rot bewusst ausgespart — das ist Akzent, nicht Kategorie)
@@ -20,6 +22,7 @@ function dateKey(y: number, m: number, d: number) {
 }
 
 export function CalendarPage() {
+  const { istAdmin } = useRolle()
   const toast = useToastContext()
   const [loading, setLoading] = useState(true)
   const [seasons, setSeasons] = useState<Season[]>([])
@@ -115,7 +118,7 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
-      <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline py-1.5">← Zurück zur Orga</Link>
+      {istAdmin && <Link to="/orga" className="inline-flex items-center gap-1 text-gray-500 text-sm hover:text-navy-700 hover:underline py-1.5">← Zurück zur Orga</Link>}
 
       {/* Header: Monats-Nav + ICS-Export */}
       <div className="flex items-center justify-between gap-2">
@@ -268,7 +271,7 @@ export function CalendarPage() {
                   const meta = seasonMeta.get(gd.seasonId)
                   const opponents = gd.games.map(g => g.opponentTeam?.name).filter(Boolean) as string[]
                   return (
-                    <Link key={gd.id} to={`/gameday/${gd.id}`} className="block group">
+                    <GatedLink key={gd.id} erlaubt={istAdmin} to={`/gameday/${gd.id}`} className="block group">
                       <div className="flex items-center gap-2 flex-wrap">
                         {meta && (
                           <span className={`font-display text-[9px] font-extrabold tracking-widest uppercase px-1.5 py-0.5 rounded ${meta.bg} ${meta.text}`}>
@@ -282,7 +285,7 @@ export function CalendarPage() {
                       {gd.location && (
                         <div className="text-[11px] text-gray-500 inline-flex items-center gap-1 mt-0.5"><MapPin size={10} /> {gd.location}</div>
                       )}
-                    </Link>
+                    </GatedLink>
                   )
                 })}
               </div>

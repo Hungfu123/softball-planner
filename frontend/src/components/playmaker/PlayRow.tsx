@@ -6,6 +6,7 @@ import type { Play } from './board/types'
 import type { Treffer } from './suche'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CopyIcon, TrashBin } from '@/icons'
+import { useRolle } from '@/hooks/useRolle'
 
 /** Woher der Treffer kommt — ein Wort, damit die Zeile einzeilig bleibt. */
 const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
@@ -40,6 +41,7 @@ export function PlayRow({
   onDuplicate: () => void
   onDelete: () => void
 }) {
+  const { istAdmin } = useRolle()
   const [loeschen, setLoeschen] = useState(false)
   const lage = LAGE_TEXT[play.gameState]
 
@@ -66,7 +68,7 @@ export function PlayRow({
           {lage}
         </span>
       )}
-      <div className="actions-reveal flex shrink-0 items-center gap-1">
+      {istAdmin && <div className="actions-reveal flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={onDuplicate}
@@ -83,7 +85,7 @@ export function PlayRow({
         >
           <TrashBin size={16} />
         </button>
-      </div>
+      </div>}
 
       {loeschen && (
         <ConfirmModal

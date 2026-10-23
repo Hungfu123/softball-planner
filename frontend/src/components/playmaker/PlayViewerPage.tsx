@@ -7,6 +7,7 @@ import { PlaybackBar } from './PlaybackBar'
 import { LegendSheet } from './LegendSheet'
 import { StepList } from './StepList'
 import type { Play } from './board/types'
+import { useRolle } from '@/hooks/useRolle'
 
 const TEMPI: PlaybackSpeed[] = [1, 0.5, 2]
 
@@ -76,6 +77,7 @@ function Viewer({
   gegenstueck: Play | null
   onEdit: () => void
 }) {
+  const { istAdmin } = useRolle()
   const [loop, setLoop] = useState(false)
   const [tempoIndex, setTempoIndex] = useState(0)
   const [legende, setLegende] = useState(false)
@@ -130,13 +132,15 @@ function Viewer({
             ?
           </span>
         </button>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
-        >
-          Ändern
-        </button>
+        {istAdmin && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
+          >
+            Ändern
+          </button>
+        )}
         <div className="flex gap-1.5" role="group" aria-label="Outs">
           {[0, 1, 2].map(i => (
             <span

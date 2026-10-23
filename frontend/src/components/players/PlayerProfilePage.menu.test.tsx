@@ -3,6 +3,11 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 
 const toast = { show: vi.fn(), dismiss: vi.fn() }
+const rolle = vi.hoisted(() => ({ istAdmin: true }))
+vi.mock('@/hooks/useRolle', () => ({
+  useRolle: () => ({ me: null, istAdmin: rolle.istAdmin, istSuperadmin: rolle.istAdmin, darfScoren: rolle.istAdmin }),
+}))
+
 vi.mock('@/components/layout/Layout', () => ({ useToastContext: () => toast }))
 
 vi.mock('@/api/client', () => ({
@@ -48,6 +53,7 @@ async function openMenu() {
 
 describe('PlayerProfilePage — Kopf-Menü', () => {
   beforeEach(() => {
+    rolle.istAdmin = true
     vi.clearAllMocks()
     mockApi.getPlayer.mockResolvedValue(PLAYER)
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
@@ -106,5 +112,41 @@ describe('PlayerProfilePage — Kopf-Menü', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
 
     await waitFor(() => expect(screen.queryByText('Umbenennen')).not.toBeInTheDocument())
+  })
+})
+
+describe('PlayerProfilePage — als Spieler', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockApi.getPlayer.mockResolvedValue(PLAYER)
+    mockApi.getPlayerBattingTimeline.mockResolvedValue([])
+    mockApi.getPlayerUsage.mockResolvedValue(null)
+    mockApi.getAllTimeStats.mockResolvedValue([])
+    mockApi.getAllTimeBattingStats.mockResolvedValue([])
+  })
+
+  it('zeigt Name, aber nichts zum Ändern: kein Positions-Profil-Stift, kein Geschlecht, kein Menü', async () => {
+    rolle.istAdmin = false
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mia' })).toBeInTheDocument())
+    expect(screen.queryByLabelText('Positions-Profil bearbeiten')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Geschlecht/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Weitere Aktionen')).not.toBeInTheDocument()
+  })
+
+  it('führt zurück zum Start statt zum Kader, den ein Spieler nicht sieht', async () => {
+    rolle.istAdmin = false
+    renderPage()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mia' })).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Kader' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
+  })
+
+  it('gegenprobe: derselbe Spieler-Datensatz bietet einem Admin alle drei', async () => {
+    rolle.istAdmin = true
+    renderPage()
+    await waitFor(() => expect(screen.getByLabelText('Positions-Profil bearbeiten')).toBeInTheDocument())
+    expect(screen.getByLabelText(/Geschlecht/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Weitere Aktionen')).toBeInTheDocument()
   })
 })

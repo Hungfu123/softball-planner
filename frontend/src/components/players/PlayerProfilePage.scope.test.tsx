@@ -3,6 +3,11 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import type { PlayerFormPoint, PlayerBattingStatsResponse, PlayerUsage, SeasonPlayerStats } from '@/types'
 
+const rolle = vi.hoisted(() => ({ istAdmin: true }))
+vi.mock('@/hooks/useRolle', () => ({
+  useRolle: () => ({ me: null, istAdmin: rolle.istAdmin, istSuperadmin: rolle.istAdmin, darfScoren: rolle.istAdmin }),
+}))
+
 vi.mock('@/components/layout/Layout', () => ({
   useToastContext: () => ({ show: vi.fn(), dismiss: vi.fn() }),
 }))
