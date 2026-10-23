@@ -28,13 +28,11 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/calendar.ics").permitAll() // öffentlich → in Kalender-Apps abonnierbar
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
             .httpBasic(Customizer.withDefaults());
         return http.build();
     }
