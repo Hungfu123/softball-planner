@@ -97,9 +97,9 @@ export interface PlayerUsage {
   gameDaysTotal: number
   gameDaysAvailable: number
   gameDaysPlayed: number
-  /** Nicht abgesagte Trainings bis heute. */
-  trainingsTotal: number
-  trainingsAttended: number
+  /** Nicht abgesagte Trainings bis heute. `null` für Spieler: die Beteiligung bleibt vor ihnen verborgen. */
+  trainingsTotal: number | null
+  trainingsAttended: number | null
   averageBattingOrder: number | null
   battingOrderCounts: Record<string, number>
 }
@@ -396,7 +396,8 @@ export interface TrainingResponse {
   time: string | null
   location: string | null
   cancelled: boolean
-  attendeeCount: number
+  /** `null` für Spieler: die Teilnehmerzahl bleibt vor ihnen verborgen. */
+  attendeeCount: number | null
   periodId: number | null
   type: TrainingType
   /** War der ganze Kader eingeladen? False = Nur-P/C, zählt nicht in die Beteiligung. */

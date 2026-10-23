@@ -33,6 +33,7 @@ public class ScoringController {
         this.clockService = clockService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{gameId}/atbats")
     public List<AtBatResponse> getAtBats(@PathVariable final Long gameId) {
         return scoringService.getAtBats(gameId);
@@ -87,6 +88,7 @@ public class ScoringController {
         return scoringService.updateLastBaseState(gameId, req.first(), req.second(), req.third(), req.runsScored(), req.rbi());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{gameId}/stealing-events")
     public List<StealingEventResponse> getStealingEvents(@PathVariable final Long gameId) {
         return scoringService.getStealingEvents(gameId);
@@ -106,6 +108,7 @@ public class ScoringController {
         scoringService.deleteStealingEvent(gameId, eventId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{gameId}/scoreboard")
     public ScoreboardResponse getScoreboard(@PathVariable final Long gameId) {
         return scoringService.getScoreboard(gameId);

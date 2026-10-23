@@ -51,6 +51,7 @@ public class GameController {
         return GameResponse.from(game, atBatCount, liveScoreUs);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public GameResponse getGame(@PathVariable final Long id) {
         return toResponseWithLive(gameService.findById(id));
@@ -89,6 +90,7 @@ public class GameController {
         return toResponseWithLive(gameService.reopenGame(id));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/lineup")
     public List<LineupEntryResponse> getLineup(@PathVariable final Long id) {
         return lineupService.getLineup(id).stream().map(LineupEntryResponse::from).toList();
@@ -111,6 +113,7 @@ public class GameController {
         return lineupSuggestionService.suggest(id);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/staff")
     public List<GameStaffResponse> getStaff(@PathVariable final Long id) {
         return gameStaffService.getStaff(id).stream().map(GameStaffResponse::from).toList();
@@ -126,6 +129,7 @@ public class GameController {
         return gameService.swapGames(gameId1, gameId2).stream().map(this::toResponseWithLive).toList();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/substitutions")
     public List<SubstitutionResponse> getSubstitutions(@PathVariable final Long id) {
         return substitutionService.getSubstitutions(id).stream().map(SubstitutionResponse::from).toList();

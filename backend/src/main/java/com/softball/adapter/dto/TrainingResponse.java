@@ -5,8 +5,13 @@ import com.softball.domain.model.Training;
 import java.time.LocalDate;
 
 public record TrainingResponse(Long id, LocalDate date, String time, String location, boolean cancelled,
-                                int attendeeCount, Long periodId, String type,
+                                Integer attendeeCount, Long periodId, String type,
                                 boolean openToAll) {
+
+    /** Dieselbe Antwort ohne Teilnehmerzahl: fuer Leser, die Trainingszahlen nicht sehen duerfen. */
+    public TrainingResponse ohneTeilnehmerzahl() {
+        return new TrainingResponse(id, date, time, location, cancelled, null, periodId, type, openToAll);
+    }
 
     public static TrainingResponse from(final Training training) {
         final int attendeeCount = (int) training.getAttendances().stream()

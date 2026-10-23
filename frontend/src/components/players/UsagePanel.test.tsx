@@ -30,6 +30,19 @@ describe('UsagePanel', () => {
     expect(screen.getByText('15 von 20 Trainings')).toBeInTheDocument()
   })
 
+  it('zeigt keinen Trainingsblock, wenn die Trainingszahlen fehlen', () => {
+    render(<UsagePanel usage={usage({ trainingsTotal: null, trainingsAttended: null })} />)
+
+    expect(screen.getByText('8 von 10 Spieltagen')).toBeInTheDocument()
+    expect(screen.queryByText('Training')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Trainings/)).not.toBeInTheDocument()
+  })
+
+  it('meldet bei fehlenden Trainingszahlen und ohne Spieltage nur die Spieltage', () => {
+    render(<UsagePanel usage={usage({ gameDaysTotal: 0, trainingsTotal: null, trainingsAttended: null })} />)
+    expect(screen.getByText('Noch keine Spieltage erfasst.')).toBeInTheDocument()
+  })
+
   it('zeigt Schnitt und Verteilung der Schlagplätze', () => {
     render(<UsagePanel usage={usage()} />)
 

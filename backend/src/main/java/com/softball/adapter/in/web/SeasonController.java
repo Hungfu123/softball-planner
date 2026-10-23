@@ -28,11 +28,13 @@ public class SeasonController {
         this.statsService = statsService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public List<SeasonResponse> getAll() {
         return seasonService.findAll().stream().map(SeasonResponse::from).toList();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public SeasonResponse getById(@PathVariable final Long id) {
         return SeasonResponse.from(seasonService.findById(id));
@@ -62,11 +64,13 @@ public class SeasonController {
         seasonService.delete(id);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/stats")
     public List<SeasonPlayerStats> getStats(@PathVariable final Long id) {
         return statsService.getSeasonStats(id);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/years")
     public List<Integer> getYears() {
         return seasonService.getDistinctYears();

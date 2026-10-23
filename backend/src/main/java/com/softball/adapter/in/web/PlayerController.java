@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import com.softball.shared.security.CurrentUser;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.CreatePlayerRequest;
 import com.softball.adapter.dto.PlayerFormPointResponse;
@@ -25,30 +26,37 @@ public class PlayerController {
 
     private final PlayerService playerService;
     private final PlayerProfileService playerProfileService;
+    private final CurrentUser currentUser;
 
     public PlayerController(final PlayerService playerService,
-                            final PlayerProfileService playerProfileService) {
+                            final PlayerProfileService playerProfileService,
+                            final CurrentUser currentUser) {
         this.playerService = playerService;
         this.playerProfileService = playerProfileService;
+        this.currentUser = currentUser;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public List<PlayerResponse> getAll(@RequestParam(name = "includeArchived", required = false, defaultValue = "false") final boolean includeArchived) {
         return playerService.findAll(includeArchived).stream().map(PlayerResponse::from).toList();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public PlayerResponse getOne(@PathVariable final Long id) {
         return PlayerResponse.from(playerService.findById(id));
     }
 
     /** Form-Kurve des Spielers: ein Punkt je Spiel, ältestes zuerst. */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/batting-timeline")
     public List<PlayerFormPointResponse> getBattingTimeline(@PathVariable final Long id) {
         return playerProfileService.getFormTimeline(id).stream().map(PlayerFormPointResponse::from).toList();
     }
 
     /** Einsatz-Profil: Zusagen, Aufstellungen, Training-Anwesenheit, Schlagplatz. */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/usage")
     public PlayerUsageResponse getUsage(@PathVariable final Long id,
                                         @RequestParam(name = "year", required = false) final Integer year,
@@ -56,7 +64,8 @@ public class PlayerController {
         final UsageScope scope = seasonId != null ? UsageScope.ofSeason(seasonId)
             : year != null ? UsageScope.ofYear(year)
             : UsageScope.all();
-        return PlayerUsageResponse.from(playerProfileService.getUsage(id, scope));
+        return PlayerUsageResponse.from(playerProfileService.getUsage(id, scope),
+            currentUser.darfTrainingszahlenSehen());
     }
 
     @PostMapping
