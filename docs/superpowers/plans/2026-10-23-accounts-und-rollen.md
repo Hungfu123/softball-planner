@@ -634,8 +634,8 @@ it('lässt einen Spieler auf /stats, /kalender und sein Profil', async () => { }
 it('zeigt einem Spieler drei Reiter', () => { })
 it('zeigt einem Admin fünf Reiter', () => { })
 
-it('zeigt Historie im Menü nur dem Superadmin', () => { })
-it('zeigt Accounts im Menü dem Admin', () => { })
+it('zeigt jedem Angemeldeten Mein Profil und Abmelden im Menü', () => { })
+it('zeigt einem Spieler keine Verwaltungs-Einträge im Menü', () => { })
 
 it('sperrt die Scoring-Route für einen Spieler ohne Scorer-Recht', async () => { })
 it('lässt einen Spieler mit Scorer-Recht auf die Scoring-Route', async () => { })
@@ -662,7 +662,11 @@ Spieler sehen `/` (Start), `/stats` (Analyse), `/kalender`. Admin und Superadmin
 
 - [ ] **Step 5: `KontoMenu` schreiben**
 
-Kreis mit den Initialen oben rechts im Kopf, mindestens 44 × 44 px. Dahinter: Mein Profil, Konto & Passwort, Abmelden; ab Admin zusätzlich Accounts; nur Superadmin Historie.
+Kreis mit den Initialen oben rechts im Kopf, mindestens 44 × 44 px. Dahinter **zunächst nur die Einträge, deren Ziele schon existieren**: Mein Profil (`/players/:id`) und Abmelden.
+
+Konto, Accounts und Historie kommen **erst in Task 12** dazu, zusammen mit ihren Routen. Stünden sie hier schon, zeigten drei Menüeinträge über zwei Commits hinweg ins Leere — die Catch-all-Route fängt sie aufs Dashboard. Dieselbe Regel wie im Navigationsplan, wo die Orga-Kachel für den Spielbogen gebaut wurde, bevor sein Reiter verschwand: kein Commit, in dem ein sichtbarer Weg ins Nichts führt.
+
+Die Rollenlogik des Menüs entsteht trotzdem hier und wird mit den beiden vorhandenen Einträgen getestet; Task 12 hängt die drei weiteren nur ein.
 
 Das Menü portalt nach `body` — ein nicht portaltes Menü liegt hinter `ResponsiveSheet`, das ist in diesem Projekt schon einmal passiert.
 
@@ -774,16 +778,20 @@ Nach den Hausregeln: Modale mit dunklem Hintergrund statt `confirm()`, `ConfirmM
 
 Auf `HistoriePage` oben der Satz über gemeinsame Passwörter — die Zahl ist ein Hinweis, kein Beweis.
 
-- [ ] **Step 4: In Orga einhängen**
+- [ ] **Step 4: Die drei Menüeinträge aus Task 10 einhängen**
+
+Jetzt, wo die Routen existieren, bekommt `KontoMenu` die restlichen Einträge: Konto & Passwort für jeden, Accounts ab Admin, Historie nur für Superadmins. Je ein Test, dass ein Eintrag nur der berechtigten Rolle erscheint.
+
+- [ ] **Step 5: In Orga einhängen**
 
 Accounts in den oberen Block zu Counter, Umfrage und Abrechnung — der User erwartet, es am häufigsten zu benutzen. Historie unter „Selten" neben den Spielbogen.
 
-- [ ] **Step 5: Tests laufen lassen**
+- [ ] **Step 6: Tests laufen lassen**
 
 Run: `cd frontend && npx vitest run && npm run build`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add frontend/src
