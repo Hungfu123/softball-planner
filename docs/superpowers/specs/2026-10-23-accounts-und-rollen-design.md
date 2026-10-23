@@ -535,6 +535,78 @@ Handy und Desktop ausdrücklich beide: eine Spalte auf dem Handy, auf dem Deskto
 Nächstes-Spiel und Zahlen nebeneinander. Dark-Only wie der Rest (CLAUDE.md, „Dark-Only
 bewusst"). Rot bleibt negativen Signalen vorbehalten.
 
+### Navigation
+
+Die Reiterleiste sitzt im Kopf (`Layout.tsx`, `sticky top-0`), nicht am unteren Rand, und
+ist waagerecht scrollbar. Der Kommentar im Code hält die Maße fest: die Reiter brauchen
+**301 px**, ein 390er-Telefon hat **366 px** innen. Sieben passen gerade so; auf schmaleren
+Geräten greift `navOverflows` mit einem Verlauf als Scroll-Hinweis.
+
+Mit Konto, Accounts und Historie kämen vier weitere Ziele dazu. Die Leiste trägt sie nicht.
+Die Entscheidungen:
+
+**Analyse und Statistik werden ein Punkt, er heißt `ANALYSE`.** Der Umschalter dafür
+existiert bereits (`AnalysisModeTabs`, heute *Spiel-Verlauf* und *Gegner*); er bekommt einen
+dritten Chip. Reihenfolge und Vorgabe: **Statistik**, Spiel-Verlauf, Gegner — damit bleibt
+das häufigste Ziel einen Tipp entfernt. Das Wort *Statistik* verschwindet dadurch aus der
+Leiste, bleibt aber als erster Chip sichtbar.
+
+Der Code begründet den Namen schon selbst: der Punkt heiße „bewusst nicht mehr Gegner". Ein
+Gegner-Verzeichnis ist keine Statistik, deshalb trägt der Oberbegriff, nicht der Teil.
+
+**Der Spielbogen verlässt die Leiste und zieht nach Orga.** Nach Auskunft des Users wird er
+derzeit kaum benutzt. Damit bleiben **fünf** Reiter — Spiele, Training, Spieler, Analyse,
+Orga — und rund 215 statt 301 px. Über 150 px Luft, kein Scroll-Hinweis mehr, breitere
+Trefferflächen.
+
+**Persönliches liegt hinter den Initialen oben rechts:** Mein Profil, Konto & Passwort,
+Abmelden; für Admins zusätzlich Accounts, für Superadmins Historie. Nichts Neues kommt in
+die Leiste.
+
+**Orga wird gruppiert, sortiert nach tatsächlichem Gebrauch** — nicht nach Thema. Eine Ebene
+Überschriften, nichts klappt auf, jede Kachel bleibt einen Tipp entfernt:
+
+| Block | Darstellung | Inhalt |
+|---|---|---|
+| (ohne Überschrift) | vier große Kacheln | Counter, Umfrage, Trainerabrechnung, **Accounts** |
+| Weiteres | normale Kacheln | Kalender, Einladungen, Playmaker |
+| Selten | ruhige Zeilen, je 46 px | Spielbogen, **Historie** |
+
+„Zähler" heißt künftig **Counter**, passend zur Adresse `/counter`.
+
+**Der Aufbau-Katalog verschwindet ganz** — Entscheidung des Users, er benutzt ihn nicht
+mehr. Betroffen sind `components/equipment/` (4 Dateien), `useEquipmentCatalog`,
+`utils/aufbauPdf*`, die Einträge in `routes.tsx`, `lazyPages.tsx`, `OrgaHome`, `client.ts`
+und `types`, dazu backendseitig `EquipmentItem` mit Port, Adapter, Mapper, Entity,
+Spring-Repo, `EquipmentService`, `EquipmentController` und zwei DTOs. `VenueMap` und
+`venueLayout` hängen nur am Aufbau-PDF und gehen mit.
+
+Nicht verwechseln: `Drill.equipment` ist eine Stringliste aus `drills.json` und hat mit dem
+Katalog nichts zu tun — der Trainingsplan-Generator bleibt unberührt.
+
+Die Tabelle `equipment_item` **bleibt vorerst stehen**. Sie trägt die echten Bestandsdaten,
+und `ddl-auto=validate` stört sich nicht an einer Tabelle ohne Entity. Der Code ist über Git
+rückholbar, die Zeilen wären es nicht. `DROP TABLE equipment_item;` ist eine spätere
+Migration, wenn der User sicher ist.
+
+Das ist eine **eigene Aufgabe mit eigenem Commit**, kein Teil dieses Projekts. Sie steht
+hier, weil die Orga-Übersicht sonst eine Kachel zu viel hätte.
+
+Accounts und Historie liegen damit an zwei Stellen — hier und im Initialen-Menü. Das ist
+Absicht: das Menü zum Zielen, Orga zum Stöbern.
+
+**Was ausdrücklich nicht gemacht wird:** kein zusätzlicher Spielbogen-Knopf auf der
+Spieltagsseite. Er war als Ausgleich dafür gedacht, dass heute **nichts** im Frontend auf
+`/spielbogen` verlinkt außer dem Reiter — bei der tatsächlichen Nutzung lohnt er nicht.
+Sollte der Spielbogen wieder wichtiger werden, ist das der erste Griff.
+
+**Für Spieler** schrumpft die Leiste von allein: Start, Analyse, Kalender. Kein Training,
+kein Spielbogen, kein Orga, kein Spieler-Verwalten. Das Gedränge ist ein Admin-Problem.
+
+**Die Seiten ohne Navigation bleiben ohne:** `ScoringPage`, Spielbogen, Playmaker-Viewer und
+Lineup-Bogen laufen außerhalb von `Layout` und füllen den Schirm per `h-dvh`. Daran ändert
+sich nichts.
+
 ### Weitere Seiten
 
 - **`/konto`** — eigener Account: Benutzername ändern, Passwort ändern. Für jede Rolle
@@ -568,6 +640,7 @@ setzen.
 | **Die Historie wird falsch verstanden** | Hinweis auf gemeinsame Passwörter steht in der Oberfläche |
 | **E2E bricht, weil ein altes Backend auf 8080 läuft** | Bekanntes Problem im Projekt: vor dem Lauf das laufende Backend beenden |
 | **Alle sehen am Deploy-Tag nur Fehler** | 401-Abfang in `request<T>`, Prüfung gegen `/api/me` beim Laden, Abmelde-Knopf |
+| **Der Spielbogen wird unauffindbar** | Er hängt heute an genau einem Link. Nach dem Umzug liegt er unter Orga → Selten |
 | **Spieler rechnet sich seine Trainingsquote aus** | `trainingsTotal`/`trainingsAttended` für Rolle `PLAYER` immer `null`, auch im eigenen Profil |
 | **Scorer-Spieler kann das Inning nicht weiterschalten** | Die fünf `GameController`-Schreibzugriffe hängen am Scorer-Recht |
 
