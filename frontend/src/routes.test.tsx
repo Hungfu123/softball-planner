@@ -152,7 +152,7 @@ describe('Routing: Rollen', () => {
     vi.unstubAllGlobals()
   })
 
-  const NUR_ADMIN = ['/players', '/training', '/orga', '/spielbogen', '/spielbogen/new', '/orga/trainerabrechnung', '/orga/einladungen', '/orga/whatsapp-umfrage', '/spielbogen/1']
+  const NUR_ADMIN = ['/players', '/training', '/orga', '/spielbogen', '/spielbogen/new', '/orga/trainerabrechnung', '/orga/einladungen', '/orga/whatsapp-umfrage', '/spielbogen/1', '/gameday/1', '/orga/playmaker/neu', '/orga/playmaker/1/bearbeiten']
 
   it.each(NUR_ADMIN)('schickt einen Spieler von %s zurück aufs Dashboard', async pfad => {
     const router = await oeffne(pfad, konto('PLAYER'))

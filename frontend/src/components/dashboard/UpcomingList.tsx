@@ -1,5 +1,6 @@
 import { GatedLink } from '@/components/shared/GatedLink'
 import { useRolle } from '@/hooks/useRolle'
+import { ohneKlickstile } from '@/utils/klickstile'
 import type { GameDayResponse } from '@/types'
 import { Pencil, TrashBin } from '@/icons'
 
@@ -41,7 +42,9 @@ export function UpcomingList({ gameDays, showAll, onShowAll, onShowLess, visible
       {visible.map(gd => (
         <div
           key={gd.id}
-          className="group flex items-center gap-2.5 sm:gap-3 px-2.5 py-1.5 sm:px-3 sm:py-2.5 bg-cream-50 border border-cream-300 rounded-lg sm:rounded-xl shadow-sm shadow-navy-900/5 hover:border-navy-400 hover:shadow-md hover:shadow-navy-900/10 transition-all"
+          className={istAdmin
+            ? 'group flex items-center gap-2.5 sm:gap-3 px-2.5 py-1.5 sm:px-3 sm:py-2.5 bg-cream-50 border border-cream-300 rounded-lg sm:rounded-xl shadow-sm shadow-navy-900/5 hover:border-navy-400 hover:shadow-md hover:shadow-navy-900/10 transition-all'
+            : ohneKlickstile('flex items-center gap-2.5 sm:gap-3 px-2.5 py-1.5 sm:px-3 sm:py-2.5 bg-cream-50 border border-cream-300 rounded-lg sm:rounded-xl shadow-sm shadow-navy-900/5')}
         >
           <GatedLink erlaubt={istAdmin} to={`/gameday/${gd.id}`} className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0 active:scale-[0.99]">
             <span className="font-display text-[12px] sm:text-sm font-extrabold text-navy-900 tracking-wider min-w-[58px] sm:min-w-[64px]">

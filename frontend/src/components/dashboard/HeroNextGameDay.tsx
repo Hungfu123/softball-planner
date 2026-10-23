@@ -3,6 +3,7 @@ import { MapPin, Check, ClipboardList } from 'lucide-react'
 import type { GameDayResponse } from '@/types'
 import { GatedLink } from '@/components/shared/GatedLink'
 import { useRolle } from '@/hooks/useRolle'
+import { ohneKlickstile } from '@/utils/klickstile'
 
 interface Props {
   gameDay: GameDayResponse
@@ -58,11 +59,13 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                 ? null
                 : (g.scoreUs ?? 0) > (g.scoreThem ?? 0) ? 'W'
                 : (g.scoreUs ?? 0) < (g.scoreThem ?? 0) ? 'L' : 'T'
-              const cls = finished
+              const klickbar = istAdmin || darfScoren
+              const rohCls = finished
                 ? 'bg-white/5 border-white/10 hover:bg-white/10'
                 : isLive
                 ? 'bg-softball-red-600/20 border-softball-red-400/40 hover:bg-softball-red-600/30'
                 : 'bg-white/8 border-white/15 hover:bg-white/15'
+              const cls = klickbar ? rohCls : ohneKlickstile(rohCls)
               const numCls = finished
                 ? 'bg-white/10 text-white/60'
                 : isLive
