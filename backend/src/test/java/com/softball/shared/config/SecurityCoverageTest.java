@@ -20,8 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class SecurityCoverageTest {
 
+    private static final String ADMIN_REGEL = "hasRole('ADMIN')";
+    private static final String OFFEN = "permitAll()";
+
     @Test
-    void jederControllerHatEineKlassenRegel() throws Exception {
+    void jederControllerAusserDemKalenderTraegtExaktDieAdminRegel() throws Exception {
         final List<Class<?>> controller = produktiveController();
 
         // Gegen Leerlauf: ein Scan ohne Treffer waere sonst gruen, ohne zu pruefen.
@@ -29,21 +32,27 @@ class SecurityCoverageTest {
                 .contains("PlayerController", "GameController", "ScoringController", "CalendarController");
 
         assertThat(controller)
-                .filteredOn(c -> AnnotatedElementUtils.findMergedAnnotation(c, PreAuthorize.class) == null)
-                .as("@RestController ohne Klassen-@PreAuthorize (Default-Deny: hasRole('ADMIN'), "
-                        + "bewusst offen nur mit ausdruecklichem permitAll())")
+                .filteredOn(c -> !"CalendarController".equals(c.getSimpleName()))
+                .filteredOn(c -> !ADMIN_REGEL.equals(regel(c)))
+                .as("@RestController ohne exakt @PreAuthorize(\"hasRole('ADMIN')\") auf der Klasse "
+                        + "(Default-Deny; Lockerungen gehoeren an einzelne Methoden)")
                 .isEmpty();
     }
 
     @Test
     void nurDerKalenderIstBewusstOffen() throws Exception {
         final List<String> offen = produktiveController().stream()
-                .filter(c -> c.isAnnotationPresent(PreAuthorize.class))
-                .filter(c -> "permitAll()".equals(c.getAnnotation(PreAuthorize.class).value()))
+                .filter(c -> OFFEN.equals(regel(c)))
                 .map(Class::getSimpleName)
                 .toList();
 
         assertThat(offen).containsExactly("CalendarController");
+    }
+
+    /** Wert der Klassenregel, ueber Meta-Annotationen hinweg und ohne Leerraum; null wenn keine da ist. */
+    private static String regel(final Class<?> type) {
+        final PreAuthorize regel = AnnotatedElementUtils.findMergedAnnotation(type, PreAuthorize.class);
+        return regel == null ? null : regel.value().replaceAll("\\s+", "");
     }
 
     private static List<Class<?>> produktiveController() throws ClassNotFoundException {
