@@ -149,6 +149,15 @@ describe('KontoMenu', () => {
     expect(screen.queryByRole('menu')).toBeNull()
   })
 
+  it('bietet Abmelden auch ohne Auskunft vom Server (me === null), aber kein Mein Profil', () => {
+    auth.me = null
+    renderAt('/')
+    fireEvent.click(knopf())
+    expect(screen.queryByRole('menuitem', { name: 'Mein Profil' })).toBeNull()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Abmelden' }))
+    expect(auth.logout).toHaveBeenCalledTimes(1)
+  })
+
   it('jeder Menüeintrag ist mindestens 44 px hoch', () => {
     renderAt('/')
     fireEvent.click(knopf())

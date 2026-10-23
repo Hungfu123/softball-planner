@@ -65,6 +65,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
+  /*
+   * Ist /api/me beim Seitenaufbau gescheitert, bleibt der Nutzer angemeldet, aber `me` ist
+   * null — und die Oberfläche zeigt dann alles. Das heilt sich selbst: sobald das Fenster
+   * wieder online geht oder den Fokus bekommt, wird /api/me erneut gefragt.
+   */
+  useEffect(() => {
+    if (!loggedIn || pruefend || me !== null) return
+    const nachladen = () => {
+      if (!hasAuth()) return
+      const meiner = ++versuch.current
+      fetch('/api/me', { headers: basic() })
+        .then(async res => {
+          if (meiner !== versuch.current) return
+          if (res.status === 401) {
+            clearAuth()
+            setLoggedIn(false)
+          } else if (res.ok) {
+            setMe(await res.json())
+          }
+        })
+        .catch(() => {})
+    }
+    window.addEventListener('online', nachladen)
+    window.addEventListener('focus', nachladen)
+    return () => {
+      window.removeEventListener('online', nachladen)
+      window.removeEventListener('focus', nachladen)
+    }
+  }, [loggedIn, pruefend, me])
+
   // request<T> meldet eine abgelehnte Anmeldung per Ereignis, ein harter Reload wuerde ein
   // offenes Formular verwerfen.
   useEffect(() => {
@@ -122,6 +152,11 @@ export function useAuth(): AuthValue {
   const auth = useContext(AuthContext)
   if (!auth) throw new Error('useAuth braucht einen AuthProvider darüber')
   return auth
+}
+
+/** Wie useAuth, aber ohne Wurf: für öffentliche Seiten, die auch ohne Provider laufen müssen. */
+export function useOptionalAuth(): AuthValue | null {
+  return useContext(AuthContext)
 }
 
 /**

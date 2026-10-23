@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ConfirmModal } from '@/components/shared'
 import { hasAuth } from '@/api/client'
+import { useOptionalAuth } from '@/components/auth/AuthProvider'
 import { useCounter } from '@/hooks/useCounter'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { CounterBoard } from './CounterBoard'
@@ -34,13 +35,15 @@ export default function CounterPage() {
   useWakeLock()
 
   const loggedIn = hasAuth()
+  // Spieler sehen Orga nicht; für sie führt der Pfeil direkt aufs Dashboard.
+  const zurueck = useOptionalAuth()?.me?.role === 'PLAYER' ? '/' : '/orga'
 
   return (
     <div className="flex h-svh flex-col overflow-y-auto bg-cream-100">
       <CounterBoard
         state={counter.state}
-        backTo={loggedIn ? '/orga' : undefined}
-        backLabel={loggedIn ? 'Zurück zur Orga' : undefined}
+        backTo={loggedIn ? zurueck : undefined}
+        backLabel={loggedIn ? (zurueck === '/' ? 'Zurück' : 'Zurück zur Orga') : undefined}
       />
 
       <CounterPad

@@ -308,3 +308,47 @@ describe('Abmelden', () => {
     expect(localStorage.getItem('auth')).toBeNull()
   })
 })
+
+describe('Auskunft nachholen, wenn /api/me beim Seitenaufbau scheiterte', () => {
+  async function ohneAuskunft() {
+    localStorage.setItem('auth', btoa('hung:x'))
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError('offline'))
+    vi.stubGlobal('fetch', fetchMock)
+    renderGated()
+    await screen.findByText('Geschützter Inhalt')
+    expect(screen.getByTestId('me')).toHaveTextContent('kein me')
+    return fetchMock
+  }
+
+  it.each(['focus', 'online'])('holt /api/me beim Ereignis %s erneut', async ereignis => {
+    const fetchMock = await ohneAuskunft()
+    fetchMock.mockResolvedValue(ok())
+
+    fireEvent(window, new Event(ereignis))
+
+    await waitFor(() => expect(screen.getByTestId('me')).toHaveTextContent('hung|SUPERADMIN|Hung'))
+    expect(aufrufe(fetchMock).map(a => a.url)).toEqual(['/api/me', '/api/me'])
+  })
+
+  it('fragt nicht mehr nach, sobald die Auskunft da ist', async () => {
+    localStorage.setItem('auth', btoa('hung:x'))
+    const fetchMock = vi.fn().mockResolvedValue(ok())
+    vi.stubGlobal('fetch', fetchMock)
+    renderGated()
+    await waitFor(() => expect(screen.getByTestId('me')).toHaveTextContent('SUPERADMIN'))
+
+    fireEvent(window, new Event('focus'))
+    await new Promise(r => setTimeout(r, 10))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('meldet ab, wenn die nachgeholte Auskunft 401 sagt', async () => {
+    const fetchMock = await ohneAuskunft()
+    fetchMock.mockResolvedValue(fehler(401))
+
+    fireEvent(window, new Event('focus'))
+
+    await waitFor(() => expect(maske()).toBeInTheDocument())
+  })
+})

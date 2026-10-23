@@ -18,6 +18,9 @@ const EINTRAG = 'flex items-center w-full min-h-11 px-4 text-left text-sm font-s
  * Angemeldete hat. Konto, Accounts und Historie kommen mit ihren Routen (Task 12) — ein Eintrag
  * ohne Ziel gäbe es hier nur als Sackgasse.
  *
+ * Abmelden steht immer da, auch wenn /api/me nicht beantwortet wurde (me === null): es ist der
+ * Notausgang aus einer Sitzung, die sonst nicht heilt.
+ *
  * Das Menü portalt nach body: ein Menü im Kopf läge hinter einem offenen ResponsiveSheet.
  */
 export function KontoMenu() {
@@ -38,8 +41,6 @@ export function KontoMenu() {
     return () => document.removeEventListener('keydown', taste)
   }, [offen])
 
-  if (!me) return null
-
   const oeffnen = () => {
     const box = knopf.current?.getBoundingClientRect()
     if (box) setRechts(Math.max(8, window.innerWidth - box.right))
@@ -58,7 +59,7 @@ export function KontoMenu() {
         onClick={oeffnen}
         className="shrink-0 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white font-display font-bold text-sm tracking-wide flex items-center justify-center active:scale-[0.97] transition-colors duration-200"
       >
-        {initialen(me.playerName ?? me.username)}
+        {me ? initialen(me.playerName ?? me.username) : '?'}
       </button>
       {offen &&
         createPortal(
@@ -70,8 +71,8 @@ export function KontoMenu() {
               className="absolute top-14 w-56 py-1 rounded-xl bg-white shadow-xl border border-cream-300 overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <p className="px-4 py-2 text-xs text-navy-900/60 truncate">{me.username}</p>
-              {me.playerId !== null && (
+              {me && <p className="px-4 py-2 text-xs text-navy-900/60 truncate">{me.username}</p>}
+              {me && me.playerId !== null && (
                 <Link role="menuitem" to={`/players/${me.playerId}`} onClick={schliessen} className={EINTRAG}>
                   Mein Profil
                 </Link>

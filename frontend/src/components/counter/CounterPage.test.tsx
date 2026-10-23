@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import CounterPage from './CounterPage'
+import { AuthProvider } from '@/components/auth/AuthProvider'
 
 function renderPage() {
   return render(
@@ -25,6 +26,36 @@ describe('CounterPage — Zurück-Pfeil', () => {
   it('zeigt angemeldet einen Zurück-Pfeil zur Orga', () => {
     localStorage.setItem('auth', btoa('hung:x'))
     renderPage()
+    expect(screen.getByRole('link', { name: 'Zurück zur Orga' })).toHaveAttribute('href', '/orga')
+  })
+})
+
+describe('CounterPage — Zurück-Pfeil nach Rolle', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  async function alsRolle(role: 'PLAYER' | 'ADMIN') {
+    localStorage.setItem('auth', btoa('x:x'))
+    const me = { username: 'x', role, playerId: 1, playerName: 'X', mayScore: false, passwordChanged: true }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => me }))
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <CounterPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    )
+    // Erst wenn /api/me beantwortet ist, steht die Rolle fest.
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalled())
+    await new Promise(r => setTimeout(r, 10))
+  }
+
+  it('führt Spieler direkt aufs Dashboard statt über Orga', async () => {
+    await alsRolle('PLAYER')
+    expect(screen.getByRole('link', { name: 'Zurück' })).toHaveAttribute('href', '/')
+  })
+
+  it('führt Admins weiter zur Orga', async () => {
+    await alsRolle('ADMIN')
     expect(screen.getByRole('link', { name: 'Zurück zur Orga' })).toHaveAttribute('href', '/orga')
   })
 })
