@@ -292,6 +292,18 @@ Expected: FAIL — Spieler kommen an alles oder an nichts.
 
 An den Methoden, die Spieler laut Spec lesen dürfen, `@PreAuthorize("isAuthenticated()")`. Die Liste steht in der Spec unter „Was Spieler dürfen". Alles andere bleibt bei der Klassenregel.
 
+**Achtung — hier wird der Wächter aus Task 3 blind.** `SecurityCoverageTest` prüft nur
+**Klassen**-Annotationen. Eine Methodenregel überschreibt die Klassenregel; ein
+versehentliches `@PreAuthorize("isAuthenticated()")` an der falschen Methode öffnet sie für
+jeden Spieler, und der Abdeckungstest bleibt grün. Genau das tut dieser Task
+dutzendfach — und zwar absichtlich.
+
+Deshalb gehört in diesen Task ein **zweiter Abdeckungstest auf Methodenebene**: er listet
+jede Methode auf, deren Regel von der Klassenregel abweicht, und vergleicht sie gegen eine
+im Test gepflegte Erlaubnisliste. Wer künftig eine Methode öffnet, muss sie dort eintragen —
+sonst schlägt der Test fehl. Das ist der einzige Weg, die Erlaubnisse sichtbar zu halten,
+statt sie über 23 Dateien zu verstreuen.
+
 Für jeden Fund die zweite Leitfrage aus der Spec mitlaufen lassen: steckt eine Trainingszahl darin? Dann nicht öffnen.
 
 - [ ] **Step 4: Die zwei DTOs beschneiden**
