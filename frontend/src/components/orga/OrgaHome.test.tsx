@@ -4,26 +4,32 @@ import { MemoryRouter } from 'react-router-dom'
 import { OrgaHome } from './OrgaHome'
 
 describe('OrgaHome', () => {
-  it('zeigt vier Kacheln, jede verlinkt auf ihr eigenes Ziel', () => {
-    render(
-      <MemoryRouter>
-        <OrgaHome />
-      </MemoryRouter>,
-    )
-
-    expect(screen.getByRole('link', { name: /Einladungen/ })).toHaveAttribute('href', '/orga/einladungen')
-    expect(screen.getByRole('link', { name: /WhatsApp-Umfragen/ })).toHaveAttribute('href', '/orga/whatsapp-umfrage')
-    expect(screen.getByRole('link', { name: /Zähler/ })).toHaveAttribute('href', '/counter')
-    expect(screen.getByRole('link', { name: /Kalender/ })).toHaveAttribute('href', '/kalender')
+  it.each([
+    ['Counter', '/counter'],
+    ['WhatsApp-Umfragen', '/orga/whatsapp-umfrage'],
+    ['Trainerabrechnung', '/orga/trainerabrechnung'],
+    ['Kalender', '/kalender'],
+    ['Einladungen', '/orga/einladungen'],
+    ['Playmaker', '/orga/playmaker'],
+    ['Spielbogen', '/spielbogen'],
+  ])('Kachel %s zeigt auf %s', (name, ziel) => {
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
+    expect(screen.getByRole('link', { name: new RegExp(name) })).toHaveAttribute('href', ziel)
   })
 
-  it('hat keine Gegner-Kachel mehr — der Navigations-Tab GEGNER ist der Einstieg', () => {
-    render(
-      <MemoryRouter>
-        <OrgaHome />
-      </MemoryRouter>,
-    )
+  it('zeigt die drei Blöcke in der Reihenfolge oben, Weiteres, Selten', () => {
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
+    const ueberschriften = screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent)
+    expect(ueberschriften).toEqual(['Weiteres', 'Selten'])
+  })
 
+  it('nennt den Zähler Counter', () => {
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
+    expect(screen.queryByRole('link', { name: /Zähler/ })).toBeNull()
+  })
+
+  it('hat keine Gegner-Kachel — der Navigations-Tab GEGNER ist der Einstieg', () => {
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
     expect(screen.queryByRole('link', { name: /Gegner/ })).toBeNull()
   })
 })
