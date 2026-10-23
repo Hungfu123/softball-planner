@@ -28,7 +28,7 @@ describe('OrgaHome', () => {
     expect(screen.queryByRole('link', { name: /Zähler/ })).toBeNull()
   })
 
-  it('hat keine Gegner-Kachel — der Navigations-Tab GEGNER ist der Einstieg', () => {
+  it('hat keine Gegner-Kachel — der Einstieg ist der Reiter ANALYSE, dort der Chip „Gegner“', () => {
     render(<MemoryRouter><OrgaHome /></MemoryRouter>)
     expect(screen.queryByRole('link', { name: /Gegner/ })).toBeNull()
   })
