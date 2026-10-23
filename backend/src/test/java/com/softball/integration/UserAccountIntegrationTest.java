@@ -471,13 +471,67 @@ class UserAccountIntegrationTest {
         assertThat(playerRepository.findById(zweiter.getPlayerId()).orElseThrow().isArchived()).isFalse();
     }
 
+    /** Altbestand aus der Zeit vor der Regel: Superadmin, Spieler archiviert, Account gesperrt. */
+    private AppUser gesperrterArchivierterSuperadmin(final String name) {
+        final AppUser a = konto(name, Role.SUPERADMIN);
+        final Player p = playerRepository.findById(a.getPlayerId()).orElseThrow();
+        p.setArchived(true);
+        playerRepository.save(p);
+        appUserRepository.updateLocked(a.getId(), true);
+        return a;
+    }
+
     @Test
-    void ueberDenSpielerReaktivierenBleibtFuerEinenSuperadminErlaubt() {
-        final AppUser zweiter = konto("Zweiter7", Role.SUPERADMIN);
+    void ueberDenSpielerReaktivierenEntsperrtEinenGesperrtenSuperadminAltbestand() {
+        final AppUser zweiter = gesperrterArchivierterSuperadmin("Zweiter7");
 
         playerService.setArchived(zweiter.getPlayerId(), false, hung());
 
         assertThat(frisch(zweiter.getId()).isLocked()).isFalse();
+        assertThat(playerRepository.findById(zweiter.getPlayerId()).orElseThrow().isArchived()).isFalse();
+    }
+
+    @Test
+    void einGesperrterSuperadminAltbestandLaesstSichDirektEntsperren() {
+        final AppUser zweiter = konto("Zweiter8", Role.SUPERADMIN);
+        appUserRepository.updateLocked(zweiter.getId(), true);
+
+        userAccountService.setLocked(zweiter.getId(), false, hung());
+
+        assertThat(frisch(zweiter.getId()).isLocked()).isFalse();
+    }
+
+    @Test
+    void einGesperrterAccountKannNichtZumSuperadminBefoerdertWerden() throws Exception {
+        final AppUser gesperrt = konto("Gesperrt1", Role.ADMIN);
+        appUserRepository.updateLocked(gesperrt.getId(), true);
+
+        mockMvc.perform(put("/api/users/" + gesperrt.getId() + "/role").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"role\":\"SUPERADMIN\"}"))
+                .andExpect(status().isBadRequest());
+        assertThatThrownBy(() -> userAccountService.setRole(gesperrt.getId(), Role.SUPERADMIN, hung()))
+                .isInstanceOf(BusinessValidationException.class).hasMessageContaining("Entsperre");
+
+        assertThat(frisch(gesperrt.getId()).getRole()).isEqualTo(Role.ADMIN);
+        assertThat(frisch(gesperrt.getId()).isLocked()).isTrue();
+    }
+
+    @Test
+    void einArchivierterSpielerKannNichtZumSuperadminBefoerdertWerden() {
+        final AppUser a = konto("Ausgeschieden", Role.PLAYER);
+        playerService.setArchived(a.getPlayerId(), true, hung());
+
+        assertThatThrownBy(() -> userAccountService.setRole(a.getId(), Role.SUPERADMIN, hung()))
+                .isInstanceOf(BusinessValidationException.class).hasMessageContaining("Entsperre");
+    }
+
+    @Test
+    void einEntsperrterAccountLaesstSichZumSuperadminBefoerdern() {
+        final AppUser a = konto("Aufsteiger2", Role.ADMIN);
+
+        userAccountService.setRole(a.getId(), Role.SUPERADMIN, hung());
+
+        assertThat(frisch(a.getId()).getRole()).isEqualTo(Role.SUPERADMIN);
     }
 
     @Test
