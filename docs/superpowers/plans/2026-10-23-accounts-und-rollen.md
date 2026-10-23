@@ -550,6 +550,17 @@ Expected: FAIL.
 
 `V71__audit_event.sql` nach der Tabelle in der Spec, mit `user_id … ON DELETE SET NULL` und Indizes auf `(occurred_at DESC)` und `(user_id, occurred_at DESC)`.
 
+**Wo deine Migration geprüft wird — das überrascht sonst.** `application-test.properties`
+setzt `ddl-auto=create-drop` und `flyway.enabled=false`: die gesamte Backend-Suite baut das
+Schema aus den Entities und fährt **keine** Migration. Die einzige Stelle im Repo, die
+Flyway laufen lässt und danach `validate` anwendet, ist `AccountBootstrapWiringTest` (per
+`@TestPropertySource`). Dein V71 wird dort automatisch mitgeprüft, weil dieser Kontext alle
+Migrationen fährt — aber wenn es bricht, schlägt ein Test namens „Wiring" fehl, nicht einer
+mit „Audit" im Namen. Rechne damit, und such den Fehler nicht in deinem eigenen Test.
+
+`validate` prüft nur Spalten und Typen. Der `ON DELETE SET NULL` auf `user_id` und die
+Indizes werden dadurch **nicht** abgedeckt — dafür brauchst du Verhaltenstests.
+
 - [ ] **Step 4: Filter, Labels und Service schreiben**
 
 `AuditFilter` schreibt bei `POST`, `PUT`, `PATCH`, `DELETE` unter `/api/**` und nur bei 2xx. `AuditLabels` bildet Pfadmuster auf deutschen Klartext ab — **eine** Klasse, nicht verteilte `audit.record(...)`-Aufrufe in neunzehn Services. Was die Tabelle nicht kennt, landet als Methode plus Pfad.
