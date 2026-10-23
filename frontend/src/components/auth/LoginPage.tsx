@@ -43,7 +43,7 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
         <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-card p-6 space-y-4">
           <div>
             <label htmlFor="username" className="sr-only">Benutzer</label>
-            {/* Hidden username field for browser autofill UX */}
+            {/* Hidden username field for browser autofill UX; Uebergang: fester Benutzer "hung" bis Task 9 */}
             <input
               id="username"
               type="text"

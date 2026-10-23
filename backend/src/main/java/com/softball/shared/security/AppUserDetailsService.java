@@ -2,6 +2,8 @@ package com.softball.shared.security;
 
 import com.softball.domain.model.AppUser;
 import com.softball.domain.port.out.AppUserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AppUserDetailsService implements UserDetailsService {
 
+    private static final Logger log = LoggerFactory.getLogger(AppUserDetailsService.class);
+
     private final AppUserRepository appUserRepository;
 
     public AppUserDetailsService(final AppUserRepository appUserRepository) {
@@ -26,7 +30,13 @@ public class AppUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
         final AppUser user = appUserRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Unbekannter Benutzer"));
+                .orElseThrow(() -> {
+                    log.warn("Anmeldung fuer unbekannten Benutzer '{}'", username);
+                    return new UsernameNotFoundException("Unbekannter Benutzer");
+                });
+        if (user.isLocked()) {
+            log.warn("Anmeldung fuer gesperrten Account '{}' abgelehnt", user.getUsername());
+        }
         return User.builder()
                 .username(user.getUsername())
                 .password(user.getPasswordHash())

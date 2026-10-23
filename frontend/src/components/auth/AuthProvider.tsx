@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(password)
     try {
       const res = await fetch('/api/players', {
+        // Uebergang: fester Benutzername, bis die Anmeldung ein Benutzer-Feld bekommt (Accounts-Plan, Task 9)
         headers: { Authorization: `Basic ${btoa(`hung:${password}`)}` },
       })
       if (meiner !== versuch.current) return

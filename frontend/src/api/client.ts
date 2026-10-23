@@ -7,6 +7,7 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export function setAuth(password: string) {
+  // Uebergang: fester Benutzername, bis die Anmeldung ein Benutzer-Feld bekommt (Accounts-Plan, Task 9)
   const creds = btoa(`hung:${password}`)
   localStorage.setItem('auth', creds)
 }

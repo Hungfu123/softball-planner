@@ -1,7 +1,7 @@
 package com.softball.integration;
 
+import com.softball.TestAccounts;
 import com.softball.TestcontainersConfig;
-import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
 import com.softball.domain.model.AppUser;
 import com.softball.domain.model.Player;
 import com.softball.domain.model.Role;
@@ -9,6 +9,7 @@ import com.softball.domain.port.out.AppUserRepository;
 import com.softball.domain.port.out.PlayerRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,9 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
+@ExtendWith(TestAccounts.class)
 class AuthenticationIntegrationTest {
 
-    private static final String PASSWORD = "test"; // app.auth.password im Testprofil
+    private static final String PASSWORD = TestAccounts.PASSWORD;
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,16 +47,13 @@ class AuthenticationIntegrationTest {
     @Autowired
     private PlayerRepository playerRepository;
 
-    @Autowired
-    private SpringPlayerRepository springPlayerRepository;
-
     private final List<Long> angelegt = new ArrayList<>();
     private final List<Long> spieler = new ArrayList<>();
 
     @AfterEach
     void tearDown() {
         angelegt.forEach(appUserRepository::deleteById);
-        spieler.forEach(springPlayerRepository::deleteById);
+        spieler.forEach(playerRepository::deleteById);
     }
 
     @Test
@@ -71,7 +70,7 @@ class AuthenticationIntegrationTest {
 
     @Test
     void lehntEinenGesperrtenAccountAb() throws Exception {
-        legeAn("gesperrt", true);
+        legeAn("gesperrt", true, Role.PLAYER);
 
         mockMvc.perform(get("/api/players").with(httpBasic("gesperrt", PASSWORD)))
                 .andExpect(status().isUnauthorized());
@@ -79,20 +78,20 @@ class AuthenticationIntegrationTest {
 
     @Test
     void meldetEinenEntsperrtenAccountAn() throws Exception {
-        legeAn("entsperrt", false);
+        legeAn("entsperrt", false, Role.SUPERADMIN);
 
         mockMvc.perform(get("/api/players").with(httpBasic("entsperrt", PASSWORD)))
                 .andExpect(status().isOk());
     }
 
-    private void legeAn(final String username, final boolean locked) {
+    private void legeAn(final String username, final boolean locked, final Role role) {
         final AppUser user = new AppUser();
         final Long playerId = playerRepository.save(new Player(username)).getId();
         spieler.add(playerId);
         user.setPlayerId(playerId);
         user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(PASSWORD));
-        user.setRole(Role.PLAYER);
+        user.setRole(role);
         user.setLocked(locked);
         user.setCreatedAt(Instant.now());
         angelegt.add(appUserRepository.save(user).getId());
