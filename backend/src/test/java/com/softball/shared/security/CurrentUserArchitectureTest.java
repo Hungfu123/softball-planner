@@ -44,7 +44,12 @@ class CurrentUserArchitectureTest {
      * GRENZEN, der Test ist nicht lueckenlos: generische Typen ({@code ObjectProvider<CurrentUser>},
      * {@code List<X>}), Setter- und Methodenparameter, Felder der Oberklassen, per
      * {@code ApplicationContext.getBean} geholte Beans und Lambdas bleiben unsichtbar. Nur
-     * Klassen unter {@code com.softball} werden betreten. Er ist ein Netz fuer den haeufigen Fall
+     * Klassen unter {@code com.softball} werden betreten. Test-Klassen unter {@code com.softball} gehoeren
+     * zum Scan; nicht-statische innere Klassen fallen heraus, weil Springs Scanner nur unabhaengige Klassen
+     * liefert. Bewusst konservativ: der Scan folgt ALLEN Implementierungen eines Ports, auch solchen, die
+     * Spring fuer den Aufrufer nicht verdrahtet. Bei zwei Implementierungen kann er anschlagen, obwohl die
+     * echte Verdrahtung sauber ist. Das ist gewollt und kein Bug: ein Fehlalarm kostet eine Minute, ein
+     * uebersehener Treffer einen Ausfall. Er ist ein Netz fuer den haeufigen Fall
      * (Konstruktor- oder Feldinjektion), kein Beweis.
      */
     @Test
@@ -72,7 +77,7 @@ class CurrentUserArchitectureTest {
                     return true;
                 }
             }
-            return false;
+            // Abstrakte Klassen tragen eigene Felder und Konstruktoren: weiter unten ebenfalls pruefen.
         }
         for (final Constructor<?> c : type.getDeclaredConstructors()) {
             for (final Class<?> p : c.getParameterTypes()) {
