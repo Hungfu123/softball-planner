@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.PlayCategoryRequest;
 import com.softball.adapter.dto.PlayCategoryResponse;
 import com.softball.application.PlayCategoryService;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/play-categories")
 public class PlayCategoryController {

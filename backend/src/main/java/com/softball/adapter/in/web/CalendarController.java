@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.GameDayResponse;
 import com.softball.adapter.dto.TrainingResponse;
 import com.softball.application.GameDayService;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
  * Abonnierbar/importierbar in jeden Kalender. Reine Serialisierung (Adapter-Layer).
  * Öffentlich (permitAll in SecurityConfig) damit Kalender-Apps abonnieren können.
  */
+@PreAuthorize("permitAll()")
 @RestController
 public class CalendarController {
 

@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.*;
 import com.softball.domain.model.GameDay;
 import com.softball.domain.model.GameStaff;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api")
 public class GameDayController {
