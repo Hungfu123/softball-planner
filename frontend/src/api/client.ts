@@ -23,20 +23,32 @@ export function hasAuth(): boolean {
 /** Feuert, wenn der Server die gespeicherten Zugangsdaten ablehnt. Der AuthProvider hoert darauf. */
 export const UNAUTHORIZED_EVENT = 'auth:unauthorized'
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
+/**
+ * fetch mit Basic-Auth und der 401-Behandlung. Alles, was /api anspricht, laeuft hier durch —
+ * auch die Aufrufe, die ihre Antwort selbst auswerten (Download, Statuscodes).
+ */
+async function senden(url: string, options?: RequestInit): Promise<Response> {
   const gesendet = localStorage.getItem('auth')
-  const res = await fetch(`${API}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    ...options,
-  })
+  const res = await fetch(`${API}${url}`, options)
   if (res.status === 401 && gesendet !== null) {
     // Nur abmelden, wenn es noch die Zugangsdaten sind, mit denen die Anfrage lief: eine
     // verspaetete 401 darf eine Anmeldung, die inzwischen neu erfolgte, nicht wegraeumen.
+    // Bekannte Luecke: verglichen wird die Zeichenfolge. Meldet sich jemand mit IDENTISCHEN
+    // Zugangsdaten neu an, obwohl der Server sie zwischendurch abgelehnt hat, raeumt eine
+    // spaete 401 der alten Sitzung auch diese Anmeldung weg. Praktisch ausgeschlossen.
     if (localStorage.getItem('auth') === gesendet) {
       clearAuth()
       window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
     }
   }
+  return res
+}
+
+export async function request<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await senden(url, {
+    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+    ...options,
+  })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new Error(body?.error ?? `Fehler ${res.status}`)
@@ -187,7 +199,7 @@ export const getAllGameDays = () => request<GameDayResponse[]>('/gamedays/all')
 
 /** Lädt den ICS-Kalender (mit Auth, da Basic-Auth global) und triggert den Download. */
 export async function downloadCalendarIcs(trainings: boolean) {
-  const res = await fetch(`${API}/calendar.ics?trainings=${trainings}`, { headers: getAuthHeaders() })
+  const res = await senden(`/calendar.ics?trainings=${trainings}`, { headers: getAuthHeaders() })
   if (!res.ok) throw new Error('Kalender-Export fehlgeschlagen')
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
@@ -465,7 +477,7 @@ export const getTrainingPlansByTrainingIds = (ids: number[]) =>
   request<Record<string, TrainingPlanResponse[]>>(`/training-plans/by-training-ids?ids=${ids.join(',')}`)
 
 export const generateTrainingPlan = async (data: GeneratePlanRequest): Promise<TrainingPlanResponse> => {
-  const res = await fetch(`${API}/training-plans/generate`, {
+  const res = await senden('/training-plans/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),

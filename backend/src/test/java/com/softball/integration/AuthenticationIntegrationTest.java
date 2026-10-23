@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,13 +85,37 @@ class AuthenticationIntegrationTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Das Frontend kodiert Name und Passwort als UTF-8 (setAuth in api/client.ts). Der Header wird
+     * hier von Hand gebaut, statt httpBasic() zu trauen, damit die Kette so geprueft ist, wie
+     * der Browser sie schickt.
+     */
+    @Test
+    void liestUmlauteInBenutzernameUndPasswortAlsUtf8() throws Exception {
+        legeAn("jörg", false, Role.SUPERADMIN, "pässwort");
+
+        final String basic = java.util.Base64.getEncoder()
+                .encodeToString("jörg:pässwort".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        mockMvc.perform(get("/api/players").header(AUTHORIZATION, "Basic " + basic))
+                .andExpect(status().isOk());
+
+        final String falsch = java.util.Base64.getEncoder()
+                .encodeToString("jörg:passwort".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        mockMvc.perform(get("/api/players").header(AUTHORIZATION, "Basic " + falsch))
+                .andExpect(status().isUnauthorized());
+    }
+
     private void legeAn(final String username, final boolean locked, final Role role) {
+        legeAn(username, locked, role, PASSWORD);
+    }
+
+    private void legeAn(final String username, final boolean locked, final Role role, final String passwort) {
         final AppUser user = new AppUser();
         final Long playerId = playerRepository.save(new Player(username)).getId();
         spieler.add(playerId);
         user.setPlayerId(playerId);
         user.setUsername(username);
-        user.setPasswordHash(passwordEncoder.encode(PASSWORD));
+        user.setPasswordHash(passwordEncoder.encode(passwort));
         user.setRole(role);
         user.setLocked(locked);
         user.setCreatedAt(Instant.now());
