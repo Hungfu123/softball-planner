@@ -85,11 +85,13 @@ export function Layout() {
               </Link>
             )}
             {/*
-              Marke erst ab lg. Darunter kostet sie 44px (Logo + gap) und genau die
-              fehlen zum Zentrieren: die fünf Tabs brauchen 331px (gemessen bei 390px
-              Viewport), die Leiste hat 366px innen. Mit Logo bliebe nur 322px Platz — die
-              Tabs liefen über; ohne sind es 35px Luft und der Block steht mittig. Im
-              PWA-Standalone-Modus trägt ohnehin das App-Icon die Marke.
+              Marke erst ab lg. Darunter kostet sie 44px (Logo + gap); verfügbar wären
+              dann 322px von 366px Innenbreite (390px Viewport). Mit geladener Saira
+              Condensed brauchen die fünf Tabs 264px (gemessen) — das Logo passte. Mit der
+              Fallback-Schrift, also beim ersten Paint vor dem Webfont, wären es 331px
+              (früherer Lauf, vermutlich Fallback — nicht verifiziert) und es passte nicht.
+              Deshalb bleibt sie unten weg. Im PWA-Standalone-Modus trägt ohnehin das
+              App-Icon die Marke.
               Auf Unterseiten zeigt links der Chevron nach "/" — das Logo wäre dort
               zusätzlich ein zweiter Link aufs selbe Ziel.
             */}
@@ -120,10 +122,9 @@ export function Layout() {
                 volle Labels) braucht 597px (gemessen, fünf Tabs). Bei sm (640px) hat die
                 Leiste nur 592px innen — 5px zu wenig, die Leiste wäre abgeschnitten;
                 ab lg stehen 821px zur Verfügung (1024px, mit Logo). Bis 1023px
-                bleibt die kompakte Variante — 264px gemessen (Saira Condensed sichtbar geladen).
-                331px stammt aus einem früheren Lauf, vermutlich vor dem Laden der Webfont
-                (Fallback-Schrift) — nicht verifiziert. Innenbreite bei 390px: 366px gemessen. Beide passen, scrollWidth <= clientWidth, data-scroll-hint false.
-                Sie hat die 44px-Targets, die auf dem Tablet ohnehin richtig sind.
+                bleibt die kompakte Variante: 264px gemessen gegen 366px Innenbreite bei
+                390px, scrollWidth <= clientWidth, data-scroll-hint false. Die kompakte
+                Variante hat die 44px-Targets, die auf dem Tablet ohnehin richtig sind.
               */}
               <div className="flex items-stretch gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
                 {TABS.map(tab => {

@@ -22,6 +22,20 @@ describe('Layout Reiterleiste', () => {
     expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(5)
   })
 
+  it('zeigt die richtigen fünf Reiter in dieser Reihenfolge mit diesen Zielen', () => {
+    renderAt('/')
+    const tabs = screen.getAllByRole('link').filter(isTab)
+    expect(tabs.map(t => t.getAttribute('href'))).toEqual(['/', '/training', '/players', '/stats', '/orga'])
+    // Jeder Reiter trägt Kurz- und Langlabel im DOM (CSS blendet eines aus), Kurzlabel zuerst.
+    expect(tabs.map(t => t.textContent)).toEqual([
+      'SpieleSpielbetrieb',
+      'TrainingTraining',
+      'SpielerSpieler',
+      'AnalyseAnalyse',
+      'OrgaOrga',
+    ])
+  })
+
   it.each(['/stats', '/teams', '/teams/spiele'])('markiert ANALYSE auf %s', (pfad) => {
     renderAt(pfad)
     expect(screen.getByRole('link', { name: /Analyse/ })).toHaveClass('bg-white')
