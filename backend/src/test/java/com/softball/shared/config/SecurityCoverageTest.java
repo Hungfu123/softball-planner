@@ -24,7 +24,7 @@ class SecurityCoverageTest {
     private static final String OFFEN = "permitAll()";
 
     @Test
-    void jederControllerAusserDemKalenderTraegtExaktDieAdminRegel() throws Exception {
+    void jederControllerAusserDemKalenderTraegtExaktDieAdminRegel() throws ClassNotFoundException {
         final List<Class<?>> controller = produktiveController();
 
         // Gegen Leerlauf: ein Scan ohne Treffer waere sonst gruen, ohne zu pruefen.
@@ -40,7 +40,7 @@ class SecurityCoverageTest {
     }
 
     @Test
-    void nurDerKalenderIstBewusstOffen() throws Exception {
+    void nurDerKalenderIstBewusstOffen() throws ClassNotFoundException {
         final List<String> offen = produktiveController().stream()
                 .filter(c -> OFFEN.equals(regel(c)))
                 .map(Class::getSimpleName)
