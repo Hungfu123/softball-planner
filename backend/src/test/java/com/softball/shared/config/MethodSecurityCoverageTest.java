@@ -56,6 +56,7 @@ class MethodSecurityCoverageTest {
         "GameDayController#getLineups",
         "GameDayController#getStats",
         // LeagueTeamController
+        "LeagueTeamController#getTeamDirectory",
         "LeagueTeamController#getTeams",
         "LeagueTeamController#getStandings",
         // LeagueResultController
