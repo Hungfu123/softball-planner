@@ -13,8 +13,11 @@ import { OrgaHome } from '@/components/orga/OrgaHome'
 import { WhatsappPollPage } from '@/components/orga/WhatsappPollPage'
 import { TeamDirectoryPage } from '@/components/orga/TeamDirectoryPage'
 import { GameLogPage } from '@/components/orga/GameLogPage'
+import { KontoPage } from '@/components/account/KontoPage'
 import {
+  LazyAccounts,
   LazyCalendar,
+  LazyHistorie,
   LazyCounter,
   LazyTrainerabrechnung,
   LazyPlaymaker,
@@ -56,6 +59,10 @@ export const routes: RouteObject[] = [
       { path: '/orga/trainerabrechnung', element: <RequireRole mind="ADMIN"><LazyTrainerabrechnung /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker', element: <LazyPlaymaker />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker/neu', element: <RequireRole mind="ADMIN"><LazyPlaySetup /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/accounts', element: <RequireRole mind="ADMIN"><LazyAccounts /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/historie', element: <RequireRole mind="SUPERADMIN"><LazyHistorie /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      // Das eigene Konto: jede Rolle, daher ohne RequireRole.
+      { path: '/konto', element: <KontoPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams/spiele', element: <GameLogPage />, errorElement: <ChunkErrorBoundary /> },
     ],

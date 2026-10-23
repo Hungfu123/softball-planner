@@ -114,13 +114,13 @@ describe('KontoMenu', () => {
     expect(menu.parentElement?.parentElement).toBe(document.body)
   })
 
-  it('bietet Mein Profil mit der playerId und Abmelden', () => {
+  it('bietet einem Spieler Mein Profil mit der playerId, Konto und Abmelden', () => {
     auth.me = SPIELER
     renderAt('/')
     fireEvent.click(knopf())
     const menu = within(screen.getByRole('menu'))
     expect(menu.getByRole('menuitem', { name: 'Mein Profil' })).toHaveAttribute('href', '/players/9')
-    expect(menu.getAllByRole('menuitem').map(e => e.textContent)).toEqual(['Mein Profil', 'Abmelden'])
+    expect(menu.getAllByRole('menuitem').map(e => e.textContent)).toEqual(['Mein Profil', 'Konto & Passwort', 'Abmelden'])
   })
 
   it('lässt Mein Profil weg, wenn der Account an keinem Spieler hängt', () => {
@@ -156,6 +156,53 @@ describe('KontoMenu', () => {
     expect(screen.queryByRole('menuitem', { name: 'Mein Profil' })).toBeNull()
     fireEvent.click(screen.getByRole('menuitem', { name: 'Abmelden' }))
     expect(auth.logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('führt Konto & Passwort jede Rolle zu /konto', () => {
+    for (const me of [SPIELER, ADMIN, SUPER]) {
+      auth.me = me
+      const { unmount } = renderAt('/')
+      fireEvent.click(knopf())
+      expect(screen.getByRole('menuitem', { name: 'Konto & Passwort' })).toHaveAttribute('href', '/konto')
+      unmount()
+    }
+  })
+
+  it('zeigt Accounts erst ab Admin', () => {
+    auth.me = SPIELER
+    const spieler = renderAt('/')
+    fireEvent.click(knopf())
+    expect(screen.queryByRole('menuitem', { name: 'Accounts' })).toBeNull()
+    spieler.unmount()
+
+    for (const me of [ADMIN, SUPER]) {
+      auth.me = me
+      const { unmount } = renderAt('/')
+      fireEvent.click(knopf())
+      expect(screen.getByRole('menuitem', { name: 'Accounts' })).toHaveAttribute('href', '/orga/accounts')
+      unmount()
+    }
+  })
+
+  it('zeigt Historie nur dem Superadmin', () => {
+    for (const me of [SPIELER, ADMIN]) {
+      auth.me = me
+      const { unmount } = renderAt('/')
+      fireEvent.click(knopf())
+      expect(screen.queryByRole('menuitem', { name: 'Historie' })).toBeNull()
+      unmount()
+    }
+    auth.me = SUPER
+    renderAt('/')
+    fireEvent.click(knopf())
+    expect(screen.getByRole('menuitem', { name: 'Historie' })).toHaveAttribute('href', '/orga/historie')
+  })
+
+  it('bietet ohne Auskunft vom Server nur Abmelden, keine Verwaltung', () => {
+    auth.me = null
+    renderAt('/')
+    fireEvent.click(knopf())
+    expect(screen.getAllByRole('menuitem').map(e => e.textContent)).toEqual(['Abmelden'])
   })
 
   it('jeder Menüeintrag ist mindestens 44 px hoch', () => {

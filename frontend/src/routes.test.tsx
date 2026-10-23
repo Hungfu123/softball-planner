@@ -23,6 +23,9 @@ const PROTECTED_PATHS = [
   '/orga',
   '/orga/einladungen',
   '/orga/whatsapp-umfrage',
+  '/orga/accounts',
+  '/orga/historie',
+  '/konto',
   '/gameday/1',
   '/gameday/1/export',
   '/gameday/1/scoring/0',
@@ -152,7 +155,7 @@ describe('Routing: Rollen', () => {
     vi.unstubAllGlobals()
   })
 
-  const NUR_ADMIN = ['/players', '/training', '/orga', '/spielbogen', '/spielbogen/new', '/orga/trainerabrechnung', '/orga/einladungen', '/orga/whatsapp-umfrage', '/spielbogen/1', '/gameday/1', '/orga/playmaker/neu', '/orga/playmaker/1/bearbeiten']
+  const NUR_ADMIN = ['/players', '/training', '/orga', '/spielbogen', '/spielbogen/new', '/orga/trainerabrechnung', '/orga/einladungen', '/orga/whatsapp-umfrage', '/orga/accounts', '/spielbogen/1', '/gameday/1', '/orga/playmaker/neu', '/orga/playmaker/1/bearbeiten']
 
   it.each(NUR_ADMIN)('schickt einen Spieler von %s zurück aufs Dashboard', async pfad => {
     const router = await oeffne(pfad, konto('PLAYER'))
@@ -162,6 +165,21 @@ describe('Routing: Rollen', () => {
   it.each(NUR_ADMIN)('lässt einen Admin auf %s durch', async pfad => {
     const router = await oeffne(pfad, konto('ADMIN'))
     expect(router.state.location.pathname).toBe(pfad)
+  })
+
+  it.each(['PLAYER', 'ADMIN', 'SUPERADMIN'] as const)('lässt %s auf /konto', async role => {
+    const router = await oeffne('/konto', konto(role))
+    expect(router.state.location.pathname).toBe('/konto')
+  })
+
+  it.each(['PLAYER', 'ADMIN'] as const)('schickt %s von /orga/historie zurück aufs Dashboard', async role => {
+    const router = await oeffne('/orga/historie', konto(role))
+    expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('lässt den Superadmin auf /orga/historie', async () => {
+    const router = await oeffne('/orga/historie', konto('SUPERADMIN'))
+    expect(router.state.location.pathname).toBe('/orga/historie')
   })
 
   it.each(['/stats', '/kalender', '/players/5', '/teams', '/gameday/1/export'])('lässt einen Spieler auf %s', async pfad => {
