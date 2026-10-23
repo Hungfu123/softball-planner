@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
-import { Home, Dumbbell, Users, BarChart3, ClipboardList, Mail, type LucideIcon, LineChart } from 'lucide-react'
+import { Home, Dumbbell, Users, BarChart3, Mail, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { WhatsappStatusBanner } from './WhatsappStatusBanner'
 import { useToast } from '@/hooks/useToast'
@@ -33,9 +33,7 @@ const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon;
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
-  { path: '/teams/spiele', label: 'Analyse', shortLabel: 'Analyse', Icon: LineChart, extraPaths: ['/teams'] },
-  { path: '/stats', label: 'Statistik', shortLabel: 'Stats', Icon: BarChart3 },
-  { path: '/spielbogen', label: 'Spielbogen', shortLabel: 'Bogen', Icon: ClipboardList },
+  { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
   { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender'] },
 ]
 
@@ -88,9 +86,9 @@ export function Layout() {
             )}
             {/*
               Marke erst ab lg. Darunter kostet sie 44px (Logo + gap) und genau die
-              fehlen zum Zentrieren: die Tabs brauchen 301px, ein 390er-Viewport hat
-              366px innen. Mit Logo bleiben 21px Luft und der Block sitzt sichtbar
-              links; ohne sind es 65px und er steht mittig im Header. Im
+              fehlen zum Zentrieren: die fünf Tabs brauchen 331px (gemessen bei 390px
+              Viewport), die Leiste hat 366px innen. Mit Logo blieben 322px — die Tabs
+              liefen über; ohne sind es 35px Luft und der Block steht mittig. Im
               PWA-Standalone-Modus trägt ohnehin das App-Icon die Marke.
               Auf Unterseiten zeigt links der Chevron nach "/" — das Logo wäre dort
               zusätzlich ein zweiter Link aufs selbe Ziel.
@@ -121,7 +119,7 @@ export function Layout() {
                 Der Layout-Wechsel liegt bei lg, nicht sm: die breite Variante (Zeile,
                 volle Labels) braucht 620px und passt erst ab ~860px Viewport. Bei sm
                 (640px) wäre sie 220px zu früh und die Leiste abgeschnitten. Bis 1023px
-                bleibt die kompakte Variante — passt mit 284px bequem und hat die
+                bleibt die kompakte Variante — passt mit 331px (fünf Tabs) und hat die
                 44px-Targets, die auf dem Tablet ohnehin richtig sind.
               */}
               <div className="flex items-stretch gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
