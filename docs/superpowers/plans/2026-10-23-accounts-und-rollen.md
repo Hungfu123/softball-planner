@@ -600,7 +600,7 @@ git commit -m "✨ Historie: wer war da, wer hat was geändert"
 - [ ] **Step 1: Die Tests schreiben**
 
 ```tsx
-it('schickt den eingegebenen Benutzernamen, nicht admin', async () => { })
+it('schickt den eingegebenen Benutzernamen, nicht den fest verdrahteten', async () => { })
 it('zeigt bei 401 die Anmeldemaske und räumt localStorage auf', async () => { })
 it('bleibt bei Netzfehler angemeldet', async () => { })   // PWA offline
 it('prüft beim Laden gegen /api/me und zeigt solange den Ladezustand', async () => { })
