@@ -1,6 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
-import { Dashboard } from '@/components/dashboard/Dashboard'
+import { Startseite } from '@/components/dashboard/Startseite'
 import { PlayerManager } from '@/components/players/PlayerManager'
 import { PlayerProfilePage } from '@/components/players/PlayerProfilePage'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
@@ -41,7 +41,7 @@ export const routes: RouteObject[] = [
     element: <RequireAuth><Layout /></RequireAuth>,
     errorElement: <ChunkErrorBoundary />,
     children: [
-      { path: '/', element: <Dashboard />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/', element: <Startseite />, errorElement: <ChunkErrorBoundary /> },
       { path: '/kalender', element: <LazyCalendar />, errorElement: <ChunkErrorBoundary /> },
       { path: '/training', element: <RequireRole mind="ADMIN"><LazyTrainingToday /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/players', element: <RequireRole mind="ADMIN"><PlayerManager /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
