@@ -7,7 +7,7 @@ import { NavLink } from 'react-router-dom'
  */
 export function AnalysisModeTabs() {
   const tabCls = ({ isActive }: { isActive: boolean }) =>
-    `font-display text-[11px] font-bold tracking-widest uppercase rounded-full px-4 py-1.5 transition-colors cursor-pointer ${
+    `font-display text-[11px] font-bold tracking-widest uppercase inline-flex items-center justify-center min-h-11 rounded-full px-4 transition-colors cursor-pointer ${
       isActive ? 'bg-navy-800 text-white' : 'border border-cream-300 text-gray-600 hover:bg-cream-100'
     }`
   return (

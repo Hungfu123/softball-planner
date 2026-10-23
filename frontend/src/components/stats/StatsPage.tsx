@@ -266,7 +266,7 @@ export function StatsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2 sm:gap-3 mb-4 pb-3 border-b border-cream-300">
+        <div className="flex items-center gap-2 sm:gap-3 mb-4">
           <h1 className="font-headline text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h1>
           <button
             onClick={() => setShowGlossary(true)}
