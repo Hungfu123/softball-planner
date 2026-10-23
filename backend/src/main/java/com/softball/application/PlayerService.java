@@ -1,5 +1,6 @@
 package com.softball.application;
 
+import com.softball.domain.model.AppUser;
 import com.softball.domain.model.Gender;
 import com.softball.domain.model.Player;
 import com.softball.domain.model.PositionSlot;
@@ -123,8 +124,9 @@ public class PlayerService {
      * sonst würde die Spielhistorie und die Statistiken anderer Spieler beschädigt.
      */
     @Transactional
-    public void delete(final Long id) {
+    public void delete(final Long id, final AppUser actor) {
         final Player player = findById(id);
+        superadminGuard.pruefeSpielerAenderbar(id, actor);
 
         if (atBatRepository.existsByPlayerId(id)
             || baseRunningEventRepository.existsByRunnerPlayerId(id)
@@ -156,8 +158,9 @@ public class PlayerService {
      * Reaktivieren wieder entsperrt.
      */
     @Transactional
-    public Player setArchived(final Long id, final boolean archived) {
+    public Player setArchived(final Long id, final boolean archived, final AppUser actor) {
         final Player player = findById(id);
+        superadminGuard.pruefeSpielerAenderbar(id, actor);
         if (archived && !player.isArchived()) {
             superadminGuard.pruefeSpielerNichtLetzter(id, "Spieler '" + player.getName()
                 + "' ist der letzte Superadmin und kann nicht archiviert werden: sein Account würde gesperrt.");

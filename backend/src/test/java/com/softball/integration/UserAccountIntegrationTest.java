@@ -431,7 +431,7 @@ class UserAccountIntegrationTest {
     void spielerArchivierenSperrtDenAccount() {
         final AppUser a = konto("Archivierbar", Role.PLAYER);
 
-        playerService.setArchived(a.getPlayerId(), true);
+        playerService.setArchived(a.getPlayerId(), true, hung());
 
         assertThat(frisch(a.getId()).isLocked()).isTrue();
     }
@@ -439,9 +439,9 @@ class UserAccountIntegrationTest {
     @Test
     void spielerReaktivierenEntsperrtDenAccount() {
         final AppUser a = konto("Zurueck", Role.PLAYER);
-        playerService.setArchived(a.getPlayerId(), true);
+        playerService.setArchived(a.getPlayerId(), true, hung());
 
-        playerService.setArchived(a.getPlayerId(), false);
+        playerService.setArchived(a.getPlayerId(), false, hung());
 
         assertThat(frisch(a.getId()).isLocked()).isFalse();
     }
@@ -451,7 +451,7 @@ class UserAccountIntegrationTest {
         final AppUser a = konto("Absichtlich", Role.PLAYER);
         appUserRepository.updateLocked(a.getId(), true);
 
-        playerService.setArchived(a.getPlayerId(), false); // Spieler war gar nicht archiviert
+        playerService.setArchived(a.getPlayerId(), false, hung()); // Spieler war gar nicht archiviert
 
         assertThat(frisch(a.getId()).isLocked()).isTrue();
     }
@@ -460,7 +460,7 @@ class UserAccountIntegrationTest {
     void spielerLoeschenLoeschtDenAccountMit() {
         final AppUser a = konto("Loeschbar", Role.PLAYER);
 
-        playerService.delete(a.getPlayerId());
+        playerService.delete(a.getPlayerId(), hung());
 
         assertThat(appUserRepository.findById(a.getId())).isEmpty();
     }
@@ -469,7 +469,7 @@ class UserAccountIntegrationTest {
     void spielerLoeschenLehntDenLetztenSuperadminAb() {
         final Long playerId = hung().getPlayerId();
 
-        assertThatThrownBy(() -> playerService.delete(playerId))
+        assertThatThrownBy(() -> playerService.delete(playerId, hung()))
                 .isInstanceOf(BusinessValidationException.class).hasMessageContaining("letzte Superadmin");
 
         assertThat(playerRepository.existsById(playerId)).isTrue();
@@ -480,7 +480,7 @@ class UserAccountIntegrationTest {
     void spielerArchivierenLehntDenLetztenSuperadminAb() {
         final Long playerId = hung().getPlayerId();
 
-        assertThatThrownBy(() -> playerService.setArchived(playerId, true))
+        assertThatThrownBy(() -> playerService.setArchived(playerId, true, hung()))
                 .isInstanceOf(BusinessValidationException.class).hasMessageContaining("letzte Superadmin");
 
         assertThat(playerRepository.findById(playerId).orElseThrow().isArchived()).isFalse();
@@ -488,13 +488,46 @@ class UserAccountIntegrationTest {
     }
 
     @Test
-    void mitZweitemSuperadminDarfDerSpielerDesZweitenGeloeschtWerden() {
+    void einSuperadminDarfDenSpielerEinesZweitenSuperadminsLoeschen() {
         final AppUser zweiter = konto("Zweiter2", Role.SUPERADMIN); // hung bleibt ungesperrt uebrig
 
-        playerService.delete(zweiter.getPlayerId());
+        playerService.delete(zweiter.getPlayerId(), hung());
 
         assertThat(appUserRepository.findById(zweiter.getId())).isEmpty();
         assertThat(appUserRepository.findByUsername(TestAccounts.SUPERADMIN)).isPresent();
+    }
+
+    @Test
+    void einAdminDarfUeberDenSpielerKeinenSuperadminLoeschenArchivierenOderReaktivieren() throws Exception {
+        konto("Verwalter3", Role.ADMIN);
+        final AppUser zweiter = konto("Zweiter3", Role.SUPERADMIN); // nicht der letzte: der Guard allein liesse es durch
+        final String id = String.valueOf(zweiter.getPlayerId());
+
+        mockMvc.perform(delete("/api/players/" + id).with(als("verwalter3", "ADMIN")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/players/" + id + "/archive").with(als("verwalter3", "ADMIN")))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/players/" + id + "/unarchive").with(als("verwalter3", "ADMIN")))
+                .andExpect(status().isForbidden());
+
+        assertThat(appUserRepository.findById(zweiter.getId())).isPresent();
+        assertThat(frisch(zweiter.getId()).isLocked()).isFalse();
+        assertThat(playerRepository.findById(zweiter.getPlayerId()).orElseThrow().isArchived()).isFalse();
+    }
+
+    @Test
+    void einAdminDarfSpielerArchivierenUndLoeschenDieKeinenSuperadminTragen() throws Exception {
+        konto("Verwalter4", Role.ADMIN);
+        final AppUser spieler = konto("Gewoehnlich", Role.PLAYER);
+        final AppUser kollege = konto("Kollege", Role.ADMIN);
+
+        mockMvc.perform(put("/api/players/" + spieler.getPlayerId() + "/archive").with(als("verwalter4", "ADMIN")))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/players/" + kollege.getPlayerId()).with(als("verwalter4", "ADMIN")))
+                .andExpect(status().isNoContent());
+
+        assertThat(frisch(spieler.getId()).isLocked()).isTrue();
+        assertThat(appUserRepository.findById(kollege.getId())).isEmpty();
     }
 
     @Test
