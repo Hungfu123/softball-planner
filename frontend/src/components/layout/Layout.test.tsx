@@ -27,6 +27,11 @@ describe('Layout Reiterleiste', () => {
     expect(screen.getByRole('link', { name: /Analyse/ })).toHaveClass('bg-white')
   })
 
+  it.each(['/spielbogen', '/spielbogen/new', '/kalender'])('markiert ORGA auf %s', (pfad) => {
+    renderAt(pfad)
+    expect(screen.getByRole('link', { name: /Orga/ })).toHaveClass('bg-white')
+  })
+
   it('hat keinen Spielbogen-Reiter mehr', () => {
     renderAt('/')
     expect(screen.queryByRole('link', { name: /Bogen|Spielbogen/ })).toBeNull()

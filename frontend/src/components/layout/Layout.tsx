@@ -34,7 +34,7 @@ const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon;
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
-  { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender'] },
+  { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender', '/spielbogen'] },
 ]
 
 export function Layout() {
@@ -87,8 +87,8 @@ export function Layout() {
             {/*
               Marke erst ab lg. Darunter kostet sie 44px (Logo + gap) und genau die
               fehlen zum Zentrieren: die fünf Tabs brauchen 331px (gemessen bei 390px
-              Viewport), die Leiste hat 366px innen. Mit Logo blieben 322px — die Tabs
-              liefen über; ohne sind es 35px Luft und der Block steht mittig. Im
+              Viewport), die Leiste hat 366px innen. Mit Logo bliebe nur 322px Platz — die
+              Tabs liefen über; ohne sind es 35px Luft und der Block steht mittig. Im
               PWA-Standalone-Modus trägt ohnehin das App-Icon die Marke.
               Auf Unterseiten zeigt links der Chevron nach "/" — das Logo wäre dort
               zusätzlich ein zweiter Link aufs selbe Ziel.
@@ -117,8 +117,9 @@ export function Layout() {
                 Kompakt beidseitig auto = zentriert, ab lg nur links = rechtsbündig.
 
                 Der Layout-Wechsel liegt bei lg, nicht sm: die breite Variante (Zeile,
-                volle Labels) braucht 620px und passt erst ab ~860px Viewport. Bei sm
-                (640px) wäre sie 220px zu früh und die Leiste abgeschnitten. Bis 1023px
+                volle Labels) braucht 597px (gemessen, fünf Tabs). Bei sm (640px) hat die
+                Leiste nur 592px innen — 5px zu wenig, die Leiste wäre abgeschnitten;
+                ab lg stehen 821px zur Verfügung (1024px, mit Logo). Bis 1023px
                 bleibt die kompakte Variante — passt mit 331px (fünf Tabs) und hat die
                 44px-Targets, die auf dem Tablet ohnehin richtig sind.
               */}
