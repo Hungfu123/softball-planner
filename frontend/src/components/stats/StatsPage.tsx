@@ -8,13 +8,12 @@ import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { GamesNeedRangeNotice } from './GamesNeedRangeNotice'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
+import { parseStatsView } from '@/components/analysis/statsView'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
 import { StatsTableSkeleton } from './StatsTableSkeleton'
 import { generateBattingStatsPdf } from '@/utils/statsPdf'
 
 type ScopeKind = 'season' | 'year' | 'allTime' | 'gameDay' | 'game' | 'opponent'
-type ViewKind = 'batting' | 'games'
-
 const SCOPE_LABEL_MAP: Record<ScopeKind, string> = {
   season: 'Saison',
   year: 'Jahr',
@@ -38,7 +37,7 @@ export function StatsPage() {
   const [params, setParams] = useSearchParams()
 
   const scopeKind = (params.get('scope') as ScopeKind) || 'year'
-  const view = (params.get('view') as ViewKind) || 'batting'
+  const view = parseStatsView(params.get('view'))
   const seasonIdParam = params.get('seasonId')
   const yearParam = params.get('year')
   const gameIdParam = params.get('gameId')
