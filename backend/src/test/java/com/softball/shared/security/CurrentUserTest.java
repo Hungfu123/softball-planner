@@ -72,5 +72,6 @@ class CurrentUserTest {
 
         assertThatThrownBy(currentUser::get).isInstanceOf(NichtAngemeldetException.class);
         assertThat(currentUser.istGenauRolle(Role.PLAYER)).isFalse();
+        verify(repo, times(1)).findByUsername("weg");
     }
 }
