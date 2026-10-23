@@ -774,6 +774,9 @@ it('zeigt vier Kennzahlen: AVG, OBP, Spiele, Hits', () => { })
 it('zeigt keine Trainingszahl', () => { })
 it('verlinkt ins volle Profil', () => { })
 it('kommt ohne nächstes Spiel zurecht', () => { })   // Saisonende
+it('zeigt das Lineup des nächsten Spiels mit Schlagplatz und Position', () => { })
+it('zeigt im Lineup keinen einzigen Bearbeiten-Knopf', () => { })
+it('kommt mit einem Spiel ohne Lineup zurecht', () => { })
 ```
 
 - [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
@@ -783,7 +786,19 @@ Expected: FAIL.
 
 - [ ] **Step 3: Die Seite bauen**
 
-Vier Blöcke in dieser Reihenfolge: nächstes Spiel, „bin ich dabei", vier Kennzahlen, kommende Spieltage. Auf dem Handy eine Spalte, ab `lg` nächstes Spiel und Kennzahlen nebeneinander.
+**Fünf** Blöcke in dieser Reihenfolge: nächstes Spiel, „bin ich dabei", **das Lineup des
+nächsten Spiels**, vier Kennzahlen, kommende Spieltage. Auf dem Handy eine Spalte, ab `lg`
+nächstes Spiel und Kennzahlen nebeneinander.
+
+**Warum das Lineup hier steht.** Die Spec verspricht Spielern „Lineups — nur lesen". Task 10
+hat den Planer (`/gameday/:id`) für sie gesperrt, und das zu Recht: er ruft mehrere
+admin-only Endpunkte (Lineup-Sets, Poll-Votes, Trainings-Statistik) und ist eine
+Admin-Werkbank, kein Leseblatt. Einen Lese-Modus dort einzubauen wäre ein eigenes Vorhaben.
+
+**Dieses Dashboard löst das Versprechen stattdessen ein:** Schlagreihenfolge und Positionen
+des nächsten Spiels, wie sie stehen, ohne jede Bearbeitungsmöglichkeit. Die nötigen Daten
+sind seit Task 4 für Spieler offen (`GET /api/games/{id}/lineup`). Ein Test prüft, dass dort
+kein einziger Bearbeiten-Knopf erscheint.
 
 Verfügbarkeit wird **angezeigt, nicht gesetzt** — Zusagen laufen über die WhatsApp-Umfrage, ein zweiter Weg hinein würde die bestehende Mechanik aufweichen.
 
