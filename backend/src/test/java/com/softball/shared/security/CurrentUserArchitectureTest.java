@@ -35,6 +35,44 @@ class CurrentUserArchitectureTest {
                 .isEmpty();
     }
 
+    /**
+     * Der direkte Test oben sieht nur Felder und Konstruktoren der geplanten Klasse selbst. Ein Lauf,
+     * der ueber einen Service indirekt an CurrentUser kaeme, rutschte durch. Dieser Test folgt den
+     * Konstruktor-Abhaengigkeiten der Audit-Aufraeumer bis in die eigenen Pakete.
+     */
+    @Test
+    void derHistorienAufraeumerErreichtCurrentUserAuchIndirektNicht() throws Exception {
+        final List<Class<?>> aufraeumer = geplanteKlassen().stream()
+                .filter(c -> c.getName().contains("AuditCleanup")).toList();
+        assertThat(aufraeumer).as("Gegen Leerlauf: der Aufraeum-Lauf muss gefunden werden").hasSize(1);
+
+        assertThat(erreichtCurrentUser(aufraeumer.get(0), new java.util.HashSet<>()))
+                .as("Der Aufraeum-Lauf laeuft ausserhalb jeder Anfrage: kein Weg zu CurrentUser, auch nicht ueber Services")
+                .isFalse();
+    }
+
+    private static boolean erreichtCurrentUser(final Class<?> type, final java.util.Set<Class<?>> besucht) {
+        if (type == CurrentUser.class) {
+            return true;
+        }
+        if (!type.getName().startsWith("com.softball") || !besucht.add(type)) {
+            return false;
+        }
+        for (final Constructor<?> c : type.getDeclaredConstructors()) {
+            for (final Class<?> p : c.getParameterTypes()) {
+                if (erreichtCurrentUser(p, besucht)) {
+                    return true;
+                }
+            }
+        }
+        for (final Field f : type.getDeclaredFields()) {
+            if (erreichtCurrentUser(f.getType(), besucht)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static List<Class<?>> geplanteKlassen() throws ClassNotFoundException {
         final ClassPathScanningCandidateComponentProvider scanner =
                 new ClassPathScanningCandidateComponentProvider(false);
