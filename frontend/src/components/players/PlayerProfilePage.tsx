@@ -14,6 +14,7 @@ import { GenderSheet } from './GenderSheet'
 import { SeasonTable } from './SeasonTable'
 import { UsagePanel } from './UsagePanel'
 import { PositionBadges } from './PositionBadges'
+import { useRolle } from '@/hooks/useRolle'
 import { PositionProfileSheet } from './PositionProfileSheet'
 import { StrengthsPanel } from './StrengthsPanel'
 import type { PlayerFormPoint } from '@/types'
@@ -33,6 +34,7 @@ const POSITION_NAMES: Record<string, string> = {
  * Cream darunter: Form-Kurve, Einsatz, Teamvergleich und die gespielten Posten.
  */
 export function PlayerProfilePage() {
+  const { istAdmin } = useRolle()
   const { id } = useParams<{ id: string }>()
   const playerId = Number(id)
   const navigate = useNavigate()
@@ -148,8 +150,8 @@ export function PlayerProfilePage() {
           icon={<CrossBones size={48} />}
         />
         <div className="text-center mt-4">
-          <Link to="/players" className="text-sm font-semibold text-navy-700 hover:text-navy-900 underline">
-            Zum Kader
+          <Link to={istAdmin ? '/players' : '/'} className="text-sm font-semibold text-navy-700 hover:text-navy-900 underline">
+            {istAdmin ? 'Zum Kader' : 'Zum Start'}
           </Link>
         </div>
       </div>
@@ -184,11 +186,11 @@ export function PlayerProfilePage() {
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-5xl mx-auto p-4 space-y-4">
         <button
-          onClick={() => navigate('/players')}
+          onClick={() => navigate(istAdmin ? '/players' : '/')}
           className="inline-flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-navy-900 cursor-pointer"
         >
           <ChevronLeft size={16} />
-          Kader
+          {istAdmin ? 'Kader' : 'Start'}
         </button>
 
         {/* Kopf — dunkel wie das Feld, damit Name und Zahlen zusammen eine Einheit bilden */}
@@ -217,46 +219,54 @@ export function PlayerProfilePage() {
                 {/* Die Chips sind das Positions-Profil — hier stehen sie ohnehin, also
                     bearbeitet man sie auch hier. Eine eigene Karte weiter unten sagte
                     dasselbe zweimal. */}
-                <button
-                  onClick={() => setPositionsOpen(true)}
-                  title="Erste · zweite · dritte Wahl — zum Ändern tippen"
-                  aria-label="Positions-Profil bearbeiten"
-                  className={`group inline-flex items-center gap-2 rounded-xl -ml-2 pl-2 pr-2.5 py-1.5 cursor-pointer transition-colors border hover:bg-navy-800 ${
-                    player.primaryPosition
-                      ? 'border-navy-700 hover:border-navy-500'
-                      : 'border-dashed border-navy-500 hover:border-cream-200'
-                  }`}
-                >
-                  {player.primaryPosition
-                    ? <PositionBadges player={player} tone="dark" />
-                    : (
-                      <span className="font-display text-xs font-bold uppercase tracking-wide text-navy-200">
-                        Positionen festlegen
-                      </span>
-                    )}
-                  {/* Der Stift muss man erkennen, bevor man ihn braucht: eigene Fläche,
-                      heller Rahmen, und beim Überfahren wird er weiß. */}
-                  <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-navy-800 text-navy-200 transition-colors group-hover:bg-navy-600 group-hover:text-white">
-                    <Pencil size={14} />
-                  </span>
-                </button>
+                {istAdmin ? (
+                  <button
+                    onClick={() => setPositionsOpen(true)}
+                    title="Erste · zweite · dritte Wahl — zum Ändern tippen"
+                    aria-label="Positions-Profil bearbeiten"
+                    className={`group inline-flex items-center gap-2 rounded-xl -ml-2 pl-2 pr-2.5 py-1.5 cursor-pointer transition-colors border hover:bg-navy-800 ${
+                      player.primaryPosition
+                        ? 'border-navy-700 hover:border-navy-500'
+                        : 'border-dashed border-navy-500 hover:border-cream-200'
+                    }`}
+                  >
+                    {player.primaryPosition
+                      ? <PositionBadges player={player} tone="dark" />
+                      : (
+                        <span className="font-display text-xs font-bold uppercase tracking-wide text-navy-200">
+                          Positionen festlegen
+                        </span>
+                      )}
+                    {/* Der Stift muss man erkennen, bevor man ihn braucht: eigene Fläche,
+                        heller Rahmen, und beim Überfahren wird er weiß. */}
+                    <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-navy-800 text-navy-200 transition-colors group-hover:bg-navy-600 group-hover:text-white">
+                      <Pencil size={14} />
+                    </span>
+                  </button>
+                ) : player.primaryPosition && (
+                  <div className="inline-flex items-center rounded-xl -ml-2 pl-2 pr-2.5 py-1.5 border border-navy-700">
+                    <PositionBadges player={player} tone="dark" />
+                  </div>
+                )}
                 {/* Geschlecht steht neben den Positionen, weil es dieselbe Art Angabe ist:
                     Stammdaten, die die Aufstellung braucht. Fehlt es, sagt der Knopf das —
                     die Frauen-Quote der Liga haengt daran. */}
-                <button
-                  onClick={() => setGenderOpen(true)}
-                  aria-label={player.gender ? `Geschlecht: ${GENDER_LABELS[player.gender]} — ändern` : 'Geschlecht festlegen'}
-                  title={player.gender
-                    ? `${GENDER_LABELS[player.gender]} — Grundlage der Frauen-Quote, zum Ändern tippen`
-                    : 'Grundlage der Frauen-Quote — zum Ändern tippen'}
-                  className={`font-display text-[10px] font-bold uppercase rounded-lg py-1.5 cursor-pointer transition-colors border ${
-                    player.gender
-                      ? 'w-7 text-[13px] border-navy-700 text-navy-100 hover:bg-navy-800 hover:border-navy-500'
-                      : 'px-2 tracking-widest border-dashed border-navy-500 text-navy-200 hover:border-cream-200 hover:text-cream-100'
-                  }`}
-                >
-                  {player.gender ? GENDER_SHORT[player.gender] : 'Geschlecht festlegen'}
-                </button>
+                {istAdmin && (
+                  <button
+                    onClick={() => setGenderOpen(true)}
+                    aria-label={player.gender ? `Geschlecht: ${GENDER_LABELS[player.gender]} — ändern` : 'Geschlecht festlegen'}
+                    title={player.gender
+                      ? `${GENDER_LABELS[player.gender]} — Grundlage der Frauen-Quote, zum Ändern tippen`
+                      : 'Grundlage der Frauen-Quote — zum Ändern tippen'}
+                    className={`font-display text-[10px] font-bold uppercase rounded-lg py-1.5 cursor-pointer transition-colors border ${
+                      player.gender
+                        ? 'w-7 text-[13px] border-navy-700 text-navy-100 hover:bg-navy-800 hover:border-navy-500'
+                        : 'px-2 tracking-widest border-dashed border-navy-500 text-navy-200 hover:border-cream-200 hover:text-cream-100'
+                    }`}
+                  >
+                    {player.gender ? GENDER_SHORT[player.gender] : 'Geschlecht festlegen'}
+                  </button>
+                )}
                 {player.regular && (
                   <span className="font-display text-[10px] font-bold uppercase tracking-widest text-navy-200">
                     Stammspieler
@@ -272,7 +282,7 @@ export function PlayerProfilePage() {
             {/* Selten gebrauchte Aktionen hinter den drei Punkten: ein Name wird einmal
                 getippt und dann nie wieder, und zwei Stifte nebeneinander zeigen auf
                 zwei verschiedene Dinge. Der Stift an den Chips bleibt das Positions-Profil. */}
-            {!editingName && (
+            {istAdmin && !editingName && (
               <div className="relative shrink-0" ref={menuRef}>
                 <button
                   onClick={() => setMenuOpen(o => !o)}

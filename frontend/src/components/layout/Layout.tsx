@@ -1,8 +1,10 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
-import { Home, Dumbbell, Users, BarChart3, Mail, type LucideIcon } from 'lucide-react'
+import { Home, Dumbbell, Users, BarChart3, Mail, CalendarDays, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { WhatsappStatusBanner } from './WhatsappStatusBanner'
+import { KontoMenu } from './KontoMenu'
+import { useRolle } from '@/hooks/useRolle'
 import { useToast } from '@/hooks/useToast'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ToastContext } from '@/hooks/useToast'
@@ -29,7 +31,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
  * nicht unter seinem Pfad liegen — z.B. /kalender, das als Orga-Kind verlinkt ist,
  * seine Route aber aus Bookmark-/PWA-Gründen behält.
  */
-const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon; extraPaths?: string[] }[] = [
+type Tab = { path: string; label: string; shortLabel: string; Icon: LucideIcon; extraPaths?: string[] }
+
+const ADMIN_TABS: Tab[] = [
   { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
@@ -37,9 +41,21 @@ const TABS: { path: string; label: string; shortLabel: string; Icon: LucideIcon;
   { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender', '/spielbogen'] },
 ]
 
+/**
+ * Spieler sehen Orga nicht — `/kalender` braucht deshalb einen eigenen Reiter statt
+ * des extraPaths-Dachs, unter dem es für Admins hängt.
+ */
+const PLAYER_TABS: Tab[] = [
+  { path: '/', label: 'Start', shortLabel: 'Start', Icon: Home },
+  { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
+  { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
+]
+
 export function Layout() {
   const toast = useToast()
   const location = useLocation()
+  const { istAdmin } = useRolle()
+  const tabs = istAdmin ? ADMIN_TABS : PLAYER_TABS
 
   const isSubPage = location.pathname.startsWith('/gameday/')
   // Läuft die Tab-Leiste über? Nur dann den Fade-Hinweis zeigen (siehe index.css).
@@ -72,7 +88,7 @@ export function Layout() {
 
   const matches = (path: string) =>
     path === '/' ? location.pathname === '/' : (location.pathname === path || location.pathname.startsWith(path + '/'))
-  const activeTab = TABS.find(t => matches(t.path) || t.extraPaths?.some(matches))?.path
+  const activeTab = tabs.find(t => matches(t.path) || t.extraPaths?.some(matches))?.path
 
   return (
     <ToastCtx.Provider value={toast}>
@@ -127,7 +143,7 @@ export function Layout() {
                 Variante hat die 44px-Targets, die auf dem Tablet ohnehin richtig sind.
               */}
               <div className="flex items-stretch gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
-                {TABS.map(tab => {
+                {tabs.map(tab => {
                   const active = activeTab === tab.path
                   return (
                     <Link
@@ -145,10 +161,11 @@ export function Layout() {
                 })}
               </div>
             </nav>
+            <KontoMenu />
           </div>
         </header>
 
-        <WhatsappStatusBanner />
+        {istAdmin && <WhatsappStatusBanner />}
 
         <main className={`${shell} pb-6 xl:pb-2 pt-2 sm:pt-4 safe-bottom`}>
           <Outlet />

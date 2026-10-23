@@ -5,6 +5,7 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CollapsibleSection } from '@/components/shared/CollapsibleSection'
 import { TeamCombobox, Button } from '@/components/shared'
 import * as api from '@/api/client'
+import { useRolle } from '@/hooks/useRolle'
 
 interface Props {
   seasonId: number
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
+  const { istAdmin } = useRolle()
   const [standings, setStandings] = useState<StandingEntry[]>([])
   const [teams, setTeams] = useState<LeagueTeamResponse[]>([])
   const [leagueResults, setLeagueResults] = useState<LeagueResultResponse[]>([])
@@ -128,12 +130,12 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                           />
                         ) : (
                           <span
-                            onClick={!s.team.ownTeam ? () => setEditingTeam({ id: s.team.id, name: s.team.name }) : undefined}
-                            className={!s.team.ownTeam ? 'group/name inline-flex items-center gap-1.5 cursor-pointer hover:text-navy-700' : ''}
-                            title={!s.team.ownTeam ? 'Klicken zum Umbenennen' : undefined}
+                            onClick={istAdmin && !s.team.ownTeam ? () => setEditingTeam({ id: s.team.id, name: s.team.name }) : undefined}
+                            className={istAdmin && !s.team.ownTeam ? 'group/name inline-flex items-center gap-1.5 cursor-pointer hover:text-navy-700' : ''}
+                            title={istAdmin && !s.team.ownTeam ? 'Klicken zum Umbenennen' : undefined}
                           >
                             {s.team.name}
-                            {!s.team.ownTeam && <Pencil size={13} className="opacity-60 sm:opacity-0 sm:group-hover/name:opacity-60 transition-opacity text-navy-600" />}
+                            {istAdmin && !s.team.ownTeam && <Pencil size={13} className="opacity-60 sm:opacity-0 sm:group-hover/name:opacity-60 transition-opacity text-navy-600" />}
                           </span>
                         )}
                       </td>
@@ -152,7 +154,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                         {s.runDiff > 0 ? '+' : ''}{s.runDiff}
                       </td>
                       <td className="px-1 py-2">
-                        {!s.team.ownTeam && (
+                        {istAdmin && !s.team.ownTeam && (
                           <button
                             onClick={() => setDeleteTeam({ id: s.team.id, name: s.team.name })}
                             className="p-1 text-gray-300 hover:text-softball-red-500 hover:bg-softball-red-50 rounded transition-colors cursor-pointer"
@@ -172,7 +174,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
         )}
 
         {/* Add team inline */}
-        <div className="mt-3 flex items-center gap-2">
+        {istAdmin && <div className="mt-3 flex items-center gap-2">
           <input
             value={newTeamName}
             onChange={e => setNewTeamName(e.target.value)}
@@ -187,7 +189,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
           >
             + Hinzufügen
           </Button>
-        </div>
+        </div>}
       </div>
 
       {/* All Results */}
@@ -229,14 +231,14 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
                       {r.homeScore}:{r.awayScore}
                     </span>
                     <span className="font-display font-bold text-navy-900 tracking-wide">{r.awayTeam.name}</span>
-                    <button
+                    {istAdmin && <button
                       onClick={async () => { await api.deleteLeagueResult(r.id); reloadAll() }}
                       className="p-1 text-gray-300 hover:text-softball-red-500 hover:bg-softball-red-50 rounded transition-colors cursor-pointer ml-auto"
                       title="Löschen"
                       aria-label="Ergebnis löschen"
                     >
                       <XMark size={12} />
-                    </button>
+                    </button>}
                   </div>
                 ))}
               </div>
@@ -244,7 +246,7 @@ export function Standings({ seasonId, gameDays, onGameDaysChanged }: Props) {
           )}
 
           {/* Add league result */}
-          {nonOwnTeams.length >= 2 && (
+          {istAdmin && nonOwnTeams.length >= 2 && (
             <AddLeagueResult
               seasonId={seasonId}
               teams={nonOwnTeams}
@@ -272,6 +274,7 @@ function formatDate(d: string) {
 }
 
 function OurGameRow({ game, onChanged }: { game: GameResponse; onChanged: () => void }) {
+  const { istAdmin } = useRolle()
   const [editing, setEditing] = useState(false)
   const [us, setUs] = useState(game.scoreUs?.toString() ?? '')
   const [them, setThem] = useState(game.scoreThem?.toString() ?? '')
@@ -316,8 +319,8 @@ function OurGameRow({ game, onChanged }: { game: GameResponse; onChanged: () => 
           )}
         </div>
       ) : (
-        <button onClick={() => setEditing(true)}
-          className={`font-display tabular-nums font-extrabold cursor-pointer px-2 py-0.5 rounded hover:bg-cream-200 ${
+        <button onClick={() => setEditing(true)} disabled={!istAdmin}
+          className={`font-display tabular-nums font-extrabold px-2 py-0.5 rounded ${istAdmin ? 'cursor-pointer hover:bg-cream-200' : 'cursor-default'} ${
             game.scoreUs != null
               ? game.scoreUs > game.scoreThem! ? 'text-emerald-700' : game.scoreUs < game.scoreThem! ? 'text-softball-red-600' : 'text-gray-500'
               : 'text-gray-300'

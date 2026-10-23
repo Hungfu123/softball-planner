@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { ResponsiveSheet, Button } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
+import { useRolle } from '@/hooks/useRolle'
 
 interface Props {
   seasons: Season[]
@@ -18,6 +19,7 @@ interface Props {
 
 export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onCopyYear, onUpdate, onDelete }: Props) {
   const toast = useToastContext()
+  const { istAdmin } = useRolle()
   const [showModal, setShowModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -120,7 +122,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onCopy
                   ))}
                 </div>
               )}
-              <div className="border-t border-cream-200 py-1">
+              {istAdmin && <div className="border-t border-cream-200 py-1">
                 {selectedId && (
                   <>
                     <button
@@ -162,7 +164,7 @@ export function SeasonSelector({ seasons, selectedId, onSelect, onCreate, onCopy
                 >
                   <PlusCircle size={14} /> Neue Saison
                 </button>
-              </div>
+              </div>}
             </div>
           )}
         </div>

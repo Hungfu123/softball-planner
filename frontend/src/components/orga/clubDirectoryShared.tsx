@@ -4,6 +4,7 @@ import * as api from '@/api/client'
 import type { GameDayResponse, Season, TeamDirectoryEntry, TeamLeagueOccurrence } from '@/types'
 import { Pencil, TrashBin, ArrowsSwap } from '@/icons'
 import { Button, ResponsiveSheet, ConfirmModal } from '@/components/shared'
+import { useRolle } from '@/hooks/useRolle'
 import { useToastContext } from '@/components/layout/Layout'
 
 /** Ein Spiel gegen einen Club — client-seitig aus den Spieltagen abgeleitet. */
@@ -177,6 +178,7 @@ export function ClubSheet({ entry, history, allClubNames, loading = false, onClo
 }) {
   const toast = useToastContext()
   const navigate = useNavigate()
+  const { istAdmin } = useRolle()
   const [showRename, setShowRename] = useState(false)
   const [renameValue, setRenameValue] = useState(entry.clubName)
   const [renameRunning, setRenameRunning] = useState(false)
@@ -248,12 +250,12 @@ export function ClubSheet({ entry, history, allClubNames, loading = false, onClo
         title={entry.clubName}
         footer={loading ? undefined : (
           <div className="flex flex-wrap justify-end gap-2">
-            <button
+            {istAdmin && <button
               onClick={() => { setRenameValue(entry.clubName); setShowRename(true) }}
               className="font-display px-3.5 py-2 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5 active:scale-95 transition-transform"
             >
               <Pencil size={12} /> Umbenennen
-            </button>
+            </button>}
             <button
               onClick={() => navigate(`/stats?scope=opponent&opponent=${encodeURIComponent(entry.clubName)}`)}
               className="font-display px-3.5 py-2 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-navy-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5 active:scale-95 transition-transform"
@@ -301,7 +303,7 @@ export function ClubSheet({ entry, history, allClubNames, loading = false, onClo
                     {l.leagueName}
                     {l.year != null && <span className="text-gray-400 font-normal"> · {l.year}</span>}
                   </span>
-                  <div className="actions-reveal flex gap-1 shrink-0">
+                  {istAdmin && <div className="actions-reveal flex gap-1 shrink-0">
                     <button
                       onClick={() => { setRenameLeagueOcc(l); setRenameLeagueValue(entry.clubName) }}
                       aria-label={`${entry.clubName} in ${l.leagueName} umbenennen`}
@@ -318,7 +320,7 @@ export function ClubSheet({ entry, history, allClubNames, loading = false, onClo
                     >
                       <TrashBin size={15} />
                     </button>
-                  </div>
+                  </div>}
                 </div>
               ))}
             </div>

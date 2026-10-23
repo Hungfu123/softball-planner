@@ -5,6 +5,7 @@ import type { GameDayResponse, Season, TeamDirectoryEntry } from '@/types'
 import { CrossBones, PlusCircle } from '@/icons'
 import { Button } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
+import { useRolle } from '@/hooks/useRolle'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
 import { CreateTeamSheet } from './CreateTeamSheet'
 import {
@@ -20,6 +21,7 @@ import {
 
 export function TeamDirectoryPage() {
   const toast = useToastContext()
+  const { istAdmin } = useRolle()
   const [directory, setDirectory] = useState<TeamDirectoryEntry[]>([])
   const [historyByClub, setHistoryByClub] = useState<Map<string, ClubGame[]>>(new Map())
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
@@ -176,7 +178,7 @@ export function TeamDirectoryPage() {
             Gegner
             {directory.length > 0 && <span className="text-navy-500 font-bold text-xl"> ({directory.length})</span>}
           </h1>
-          <Button
+          {istAdmin && <Button
             variant="primary"
             size="sm"
             icon={<PlusCircle size={13} />}
@@ -185,7 +187,7 @@ export function TeamDirectoryPage() {
             title="Neues Gegner-Team anlegen"
           >
             Gegner anlegen
-          </Button>
+          </Button>}
         </div>
 
         <AnalysisModeTabs />

@@ -4,6 +4,11 @@ import { MemoryRouter } from 'react-router-dom'
 import type { GameDayResponse, SeasonPlayerStats, PlayerBattingStatsResponse } from '@/types'
 
 // Toast-Context stubben (Dashboard zieht useToastContext aus Layout)
+const rolle = vi.hoisted(() => ({ istAdmin: true }))
+vi.mock('@/hooks/useRolle', () => ({
+  useRolle: () => ({ me: null, istAdmin: rolle.istAdmin, istSuperadmin: rolle.istAdmin, darfScoren: rolle.istAdmin }),
+}))
+
 vi.mock('@/components/layout/Layout', () => ({
   useToastContext: () => ({ show: vi.fn(), dismiss: vi.fn() }),
 }))
@@ -37,6 +42,7 @@ function gameDay(id: number, date: string): GameDayResponse {
 
 describe('Dashboard — Loading-State beim Laden der Spieltage', () => {
   beforeEach(() => {
+    rolle.istAdmin = true
     localStorage.clear()
     vi.clearAllMocks()
     mockApi.getSeasons.mockResolvedValue([SEASON])
@@ -80,6 +86,49 @@ describe('Dashboard — Loading-State beim Laden der Spieltage', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('dashboard-loading')).not.toBeInTheDocument()
       expect(screen.queryByText(/Noch kein Spieltag/i)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Rollen', () => {
+    // In drei Tagen: das Wetter wird nur für Spieltage von heute bis +16 Tage angefragt.
+    const heute = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10)
+
+    it('zeigt einem Spieler keine Anlegen-, Bearbeiten- oder Löschen-Knöpfe und fragt kein Wetter an', async () => {
+      rolle.istAdmin = false
+      mockApi.getGameDays.mockResolvedValue([gameDay(10, heute), gameDay(11, '2999-01-01')])
+
+      render(<MemoryRouter><Dashboard /></MemoryRouter>)
+
+      await waitFor(() => expect(screen.getByText(/Anstehend/)).toBeInTheDocument())
+      await waitFor(() => expect(screen.queryByTestId('dashboard-loading')).not.toBeInTheDocument())
+      expect(screen.queryByText(/Neuer Spieltag/)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Spieltag bearbeiten')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Spieltag löschen')).not.toBeInTheDocument()
+      expect(screen.queryByText(/Lineup verwalten/)).not.toBeInTheDocument()
+      expect(mockApi.getGameDayWeather).not.toHaveBeenCalled()
+    })
+
+    it('gegenprobe: derselbe Zustand gibt einem Admin Anlegen, Bearbeiten, Löschen und Lineup und fragt das Wetter an', async () => {
+      rolle.istAdmin = true
+      mockApi.getGameDays.mockResolvedValue([gameDay(10, heute), gameDay(11, '2999-01-01')])
+
+      render(<MemoryRouter><Dashboard /></MemoryRouter>)
+
+      expect(await screen.findByLabelText('Spieltag bearbeiten')).toBeInTheDocument()
+      expect(screen.getAllByText(/Neuer Spieltag/).length).toBeGreaterThan(0)
+      expect(screen.getByLabelText('Spieltag löschen')).toBeInTheDocument()
+      expect(screen.getByText(/Lineup verwalten/)).toBeInTheDocument()
+      await waitFor(() => expect(mockApi.getGameDayWeather).toHaveBeenCalledWith(10))
+    })
+
+    it('sagt einem Spieler ohne Saison, dass keine angelegt ist, statt Anlegen anzubieten', async () => {
+      rolle.istAdmin = false
+      mockApi.getSeasons.mockResolvedValue([])
+
+      render(<MemoryRouter><Dashboard /></MemoryRouter>)
+
+      expect(await screen.findByText(/noch keine Saison angelegt/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /erstellen/i })).not.toBeInTheDocument()
     })
   })
 })
