@@ -40,20 +40,23 @@ function useNaechsterSpieltag() {
   const [laden, setLaden] = useState(true)
   const [seasonId, setSeasonId] = useState<number | null>(null)
   const [spieltage, setSpieltage] = useState<GameDayResponse[]>([])
+  const [ladefehler, setLadefehler] = useState(false)
 
   useEffect(() => {
     let abgebrochen = false
     ;(async () => {
       try {
         const seasons = await api.getSeasons()
-        const aktuelle = seasons[seasons.length - 1]
+        // findAll liefert unsortiert: die jüngste Saison ist die mit dem höchsten Jahr, bei Gleichstand der höchsten id.
+        const aktuelle = [...seasons].sort((a, b) => a.year - b.year || a.id - b.id).at(-1)
         if (!aktuelle) return
         const tage = await api.getGameDays(aktuelle.id)
         if (abgebrochen) return
         setSeasonId(aktuelle.id)
         setSpieltage([...tage].sort((a, b) => a.date.localeCompare(b.date)))
       } catch {
-        // Ohne Daten bleibt die Seite im Leerzustand — er erklärt, was Sache ist.
+        // Ein Ausfall ist nicht „kein Spiel": die Seite sagt es getrennt.
+        if (!abgebrochen) setLadefehler(true)
       } finally {
         if (!abgebrochen) setLaden(false)
       }
@@ -62,7 +65,7 @@ function useNaechsterSpieltag() {
   }, [])
 
   const kommende = useMemo(() => spieltage.filter(gd => gd.date >= heute()), [spieltage])
-  return { laden, seasonId, naechster: kommende[0] ?? null, danach: kommende.slice(1) }
+  return { laden, ladefehler, seasonId, naechster: kommende[0] ?? null, danach: kommende.slice(1) }
 }
 
 function useAufstellungen(spieltag: GameDayResponse | null): Aufstellungen {
@@ -83,6 +86,8 @@ function useAufstellungen(spieltag: GameDayResponse | null): Aufstellungen {
 function useMeineZahlen(seasonId: number | null, playerId: number | null) {
   const [stand, setStand] = useState<{
     key: string
+    /** true = Abruf gescheitert; dann sind schlag/spiele bedeutungslos. */
+    fehler: boolean
     schlag: PlayerBattingStatsResponse | null
     spiele: SeasonPlayerStats | null
   } | null>(null)
@@ -92,15 +97,18 @@ function useMeineZahlen(seasonId: number | null, playerId: number | null) {
     if (seasonId == null || playerId == null) return
     let abgebrochen = false
     Promise.all([
-      api.getSeasonBattingStats(seasonId).catch(() => [] as PlayerBattingStatsResponse[]),
-      api.getSeasonStats(seasonId).catch(() => [] as SeasonPlayerStats[]),
+      api.getSeasonBattingStats(seasonId),
+      api.getSeasonStats(seasonId),
     ]).then(([schlag, spiele]) => {
       if (abgebrochen) return
       setStand({
         key,
+        fehler: false,
         schlag: schlag.find(s => s.playerId === playerId) ?? null,
         spiele: spiele.find(s => s.playerId === playerId) ?? null,
       })
+    }).catch(() => {
+      if (!abgebrochen) setStand({ key, fehler: true, schlag: null, spiele: null })
     })
     return () => { abgebrochen = true }
   }, [seasonId, playerId, key])
@@ -235,13 +243,20 @@ function Kachel({ wert, label }: { wert: string; label: string }) {
   )
 }
 
-function MeineZahlen({ playerId, seasonId }: { playerId: number; seasonId: number | null }) {
+function MeineZahlen({ playerId, seasonId, ladefehler }: { playerId: number; seasonId: number | null; ladefehler: boolean }) {
   const zahlen = useMeineZahlen(seasonId, playerId)
-  const nichts = zahlen && !zahlen.schlag && !zahlen.spiele
+  const nichts = zahlen && !zahlen.fehler && !zahlen.schlag && !zahlen.spiele
+  const nichtErreichbar = ladefehler || zahlen?.fehler
   return (
     <section aria-label="Meine Zahlen" className={KARTE}>
       <h2 className={UEBERSCHRIFT}>Meine Zahlen</h2>
-      {seasonId == null || nichts ? (
+      {nichtErreichbar ? (
+        <p className="text-sm text-white/65">Deine Zahlen sind gerade nicht erreichbar — später nochmal reinschauen.</p>
+      ) : seasonId == null ? (
+        <p className="text-sm text-white/65">
+          Es ist noch keine Saison angelegt. Sobald sie steht und du gespielt hast, erscheinen hier deine Zahlen.
+        </p>
+      ) : nichts ? (
         <p className="text-sm text-white/65">
           Du hast in dieser Saison noch nicht geschlagen. Sobald ein Spiel gezählt ist, in dem du dran warst, stehen hier deine Zahlen.
         </p>
@@ -265,7 +280,20 @@ function MeineZahlen({ playerId, seasonId }: { playerId: number; seasonId: numbe
   )
 }
 
-function KeinSpiel() {
+function KeinSpiel({ ladefehler }: { ladefehler: boolean }) {
+  if (ladefehler) {
+    return (
+      <section className="rounded-2xl bg-navy-900 text-white p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15">
+        <div className="mx-auto mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 text-white/80">
+          <CrossBones size={24} />
+        </div>
+        <h2 className="font-display text-lg font-extrabold tracking-wide uppercase mb-1">Spiele gerade nicht erreichbar</h2>
+        <p className="text-sm text-white/65 max-w-md mx-auto leading-relaxed">
+          Der Server antwortet nicht. Das heißt nicht, dass kein Spiel ansteht — lade die Seite später neu.
+        </p>
+      </section>
+    )
+  }
   return (
     <section className="rounded-2xl bg-navy-900 text-white p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15">
       <div className="mx-auto mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 text-white/80">
@@ -304,7 +332,7 @@ function WerkzeugZeile() {
 export function PlayerDashboard() {
   const { me } = useRolle()
   const playerId = me?.playerId ?? null
-  const { laden, seasonId, naechster, danach } = useNaechsterSpieltag()
+  const { laden, ladefehler, seasonId, naechster, danach } = useNaechsterSpieltag()
   const aufstellungen = useAufstellungen(naechster)
   const [alleZeigen, setAlleZeigen] = useState(false)
 
@@ -320,7 +348,7 @@ export function PlayerDashboard() {
         <div className="lg:col-start-1 lg:row-start-1">
           {naechster
             ? <HeroNextGameDay gameDay={naechster} variant={heroVariant} />
-            : <KeinSpiel />}
+            : <KeinSpiel ladefehler={ladefehler} />}
         </div>
 
         {naechster && playerId != null && (
@@ -337,7 +365,7 @@ export function PlayerDashboard() {
 
         {playerId != null && (
           <div className="lg:col-start-2 lg:row-start-1">
-            <MeineZahlen playerId={playerId} seasonId={seasonId} />
+            <MeineZahlen playerId={playerId} seasonId={seasonId} ladefehler={ladefehler} />
           </div>
         )}
 
