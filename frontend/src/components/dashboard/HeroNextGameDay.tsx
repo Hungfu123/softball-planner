@@ -59,7 +59,9 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                 ? null
                 : (g.scoreUs ?? 0) > (g.scoreThem ?? 0) ? 'W'
                 : (g.scoreUs ?? 0) < (g.scoreThem ?? 0) ? 'L' : 'T'
-              const klickbar = istAdmin || darfScoren
+              // Die Zeile hebt sich nur an, wenn die GANZE Zeile klickbar ist. Ein Scorer ohne Admin-Recht
+              // hat nur die Scoring-Fläche rechts als Link — die trägt ihren eigenen Hover.
+              const klickbar = istAdmin
               const rohCls = finished
                 ? 'bg-white/5 border-white/10 hover:bg-white/10'
                 : isLive
@@ -99,7 +101,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                   <GatedLink
                     erlaubt={darfScoren}
                     to={`/gameday/${gameDay.id}/scoring/${routeIdx}`}
-                    className="shrink-0 flex items-center px-1.5 my-0.5 rounded-md hover:bg-white/10"
+                    className="shrink-0 flex items-center min-h-11 px-1.5 rounded-md hover:bg-white/10"
                     aria-label={`${finished ? 'Stats' : 'Live-Scoring'} für Spiel ${displayNum}`}
                   >
                     {finished ? (
