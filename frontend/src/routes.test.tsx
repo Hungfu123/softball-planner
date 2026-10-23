@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { routes } from './routes'
@@ -188,6 +188,32 @@ describe('Routing: Rollen', () => {
       await startseite(konto('PLAYER'))
       expect(await screen.findByText('Kein Spiel angesetzt')).toBeInTheDocument()
       expect(screen.queryByText('Saison anlegen')).not.toBeInTheDocument()
+    })
+
+    it('zeigt bei unbekannter Rolle weder das Admin-Dashboard noch das Spieler-Dashboard, sondern einen Ausweg', async () => {
+      localStorage.setItem('auth', btoa('x:x'))
+      let netz = false
+      vi.stubGlobal('fetch', vi.fn((url: string) => {
+        if (String(url) === '/api/me') {
+          return netz
+            ? Promise.resolve({ ok: true, status: 200, json: async () => konto('PLAYER') })
+            : Promise.reject(new TypeError('offline'))
+        }
+        return String(url) === '/api/seasons'
+          ? Promise.resolve({ ok: true, status: 200, json: async () => [] })
+          : new Promise(() => {})
+      }))
+      const router = createMemoryRouter(routes, { initialEntries: ['/'] })
+      render(<AuthProvider><RouterProvider router={router} /></AuthProvider>)
+
+      expect(await screen.findByText('Dein Konto wird noch geladen')).toBeInTheDocument()
+      expect(screen.queryByText('Saison anlegen')).not.toBeInTheDocument()
+      expect(screen.queryByText('Kein Spiel angesetzt')).not.toBeInTheDocument()
+
+      netz = true
+      fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }))
+      expect(await screen.findByText('Kein Spiel angesetzt')).toBeInTheDocument()
+      expect(screen.queryByText('Dein Konto wird noch geladen')).not.toBeInTheDocument()
     })
 
     it('zeigt einem Admin weiterhin das bestehende Dashboard', async () => {

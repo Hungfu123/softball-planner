@@ -11,6 +11,8 @@ interface AuthValue {
   /** null, solange nicht bekannt — auch bei Netzfehler, wo der Nutzer angemeldet bleibt. */
   me: MeResponse | null
   error: string | null
+  /** Fragt /api/me noch einmal; heilt `me === null` nach einem Netzfehler. */
+  neuLaden: () => Promise<void>
   login: (username: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -70,30 +72,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * null — und die Oberfläche zeigt dann alles. Das heilt sich selbst: sobald das Fenster
    * wieder online geht oder den Fokus bekommt, wird /api/me erneut gefragt.
    */
+  const neuLaden = useCallback(async () => {
+    if (!hasAuth()) return
+    const meiner = ++versuch.current
+    try {
+      const res = await fetch('/api/me', { headers: basic() })
+      if (meiner !== versuch.current) return
+      if (res.status === 401) {
+        clearAuth()
+        setLoggedIn(false)
+      } else if (res.ok) {
+        setMe(await res.json())
+      }
+    } catch {
+      // bleibt null — der Nutzer kann es erneut versuchen
+    }
+  }, [])
+
   useEffect(() => {
     if (!loggedIn || pruefend || me !== null) return
-    const nachladen = () => {
-      if (!hasAuth()) return
-      const meiner = ++versuch.current
-      fetch('/api/me', { headers: basic() })
-        .then(async res => {
-          if (meiner !== versuch.current) return
-          if (res.status === 401) {
-            clearAuth()
-            setLoggedIn(false)
-          } else if (res.ok) {
-            setMe(await res.json())
-          }
-        })
-        .catch(() => {})
-    }
+    const nachladen = () => { void neuLaden() }
     window.addEventListener('online', nachladen)
     window.addEventListener('focus', nachladen)
     return () => {
       window.removeEventListener('online', nachladen)
       window.removeEventListener('focus', nachladen)
     }
-  }, [loggedIn, pruefend, me])
+  }, [loggedIn, pruefend, me, neuLaden])
 
   // request<T> meldet eine abgelehnte Anmeldung per Ereignis, ein harter Reload wuerde ein
   // offenes Formular verwerfen.
@@ -141,8 +146,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [abmelden])
 
   const value = useMemo(
-    () => ({ loggedIn, pruefend, me, error, login, logout }),
-    [loggedIn, pruefend, me, error, login, logout],
+    () => ({ loggedIn, pruefend, me, error, neuLaden, login, logout }),
+    [loggedIn, pruefend, me, error, neuLaden, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -131,7 +131,7 @@ describe('PlayerDashboard', () => {
     expect(await within(block).findByText(/als DH/)).toBeInTheDocument()
   })
 
-  it('zeigt das Lineup vollständig und ohne einen einzigen Bearbeiten-Knopf', async () => {
+  it('zeigt das Lineup vollständig', async () => {
     mockApi.getLineup.mockResolvedValue([
       eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2), eintrag(DRITTER, 'C', 3),
     ])
@@ -140,16 +140,64 @@ describe('PlayerDashboard', () => {
     await waitFor(() => expect(within(lineup).getAllByRole('listitem')).toHaveLength(3))
     expect(within(lineup).getByText('Tom Test')).toBeInTheDocument()
     expect(within(lineup).getByText('Uli Unter')).toBeInTheDocument()
+  })
 
-    // Weder im Lineup noch irgendwo auf der Seite: nichts, was bearbeitet
-    expect(within(lineup).queryByRole('button')).not.toBeInTheDocument()
-    expect(within(lineup).queryByRole('link')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Lineup verwalten/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText(/bearbeiten/i)).not.toBeInTheDocument()
-    expect(screen.queryByTitle(/Bearbeiten/i)).not.toBeInTheDocument()
-    for (const a of screen.queryAllByRole('link')) {
-      expect(a.getAttribute('href')).not.toMatch(/^\/gameday\//)
-    }
+  /*
+   * Der Wächter für „Spieler: Lineups nur lesen". Kein Suchen nach verbotenen Wörtern,
+   * sondern eine Erlaubnisliste über die GANZE Seite: jedes bedienbare Element, das nicht
+   * ausdrücklich zugelassen ist, macht den Test rot — egal wie es heißt oder ob es ein Label hat.
+   */
+  const ERLAUBTE_KNOEPFE = [/^Spiel \d+$/, /^\+ \d+ weitere/, /^Weniger anzeigen$/]
+  const ERLAUBTE_LINKS = [/^\/players\/7$/, /^\/orga\/playmaker$/, /^\/counter$/]
+
+  async function bedienbar() {
+    await screen.findByRole('region', { name: 'Lineup' })
+    await waitFor(() => expect(mockApi.getLineup).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByRole('region', { name: 'Lineup' }).querySelectorAll('li').length).toBeGreaterThan(0))
+    const sel = 'button, a, input, select, textarea, [role="button"], [role="link"], [role="menuitem"], [role="checkbox"], [role="switch"], [role="tab"], [draggable="true"], [tabindex]:not([tabindex="-1"]), [contenteditable]'
+    return Array.from(document.body.querySelectorAll<HTMLElement>(sel))
+  }
+
+  function unerlaubt(elemente: HTMLElement[]): string[] {
+    return elemente.flatMap(el => {
+      const name = (el.getAttribute('aria-label') ?? el.textContent ?? '').trim()
+      if (el.tagName === 'A') {
+        return ERLAUBTE_LINKS.some(r => r.test(el.getAttribute('href') ?? '')) ? [] : [`Link ${el.getAttribute('href')}`]
+      }
+      if (el.tagName === 'BUTTON') {
+        return ERLAUBTE_KNOEPFE.some(r => r.test(name)) ? [] : [`Knopf "${name}"`]
+      }
+      return [`${el.tagName.toLowerCase()} "${name}"`]
+    })
+  }
+
+  const ROLLEN: [string, MeResponse][] = [
+    ['Spieler', ME],
+    ['Spieler mit Scorer-Recht', { ...ME, mayScore: true }],
+  ]
+
+  it.each(ROLLEN)('hat für %s nichts Bedienbares außer der Erlaubnisliste (ein Spiel)', async (_n, me) => {
+    auth.me = me
+    rendern()
+    expect(unerlaubt(await bedienbar())).toEqual([])
+  })
+
+  it.each(ROLLEN)('hat für %s mit zwei Spielen und Reitern nichts Bedienbares außer der Erlaubnisliste', async (_n, me) => {
+    auth.me = me
+    const zwei = gameDay(1, ZUKUNFT)
+    zwei.games.push({ ...zwei.games[0], id: 11, gameNumber: 2, opponentTeam: { id: 2, name: 'Köln Kings', ownTeam: false } })
+    mockApi.getGameDays.mockResolvedValue([zwei, gameDay(2, ZUKUNFT_2), gameDay(3, '2099-07-11'), gameDay(4, '2099-07-18'), gameDay(5, '2099-07-25')])
+    rendern()
+    const el = await bedienbar()
+    expect(el.filter(e => /^Spiel \d$/.test(e.textContent ?? ''))).toHaveLength(2)
+    expect(unerlaubt(el)).toEqual([])
+  })
+
+  it('der Wächter schlägt an: ein Ändern-Knopf, ein Link in den Planer und ein Drag-Handle fallen durch', () => {
+    const b = document.createElement('button'); b.textContent = 'Ändern'
+    const a = document.createElement('a'); a.setAttribute('href', '/gameday/1')
+    const d = document.createElement('div'); d.setAttribute('draggable', 'true')
+    expect(unerlaubt([b, a, d])).toHaveLength(3)
   })
 
   it('wechselt zwischen den Spielen eines Spieltags', async () => {
@@ -217,6 +265,38 @@ describe('PlayerDashboard', () => {
     mockApi.getSeasons.mockResolvedValue([])
     rendern()
     expect(await screen.findByText(/Kein Spiel angesetzt/)).toBeInTheDocument()
+    const zahlen = screen.getByRole('region', { name: 'Meine Zahlen' })
+    expect(within(zahlen).getByText(/noch keine Saison angelegt/)).toBeInTheDocument()
+    expect(within(zahlen).queryByText(/noch nicht geschlagen/)).not.toBeInTheDocument()
+  })
+
+  it('sagt „gerade nicht erreichbar" statt „nicht geschlagen", wenn der Abruf der Zahlen scheitert', async () => {
+    mockApi.getSeasonBattingStats.mockRejectedValue(new Error('500'))
+    rendern()
+    const zahlen = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    expect(await within(zahlen).findByText(/gerade nicht erreichbar/)).toBeInTheDocument()
+    expect(within(zahlen).queryByText(/noch nicht geschlagen/)).not.toBeInTheDocument()
+    expect(within(zahlen).queryByText('AVG')).not.toBeInTheDocument()
+  })
+
+  it('sagt „nicht erreichbar" statt „Saison durch", wenn die Spieltage nicht laden', async () => {
+    mockApi.getGameDays.mockRejectedValue(new Error('500'))
+    rendern()
+    expect(await screen.findByText(/Spiele gerade nicht erreichbar/)).toBeInTheDocument()
+    expect(screen.queryByText(/Saison durch/)).not.toBeInTheDocument()
+    const zahlen = screen.getByRole('region', { name: 'Meine Zahlen' })
+    expect(within(zahlen).getByText(/gerade nicht erreichbar/)).toBeInTheDocument()
+  })
+
+  it('nimmt die Saison mit dem höchsten Jahr, nicht die letzte der Liste', async () => {
+    mockApi.getSeasons.mockResolvedValue([
+      { id: 9, name: 'Saison 2099', year: 2099 },
+      { id: 2, name: 'Saison 2025', year: 2025 },
+    ])
+    rendern()
+    await screen.findByText('Berlin Bears')
+    expect(mockApi.getGameDays).toHaveBeenCalledWith(9)
+    await waitFor(() => expect(mockApi.getSeasonBattingStats).toHaveBeenCalledWith(9))
   })
 
   it('stürzt nicht, wenn me noch null ist, und sagt warum Persönliches fehlt', async () => {
