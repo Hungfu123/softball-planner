@@ -20,6 +20,10 @@ import org.springframework.stereotype.Component;
  * Zugriffsschutz: ein Admin darf einen Superadmin-Account nicht aendern, auch nicht ueber den Spieler
  * ({@link #pruefeSpielerAenderbar}): Loeschen kaskadiert, Archivieren sperrt, Reaktivieren entsperrt.
  * <p>
+ * Sperrschutz: ein Superadmin-Account wird nie gesperrt, von niemandem und auch nicht von sich selbst
+ * ({@link #pruefeNichtSperrbar}). Wer aufhoeren will, Superadmin zu sein, macht vorher jemand anderen dazu
+ * und wird dann herabgestuft; dort greift {@link #pruefeNichtLetzter}.
+ * <p>
  * Gezaehlt werden nur ungesperrte Superadmins: ein gesperrter hilft niemandem.
  */
 @Component
@@ -37,6 +41,18 @@ public class SuperadminGuard {
                 && appUserRepository.countUnlockedByRole(Role.SUPERADMIN) <= 1) {
             throw new BusinessValidationException(meldung);
         }
+    }
+
+    /** Wirft, wenn {@code target} ein Superadmin ist, gleich wer aufruft und wie viele es gibt. */
+    public void pruefeNichtSperrbar(final AppUser target, final String meldung) {
+        if (target.getRole() == Role.SUPERADMIN) {
+            throw new BusinessValidationException(meldung);
+        }
+    }
+
+    /** Wie {@link #pruefeNichtSperrbar}, fuer den Account des Spielers (falls er einen hat). */
+    public void pruefeSpielerNichtSperrbar(final Long playerId, final String meldung) {
+        appUserRepository.findByPlayerId(playerId).ifPresent(account -> pruefeNichtSperrbar(account, meldung));
     }
 
     /** Wie {@link #pruefeNichtLetzter}, fuer den Account des Spielers (falls er einen hat). */
