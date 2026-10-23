@@ -24,11 +24,16 @@ export function UsagePanel({ usage, trainingsOutOfScope = false }: {
   }))
   const maxOrderCount = Math.max(1, ...orders.map(o => o.count))
   const everBatted = orders.some(o => o.count > 0)
+  // Spieler bekommen keine Trainingszahlen (null), auch nicht die eigenen: die Beteiligung
+  // fließt in die Auto-Aufstellung ein und soll nicht zur Verhandlung werden. Der Block
+  // fehlt dann ganz, statt leer oder mit Nullen zu erscheinen.
+  const { trainingsTotal, trainingsAttended } = usage
+  const showTraining = trainingsTotal !== null && trainingsAttended !== null
 
-  if (usage.gameDaysTotal === 0 && usage.trainingsTotal === 0) {
+  if (usage.gameDaysTotal === 0 && !(showTraining && trainingsTotal > 0)) {
     return (
       <p className="text-sm text-gray-500 italic">
-        Noch keine Spieltage und keine Trainings erfasst.
+        {showTraining ? 'Noch keine Spieltage und keine Trainings erfasst.' : 'Noch keine Spieltage erfasst.'}
       </p>
     )
   }
@@ -53,12 +58,12 @@ export function UsagePanel({ usage, trainingsOutOfScope = false }: {
           />
         </>
       )}
-      {usage.trainingsTotal > 0 && (
+      {showTraining && trainingsTotal > 0 && (
         <Ratio
           label="Training"
           explain="Anwesend bei nicht abgesagten Trainings"
-          value={usage.trainingsAttended}
-          total={usage.trainingsTotal}
+          value={trainingsAttended}
+          total={trainingsTotal}
           unit="Trainings"
         />
       )}
@@ -91,9 +96,11 @@ export function UsagePanel({ usage, trainingsOutOfScope = false }: {
       )}
 
       <p className="text-[11px] text-gray-500 pt-1">
-        {trainingsOutOfScope
-          ? 'Trainings gehören zu keiner Saison und bleiben hier außen vor.'
-          : 'Gezählt ab dem ersten Spieltag oder Training, an dem diese Person dabei war — davor gab es sie für das Team nicht.'}
+        {!showTraining
+          ? 'Gezählt ab dem ersten Spieltag, an dem diese Person dabei war — davor gab es sie für das Team nicht.'
+          : trainingsOutOfScope
+            ? 'Trainings gehören zu keiner Saison und bleiben hier außen vor.'
+            : 'Gezählt ab dem ersten Spieltag oder Training, an dem diese Person dabei war — davor gab es sie für das Team nicht.'}
       </p>
     </div>
   )

@@ -39,6 +39,7 @@ public class LeagueTeamController {
         return teamDirectoryService.getDirectory();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/seasons/{seasonId}/teams")
     public List<LeagueTeamResponse> getTeams(@PathVariable final Long seasonId) {
         return leagueTeamService.findBySeasonId(seasonId).stream().map(LeagueTeamResponse::from).toList();
@@ -63,6 +64,7 @@ public class LeagueTeamController {
         leagueTeamService.delete(teamId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/seasons/{seasonId}/standings")
     public List<StandingsEntry> getStandings(@PathVariable final Long seasonId) {
         return leagueTeamService.getStandings(seasonId);

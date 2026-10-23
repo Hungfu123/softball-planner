@@ -38,62 +38,74 @@ public class BattingStatsController {
     }
 
     /** Team-Offensiv-Verlauf pro gespieltem Spiel: Hits, Walks, On-Base, LOB, Inning-Zahlen. */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/game-logs")
     public List<TeamGameLogResponse> getTeamGameLogs() {
         return gameAnalysisService.getTeamGameLogs();
     }
 
     /** Was die Batting-Plätze 1..N produziert haben — ohne gameIds über alle Spiele, sonst nur über die Auswahl. */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/batting-slots")
     public List<BattingSlotStatsResponse> getBattingSlots(@RequestParam(value = "gameIds", required = false) final List<Long> gameIds) {
         return gameAnalysisService.getBattingSlots(gameIds);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/games/{gameId}/batting-stats")
     public List<PlayerBattingStatsResponse> getGameStats(@PathVariable final Long gameId) {
         return battingStatsService.getGameStats(gameId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/gamedays/{gameDayId}/batting-stats")
     public List<PlayerBattingStatsResponse> getGameDayStats(@PathVariable final Long gameDayId) {
         return battingStatsService.getGameDayStats(gameDayId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/seasons/{seasonId}/batting-stats")
     public List<PlayerBattingStatsResponse> getSeasonStats(@PathVariable final Long seasonId) {
         return battingStatsService.getSeasonStats(seasonId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/years/{year}/batting-stats")
     public List<PlayerBattingStatsResponse> getYearBattingStats(@PathVariable final int year) {
         return battingStatsService.getYearStats(year);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/years/{year}/stats")
     public List<SeasonPlayerStats> getYearStats(@PathVariable final int year) {
         return statsService.getYearStats(year);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/years/{year}/seasons")
     public List<SeasonResponse> getYearSeasons(@PathVariable final int year) {
         return seasonService.getSeasonsByYear(year).stream().map(SeasonResponse::from).toList();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/all-time/batting")
     public List<PlayerBattingStatsResponse> getAllTimeBattingStats() {
         return battingStatsService.getAllTimeStats();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/all-time/games")
     public List<SeasonPlayerStats> getAllTimeStats() {
         return statsService.getAllTimeStats();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/opponents")
     public List<OpponentBattingStatsResponse> getOpponentBattingOverview() {
         return battingStatsService.getOpponentBattingOverview();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/opponents/batting")
     public List<PlayerBattingStatsResponse> getOpponentBattingStats(@RequestParam("team") final String teamName) {
         return battingStatsService.getOpponentBattingStats(teamName);

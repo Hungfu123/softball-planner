@@ -21,6 +21,7 @@ public class PlayCategoryController {
         this.categoryService = categoryService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public List<PlayCategoryResponse> getAll() {
         return categoryService.findAll().stream().map(PlayCategoryResponse::from).toList();

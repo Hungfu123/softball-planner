@@ -21,6 +21,7 @@ public class LeagueResultController {
         this.leagueResultService = leagueResultService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/seasons/{seasonId}/results")
     public List<LeagueResultResponse> getBySeasonId(@PathVariable final Long seasonId) {
         return leagueResultService.findBySeasonId(seasonId).stream()

@@ -21,11 +21,13 @@ public class PlayController {
         this.playService = playService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public List<PlayResponse> getAll(@RequestParam(required = false) final Long categoryId) {
         return playService.findAll(categoryId).stream().map(PlayResponse::from).toList();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public PlayResponse getById(@PathVariable final Long id) {
         return PlayResponse.from(playService.findById(id));

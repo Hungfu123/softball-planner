@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import com.softball.shared.security.CurrentUser;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.*;
 import com.softball.application.TrainingAttendanceService;
@@ -23,12 +24,15 @@ public class TrainingController {
     private final TrainingPeriodService periodService;
     private final TrainingStatsService statsService;
     private final TrainingImportService importService;
+    private final CurrentUser currentUser;
 
     public TrainingController(final TrainingService trainingService,
                                final TrainingAttendanceService attendanceService,
                                final TrainingPeriodService periodService,
                                final TrainingStatsService statsService,
-                               final TrainingImportService importService) {
+                               final TrainingImportService importService,
+                               final CurrentUser currentUser) {
+        this.currentUser = currentUser;
         this.trainingService = trainingService;
         this.attendanceService = attendanceService;
         this.periodService = periodService;
@@ -36,9 +40,14 @@ public class TrainingController {
         this.importService = importService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping
     public List<TrainingResponse> getAll(@RequestParam(required = false) final Long periodId) {
-        return trainingService.findAll(periodId);
+        final List<TrainingResponse> trainings = trainingService.findAll(periodId);
+        if (currentUser.darfTrainingszahlenSehen()) {
+            return trainings;
+        }
+        return trainings.stream().map(TrainingResponse::ohneTeilnehmerzahl).toList();
     }
 
     @PostMapping

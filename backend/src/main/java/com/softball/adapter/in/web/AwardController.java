@@ -20,21 +20,25 @@ public class AwardController {
         this.awardService = awardService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/gamedays/{gameDayId}/awards")
     public List<AwardResponse> getGameDayAwards(@PathVariable final Long gameDayId) {
         return toResponses(awardService.getGameDayAwards(gameDayId));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/seasons/{seasonId}/awards")
     public List<AwardResponse> getSeasonAwards(@PathVariable final Long seasonId) {
         return toResponses(awardService.getSeasonAwards(seasonId));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/years/{year}/awards")
     public List<AwardResponse> getYearAwards(@PathVariable final int year) {
         return toResponses(awardService.getYearAwards(year));
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/all-time/awards")
     public List<AwardResponse> getAllTimeAwards() {
         return toResponses(awardService.getAllTimeAwards());

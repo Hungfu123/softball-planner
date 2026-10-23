@@ -109,7 +109,7 @@ export function useTraining() {
     setTrainings(prev =>
       prev.map(t =>
         t.id === trainingId
-          ? { ...t, attendeeCount: t.attendeeCount + (newVal ? 1 : -1) }
+          ? { ...t, attendeeCount: (t.attendeeCount ?? 0) + (newVal ? 1 : -1) }
           : t
       )
     )

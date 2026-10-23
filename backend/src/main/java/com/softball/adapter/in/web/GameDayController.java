@@ -45,6 +45,7 @@ public class GameDayController {
         this.voteSyncService = voteSyncService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/seasons/{seasonId}/gamedays")
     public List<GameDayResponse> getBySeasonId(@PathVariable final Long seasonId) {
         return gameDayService.findBySeasonIdAsDto(seasonId);
@@ -57,11 +58,13 @@ public class GameDayController {
         return gameDayService.create(seasonId, request.date(), request.label(), request.location(), request.numberOfGames());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/all")
     public List<GameDayResponse> getAll() {
         return gameDayService.findAllAsDto();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/{id}")
     public GameDayResponse getById(@PathVariable final Long id) {
         return gameDayService.findByIdAsDto(id);
@@ -79,6 +82,7 @@ public class GameDayController {
         return gameDayService.setAvailablePlayers(id, request.playerIds());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/{id}/lineups")
     public GameDayLineupsResponse getLineups(@PathVariable final Long id) {
         final GameDay gameDay = gameDayService.findById(id);
@@ -91,6 +95,7 @@ public class GameDayController {
         return new GameDayLineupsResponse(lineups, staff, substitutions);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/{id}/stats")
     public List<GameDayPlayerStats> getStats(@PathVariable final Long id) {
         return gameDayService.getStats(id);
