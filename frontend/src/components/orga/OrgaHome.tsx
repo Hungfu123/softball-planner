@@ -50,14 +50,14 @@ export function OrgaHome() {
     <div className="space-y-4">
       <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Orga</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Kachel to="/counter" icon={<CounterIcon size={20} />} titel="Counter" untertitel="Balls, Strikes, Outs und Score am Feld" />
         <Kachel to="/orga/whatsapp-umfrage" icon={<SendIcon size={20} />} titel="WhatsApp-Umfragen" untertitel="Wöchentliche Trainings-Abstimmungen" />
         <Kachel to="/orga/trainerabrechnung" icon={<Receipt size={20} />} titel="Trainerabrechnung" untertitel="Stunden eines Monats als Bogen für den Hochschulsport" />
       </div>
 
       <Ueberschrift>Weiteres</Ueberschrift>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Kachel to="/kalender" icon={<CalendarIcon size={20} />} titel="Kalender" untertitel="Spieltage und Trainings im Monat, ICS-Export" />
         <Kachel to="/orga/einladungen" icon={<Mail size={20} />} titel="Einladungen" untertitel="Einladungsschreiben für Heimspieltage" />
         <Kachel to="/orga/playmaker" icon={<CrossBones size={20} />} titel="Playmaker" untertitel="Spielsituationen bauen und als Animation zeigen" />

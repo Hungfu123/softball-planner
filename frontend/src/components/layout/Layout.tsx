@@ -120,8 +120,10 @@ export function Layout() {
                 volle Labels) braucht 597px (gemessen, fünf Tabs). Bei sm (640px) hat die
                 Leiste nur 592px innen — 5px zu wenig, die Leiste wäre abgeschnitten;
                 ab lg stehen 821px zur Verfügung (1024px, mit Logo). Bis 1023px
-                bleibt die kompakte Variante — passt mit 331px (fünf Tabs) und hat die
-                44px-Targets, die auf dem Tablet ohnehin richtig sind.
+                bleibt die kompakte Variante — 264px mit geladener Saira Condensed, ca. 331px
+                solange die Fallback-Schrift greift (Messung vor dem Webfont-Laden); Innenbreite
+                bei 390px: 366px. Beide passen, scrollWidth <= clientWidth, data-scroll-hint false.
+                Sie hat die 44px-Targets, die auf dem Tablet ohnehin richtig sind.
               */}
               <div className="flex items-stretch gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
                 {TABS.map(tab => {
