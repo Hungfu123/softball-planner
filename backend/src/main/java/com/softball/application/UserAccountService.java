@@ -130,6 +130,10 @@ public class UserAccountService {
             superadminGuard.pruefeNichtLetzter(target,
                     "Der letzte Superadmin kann nicht herabgestuft werden: danach käme niemand mehr in die Verwaltung.");
         }
+        if (role == Role.SUPERADMIN && target.getRole() != Role.SUPERADMIN && target.isLocked()) {
+            throw new BusinessValidationException(
+                    "Ein gesperrter Account kann nicht zum Superadmin gemacht werden. Entsperre ihn zuerst.");
+        }
         appUserRepository.updateRole(id, role);
         log.info("Rolle von Account {} ('{}') von {} auf {} gesetzt, durch {}",
                 id, target.getUsername(), target.getRole(), role, actor.getUsername());
