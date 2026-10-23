@@ -1,8 +1,6 @@
 package com.softball.shared.config;
 
 import com.softball.application.SelbstauskunftService;
-import com.softball.domain.model.AppUser;
-import com.softball.shared.security.CurrentUser;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,14 +14,12 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class LastSeenFilterTest {
 
@@ -34,15 +30,11 @@ class LastSeenFilterTest {
         @Override public Instant instant() { return jetzt; }
     };
     private final SelbstauskunftService service = mock(SelbstauskunftService.class);
-    private final CurrentUser currentUser = mock(CurrentUser.class);
-    private final AppUser hung = new AppUser();
     private LastSeenFilter filter;
 
     @BeforeEach
     void setUp() {
-        hung.setUsername("hung");
-        when(currentUser.find()).thenReturn(Optional.of(hung));
-        filter = new LastSeenFilter(uhr, currentUser, service);
+        filter = new LastSeenFilter(uhr, service);
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("hung", "x", "ROLE_ADMIN"));
     }
 
@@ -60,7 +52,7 @@ class LastSeenFilterTest {
         aufruf();
         aufruf();
 
-        verify(service, times(1)).vermerkeGesehen(hung, jetzt);
+        verify(service, times(1)).vermerkeGesehen("hung", jetzt);
     }
 
     @Test

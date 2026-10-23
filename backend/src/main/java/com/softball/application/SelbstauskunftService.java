@@ -30,16 +30,14 @@ public class SelbstauskunftService {
     }
 
     @Transactional
-    public void vermerkeAnmeldung(final AppUser user, final Instant jetzt) {
-        user.setLastLoginAt(jetzt);
-        appUserRepository.save(user);
-        log.info("Anmeldung: {}", user.getUsername());
+    public void vermerkeAnmeldung(final String username, final Instant jetzt) {
+        appUserRepository.touchLastLogin(username, jetzt);
+        log.info("Anmeldung: {}", username);
     }
 
     @Transactional
-    public void vermerkeGesehen(final AppUser user, final Instant jetzt) {
-        user.setLastSeenAt(jetzt);
-        appUserRepository.save(user);
+    public void vermerkeGesehen(final String username, final Instant jetzt) {
+        appUserRepository.touchLastSeen(username, jetzt);
     }
 
     @Transactional(readOnly = true)

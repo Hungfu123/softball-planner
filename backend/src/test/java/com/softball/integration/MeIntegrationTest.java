@@ -57,10 +57,8 @@ class MeIntegrationTest {
     }
 
     private void setze(final Instant lastLoginAt, final Instant lastSeenAt) {
-        final AppUser user = konto();
-        user.setLastLoginAt(lastLoginAt);
-        user.setLastSeenAt(lastSeenAt);
-        appUserRepository.save(user);
+        appUserRepository.touchLastLogin(TestAccounts.SUPERADMIN, lastLoginAt);
+        appUserRepository.touchLastSeen(TestAccounts.SUPERADMIN, lastSeenAt);
     }
 
     @Test
