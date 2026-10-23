@@ -407,8 +407,37 @@ Eindeutigkeitsprüfung des Benutzernamens sitzt im `UserAccountService` und im
 Datenbank sichert mit `UNIQUE` nach; der Fehler aus dem Index wird abgefangen und in
 dieselbe Meldung übersetzt, damit zwei gleichzeitige Anlagen nicht als 500 enden.
 
-**Aussperrschutz:** `PUT /role` und `DELETE` lehnen ab, wenn danach kein Superadmin mehr
-übrig wäre. Ein Superadmin kann sich auch nicht selbst degradieren oder löschen.
+**Aussperrschutz — vom User nach dem ersten Durchlauf verschärft.**
+
+Ursprünglich schützte die Regel nur den **letzten** Superadmin, und zwar nur, solange er
+ungesperrt war. Damit konnte ein Superadmin einen zweiten sperren, und über ein Rennen war
+der Zustand „einziger Superadmin gesperrt" erreichbar — aus dem man nur per SQL wieder
+herauskam. Der User hat die Regel deshalb verschärft:
+
+> „Superadmin kann nie gesperrt werden und wenn dann muss er jmd anderen superadmin geben
+> also wenn er sich selber die rechte geben will aber das kann nicht gehen"
+
+Daraus gilt:
+
+1. **Ein Superadmin-Account wird nie gesperrt** — von niemandem, auch nicht von einem
+   anderen Superadmin, auch nicht von sich selbst. Das gilt für `PUT /{id}/locked`
+   **und** für das Archivieren des zugehörigen Spielers, denn Archivieren sperrt.
+2. **Ein gesperrter Account kann nicht zum Superadmin befördert werden.** Das ist der
+   dritte Weg, der nicht über das Sperren führt: `PUT /{id}/role` lehnt ab, wenn das Ziel
+   `SUPERADMIN` ist und der Account gesperrt. **Kein stillschweigendes Entsperren** als
+   Nebenwirkung — wer befördert, entsperrt vorher bewusst.
+3. **Wer aufhören will, Superadmin zu sein, macht vorher jemand anderen dazu.**
+   `PUT /role` und `DELETE` lehnen weiterhin ab, wenn danach kein Superadmin übrig wäre;
+   ein Superadmin kann sich nicht selbst degradieren oder löschen.
+4. **Niemand kann sich selbst Superadmin geben.** `PUT /{id}/role` ist superadmin-only, ein
+   Admin kommt an den Endpunkt nicht. Zwei Tests halten das fest.
+
+**Offen bleiben darf nur der Ausweg:** Ein Superadmin, der vor dieser Regel gesperrt wurde,
+lässt sich weiterhin entsperren — direkt und über das Reaktivieren seines Spielers. Sonst
+wäre ein Altbestand für immer ausgesperrt.
+
+**Damit entfällt die frühere offene Stelle** „kein Weg zurück, wenn der letzte Superadmin
+gesperrt ist". Der Zustand kann nicht mehr entstehen.
 
 **Warum `/api/auth/login` neben `/api/me` steht:** `AuthProvider` ruft `/api/me` bei jedem
 Laden der Seite auf, nicht nur nach dem Formular. Würde dieser Aufruf `last_login_at`
