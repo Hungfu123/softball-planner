@@ -76,6 +76,10 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
             />
           </div>
 
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Dein Benutzername ist dein Vorname, klein geschrieben. Das Passwort steht in der WhatsApp-Gruppe.
+          </p>
+
           {error && (
             <p className="font-display text-[11px] tracking-widest uppercase text-softball-red-700 font-bold bg-softball-red-50 border border-softball-red-100 rounded-lg px-3 py-2">
               {error}
