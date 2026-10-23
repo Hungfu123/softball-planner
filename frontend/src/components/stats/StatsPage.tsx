@@ -20,7 +20,7 @@ const SCOPE_LABEL_MAP: Record<ScopeKind, string> = {
   allTime: 'Alle Zeit',
   gameDay: 'Spieltag',
   game: 'Spiel',
-  opponent: 'Gegner',
+  opponent: 'Nach Gegner',
 }
 
 /** Scopes mit Rate-Stat-Qualifier (≥5 ABs). Einzel-Spiel + Spieltag bleiben ungefiltert. */
@@ -303,7 +303,7 @@ export function StatsPage() {
           <ScopeChip active={scopeKind === 'gameDay'} onClick={() => setScope('gameDay')}>Spieltag</ScopeChip>
           <ScopeChip active={scopeKind === 'season'} onClick={() => setScope('season')}>Saison</ScopeChip>
           <ScopeChip active={scopeKind === 'year'} onClick={() => setScope('year')}>Jahr</ScopeChip>
-          <ScopeChip active={scopeKind === 'opponent'} onClick={() => setScope('opponent')}>Gegner</ScopeChip>
+          <ScopeChip active={scopeKind === 'opponent'} onClick={() => setScope('opponent')}>Nach Gegner</ScopeChip>
           <ScopeChip active={scopeKind === 'allTime'} onClick={() => setScope('allTime')}>Alle Zeit</ScopeChip>
 
           {/* Selector inline rechts daneben statt eigene Reihe */}
