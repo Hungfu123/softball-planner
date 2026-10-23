@@ -169,6 +169,34 @@ describe('Routing: Rollen', () => {
     expect(router.state.location.pathname).toBe(pfad)
   })
 
+  describe('Startseite je Rolle', () => {
+    // Keine Saison: beide Dashboards landen in ihrem Leerzustand, an dem man sie unterscheidet.
+    async function startseite(me: MeResponse) {
+      localStorage.setItem('auth', btoa('x:x'))
+      vi.stubGlobal('fetch', vi.fn((url: string) =>
+        String(url) === '/api/me'
+          ? Promise.resolve({ ok: true, status: 200, json: async () => me })
+          : String(url) === '/api/seasons'
+            ? Promise.resolve({ ok: true, status: 200, json: async () => [] })
+            : new Promise(() => {}),
+      ))
+      const router = createMemoryRouter(routes, { initialEntries: ['/'] })
+      render(<AuthProvider><RouterProvider router={router} /></AuthProvider>)
+    }
+
+    it('zeigt einem Spieler sein eigenes Dashboard', async () => {
+      await startseite(konto('PLAYER'))
+      expect(await screen.findByText('Kein Spiel angesetzt')).toBeInTheDocument()
+      expect(screen.queryByText('Saison anlegen')).not.toBeInTheDocument()
+    })
+
+    it('zeigt einem Admin weiterhin das bestehende Dashboard', async () => {
+      await startseite(konto('ADMIN'))
+      expect(await screen.findByText('Saison anlegen')).toBeInTheDocument()
+      expect(screen.queryByText('Kein Spiel angesetzt')).not.toBeInTheDocument()
+    })
+  })
+
   it('sperrt die Scoring-Route für einen Spieler ohne Scorer-Recht', async () => {
     const router = await oeffne('/gameday/1/scoring/0', konto('PLAYER', false))
     expect(router.state.location.pathname).toBe('/')
