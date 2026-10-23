@@ -11,6 +11,7 @@ public interface AppUserRepository {
     List<AppUser> findAll();
     AppUser save(AppUser user);
     void deleteById(Long id);
+    long count();
     long countByRole(Role role);
     boolean existsByUsername(String username);
 }

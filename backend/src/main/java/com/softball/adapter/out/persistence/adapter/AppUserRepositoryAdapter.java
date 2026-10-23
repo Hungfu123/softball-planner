@@ -54,6 +54,11 @@ public class AppUserRepositoryAdapter implements AppUserRepository {
     }
 
     @Override
+    public long count() {
+        return repo.count();
+    }
+
+    @Override
     public long countByRole(final Role role) {
         return repo.countByRole(role);
     }
