@@ -179,6 +179,27 @@ describe('Anmeldung — Formular', () => {
     expect(screen.getByText('Geschützter Inhalt')).toBeInTheDocument()
     expect(localStorage.getItem('auth')).toBe(btoa('hung:zweites'))
   })
+
+  it('liest den Body einer überholten Antwort trotzdem, sonst bleibt die Verbindung offen', async () => {
+    // Ein ungelesener Body hält die Anfrage für den Browser „in flight": die Seite erreicht
+    // nie network idle (E2E-Timeouts). Betrifft jede überholte Antwort.
+    let erste!: (a: unknown) => void
+    const ersteAntwort = new Promise<unknown>(res => { erste = res })
+    const text = vi.fn().mockResolvedValue('')
+    const fetchMock = vi.fn().mockReturnValueOnce(ersteAntwort).mockResolvedValue(ok())
+    vi.stubGlobal('fetch', fetchMock)
+    renderGated()
+
+    anmelden('hung', 'erstes')
+    anmelden('hung', 'zweites')
+    expect(await screen.findByText('Geschützter Inhalt')).toBeInTheDocument()
+    await act(async () => {
+      erste({ ok: false, status: 401, text, json: async () => ({}) })
+      await ersteAntwort
+    })
+
+    expect(text).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('Seitenaufbau mit gespeicherten Zugangsdaten', () => {

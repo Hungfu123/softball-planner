@@ -23,6 +23,15 @@ function basic(): Record<string, string> {
   return { Authorization: `Basic ${localStorage.getItem('auth')}` }
 }
 
+/**
+ * Eine überholte Antwort wird nicht ausgewertet, ihren Body holen wir trotzdem ab: ein
+ * ungelesener Body hält die Verbindung offen, die Seite erreicht nie „network idle"
+ * (E2E-Timeouts im Dev-Server, wo StrictMode jeden Effekt doppelt startet).
+ */
+function verwerfen(res: Response): void {
+  void res.text().catch(() => {})
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loggedIn, setLoggedIn] = useState(hasAuth())
   const [pruefend, setPruefend] = useState(hasAuth())
@@ -53,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const meiner = ++versuch.current
     fetch('/api/me', { headers: basic() })
       .then(async res => {
-        if (meiner !== versuch.current) return
+        if (meiner !== versuch.current) return verwerfen(res)
         if (res.status === 401) {
           clearAuth()
           setLoggedIn(false)
@@ -77,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const meiner = ++versuch.current
     try {
       const res = await fetch('/api/me', { headers: basic() })
-      if (meiner !== versuch.current) return
+      if (meiner !== versuch.current) return verwerfen(res)
       if (res.status === 401) {
         clearAuth()
         setLoggedIn(false)
@@ -112,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(username, password)
     try {
       const res = await fetch('/api/auth/login', { method: 'POST', headers: basic() })
-      if (meiner !== versuch.current) return
+      if (meiner !== versuch.current) return verwerfen(res)
 
       if (res.ok) {
         const auskunft: MeResponse = await res.json()
