@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getPlayers, setAuth, clearAuth, UNAUTHORIZED_EVENT } from './client'
+import { getPlayers, setAuth, clearAuth, downloadCalendarIcs, generateTrainingPlan, UNAUTHORIZED_EVENT } from './client'
+import { getPlays } from './plays'
+import type { GeneratePlanRequest } from '@/types'
 
 let ereignisse = 0
 const zaehlen = () => {
@@ -66,5 +68,24 @@ describe('request: 401', () => {
 
     expect(localStorage.getItem('auth')).toBe(btoa('hung:neu'))
     expect(ereignisse).toBe(0)
+  })
+})
+
+describe('401 auch auf den Nebenwegen', () => {
+  const abgelehnt = () =>
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => null }))
+
+  it.each([
+    ['Playmaker (api/plays.ts)', () => getPlays()],
+    ['Kalender-Download', () => downloadCalendarIcs(false)],
+    ['Trainingsplan erzeugen', () => generateTrainingPlan({} as GeneratePlanRequest)],
+  ])('%s meldet ab wie der gemeinsame Wrapper', async (_name, aufruf) => {
+    setAuth('hung', 'alt')
+    abgelehnt()
+
+    await expect(aufruf()).rejects.toThrow()
+
+    expect(localStorage.getItem('auth')).toBeNull()
+    expect(ereignisse).toBe(1)
   })
 })

@@ -1,25 +1,6 @@
 import type { Play, PlayCategory, PlayStep } from '@/components/playmaker/board/types'
 
-const API = '/api'
-
-function getAuthHeaders(): Record<string, string> {
-  const creds = localStorage.getItem('auth')
-  if (!creds) return {}
-  return { Authorization: `Basic ${creds}` }
-}
-
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    ...options,
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => null)
-    throw new Error(body?.error ?? `Fehler ${res.status}`)
-  }
-  if (res.status === 204) return undefined as T
-  return res.json()
-}
+import { request } from './client'
 
 export interface PlayPayload {
   title: string
