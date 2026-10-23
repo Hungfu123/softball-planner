@@ -126,11 +126,6 @@ export function StatsPage() {
     }
     setParams(next, { replace: true })
   }
-  const setView = (v: ViewKind) => {
-    const next = new URLSearchParams(params)
-    next.set('view', v)
-    setParams(next, { replace: true })
-  }
   const setSeasonId = (id: number) => {
     const next = new URLSearchParams(params)
     next.set('seasonId', String(id))
@@ -390,14 +385,6 @@ export function StatsPage() {
         </div>
       )}
 
-      {/* View Tabs — 'Einsätze' macht nur Sinn bei aggregierten Scopes mit Game-Zähler */}
-      <div className="flex gap-2 border-b border-cream-300">
-        <ViewTab active={view === 'batting'} onClick={() => setView('batting')}>Schlagen</ViewTab>
-        {scopeKind !== 'game' && scopeKind !== 'gameDay' && scopeKind !== 'opponent' && (
-          <ViewTab active={view === 'games'} onClick={() => setView('games')}>Einsätze</ViewTab>
-        )}
-      </div>
-
       {/* Hinweis: Spieltag zeigt ALLE Schläge (kein Mindest-AB), Gesamt-Scopes filtern */}
       {!loading && view === 'batting' && scopeKind === 'gameDay' && battingStats.length > 0 && (
         <p className="text-[11px] text-gray-500 px-1 -mt-2">
@@ -432,19 +419,6 @@ function ScopeChip({ active, onClick, children }: { active: boolean; onClick: ()
       onClick={onClick}
       className={`font-display px-3 py-1.5 text-xs font-bold tracking-widest uppercase rounded-full cursor-pointer transition-colors ${
         active ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
-      }`}
-    >
-      {children}
-    </button>
-  )
-}
-
-function ViewTab({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`font-display px-4 py-2 text-xs font-bold tracking-widest uppercase cursor-pointer border-b-2 -mb-[2px] transition-colors ${
-        active ? 'border-softball-red-600 text-softball-red-700' : 'border-transparent text-gray-500 hover:text-navy-900'
       }`}
     >
       {children}
