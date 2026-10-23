@@ -1,6 +1,8 @@
 package com.softball.service;
 
+import com.softball.domain.model.AppUser;
 import com.softball.domain.model.Player;
+import com.softball.domain.model.Role;
 import com.softball.application.SuperadminGuard;
 import com.softball.domain.port.out.AppUserRepository;
 import com.softball.domain.port.out.AtBatRepository;
@@ -55,6 +57,12 @@ class PlayerServiceTest {
 
     @InjectMocks
     private PlayerService playerService;
+
+    private static final AppUser SUPERADMIN = new AppUser();
+
+    static {
+        SUPERADMIN.setRole(Role.SUPERADMIN);
+    }
 
     private Player testPlayer;
 
@@ -119,7 +127,7 @@ class PlayerServiceTest {
         when(baseRunningEventRepository.existsByRunnerPlayerId(1L)).thenReturn(false);
         when(substitutionRepository.existsByPlayerId(1L)).thenReturn(false);
 
-        playerService.delete(1L);
+        playerService.delete(1L, SUPERADMIN);
 
         verify(availabilityService).removeAllPlanningReferences(1L);
         verify(trainingAttendanceRepository).deleteByPlayerId(1L);
@@ -131,7 +139,7 @@ class PlayerServiceTest {
         when(playerRepository.findById(1L)).thenReturn(Optional.of(testPlayer));
         when(atBatRepository.existsByPlayerId(1L)).thenReturn(true);
 
-        assertThatThrownBy(() -> playerService.delete(1L))
+        assertThatThrownBy(() -> playerService.delete(1L, SUPERADMIN))
             .isInstanceOf(BusinessValidationException.class)
             .hasMessageContaining("Scoring-Daten");
 
@@ -142,7 +150,7 @@ class PlayerServiceTest {
     void delete_nonExistingPlayer_throwsResourceNotFound() {
         when(playerRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> playerService.delete(99L))
+        assertThatThrownBy(() -> playerService.delete(99L, SUPERADMIN))
             .isInstanceOf(ResourceNotFoundException.class);
     }
 

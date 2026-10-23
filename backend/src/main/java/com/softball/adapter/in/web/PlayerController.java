@@ -94,18 +94,18 @@ public class PlayerController {
 
     @PutMapping("/{id}/archive")
     public PlayerResponse archive(@PathVariable final Long id) {
-        return PlayerResponse.from(playerService.setArchived(id, true));
+        return PlayerResponse.from(playerService.setArchived(id, true, currentUser.get()));
     }
 
     @PutMapping("/{id}/unarchive")
     public PlayerResponse unarchive(@PathVariable final Long id) {
-        return PlayerResponse.from(playerService.setArchived(id, false));
+        return PlayerResponse.from(playerService.setArchived(id, false, currentUser.get()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable final Long id) {
-        playerService.delete(id);
+        playerService.delete(id, currentUser.get());
     }
 
     @PutMapping("/{id}/whatsapp-name")
