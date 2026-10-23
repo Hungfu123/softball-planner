@@ -33,10 +33,13 @@
 Fünf Dinge, die die Spec voraussetzt, aber kein Task-Test von allein prüft:
 
 1. **Zwei Leute legen gleichzeitig denselben Benutzernamen an.** Die Prüfung im Service sieht beide als frei, der `UNIQUE`-Index lässt einen durch. Der andere darf keinen 500 bekommen, sondern dieselbe deutsche 400-Meldung. Test in Task 7.
-2. **Der letzte Superadmin degradiert oder löscht sich selbst.** Danach kann niemand mehr Rollen vergeben — die Installation ist tot und nur noch über die Datenbank zu retten. Test in Task 7.
-3. **Ein abgemeldeter Browser mit altem `localStorage`.** Am Deploy-Tag trägt jeder Tab `admin:…`. Ohne 401-Abfang sieht der Nutzer nur Fehler-Toasts und findet nicht zur Anmeldemaske zurück. Test in Task 9.
-4. **Ein Spieler ruft einen Schreib-Endpunkt direkt auf**, vorbei an der Oberfläche. Das Backend muss ablehnen, auch wo die Navigation den Weg gar nicht anbietet. Test in Task 3.
-5. **Ein Spieler liest sein eigenes Profil.** Die Trainingszahlen müssen auch dort fehlen — wer seine eigene Quote kennt, gibt sie weiter, und genau der Vergleich soll nicht entstehen. Test in Task 4.
+2. **Der Spieler des letzten Superadmins wird gelöscht.** `ON DELETE CASCADE` nimmt den
+   Account lautlos mit; der nächste Start legt über den Bootstrap einen neuen Superadmin
+   mit dem Standardpasswort an. Aus einem Versehen wird ein offener Zugang. Test in Task 7.
+3. **Der letzte Superadmin degradiert oder löscht sich selbst.** Danach kann niemand mehr Rollen vergeben — die Installation ist tot und nur noch über die Datenbank zu retten. Test in Task 7.
+4. **Ein abgemeldeter Browser mit altem `localStorage`.** Am Deploy-Tag trägt jeder Tab `admin:…`. Ohne 401-Abfang sieht der Nutzer nur Fehler-Toasts und findet nicht zur Anmeldemaske zurück. Test in Task 9.
+5. **Ein Spieler ruft einen Schreib-Endpunkt direkt auf**, vorbei an der Oberfläche. Das Backend muss ablehnen, auch wo die Navigation den Weg gar nicht anbietet. Test in Task 3.
+6. **Ein Spieler liest sein eigenes Profil.** Die Trainingszahlen müssen auch dort fehlen — wer seine eigene Quote kennt, gibt sie weiter, und genau der Vergleich soll nicht entstehen. Test in Task 4.
 
 ---
 
@@ -460,6 +463,7 @@ git commit -m "✨ /api/me und der Anmelde-Handschlag"
 @Test void spielerArchivierenSperrtDenAccount() { }
 @Test void spielerReaktivierenEntsperrtDenAccount() { }
 @Test void spielerLoeschenLoeschtDenAccountMit() { /* ON DELETE CASCADE */ }
+@Test void derSpielerDesLetztenSuperadminsKannNichtGeloeschtWerden() { /* 400, deutsche Meldung */ }
 @Test void nutzerAendertSeinenEigenenBenutzernamen() { }
 @Test void nutzerKannNichtDenBenutzernamenEinesAnderenAendern() { /* 403 */ }
 ```
@@ -477,9 +481,24 @@ Benutzernamen immer klein gespeichert, immer `trim()`. Keiner der drei Passwort-
 
 Den `DataIntegrityViolationException` aus dem `UNIQUE`-Index abfangen und in dieselbe `BusinessValidationException` übersetzen wie die Vorabprüfung.
 
-- [ ] **Step 4: `PlayerService.setArchived` erweitern**
+- [ ] **Step 4: `PlayerService` erweitern — Sperren und Aussperrschutz**
 
-Beim Archivieren den zugehörigen Account sperren, beim Reaktivieren entsperren. Die bestehende Bereinigung der Planungs- und Trainings-Referenzen bleibt unangetastet.
+`setArchived` sperrt beim Archivieren den zugehörigen Account und entsperrt beim
+Reaktivieren. Die bestehende Bereinigung der Planungs- und Trainings-Referenzen bleibt
+unangetastet.
+
+**`delete` bekommt einen zweiten Riegel.** Der Fremdschlüssel `app_user.player_id` trägt
+`ON DELETE CASCADE` — das Löschen eines Spielers nimmt seinen Account lautlos mit. Beim
+letzten Superadmin ist das ein Loch: die Tabelle steht danach leer, und der nächste Start
+legt über `AccountBootstrap` einen neuen Superadmin **mit dem Standardpasswort** an. Aus
+einem versehentlichen Löschen wird ein offener Zugang.
+
+`PlayerService.delete` lehnt deshalb mit `BusinessValidationException` und deutscher
+Meldung ab, wenn der Spieler den letzten Superadmin trägt. `AppUserRepository` hat die
+Mittel schon: `countByRole(Role.SUPERADMIN)` und `findByPlayerId(...)`.
+
+Dieselbe Prüfung gilt für jeden anderen Weg, auf dem ein Spieler verschwinden kann —
+`DataImportService` ist der Kandidat, der dabei übersehen wird. Prüfe ihn ausdrücklich.
 
 - [ ] **Step 5: Tests laufen lassen**
 
