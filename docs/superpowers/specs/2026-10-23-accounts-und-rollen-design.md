@@ -523,8 +523,14 @@ Navigation wird nach Rolle gefiltert. Ein Spieler sieht keine Menüpunkte, die e
 Eigene Komponente, Route `/`, wird statt des Admin-`Dashboard` gerendert, wenn die Rolle
 `PLAYER` ist. Inhalt, in dieser Reihenfolge auf dem Handy:
 
-1. **Nächstes Spiel** — Datum, Gegner, Uhrzeit, Ort. Der bestehende `HeroNextGameDay` ist
-   dafür der Ausgangspunkt
+1. **Nächstes Spiel** — Datum, Gegner, Ort. Der bestehende `HeroNextGameDay` ist
+   dafür der Ausgangspunkt.
+
+   **Keine Uhrzeit.** Ein früherer Stand dieses Dokuments nannte sie; die App speichert
+   aber keine. `GameDay` trägt nur ein `LocalDate`, und die Zeitfelder am `Game` gehören
+   zur Spieluhr des Live-Scorings, nicht zur Ansetzung. Eine Anstoßzeit nachzurüsten
+   berührt Modell, Planer, Einladungs-PDF und Kalender-Export — eigenes Vorhaben, nicht
+   dieses
 2. **Bin ich dabei** — steht er in der Verfügbarkeitsliste, steht er im Lineup, auf
    welcher Position, an welcher Stelle im Schlagplan
 3. **Meine Zahlen, kurz** — AVG, OBP, Spiele, Hits. Vier Kacheln, nicht die ganze
