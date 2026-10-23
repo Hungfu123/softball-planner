@@ -18,7 +18,9 @@ function Fehler({ text }: { text: string | null }) {
 function NamenFormular() {
   const { me, neuLaden } = useAuth()
   const toast = useToastContext()
-  const [name, setName] = useState(me?.username ?? '')
+  // null = noch nicht getippt: das Feld zeigt dann den aktuellen Namen, auch wenn `me` erst später eintrifft.
+  const [eingabe, setEingabe] = useState<string | null>(null)
+  const name = eingabe ?? me?.username ?? ''
   const [fehler, setFehler] = useState<string | null>(null)
   const [laeuft, setLaeuft] = useState(false)
 
@@ -30,9 +32,14 @@ function NamenFormular() {
       const neu = await changeUsername(name.trim())
       // Die Basic-Anmeldedaten tragen den alten Namen: ohne den Tausch lehnte der Server die nächste Anfrage ab.
       const alt = storedCredentials()
-      if (alt) setAuth(neu.username, alt.password)
-      await neuLaden()
-      toast.show('Benutzername geändert')
+      if (alt) {
+        setAuth(neu.username, alt.password)
+        await neuLaden()
+        toast.show('Benutzername geändert')
+      } else {
+        // Nichts neu abzulegen heißt: die nächste Anfrage liefe mit dem alten Namen ins 401. Lieber laut.
+        setFehler('Der Name wurde geändert, aber die Anmeldung kann nicht fortgeführt werden. Bitte melde dich mit dem neuen Namen neu an.')
+      }
     } catch (err) {
       setFehler((err as Error).message)
     } finally {
@@ -44,7 +51,7 @@ function NamenFormular() {
     <form onSubmit={speichern} className="space-y-3">
       <div>
         <label htmlFor="konto-benutzername" className={labelCls}>Benutzername</label>
-        <input id="konto-benutzername" value={name} onChange={e => setName(e.target.value)} autoComplete="username" className={inputCls} />
+        <input id="konto-benutzername" value={name} onChange={e => setEingabe(e.target.value)} autoComplete="username" className={inputCls} />
       </div>
       <Fehler text={fehler} />
       <Button type="submit" variant="navy" className="min-h-11" disabled={laeuft || name.trim() === '' || name.trim() === me?.username}>
