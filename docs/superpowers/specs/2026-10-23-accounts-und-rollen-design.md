@@ -600,6 +600,42 @@ Spieltagsseite. Er war als Ausgleich dafür gedacht, dass heute **nichts** im Fr
 `/spielbogen` verlinkt außer dem Reiter — bei der tatsächlichen Nutzung lohnt er nicht.
 Sollte der Spielbogen wieder wichtiger werden, ist das der erste Griff.
 
+### Nachtrag: die Steuerelemente auf ANALYSE (entschieden 2026-10-23, noch nicht gebaut)
+
+Nach dem Umbau standen auf `/stats` **vier Steuerzeilen** übereinander, bevor Inhalt kam:
+die drei Modus-Chips, fünf Zeitraum-Pillen, ein Jahr-Auswahlfeld und die Reiter
+Schlagen/Einsätze. Zwei Fehler dabei:
+
+- **„Gegner" stand zweimal** — oben als Modus (Gegner-Verzeichnis), unten als Zeitraum
+  (nach Gegner filtern). Gleiches Wort, gleiche Pillenform, zwei Bedeutungen. Sofort
+  behoben: die Zeitraum-Pille heißt jetzt „Nach Gegner".
+- **Alle Ebenen trugen dieselbe Form.** Nichts unterschied „wechselt die Seite" von „filtert".
+
+Die Praxisregel lautet: eine Reiterzeile, höchstens eine Verschachtelung. Vier Ebenen
+verfehlen das deutlich.
+
+**Entscheidung des Users: Variante F — zwei Formen, keine Pillen.**
+
+| Aufgabe | Form | Inhalt |
+|---|---|---|
+| Welche Tabelle sehe ich | **Unterstrich-Reiter**, eine Zeile, waagerecht scrollbar | Schlagen · Einsätze · Spiel-Verlauf · Gegner |
+| Welcher Zeitraum | **ein Knopf** rechts daneben, auf schmalen Schirmen darunter | „Jahr 2101 ▾" → öffnet das bestehende `ResponsiveSheet` mit Art und Wert |
+
+Die Unterstrich-Reiter sind **kein neues Muster**: Schlagen/Einsätze auf `/stats` sind heute
+schon so gebaut. Die Form trägt bisher nur die unterste Ebene statt der obersten. Damit
+verschwindet `AnalysisModeTabs` in seiner Pillenform; die vier Ziele wandern in die
+Reiterzeile.
+
+Verworfen wurden: die Modi in den dunklen Kopf zu heben (er ist sticky und kostet die Höhe
+dann dauerhaft), den Zeitraum in die Überschrift zu setzen (ein Bedienelement im Titel wird
+übersehen, und der Zeitraum hat zwei Dimensionen), und die Ebenen bloß zusammenzulegen
+(blieb fünf gleichförmige Pillen in einer Reihe).
+
+Offene Punkte für die Umsetzung: die Trefferfläche der Unterstrich-Reiter muss über
+Polsterung auf 44 px kommen — sie sind schmaler als Pillen. Jede Reiter- und Knopffläche
+bekommt Druckgefühl (`scale(0.97)` bei `:active`), Hover nur hinter `hover: hover`. Das
+Blatt fährt mit ease-out herein und schließt schneller, als es öffnet.
+
 **Für Spieler** schrumpft die Leiste von allein: Start, Analyse, Kalender. Kein Training,
 kein Spielbogen, kein Orga, kein Spieler-Verwalten. Das Gedränge ist ein Admin-Problem.
 
