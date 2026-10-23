@@ -28,6 +28,7 @@ public class LeagueTeamController {
         this.teamDirectoryService = teamDirectoryService;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/teams/directory")
     public List<TeamDirectoryEntry> getTeamDirectory() {
         return teamDirectoryService.getDirectory();

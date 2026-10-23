@@ -146,7 +146,7 @@ class SpielerLeserechteIntegrationTest {
         for (final String pfad : List.of(
                 "/api/players", "/api/seasons", "/api/seasons/years", "/api/gamedays/all",
                 "/api/stats/game-logs", "/api/stats/batting-slots", "/api/stats/all-time/batting",
-                "/api/stats/all-time/games", "/api/stats/opponents", "/api/stats/all-time/awards",
+                "/api/stats/all-time/games", "/api/stats/opponents", "/api/teams/directory", "/api/stats/all-time/awards",
                 "/api/years/2026/batting-stats", "/api/years/2026/stats", "/api/years/2026/seasons",
                 "/api/years/2026/awards", "/api/plays", "/api/play-categories")) {
             final int status = mockMvc.perform(get(pfad).with(SPIELER)).andReturn().getResponse().getStatus();
@@ -180,7 +180,6 @@ class SpielerLeserechteIntegrationTest {
         for (final String pfad : List.of(
                 "/api/games/1/lineup/suggest",        // gewichtet die Trainingsbeteiligung
                 "/api/gamedays/1/poll-votes",         // WhatsApp
-                "/api/teams/directory",
                 "/api/spielbogen", "/api/coach-billing/profile", "/api/orga/whatsapp/status")) {
             final int status = mockMvc.perform(get(pfad).with(SPIELER)).andReturn().getResponse().getStatus();
             assertThat(status).as(pfad).isEqualTo(403);
