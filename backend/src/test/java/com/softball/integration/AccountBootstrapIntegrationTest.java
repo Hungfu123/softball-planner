@@ -4,7 +4,9 @@ import com.softball.TestcontainersConfig;
 import com.softball.application.AccountBootstrap;
 import com.softball.domain.model.AppUser;
 import com.softball.domain.model.Role;
+import com.softball.domain.model.Player;
 import com.softball.domain.port.out.AppUserRepository;
+import com.softball.domain.port.out.PlayerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ class AccountBootstrapIntegrationTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PlayerRepository playerRepository;
 
     @BeforeEach
     void leereAccountTabelle() {
@@ -56,5 +61,60 @@ class AccountBootstrapIntegrationTest {
 
         assertThat(appUserRepository.findAll()).hasSize(1);
         assertThat(appUserRepository.findByUsername("hung").orElseThrow().getId()).isEqualTo(idVorher);
+    }
+
+    @Test
+    void legtDenFehlendenSpielerAn() {
+        appUserRepository.findAll().forEach(user -> appUserRepository.deleteById(user.getId()));
+        final var bootstrap = bootstrapFuer("Neuling");
+        try {
+            bootstrap.run(null);
+
+            final AppUser user = appUserRepository.findByUsername("neuling").orElseThrow();
+            assertThat(playerRepository.findById(user.getPlayerId()).orElseThrow().getName()).isEqualTo("Neuling");
+        } finally {
+            aufraeumen("Neuling");
+        }
+    }
+
+    @Test
+    void bevorzugtEinenAktivenSpielerVorEinemArchivierten() {
+        appUserRepository.findAll().forEach(user -> appUserRepository.deleteById(user.getId()));
+        final Player archiviert = playerRepository.save(new Player("Doppel"));
+        archiviert.setArchived(true);
+        playerRepository.save(archiviert);
+        final Player aktiv = playerRepository.save(new Player("Doppel"));
+        try {
+            bootstrapFuer("Doppel").run(null);
+
+            assertThat(appUserRepository.findByUsername("doppel").orElseThrow().getPlayerId()).isEqualTo(aktiv.getId());
+        } finally {
+            aufraeumen("Doppel");
+        }
+    }
+
+    @Test
+    void nimmtNotfallsEinenArchiviertenSpieler() {
+        appUserRepository.findAll().forEach(user -> appUserRepository.deleteById(user.getId()));
+        final Player archiviert = playerRepository.save(new Player("Altlast"));
+        archiviert.setArchived(true);
+        playerRepository.save(archiviert);
+        try {
+            bootstrapFuer("Altlast").run(null);
+
+            assertThat(appUserRepository.findByUsername("altlast").orElseThrow().getPlayerId()).isEqualTo(archiviert.getId());
+        } finally {
+            aufraeumen("Altlast");
+        }
+    }
+
+    private AccountBootstrap bootstrapFuer(final String spielerName) {
+        return new AccountBootstrap(appUserRepository, playerRepository, passwordEncoder, spielerName, "test");
+    }
+
+    private void aufraeumen(final String spielerName) {
+        playerRepository.findAll().stream()
+                .filter(p -> p.getName().equals(spielerName))
+                .forEach(p -> playerRepository.deleteById(p.getId()));
     }
 }

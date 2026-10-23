@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Legt auf leerer Datenbank genau einen Superadmin an, damit frische Datenbanken
@@ -48,14 +50,11 @@ public class AccountBootstrap implements ApplicationRunner {
     @Override
     @Transactional
     public void run(final ApplicationArguments args) {
-        if (!appUserRepository.findAll().isEmpty()) {
+        if (appUserRepository.count() > 0) {
             log.info("Accounts vorhanden, Bootstrap uebersprungen");
             return;
         }
-        final Player player = playerRepository.findAll().stream()
-                .filter(p -> p.getName().equalsIgnoreCase(bootstrapPlayer))
-                .findFirst()
-                .orElseGet(this::createPlayer);
+        final Player player = findBootstrapPlayer();
 
         final AppUser user = new AppUser();
         user.setPlayerId(player.getId());
@@ -65,6 +64,22 @@ public class AccountBootstrap implements ApplicationRunner {
         user.setCreatedAt(Instant.now());
         appUserRepository.save(user);
         log.info("Superadmin '{}' fuer Spieler {} angelegt", user.getUsername(), player.getId());
+    }
+
+    /** Bevorzugt einen aktiven Spieler; ein archivierter ist besser als gar kein Zugang. */
+    private Player findBootstrapPlayer() {
+        final List<Player> matches = playerRepository.findAll().stream()
+                .filter(p -> p.getName().equalsIgnoreCase(bootstrapPlayer))
+                .toList();
+        final Optional<Player> active = matches.stream().filter(p -> !p.isArchived()).findFirst();
+        if (active.isPresent()) {
+            return active.get();
+        }
+        if (!matches.isEmpty()) {
+            log.warn("Bootstrap-Spieler '{}' ist archiviert, der Superadmin haengt an ihm", bootstrapPlayer);
+            return matches.get(0);
+        }
+        return createPlayer();
     }
 
     private Player createPlayer() {
