@@ -68,25 +68,31 @@ describe('Routing: Auth-Gate pro Route (angemeldet)', () => {
     // Die Standalone-Route lädt beim Mounten echte Daten nach — ohne Netz im Test
     // würde das als unbehandelte Rejection auffallen. Die Promise bleibt bewusst
     // offen, die Seite zeigt einfach weiter ihren Lade-Zustand, den wir prüfen wollen.
-    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
+    // Einzige Ausnahme: /api/me, die Pruefung der gespeicherten Zugangsdaten beim Seitenaufbau.
+    const me = { username: 'hung', role: 'SUPERADMIN', playerId: null, playerName: null, mayScore: true, passwordChanged: true }
+    vi.stubGlobal('fetch', vi.fn((url: string) =>
+      String(url) === '/api/me'
+        ? Promise.resolve({ ok: true, status: 200, json: async () => me })
+        : new Promise(() => {}),
+    ))
   })
 
   afterEach(() => {
     vi.unstubAllGlobals()
   })
 
-  it('/orga (Layout-Zweig) zeigt die Seite, nicht den Login', () => {
+  it('/orga (Layout-Zweig) zeigt die Seite, nicht den Login', async () => {
     renderAt('/orga')
 
+    expect(await screen.findByRole('navigation')).toBeInTheDocument()
     expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
-    expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 
-  it('/gameday/1/export (eigenständige Top-Level-Route) zeigt die Seite, nicht den Login', () => {
+  it('/gameday/1/export (eigenständige Top-Level-Route) zeigt die Seite, nicht den Login', async () => {
     renderAt('/gameday/1/export')
 
+    expect(await screen.findByRole('status', { name: 'Lade Daten' })).toBeInTheDocument()
     expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
-    expect(screen.getByRole('status', { name: 'Lade Daten' })).toBeInTheDocument()
   })
 
   it('schickt ein altes Lesezeichen auf /orga/aufbau zurück aufs Dashboard', async () => {
@@ -100,10 +106,10 @@ describe('Routing: Auth-Gate pro Route (angemeldet)', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
-  it('/nichtvorhanden (unbekannte Route) leitet angemeldet aufs Dashboard um', () => {
+  it('/nichtvorhanden (unbekannte Route) leitet angemeldet aufs Dashboard um', async () => {
     renderAt('/nichtvorhanden')
 
+    expect(await screen.findByRole('navigation')).toBeInTheDocument()
     expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
-    expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 })

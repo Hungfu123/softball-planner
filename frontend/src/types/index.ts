@@ -1107,3 +1107,15 @@ export interface GameDayVotePreview {
   voteCount: number
   yesCount: number
 }
+
+export type Role = 'SUPERADMIN' | 'ADMIN' | 'PLAYER'
+
+/** Antwort von `GET /api/me` und `POST /api/auth/login`: wer angemeldet ist und was er darf. */
+export interface MeResponse {
+  username: string
+  role: Role
+  playerId: number | null
+  playerName: string | null
+  mayScore: boolean
+  passwordChanged: boolean
+}

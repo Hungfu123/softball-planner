@@ -6,10 +6,10 @@ function getAuthHeaders(): Record<string, string> {
   return { Authorization: `Basic ${creds}` }
 }
 
-export function setAuth(password: string) {
-  // Uebergang: fester Benutzername, bis die Anmeldung ein Benutzer-Feld bekommt (Accounts-Plan, Task 9)
-  const creds = btoa(`hung:${password}`)
-  localStorage.setItem('auth', creds)
+export function setAuth(username: string, password: string) {
+  // btoa kennt nur Latin-1; Umlaute im Namen oder Passwort wuerden sonst werfen
+  const bytes = new TextEncoder().encode(`${username}:${password}`)
+  localStorage.setItem('auth', btoa(String.fromCharCode(...bytes)))
 }
 
 export function clearAuth() {
@@ -20,11 +20,23 @@ export function hasAuth(): boolean {
   return localStorage.getItem('auth') !== null
 }
 
+/** Feuert, wenn der Server die gespeicherten Zugangsdaten ablehnt. Der AuthProvider hoert darauf. */
+export const UNAUTHORIZED_EVENT = 'auth:unauthorized'
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
+  const gesendet = localStorage.getItem('auth')
   const res = await fetch(`${API}${url}`, {
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     ...options,
   })
+  if (res.status === 401 && gesendet !== null) {
+    // Nur abmelden, wenn es noch die Zugangsdaten sind, mit denen die Anfrage lief: eine
+    // verspaetete 401 darf eine Anmeldung, die inzwischen neu erfolgte, nicht wegraeumen.
+    if (localStorage.getItem('auth') === gesendet) {
+      clearAuth()
+      window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
+    }
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new Error(body?.error ?? `Fehler ${res.status}`)
