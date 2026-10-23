@@ -1,4 +1,5 @@
 import { parseStatsView } from './statsView'
+import type { ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 
 /**
@@ -7,7 +8,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
  * NavLink prüft keine Suchparameter, deshalb wird der aktive Reiter hier selbst bestimmt.
  * Der Zeitraum ist bewusst kein Reiter — er filtert nur.
  */
-export function AnalysisModeTabs() {
+export function AnalysisModeTabs({ trailing }: { trailing?: ReactNode } = {}) {
   const { pathname } = useLocation()
   const [params] = useSearchParams()
 
@@ -29,10 +30,8 @@ export function AnalysisModeTabs() {
   ]
 
   return (
-    <nav
-      className="flex overflow-x-auto border-b border-cream-300 mb-4"
-      aria-label="Analyse-Ansichten"
-    >
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 mb-4 sm:border-b sm:border-cream-300">
+    <nav className="flex overflow-x-auto max-w-full w-full sm:w-auto pb-px border-b border-cream-300 sm:border-b-0" aria-label="Analyse-Ansichten">
       {tabs.map(t => (
         <Link
           key={t.label}
@@ -49,5 +48,7 @@ export function AnalysisModeTabs() {
         </Link>
       ))}
     </nav>
+    {trailing && <div className="mt-3 sm:mt-0">{trailing}</div>}
+    </div>
   )
 }

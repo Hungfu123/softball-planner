@@ -10,19 +10,10 @@ import { GamesNeedRangeNotice } from './GamesNeedRangeNotice'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
 import { parseStatsView } from '@/components/analysis/statsView'
 import { ZeitraumKnopf } from './ZeitraumKnopf'
+import { SCOPE_LABEL_MAP, THIS_GAME_LABEL, type ScopeKind } from './statsScope'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
 import { StatsTableSkeleton } from './StatsTableSkeleton'
 import { generateBattingStatsPdf } from '@/utils/statsPdf'
-
-import type { ScopeKind } from './ZeitraumKnopf'
-const SCOPE_LABEL_MAP: Record<ScopeKind, string> = {
-  season: 'Saison',
-  year: 'Jahr',
-  allTime: 'Alle Zeit',
-  gameDay: 'Spieltag',
-  game: 'Spiel',
-  opponent: 'Nach Gegner',
-}
 
 /** Scopes mit Rate-Stat-Qualifier (≥5 ABs). Einzel-Spiel + Spieltag bleiben ungefiltert. */
 function isAggregatedScope(scope: ScopeKind): boolean {
@@ -259,7 +250,7 @@ export function StatsPage() {
   }, [scopeKind, seasons, seasonsForYear, selectedSeasonId, selectedYear, selectedGameId, selectedGame, gameDays, selectedGameDayId, opponents, selectedOpponent, selectedOpponentGameId, gamesVsOpponent])
 
   const zeitraumLabel = (() => {
-    if (scopeKind === 'game') return 'Dieses Spiel'
+    if (scopeKind === 'game') return THIS_GAME_LABEL
     if (scopeKind === 'gameDay') {
       const gd = gameDays.find(x => x.id === selectedGameDayId)
       return gd ? `Spieltag ${formatGameDayLabel(gd)}` : 'Spieltag'
@@ -304,9 +295,8 @@ export function StatsPage() {
           )}
         </div>
 
-        <AnalysisModeTabs />
-
-        <div className="mb-3">
+        <AnalysisModeTabs
+          trailing={
           <ZeitraumKnopf
             scopeKind={scopeKind}
             label={zeitraumLabel}
@@ -326,7 +316,9 @@ export function StatsPage() {
             onOpponent={setOpponentId}
             onOpponentGame={setOpponentGameId}
           />
-        </div>
+          }
+        />
+
       </div>
 
       {/* Auszeichnungen (Scope-weit) — Highlights des Zeitraums, über den Detail-Tabs */}

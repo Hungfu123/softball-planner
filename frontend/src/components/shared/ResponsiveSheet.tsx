@@ -62,7 +62,7 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
                 <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
                 {title}
               </h2>
-              <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Schließen">
+              <button onClick={onClose} className="inline-flex items-center justify-center w-11 h-11 -mr-3 text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Schließen">
                 <XMark size={20} />
               </button>
             </div>
@@ -164,7 +164,7 @@ function CenterModal({ onClose, title, maxWidth, footer, children }: { onClose: 
             <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
             {title}
           </h2>
-          <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Schließen">
+          <button onClick={onClose} className="inline-flex items-center justify-center w-11 h-11 -mr-3 text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Schließen">
             <XMark size={20} />
           </button>
         </div>
