@@ -15,6 +15,10 @@ import java.util.Map;
  * Fasst Scoring-Zeilen beim Lesen zusammen: aufeinanderfolgende {@code SCORING}-Zeilen desselben
  * Nutzers am selben Ziel gehoeren zu einer Spanne, solange zwischen zwei Zeilen weniger als
  * {@link #MAX_LUECKE} liegen. Alle anderen Zeilen bleiben einzeln.
+ * <p>
+ * Der Schluessel ist der Benutzername-Schnappschuss, nicht die userId: benennt jemand sich mitten in
+ * einer Spanne um, reisst sie ab. Selten und folgenlos; die userId waere nach einem Account-Loeschen
+ * ohnehin null und trennte dann alle Ehemaligen zu einem Nutzer zusammen.
  */
 public class AuditSummarizer {
 

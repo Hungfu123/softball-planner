@@ -23,8 +23,17 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.request.RequestContextHolder;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
+import com.softball.shared.config.AuditFilter;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -58,7 +67,7 @@ class AuditIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private AuditEventRepository auditEvents;
-    @Autowired private AuditService auditService;
+    @MockitoSpyBean private AuditService auditService;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private PlayerRepository playerRepository;
     @Autowired private SchedulingConfig.AuditCleanup auditCleanup;
@@ -124,6 +133,27 @@ class AuditIntegrationTest {
                 .andExpect(jsonPath("$[0].targetType").value("PLAYER"))
                 .andExpect(jsonPath("$[0].targetId").value(id))
                 .andExpect(jsonPath("$[1].label").value("Spieler angelegt"));
+    }
+
+    @Test
+    void eineKaputteHistorienZeileKipptDieAntwortNicht() throws Exception {
+        Mockito.doThrow(new IllegalStateException("Datenbank weg")).when(auditService)
+                .record(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+                        Mockito.any(), Mockito.any());
+        final Logger filterLog = (Logger) LoggerFactory.getLogger(AuditFilter.class);
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        filterLog.addAppender(appender);
+        try {
+            spielerAnlegen("Audit Kaputt"); // erwartet 201 trotz geworfener Ausnahme
+
+            assertThat(zeilen("true")).isZero();
+            assertThat(appender.list).filteredOn(e -> e.getLevel() == Level.WARN)
+                    .anyMatch(e -> e.getFormattedMessage().contains("POST /api/players"));
+        } finally {
+            filterLog.detachAppender(appender);
+            Mockito.reset(auditService);
+        }
     }
 
     @Test

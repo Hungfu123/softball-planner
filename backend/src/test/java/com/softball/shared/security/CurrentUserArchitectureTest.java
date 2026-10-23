@@ -36,9 +36,16 @@ class CurrentUserArchitectureTest {
     }
 
     /**
-     * Der direkte Test oben sieht nur Felder und Konstruktoren der geplanten Klasse selbst. Ein Lauf,
-     * der ueber einen Service indirekt an CurrentUser kaeme, rutschte durch. Dieser Test folgt den
-     * Konstruktor-Abhaengigkeiten der Audit-Aufraeumer bis in die eigenen Pakete.
+     * Der direkte Test oben sieht nur Felder und Konstruktoren der geplanten Klasse selbst. Dieser
+     * folgt vom Audit-Aufraeumer aus den Konstruktor-Parametern und Feldtypen innerhalb von
+     * {@code com.softball}, und loest Interfaces (Ports) ueber einen Klassenpfad-Scan zu ihren
+     * Implementierungen auf, denn die Onion-Architektur haengt alles an Ports.
+     * <p>
+     * GRENZEN, der Test ist nicht lueckenlos: generische Typen ({@code ObjectProvider<CurrentUser>},
+     * {@code List<X>}), Setter- und Methodenparameter, Felder der Oberklassen, per
+     * {@code ApplicationContext.getBean} geholte Beans und Lambdas bleiben unsichtbar. Nur
+     * Klassen unter {@code com.softball} werden betreten. Er ist ein Netz fuer den haeufigen Fall
+     * (Konstruktor- oder Feldinjektion), kein Beweis.
      */
     @Test
     void derHistorienAufraeumerErreichtCurrentUserAuchIndirektNicht() throws Exception {
@@ -47,15 +54,24 @@ class CurrentUserArchitectureTest {
         assertThat(aufraeumer).as("Gegen Leerlauf: der Aufraeum-Lauf muss gefunden werden").hasSize(1);
 
         assertThat(erreichtCurrentUser(aufraeumer.get(0), new java.util.HashSet<>()))
-                .as("Der Aufraeum-Lauf laeuft ausserhalb jeder Anfrage: kein Weg zu CurrentUser, auch nicht ueber Services")
+                .as("Der Aufraeum-Lauf laeuft ausserhalb jeder Anfrage: kein Weg zu CurrentUser, auch nicht ueber Services und Ports")
                 .isFalse();
     }
 
-    private static boolean erreichtCurrentUser(final Class<?> type, final java.util.Set<Class<?>> besucht) {
+    private static boolean erreichtCurrentUser(final Class<?> type, final java.util.Set<Class<?>> besucht)
+            throws ClassNotFoundException {
         if (type == CurrentUser.class) {
             return true;
         }
         if (!type.getName().startsWith("com.softball") || !besucht.add(type)) {
+            return false;
+        }
+        if (type.isInterface() || java.lang.reflect.Modifier.isAbstract(type.getModifiers())) {
+            for (final Class<?> impl : implementierungen(type)) {
+                if (erreichtCurrentUser(impl, besucht)) {
+                    return true;
+                }
+            }
             return false;
         }
         for (final Constructor<?> c : type.getDeclaredConstructors()) {
@@ -71,6 +87,17 @@ class CurrentUserArchitectureTest {
             }
         }
         return false;
+    }
+
+    private static List<Class<?>> implementierungen(final Class<?> type) throws ClassNotFoundException {
+        final ClassPathScanningCandidateComponentProvider scanner =
+                new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new org.springframework.core.type.filter.AssignableTypeFilter(type));
+        final List<Class<?>> result = new java.util.ArrayList<>();
+        for (final BeanDefinition def : scanner.findCandidateComponents("com.softball")) {
+            result.add(Class.forName(def.getBeanClassName()));
+        }
+        return result;
     }
 
     private static List<Class<?>> geplanteKlassen() throws ClassNotFoundException {
