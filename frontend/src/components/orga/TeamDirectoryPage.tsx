@@ -5,7 +5,7 @@ import type { GameDayResponse, Season, TeamDirectoryEntry } from '@/types'
 import { CrossBones, PlusCircle } from '@/icons'
 import { Button } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
-import { AnalysisModeTabs } from './AnalysisModeTabs'
+import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
 import { CreateTeamSheet } from './CreateTeamSheet'
 import {
   type ClubGame,
