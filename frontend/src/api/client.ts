@@ -101,8 +101,6 @@ import type {
   InvitationResponse,
   InvitationRequest,
   LineupSetResponse,
-  EquipmentItem,
-  EquipmentInput,
   WhatsappAccountStatus,
   WhatsappGroup,
   WhatsappPollResponse,
@@ -732,16 +730,6 @@ export const duplicateInvitation = (id: number) =>
   request<InvitationResponse>(`/invitations/${id}/duplicate`, { method: 'POST' })
 export const deleteInvitation = (id: number) =>
   request<void>(`/invitations/${id}`, { method: 'DELETE' })
-
-// Equipment
-export const updateEquipment = (itemId: number, input: EquipmentInput) =>
-  request<EquipmentItem>(`/equipment/${itemId}`, { method: 'PUT', body: JSON.stringify(input) })
-export const deleteEquipment = (itemId: number) =>
-  request<void>(`/equipment/${itemId}`, { method: 'DELETE' })
-export const getEquipmentCatalog = () =>
-  request<EquipmentItem[]>('/equipment')
-export const createEquipmentItem = (input: EquipmentInput) =>
-  request<EquipmentItem>('/equipment', { method: 'POST', body: JSON.stringify(input) })
 
 // WhatsApp-Umfragen
 export const getWhatsappStatus = () =>

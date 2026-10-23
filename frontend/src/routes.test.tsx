@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { routes } from './routes'
@@ -21,7 +21,6 @@ const PROTECTED_PATHS = [
   '/spielbogen/new',
   '/orga',
   '/orga/einladungen',
-  '/orga/aufbau',
   '/orga/whatsapp-umfrage',
   '/gameday/1',
   '/gameday/1/export',
@@ -88,6 +87,17 @@ describe('Routing: Auth-Gate pro Route (angemeldet)', () => {
 
     expect(screen.queryByLabelText('Passwort')).not.toBeInTheDocument()
     expect(screen.getByRole('status', { name: 'Lade Daten' })).toBeInTheDocument()
+  })
+
+  it('schickt ein altes Lesezeichen auf /orga/aufbau zurück aufs Dashboard', async () => {
+    const router = createMemoryRouter(routes, { initialEntries: ['/orga/aufbau'] })
+    render(
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>,
+    )
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
   })
 
   it('/nichtvorhanden (unbekannte Route) leitet angemeldet aufs Dashboard um', () => {
