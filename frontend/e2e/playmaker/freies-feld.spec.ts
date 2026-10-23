@@ -121,6 +121,11 @@ test('fragt vor dem Zurücksetzen und stellt dann die Standardaufstellung her', 
   await expect(page.locator('[data-marker="runner"]')).toHaveCount(2)
 })
 
+/*
+ * /api/me ist die einzige erlaubte Ausnahme: der AuthProvider der App-Huelle fragt beim Aufmachen,
+ * wer angemeldet ist. Das Feld selbst braucht es nicht, und ein Fehlschlag dort darf es nicht
+ * stoeren (siehe naechster Test). Alles andere unter /api bleibt verboten.
+ */
 test('funktioniert ohne Netz', async ({ page, context }) => {
   // Das ist der Kern: in der Pause am Platz gibt es kein WLAN. Die Seite darf gar kein
   // /api brauchen — auch nicht beim ersten Aufmachen.
@@ -131,6 +136,7 @@ test('funktioniert ohne Netz', async ({ page, context }) => {
   await context.route(
     url => url.pathname.startsWith('/api/'),
     route => {
+      if (new URL(route.request().url()).pathname === '/api/me') return route.continue()
       apiAufrufe.push(route.request().url())
       return route.abort()
     },
@@ -145,4 +151,18 @@ test('funktioniert ohne Netz', async ({ page, context }) => {
   await expect.poll(() => ballbahnen(page), { timeout: 8000 }).toBe(1)
 
   expect(apiAufrufe).toEqual([])
+})
+
+test('funktioniert auch, wenn /api/me scheitert', async ({ page, context }) => {
+  // Die eigentliche Zusicherung hinter dem Offline-Versprechen: kein Netz heisst auch kein
+  // /api/me — das Feld bleibt trotzdem bedienbar und der Nutzer angemeldet.
+  await context.route(url => url.pathname.startsWith('/api/'), route => route.abort())
+
+  await page.goto('/orga/playmaker/frei')
+  await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
+  await page.getByRole('button', { name: 'Runner auf 1' }).click()
+  await expect(page.locator('[data-marker="runner"]')).toHaveCount(1)
+  await ziehe(page, -70, -150)
+  await expect.poll(() => ballbahnen(page), { timeout: 8000 }).toBe(1)
+  await expect(page.locator('#username')).toHaveCount(0)
 })
