@@ -31,7 +31,7 @@ export function CollapsibleCard({ title, subtitle, summary, children }: {
         type="button"
         onClick={() => setUserOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-start justify-between gap-3 text-left cursor-pointer"
+        className="w-full min-h-11 flex items-start justify-between gap-3 text-left cursor-pointer"
       >
         <span className="min-w-0">
           <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">

@@ -187,7 +187,7 @@ export function PlayerProfilePage() {
       <div className="max-w-md md:max-w-2xl lg:max-w-5xl mx-auto p-4 space-y-4">
         <button
           onClick={() => navigate(istAdmin ? '/players' : '/')}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-gray-500 hover:text-navy-900 cursor-pointer"
+          className="inline-flex items-center gap-1 min-h-11 -my-3 -ml-2 pl-2 pr-3 text-sm font-semibold text-gray-500 hover:text-navy-900 cursor-pointer"
         >
           <ChevronLeft size={16} />
           {istAdmin ? 'Kader' : 'Start'}

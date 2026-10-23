@@ -123,20 +123,20 @@ export function CalendarPage() {
       {/* Header: Monats-Nav + ICS-Export */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
-          <button onClick={() => goMonth(-1)} aria-label="Vorheriger Monat" className="p-2 rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer">
+          <button onClick={() => goMonth(-1)} aria-label="Vorheriger Monat" className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer">
             <ChevronLeft size={20} />
           </button>
           <h1 className="font-headline text-xl sm:text-2xl font-extrabold text-navy-900 uppercase tracking-wide tabular-nums min-w-[150px] sm:min-w-[180px] text-center">
             {monthLabel}
           </h1>
-          <button onClick={() => goMonth(1)} aria-label="Nächster Monat" className="p-2 rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer">
+          <button onClick={() => goMonth(1)} aria-label="Nächster Monat" className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer">
             <ChevronRight size={20} />
           </button>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setCursor({ y: today.getFullYear(), m: today.getMonth() })}
-            className="font-display text-[11px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer"
+            className="font-display min-h-11 text-[11px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-lg text-navy-700 hover:bg-cream-200 cursor-pointer"
           >
             Heute
           </button>
@@ -145,7 +145,7 @@ export function CalendarPage() {
             onClick={exportIcs}
             disabled={exporting}
             icon={<Download size={13} />}
-            className="font-display text-[11px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-lg"
+            className="font-display min-h-11 text-[11px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-lg"
             title="Als .ics exportieren / abonnieren"
           >
             ICS
@@ -154,7 +154,7 @@ export function CalendarPage() {
       </div>
 
       {/* Training-Toggle */}
-      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+      <label className="inline-flex items-center gap-2 min-h-11 cursor-pointer select-none">
         <input type="checkbox" checked={showTrainings} onChange={e => setShowTrainings(e.target.checked)} className="accent-navy-700 w-4 h-4 cursor-pointer" />
         <span className="font-display text-[11px] font-bold tracking-widest uppercase text-navy-700 inline-flex items-center gap-1">
           <Dumbbell size={13} /> Training anzeigen

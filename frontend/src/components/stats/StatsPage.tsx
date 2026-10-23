@@ -272,7 +272,7 @@ export function StatsPage() {
           <h1 className="font-headline text-3xl sm:text-4xl font-extrabold text-navy-900 tracking-wide uppercase">Statistik</h1>
           <button
             onClick={() => setShowGlossary(true)}
-            className="font-display ml-auto text-[11px] tracking-widest uppercase text-gray-500 hover:text-navy-700 cursor-pointer flex items-center gap-1.5 font-bold"
+            className="font-display ml-auto min-h-11 min-w-11 justify-center text-[11px] tracking-widest uppercase text-gray-500 hover:text-navy-700 cursor-pointer flex items-center gap-1.5 font-bold"
             title="Abkürzungen und Formeln erklärt"
           >
             <span className="inline-flex w-5 h-5 items-center justify-center rounded-full border border-cream-300 text-gray-600 text-xs font-bold">i</span>
@@ -286,7 +286,7 @@ export function StatsPage() {
                 contextLabel: contextInfo,
                 scopeLabel: SCOPE_LABEL_MAP[scopeKind],
               })}
-              className="font-display group relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm"
+              className="font-display group relative inline-flex items-center gap-1.5 min-h-11 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm"
               title="Schlag-Statistiken als PDF exportieren"
             >
               <Download size={12} className="transition-transform group-hover:translate-y-0.5" />

@@ -94,7 +94,7 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
         <p className="mt-4 text-center">
           <Link
             to="/counter"
-            className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-500 underline decoration-cream-300 underline-offset-4 hover:text-navy-800 hover:decoration-navy-800"
+            className="font-display inline-flex items-center min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-gray-500 underline decoration-cream-300 underline-offset-4 hover:text-navy-800 hover:decoration-navy-800"
           >
             Nur Zähler öffnen
           </Link>

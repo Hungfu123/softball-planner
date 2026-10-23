@@ -250,7 +250,7 @@ export function GameLogPage() {
             <button
               onClick={handleExportPdf}
               disabled={exporting != null || filtered.length === 0}
-              className="font-display group relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+              className="font-display group relative inline-flex items-center gap-1.5 min-h-11 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
               title="Gefilterte Daten als PDF exportieren"
             >
               <Download size={12} className="transition-transform group-hover:translate-y-0.5" />
@@ -259,7 +259,7 @@ export function GameLogPage() {
             <button
               onClick={handleExportJson}
               disabled={exporting != null || filtered.length === 0}
-              className="font-display group relative inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
+              className="font-display group relative inline-flex items-center gap-1.5 min-h-11 px-3 sm:px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase text-white bg-navy-900 hover:bg-softball-red-600 rounded-full cursor-pointer transition-colors shadow-sm disabled:opacity-50 disabled:cursor-wait"
               title="Gefilterte Daten als JSON exportieren"
             >
               <FileJson size={12} className="transition-transform group-hover:translate-y-0.5" />
@@ -413,7 +413,7 @@ function FilterBar({ years, seasons, range, yearFilter, seasonFilter, onRange, o
           aria-label="Zeitraum wählen"
           value={range}
           onChange={e => onRange(parseRange(e.target.value))}
-          className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
+          className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full min-h-11 pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
           style={{ backgroundImage: CHEVRON_DOWN, backgroundPosition: 'right 0.7rem center', backgroundSize: '0.65rem' }}
         >
           <option value="all">Alle Spiele</option>
@@ -430,7 +430,7 @@ function FilterBar({ years, seasons, range, yearFilter, seasonFilter, onRange, o
           aria-label="Jahr wählen"
           value={yearFilter ?? 'all'}
           onChange={e => onYear(e.target.value === 'all' ? null : Number(e.target.value))}
-          className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
+          className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full min-h-11 pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
           style={{ backgroundImage: CHEVRON_DOWN, backgroundPosition: 'right 0.7rem center', backgroundSize: '0.65rem' }}
         >
           <option value="all">Alle Jahre</option>
@@ -440,7 +440,7 @@ function FilterBar({ years, seasons, range, yearFilter, seasonFilter, onRange, o
 
       <SeasonSelect seasons={seasons} value={seasonFilter} onChange={onSeason} />
       <button
-        className={`font-display text-[10px] font-bold tracking-widest uppercase rounded-full px-3 py-2 cursor-pointer transition-colors active:scale-95 ${
+        className={`font-display text-[10px] font-bold tracking-widest uppercase rounded-full min-h-11 px-3 py-2 cursor-pointer transition-colors active:scale-95 ${
           selectionMode ? 'bg-softball-red-600 text-white' : 'border border-navy-300 text-navy-700 hover:bg-navy-50'
         }`}
         onClick={onToggleSelectionMode}
@@ -490,7 +490,7 @@ function SeasonSelect({ seasons, value, onChange }: {
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
+        className="appearance-none bg-no-repeat font-display text-[10px] font-bold tracking-widest uppercase rounded-full min-h-11 pl-3 pr-8 py-2 cursor-pointer border border-cream-300 bg-white text-gray-700 hover:bg-cream-100 transition-colors"
         style={{ backgroundImage: CHEVRON_DOWN, backgroundPosition: 'right 0.7rem center', backgroundSize: '0.65rem' }}
       >
         <span className="inline-block max-w-48 truncate align-middle">{label}</span>
@@ -499,7 +499,7 @@ function SeasonSelect({ seasons, value, onChange }: {
         <>
           <div className="fixed inset-0 z-10 cursor-default" onClick={() => setOpen(false)} />
           <div className="absolute left-14 top-full z-20 mt-1 w-64 max-h-64 overflow-y-auto rounded-xl border border-cream-300 bg-white p-1.5 shadow-xl">
-            <label className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-cream-100 cursor-pointer text-xs font-semibold text-navy-900">
+            <label className="flex items-center gap-2 min-h-11 px-2 py-1.5 rounded-md hover:bg-cream-100 cursor-pointer text-xs font-semibold text-navy-900">
               <input
                 type="checkbox"
                 className="accent-navy-800"
@@ -509,7 +509,7 @@ function SeasonSelect({ seasons, value, onChange }: {
               Alle
             </label>
             {seasons.map(se => (
-              <label key={`${se.league}|${se.year}`} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-cream-100 cursor-pointer text-xs text-gray-700">
+              <label key={`${se.league}|${se.year}`} className="flex items-center gap-2 min-h-11 px-2 py-1.5 rounded-md hover:bg-cream-100 cursor-pointer text-xs text-gray-700">
                 <input
                   type="checkbox"
                   className="accent-navy-800"
