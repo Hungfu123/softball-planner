@@ -36,7 +36,7 @@ public class AuthController {
     @PostMapping("/login")
     public MeResponse login() {
         final AppUser user = currentUser.get();
-        selbstauskunft.vermerkeAnmeldung(user, Instant.now(clock));
+        selbstauskunft.vermerkeAnmeldung(user.getUsername(), Instant.now(clock));
         return MeResponse.von(user, selbstauskunft.spielerName(user).orElse(null));
     }
 }

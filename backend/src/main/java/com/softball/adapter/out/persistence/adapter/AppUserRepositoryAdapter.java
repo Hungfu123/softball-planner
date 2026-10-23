@@ -6,7 +6,9 @@ import com.softball.domain.model.AppUser;
 import com.softball.domain.model.Role;
 import com.softball.domain.port.out.AppUserRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,5 +68,17 @@ public class AppUserRepositoryAdapter implements AppUserRepository {
     @Override
     public boolean existsByUsername(final String username) {
         return repo.existsByUsernameIgnoreCase(username);
+    }
+
+    @Override
+    @Transactional
+    public void touchLastSeen(final String username, final Instant zeitpunkt) {
+        repo.updateLastSeenAt(username, zeitpunkt);
+    }
+
+    @Override
+    @Transactional
+    public void touchLastLogin(final String username, final Instant zeitpunkt) {
+        repo.updateLastLoginAt(username, zeitpunkt);
     }
 }

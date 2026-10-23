@@ -1,7 +1,6 @@
 package com.softball.shared.config;
 
 import com.softball.application.SelbstauskunftService;
-import com.softball.shared.security.CurrentUser;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,13 +31,10 @@ public class LastSeenFilter extends OncePerRequestFilter {
 
     private final ConcurrentMap<String, Instant> zuletztGeschrieben = new ConcurrentHashMap<>();
     private final Clock clock;
-    private final CurrentUser currentUser;
     private final SelbstauskunftService selbstauskunft;
 
-    public LastSeenFilter(final Clock clock, final CurrentUser currentUser,
-                          final SelbstauskunftService selbstauskunft) {
+    public LastSeenFilter(final Clock clock, final SelbstauskunftService selbstauskunft) {
         this.clock = clock;
-        this.currentUser = currentUser;
         this.selbstauskunft = selbstauskunft;
     }
 
@@ -61,7 +57,7 @@ public class LastSeenFilter extends OncePerRequestFilter {
             return faellig[0] ? jetzt : zuletzt;
         });
         if (faellig[0]) {
-            currentUser.find().ifPresent(user -> selbstauskunft.vermerkeGesehen(user, jetzt));
+            selbstauskunft.vermerkeGesehen(auth.getName(), jetzt);
         }
     }
 
