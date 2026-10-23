@@ -32,7 +32,16 @@ class MethodSecurityCoverageTest {
     /** Fuer jeden angemeldeten Benutzer lesbar, also auch fuer Spieler. */
     private static final String OFFEN_FUER_ANGEMELDETE = "isAuthenticated()";
 
-    /** Klasse#Methode, alle ausschliesslich lesend. Eine Zeile je geoeffneter Methode. */
+    /**
+     * Die Scorer-Regel: Admin wie bisher, dazu jeder Spieler mit Scorer-Recht. Sie fuegt eine
+     * Erlaubnis hinzu und nimmt keine weg. Nur diese eine Schreibweise ist erlaubt.
+     */
+    private static final String SCORER_REGEL = "hasRole('ADMIN') or @scoring.darfSchreiben(authentication)";
+
+    /**
+     * Klasse#Methode. Eine Zeile je geoeffneter Methode: lesend fuer jeden Angemeldeten, oder
+     * schreibend mit der Scorer-Regel (Abschnitt Scoring).
+     */
     private static final Set<String> ERLAUBT = new TreeSet<>(Set.of(
         // PlayerController
         "PlayerController#getAll",
@@ -89,7 +98,28 @@ class MethodSecurityCoverageTest {
         // ScoringController
         "ScoringController#getAtBats",
         "ScoringController#getStealingEvents",
-        "ScoringController#getScoreboard"
+        "ScoringController#getScoreboard",
+        // Scoring schreibend (Scorer-Regel): ScoringController
+        "ScoringController#recordAtBat",
+        "ScoringController#undoLastAtBat",
+        "ScoringController#resetScoring",
+        "ScoringController#deleteCurrentInning",
+        "ScoringController#undoLastAction",
+        "ScoringController#advanceInning",
+        "ScoringController#recordAutomaticOut",
+        "ScoringController#updateLastBaseState",
+        "ScoringController#recordStealingEvent",
+        "ScoringController#deleteStealingEvent",
+        "ScoringController#startClock",
+        "ScoringController#pauseClock",
+        "ScoringController#resumeClock",
+        "ScoringController#resetClock",
+        // Scoring schreibend (Scorer-Regel): GameController. Das Lineup-Schreiben gehoert nicht dazu.
+        "GameController#setScore",
+        "GameController#endGame",
+        "GameController#setBattingSide",
+        "GameController#reopenGame",
+        "GameController#addSubstitution"
     ));
 
     @Test
@@ -103,20 +133,21 @@ class MethodSecurityCoverageTest {
     }
 
     @Test
-    void jedeAbweichungIstDieAngemeldetenRegelUndNichtsLockereres() throws ClassNotFoundException {
+    void jedeAbweichungIstDieAngemeldetenRegelOderDieScorerRegelUndNichtsLockereres() throws ClassNotFoundException {
         final List<String> falscheRegeln = new ArrayList<>();
         for (final Class<?> type : produktiveController()) {
             for (final Method method : type.getDeclaredMethods()) {
                 final PreAuthorize regel = AnnotatedElementUtils.findMergedAnnotation(method, PreAuthorize.class);
                 if (regel != null && !OFFEN_FUER_ANGEMELDETE.equals(normiert(regel.value()))
+                        && !normiert(SCORER_REGEL).equals(normiert(regel.value()))
                         && !normiert(regel.value()).equals(klassenregel(type))) {
                     falscheRegeln.add(type.getSimpleName() + "#" + method.getName() + " -> " + regel.value());
                 }
             }
         }
         assertThat(falscheRegeln)
-                .as("Methodenregeln, die weder die Klassenregel wiederholen noch isAuthenticated() sind "
-                        + "(Scoring-Rechte kommen mit eigenem Test)")
+                .as("Methodenregeln, die weder die Klassenregel wiederholen noch isAuthenticated() "
+                        + "noch exakt die Scorer-Regel sind")
                 .isEmpty();
     }
 
