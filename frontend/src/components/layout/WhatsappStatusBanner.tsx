@@ -89,7 +89,7 @@ export function WhatsappStatusBanner() {
             sessionStorage.setItem(DISMISS_KEY, '1')
             setDismissed(true)
           }}
-          className="shrink-0 p-2 -my-1 rounded-md hover:bg-white/15 cursor-pointer"
+          className="shrink-0 min-h-11 min-w-11 inline-flex items-center justify-center -my-2 rounded-md hover:bg-white/15 cursor-pointer"
           aria-label="Hinweis ausblenden"
         >
           <XMark size={20} />

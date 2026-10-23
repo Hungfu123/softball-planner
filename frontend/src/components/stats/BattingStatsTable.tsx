@@ -124,7 +124,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
       <div className="flex items-center flex-wrap gap-2">
         <button
           onClick={() => setShowDetails(x => !x)}
-          className="font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
+          className="font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
         >
           {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           {showDetails ? 'Weniger' : 'Mehr Details (OBP, SLG, OPS)'}
@@ -132,7 +132,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
         {onOpenGlossary && (
           <button
             onClick={onOpenGlossary}
-            className="font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-navy-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
+            className="font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-navy-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
           >
             <Info size={12} />
             Abkürzungen
@@ -143,7 +143,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
             onClick={() => setShowUnqualified(x => !x)}
             role="checkbox"
             aria-checked={showUnqualified}
-            className={`font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
+            className={`font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
               showUnqualified
                 ? 'bg-navy-900 border-navy-900 text-white'
                 : 'border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400'
@@ -294,7 +294,7 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                   <td colSpan={(showDetails ? 16 : 10) + 1 + (showPerGame ? 1 : 0)} className="px-3 py-8 text-center text-sm text-gray-500">
                     Kein Spieler mit {MIN_AB_LABEL} in diesem Zeitraum.
                     {unqualified.length > 0 && (
-                      <button onClick={() => setShowUnqualified(true)} className="ml-1 text-navy-700 underline hover:text-softball-red-600 cursor-pointer">
+                      <button onClick={() => setShowUnqualified(true)} className="ml-1 min-h-11 px-2 inline-flex items-center text-navy-700 underline hover:text-softball-red-600 cursor-pointer">
                         Alle anzeigen
                       </button>
                     )}

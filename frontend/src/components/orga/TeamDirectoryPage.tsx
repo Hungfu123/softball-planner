@@ -206,7 +206,7 @@ export function TeamDirectoryPage() {
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
             <button
               onClick={() => setLeagueFilter(null)}
-              className={`font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
+              className={`font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
                 leagueFilter == null ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
               }`}
             >
@@ -216,7 +216,7 @@ export function TeamDirectoryPage() {
               <button
                 key={league}
                 onClick={() => setLeagueFilter(leagueFilter === league ? null : league)}
-                className={`font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
+                className={`font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
                   leagueFilter === league ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
                 }`}
               >
@@ -226,7 +226,7 @@ export function TeamDirectoryPage() {
             <span className="w-px h-5 bg-cream-300 shrink-0 mx-0.5" />
             <button
               onClick={() => setSortBy(sortBy === 'name' ? 'record' : 'name')}
-              className={`font-display px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border shrink-0 cursor-pointer whitespace-nowrap transition-colors ${
+              className={`font-display min-h-11 min-w-11 justify-center px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border shrink-0 cursor-pointer whitespace-nowrap transition-colors ${
                 sortBy === 'record'
                   ? 'border-navy-900 text-navy-900 bg-cream-100'
                   : 'border-cream-300 text-gray-600 hover:bg-cream-200 hover:text-navy-900'
