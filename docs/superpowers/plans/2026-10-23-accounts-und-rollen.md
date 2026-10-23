@@ -681,7 +681,15 @@ it('zeigt einem Spieler keine Verwaltungs-Einträge im Menü', () => { })
 
 it('sperrt die Scoring-Route für einen Spieler ohne Scorer-Recht', async () => { })
 it('lässt einen Spieler mit Scorer-Recht auf die Scoring-Route', async () => { })
+
+it('zeigt einem Spieler in der Gegner-Ansicht keine Umbenennen- und Löschen-Knöpfe', () => { })
 ```
+
+**Nicht nur Routen, auch Knöpfe.** Task 4 öffnet Lesezugriffe und lässt Schreibzugriffe zu.
+Manche Seiten zeigen ihre Bearbeiten-Schaltflächen aber unabhängig von der Rolle — bekannt
+ist das für die Gegner-Ansicht (`TeamDirectoryPage`, `clubDirectoryShared`): Umbenennen und
+Löschen sind für Spieler sichtbar und enden in 403. Geh beim Rollenfilter jede Seite durch,
+die ein Spieler sehen darf, und blende dort aus, was er nicht auslösen kann.
 
 Die letzten zwei sind der einzige Ort, an dem `mayScore` die Oberfläche steuert: die
 Scoring-Route hängt nicht an der Rolle, sondern am Recht. `RequireRole` braucht dafür eine
