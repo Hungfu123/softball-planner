@@ -487,6 +487,26 @@ Expected: FAIL.
 
 - [ ] **Step 3: Die beiden Services und den Controller schreiben**
 
+**Vorsicht beim Speichern — hier liegt eine Falle aus Task 6.** `AppUserRepositoryAdapter.save`
+liest die Entity zwar frisch, überschreibt sie dann aber **vollständig** mit dem Stand des
+übergebenen Domain-Objekts: `locked`, `role`, `mayScore`, `passwordChanged` und
+`passwordHash`. Wer einen `AppUser` lädt, ein Feld ändert und speichert, schreibt damit
+alle anderen Felder auf den Stand von vorhin zurück.
+
+In Task 6 wurde das für `lastSeenAt`/`lastLoginAt` durch gezielte Spalten-Updates gelöst
+(`touchLastSeen`, `touchLastLogin`). **Dein Task schreibt genau die Felder, die dort
+überschrieben würden** — und zwar aus zwei Richtungen gleichzeitig: ein Admin sperrt oder
+setzt das Passwort zurück, während der Nutzer selbst seinen Benutzernamen oder sein Passwort
+ändert.
+
+Konkreter Schadensfall: Nutzer ändert sein Passwort, Admin sperrt ihn im selben Moment —
+je nach Reihenfolge ist die Sperre weg oder das neue Passwort. Keines von beiden schlägt
+fehl, es gibt keine Versionsspalte.
+
+Lade, ändere und speichere deshalb **innerhalb einer Transaktion**, oder nimm gezielte
+Updates wie Task 6. Schreib einen Test dafür: ein Feld über den einen Weg ändern, ein
+anderes über den zweiten, und prüfen, dass **beide** Änderungen überleben.
+
 Benutzernamen immer klein gespeichert, immer `trim()`. Keiner der drei Passwort-setzenden Endpunkte nimmt ein Passwort entgegen — es kommt aus `app.auth.player-password`.
 
 `PUT /{id}/role` und `DELETE /{id}` tragen `@PreAuthorize("hasRole('SUPERADMIN')")` bzw. prüfen den Aussperrschutz im Service.
