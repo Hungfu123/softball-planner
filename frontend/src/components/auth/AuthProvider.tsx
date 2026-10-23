@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuth(password)
     try {
       const res = await fetch('/api/players', {
-        headers: { Authorization: `Basic ${btoa(`admin:${password}`)}` },
+        headers: { Authorization: `Basic ${btoa(`hung:${password}`)}` },
       })
       if (meiner !== versuch.current) return
 

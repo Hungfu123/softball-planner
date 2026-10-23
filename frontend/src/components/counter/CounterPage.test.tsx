@@ -23,7 +23,7 @@ describe('CounterPage — Zurück-Pfeil', () => {
   })
 
   it('zeigt angemeldet einen Zurück-Pfeil zur Orga', () => {
-    localStorage.setItem('auth', btoa('admin:x'))
+    localStorage.setItem('auth', btoa('hung:x'))
     renderPage()
     expect(screen.getByRole('link', { name: 'Zurück zur Orga' })).toHaveAttribute('href', '/orga')
   })

@@ -1,6 +1,6 @@
 import type { BrowserContext } from '@playwright/test'
 
-const CREDENTIALS = 'admin:Deadsox123!'
+const CREDENTIALS = 'hung:Deadsox123!'
 
 /**
  * Seed localStorage so requests authenticated.

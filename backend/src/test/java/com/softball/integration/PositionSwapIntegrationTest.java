@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
-@WithMockUser
+@WithMockUser(roles = "SUPERADMIN")
 class PositionSwapIntegrationTest {
 
     @Autowired private MockMvc mvc;

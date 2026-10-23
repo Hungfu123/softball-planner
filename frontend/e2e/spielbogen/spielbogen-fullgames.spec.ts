@@ -228,7 +228,7 @@ test.describe('Spielbogen — Full Games + UI Verifikation', () => {
         // HOME hat noch nicht in Inning 5 gespielt — manuell beenden
         await fetch(`http://localhost:8080/api/spielbogen/${bogenId}/end`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Basic ${btoa('admin:Deadsox123!')}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Basic ${btoa('hung:Deadsox123!')}` },
         })
       }
 
