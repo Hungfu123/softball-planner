@@ -1,6 +1,7 @@
 package com.softball.shared.config;
 
 import com.softball.shared.exception.BusinessValidationException;
+import com.softball.shared.exception.NichtAngemeldetException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleValidation(final BusinessValidationException ex) {
         log.warn("Validierungsfehler: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(ex.getMessage()));
+    }
+
+    @ExceptionHandler(NichtAngemeldetException.class)
+    public ResponseEntity<Map<String, Object>> handleNichtAngemeldet(final NichtAngemeldetException ex) {
+        log.warn("Zugriff ohne angemeldeten Account");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorBody(ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
