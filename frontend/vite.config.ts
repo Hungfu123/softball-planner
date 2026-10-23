@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { API_RUNTIME_CACHING } from './src/pwa/apiCaching'
 
 export default defineConfig({
   plugins: [
@@ -39,18 +40,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,jpeg,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api/, /^\/drills/, /^\/actuator/],
-        runtimeCaching: [
-          {
-            urlPattern: ({ url, request }) => url.pathname.startsWith('/api/') && request.method === 'GET',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 7 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+        runtimeCaching: API_RUNTIME_CACHING,
       },
     }),
   ],

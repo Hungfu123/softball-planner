@@ -1,3 +1,5 @@
+import { clearApiCache } from '@/pwa/apiCaching'
+
 const API = '/api'
 
 function getAuthHeaders(): Record<string, string> {
@@ -10,6 +12,8 @@ export function setAuth(username: string, password: string) {
   // btoa kennt nur Latin-1; Umlaute im Namen oder Passwort wuerden sonst werfen
   const bytes = new TextEncoder().encode(`${username}:${password}`)
   localStorage.setItem('auth', btoa(String.fromCharCode(...bytes)))
+  // Neues Konto auf diesem Gerät: Antworten des Vorgängers dürfen nicht mehr aus dem Cache kommen.
+  void clearApiCache()
 }
 
 /**
@@ -30,6 +34,7 @@ export function storedCredentials(): { username: string; password: string } | nu
 
 export function clearAuth() {
   localStorage.removeItem('auth')
+  void clearApiCache()
 }
 
 export function hasAuth(): boolean {
