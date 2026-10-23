@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
 
 /**
- * Modus-Umschalter innerhalb des ANALYSE-Punkts: Gegner-Verzeichnis vs. eigener
- * Spiel-Verlauf. Beide Ansichten gehören thematisch zusammen — der Nav-Punkt heißt
- * bewusst nicht mehr "Gegner".
+ * Modus-Umschalter innerhalb des ANALYSE-Punkts: eigene Statistik, eigener Spiel-Verlauf
+ * und Gegner-Verzeichnis. Alle drei Ansichten gehören thematisch zusammen — der Nav-Punkt
+ * heißt bewusst nicht mehr "Gegner" und auch nicht "Statistik".
  */
 export function AnalysisModeTabs() {
   const tabCls = ({ isActive }: { isActive: boolean }) =>
@@ -12,6 +12,7 @@ export function AnalysisModeTabs() {
     }`
   return (
     <nav className="flex gap-2 mb-4" aria-label="Analyse-Ansichten">
+      <NavLink to="/stats" className={tabCls}>Statistik</NavLink>
       <NavLink to="/teams/spiele" className={tabCls}>Spiel-Verlauf</NavLink>
       <NavLink to="/teams" end className={tabCls}>Gegner</NavLink>
     </nav>

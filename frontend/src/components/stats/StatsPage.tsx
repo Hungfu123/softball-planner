@@ -6,6 +6,7 @@ import type { AwardResponse, GameDayResponse, GameResponse, OpponentBattingStats
 import { AwardsCard } from '@/components/dashboard/AwardsCard'
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
+import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
 import { StatsTableSkeleton } from './StatsTableSkeleton'
 import { generateBattingStatsPdf } from '@/utils/statsPdf'
@@ -291,6 +292,8 @@ export function StatsPage() {
             </button>
           )}
         </div>
+
+        <AnalysisModeTabs />
 
         {/* Compact Filter-Row: Scope-Pills + Selector inline */}
         <div className="flex flex-wrap items-center gap-2 mb-3">
