@@ -1119,3 +1119,49 @@ export interface MeResponse {
   mayScore: boolean
   passwordChanged: boolean
 }
+
+/** Ein Account in der Verwaltung (`GET /api/users`). Nie mit Passwort-Hash. */
+export interface UserAccount {
+  id: number
+  playerId: number | null
+  playerName: string | null
+  username: string
+  role: Role
+  mayScore: boolean
+  locked: boolean
+  passwordChanged: boolean
+  createdAt: string
+  lastLoginAt: string | null
+  lastSeenAt: string | null
+}
+
+/** Was die Massenanlage getan hat — und was sie übersprungen hat, mit Grund. */
+export interface BulkCreateResult {
+  created: { accountId: number; playerId: number; playerName: string; username: string }[]
+  skipped: { playerId: number; playerName: string; reason: string }[]
+}
+
+export type AuditKind = 'LOGIN' | 'LOGIN_FAILED' | 'WRITE' | 'SCORING'
+
+/** Eine Zeile der Historie; bei `count` > 1 eine zusammengefasste Scoring-Spanne von `from` bis `to`. */
+export interface AuditEntry {
+  username: string
+  kind: AuditKind
+  label: string
+  method: string | null
+  path: string | null
+  targetType: string | null
+  targetId: number | null
+  status: number | null
+  from: string
+  to: string
+  count: number
+}
+
+export interface LastSeen {
+  userId: number
+  username: string
+  role: Role
+  lastLoginAt: string | null
+  lastSeenAt: string | null
+}

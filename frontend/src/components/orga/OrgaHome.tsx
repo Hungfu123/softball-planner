@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '@/components/shared'
 import { SendIcon, CounterIcon, CalendarIcon, CrossBones, ClipboardListIcon } from '@/icons'
-import { Mail, Receipt, ChevronRight } from 'lucide-react'
+import { Mail, Receipt, ChevronRight, Users, History } from 'lucide-react'
+import { useRolle } from '@/hooks/useRolle'
 
 function Kachel({ to, icon, titel, untertitel }: { to: string; icon: ReactNode; titel: string; untertitel: string }) {
   return (
@@ -46,6 +47,7 @@ function Ueberschrift({ children }: { children: ReactNode }) {
 }
 
 export function OrgaHome() {
+  const { istSuperadmin } = useRolle()
   return (
     <div className="space-y-4">
       <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Orga</h1>
@@ -54,6 +56,7 @@ export function OrgaHome() {
         <Kachel to="/counter" icon={<CounterIcon size={20} />} titel="Counter" untertitel="Balls, Strikes, Outs und Score am Feld" />
         <Kachel to="/orga/whatsapp-umfrage" icon={<SendIcon size={20} />} titel="WhatsApp-Umfragen" untertitel="Wöchentliche Trainings-Abstimmungen" />
         <Kachel to="/orga/trainerabrechnung" icon={<Receipt size={20} />} titel="Trainerabrechnung" untertitel="Stunden eines Monats als Bogen für den Hochschulsport" />
+        <Kachel to="/orga/accounts" icon={<Users size={20} />} titel="Accounts" untertitel="Anmeldungen, Rollen und Scorer-Rechte des Kaders" />
       </div>
 
       <Ueberschrift>Weiteres</Ueberschrift>
@@ -64,8 +67,11 @@ export function OrgaHome() {
       </div>
 
       <Ueberschrift>Selten</Ueberschrift>
-      <div className="max-w-md">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-w-2xl">
         <Zeile to="/spielbogen" icon={<ClipboardListIcon size={20} />} titel="Spielbogen" untertitel="Live-Scoring im RFL-Bogen" />
+        {istSuperadmin && (
+          <Zeile to="/orga/historie" icon={<History size={20} />} titel="Historie" untertitel="Wer zuletzt da war und was geändert wurde" />
+        )}
       </div>
     </div>
   )

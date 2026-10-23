@@ -12,6 +12,22 @@ export function setAuth(username: string, password: string) {
   localStorage.setItem('auth', btoa(String.fromCharCode(...bytes)))
 }
 
+/**
+ * Die gespeicherten Zugangsdaten, wieder entpackt. Nach einer Namensänderung braucht das
+ * Frontend das Passwort, um sie unter dem neuen Namen neu abzulegen — der Server kennt es nur als Hash.
+ */
+export function storedCredentials(): { username: string; password: string } | null {
+  const raw = localStorage.getItem('auth')
+  if (raw === null) return null
+  try {
+    const text = new TextDecoder().decode(Uint8Array.from(atob(raw), c => c.charCodeAt(0)))
+    const i = text.indexOf(':')
+    return i < 0 ? null : { username: text.slice(0, i), password: text.slice(i + 1) }
+  } catch {
+    return null
+  }
+}
+
 export function clearAuth() {
   localStorage.removeItem('auth')
 }
@@ -132,6 +148,12 @@ import type {
   WhatsappPollRequest,
   UnknownVoter,
   GameDayVotePreview,
+  MeResponse,
+  Role,
+  UserAccount,
+  BulkCreateResult,
+  AuditEntry,
+  LastSeen,
 } from '@/types'
 
 // Players
@@ -798,3 +820,35 @@ export const getCoachBillingProfile = () =>
 
 export const updateCoachBillingProfile = (profile: CoachBillingProfile) =>
   request<CoachBillingProfile>('/coach-billing/profile', { method: 'PUT', body: JSON.stringify(profile) })
+
+// Eigenes Konto
+export const changeUsername = (username: string) =>
+  request<MeResponse>('/me/username', { method: 'PUT', body: JSON.stringify({ username }) })
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  request<MeResponse>('/me/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) })
+
+// Accountverwaltung — kein Endpunkt nimmt ein Passwort entgegen, es kommt aus der Konfiguration
+export const getUsers = () => request<UserAccount[]>('/users')
+export const createUser = (playerId: number) =>
+  request<UserAccount>('/users', { method: 'POST', body: JSON.stringify({ playerId }) })
+export const bulkCreateUsers = () => request<BulkCreateResult>('/users/bulk-create', { method: 'POST' })
+export const resetUserPassword = (id: number) =>
+  request<UserAccount>(`/users/${id}/password-reset`, { method: 'PUT' })
+export const setUserRole = (id: number, role: Role) =>
+  request<UserAccount>(`/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) })
+export const setUserMayScore = (id: number, mayScore: boolean) =>
+  request<UserAccount>(`/users/${id}/may-score`, { method: 'PUT', body: JSON.stringify({ mayScore }) })
+export const setUserLocked = (id: number, locked: boolean) =>
+  request<UserAccount>(`/users/${id}/locked`, { method: 'PUT', body: JSON.stringify({ locked }) })
+export const deleteUser = (id: number) => request<void>(`/users/${id}`, { method: 'DELETE' })
+
+// Historie (nur Superadmin). Der Verlauf hat keine Seitenbildung: immer mit Zeitraum fragen.
+export const getAudit = (filter: { userId?: number; from?: string; to?: string }) => {
+  const q = new URLSearchParams()
+  if (filter.userId !== undefined) q.set('userId', String(filter.userId))
+  if (filter.from) q.set('from', filter.from)
+  if (filter.to) q.set('to', filter.to)
+  const query = q.toString()
+  return request<AuditEntry[]>(`/audit${query ? `?${query}` : ''}`)
+}
+export const getLastSeen = () => request<LastSeen[]>('/audit/last-seen')

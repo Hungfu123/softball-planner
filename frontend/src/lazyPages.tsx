@@ -18,6 +18,8 @@ const SpielbogenPage = lazy(() => import('@/components/spielbogen/SpielbogenPage
 const CounterPage = lazy(() => import('@/components/counter/CounterPage'))
 // pdf-lib wiegt schwer und wird einmal im Monat gebraucht — nicht ins Hauptbundle.
 const TrainerabrechnungPage = lazy(() => import('@/components/orga/TrainerabrechnungPage'))
+const AccountsPage = lazy(() => import('@/components/orga/AccountsPage'))
+const HistoriePage = lazy(() => import('@/components/orga/HistoriePage'))
 const PlaymakerOverview = lazy(() => import('@/components/playmaker/PlaymakerOverview'))
 const PlaySetupPage = lazy(() => import('@/components/playmaker/PlaySetupPage'))
 const PlayEditorPage = lazy(() => import('@/components/playmaker/PlayEditorPage'))
@@ -88,4 +90,12 @@ export function LazyPlayViewer() {
 
 export function LazyTrainerabrechnung() {
   return <Suspense fallback={<LoadingSkeleton />}><TrainerabrechnungPage /></Suspense>
+}
+
+export function LazyAccounts() {
+  return <Suspense fallback={<LoadingSkeleton />}><AccountsPage /></Suspense>
+}
+
+export function LazyHistorie() {
+  return <Suspense fallback={<LoadingSkeleton />}><HistoriePage /></Suspense>
 }

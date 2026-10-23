@@ -15,8 +15,8 @@ const EINTRAG = 'flex items-center w-full min-h-11 px-4 text-left text-sm font-s
 
 /**
  * Konto-Menü oben rechts: Kreis mit den Initialen, dahinter die Einträge, die der
- * Angemeldete hat. Konto, Accounts und Historie kommen mit ihren Routen (Task 12) — ein Eintrag
- * ohne Ziel gäbe es hier nur als Sackgasse.
+ * Angemeldete hat: Konto für jeden, Accounts ab Admin, Historie nur für den Superadmin.
+ * Ohne Auskunft (me === null) bleibt es bei Abmelden — verwaltet wird nur, wer bekannt ist.
  *
  * Abmelden steht immer da, auch wenn /api/me nicht beantwortet wurde (me === null): es ist der
  * Notausgang aus einer Sitzung, die sonst nicht heilt.
@@ -75,6 +75,21 @@ export function KontoMenu() {
               {me && me.playerId !== null && (
                 <Link role="menuitem" to={`/players/${me.playerId}`} onClick={schliessen} className={EINTRAG}>
                   Mein Profil
+                </Link>
+              )}
+              {me && (
+                <Link role="menuitem" to="/konto" onClick={schliessen} className={EINTRAG}>
+                  Konto &amp; Passwort
+                </Link>
+              )}
+              {me && (me.role === 'ADMIN' || me.role === 'SUPERADMIN') && (
+                <Link role="menuitem" to="/orga/accounts" onClick={schliessen} className={EINTRAG}>
+                  Accounts
+                </Link>
+              )}
+              {me?.role === 'SUPERADMIN' && (
+                <Link role="menuitem" to="/orga/historie" onClick={schliessen} className={EINTRAG}>
+                  Historie
                 </Link>
               )}
               <button
