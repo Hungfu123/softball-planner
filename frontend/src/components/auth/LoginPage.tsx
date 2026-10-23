@@ -4,16 +4,17 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/shared'
 
 interface LoginPageProps {
-  onLogin: (password: string) => void
+  onLogin: (username: string, password: string) => void
   error: string | null
 }
 
 export function LoginPage({ onLogin, error }: LoginPageProps) {
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    onLogin(password)
+    onLogin(username.trim(), password)
   }
 
   return (
@@ -42,17 +43,25 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
         {/* Card */}
         <div className="bg-cream-50 border border-cream-300 rounded-2xl shadow-card p-6 space-y-4">
           <div>
-            <label htmlFor="username" className="sr-only">Benutzer</label>
-            {/* Hidden username field for browser autofill UX; Uebergang: fester Benutzer "hung" bis Task 9 */}
+            <label htmlFor="username" className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">
+              Benutzername
+            </label>
             <input
               id="username"
               type="text"
               name="username"
               autoComplete="username"
-              value="hung"
-              readOnly
-              hidden
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              className="w-full min-h-11 bg-cream-100 border border-cream-300 rounded-lg px-3 py-2.5 text-sm text-navy-900 placeholder-gray-400 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none transition-colors"
+              autoFocus
             />
+          </div>
+
+          <div>
             <label htmlFor="password" className="font-display block text-[10px] tracking-widest uppercase font-bold text-gray-500 mb-1.5">
               Passwort
             </label>
@@ -63,8 +72,7 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-cream-100 border border-cream-300 rounded-lg px-3 py-2.5 text-sm text-navy-900 placeholder-gray-400 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none transition-colors"
-              autoFocus
+              className="w-full min-h-11 bg-cream-100 border border-cream-300 rounded-lg px-3 py-2.5 text-sm text-navy-900 placeholder-gray-400 focus:border-navy-600 focus:ring-2 focus:ring-cream-200 outline-none transition-colors"
             />
           </div>
 
