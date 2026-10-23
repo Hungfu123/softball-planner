@@ -6,6 +6,7 @@ import type { AwardResponse, GameDayResponse, GameResponse, OpponentBattingStats
 import { AwardsCard } from '@/components/dashboard/AwardsCard'
 import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
+import { GamesNeedRangeNotice } from './GamesNeedRangeNotice'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
 import { StatsTableSkeleton } from './StatsTableSkeleton'
@@ -404,6 +405,8 @@ export function StatsPage() {
           gamesByPlayerId={gamesByPlayerId}
           showPerGame={isAggregatedScope(scopeKind) && scopeKind !== 'opponent'}
         />
+      ) : scopeKind === 'game' || scopeKind === 'gameDay' || scopeKind === 'opponent' ? (
+        <GamesNeedRangeNotice />
       ) : (
         <GamesStatsTable stats={gamesStats} />
       )}
