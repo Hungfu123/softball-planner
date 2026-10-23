@@ -44,12 +44,10 @@ class AppUserTouchIntegrationTest {
     /** Stellt den Account her, den der Test veraendert hat: Reste wandern sonst in fremde Tests. */
     @AfterEach
     void zustandHerstellen() {
-        final AppUser heute = konto();
-        heute.setLocked(vorher.isLocked());
-        heute.setMayScore(vorher.isMayScore());
-        heute.setPasswordChanged(vorher.isPasswordChanged());
-        heute.setPasswordHash(vorher.getPasswordHash());
-        appUserRepository.save(heute);
+        final Long id = vorher.getId();
+        appUserRepository.updateLocked(id, vorher.isLocked());
+        appUserRepository.updateMayScore(id, vorher.isMayScore());
+        appUserRepository.updatePassword(id, vorher.getPasswordHash(), vorher.isPasswordChanged());
         appUserRepository.touchLastLogin(TestAccounts.SUPERADMIN, vorher.getLastLoginAt());
         appUserRepository.touchLastSeen(TestAccounts.SUPERADMIN, vorher.getLastSeenAt());
     }
@@ -60,12 +58,10 @@ class AppUserTouchIntegrationTest {
 
     /** Aendert den Account auf dem normalen Weg, waehrend ein anderer Aufrufer noch den alten Stand haelt. */
     private void aendereZwischenzeitlich() {
-        final AppUser frisch = konto();
-        frisch.setLocked(true);
-        frisch.setMayScore(true);
-        frisch.setPasswordChanged(true);
-        frisch.setPasswordHash("{noop}neu");
-        appUserRepository.save(frisch);
+        final Long id = konto().getId();
+        appUserRepository.updateLocked(id, true);
+        appUserRepository.updateMayScore(id, true);
+        appUserRepository.updatePassword(id, "{noop}neu", true);
     }
 
     private void pruefeUnangetastet() {

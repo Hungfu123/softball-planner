@@ -18,6 +18,8 @@ public interface SpringAppUserRepository extends JpaRepository<AppUserEntity, Lo
 
     long countByRole(Role role);
 
+    long countByRoleAndLocked(Role role, boolean locked);
+
     @Query("select count(u) > 0 from AppUserEntity u where lower(u.username) = lower(:username)")
     boolean existsByUsernameIgnoreCase(String username);
 
@@ -28,4 +30,24 @@ public interface SpringAppUserRepository extends JpaRepository<AppUserEntity, Lo
     @Modifying
     @Query("update AppUserEntity u set u.lastLoginAt = :zeitpunkt where lower(u.username) = lower(:username)")
     int updateLastLoginAt(String username, Instant zeitpunkt);
+
+    @Modifying
+    @Query("update AppUserEntity u set u.locked = :locked where u.id = :id")
+    int updateLocked(Long id, boolean locked);
+
+    @Modifying
+    @Query("update AppUserEntity u set u.role = :role where u.id = :id")
+    int updateRole(Long id, Role role);
+
+    @Modifying
+    @Query("update AppUserEntity u set u.mayScore = :mayScore where u.id = :id")
+    int updateMayScore(Long id, boolean mayScore);
+
+    @Modifying
+    @Query("update AppUserEntity u set u.passwordHash = :passwordHash, u.passwordChanged = :passwordChanged where u.id = :id")
+    int updatePassword(Long id, String passwordHash, boolean passwordChanged);
+
+    @Modifying
+    @Query("update AppUserEntity u set u.username = :username where u.id = :id")
+    int updateUsername(Long id, String username);
 }

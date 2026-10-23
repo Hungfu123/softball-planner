@@ -36,6 +36,7 @@ class MeIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private PlayerRepository playerRepository;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
     private Long angelegt;
     @Autowired private LastSeenFilter lastSeenFilter;
 
@@ -116,11 +117,11 @@ class MeIntegrationTest {
     void meLiefertRolleUndSpieler() throws Exception {
         // Den Spieler selbst anlegen: andere Tests raeumen die Spielertabelle, der Bestand ist nicht gesichert.
         final Player spieler = playerRepository.save(new Player("Hung"));
-        final AppUser user = konto();
         angelegt = spieler.getId();
-        user.setPlayerId(spieler.getId());
-        user.setMayScore(true);
-        appUserRepository.save(user);
+        // Der Port schreibt bestehende Accounts nur noch spaltenweise; den Spielerbezug setzt der Test direkt.
+        jdbc.update("update app_user set player_id = ?, may_score = true where username = ?",
+                spieler.getId(), TestAccounts.SUPERADMIN);
+        final AppUser user = konto();
 
         mockMvc.perform(get("/api/me")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("hung"))

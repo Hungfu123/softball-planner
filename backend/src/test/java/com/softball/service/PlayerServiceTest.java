@@ -1,6 +1,8 @@
 package com.softball.service;
 
 import com.softball.domain.model.Player;
+import com.softball.application.SuperadminGuard;
+import com.softball.domain.port.out.AppUserRepository;
 import com.softball.domain.port.out.AtBatRepository;
 import com.softball.domain.port.out.BaseRunningEventRepository;
 import com.softball.domain.port.out.PlayerRepository;
@@ -44,6 +46,12 @@ class PlayerServiceTest {
 
     @Mock
     private AvailabilityService availabilityService;
+
+    @Mock
+    private AppUserRepository appUserRepository;
+
+    @Mock
+    private SuperadminGuard superadminGuard;
 
     @InjectMocks
     private PlayerService playerService;
