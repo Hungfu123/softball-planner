@@ -26,6 +26,9 @@ class SecurityCoverageTest {
     private static final String ANGEMELDET = "isAuthenticated()";
     /** Fuer jeden Angemeldeten da: Auskunft ueber sich selbst, nichts Fremdes. */
     private static final Set<String> FUER_ANGEMELDETE = Set.of("AuthController", "MeController");
+    /** Strenger als der Rest: nur der Superadmin, auf der ganzen Klasse (Historie). */
+    private static final String SUPERADMIN_REGEL = "hasRole('SUPERADMIN')";
+    private static final Set<String> NUR_SUPERADMIN = Set.of("AuditController");
 
     @Test
     void jederControllerAusserDemKalenderTraegtExaktDieAdminRegel() throws ClassNotFoundException {
@@ -34,11 +37,12 @@ class SecurityCoverageTest {
         // Gegen Leerlauf: ein Scan ohne Treffer waere sonst gruen, ohne zu pruefen.
         assertThat(controller).extracting(Class::getSimpleName)
                 .contains("PlayerController", "GameController", "ScoringController", "CalendarController",
-                        "AuthController", "MeController");
+                        "AuthController", "MeController", "AuditController");
 
         assertThat(controller)
                 .filteredOn(c -> !"CalendarController".equals(c.getSimpleName()))
                 .filteredOn(c -> !FUER_ANGEMELDETE.contains(c.getSimpleName()))
+                .filteredOn(c -> !NUR_SUPERADMIN.contains(c.getSimpleName()))
                 .filteredOn(c -> !ADMIN_REGEL.equals(regel(c)))
                 .as("@RestController ohne exakt @PreAuthorize(\"hasRole('ADMIN')\") auf der Klasse "
                         + "(Default-Deny; Lockerungen gehoeren an einzelne Methoden)")
@@ -65,6 +69,19 @@ class SecurityCoverageTest {
                 .filteredOn(c -> FUER_ANGEMELDETE.contains(c.getSimpleName()))
                 .filteredOn(c -> !ANGEMELDET.equals(regel(c)))
                 .as("AuthController/MeController: exakt isAuthenticated() auf der Klasse")
+                .isEmpty();
+    }
+
+    @Test
+    void dieHistorieTraegtExaktDieSuperadminRegel() throws ClassNotFoundException {
+        assertThat(produktiveController())
+                .filteredOn(c -> NUR_SUPERADMIN.contains(c.getSimpleName()))
+                .extracting(Class::getSimpleName)
+                .containsExactlyInAnyOrderElementsOf(NUR_SUPERADMIN);
+        assertThat(produktiveController())
+                .filteredOn(c -> NUR_SUPERADMIN.contains(c.getSimpleName()))
+                .filteredOn(c -> !SUPERADMIN_REGEL.equals(regel(c)))
+                .as("AuditController: exakt hasRole('SUPERADMIN') auf der Klasse")
                 .isEmpty();
     }
 
