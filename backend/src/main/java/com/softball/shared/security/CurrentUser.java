@@ -15,6 +15,8 @@ import java.util.Optional;
 /**
  * Der angemeldete Account, aus dem SecurityContext gelesen und ueber den Port geladen.
  * Je Anfrage wird er hoechstens einmal geladen (Request-Scope + gemerktes Ergebnis).
+ * Die Klasse ist {@code @RequestScope} und funktioniert nur innerhalb einer HTTP-Anfrage;
+ * {@code CurrentUserArchitectureTest} sichert ab, dass geplante Laeufe sie nicht benutzen.
  */
 @Component
 @RequestScope
