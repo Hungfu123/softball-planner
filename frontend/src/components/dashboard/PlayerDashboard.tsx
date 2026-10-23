@@ -83,6 +83,25 @@ function useAufstellungen(spieltag: GameDayResponse | null): Aufstellungen {
   return stand && spieltag && stand.id === spieltag.id ? stand.daten : {}
 }
 
+/**
+ * Wer zugesagt hat, steht nur im Einzelabruf des Spieltags: die Saison-Liste liefert
+ * `availablePlayers` bewusst leer (N+1). Wer die Liste fragt, sagt jedem „nicht dabei".
+ * null = nicht ladbar, undefined = lädt noch.
+ */
+function useZusagen(spieltag: GameDayResponse | null): number[] | null | undefined {
+  const [stand, setStand] = useState<{ id: number; ids: number[] | null } | null>(null)
+  useEffect(() => {
+    if (!spieltag) return
+    let abgebrochen = false
+    api.getGameDay(spieltag.id)
+      .then(gd => gd.availablePlayers.map(p => p.id))
+      .catch(() => null)
+      .then(ids => { if (!abgebrochen) setStand({ id: spieltag.id, ids }) })
+    return () => { abgebrochen = true }
+  }, [spieltag])
+  return stand && spieltag && stand.id === spieltag.id ? stand.ids : undefined
+}
+
 function useMeineZahlen(seasonId: number | null, playerId: number | null) {
   const [stand, setStand] = useState<{
     key: string
@@ -134,16 +153,20 @@ function meinePlatzierung(eintraege: LineupEntryResponse[] | null | undefined, p
   return 'Nicht aufgestellt — in diesem Spiel bist du nicht im Lineup.'
 }
 
-function BinIchDabei({ spieltag, aufstellungen, playerId }: {
+function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
   spieltag: GameDayResponse
+  zusagen: number[] | null | undefined
   aufstellungen: Aufstellungen
   playerId: number
 }) {
-  const zugesagt = spieltag.availablePlayers.some(p => p.id === playerId)
   return (
     <section aria-label="Bin ich dabei" className={KARTE}>
       <h2 className={UEBERSCHRIFT}>Bin ich dabei?</h2>
-      {zugesagt ? (
+      {zusagen === undefined ? (
+        <p className="text-sm text-white/65">Zusageliste lädt …</p>
+      ) : zusagen === null ? (
+        <p className="text-sm text-white/65">Die Zusageliste ist gerade nicht erreichbar — später nochmal reinschauen.</p>
+      ) : zusagen.includes(playerId) ? (
         <p className="font-display text-xl font-extrabold tracking-wide uppercase text-amber-400">Du bist dabei</p>
       ) : (
         <>
@@ -334,6 +357,7 @@ export function PlayerDashboard() {
   const playerId = me?.playerId ?? null
   const { laden, ladefehler, seasonId, naechster, danach } = useNaechsterSpieltag()
   const aufstellungen = useAufstellungen(naechster)
+  const zusagen = useZusagen(naechster)
   const [alleZeigen, setAlleZeigen] = useState(false)
 
   if (laden) return <LoadingSkeleton variant="ball" />
@@ -353,7 +377,7 @@ export function PlayerDashboard() {
 
         {naechster && playerId != null && (
           <div className="lg:col-start-1 lg:row-start-2">
-            <BinIchDabei spieltag={naechster} aufstellungen={aufstellungen} playerId={playerId} />
+            <BinIchDabei spieltag={naechster} zusagen={zusagen} aufstellungen={aufstellungen} playerId={playerId} />
           </div>
         )}
 
@@ -363,8 +387,9 @@ export function PlayerDashboard() {
           </div>
         )}
 
+        {/* Ohne „Was kommt“ darunter spannt die Zahlenkarte beide Zeilen — sonst reisst sie unter dem Hero ein Loch. */}
         {playerId != null && (
-          <div className="lg:col-start-2 lg:row-start-1">
+          <div className={`lg:col-start-2 lg:row-start-1 ${danach.length === 0 ? 'lg:row-span-2' : ''}`}>
             <MeineZahlen playerId={playerId} seasonId={seasonId} ladefehler={ladefehler} />
           </div>
         )}
