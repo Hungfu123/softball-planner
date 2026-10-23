@@ -777,6 +777,7 @@ it('kommt ohne nächstes Spiel zurecht', () => { })   // Saisonende
 it('zeigt das Lineup des nächsten Spiels mit Schlagplatz und Position', () => { })
 it('zeigt im Lineup keinen einzigen Bearbeiten-Knopf', () => { })
 it('kommt mit einem Spiel ohne Lineup zurecht', () => { })
+it('verlinkt Playmaker und Counter', () => { })
 ```
 
 - [ ] **Step 2: Tests laufen lassen, Fehlschlag bestätigen**
@@ -799,6 +800,12 @@ Admin-Werkbank, kein Leseblatt. Einen Lese-Modus dort einzubauen wäre ein eigen
 des nächsten Spiels, wie sie stehen, ohne jede Bearbeitungsmöglichkeit. Die nötigen Daten
 sind seit Task 4 für Spieler offen (`GET /api/games/{id}/lineup`). Ein Test prüft, dass dort
 kein einziger Bearbeiten-Knopf erscheint.
+
+**Dazu eine schmale Werkzeug-Zeile: Playmaker und Counter.** Beide sind laut Spec für
+Spieler lesbar und per Route offen — aber seit Task 10 den Orga-Reiter für sie ausblendet,
+kommt ein Spieler nur noch über die Adresszeile hin. Einen eigenen Reiter bekommen sie
+nicht; drei sind die richtige Form. Also zwei kleine Verweise hier, unterhalb der
+Kennzahlen.
 
 Verfügbarkeit wird **angezeigt, nicht gesetzt** — Zusagen laufen über die WhatsApp-Umfrage, ein zweiter Weg hinein würde die bestehende Mechanik aufweichen.
 
