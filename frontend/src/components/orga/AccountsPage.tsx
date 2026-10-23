@@ -91,9 +91,12 @@ function KontoZeile({ eintrag, istSuperadmin, onAnlegen, onRolle, onScorer, onSp
             <button type="button" className={KLEIN} onClick={() => onDialog({ art: 'zuruecksetzen', konto })}>
               Passwort zurücksetzen
             </button>
-            <button type="button" className={KLEIN} onClick={() => onSperre(konto, !konto.locked)}>
-              {konto.locked ? 'Entsperren' : 'Sperren'}
-            </button>
+            {/* Ein Superadmin lässt sich nie sperren (Backend lehnt ab); nur ein Altbestand bleibt entsperrbar */}
+            {(konto.role !== 'SUPERADMIN' || konto.locked) && (
+              <button type="button" className={KLEIN} onClick={() => onSperre(konto, !konto.locked)}>
+                {konto.locked ? 'Entsperren' : 'Sperren'}
+              </button>
+            )}
             <button
               type="button"
               aria-label="Account löschen"

@@ -127,6 +127,15 @@ describe('AccountsPage', () => {
     expect(await within(zeile('Bert')).findByRole('button', { name: 'Entsperren' })).toBeInTheDocument()
   })
 
+  it('bietet an einem Superadmin-Account kein Sperren an', async () => {
+    h.me = SUPER
+    h.getUsers.mockResolvedValue([konto(10, 1, 'Anna', { role: 'SUPERADMIN' }), konto(11, 2, 'Bert')])
+    zeige()
+    await screen.findByRole('listitem', { name: 'Bert' })
+    expect(within(zeile('Anna')).queryByRole('button', { name: 'Sperren' })).toBeNull()
+    expect(within(zeile('Bert')).getByRole('button', { name: 'Sperren' })).toBeInTheDocument()
+  })
+
   it('zeigt die Rollenwahl dem Superadmin', async () => {
     h.me = SUPER
     zeige()
