@@ -17,8 +17,8 @@ import java.util.Map;
  * {@link #MAX_LUECKE} liegen. Alle anderen Zeilen bleiben einzeln.
  * <p>
  * Der Schluessel ist der Benutzername-Schnappschuss, nicht die userId: benennt jemand sich mitten in
- * einer Spanne um, reisst sie ab. Selten und folgenlos; die userId waere nach einem Account-Loeschen
- * ohnehin null und trennte dann alle Ehemaligen zu einem Nutzer zusammen.
+ * einer Spanne um, reisst sie ab. Selten und folgenlos. Die userId taugt nicht als Schluessel, weil sie
+ * nach dem Loeschen eines Accounts null ist.
  */
 public class AuditSummarizer {
 
