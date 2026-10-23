@@ -6,6 +6,8 @@ import com.softball.TestcontainersConfig;
 import com.softball.application.SelbstauskunftService;
 import com.softball.domain.model.AppUser;
 import com.softball.domain.port.out.AppUserRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +33,26 @@ class AppUserTouchIntegrationTest {
 
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private SelbstauskunftService service;
+
+    private AppUser vorher;
+
+    @BeforeEach
+    void zustandMerken() {
+        vorher = konto();
+    }
+
+    /** Stellt den Account her, den der Test veraendert hat: Reste wandern sonst in fremde Tests. */
+    @AfterEach
+    void zustandHerstellen() {
+        final AppUser heute = konto();
+        heute.setLocked(vorher.isLocked());
+        heute.setMayScore(vorher.isMayScore());
+        heute.setPasswordChanged(vorher.isPasswordChanged());
+        heute.setPasswordHash(vorher.getPasswordHash());
+        appUserRepository.save(heute);
+        appUserRepository.touchLastLogin(TestAccounts.SUPERADMIN, vorher.getLastLoginAt());
+        appUserRepository.touchLastSeen(TestAccounts.SUPERADMIN, vorher.getLastSeenAt());
+    }
 
     private AppUser konto() {
         return appUserRepository.findByUsername(TestAccounts.SUPERADMIN).orElseThrow();
