@@ -91,7 +91,7 @@ describe('RequireAuth — überholte Anmeldung', () => {
     await ersteAntwort
 
     expect(screen.getByText('Geschützter Inhalt')).toBeInTheDocument()
-    expect(localStorage.getItem('auth')).toBe(btoa('admin:erstesPasswortzweitesPasswort'))
+    expect(localStorage.getItem('auth')).toBe(btoa('hung:erstesPasswortzweitesPasswort'))
   })
 })
 
@@ -103,7 +103,7 @@ describe('RequireAuth', () => {
   })
 
   it('zeigt die Kinder, wenn bereits Zugangsdaten hinterlegt sind', () => {
-    localStorage.setItem('auth', btoa('admin:geheim'))
+    localStorage.setItem('auth', btoa('hung:geheim'))
     renderGated()
     expect(screen.getByText('Geschützter Inhalt')).toBeInTheDocument()
   })
@@ -117,7 +117,7 @@ describe('RequireAuth', () => {
     await user.click(screen.getByRole('button', { name: 'Ready Up' }))
 
     expect(await screen.findByText('Geschützter Inhalt')).toBeInTheDocument()
-    expect(localStorage.getItem('auth')).toBe(btoa('admin:geheim'))
+    expect(localStorage.getItem('auth')).toBe(btoa('hung:geheim'))
   })
 
   it('meldet ein falsches Passwort und verwirft die Zugangsdaten', async () => {

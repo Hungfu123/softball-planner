@@ -49,7 +49,7 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
               type="text"
               name="username"
               autoComplete="username"
-              value="admin"
+              value="hung"
               readOnly
               hidden
             />

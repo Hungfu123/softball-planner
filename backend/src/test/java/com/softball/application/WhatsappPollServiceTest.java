@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
-@WithMockUser
+@WithMockUser(roles = "SUPERADMIN")
 class WhatsappPollServiceTest {
 
     // Feste Clock statt LocalDate.now() — Spieltag-Validierung prüft "Vergangenheit" relativ zur

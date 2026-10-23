@@ -64,7 +64,7 @@ describe('Routing: Auth-Gate pro Route (abgemeldet)', () => {
 
 describe('Routing: Auth-Gate pro Route (angemeldet)', () => {
   beforeEach(() => {
-    localStorage.setItem('auth', btoa('admin:x'))
+    localStorage.setItem('auth', btoa('hung:x'))
     // Die Standalone-Route lädt beim Mounten echte Daten nach — ohne Netz im Test
     // würde das als unbehandelte Rejection auffallen. Die Promise bleibt bewusst
     // offen, die Seite zeigt einfach weiter ihren Lade-Zustand, den wir prüfen wollen.

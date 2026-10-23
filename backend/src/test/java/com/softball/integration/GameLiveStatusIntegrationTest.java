@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import(TestcontainersConfig.class)
-@WithMockUser
+@WithMockUser(roles = "SUPERADMIN")
 class GameLiveStatusIntegrationTest {
 
     @Autowired private MockMvc mockMvc;

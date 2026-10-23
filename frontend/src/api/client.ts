@@ -7,7 +7,7 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 export function setAuth(password: string) {
-  const creds = btoa(`admin:${password}`)
+  const creds = btoa(`hung:${password}`)
   localStorage.setItem('auth', creds)
 }
 
