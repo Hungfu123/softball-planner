@@ -39,6 +39,7 @@ public class ScoringController {
         return scoringService.getAtBats(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/atbats")
     @ResponseStatus(HttpStatus.CREATED)
     public AtBatResponse recordAtBat(@PathVariable final Long gameId,
@@ -46,29 +47,34 @@ public class ScoringController {
         return scoringService.recordAtBat(gameId, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @DeleteMapping("/{gameId}/atbats/last")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void undoLastAtBat(@PathVariable final Long gameId) {
         scoringService.undoLastAtBat(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @DeleteMapping("/{gameId}/scoring")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resetScoring(@PathVariable final Long gameId) {
         scoringService.resetScoring(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @DeleteMapping("/{gameId}/scoring/current-inning")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCurrentInning(@PathVariable final Long gameId) {
         scoringService.deleteCurrentInning(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/scoring/undo")
     public UndoResultResponse undoLastAction(@PathVariable final Long gameId) {
         return scoringService.undoLastAction(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/scoring/next-inning")
     @ResponseStatus(HttpStatus.CREATED)
     public InningAdvanceEventResponse advanceInning(@PathVariable final Long gameId,
@@ -76,12 +82,14 @@ public class ScoringController {
         return scoringService.advanceInning(gameId, req.opponentRuns());
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/scoring/automatic-out")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void recordAutomaticOut(@PathVariable final Long gameId) {
         scoringService.recordAutomaticOut(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PutMapping("/{gameId}/atbats/last/base-state")
     public AtBatResponse updateLastBaseState(@PathVariable final Long gameId,
                                               @RequestBody final UpdateBaseStateRequest req) {
@@ -94,6 +102,7 @@ public class ScoringController {
         return scoringService.getStealingEvents(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/stealing-events")
     @ResponseStatus(HttpStatus.CREATED)
     public StealingEventResponse recordStealingEvent(@PathVariable final Long gameId,
@@ -101,6 +110,7 @@ public class ScoringController {
         return scoringService.recordStealingEvent(gameId, request);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @DeleteMapping("/{gameId}/stealing-events/{eventId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteStealingEvent(@PathVariable final Long gameId,
@@ -114,22 +124,26 @@ public class ScoringController {
         return scoringService.getScoreboard(gameId);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/clock/start")
     public ClockStateResponse startClock(@PathVariable final Long gameId,
                                           @Valid @RequestBody final StartClockRequest request) {
         return ClockStateResponse.from(clockService.startGameClock(gameId, request.limitMinutes()));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/clock/pause")
     public ClockStateResponse pauseClock(@PathVariable final Long gameId) {
         return ClockStateResponse.from(clockService.pauseGameClock(gameId));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/clock/resume")
     public ClockStateResponse resumeClock(@PathVariable final Long gameId) {
         return ClockStateResponse.from(clockService.resumeGameClock(gameId));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{gameId}/clock/reset")
     public ClockStateResponse resetClock(@PathVariable final Long gameId) {
         return ClockStateResponse.from(clockService.resetGameClock(gameId));

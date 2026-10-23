@@ -70,21 +70,25 @@ public class GameController {
         return toResponseWithLive(gameService.updateOpponent(id, request.opponentTeamId()));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PutMapping("/{id}/score")
     public GameResponse setScore(@PathVariable final Long id, @RequestBody final SetGameScoreRequest request) {
         return toResponseWithLive(gameService.setScore(id, request.scoreUs(), request.scoreThem()));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{id}/end")
     public GameResponse endGame(@PathVariable final Long id) {
         return toResponseWithLive(gameService.endGame(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PutMapping("/{id}/batting-side")
     public GameResponse setBattingSide(@PathVariable final Long id, @RequestBody @Valid final SetBattingSideRequest request) {
         return toResponseWithLive(gameService.setBattingSide(id, request.battingSide()));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{id}/reopen")
     public GameResponse reopenGame(@PathVariable final Long id) {
         return toResponseWithLive(gameService.reopenGame(id));
@@ -145,6 +149,7 @@ public class GameController {
      * Fügt EINE Substitution hinzu (ohne existierende zu löschen).
      * Für Mid-Game-Wechsel im Live-Scoring.
      */
+    @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")
     @PostMapping("/{id}/substitutions")
     public SubstitutionResponse addSubstitution(@PathVariable final Long id,
                                                  @RequestBody @Valid SubstitutionRequest request) {
