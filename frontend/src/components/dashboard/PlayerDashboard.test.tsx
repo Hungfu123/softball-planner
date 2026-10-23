@@ -19,6 +19,7 @@ vi.mock('@/hooks/useRolle', () => ({
 vi.mock('@/api/client', () => ({
   getSeasons: vi.fn(),
   getGameDays: vi.fn(),
+  getGameDay: vi.fn(),
   getLineup: vi.fn(),
   getSeasonBattingStats: vi.fn(),
   getSeasonStats: vi.fn(),
@@ -41,7 +42,8 @@ const ME: MeResponse = {
 function gameDay(id: number, date: string, extra: Partial<GameDayResponse> = {}): GameDayResponse {
   return {
     id, date, label: 'Spieltag', location: 'Sportplatz Nord', seasonId: 1,
-    availablePlayers: [ICH, ANDERE],
+    // Wie im echten Backend: die Saison-Liste liefert die Zusagen leer, nur der Einzelabruf füllt sie.
+    availablePlayers: [],
     games: [{
       id: id * 10, gameNumber: 1, opponentTeam: { id: 1, name: 'Berlin Bears', ownTeam: false },
       scoreUs: null, scoreThem: null, gameDayId: id, lineupEntryCount: 2,
@@ -76,6 +78,8 @@ describe('PlayerDashboard', () => {
     vi.clearAllMocks()
     mockApi.getSeasons.mockResolvedValue([{ id: 1, name: 'Saison 2099', year: 2099 }])
     mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT), gameDay(2, ZUKUNFT_2)])
+    mockApi.getGameDay.mockImplementation((id: number) =>
+      Promise.resolve(gameDay(id, ZUKUNFT, { availablePlayers: [ICH, ANDERE] })))
     mockApi.getLineup.mockResolvedValue([eintrag(ICH, 'SS', 3), eintrag(ANDERE, 'P', 1)])
     mockApi.getSeasonBattingStats.mockResolvedValue([ZAHLEN])
     mockApi.getSeasonStats.mockResolvedValue([
@@ -106,13 +110,28 @@ describe('PlayerDashboard', () => {
   })
 
   it('sagt dass er nicht auf der Zusageliste steht und wie er dahin kommt', async () => {
-    mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT, { availablePlayers: [ANDERE] })])
+    mockApi.getGameDay.mockResolvedValue(gameDay(1, ZUKUNFT, { availablePlayers: [ANDERE] }))
     rendern()
     const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
     expect(await within(block).findByText(/nicht auf der Zusageliste/)).toBeInTheDocument()
     expect(within(block).getByText(/WhatsApp-Umfrage/)).toBeInTheDocument()
     // angezeigt, nicht gesetzt
     expect(within(block).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('liest die Zusagen aus dem Einzelabruf, nicht aus der Saison-Liste (die ist dort leer)', async () => {
+    rendern()
+    const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
+    expect(await within(block).findByText(/Du bist dabei/)).toBeInTheDocument()
+    expect(mockApi.getGameDay).toHaveBeenCalledWith(1)
+  })
+
+  it('sagt „nicht erreichbar" statt „nicht auf der Zusageliste", wenn der Einzelabruf scheitert', async () => {
+    mockApi.getGameDay.mockRejectedValue(new Error('500'))
+    rendern()
+    const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
+    expect(await within(block).findByText(/Zusageliste ist gerade nicht erreichbar/)).toBeInTheDocument()
+    expect(within(block).queryByText(/nicht auf der Zusageliste/)).not.toBeInTheDocument()
   })
 
   it('sagt dass das Lineup noch fehlt und was dann passiert', async () => {
