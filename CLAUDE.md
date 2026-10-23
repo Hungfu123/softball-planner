@@ -192,7 +192,8 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 ## Frontend conventions
 
 - Path alias `@/` → `frontend/src/` (configured in `vite.config.ts` + `tsconfig.app.json`).
-- API client at `src/api/client.ts` — single `request<T>` wrapper. Auth is HTTP Basic stored in `localStorage` under key `auth` (base64 `admin:password`). Backend password from env `APP_AUTH_PASSWORD` (default `Deadsox123!` locally).
+- API client at `src/api/client.ts` — single `request<T>` wrapper über `senden()`, das **jeden** Aufruf trägt und 401 abfängt. Auth is HTTP Basic in `localStorage` unter `auth` (base64 `benutzername:passwort`, UTF-8-kodiert — Umlaute sind erlaubt). Der Benutzername kommt aus dem Anmeldeformular, nicht aus einer Konstante. `useAuth()` liefert `me` mit `{username, role, playerId, playerName, mayScore, passwordChanged}` aus `GET /api/me`; `POST /api/auth/login` ist der Handschlag beim Formular und setzt `lastLoginAt`, `/api/me` tut das nicht.
+- **Keine eigenen `fetch`-Aufrufe gegen `/api`** — sie umgehen den 401-Abfang. Drei solche Umgehungen gab es schon (`api/plays.ts`, `downloadCalendarIcs`, `generateTrainingPlan`); alle laufen jetzt über `senden()`.
 - Routes in `App.tsx`. Heavy pages (Scoring, TrainingPlan, Stats) are lazy-loaded; wrap them in `Suspense` + `ChunkErrorBoundary` if adding new ones. `ScoringPage` runs **outside** `Layout` and needs its own `ToastProvider`.
 - State lives in custom hooks (`useLineup`, `useGameDay`, `useSeasons`, `usePlayers`, `useStaff`, `useTraining`, `useTrainingPlan`, `useScoring`, `useToast`, `useTodayGameDay`). Components stay presentational where possible.
 - **Tailwind v4:** use `lg:grid-cols-3` style classes, NOT arbitrary brackets. Theme + animations live in `src/styles/index.css`.
@@ -225,9 +226,14 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 
 ## Auth & deployment
 
-- Local: HTTP Basic, password from `APP_AUTH_PASSWORD` env (defaults to `Deadsox123!`). Frontend stashes base64 creds in `localStorage`.
-- Zwei Stellen sind bewusst offen: backendseitig `/api/calendar.ics` (`permitAll()` in `SecurityConfig`), frontendseitig die Route `/counter` (einzige Route ohne `RequireAuth` in `App.tsx`). `/counter` ruft kein `/api` auf und braucht das Backend-Loch nicht. Alles andere unter `/api/**` ist authentifiziert und jede andere Route liegt hinter `RequireAuth`.
-- Prod env vars on the VPS in `/opt/softball/docker-compose.yml`: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`, `GEMINI_API_KEY`, optionally `AI_ENABLED=true` + `GROQ_API_KEY` for Spring AI features.
+- **Drei Rollen:** `SUPERADMIN > ADMIN > PLAYER` als Spring-`RoleHierarchy`. Jeder Account hängt 1:0..1 an einem Spieler (`app_user.player_id`, `NOT NULL UNIQUE`, `ON DELETE CASCADE`). Ein Spieler kann ohne Account existieren, ein Account nie ohne Spieler.
+- **Zwei getrennte Passwörter, niemals eins:** `APP_AUTH_PASSWORD` gehört dem Superadmin, `APP_PLAYER_PASSWORD` ist das an die Spieler verteilte. Wären sie gleich, wäre jeder Spieler einen Anmeldeversuch von Superadmin entfernt — der Benutzername ist der Vorname. `VerteiltesPasswort` verweigert den Start, wenn sie übereinstimmen oder die zweite fehlt.
+- **Default-Deny:** jede Klasse in `adapter/in/web/` trägt exakt `@PreAuthorize("hasRole('ADMIN')")`, Ausnahmen sind `CalendarController` (`permitAll()`), `MeController`/`AuthController` (`isAuthenticated()`) und `AuditController` (`SUPERADMIN`). **Drei Wächter-Tests erzwingen das** — `SecurityCoverageTest`, `MethodSecurityCoverageTest`, `CurrentUserArchitectureTest`. Ein neuer Controller ohne Regel lässt die Suite scheitern.
+- **`CurrentUser` ist `@RequestScope`** und funktioniert nur innerhalb einer HTTP-Anfrage. Aus `@Scheduled`-Läufen wirft er; der Architekturtest fängt das.
+- Local: HTTP Basic, Passwörter aus `APP_AUTH_PASSWORD` und `APP_PLAYER_PASSWORD`. Der Bootstrap legt auf leerer Datenbank genau einen Superadmin an (Benutzername aus `app.auth.bootstrap-player`, Vorgabe `Hung`, klein geschrieben).
+- Zwei Stellen sind bewusst offen: backendseitig `/api/calendar.ics` (`permitAll()` in `SecurityConfig`), frontendseitig die Route `/counter` (einzige Route ohne `RequireAuth` in `App.tsx`). **Ohne Anmeldung ruft `/counter` kein `/api` auf** und braucht das Backend-Loch nicht; angemeldet läuft dort wie überall der `/api/me`-Abruf des `AuthProvider`. Alles andere unter `/api/**` ist authentifiziert und jede andere Route liegt hinter `RequireAuth`.
+- **Das freie Feld** (`/orga/playmaker/frei`) hält sein Offline-Versprechen weiter, aber die E2E misst es jetzt anders: der Test lässt genau `/api/me` zu (der `AuthProvider` läuft app-weit) und bleibt für alles andere unter `/api` streng. Dazu prüft ein zweiter Test die eigentliche Zusicherung — die Seite funktioniert, **wenn `/api/me` scheitert**. Ein routenabhängiger Sonderweg im Provider wurde bewusst nicht gebaut.
+- Prod env vars on the VPS in `/opt/softball/docker-compose.yml`: `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `APP_AUTH_PASSWORD`, **`APP_PLAYER_PASSWORD`** (ohne sie startet prod nicht — Absicht), `GEMINI_API_KEY`, optionally `AI_ENABLED=true` + `GROQ_API_KEY` for Spring AI features.
 - Push to `master` triggers GitHub Action → SSH → `/opt/softball/deploy.sh` → `git pull` → `docker build` → `docker compose up -d backend`. The Dockerfile builds frontend + backend into a single Spring Boot JAR (frontend served as static resources via `SpaForwardingConfig`).
 
 ## Known environment gotchas
