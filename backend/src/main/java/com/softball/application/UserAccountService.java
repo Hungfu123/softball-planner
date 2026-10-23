@@ -152,8 +152,9 @@ public class UserAccountService {
             if (target.getId().equals(actor.getId())) {
                 throw new BusinessValidationException("Du kannst deinen eigenen Account nicht sperren.");
             }
-            superadminGuard.pruefeNichtLetzter(target,
-                    "Der letzte Superadmin kann nicht gesperrt werden: danach käme niemand mehr in die Verwaltung.");
+            superadminGuard.pruefeNichtSperrbar(target,
+                    "Ein Superadmin kann nie gesperrt werden. Wer ihn loswerden will, stuft ihn erst herab "
+                            + "(dafür braucht es vorher einen anderen Superadmin).");
         }
         appUserRepository.updateLocked(id, locked);
         log.info("Account {} ('{}') {}, durch {}", id, target.getUsername(),

@@ -162,8 +162,9 @@ public class PlayerService {
         final Player player = findById(id);
         superadminGuard.pruefeSpielerAenderbar(id, actor);
         if (archived && !player.isArchived()) {
-            superadminGuard.pruefeSpielerNichtLetzter(id, "Spieler '" + player.getName()
-                + "' ist der letzte Superadmin und kann nicht archiviert werden: sein Account würde gesperrt.");
+            superadminGuard.pruefeSpielerNichtSperrbar(id, "Spieler '" + player.getName()
+                + "' trägt einen Superadmin-Account und kann nicht archiviert werden: Archivieren sperrt den Account, "
+                + "und ein Superadmin kann nie gesperrt werden.");
             availabilityService.removeAllPlanningReferences(id);
             trainingAttendanceRepository.deleteByPlayerId(id);
         }
