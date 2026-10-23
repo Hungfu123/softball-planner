@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.WhatsappAccountStatusResponse;
 import com.softball.adapter.dto.WhatsappGroupResponse;
 import com.softball.adapter.dto.WhatsappPollRequest;
@@ -13,6 +14,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/orga/whatsapp")
 public class WhatsappController {

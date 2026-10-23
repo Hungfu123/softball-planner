@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.CreateLineupSetRequest;
 import com.softball.adapter.dto.LineupSetResponse;
 import com.softball.adapter.dto.RenameLineupSetRequest;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api")
 public class LineupSetController {

@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.CreatePlayerRequest;
 import com.softball.adapter.dto.PlayerFormPointResponse;
 import com.softball.adapter.dto.PlayerResponse;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/players")
 public class PlayerController {

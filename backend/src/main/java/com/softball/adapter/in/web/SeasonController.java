@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.CopyYearRequest;
 import com.softball.adapter.dto.CreateSeasonRequest;
 import com.softball.adapter.dto.SeasonPlayerStats;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/seasons")
 public class SeasonController {

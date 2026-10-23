@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.BattingSlotStatsResponse;
 import com.softball.adapter.dto.OpponentBattingStatsResponse;
 import com.softball.adapter.dto.PlayerBattingStatsResponse;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 public class BattingStatsController {
 

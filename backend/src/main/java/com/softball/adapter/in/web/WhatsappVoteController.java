@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.AssignNewVoterRequest;
 import com.softball.adapter.dto.AssignVoterRequest;
 import com.softball.adapter.dto.PlayerResponse;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+@PreAuthorize("hasRole('ADMIN')")
 @RestController
 @RequestMapping("/api/orga/whatsapp")
 public class WhatsappVoteController {
