@@ -131,4 +131,12 @@ describe('StatsPage: Zeitraum als ein Knopf', () => {
     renderAt('?scope=year&year=2101')
     expect(await screen.findByTestId('zeitraum-knopf')).not.toHaveClass('uppercase')
   })
+
+  it('kürzt einen langen Gegnernamen: Wrapper darf schrumpfen, Text trägt truncate', async () => {
+    renderAt('?scope=opponent&opponent=Blue%20Devils')
+    const knopf = await screen.findByTestId('zeitraum-knopf')
+    expect(knopf.parentElement).toHaveClass('min-w-0', 'max-w-full')
+    expect(knopf).toHaveClass('max-w-full')
+    expect(knopf.querySelector('span')).toHaveClass('truncate')
+  })
 })

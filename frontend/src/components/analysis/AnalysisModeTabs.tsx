@@ -48,7 +48,7 @@ export function AnalysisModeTabs({ trailing }: { trailing?: ReactNode } = {}) {
         </Link>
       ))}
     </nav>
-    {trailing && <div className="mt-3 sm:mt-0">{trailing}</div>}
+    {trailing && <div className="mt-3 sm:mt-0 min-w-0 max-w-full">{trailing}</div>}
     </div>
   )
 }
