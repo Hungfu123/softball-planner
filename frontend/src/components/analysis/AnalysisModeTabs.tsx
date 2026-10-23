@@ -1,3 +1,4 @@
+import { parseStatsView } from './statsView'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 
 /**
@@ -11,7 +12,7 @@ export function AnalysisModeTabs() {
   const [params] = useSearchParams()
 
   const onStats = pathname === '/stats'
-  const statsView = params.get('view') === 'games' ? 'games' : 'batting'
+  const statsView = parseStatsView(params.get('view'))
 
   // Auf /stats bleibt der gewählte Zeitraum beim Reiterwechsel erhalten.
   const statsHref = (view: 'batting' | 'games') => {
