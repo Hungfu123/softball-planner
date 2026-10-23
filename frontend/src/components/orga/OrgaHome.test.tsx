@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { OrgaHome } from './OrgaHome'
 
 describe('OrgaHome', () => {
-  it('zeigt fünf Kacheln, jede verlinkt auf ihr eigenes Ziel', () => {
+  it('zeigt vier Kacheln, jede verlinkt auf ihr eigenes Ziel', () => {
     render(
       <MemoryRouter>
         <OrgaHome />
@@ -12,7 +12,6 @@ describe('OrgaHome', () => {
     )
 
     expect(screen.getByRole('link', { name: /Einladungen/ })).toHaveAttribute('href', '/orga/einladungen')
-    expect(screen.getByRole('link', { name: /Aufbau Heimspieltag/ })).toHaveAttribute('href', '/orga/aufbau')
     expect(screen.getByRole('link', { name: /WhatsApp-Umfragen/ })).toHaveAttribute('href', '/orga/whatsapp-umfrage')
     expect(screen.getByRole('link', { name: /Zähler/ })).toHaveAttribute('href', '/counter')
     expect(screen.getByRole('link', { name: /Kalender/ })).toHaveAttribute('href', '/kalender')

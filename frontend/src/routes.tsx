@@ -15,7 +15,6 @@ import { GameLogPage } from '@/components/orga/GameLogPage'
 import {
   LazyCalendar,
   LazyCounter,
-  LazyEquipmentCatalog,
   LazyTrainerabrechnung,
   LazyPlaymaker,
   LazyPlaySetup,
@@ -52,7 +51,6 @@ export const routes: RouteObject[] = [
       { path: '/spielbogen/new', element: <LazySpielbogenWizard />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga', element: <OrgaHome />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/einladungen', element: <InvitationListPage />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga/aufbau', element: <LazyEquipmentCatalog />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/whatsapp-umfrage', element: <WhatsappPollPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/trainerabrechnung', element: <LazyTrainerabrechnung />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker', element: <LazyPlaymaker />, errorElement: <ChunkErrorBoundary /> },

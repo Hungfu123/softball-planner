@@ -1030,21 +1030,6 @@ export interface InvitationRequest {
   contacts: InvitationContact[]
 }
 
-export interface EquipmentItem {
-  id: number
-  name: string
-  quantity: number
-  storageLocation: string | null
-  notes: string | null
-}
-
-export interface EquipmentInput {
-  name: string
-  quantity: number
-  storageLocation: string | null
-  notes: string | null
-}
-
 export type Weekday = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY'
 
 /**
