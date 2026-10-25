@@ -166,8 +166,10 @@ export function WhatsappPollPage() {
     getAllGameDays().then(setGameDays).catch(() => {})
   }, [])
 
-  // Solange nicht verbunden: QR alle 20s neu laden (läuft sonst ab) und Status
-  // alle 4s pollen, damit die Seite automatisch umschaltet sobald gescannt wurde.
+  // Solange nicht verbunden: QR alle 10s neu laden und Status alle 4s pollen, damit
+  // die Seite automatisch umschaltet sobald gescannt wurde. 10s, weil ein Code nur 60s
+  // lebt — bei 20s Takt konnte der angezeigte Code bereits abgelaufen sein und WhatsApp
+  // meldete beim Scannen "Anmeldung fehlgeschlagen".
   useEffect(() => {
     if (connected) return
     let cancelled = false
@@ -179,7 +181,7 @@ export function WhatsappPollPage() {
         .catch((e: unknown) => { if (!cancelled) setQrError((e as Error).message) })
     }
     fetchQr()
-    const qrTimer = setInterval(fetchQr, 20000)
+    const qrTimer = setInterval(fetchQr, 10000)
     const statusTimer = setInterval(reload, 4000)
     return () => {
       cancelled = true

@@ -15,7 +15,7 @@ import { WhatsappStatusBanner } from './WhatsappStatusBanner'
 function mockStatus(s: Partial<WhatsappAccountStatus>): WhatsappAccountStatus {
   return {
     connected: false, number: null, name: null, needsQr: false,
-    state: null, lastError: null, lastErrorAt: null,
+    state: null, lastError: null, lastErrorAt: null, lastPairingAt: null,
     ...s,
   }
 }

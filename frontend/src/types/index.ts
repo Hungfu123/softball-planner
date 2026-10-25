@@ -1052,7 +1052,7 @@ export type Weekday = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY'
  * UNREACHABLE setzt das Backend wenn der Sidecar nicht antwortet.
  */
 export type WhatsappConnectionState =
-  | 'CONNECTING' | 'WAITING_QR' | 'CONNECTED' | 'LOGGED_OUT' | 'INIT_FAILED' | 'UNREACHABLE'
+  | 'CONNECTING' | 'WAITING_QR' | 'PAIRING' | 'CONNECTED' | 'LOGGED_OUT' | 'INIT_FAILED' | 'UNREACHABLE'
 
 export interface WhatsappAccountStatus {
   connected: boolean
@@ -1062,6 +1062,8 @@ export interface WhatsappAccountStatus {
   state: WhatsappConnectionState | null
   lastError: string | null
   lastErrorAt: string | null
+  /** Letzter von WhatsApp angenommener Scan. Steht der, lag es nicht am QR-Code. */
+  lastPairingAt: string | null
 }
 
 export interface WhatsappGroup {

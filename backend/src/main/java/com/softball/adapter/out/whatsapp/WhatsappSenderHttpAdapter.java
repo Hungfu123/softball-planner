@@ -38,7 +38,7 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
             final StatusDto s = client.get().uri("/status").retrieve().body(StatusDto.class);
             if (s == null) return WhatsappAccountStatus.unreachable("Sidecar antwortet mit leerem Body");
             return new WhatsappAccountStatus(s.connected(), s.number(), s.name(), s.needsQr(), null,
-                    parseState(s.state(), s.connected()), s.lastError(), s.lastErrorAt());
+                    parseState(s.state(), s.connected()), s.lastError(), s.lastErrorAt(), s.lastPairingAt());
         } catch (final Exception e) {
             log.warn("WhatsApp-Status nicht erreichbar: {}", e.getMessage());
             return WhatsappAccountStatus.unreachable(e.getMessage());
@@ -124,7 +124,7 @@ public class WhatsappSenderHttpAdapter implements WhatsappSender {
     }
 
     private record StatusDto(boolean connected, String number, String name, boolean needsQr,
-                             String state, String lastError, String lastErrorAt) {}
+                             String state, String lastError, String lastErrorAt, String lastPairingAt) {}
     private record QrDto(String qr) {}
     private record GroupsDto(List<GroupDto> groups) {}
     private record GroupDto(String id, String name) {}
