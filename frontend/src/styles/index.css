@@ -110,6 +110,14 @@
      heller sein, als es fuer Text zulaessig waere. */
   --color-bar: #193253;
   --schimmer: rgb(255 255 255 / 0.7);
+  /* Der hervorgehobene Block: Kennzahlen-Kachel, Profilkopf, Vergleichstafel.
+     Auf Papier wird so etwas zum dunklen Klotz — es faellt auf, weil es die
+     Helligkeit UMDREHT. Im Dunkeln kann es das nicht; dort faellt auf, was heller
+     ist als alles ringsum. Gleiche Absicht, umgekehrtes Mittel. Nicht zu
+     verwechseln mit --color-band: das ist Rahmen (Kopfleiste, Scoreboard) und
+     darf ruhig zuruecktreten. */
+  --color-spotlight: #142B49;
+  --color-spotlight-ink: #FFFFFF;
   --color-band-ink: #FFFFFF;       /* Schrift auf dem Band */
   --color-danger-ink: #B91C2A;     /* Rot als SCHRIFT (nicht als Flaeche) */
 
@@ -235,6 +243,10 @@ p {
     /* 3,1:1 gegen das Gleis — einen Balken muss man ablesen koennen. */
     --color-bar: #6C9BD6;
     --schimmer: rgb(255 255 255 / 0.1);
+    /* Eine Stufe ueber der Karte: 1,6:1 gegen die Seite, 1,2:1 gegen gewoehnliche
+       Karten. Weisse Schrift steht darauf bei 9,0:1. */
+    --color-spotlight: #2F4A6E;
+    --color-spotlight-ink: #FFFFFF;
     --color-band-ink: #F4F0E6;
     /* softball-red-500 schafft auf der Seite nur 3,4:1 und auf Karten 2,9:1 — als SCHRIFT
        braucht es hier den hellen Ton. Als Flaeche (Knopf mit weisser Schrift) bleibt Rot Rot. */
