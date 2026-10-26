@@ -307,6 +307,16 @@ p {
 
   [data-theme="dark"] .text-gray-400 { color: var(--color-ink-faint); }
 
+  /* In SVG malt `fill`, nicht `color` — eine Regel fuer .text-gray-400 erreicht einen
+     Achsenbeschrifter also nicht. Tailwind hat dafuer eigene Klassen, und die fielen
+     durch: die Base-Beschriftungen im Diamond (2B/3B/Home) und die Achsen der
+     Form-Kurve standen im Dunkeln als dunkles Grau auf dunklem Grund.
+     `fill-white` bleibt unberuehrt — das sitzt auf Markern, die in beiden Themes
+     dunkel sind. */
+  [data-theme="dark"] .fill-gray-400 { fill: var(--color-ink-faint); }
+  [data-theme="dark"] .fill-gray-500,
+  [data-theme="dark"] .fill-gray-600 { fill: var(--color-ink-muted); }
+
   /* Flaechen. Die Zwischenstufen sind im Logo-Farbton gerechnet (H 255,8 / C 0,058),
      damit sie auf derselben Leiter sitzen wie Seite, Karte und Linie. */
   [data-theme="dark"] .bg-white,
