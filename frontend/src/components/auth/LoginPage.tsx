@@ -86,8 +86,15 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
             />
           </div>
 
+          {/*
+            Am Deploy-Tag sieht das Team diese Maske zum ersten Mal und sucht nach
+            "seinem" Passwort. Es gibt keins: alle bekommen dasselbe. Das muss hier
+            stehen, nicht nur WO es steht — sonst sucht man nach etwas, das es nicht
+            gibt. Der Hinweis auf Konto gehört dazu, sonst bleibt es für immer dabei.
+          */}
           <p className="text-xs text-navy-300 leading-relaxed">
-            Dein Benutzername ist dein Vorname, klein geschrieben. Das Passwort steht in der WhatsApp-Gruppe.
+            Dein Benutzername ist dein Vorname, klein geschrieben. Das Passwort ist für alle dasselbe
+            und steht in der WhatsApp-Gruppe — unter „Konto" kannst du danach ein eigenes setzen.
           </p>
 
           {error && (
