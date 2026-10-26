@@ -7,6 +7,8 @@ import java.time.Instant;
  * zusammengefasster Scoring-Zeilen. method/path/status stammen bei einer Spanne von der letzten Zeile.
  */
 public record AuditSpan(
+        /** Stabil ueber Umbenennungen hinweg; null, wenn der Account geloescht wurde. */
+        Long userId,
         String username,
         AuditKind kind,
         String method,

@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.application.AuditService;
 import com.softball.domain.model.AuditKind;
 import com.softball.domain.model.AuditSpan;
 
@@ -9,6 +10,8 @@ import java.time.Instant;
  * bei einer Scoring-Spanne die Zahl der zusammengefassten Aktionen. */
 public record AuditEntryResponse(
         String username,
+        /** Der Spieler hinter dem Account — null, wenn der Account geloescht wurde. */
+        String playerName,
         AuditKind kind,
         String label,
         String method,
@@ -20,10 +23,11 @@ public record AuditEntryResponse(
         Instant to,
         int count
 ) {
-    public static AuditEntryResponse von(final AuditSpan s) {
+    public static AuditEntryResponse von(final AuditService.Zeile zeile) {
+        final AuditSpan s = zeile.span();
         final String label = s.count() > 1 ? "Gescort (" + s.count() + " Aktionen)"
                 : s.label() != null ? s.label() : (s.method() + " " + s.path());
-        return new AuditEntryResponse(s.username(), s.kind(), label, s.method(), s.path(), s.targetType(),
-                s.targetId(), s.status(), s.from(), s.to(), s.count());
+        return new AuditEntryResponse(s.username(), zeile.playerName(), s.kind(), label, s.method(), s.path(),
+                s.targetType(), s.targetId(), s.status(), s.from(), s.to(), s.count());
     }
 }

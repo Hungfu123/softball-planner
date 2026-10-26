@@ -43,13 +43,29 @@ function zeitfenster(zeitraum: Zeitraum, von: string, bis: string): { from?: str
   }
 }
 
+/**
+ * Der Spieler hinter dem Benutzernamen — aber nur, wenn er etwas Neues sagt. „seb" und „Seb"
+ * nebeneinander wäre Lärm; „ballermann99 · Seb" ist der Fall, für den die Spalte existiert.
+ * Wer sich umbenennt, bleibt damit zuordenbar, und alte Zeilen unter dem alten Namen ebenso:
+ * aufgelöst wird über die userId, nicht über den Namen im Ereignis.
+ */
+function fremderName(username: string, playerName: string | null): string | null {
+  if (!playerName) return null
+  return playerName.toLowerCase() === username.toLowerCase() ? null : playerName
+}
+
 function ZuletztGesehen({ liste }: { liste: LastSeen[] }) {
   return (
     <Card>
       <ul aria-label="Zuletzt gesehen">
         {liste.map(l => (
           <li key={l.userId} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 min-h-11 border-b border-cream-300 last:border-b-0">
-            <span className="font-semibold text-navy-900 flex-1 min-w-32 break-words">{l.username}</span>
+            <span className="flex-1 min-w-32 break-words">
+              <span className="font-semibold text-navy-900">{l.username}</span>
+              {fremderName(l.username, l.playerName) && (
+                <span className="text-sm text-gray-500"> · {fremderName(l.username, l.playerName)}</span>
+              )}
+            </span>
             <span className="text-xs text-gray-500">{ROLLEN[l.role]}</span>
             <span className="text-sm text-gray-700 tabular-nums">
               {l.lastSeenAt ? `zuletzt gesehen ${datumZeit.format(new Date(l.lastSeenAt))}` : 'noch nie gesehen'}
@@ -78,7 +94,12 @@ function Verlauf({ eintraege }: { eintraege: AuditEntry[] }) {
             <FragmentZeile key={`${e.username}-${e.from}-${i}`} kopf={neuerTag ? tagKopf.format(new Date(e.to)) : null}>
               <li className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 min-h-11 border-b border-cream-300 last:border-b-0">
                 <Zeitangabe e={e} />
-                <span className="font-semibold text-navy-900 min-w-20">{e.username}</span>
+                <span className="min-w-20">
+                  <span className="font-semibold text-navy-900">{e.username}</span>
+                  {fremderName(e.username, e.playerName) && (
+                    <span className="text-xs text-gray-500"> · {fremderName(e.username, e.playerName)}</span>
+                  )}
+                </span>
                 <span className="flex-1 min-w-40 text-sm text-gray-700 break-words">{e.label}</span>
                 <Badge color={ART[e.kind].color} size="sm">{ART[e.kind].text}</Badge>
               </li>

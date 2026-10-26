@@ -69,7 +69,7 @@ public class AuditSummarizer {
     }
 
     private static AuditSpan spanne(final AuditEvent juengste, final AuditEvent aelteste, final int anzahl) {
-        return new AuditSpan(juengste.username(), juengste.kind(), juengste.method(), juengste.path(),
+        return new AuditSpan(juengste.userId(), juengste.username(), juengste.kind(), juengste.method(), juengste.path(),
                 juengste.label(), juengste.targetType(), juengste.targetId(), juengste.status(),
                 aelteste.occurredAt(), juengste.occurredAt(), anzahl);
     }

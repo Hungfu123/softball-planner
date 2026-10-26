@@ -9,15 +9,15 @@ vi.mock('@/api/client', () => ({ getAudit: h.getAudit, getLastSeen: h.getLastSee
 import { HistoriePage } from './HistoriePage'
 
 const eintrag = (extra: Partial<AuditEntry>): AuditEntry => ({
-  username: 'anna', kind: 'WRITE', label: 'Spieler angelegt', method: 'POST', path: '/api/players',
+  username: 'anna', playerName: 'Anna', kind: 'WRITE', label: 'Spieler angelegt', method: 'POST', path: '/api/players',
   targetType: null, targetId: null, status: 201, from: '2026-10-22T10:00:00Z', to: '2026-10-22T10:00:00Z', count: 1, ...extra,
 })
 const spanne = (from: string, to: string, count: number): AuditEntry =>
   eintrag({ kind: 'SCORING', label: `Gescort (${count} Aktionen)`, from, to, count })
 
 const GESEHEN: LastSeen[] = [
-  { userId: 1, username: 'anna', role: 'ADMIN', lastLoginAt: '2026-10-22T09:00:00Z', lastSeenAt: '2026-10-22T10:00:00Z' },
-  { userId: 2, username: 'bert', role: 'PLAYER', lastLoginAt: null, lastSeenAt: null },
+  { userId: 1, username: 'anna', playerName: 'Anna', role: 'ADMIN', lastLoginAt: '2026-10-22T09:00:00Z', lastSeenAt: '2026-10-22T10:00:00Z' },
+  { userId: 2, username: 'bert', playerName: 'Bert', role: 'PLAYER', lastLoginAt: null, lastSeenAt: null },
 ]
 
 function zeige() {
@@ -71,6 +71,30 @@ describe('HistoriePage', () => {
     const alter = vorher - new Date(filter.from).getTime()
     expect(alter).toBeGreaterThanOrEqual(7 * 86400_000 - 1000)
     expect(alter).toBeLessThan(7 * 86400_000 + 60_000)
+  })
+
+  it('nennt den Spieler, wenn der Benutzername ein anderer ist', async () => {
+    // Der Fall, für den die Spalte da ist: jemand benennt sich in etwas Ausgedachtes um.
+    h.getAudit.mockResolvedValue([eintrag({ username: 'ballermann99', playerName: 'Anna' })])
+    zeige()
+    const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
+    expect(within(verlauf).getByText('ballermann99')).toBeInTheDocument()
+    expect(within(verlauf).getByText(/· Anna/)).toBeInTheDocument()
+  })
+
+  it('wiederholt den Namen nicht, wenn er dasselbe sagt', async () => {
+    h.getAudit.mockResolvedValue([eintrag({ username: 'anna', playerName: 'Anna' })])
+    zeige()
+    const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
+    expect(within(verlauf).queryByText(/· Anna/)).toBeNull()
+  })
+
+  it('kommt ohne Spielernamen aus — ein gelöschter Account hat keinen mehr', async () => {
+    h.getAudit.mockResolvedValue([eintrag({ username: 'weg', playerName: null })])
+    zeige()
+    const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
+    expect(within(verlauf).getByText('weg')).toBeInTheDocument()
+    expect(within(verlauf).queryByText(/·/)).toBeNull()
   })
 
   it('filtert nach Nutzer und lädt neu', async () => {
