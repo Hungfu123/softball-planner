@@ -46,6 +46,37 @@ const SEITEN = [
   '/counter',
 ]
 
+/*
+ * Die Anmeldemaske ist die erste Seite, die jeder sieht — und die einzige, die niemand
+ * angemeldet zu Gesicht bekommt. Sie fiel deshalb aus jeder Messung heraus. Sie ist in
+ * beiden Themes dunkel gebaut, der Vergleich hell/dunkel sagt hier also nichts; geprüft
+ * wird, was absolut gilt.
+ */
+test('Die Anmeldemaske bleibt lesbar', async ({ page }) => {
+  await page.goto('/')
+  await page.waitForLoadState('networkidle')
+  await page.addStyleTag({
+    content: '*,*::before,*::after{transition:none !important;animation:none !important}',
+  })
+  await expect(page.getByRole('button', { name: 'Ready Up' })).toBeVisible()
+
+  for (const theme of ['hell', 'dunkel'] as const) {
+    await page.evaluate(t => {
+      if (t === 'dunkel') document.documentElement.setAttribute('data-theme', 'dark')
+      else document.documentElement.removeAttribute('data-theme')
+    }, theme)
+    const m = await messeKontrast(page)
+    expect(m.unsichtbar, `Unsichtbarer Text auf der Anmeldemaske (${theme}):\n${bericht(m.unsichtbar)}`).toHaveLength(0)
+    expect(
+      m.aa,
+      `Die Anmeldemaske unterschreitet AA (${theme}) — sie ist der erste Kontakt, ` +
+        `dort gibt es keine Altlasten zu dulden:\n${bericht(m.aa)}`,
+    ).toHaveLength(0)
+  }
+
+  expect(await helleFlaechenOhneDunkleTinte(page)).toHaveLength(0)
+})
+
 test.describe('Kontrast in beiden Themes', () => {
   test.beforeEach(async ({ context }) => {
     await seedAuth(context)

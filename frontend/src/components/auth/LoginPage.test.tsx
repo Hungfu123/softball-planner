@@ -38,7 +38,11 @@ describe('LoginPage', () => {
   it('sagt, was Benutzername und Passwort sind (Deploy-Tag: alle sehen die Maske zum ersten Mal)', () => {
     render(<MemoryRouter><LoginPage onLogin={() => {}} error={null} /></MemoryRouter>)
     expect(screen.getByText(/Benutzername ist dein Vorname, klein geschrieben/)).toBeInTheDocument()
-    expect(screen.getByText(/Passwort steht in der WhatsApp-Gruppe/)).toBeInTheDocument()
+    // "für alle dasselbe" ist der Teil, nach dem sonst gesucht wird: es gibt kein
+    // persönliches Startpasswort, und wer das nicht weiß, sucht vergeblich.
+    expect(screen.getByText(/Passwort ist für alle dasselbe/)).toBeInTheDocument()
+    expect(screen.getByText(/WhatsApp-Gruppe/)).toBeInTheDocument()
+    expect(screen.getByText(/ein eigenes setzen/)).toBeInTheDocument()
   })
 
   it('hat ein Benutzername-Feld vor dem Passwort, mit Autofill-Hinweisen', () => {
