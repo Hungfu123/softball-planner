@@ -100,6 +100,16 @@
   --color-ink-faint: #6B655C;      /* Randnotiz */
   --color-label: #2F5383;          /* Feldbeschriftung — im Hellen navy-500, wie gehabt */
   --color-band: #142B49;           /* dunkles Band: Kopfzeile, dunkle Karten */
+  /* Gefuellt und aktiv: der gewaehlte Reiter, die primaere Schaltflaeche, die
+     besetzte Kachel. Im Hellen ist das schlicht dunkel — im Dunkeln braucht es
+     eine eigene Farbe, weil die Seite dort selbst navy ist. */
+  --color-accent: #193253;
+  --color-accent-hover: #142B49;
+  --color-accent-ink: #FFFFFF;
+  /* Datenbalken. Eigene Rolle, weil keine Schrift darauf steht: der Balken darf
+     heller sein, als es fuer Text zulaessig waere. */
+  --color-bar: #193253;
+  --schimmer: rgb(255 255 255 / 0.7);
   --color-band-ink: #FFFFFF;       /* Schrift auf dem Band */
   --color-danger-ink: #B91C2A;     /* Rot als SCHRIFT (nicht als Flaeche) */
 
@@ -193,7 +203,7 @@ p {
     --color-surface: #142B49;
     --color-surface-raised: #273D5A;
     --color-surface-white: #273D5A;   /* im Dunklen gibt es kein Weiss als Flaeche */
-    --color-surface-sunken: #0B1E37;
+    --color-surface-sunken: #1D3350;
     /* Hover hebt um eine Stufe (L* 32 -> 41), nicht um eine Farbe. Gegen die Karte
        sind das 1,25:1 — sichtbar, ohne dass die Zeile aus der Seite springt. */
     --color-surface-hover: #354C6A;
@@ -214,6 +224,17 @@ p {
        zur Kartenueberschrift traegt im Dunklen die Schriftgroesse, nicht die Helligkeit. */
     --color-label: #FFFFFF;
     --color-band: #061A35;
+    /* Im Hellen wird der aktive Zustand DUNKLER als sein Grund, im Dunkeln muss er
+       HELLER werden — sonst faellt er mit der Seite zusammen. Die Werte liegen in
+       einem engen Fenster: weisse Schrift braucht hoechstens L 0,183 (4,5:1), die
+       Abgrenzung zur getoenten Flaeche mindestens 1,5:1. 5,8:1 fuer die Schrift,
+       1,9:1 gegen die Karte, 1,5:1 gegen die hellste Toenung. */
+    --color-accent: #43679A;
+    --color-accent-hover: #4E76AD;
+    --color-accent-ink: #FFFFFF;
+    /* 3,1:1 gegen das Gleis — einen Balken muss man ablesen koennen. */
+    --color-bar: #6C9BD6;
+    --schimmer: rgb(255 255 255 / 0.1);
     --color-band-ink: #F4F0E6;
     /* softball-red-500 schafft auf der Seite nur 3,4:1 und auf Karten 2,9:1 — als SCHRIFT
        braucht es hier den hellen Ton. Als Flaeche (Knopf mit weisser Schrift) bleibt Rot Rot. */
@@ -287,21 +308,34 @@ p {
      selbst (Spielbogen, Playmaker) und darf dort nicht aufgehellt werden.
      #375987 = L* 46 bei C 0,085 — gesaettigter als die Leiter, damit ein Knopf
      nach Knopf aussieht: 1,55:1 gegen die Karte, weisse Schrift darauf 7,1:1. */
-  [data-theme="dark"] button.bg-navy-800,
-  [data-theme="dark"] button.bg-navy-900,
-  [data-theme="dark"] a.bg-navy-800,
-  [data-theme="dark"] a.bg-navy-900 { background-color: #375987; }
+  [data-theme="dark"] :is(button, a, label, summary, [role="button"], [role="tab"]):is(.bg-navy-700, .bg-navy-800, .bg-navy-900),
+  /* Auch das gefuellte Kind: der abgehakte Kreis in der Anwesenheitsliste ist ein
+     <span>, der erreichte Schritt im Assistenten ein <div>. Beide meinen "gesetzt"
+     und wuerden sonst die Farbe der Seite tragen — also unsichtbar sein.
+     Unterschieden wird an der Rundung, nicht am Elementtyp: eine Kachel ist
+     gerundet, eine Seitenflaeche nicht. Die grossen Sockel (rounded-2xl) sind davon
+     ausgenommen — die tragen bg-band und bleiben Sockel. */
+  [data-theme="dark"] :is(span, div, li, td):is(.bg-navy-700, .bg-navy-800, .bg-navy-900):is(.rounded-full, .rounded-md, .rounded-lg, .rounded-xl) {
+    background-color: var(--color-accent);
+  }
 
   /* Deaktiviert. disabled:opacity-50 blendet eine Navy-Fuellung im Dunkeln in die
      Karte hinein (gemessen 1,08:1 — der Knopf war weg, nicht gedaempft). Deshalb
-     hier keine Transparenz, sondern eine eigene, entsaettigte Flaeche: grau statt
-     blau ist das Signal, 1,42:1 gegen die Karte macht sie sichtbar. */
+     hier keine Transparenz, sondern eine eigene Flaeche.
+
+     Zweiter Anlauf: das erste Grau (#4C535D) kam aus einer fremden Familie und sah
+     auf Navy aus wie Schmutz — es DRAENGTE sich nach vorn, statt zurueckzutreten.
+     Jetzt dieselbe Familie, eine Spur unter der Karte, dazu eine Kante. Das liest
+     sich als abgeschaltet und bleibt sichtbar: WCAG 1.4.3 nimmt die Schrift eines
+     inaktiven Bedienelements aus, seine Flaeche nicht. */
   [data-theme="dark"] button.bg-navy-800:disabled,
   [data-theme="dark"] button.bg-navy-900:disabled,
   [data-theme="dark"] button.bg-softball-red-600:disabled {
     opacity: 1;
-    background-color: #4C535D;
+    background-color: #2E4057;
     color: var(--color-ink-faint);
+    outline: 1px solid var(--color-line);
+    outline-offset: -1px;
   }
 
   /* Schleier hinter Modalen. bg-navy-900/60 liegt im Dunkeln auf einer Seite, die
@@ -344,6 +378,19 @@ p {
   [data-theme="dark"] .bg-amber-100        { background-color: #634C22; }
   [data-theme="dark"] .bg-emerald-50       { background-color: #184A36; }
   [data-theme="dark"] .bg-emerald-100      { background-color: #1F6246; }
+
+  /* Dieselbe Falle wie bei Rot: eine Alpha-Toenung von Amber ueber Navy ergibt
+     Olive, nicht Amber. Betrifft die Hinweisbaender, die mit /10 und /60 arbeiten. */
+  [data-theme="dark"] .bg-amber-400\/10,
+  [data-theme="dark"] .bg-amber-500\/10,
+  [data-theme="dark"] .bg-amber-400\/15 { background-color: #4F3D1C; }
+  [data-theme="dark"] .border-amber-400\/60,
+  [data-theme="dark"] .border-amber-400\/40,
+  [data-theme="dark"] .border-amber-500\/40 { border-color: #8A6B30; }
+  [data-theme="dark"] .bg-softball-red-500\/10,
+  [data-theme="dark"] .bg-softball-red-600\/10 { background-color: #4A2430; }
+  [data-theme="dark"] .bg-emerald-500\/10,
+  [data-theme="dark"] .bg-emerald-600\/10 { background-color: #184A36; }
 
   [data-theme="dark"] .border-softball-red-100,
   [data-theme="dark"] .border-softball-red-200,
@@ -409,14 +456,14 @@ p {
   [data-theme="dark"] .hover\:bg-navy-700:hover,
   [data-theme="dark"] .hover\:bg-navy-800:hover,
   [data-theme="dark"] .hover\:bg-navy-900:hover {
-    background-color: #456B9E;
+    background-color: var(--color-accent-hover);
     /* Die Schrift muss mit. Ohne das bleibt gedaempfte Tinte auf der aufgehellten
        Flaeche stehen (3,01:1) — im Hellen erledigte das `hover:text-white`, hier
        liegt der Ruhezustand schon auf Tinte und die Variante greift nicht mehr. */
     color: var(--color-ink);
   }
   /* Gedrueckt geht es wieder nach unten — das ist der Unterschied zum Hover. */
-  [data-theme="dark"] .active\:bg-navy-950:active { background-color: #2E4C74; }
+  [data-theme="dark"] .active\:bg-navy-950:active { background-color: #375987; }
 
   /* Status-Toenungen beim Ueberfahren: dieselben Flaechen wie oben, denn hier ruht
      das Element auf durchsichtigem Grund, nicht auf der Toenung. */
@@ -461,6 +508,71 @@ p {
   [data-theme="dark"] .focus\:border-navy-400:focus,
   [data-theme="dark"] .focus\:border-navy-500:focus,
   [data-theme="dark"] .focus\:border-navy-600:focus { border-color: #8CA0BC; }
+
+  /* -------------------------------------------------------------------------
+     Der Rest der Palette. Weniger haeufig als die Klassen oben, aber dieselbe
+     Mechanik: die Rolle haengt an der Eigenschaft.
+     ------------------------------------------------------------------------- */
+
+  /* Ein Feld im Fokus wurde weiss — auf dunklem Grund das Gegenteil von Fokus. */
+  [data-theme="dark"] .focus\:bg-white:focus,
+  [data-theme="dark"] .focus\:bg-cream-50:focus { background-color: var(--color-surface-raised); }
+
+  /* Linien. Die hellen Navy-Stufen sind auf Papier gedachte Raender, die dunklen
+     gedachte Betonungen — im Dunkeln dreht sich beides um dieselbe Achse. */
+  [data-theme="dark"] .border-navy-100,
+  [data-theme="dark"] .border-navy-200,
+  [data-theme="dark"] .border-navy-300,
+  [data-theme="dark"] .border-cream-50,
+  [data-theme="dark"] .border-cream-100,
+  [data-theme="dark"] .border-gray-200,
+  [data-theme="dark"] .border-gray-300 { border-color: var(--color-line); }
+  [data-theme="dark"] .border-navy-500,
+  [data-theme="dark"] .border-navy-700,
+  [data-theme="dark"] .border-navy-800,
+  [data-theme="dark"] .border-navy-900 { border-color: var(--color-line-strong); }
+  [data-theme="dark"] .divide-cream-200 > :not([hidden]) ~ :not([hidden]),
+  [data-theme="dark"] .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-line); }
+  [data-theme="dark"] .ring-navy-400,
+  [data-theme="dark"] .ring-navy-500,
+  [data-theme="dark"] .ring-navy-600,
+  [data-theme="dark"] .ring-navy-900 { --tw-ring-color: var(--color-line-strong); }
+
+  /* Durchsichtige Tinte. Im Hellen gedaempftes Dunkelblau auf Papier — im Dunkeln
+     stuende dasselbe Dunkelblau auf Dunkelblau. Die Deckung bleibt, die Farbe dreht. */
+  [data-theme="dark"] .text-navy-900\/70,
+  [data-theme="dark"] .text-navy-700\/70 { color: rgb(255 255 255 / 0.7); }
+  [data-theme="dark"] .text-navy-900\/55,
+  [data-theme="dark"] .text-navy-700\/55 { color: rgb(255 255 255 / 0.6); }
+  [data-theme="dark"] .text-navy-900\/45 { color: rgb(255 255 255 / 0.55); }
+
+  /* Graue Flaechen: im Hellen neutrale Mulden, im Dunkeln getoente Flaechen.
+     Ab gray-400 sind es bewusst dunkle Flaechen mit heller Schrift — die bleiben. */
+  [data-theme="dark"] .bg-gray-100,
+  [data-theme="dark"] .bg-gray-200 { background-color: var(--color-surface-raised); }
+  [data-theme="dark"] .bg-gray-300 { background-color: #4C535D; }
+
+  /* Die mittlere Rot-Stufe als Schrift: auf Papier knapp lesbar, hier nicht mehr. */
+  [data-theme="dark"] .text-softball-red-500 { color: var(--color-danger-ink); }
+  [data-theme="dark"] .text-green-600,
+  [data-theme="dark"] .text-emerald-500 { color: #6EE7B7; }
+
+  /* Rote Schaltflaechen. Die Fuellung bleibt Rot — sie ist Marke und Signal. Gegen
+     die dunkle Seite steht sie aber nur bei 2,7:1, und WCAG 1.4.11 will 3:1 fuer die
+     Kante eines Bedienelements. Eine hellere Fuellung scheidet aus: dann faellt die
+     weisse Schrift unter 4,5:1 (das Fenster zwischen beiden Forderungen ist etwa
+     0,17-0,18 Leuchtdichte breit und damit kaum zu treffen). Stattdessen eine
+     1px-Kante in der helleren Rot-Stufe: 3,4:1 gegen die Seite, ohne die Schrift
+     anzutasten. `outline` statt `border`, damit sich kein Kasten verschiebt, und
+     mit negativem Versatz, damit sie der Rundung folgt. Der Tastatur-Fokus
+     ueberschreibt sie — richtig so, der ist wichtiger. */
+  [data-theme="dark"] :is(button, a, [role="button"]):is(.bg-softball-red-500, .bg-softball-red-600, .bg-softball-red-700):not(:focus-visible):not(:disabled) {
+    outline: 1px solid #E63946;
+    outline-offset: -1px;
+  }
+  /* Beim Ueberfahren wird Rot im Hellen dunkler. Im Dunkeln waere das ein Rueckzug. */
+  [data-theme="dark"] .hover\:bg-softball-red-600:hover,
+  [data-theme="dark"] .hover\:bg-softball-red-700:hover { background-color: #E63946; }
 }
 
 /* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default.
@@ -567,7 +679,9 @@ button:active:not(:disabled), [role="button"]:active {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  /* Der Schleier muss zum Grund passen: 70 % Weiss ueber einer dunklen Karte ist
+     kein Schimmer, sondern ein Blitz. Die Staerke steht deshalb in einer Variable. */
+  background: linear-gradient(90deg, transparent, var(--schimmer), transparent);
   animation: shimmer 1.6s infinite;
 }
 

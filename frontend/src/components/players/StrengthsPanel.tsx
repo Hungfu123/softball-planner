@@ -96,7 +96,7 @@ export function StrengthsPanel({ playerId, allTime }: {
           </div>
           <div className="relative h-2 bg-cream-200 rounded-full">
             <div
-              className="absolute inset-y-0 left-0 bg-navy-700 rounded-full"
+              className="absolute inset-y-0 left-0 bg-bar rounded-full"
               style={{ width: `${Math.min(100, (value / scale) * 100)}%` }}
             />
             {/* Teamschnitt als Kerbe: der Balken sagt „wie viel", die Kerbe sagt „im Vergleich wozu". */}

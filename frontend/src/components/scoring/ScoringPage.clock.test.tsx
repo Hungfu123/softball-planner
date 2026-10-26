@@ -136,7 +136,10 @@ describe('ScoringPage — Legacy-Kopfzeile bleibt unverändert ohne Uhr', () => 
     // Über den eindeutigen Outs-Button zur Live-State-Strip-Zeile hoch — "Inning" als Text
     // kommt auch im Header-Button "Inning löschen" vor, ist dort also nicht eindeutig genug.
     const outsButton = await screen.findByRole('button', { name: 'Automatisches Out' })
-    const strip = outsButton.closest('div.bg-navy-900')
+    // `bg-band` statt `bg-navy-900`: die Leiste traegt jetzt den Token fuer
+    // "dunkler Sockel". Im hellen Theme ist er derselbe Wert wie zuvor — der Test
+    // haelt den Inhalt fest, nicht die Farbe, und braucht die Klasse nur als Griff.
+    const strip = outsButton.closest('div.bg-band')
     expect(strip).toBeTruthy()
     expect(within(strip as HTMLElement).getByText('Inning')).toBeInTheDocument()
     expect(strip).toHaveTextContent('1') // displayInning-Fallback ohne Scoreboard

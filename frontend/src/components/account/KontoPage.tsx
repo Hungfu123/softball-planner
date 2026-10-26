@@ -129,7 +129,7 @@ function ThemeWahl() {
       aria-pressed={theme === wert}
       className={`min-h-11 flex-1 rounded-lg border px-4 font-display text-sm font-bold uppercase tracking-wide transition-colors ${
         theme === wert
-          ? 'border-ink-strong bg-ink-strong text-surface'
+          ? 'border-accent bg-accent text-accent-ink'
           : 'border-line bg-surface-raised text-ink hover:border-line-strong'
       }`}
     >

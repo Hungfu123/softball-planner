@@ -714,7 +714,7 @@ export default function SpielbogenPage() {
       </AnimatePresence>
 
       {/* Nav header */}
-      <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md">
+      <header className="bg-band text-band-ink sticky top-0 z-50 shadow-md">
         <div className="px-3 sm:px-4 h-14 flex items-center gap-2">
           <Link to="/spielbogen" className="p-1 hover:bg-navy-700 rounded-lg" aria-label="Zurück">
             <ChevronLeftLucide size={22} />
@@ -767,7 +767,7 @@ export default function SpielbogenPage() {
       </header>
 
       {/* Live-State-Strip */}
-      <div className="bg-navy-900 text-white px-4 py-2 flex items-center gap-2">
+      <div className="bg-band text-band-ink px-4 py-2 flex items-center gap-2">
         <div className="flex items-center gap-2.5">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white/80">Inning</span>
           <span className="font-display text-2xl font-extrabold leading-none tabular-nums">{meta.currentInning}</span>

@@ -194,7 +194,7 @@ export function PlayerProfilePage() {
         </button>
 
         {/* Kopf — dunkel wie das Feld, damit Name und Zahlen zusammen eine Einheit bilden */}
-        <header className="bg-navy-900 rounded-2xl px-5 py-5 shadow-card">
+        <header className="bg-band rounded-2xl px-5 py-5 shadow-card">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               {editingName ? (
@@ -448,7 +448,7 @@ export function PlayerProfilePage() {
                           <span className="w-28 shrink-0 text-xs text-navy-900">{POSITION_NAMES[position] ?? position}</span>
                           <span className="flex-1 h-2 bg-cream-200 rounded-full overflow-hidden">
                             <span
-                              className="block h-full bg-navy-700 rounded-full"
+                              className="block h-full bg-bar rounded-full"
                               style={{ width: `${(count / max) * 100}%` }}
                             />
                           </span>

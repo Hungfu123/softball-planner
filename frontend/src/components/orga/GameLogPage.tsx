@@ -296,7 +296,7 @@ export function GameLogPage() {
           />
 
           {(selectionMode || selectedIds.size > 0) && (
-            <div className="flex items-center justify-between bg-navy-800 text-white rounded-2xl px-4 py-2.5">
+            <div className="flex items-center justify-between bg-band text-band-ink rounded-2xl px-4 py-2.5">
               <p className="text-xs font-semibold">
                 {selectedIds.size > 0
                   ? selectedIds.size === 2
@@ -562,7 +562,7 @@ function SummaryStrip({ totals, count }: { totals: ReturnType<typeof summarize>;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map(i => (
-        <div key={i.label} className="bg-navy-900 rounded-2xl px-4 py-3.5">
+        <div key={i.label} className="bg-band rounded-2xl px-4 py-3.5">
           <p className={`font-display text-2xl font-extrabold tabular-nums leading-tight ${i.tone}`}>{i.value}</p>
           <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mt-0.5">{i.label}</p>
           {i.sub && <p className="text-[10px] text-white/60 mt-1 leading-snug">{i.sub}</p>}
@@ -819,7 +819,7 @@ function SlotProfile({ slots, gameCount, allGames, comparison }: {
                 <span className="font-display text-xs font-extrabold text-gray-400 tabular-nums w-5 text-right shrink-0">{s.slot}.</span>
                 <div className="flex-1 h-5 bg-cream-200/70 rounded-full overflow-hidden">
                   <div className="h-full flex rounded-full overflow-hidden">
-                    <div className="h-full bg-navy-800" style={{ width: `${avgShare * 100}%` }} />
+                    <div className="h-full bg-bar" style={{ width: `${avgShare * 100}%` }} />
                     <div className="h-full bg-navy-400" style={{ width: `${(obp - avgShare) * 100}%` }} />
                   </div>
                 </div>
@@ -1340,7 +1340,7 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
             Hits pro Inning
           </p>
           <p className="text-[10px] text-gray-400">
-            <span className="inline-block w-2 h-2 rounded-sm bg-navy-800 mr-1 align-middle" />Hits
+            <span className="inline-block w-2 h-2 rounded-sm bg-bar mr-1 align-middle" />Hits
             <span className="inline-block w-2 h-2 rounded-sm bg-amber-400 ml-2.5 mr-1 align-middle" />Runs
           </p>
         </div>
@@ -1406,7 +1406,7 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
               <div key={name} className="flex items-center gap-2.5" title={`${name}: ${times}× das letzte Aus bei Runnern auf Base`}>
                 <span className="text-[11px] font-semibold text-navy-900 w-20 shrink-0 truncate">{name}</span>
                 <div className="flex-1 h-4 bg-cream-200/70 rounded-full overflow-hidden">
-                  <div className="h-full bg-navy-700 rounded-full" style={{ width: `${(times / maxOutMakers) * 100}%` }} />
+                  <div className="h-full bg-bar rounded-full" style={{ width: `${(times / maxOutMakers) * 100}%` }} />
                 </div>
                 <span className="font-display text-[11px] font-extrabold tabular-nums text-navy-800 w-8 text-right shrink-0">×{times}</span>
               </div>
@@ -1680,7 +1680,7 @@ function LineupCompare({ gameA, gameB }: { gameA?: TeamGameLogResponse; gameB?: 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: EASE_OUT }}
-      className="bg-navy-900 rounded-2xl px-4 py-4"
+      className="bg-band rounded-2xl px-4 py-4"
     >
       <p className="font-display text-sm font-extrabold uppercase tracking-wide text-white mb-3">
         Lineup-Vergleich <span className="text-white/60 font-bold">— rote Zellen = am Platz anders besetzt</span>

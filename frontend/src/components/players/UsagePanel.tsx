@@ -128,7 +128,7 @@ function Ratio({ label, explain, value, total, unit }: {
         </span>
       </div>
       <div className="h-2 bg-cream-200 rounded-full overflow-hidden">
-        <span className="block h-full bg-navy-700 rounded-full" style={{ width: `${share * 100}%` }} />
+        <span className="block h-full bg-bar rounded-full" style={{ width: `${share * 100}%` }} />
       </div>
     </div>
   )
