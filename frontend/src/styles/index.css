@@ -736,9 +736,52 @@ button:active:not(:disabled), [role="button"]:active {
   to { transform: scale(1); }
 }
 
+/*
+ * Reduzierte Bewegung. Bisher standen hier zwei Namen — der Dauerlauf des Skeletons,
+ * das Einschwenken der Planner-Spalte und jedes Druck-Feedback liefen weiter.
+ *
+ * Abgeschaltet wird, was sich BEWEGT: Animationen ganz, Transformationen auf null.
+ * Farbuebergaenge bleiben, nur kurz — sie verursachen keine Uebelkeit, und ohne sie
+ * flackert jeder Hover. Das ist der Unterschied zwischen "weniger Bewegung" und
+ * "keine Uebergaenge", den die blanke Holzhammer-Regel (alles auf 0,01ms) verwischt.
+ */
 @media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 80ms !important;
+  }
+  .skeleton-shimmer::after { display: none; }
   .planner-pane { animation: none; }
   .count-pop { animation: none; }
+  .chart-bar:active, .chart-bar:hover { transform: none; }
+  button:active:not(:disabled), [role="button"]:active { transform: none; }
+  html { scroll-behavior: auto; }
+}
+
+/*
+ * Der Theme-Wechsel als EIN Vorgang. Die Voreinstellung blendet den alten gegen den
+ * neuen Zustand; hier nur Dauer und Kurve, damit es zur uebrigen Bewegung passt.
+ * Waehrend des Wechsels sind die Einzeluebergaenge aus — zwei Bewegungen uebereinander
+ * sehen nach Fehler aus, nicht nach Absicht.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-out-strong);
+}
+
+[data-theme-wechsel] *,
+[data-theme-wechsel] *::before,
+[data-theme-wechsel] *::after {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 /* Hover nur auf Geraeten, die wirklich hovern koennen. Tailwind generiert
