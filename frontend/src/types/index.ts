@@ -1146,6 +1146,8 @@ export type AuditKind = 'LOGIN' | 'LOGIN_FAILED' | 'WRITE' | 'SCORING'
 /** Eine Zeile der Historie; bei `count` > 1 eine zusammengefasste Scoring-Spanne von `from` bis `to`. */
 export interface AuditEntry {
   username: string
+  /** Der Spieler hinter dem Account; null nach dem Löschen des Accounts. */
+  playerName: string | null
   kind: AuditKind
   label: string
   method: string | null
@@ -1161,6 +1163,8 @@ export interface AuditEntry {
 export interface LastSeen {
   userId: number
   username: string
+  /** Der Spieler hinter dem Account; null, wenn keiner auffindbar ist. */
+  playerName: string | null
   role: Role
   lastLoginAt: string | null
   lastSeenAt: string | null

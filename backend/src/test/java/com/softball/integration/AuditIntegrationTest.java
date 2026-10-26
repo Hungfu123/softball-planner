@@ -195,6 +195,36 @@ class AuditIntegrationTest {
         assertThat(zeilen("username = 'weg' and user_id is null")).isEqualTo(1);
     }
 
+    /**
+     * Der Grund fuer die Spalte: wer sich einen Fantasienamen gibt, soll trotzdem zuordenbar
+     * bleiben — und zwar auch mit den Zeilen, die er unter dem ALTEN Namen geschrieben hat.
+     * Aufgeloest wird deshalb ueber die userId, nicht ueber den Namen im Ereignis.
+     */
+    @Test
+    void nenntDenSpielerAuchFuerZeilenUnterEinemFrueherenBenutzernamen() {
+        final Player spieler = playerRepository.save(new Player("Audit Umbenannt"));
+        final AppUser konto = new AppUser();
+        konto.setPlayerId(spieler.getId());
+        konto.setUsername("vorher");
+        konto.setPasswordHash("{noop}x");
+        konto.setRole(Role.PLAYER);
+        konto.setCreatedAt(Instant.now());
+        final AppUser gespeichert = appUserRepository.save(konto);
+
+        auditService.record("vorher", AuditKind.WRITE, "PUT", "/api/irgendwas", "Etwas geaendert", null, null, 200);
+        appUserRepository.updateUsername(gespeichert.getId(), "ballermann99");
+
+        final List<AuditService.Zeile> zeilen = auditService.verlauf(
+                new com.softball.domain.model.AuditQuery(gespeichert.getId(), null, null, null));
+
+        assertThat(zeilen).hasSize(1);
+        assertThat(zeilen.get(0).span().username()).isEqualTo("vorher"); // Schnappschuss bleibt
+        assertThat(zeilen.get(0).playerName()).isEqualTo("Audit Umbenannt"); // trotzdem zuordenbar
+
+        appUserRepository.deleteById(gespeichert.getId());
+        playerRepository.deleteById(spieler.getId());
+    }
+
     @Test
     void fasstAufeinanderfolgendeScoringZeilenZuEinerSpanneZusammen() throws Exception {
         // hung, Spiel 7: Abstaende 8 und 13 Minuten, die Spanne insgesamt 21 Minuten (kettet, nicht ab Beginn)
