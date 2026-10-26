@@ -203,27 +203,36 @@ export function TeamDirectoryPage() {
 
         {/* Filter-Zeile: Liga-Chips + Sortierung */}
         {!loading && directory.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
-            <button
-              onClick={() => setLeagueFilter(null)}
-              className={`font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
-                leagueFilter == null ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
-              }`}
-            >
-              Alle
-            </button>
-            {availableLeagues.map(league => (
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+            {/*
+              Die Liga-Filter liegen auf einem Gleis, wie die Sortierung im Training.
+              Vorher stand die gewaehlte Pille gefuellt neben randlosen Nachbarn — die
+              sahen dadurch abgeschaltet aus, obwohl man sie anklicken kann. Das Gleis
+              sagt "hier wird eine von mehreren gewaehlt", bevor man ueberhaupt liest.
+            */}
+            <div role="group" aria-label="Liga" className="inline-flex items-center gap-0.5 bg-cream-200 rounded-full p-0.5 shrink-0">
               <button
-                key={league}
-                onClick={() => setLeagueFilter(leagueFilter === league ? null : league)}
-                className={`font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
-                  leagueFilter === league ? 'bg-navy-900 text-white' : 'text-gray-600 hover:bg-cream-200 hover:text-navy-900'
+                onClick={() => setLeagueFilter(null)}
+                aria-pressed={leagueFilter == null}
+                className={`font-display min-h-11 px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
+                  leagueFilter == null ? 'bg-navy-900 text-white' : 'text-navy-700 hover:bg-cream-300'
                 }`}
               >
-                {league.replace(' Series', '').replace(' Liga', '')}
+                Alle
               </button>
-            ))}
-            <span className="w-px h-5 bg-cream-300 shrink-0 mx-0.5" />
+              {availableLeagues.map(league => (
+                <button
+                  key={league}
+                  onClick={() => setLeagueFilter(leagueFilter === league ? null : league)}
+                  aria-pressed={leagueFilter === league}
+                  className={`font-display min-h-11 px-3.5 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full cursor-pointer whitespace-nowrap transition-colors ${
+                    leagueFilter === league ? 'bg-navy-900 text-white' : 'text-navy-700 hover:bg-cream-300'
+                  }`}
+                >
+                  {league.replace(' Series', '').replace(' Liga', '')}
+                </button>
+              ))}
+            </div>
             <button
               onClick={() => setSortBy(sortBy === 'name' ? 'record' : 'name')}
               className={`font-display min-h-11 min-w-11 justify-center px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border shrink-0 cursor-pointer whitespace-nowrap transition-colors ${
