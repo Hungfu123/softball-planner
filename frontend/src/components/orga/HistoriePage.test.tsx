@@ -51,12 +51,15 @@ describe('HistoriePage', () => {
     expect(zeilen[1]).toHaveTextContent('Gescort (5 Aktionen)')
   })
 
-  it('sagt, dass gemeinsame Passwörter die Zuordnung weich machen — und der Passwort-Reset eines Admins auch', () => {
+  it('sagt kurz, dass geteilte Passwörter und der Reset durch einen Admin die Zuordnung weich machen', () => {
     zeige()
     const hinweis = screen.getByRole('note')
-    expect(hinweis).toHaveTextContent(/Gemeinsame Passwörter machen die Zuordnung weich/)
-    expect(hinweis).toHaveTextContent(/Passwort eines anderen Admins/)
+    expect(hinweis).toHaveTextContent(/Konto, nicht die Person/)
+    expect(hinweis).toHaveTextContent(/Passwörter sind geteilt/)
+    expect(hinweis).toHaveTextContent(/Admin kann das eines anderen/)
     expect(hinweis).toHaveTextContent(/Hinweis, kein Beweis/)
+    // Der Kasten steht über jedem Seitenaufbau: er darf nicht wieder zum Absatz werden.
+    expect(hinweis.textContent!.trim().length).toBeLessThan(170)
   })
 
   it('lädt vorgabemäßig nur die letzten sieben Tage, nie alles', async () => {
@@ -90,11 +93,48 @@ describe('HistoriePage', () => {
     await waitFor(() => expect(h.getAudit.mock.calls.at(-1)?.[0].kind).toBeUndefined())
   })
 
-  it('bietet keine gescheiterten Anmeldungen an — die Art wird nie geschrieben', async () => {
+  it('bietet jede Art an, die geschrieben wird — auch gescheiterte Anmeldungen', async () => {
     zeige()
     const auswahl = await screen.findByLabelText('Aktivität')
     const werte = Array.from(auswahl.querySelectorAll('option')).map(o => o.getAttribute('value'))
-    expect(werte).toEqual(['', 'LOGIN', 'WRITE', 'SCORING'])
+    expect(werte).toEqual(['', 'LOGIN', 'LOGIN_FAILED', 'WRITE', 'SCORING'])
+  })
+
+  it('zeigt erst 50 Zeilen, dann auf Knopfdruck mehr', async () => {
+    const viele = Array.from({ length: 120 }, (_, i) => eintrag({ label: `Eintrag ${i}` }))
+    h.getAudit.mockResolvedValue(viele)
+    zeige()
+
+    const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
+    expect(within(verlauf).getAllByRole('listitem')).toHaveLength(50)
+    expect(screen.getByText('50 von 120 Einträgen')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mehr anzeigen' }))
+    await waitFor(() => expect(within(verlauf).getAllByRole('listitem')).toHaveLength(100))
+    expect(screen.getByText('100 von 120 Einträgen')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mehr anzeigen' }))
+    await waitFor(() => expect(within(verlauf).getAllByRole('listitem')).toHaveLength(120))
+    // Alles da: der Knopf hat nichts mehr zu tun und verschwindet.
+    expect(screen.queryByRole('button', { name: 'Mehr anzeigen' })).not.toBeInTheDocument()
+  })
+
+  it('fängt nach einem Filterwechsel wieder bei 50 an', async () => {
+    h.getAudit.mockResolvedValue(Array.from({ length: 120 }, (_, i) => eintrag({ label: `Eintrag ${i}` })))
+    zeige()
+    const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
+    fireEvent.click(await screen.findByRole('button', { name: 'Mehr anzeigen' }))
+    await waitFor(() => expect(within(verlauf).getAllByRole('listitem')).toHaveLength(100))
+
+    fireEvent.change(screen.getByLabelText('Aktivität'), { target: { value: 'WRITE' } })
+    await waitFor(() => expect(within(screen.getByRole('list', { name: 'Verlauf' })).getAllByRole('listitem')).toHaveLength(50))
+  })
+
+  it('zeigt bei kurzer Liste keinen Knopf, aber die Zahl', async () => {
+    h.getAudit.mockResolvedValue([eintrag({}), eintrag({})])
+    zeige()
+    expect(await screen.findByText('2 von 2 Einträgen')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mehr anzeigen' })).not.toBeInTheDocument()
   })
 
   it('wechselt den Zeitraum und lädt neu', async () => {
