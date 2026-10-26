@@ -22,7 +22,7 @@ export function LegendSheet({ onClose }: { onClose: () => void }) {
         <h2 className="font-headline text-xl font-extrabold uppercase tracking-wide text-navy-900">Legende</h2>
         <ul className="mt-4 space-y-3 text-sm text-navy-900">
           <Zeile beschreibung="Verteidiger, mit Positionskürzel">
-            <circle cx="14" cy="14" r="11" fill="#10133F" />
+            <circle cx="14" cy="14" r="11" fill="#193253" />
             <text x="14" y="17.5" textAnchor="middle" fill="#FBF6EC" fontSize="8" fontWeight="700">
               SS
             </text>

@@ -23,8 +23,8 @@ export default defineConfig({
         // denselben dunklen Rahmen wie ihre eigene Navigationsleiste, die Gesten-
         // Pille bleibt hell und sichtbar. Mit #ffffff stand dort eine weisse Leiste
         // unter dem Cream.
-        theme_color: '#070A2E',
-        background_color: '#070A2E',
+        theme_color: '#122742',
+        background_color: '#122742',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

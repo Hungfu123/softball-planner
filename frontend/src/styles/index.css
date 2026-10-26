@@ -3,8 +3,23 @@
 @import "@fontsource/big-shoulders-display/900";
 
 /*
- * Design-System: Cream paper bg + Navy (Website-Hue-Familie) + Softball-Red.
- *   Farben = identisch zur Marketing-Website (deadsox.duckdns.org),
+ * Design-System: Cream paper bg + Navy (Logo-Blau) + Softball-Red.
+ *   `navy-900` IST das Blau hinter dem Totenkopf (#142B49) — dieselbe Farbe,
+ *   nicht nur dieselbe Familie. Deshalb verschwindet das Hintergrundquadrat des
+ *   Logos in der Kopfzeile (die trägt bg-navy-900) vollständig. Genau dafür ist
+ *   die Skala gebaut; wer navy-900 ändert, macht den Rand wieder sichtbar.
+ *   Ableitung: Farbton 255,8° (OKLCH) durchgehend. Das dunkle Ende (600–950)
+ *   ist um 9,8 OKLab-Punkte angehoben, damit 900 auf dem Logo landet; die
+ *   Abstände der Stufen untereinander bleiben, die Reihenfolge auch (geprüft).
+ *   navy-500 und heller sind in der Helligkeit unverändert.
+ *   Chroma: dunkles Ende Faktor 0,811 (so trifft 900 das Logo exakt), helles
+ *   Ende 1,0 bis 0,8 — mit dem alten Chroma lägen die dunklen Stufen bei diesem
+ *   Farbton außerhalb von sRGB und würden auf Elektroblau abgeschnitten.
+ *   Die App wird dadurch spürbar heller: navy-800 (126 Flächen) liegt jetzt
+ *   über dem alten navy-600. Kontrast bleibt überall weit über AA, schwächster
+ *   Wert ist navy-400 als Tinte auf Cream mit 4,64 (unverändert).
+ *   ACHTUNG: die Marketing-Website (deadsox.duckdns.org) trägt noch die alte
+ *   Indigo-Skala (#0a0d35 …). Die beiden driften, bis sie nachgezogen wird.
  *   Schriften = Hybrid (Emil-Empfehlung): Big Shoulders Display für die
  *   Page-Headlines (Marken-Brücke zur Website), Saira Condensed für
  *   Display-Labels/Score-Nummern (größere Versalhöhe, besser lesbar im
@@ -20,17 +35,17 @@
   --color-cream-300: #DDD2B8;
   --color-cream-400: #CCC09E;
 
-  --color-navy-50: #F0F1F8;
-  --color-navy-100: #E2E4F1;
-  --color-navy-200: #C8CBE2;
-  --color-navy-300: #9DA3CD;
-  --color-navy-400: #646B9F;
-  --color-navy-500: #434A8F;
-  --color-navy-600: #212559;
-  --color-navy-700: #181B4D;
-  --color-navy-800: #10133F;
-  --color-navy-900: #0A0D35;
-  --color-navy-950: #070A2E;
+  --color-navy-50: #EEF2F8;
+  --color-navy-100: #DDE6F1;
+  --color-navy-200: #BFCEE2;
+  --color-navy-300: #8FA8CB;
+  --color-navy-400: #547199;
+  --color-navy-500: #2F5383;
+  --color-navy-600: #29466D;
+  --color-navy-700: #1F3C61;
+  --color-navy-800: #193253;
+  --color-navy-900: #142B49;
+  --color-navy-950: #122742;
 
   --color-softball-red-50: #FFF5F5;
   --color-softball-red-100: #FEE2E2;
@@ -70,7 +85,7 @@
 
   /* Emil: statt dünnem shadow-sm ein weicher, großflächiger Card-Schatten
      (Navy-getönt, damit Cream-Cards vom Cream-Hintergrund plastisch abheben) */
-  --shadow-card: 0 10px 30px -12px rgb(10 13 53 / 0.14);
+  --shadow-card: 0 10px 30px -12px rgb(20 43 73 / 0.18);
 
   /* Design-Engineering-Tokens: starke Kurven statt Standard-Easings (wie Website) */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
