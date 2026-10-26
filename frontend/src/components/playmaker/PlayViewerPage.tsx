@@ -187,7 +187,11 @@ function Viewer({
             className="mx-4 mb-2 flex items-center gap-3 rounded-xl border border-dashed border-cream-400 bg-white p-2.5"
           >
             <div className="h-10 w-12 shrink-0 overflow-hidden rounded-lg">
-              <PlayBoard markers={gegenstueck.steps[0].markers} steps={gegenstueck.steps} width={48} height={40} interactive={false} />
+              {gegenstueck.steps[0] ? (
+                <PlayBoard markers={gegenstueck.steps[0].markers} steps={gegenstueck.steps} width={48} height={40} interactive={false} />
+              ) : (
+                <div className="h-full w-full bg-cream-200" />
+              )}
             </div>
             <div className="min-w-0">
               <div className="truncate font-display text-xs font-extrabold text-navy-900">

@@ -421,7 +421,11 @@ function HeroPlay({
           hinein.
         */}
         <div className={kompakt ? 'h-0 overflow-hidden' : 'h-64 sm:h-80'}>
-          <PlayBoard markers={play.steps[0].markers} steps={play.steps} />
+          {play.steps[0] ? (
+            <PlayBoard markers={play.steps[0].markers} steps={play.steps} />
+          ) : (
+            <div className="h-full w-full bg-cream-200" />
+          )}
         </div>
         <div
           className={
