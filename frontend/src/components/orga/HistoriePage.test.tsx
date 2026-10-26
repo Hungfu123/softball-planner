@@ -77,6 +77,26 @@ describe('HistoriePage', () => {
     await waitFor(() => expect(h.getAudit).toHaveBeenLastCalledWith(expect.objectContaining({ userId: 2 })))
   })
 
+  it('filtert nach Aktivität und lädt neu', async () => {
+    zeige()
+    await waitFor(() => expect(h.getAudit).toHaveBeenCalledTimes(1))
+    // Ohne Wahl darf kein kind mitgehen, sonst verschwänden die anderen Arten still.
+    expect(h.getAudit.mock.calls[0][0].kind).toBeUndefined()
+
+    fireEvent.change(await screen.findByLabelText('Aktivität'), { target: { value: 'LOGIN' } })
+    await waitFor(() => expect(h.getAudit).toHaveBeenLastCalledWith(expect.objectContaining({ kind: 'LOGIN' })))
+
+    fireEvent.change(screen.getByLabelText('Aktivität'), { target: { value: '' } })
+    await waitFor(() => expect(h.getAudit.mock.calls.at(-1)?.[0].kind).toBeUndefined())
+  })
+
+  it('bietet keine gescheiterten Anmeldungen an — die Art wird nie geschrieben', async () => {
+    zeige()
+    const auswahl = await screen.findByLabelText('Aktivität')
+    const werte = Array.from(auswahl.querySelectorAll('option')).map(o => o.getAttribute('value'))
+    expect(werte).toEqual(['', 'LOGIN', 'WRITE', 'SCORING'])
+  })
+
   it('wechselt den Zeitraum und lädt neu', async () => {
     zeige()
     await waitFor(() => expect(h.getAudit).toHaveBeenCalledTimes(1))
