@@ -569,12 +569,31 @@ p {
   [data-theme="dark"] .ring-navy-900 { --tw-ring-color: var(--color-line-strong); }
 
   /* Durchsichtige Tinte. Im Hellen gedaempftes Dunkelblau auf Papier — im Dunkeln
-     stuende dasselbe Dunkelblau auf Dunkelblau. Die Deckung bleibt, die Farbe dreht. */
+     stuende dasselbe Dunkelblau auf Dunkelblau.
+
+     Beim ersten Anlauf hatte ich drei der sechzehn Stufen erwischt und den Rest
+     uebersehen; aufgefallen ist es am Benutzernamen im Konto-Menue, der praktisch
+     verschwunden war. Deshalb jetzt alle, in drei Gruppen zusammengefasst.
+
+     Die Deckung bleibt ungefaehr, aber mit Boden bei 55 %: darunter traegt weisse
+     Schrift auf der Karte nicht mehr (55 % stehen bei 4,6:1, also knapp ueber AA).
+     Im Hellen darf eine Beschriftung blasser sein als im Dunkeln — Papier verzeiht
+     mehr als eine leuchtende Flaeche. */
+  [data-theme="dark"] .text-navy-900\/80,
   [data-theme="dark"] .text-navy-900\/70,
-  [data-theme="dark"] .text-navy-700\/70 { color: rgb(255 255 255 / 0.7); }
+  [data-theme="dark"] .text-navy-900\/65,
+  [data-theme="dark"] .text-navy-700\/70 { color: rgb(255 255 255 / 0.75); }
+  [data-theme="dark"] .text-navy-900\/60,
   [data-theme="dark"] .text-navy-900\/55,
-  [data-theme="dark"] .text-navy-700\/55 { color: rgb(255 255 255 / 0.6); }
-  [data-theme="dark"] .text-navy-900\/45 { color: rgb(255 255 255 / 0.55); }
+  [data-theme="dark"] .text-navy-900\/50,
+  [data-theme="dark"] .text-navy-700\/60,
+  [data-theme="dark"] .text-navy-700\/55,
+  [data-theme="dark"] .text-navy-700\/50,
+  [data-theme="dark"] .text-navy-600\/50 { color: rgb(255 255 255 / 0.65); }
+  [data-theme="dark"] .text-navy-900\/45,
+  [data-theme="dark"] .text-navy-700\/45,
+  [data-theme="dark"] .text-navy-700\/35,
+  [data-theme="dark"] .text-navy-600\/40 { color: rgb(255 255 255 / 0.55); }
 
   /* Graue Flaechen: im Hellen neutrale Mulden, im Dunkeln getoente Flaechen.
      Ab gray-400 sind es bewusst dunkle Flaechen mit heller Schrift — die bleiben. */
