@@ -157,6 +157,21 @@ Wären es dieselben, wäre die Rechteverwaltung wirkungslos: der Benutzername de
 ist Hungs Vorname in Kleinbuchstaben, den kennt jeder im Team, und das Passwort stünde in
 der WhatsApp-Gruppe. Jeder Spieler wäre einen Anmeldeversuch von Superadmin entfernt.
 
+### Nachtrag 26.10.2026 — die Prüfung blockiert nicht mehr
+
+Ursprünglich verweigerte `VerteiltesPasswort` den Start, wenn beide Werte übereinstimmen.
+Auf dem VPS standen sie gleich, und Hung hat nach zweimaligem Hinweis entschieden, dass das
+für ihn in Ordnung ist: er vertraut dem Team, und er ändert sein eigenes Passwort nach dem
+Deploy in der Oberfläche — danach ist `APP_AUTH_PASSWORD` für die Anmeldung bedeutungslos,
+weil der Bootstrap einen vorhandenen Account nie wieder anfasst.
+
+Die Prüfung schreibt deshalb nur noch eine Warnung ins Log und lässt die App starten. Die
+Bewertung oben bleibt gültig und ist nicht widerlegt — sie ist bewusst in Kauf genommen.
+**Nicht ohne Rückfrage wieder zum harten Fehler machen.**
+
+Ein *leeres* `APP_PLAYER_PASSWORD` bleibt ein harter Fehler. Das ist keine Entscheidung,
+sondern eine unfertige Konfiguration, und in Produktion gibt es dafür bewusst keinen Vorgabewert.
+
 `POST /api/users` und `POST /api/users/bulk-create` setzen das Spieler-Passwort,
 `PUT /api/users/{id}/password-reset` setzt darauf zurück. Keiner der drei nimmt ein
 Passwort im Aufruf entgegen — es kommt immer aus der Konfiguration. Damit steht es nirgends

@@ -287,11 +287,22 @@ class UserAccountIntegrationTest {
         assertThat(danach.isPasswordChanged()).isFalse();
     }
 
+    /**
+     * Frueher verweigerte die App hier den Start. Seit dem 26.10.2026 warnt sie nur — ausdrueckliche
+     * Entscheidung des Betreibers. Der Test haelt fest, dass es eine Entscheidung war und kein
+     * verlorengegangener Schutz: gleiche Passwoerter sind erlaubt, ein leeres ist es nicht.
+     */
     @Test
-    void dasVerteiltePasswortDarfNichtDasDesSuperadminsSein() {
-        assertThatThrownBy(() -> new VerteiltesPasswort(passwordEncoder, "gleich", "gleich"))
-                .isInstanceOf(IllegalStateException.class);
+    void gleichesPasswortWieDerSuperadminIstErlaubt() {
+        final VerteiltesPasswort p = new VerteiltesPasswort(passwordEncoder, "gleich", "gleich");
+        assertThat(p.istGleich("gleich")).isTrue();
+    }
+
+    @Test
+    void einLeeresVerteiltesPasswortBleibtEinHarterFehler() {
         assertThatThrownBy(() -> new VerteiltesPasswort(passwordEncoder, " ", "anders"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> new VerteiltesPasswort(passwordEncoder, null, "anders"))
                 .isInstanceOf(IllegalStateException.class);
     }
 
