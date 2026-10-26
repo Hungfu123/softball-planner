@@ -15,6 +15,26 @@ describe('LoginPage', () => {
     expect(link).toHaveAttribute('href', '/counter')
   })
 
+  it('trägt den Teamnamen als Überschrift, nicht einen zweiten Produktnamen', () => {
+    render(<MemoryRouter><LoginPage onLogin={() => {}} error={null} /></MemoryRouter>)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Dead Sox')
+    expect(screen.queryByText(/Lineup HQ/i)).not.toBeInTheDocument()
+  })
+
+  it('nimmt die Marke ohne Hintergrundquadrat', () => {
+    // deadsox.svg trägt ein <rect> in #142B49. Auf dem Navy der Seite wäre es heute unsichtbar,
+    // weil navy-900 genau dieser Wert ist — aber das ist Zufall zweier Zahlen, nicht Absicht im
+    // Code. Mit der Marke ohne Quadrat sitzt das Logo auf jedem Grund richtig.
+    const { container } = render(<MemoryRouter><LoginPage onLogin={() => {}} error={null} /></MemoryRouter>)
+    const bild = container.querySelector('img')
+    expect(bild).toHaveAttribute('src', '/deadsox-mark.svg')
+  })
+
+  it('setzt eine eigene Fokusfarbe — der globale rote Ring ist auf Navy ein Fehlersignal', () => {
+    const { container } = render(<MemoryRouter><LoginPage onLogin={() => {}} error={null} /></MemoryRouter>)
+    expect(container.firstElementChild?.className).toContain('[--fokus-farbe:#fff]')
+  })
+
   it('sagt, was Benutzername und Passwort sind (Deploy-Tag: alle sehen die Maske zum ersten Mal)', () => {
     render(<MemoryRouter><LoginPage onLogin={() => {}} error={null} /></MemoryRouter>)
     expect(screen.getByText(/Benutzername ist dein Vorname, klein geschrieben/)).toBeInTheDocument()
