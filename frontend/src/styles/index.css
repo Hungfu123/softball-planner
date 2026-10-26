@@ -91,6 +91,7 @@
   --color-surface-raised: #FBF6EC; /* Karte darauf — cream-50, wie `Card` es hatte */
   --color-surface-white: #FFFFFF;  /* die Stellen, die wirklich Weiß wollen (282 im Code) */
   --color-surface-sunken: #FBF6EC; /* Eingabefeld, Mulde */
+  --color-surface-hover: #F2EBDC;  /* Zeile/Karte unter dem Zeiger */
   --color-line: #DDD2B8;           /* Trennlinie, Kartenrand */
   --color-line-strong: #CCC09E;    /* betonte Linie */
   --color-ink: #2A2520;            /* Fliesstext */
@@ -161,11 +162,18 @@ p {
    Dunkles Theme. Gespiegelte Logik des hellen: dort warmes Papier und kuehle Tinte,
    hier kuehle Flaechen (Logo-Farbton 255,8°) und warme Schrift (Cream-Farbton 84,6°).
 
-   Nachgemessen im Browser (sRGB, WCAG 2.1), Tinte auf Seite / auf Karte:
-   weiss 14,3 / 11,0 — gedaempft 7,9 / 6,1 — Randnotiz 6,1 / 4,7. Der schwaechste Wert
-   liegt 0,2 ueber AA, also ohne Puffer: ink-faint gehoert nicht unter 12px und nicht
-   auf noch hellere Flaechen. Rot bleibt Rot als Flaeche; als SCHRIFT auf dunklem Grund
-   nimmt man softball-red-300 (siehe --color-danger-ink).
+   Nachgemessen im Browser (sRGB, WCAG 2.1), Tinte auf Seite / Karte / Hover-Zeile:
+   weiss 14,3 / 11,0 / 8,8 — gedaempft 10,5 / 8,1 / 6,4 — Randnotiz 7,5 / 5,8 / 4,6.
+   Die dritte Spalte ist der Grund fuer die heutigen Werte: eine Zeile unter dem Zeiger
+   ist eine Stufe heller, und die urspruengliche Randnotiz (#B0A99B) fiel dort auf
+   3,8:1. Jede Stufe muss die hellste Flaeche ueberstehen, auf der sie vorkommt —
+   sonst ist sie kein Token, sondern eine Farbe, die zufaellig an einer Stelle passt.
+   Bekannte Kante: auf der gefuellten Knopf-Hover-Flaeche (#456B9E) steht gedaempfte
+   Tinte bei 4,0:1. Der Knopf selbst faerbt seine Schrift dort auf weiss (5,5:1); ein
+   Kind-Element mit eigener gedaempfter Klasse taete es nicht. Auf den geprueften
+   Seiten kommt das nicht vor.
+   Rot bleibt Rot als Flaeche; als SCHRIFT auf dunklem Grund nimmt man
+   softball-red-300 (siehe --color-danger-ink).
 
    Alles hier steht in @media not print. Im Druck faellt die Seite damit von selbst
    auf das helle Theme zurueck — ohne diese Klammer druckte der Dunkelmodus weisse
@@ -186,12 +194,22 @@ p {
     --color-surface-raised: #273D5A;
     --color-surface-white: #273D5A;   /* im Dunklen gibt es kein Weiss als Flaeche */
     --color-surface-sunken: #0B1E37;
+    /* Hover hebt um eine Stufe (L* 32 -> 41), nicht um eine Farbe. Gegen die Karte
+       sind das 1,25:1 — sichtbar, ohne dass die Zeile aus der Seite springt. */
+    --color-surface-hover: #354C6A;
     --color-line: #445977;
     --color-line-strong: #617692;
     --color-ink: #FFFFFF;
     --color-ink-strong: #FFFFFF;
-    --color-ink-muted: #C7C0B1;
-    --color-ink-faint: #B0A99B;
+    /* Angehoben, nachdem der Hover-Pruefer zeigte, was der Kommentar oben schon sagte:
+       bei 4,7:1 auf der Karte hat die Randnotiz keinen Puffer. Hebt eine Zeile unter
+       dem Zeiger um eine Stufe, faellt sie auf 3,8:1. Ein Ton, der nur auf genau einem
+       Grund traegt, ist kein Token. Beide Stufen sitzen jetzt so, dass sie die hellste
+       Flaeche ueberstehen, auf der sie vorkommen — die Rangfolge traegt dafuer weniger
+       Helligkeitsabstand als im Hellen. Im Dunkeln ist zwischen lesbar und weiss
+       schlicht wenig Platz. */
+    --color-ink-muted: #E2DCCF;
+    --color-ink-faint: #C2BBAC;
     /* Beschriftungen sind hier kein Beiwerk: sie sagen, was ins Feld gehoert. Die Rangfolge
        zur Kartenueberschrift traegt im Dunklen die Schriftgroesse, nicht die Helligkeit. */
     --color-label: #FFFFFF;
@@ -349,6 +367,100 @@ p {
   [data-theme="dark"] .text-emerald-700,
   [data-theme="dark"] .text-emerald-800,
   [data-theme="dark"] .text-emerald-900 { color: #6EE7B7; }
+
+  /* -------------------------------------------------------------------------
+     Hover, Fokus, Druck. Der Kontrast-Test faehrt nie mit der Maus ueber etwas —
+     diese Zustaende liegen ausserhalb seines Blickfelds und brauchen eine eigene
+     Runde. Zwei verschiedene Fehler stecken hier drin:
+
+       1. Helle Hover-Flaechen. `hover:bg-cream-100` (88 Stellen) macht eine Zeile
+          beim Ueberfahren cremefarben — unter weisser Schrift. Der haeufigste und
+          lauteste Fehler im Dunkeln.
+       2. Hover, der sich nicht mehr bewegt. `hover:bg-navy-800` auf einem Knopf,
+          der im Dunkeln selbst navy ist, aendert nichts mehr. Im Hellen ging der
+          Hover nach UNTEN (hell -> dunkel); im Dunkeln muss er nach OBEN.
+
+     Deshalb ist das hier keine Abbildung auf dieselben Werte wie oben: Hover hebt
+     eine Stufe ueber den Ruhezustand. Faerbe man `hover:bg-cream-100` wie
+     `bg-cream-100`, stuende eine Karte `bg-cream-50 hover:bg-cream-100` im Dunkeln
+     auf derselben Farbe wie zuvor — der Hover waere weg.
+     ------------------------------------------------------------------------- */
+
+  /* Flaechen, die sich heben. */
+  [data-theme="dark"] .hover\:bg-white:hover,
+  [data-theme="dark"] .hover\:bg-cream-50:hover,
+  [data-theme="dark"] .hover\:bg-cream-100:hover,
+  [data-theme="dark"] .hover\:bg-navy-50:hover,
+  [data-theme="dark"] .hover\:bg-navy-100:hover,
+  [data-theme="dark"] .focus-visible\:bg-cream-100:focus-visible,
+  [data-theme="dark"] .group:hover .group-hover\:bg-navy-600 { background-color: var(--color-surface-hover); }
+
+  /* Ruht das Element schon auf einer Toenung, hebt der Hover eine Stufe hoeher. */
+  [data-theme="dark"] .hover\:bg-cream-200:hover,
+  [data-theme="dark"] .hover\:bg-cream-300:hover,
+  [data-theme="dark"] .active\:bg-cream-100:active,
+  [data-theme="dark"] .active\:bg-cream-200:active,
+  [data-theme="dark"] .active\:bg-cream-300:active { background-color: #425978; }
+
+  /* Der betonte Knopf-Hover (CLAUDE.md: navy-800 + weisse Schrift, ausdruecklich so
+     gewollt). Im Dunkeln bleibt die Geste und dreht die Richtung: heller statt
+     dunkler. 5,45:1 fuer weisse Schrift, 2,0:1 gegen die Karte — der Sprung bleibt
+     so deutlich, wie er im Hellen war. */
+  [data-theme="dark"] .hover\:bg-navy-700:hover,
+  [data-theme="dark"] .hover\:bg-navy-800:hover,
+  [data-theme="dark"] .hover\:bg-navy-900:hover {
+    background-color: #456B9E;
+    /* Die Schrift muss mit. Ohne das bleibt gedaempfte Tinte auf der aufgehellten
+       Flaeche stehen (3,01:1) — im Hellen erledigte das `hover:text-white`, hier
+       liegt der Ruhezustand schon auf Tinte und die Variante greift nicht mehr. */
+    color: var(--color-ink);
+  }
+  /* Gedrueckt geht es wieder nach unten — das ist der Unterschied zum Hover. */
+  [data-theme="dark"] .active\:bg-navy-950:active { background-color: #2E4C74; }
+
+  /* Status-Toenungen beim Ueberfahren: dieselben Flaechen wie oben, denn hier ruht
+     das Element auf durchsichtigem Grund, nicht auf der Toenung. */
+  [data-theme="dark"] .hover\:bg-softball-red-50:hover { background-color: #4A2430; }
+  [data-theme="dark"] .hover\:bg-softball-red-100:hover { background-color: #6B2F3C; }
+  [data-theme="dark"] .hover\:bg-amber-50:hover { background-color: #4F3D1C; }
+  [data-theme="dark"] .hover\:bg-amber-100:hover { background-color: #634C22; }
+  [data-theme="dark"] .hover\:bg-emerald-50:hover { background-color: #184A36; }
+  [data-theme="dark"] .hover\:bg-emerald-100:hover { background-color: #1F6246; }
+
+  /* Tinte. Fast immer gedaempft -> betont; im Dunkeln heisst betont weiss. */
+  [data-theme="dark"] .hover\:text-navy-600:hover,
+  [data-theme="dark"] .hover\:text-navy-700:hover,
+  [data-theme="dark"] .hover\:text-navy-800:hover,
+  [data-theme="dark"] .hover\:text-navy-900:hover,
+  [data-theme="dark"] .hover\:text-gray-600:hover,
+  [data-theme="dark"] .hover\:text-gray-700:hover,
+  [data-theme="dark"] .hover\:text-gray-800:hover,
+  [data-theme="dark"] .hover\:text-gray-900:hover,
+  [data-theme="dark"] .group:hover .group-hover\:text-navy-700,
+  [data-theme="dark"] .group:hover .group-hover\:text-gray-300,
+  [data-theme="dark"] .hover\:text-white\/80:hover,
+  [data-theme="dark"] .hover\:text-white\/70:hover { color: var(--color-ink); }
+  [data-theme="dark"] .hover\:text-softball-red-500:hover,
+  [data-theme="dark"] .hover\:text-softball-red-600:hover,
+  [data-theme="dark"] .hover\:text-softball-red-700:hover,
+  [data-theme="dark"] .hover\:text-softball-red-900:hover { color: var(--color-danger-ink); }
+
+  /* Linien. */
+  [data-theme="dark"] .hover\:border-navy-300:hover,
+  [data-theme="dark"] .hover\:border-navy-400:hover,
+  [data-theme="dark"] .hover\:border-navy-500:hover,
+  [data-theme="dark"] .hover\:border-navy-600:hover,
+  [data-theme="dark"] .hover\:border-navy-800:hover { border-color: var(--color-line-strong); }
+  [data-theme="dark"] .hover\:border-cream-200:hover,
+  [data-theme="dark"] .hover\:border-cream-300:hover,
+  [data-theme="dark"] .hover\:border-cream-400:hover { border-color: var(--color-line); }
+
+  /* Der Rand eines Feldes im Fokus. Die -600er Stufe ist auf hellem Grund gewaehlt
+     und waere hier kaum vom Ruherand zu unterscheiden; WCAG 1.4.11 will 3:1 fuer
+     Bedienelemente, dieser Ton steht bei 6,3:1 gegen die Mulde. */
+  [data-theme="dark"] .focus\:border-navy-400:focus,
+  [data-theme="dark"] .focus\:border-navy-500:focus,
+  [data-theme="dark"] .focus\:border-navy-600:focus { border-color: #8CA0BC; }
 }
 
 /* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default.

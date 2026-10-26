@@ -22,8 +22,8 @@ export type Messung = { aa: Befund[]; unsichtbar: Befund[] }
  *     Verschachtelung mehrfach.
  *   - Hintergrundbilder und Verlaeufe sind nicht messbar und gelten als nicht vorhanden.
  */
-export async function messeKontrast(page: Page): Promise<Messung> {
-  return page.evaluate(() => {
+export async function messeKontrast(page: Page, wurzel?: string): Promise<Messung> {
+  return page.evaluate((wurzelSel: string | undefined) => {
     const cv = document.createElement('canvas')
     cv.width = cv.height = 1
     const cx = cv.getContext('2d', { willReadFrequently: true })!
@@ -87,7 +87,11 @@ export async function messeKontrast(page: Page): Promise<Messung> {
     const aa: { text: string; kontrast: number; schwelle: number; wo: string }[] = []
     const unsichtbar: typeof aa = []
 
-    document.querySelectorAll('*').forEach(el => {
+    const start = wurzelSel ? document.querySelector(wurzelSel) : null
+    if (wurzelSel && !start) return { aa, unsichtbar }
+    const kandidaten = start ? [start, ...start.querySelectorAll('*')] : [...document.querySelectorAll('*')]
+
+    kandidaten.forEach(el => {
       const eigene = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim()
       if (!eigene || eigene.length > 60) return
       const cs = getComputedStyle(el)
@@ -120,7 +124,7 @@ export async function messeKontrast(page: Page): Promise<Messung> {
     })
 
     return { aa, unsichtbar }
-  })
+  }, wurzel)
 }
 
 export function bericht(befunde: Befund[]): string {
@@ -128,4 +132,40 @@ export function bericht(befunde: Befund[]): string {
     .slice(0, 8)
     .map(b => `    ${b.kontrast.toFixed(2)}:1 (noetig ${b.schwelle}) — „${b.text}" in ${b.wo}`)
     .join('\n')
+}
+
+/**
+ * Dasselbe, aber mit dem Zeiger auf dem Element. Der normale Prüfer fährt nie mit der
+ * Maus über etwas — alles, was erst beim Überfahren die Farbe wechselt, liegt außerhalb
+ * seines Blickfelds. Genau dort sitzen im Dunkeln die lautesten Fehler: `hover:bg-cream-100`
+ * macht eine Zeile cremefarben, unter weißer Schrift.
+ *
+ * Gemessen wird je Element einzeln: anfahren, markieren, nur diesen Teilbaum messen,
+ * Markierung weg. Elemente, die sich nicht anfahren lassen (verdeckt, außerhalb des
+ * Sichtfelds, zwischendurch verschwunden), werden übersprungen — ein nicht erreichbarer
+ * Hover ist kein Befund.
+ */
+export async function messeHover(page: Page, grenze = 30): Promise<Messung> {
+  const ziele = page.locator('button:not([disabled]), a[href], [role="button"]')
+  const anzahl = Math.min(await ziele.count(), grenze)
+  const aa: Befund[] = []
+  const unsichtbar: Befund[] = []
+
+  for (let i = 0; i < anzahl; i++) {
+    const el = ziele.nth(i)
+    try {
+      if (!(await el.isVisible())) continue
+      await el.hover({ timeout: 1000 })
+      await el.evaluate(n => n.setAttribute('data-kontrast-ziel', ''))
+    } catch {
+      continue
+    }
+    const m = await messeKontrast(page, '[data-kontrast-ziel]')
+    await page
+      .evaluate(() => document.querySelector('[data-kontrast-ziel]')?.removeAttribute('data-kontrast-ziel'))
+      .catch(() => {})
+    aa.push(...m.aa)
+    unsichtbar.push(...m.unsichtbar)
+  }
+  return { aa, unsichtbar }
 }
