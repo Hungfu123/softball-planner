@@ -169,3 +169,59 @@ export async function messeHover(page: Page, grenze = 30): Promise<Messung> {
   }
   return { aa, unsichtbar }
 }
+
+export type Flaeche = { wo: string; farbe: string; tinte: string; gross: string }
+
+/**
+ * Helle Flächen im Dunkelmodus. Erlaubt ist genau eine Sorte: die bewusste Umkehrung —
+ * heller Grund mit DUNKLER Schrift, wie der aktive Reiter im Band. Alles andere ist eine
+ * Fläche, die beim Umstellen vergessen wurde, und trägt dann weiße Schrift auf hellem
+ * Grund.
+ *
+ * Diese Prüfung findet, was der Kontrast-Prüfer nicht finden kann: eine leere Fläche ohne
+ * eigenen Text. Genau so blieb `html` cremefarben — unsichtbar, bis man am Handy
+ * überscrollt und hinter der dunklen Seite Papier aufblitzt.
+ */
+export async function helleFlaechenOhneDunkleTinte(page: Page): Promise<Flaeche[]> {
+  return page.evaluate(() => {
+    const cv = document.createElement('canvas')
+    cv.width = cv.height = 1
+    const cx = cv.getContext('2d', { willReadFrequently: true })!
+    const leucht = (css: string): number | null => {
+      cx.clearRect(0, 0, 1, 1)
+      cx.fillStyle = '#000'
+      cx.fillStyle = css
+      cx.fillRect(0, 0, 1, 1)
+      const d = cx.getImageData(0, 0, 1, 1).data
+      if (d[3] < 200) return null // durchsichtig: keine eigene Fläche
+      const [r, g, b] = [d[0], d[1], d[2]].map(v => {
+        v /= 255
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+      })
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+
+    const treffer: { wo: string; farbe: string; tinte: string; gross: string }[] = []
+    document.querySelectorAll('*').forEach(el => {
+      const cs = getComputedStyle(el)
+      if (cs.visibility === 'hidden' || cs.display === 'none') return
+      const r = el.getBoundingClientRect()
+      if (r.width * r.height < 400) return
+      const grund = leucht(cs.backgroundColor)
+      if (grund === null || grund < 0.5) return
+      const tinte = leucht(cs.color)
+      if (tinte !== null && tinte < 0.2) return // bewusste Umkehrung: heller Grund, dunkle Tinte
+      const klassen = (el as HTMLElement).className
+      treffer.push({
+        wo: `${el.tagName.toLowerCase()}.${String(typeof klassen === 'string' ? klassen : '')
+          .split(' ')
+          .slice(0, 3)
+          .join('.')}`,
+        farbe: cs.backgroundColor,
+        tinte: cs.color,
+        gross: `${Math.round(r.width)}x${Math.round(r.height)}`,
+      })
+    })
+    return treffer
+  })
+}

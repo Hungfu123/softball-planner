@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { seedAuth } from '../helpers/auth'
-import { messeKontrast, bericht } from '../helpers/kontrast'
+import { messeKontrast, bericht, helleFlaechenOhneDunkleTinte } from '../helpers/kontrast'
 
 /*
  * Haelt der Dunkelmodus, was das helle Theme kann?
@@ -72,6 +72,14 @@ test.describe('Kontrast in beiden Themes', () => {
       expect(
         dunkel.unsichtbar,
         `Unsichtbarer Text im Dunkelmodus auf ${pfad}:\n${bericht(dunkel.unsichtbar)}`,
+      ).toHaveLength(0)
+
+      const hell_geblieben = await helleFlaechenOhneDunkleTinte(page)
+      expect(
+        hell_geblieben,
+        `Helle Flächen im Dunkelmodus auf ${pfad} — ohne dunkle Schrift darauf ist das ` +
+          `keine Umkehrung, sondern eine vergessene Fläche:\n` +
+          hell_geblieben.map(f => `    ${f.wo} ${f.gross} ${f.farbe} / Schrift ${f.tinte}`).join('\n'),
       ).toHaveLength(0)
 
       expect(
