@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Badge, Card, EmptyState, LoadingSkeleton } from '@/components/shared'
+import { Badge, Button, Card, EmptyState, LoadingSkeleton } from '@/components/shared'
 import { CrossBones } from '@/icons'
 import { getAudit, getLastSeen } from '@/api/client'
 import type { AuditEntry, AuditKind, LastSeen, Role } from '@/types'
@@ -100,6 +100,13 @@ function FragmentZeile({ kopf, children }: { kopf: string | null; children: Reac
   )
 }
 
+/**
+ * Wie viele Zeilen auf einmal. Der Verlauf hat serverseitig keine Seitenbildung — die Spannen
+ * entstehen erst beim Lesen aus aufeinanderfolgenden Zeilen, eine Grenze in der Abfrage würde sie
+ * mitten durchschneiden. Also kommt der Zeitraum vollständig und die Seite zeigt ihn in Häppchen.
+ */
+const SEITE = 50
+
 /** Nur für Superadmins: wer zuletzt da war und was wer getan hat. */
 export function HistoriePage() {
   const [gesehen, setGesehen] = useState<LastSeen[] | null>(null)
@@ -108,12 +115,14 @@ export function HistoriePage() {
   const [zeitraum, setZeitraum] = useState<Zeitraum>('7')
   const [von, setVon] = useState('')
   const [bis, setBis] = useState('')
-  // '' heißt alle Arten. LOGIN_FAILED steht bewusst nicht zur Wahl: die Art ist angelegt, aber
-  // kein Code schreibt sie — ein Filter, der immer leer bleibt, wäre schlimmer als keiner.
-  const [art, setArt] = useState<'' | 'LOGIN' | 'WRITE' | 'SCORING'>('')
+  // '' heißt alle Arten.
+  const [art, setArt] = useState<'' | 'LOGIN' | 'LOGIN_FAILED' | 'WRITE' | 'SCORING'>('')
   // Die Antwort trägt den Schlüssel der Anfrage, zu der sie gehört: passt er nicht mehr zu den
   // Filtern, lädt die Seite noch — und eine späte Antwort auf einen alten Filter zeigt sich nie.
   const anfrage = `${nutzer}|${zeitraum}|${von}|${bis}|${art}`
+  // Wie die Antwort traegt auch die Sicht den Schluessel ihrer Anfrage: andere Filter, andere
+  // Liste — dann faengt sie wieder bei SEITE an, ohne dass ein Effekt sie zuruecksetzen muss.
+  const [sicht, setSicht] = useState({ anfrage, n: SEITE })
   const [antwort, setAntwort] = useState<{ anfrage: string; liste: AuditEntry[] | null; fehler: string | null } | null>(null)
 
   useEffect(() => {
@@ -127,6 +136,8 @@ export function HistoriePage() {
       .catch(e => { if (aktiv) setAntwort({ anfrage, liste: null, fehler: (e as Error).message }) })
     return () => { aktiv = false }
   }, [anfrage, nutzer, zeitraum, von, bis, art])
+
+  const sichtbar = sicht.anfrage === anfrage ? sicht.n : SEITE
 
   const aktuell = antwort?.anfrage === anfrage ? antwort : null
   const verlauf = aktuell?.liste ?? null
@@ -145,9 +156,8 @@ export function HistoriePage() {
       <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Historie</h1>
 
       <div role="note" className="rounded-xl border border-cream-300 bg-cream-100 px-4 py-3 text-sm text-navy-900">
-        Einordnung: Die Historie zeigt, unter welchem Konto etwas geschah — nicht sicher, wer es getan hat.
-        Gemeinsame Passwörter machen die Zuordnung weich, und ein Admin kann das Passwort eines anderen Admins
-        auf das verteilte setzen und sich als dieser anmelden. Die Liste ist ein Hinweis, kein Beweis.
+        Zeigt das Konto, nicht die Person: Passwörter sind geteilt, und ein Admin kann das eines anderen
+        zurücksetzen. Hinweis, kein Beweis.
       </div>
 
       <h2 className="text-xs font-bold uppercase tracking-widest text-gray-500">Zuletzt gesehen</h2>
@@ -168,6 +178,7 @@ export function HistoriePage() {
           <select id="historie-art" value={art} onChange={e => setArt(e.target.value as typeof art)} className={inputCls}>
             <option value="">Alle</option>
             <option value="LOGIN">Anmeldungen</option>
+            <option value="LOGIN_FAILED">Gescheiterte Anmeldungen</option>
             <option value="WRITE">Änderungen</option>
             <option value="SCORING">Scoring</option>
           </select>
@@ -204,7 +215,21 @@ export function HistoriePage() {
           description="Wähle einen größeren Zeitraum, eine andere Aktivität oder einen anderen Nutzer — Anmeldungen und Änderungen erscheinen hier, sobald jemand etwas tut."
         />
       )}
-      {verlauf && verlauf.length > 0 && <Verlauf eintraege={verlauf} />}
+      {verlauf && verlauf.length > 0 && (
+        <>
+          <Verlauf eintraege={verlauf.slice(0, sichtbar)} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-gray-500 tabular-nums">
+              {Math.min(sichtbar, verlauf.length)} von {verlauf.length} {verlauf.length === 1 ? 'Eintrag' : 'Einträgen'}
+            </p>
+            {verlauf.length > sichtbar && (
+              <Button variant="secondary" onClick={() => setSicht({ anfrage, n: sichtbar + SEITE })}>
+                Mehr anzeigen
+              </Button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }
