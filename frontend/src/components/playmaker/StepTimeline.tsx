@@ -56,7 +56,7 @@ export function StepTimeline({
     >
       <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-cream-200">
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-navy-800"
+          className="absolute inset-y-0 left-0 rounded-full bg-bar"
           style={{ width: `${anteil}%` }}
         />
         {Array.from({ length: count - 2 }, (_, i) => (

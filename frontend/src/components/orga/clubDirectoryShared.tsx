@@ -85,7 +85,7 @@ export function WinBar({ entry, className = '' }: { entry: TeamDirectoryEntry; c
   const lossesPct = (entry.losses / decided) * 100
   return (
     <div className={`h-1.5 rounded-full bg-gray-300 overflow-hidden flex ${className}`}>
-      <div className="h-full bg-navy-800" style={{ width: `${winsPct}%` }} />
+      <div className="h-full bg-bar" style={{ width: `${winsPct}%` }} />
       <div className="h-full bg-softball-red-600" style={{ width: `${lossesPct}%` }} />
     </div>
   )

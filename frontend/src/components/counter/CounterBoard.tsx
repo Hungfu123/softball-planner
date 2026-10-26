@@ -85,7 +85,7 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
      * statt den Inhalt in einer leeren Fläche schweben zu lassen. Die Lampen sitzen
      * fest an der Unterkante, damit die Tafel dort eine Kante hat und nicht ausläuft.
      */
-    <div className="flex grow shrink-0 flex-col bg-navy-900 px-4 pb-4 pt-[max(0.5rem,env(safe-area-inset-top))] text-white">
+    <div className="flex grow shrink-0 flex-col bg-band px-4 pb-4 pt-[max(0.5rem,env(safe-area-inset-top))] text-band-ink">
       <div className="flex shrink-0 items-center">
         {backTo && backLabel && (
           <Link

@@ -727,7 +727,7 @@ export function ScoringPage() {
        Hoehe (zusammen ~444px), der Diamond nimmt per flex-1 den Rest. */
     <div className="h-dvh overflow-hidden bg-cream-100 flex flex-col">
       {/* Header */}
-      <header className="bg-navy-900 text-white sticky top-0 z-40 shadow-md">
+      <header className="bg-band text-band-ink sticky top-0 z-40 shadow-md">
         <div className="px-4 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 shrink-0">
             <Link
@@ -782,7 +782,7 @@ export function ScoringPage() {
       </header>
 
       {/* Live-State-Strip — Navy, direkt unter Header (1 Navy-Block oben) */}
-      <div className="bg-navy-900 text-white px-4 py-2 flex items-center gap-2">
+      <div className="bg-band text-band-ink px-4 py-2 flex items-center gap-2">
         <div className="flex items-center gap-2.5">
           <span className="font-display text-[10px] font-bold tracking-widest uppercase text-white">Inning</span>
           <span className="font-display text-2xl font-extrabold leading-none">{displayInning}</span>
@@ -945,7 +945,7 @@ export function ScoringPage() {
 
       {/* Spiel-Ende-Banner */}
       {gameOver && (
-        <div className="bg-navy-900 text-white px-4 py-4 space-y-3">
+        <div className="bg-band text-band-ink px-4 py-4 space-y-3">
           <div className="text-center">
             <div className="font-display text-2xl font-black uppercase tracking-wider inline-flex items-center gap-2">
               <TrophyIcon size={24} className="text-amber-400" />
