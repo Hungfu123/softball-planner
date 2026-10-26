@@ -30,6 +30,14 @@ const SEITEN = [
   '/players',
   '/players/1',
   '/gameday/1',
+  // Das alte Live-Scoring. Lief bisher in keiner Messung mit — und genau dort standen
+  // die Base-Beschriftungen als dunkles Grau auf dunklem Feld.
+  // Grenze, die man kennen muss: hier wird nur der EINSTIEG gemessen (der Dialog
+  // "Wer schlägt zuerst?" liegt darüber). Das Feld mit Runnern und die Vollbild-
+  // Blitzer (K!, HR!, HBP) brauchen einen gesetzten Spielstand und kommen hier nicht
+  // vor; die wurden von Hand über die Test-Fixture gemessen (dunkel 9 Befunde gegen
+  // hell 10, also nicht schlechter).
+  '/gameday/1/scoring/0',
   '/stats',
   '/orga',
   '/orga/accounts',
