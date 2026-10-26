@@ -148,9 +148,17 @@
  * blieb unten eine weisse Leiste unter der Cream-Flaeche stehen.
  * color-scheme sagt dem System ausserdem, dass die App hell ist — sonst mischt
  * Chrome im Dark Mode eigene Grautoene in Leisten und Formularelemente.
+ * Im Dunkeln wird daraus color-scheme: dark (siehe [data-theme="dark"]).
+ *
+ * Die Farbe kommt aus dem Token, nicht aus der Palette. Mit --color-cream-100 blieb
+ * der Fensterhintergrund im Dunkelmodus cremefarben — unsichtbar, bis man am Handy
+ * ueberscrollt: dann blitzt hinter der dunklen Seite Papier auf. Gefunden mit einem
+ * Skript, das im Dunkeln jede Flaeche mit hoher Leuchtdichte auflistet; der Shim
+ * konnte es nicht finden, weil hier keine Utility-Klasse steht, sondern eine
+ * Variable direkt. Im Hellen ist es derselbe Wert wie zuvor.
  */
 html {
-  background-color: var(--color-cream-100);
+  background-color: var(--color-surface);
   color-scheme: light;
 }
 
