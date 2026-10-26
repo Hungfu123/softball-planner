@@ -296,7 +296,7 @@ export function GameLogPage() {
           />
 
           {(selectionMode || selectedIds.size > 0) && (
-            <div className="flex items-center justify-between bg-band text-band-ink rounded-2xl px-4 py-2.5">
+            <div className="flex items-center justify-between bg-spotlight text-spotlight-ink rounded-2xl px-4 py-2.5">
               <p className="text-xs font-semibold">
                 {selectedIds.size > 0
                   ? selectedIds.size === 2
@@ -562,10 +562,10 @@ function SummaryStrip({ totals, count }: { totals: ReturnType<typeof summarize>;
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {items.map(i => (
-        <div key={i.label} className="bg-band rounded-2xl px-4 py-3.5">
+        <div key={i.label} className="bg-spotlight text-spotlight-ink rounded-2xl px-4 py-3.5">
           <p className={`font-display text-2xl font-extrabold tabular-nums leading-tight ${i.tone}`}>{i.value}</p>
-          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-white/60 mt-0.5">{i.label}</p>
-          {i.sub && <p className="text-[10px] text-white/60 mt-1 leading-snug">{i.sub}</p>}
+          <p className="font-display text-[10px] font-bold tracking-widest uppercase text-spotlight-ink/70 mt-0.5">{i.label}</p>
+          {i.sub && <p className="text-[10px] text-spotlight-ink/70 mt-1 leading-snug">{i.sub}</p>}
         </div>
       ))}
     </div>
@@ -1680,10 +1680,10 @@ function LineupCompare({ gameA, gameB }: { gameA?: TeamGameLogResponse; gameB?: 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, ease: EASE_OUT }}
-      className="bg-band rounded-2xl px-4 py-4"
+      className="bg-spotlight text-spotlight-ink rounded-2xl px-4 py-4"
     >
       <p className="font-display text-sm font-extrabold uppercase tracking-wide text-white mb-3">
-        Lineup-Vergleich <span className="text-white/60 font-bold">— rote Zellen = am Platz anders besetzt</span>
+        Lineup-Vergleich <span className="text-spotlight-ink/70 font-bold">— rote Zellen = am Platz anders besetzt</span>
       </p>
 
       {/* Kopf: wer spielt gegen wen */}

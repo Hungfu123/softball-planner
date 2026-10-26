@@ -194,7 +194,7 @@ export function PlayerProfilePage() {
         </button>
 
         {/* Kopf — dunkel wie das Feld, damit Name und Zahlen zusammen eine Einheit bilden */}
-        <header className="bg-band rounded-2xl px-5 py-5 shadow-card">
+        <header className="bg-spotlight text-spotlight-ink rounded-2xl px-5 py-5 shadow-card">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               {editingName ? (
