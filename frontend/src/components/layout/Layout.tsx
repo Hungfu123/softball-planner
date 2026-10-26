@@ -92,8 +92,8 @@ export function Layout() {
 
   return (
     <ToastCtx.Provider value={toast}>
-      <div className="min-h-screen bg-cream-100">
-        <header className="bg-navy-900 text-white sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600 safe-top">
+      <div className="min-h-screen bg-surface">
+        <header className="bg-band text-band-ink sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600 safe-top">
           <div className={`${shell} h-14 flex items-center gap-3`}>
             {isSubPage && (
               <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg shrink-0" aria-label="Zurück">
@@ -150,7 +150,7 @@ export function Layout() {
                       key={tab.path}
                       to={tab.path}
                       className={`font-display shrink-0 flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-1.5 min-w-11 min-h-11 lg:min-w-0 px-2 lg:px-3 py-1 lg:py-1.5 text-nav lg:text-xs font-bold tracking-wide lg:tracking-widest rounded-lg lg:rounded-full transition-colors duration-200 whitespace-nowrap ${
-                        active ? 'bg-white text-navy-900' : 'text-white/70 hover:text-white hover:bg-white/10'
+                        active ? 'bg-band-ink text-band' : 'text-band-ink/70 hover:text-band-ink hover:bg-band-ink/10'
                       }`}
                     >
                       <tab.Icon size={24} strokeWidth={2.2} className="shrink-0" />

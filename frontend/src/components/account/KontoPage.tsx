@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useTheme } from '@/hooks/useTheme'
 import { useToastContext } from '@/components/layout/Layout'
 import { Button, Card } from '@/components/shared'
 import { changePassword, changeUsername, setAuth, storedCredentials } from '@/api/client'
 
 const inputCls =
-  'w-full border border-cream-300 rounded-lg px-3 py-2 min-h-11 text-sm text-navy-900 bg-cream-100 focus:bg-white focus:border-navy-600 focus:ring-2 focus:ring-navy-100 outline-none'
-const labelCls = 'block text-xs font-bold uppercase tracking-wide text-navy-500 mb-1'
+  'w-full border border-line rounded-lg px-3 py-2 min-h-11 text-sm text-ink-strong bg-surface-sunken focus:bg-surface-raised focus:border-line-strong focus:ring-2 focus:ring-navy-100 outline-none'
+const labelCls = 'block text-xs font-bold uppercase tracking-wide text-label mb-1'
 
 const MIN_LAENGE = 8
 
@@ -50,7 +51,9 @@ function NamenFormular() {
   return (
     <form onSubmit={speichern} className="space-y-3">
       <div>
-        <label htmlFor="konto-benutzername" className={labelCls}>Benutzername</label>
+        {/* Die Karte darüber heißt schon „Benutzername" — zweimal dasselbe Wort untereinander
+            ist Lärm. Für Screenreader bleibt die Beschriftung, sie ist der Name des Feldes. */}
+        <label htmlFor="konto-benutzername" className="sr-only">Benutzername</label>
         <input id="konto-benutzername" value={name} onChange={e => setEingabe(e.target.value)} autoComplete="username" className={inputCls} />
       </div>
       <Fehler text={fehler} />
@@ -113,28 +116,64 @@ function PasswortFormular() {
   )
 }
 
+/**
+ * Hell oder dunkel. Gilt nur auf diesem Gerät — wer das Handy abends dunkel will und den
+ * Laptop tagsüber hell, soll sich nicht zwischen beidem entscheiden müssen.
+ */
+function ThemeWahl() {
+  const { theme, setTheme } = useTheme()
+  const knopf = (wert: 'light' | 'dark', text: string) => (
+    <button
+      type="button"
+      onClick={() => setTheme(wert)}
+      aria-pressed={theme === wert}
+      className={`min-h-11 flex-1 rounded-lg border px-4 font-display text-sm font-bold uppercase tracking-wide transition-colors ${
+        theme === wert
+          ? 'border-ink-strong bg-ink-strong text-surface'
+          : 'border-line bg-surface-raised text-ink hover:border-line-strong'
+      }`}
+    >
+      {text}
+    </button>
+  )
+  return (
+    <div>
+      <div role="group" aria-label="Ansicht" className="flex gap-2">
+        {knopf('light', 'Hell')}
+        {knopf('dark', 'Dunkel')}
+      </div>
+      <p className="mt-2 text-xs text-ink-faint">Gilt nur auf diesem Gerät.</p>
+    </div>
+  )
+}
+
 /** Das eigene Konto: Benutzername und Passwort, für jede Rolle. */
 export function KontoPage() {
   const { me } = useAuth()
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Konto & Passwort</h1>
+      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-ink-strong tracking-wide uppercase">Konto & Passwort</h1>
 
       {me && me.passwordChanged === false && (
-        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-navy-900">
+        <div role="status" className="rounded-xl border border-amber-400/60 bg-amber-400/10 px-4 py-3 text-sm text-ink">
           Du meldest dich noch mit dem Startpasswort an, das alle bekommen haben. Setz unten ein eigenes —
           dann kann niemand sonst als du auftreten.
         </div>
       )}
 
       <Card padding="lg">
-        <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-900 mb-3">Benutzername</h2>
+        <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-ink-strong mb-3">Benutzername</h2>
         <NamenFormular />
       </Card>
 
       <Card padding="lg">
-        <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-navy-900 mb-3">Passwort</h2>
+        <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-ink-strong mb-3">Passwort</h2>
         <PasswortFormular />
+      </Card>
+
+      <Card padding="lg">
+        <h2 className="font-display text-sm font-extrabold uppercase tracking-widest text-ink-strong mb-3">Ansicht</h2>
+        <ThemeWahl />
       </Card>
     </div>
   )
