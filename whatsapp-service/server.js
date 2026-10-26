@@ -29,6 +29,15 @@ let connected = false;
 let myNumber = null;
 let myName = null;
 let currentQrDataUrl = null;   // gesetzt solange Kopplung aussteht
+let qrAt = null;               // Zeitpunkt des aktuellen QR — ein abgelaufener darf nicht mehr raus
+let lastPairingAt = null;      // letzter angenommener Scan (isNewLogin) — Beleg, dass die Kopplung überhaupt startete
+
+// Lebensdauer JEDES QR-Codes. Ohne den Wert gibt Baileys dem ersten 60 s und jedem
+// weiteren nur 20 s (Socket/socket.js: qrMs = qrTimeout || 20000). Die UI holt /qr
+// alle 10 s — bei 20 s Lebensdauer kann der angezeigte Code trotzdem schon tot sein,
+// und WhatsApp meldet beim Scannen "Anmeldung fehlgeschlagen". 60 s für alle Codes
+// macht das Fenster eindeutig größer als das Polling-Intervall.
+const QR_TTL_MS = 60000;
 
 /**
  * Sichtbarer Zustand für /status. Ohne den sah "Dienst tot", "wartet auf QR" und
@@ -44,6 +53,11 @@ let state = 'CONNECTING';
 let lastError = null;          // { reason, at } — überlebt Reconnects, damit die Ursache sichtbar bleibt
 let starting = false;          // verhindert parallele startSock-Läufe (Reconnect + Retry gleichzeitig)
 let retryDelayMs = 0;
+// Schutz vor einer 515-Dauerschleife: der Neustart darf ohne Wartezeit laufen,
+// aber nicht endlos. Zurückgesetzt bei jedem 'open'.
+let restartRequiredStreak = 0;
+// Flacher Backoff für die Phase vor der Kopplung — siehe close-Handler.
+let pairingRetryMs = 0;
 
 const DISCONNECT_LOG = path.join(SESSION_PATH, 'disconnects.log');
 
@@ -165,22 +179,39 @@ async function startSock() {
     // nach der Diagnose auf 'warn' oder 'silent' zurückdrehen.
     logger: pino({ level: process.env.WA_LOG_LEVEL || 'debug' }),
     getMessage,
+    qrTimeout: QR_TTL_MS,
   });
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async (u) => {
-    const { connection, lastDisconnect, qr } = u;
+    const { connection, lastDisconnect, qr, isNewLogin } = u;
+    if (isNewLogin) {
+      // WhatsApp hat den Scan angenommen. Ab hier entscheidet sich, ob die Kopplung
+      // trägt — ohne diesen Marker sah ein Fehlschlag NACH dem Scan in /status genauso
+      // aus wie ein nie gescannter Code, und die Container-Logs sind von aussen nicht
+      // erreichbar. Der Zeitstempel bleibt stehen, auch wenn danach alles abbricht.
+      state = 'PAIRING';
+      currentQrDataUrl = null;
+      qrAt = null;
+      lastPairingAt = new Date().toISOString();
+      console.log('[wa] Scan angenommen — Kopplung läuft…');
+    }
     if (qr) {
       currentQrDataUrl = await QRCode.toDataURL(qr);
+      qrAt = Date.now();
       connected = false;
       state = 'WAITING_QR';
+      // Ein neuer Code heisst: der Weg zu WhatsApp steht. Wartezeit zurücksetzen.
+      pairingRetryMs = 0;
       console.log('[wa] QR bereit — koppeln nötig');
     }
     if (connection === 'open') {
       connected = true;
       currentQrDataUrl = null;
+      qrAt = null;
       state = 'CONNECTED';
       retryDelayMs = 0;
+      restartRequiredStreak = 0;
       const pn = sock.user?.id ? jidNormalizedUser(sock.user.id).split('@')[0] : null;
       myNumber = pn ? '+' + pn : null;
       myName = sock.user?.name || null;
@@ -188,8 +219,51 @@ async function startSock() {
     }
     if (connection === 'close') {
       connected = false;
+      // Der Code dieses Sockets ist mit ihm gestorben. Stehen lassen hiesse: die UI
+      // zeigt ihn weiter, jemand scannt ihn, WhatsApp sagt "Anmeldung fehlgeschlagen".
+      currentQrDataUrl = null;
+      qrAt = null;
       const code = lastDisconnect?.error?.output?.statusCode;
-      if (code === DisconnectReason.loggedOut) {
+      if (code === DisconnectReason.restartRequired) {
+        // 515 direkt nach dem Pairing ist KEIN Fehler, sondern der vorgeschriebene
+        // Schritt: WhatsApp verlangt, dass der Client sich sofort neu verbindet.
+        // Vorher lief das über den gemeinsamen Backoff — der stand nach ein paar
+        // abgelaufenen QR-Runden am Deckel von 60 s. Die frisch erzeugten Creds waren
+        // nach dieser Minute wertlos, der Folge-Login lief in einen 401, der Zweig
+        // unten warf sie weg und das Handy meldete "Anmeldung fehlgeschlagen" —
+        // obwohl das Koppeln selbst jedes Mal geklappt hatte (Logs 25.10.2026:
+        // drei erfolgreiche Pairings, alle eine Minute später wieder tot).
+        // Also ohne Wartezeit und ohne den Backoff anzufassen.
+        restartRequiredStreak++;
+        state = 'CONNECTING';
+        if (restartRequiredStreak > 5) {
+          setError('restart_required_loop (code ' + code + ') — 515 in Dauerschleife');
+          console.log('[wa] 515 zum', restartRequiredStreak + '. Mal in Folge — mit Backoff weiter.');
+          const delay = retryDelayMs;
+          retryDelayMs = Math.min(retryDelayMs ? retryDelayMs * 2 : 2000, 60000);
+          restart(delay);
+        } else {
+          console.log('[wa] Neustart verlangt (515) — sofortiger Reconnect.');
+          restart(0);
+        }
+      } else if (!authState?.creds?.me) {
+        // Noch keine Kopplung: JEDER Abbruch hier gehört zum Koppeln, nicht zu einem
+        // Defekt. Entweder laufen die Codes ab (408 "QR refs attempts ended") oder
+        // WhatsApp schliesst den ungenutzten Socket vorher (428 connectionClosed) —
+        // beobachtet am 25.10.2026 alle ~3,5 min. Über den grossen Backoff wuchs die
+        // Lücke ohne Code bis auf 60 s, und wer in der Zeit scannt, scannt einen toten
+        // Code. Also eigener, flacher Backoff bis 5 s, zurückgesetzt bei jedem neuen
+        // Code. Die Unterscheidung hängt an creds.me statt am state: der state ist ein
+        // Anzeigewert, creds.me die Tatsache — configureSuccessfulPairing setzt es beim
+        // Koppeln. (creds.registered taugt NICHT: Baileys 7.0.0-rc13 legt das Feld in
+        // initAuthCreds auf false und fasst es nie wieder an.)
+        const delay = pairingRetryMs;
+        pairingRetryMs = Math.min(pairingRetryMs ? pairingRetryMs * 2 : 1000, 5000);
+        state = 'CONNECTING';
+        setError('pairing_retry (code ' + code + ') — noch nicht gekoppelt, neuer Satz Codes');
+        console.log('[wa] noch ungekoppelt (code', code + '), neuer Versuch in', delay, 'ms…');
+        restart(delay);
+      } else if (code === DisconnectReason.loggedOut) {
         // WhatsApp hat das Gerät entfernt (z.B. conflict/device_removed). Die alten Creds
         // sind wertlos — mit ihnen läuft jeder Start sofort wieder in denselben 401 und es
         // erscheint NIE ein QR. Also verwerfen und neu koppeln lassen, ohne SSH-Eingriff.
@@ -293,15 +367,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Ein QR, der älter als seine Lebensdauer ist, ist wertlos — WhatsApp weist ihn ab.
+// Lieber nichts ausliefern (UI zeigt "neuer Code kommt") als einen toten Code.
+function liveQr() {
+  if (connected || !currentQrDataUrl) return null;
+  if (qrAt && Date.now() - qrAt > QR_TTL_MS) return null;
+  return currentQrDataUrl;
+}
+
 app.get('/status', (_req, res) => {
   res.json({
     connected,
     number: myNumber,
     name: myName,
-    needsQr: !connected && currentQrDataUrl !== null,
+    needsQr: liveQr() !== null,
     state,
     lastError: lastError ? lastError.reason : null,
     lastErrorAt: lastError ? lastError.at : null,
+    lastPairingAt,
   });
 });
 

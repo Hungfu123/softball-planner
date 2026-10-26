@@ -63,7 +63,7 @@ class GameDayVoteSyncServiceTest {
 
     private void givenConnected() {
         when(sender.status()).thenReturn(new WhatsappAccountStatus(true, "0491234", "Bot", false, null,
-            WhatsappAccountStatus.ConnectionState.CONNECTED, null, null));
+            WhatsappAccountStatus.ConnectionState.CONNECTED, null, null, null));
     }
 
     private void givenGameDayWithAvailable(final Player... available) {
@@ -96,7 +96,7 @@ class GameDayVoteSyncServiceTest {
     void shouldThrowWhenWhatsappNotConnected() {
         givenPoll();
         when(sender.status()).thenReturn(new WhatsappAccountStatus(false, null, null, true, null,
-            WhatsappAccountStatus.ConnectionState.WAITING_QR, null, null));
+            WhatsappAccountStatus.ConnectionState.WAITING_QR, null, null, null));
 
         assertThatThrownBy(() -> service.fetchAndPreview(7L))
             .isInstanceOf(BusinessValidationException.class)
