@@ -20,7 +20,7 @@ const GRASS = '#93B268';
 const SKIN = '#E3C9A4';
 const CHALK = '#FFFFFF';
 const INVENTORY = '#FBF6EC';
-const INK = '#10133F';
+const INK = '#193253';
 const RUNNER = '#B91C2A';
 const BALL = '#E6F03C';
 

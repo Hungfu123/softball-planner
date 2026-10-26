@@ -36,7 +36,7 @@ export function SignaturePad({ value, onChange }: {
     ctx.lineWidth = 3
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = '#10133F'
+    ctx.strokeStyle = '#193253'
     if (!value) return
     const bild = new Image()
     bild.onload = () => ctx.drawImage(bild, 0, 0, BREITE, HOEHE)
