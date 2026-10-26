@@ -86,12 +86,12 @@ describe('Layout Reiterleiste', () => {
 
   it.each(['/stats', '/teams', '/teams/spiele'])('markiert ANALYSE auf %s', (pfad) => {
     renderAt(pfad)
-    expect(screen.getByRole('link', { name: /Analyse/ })).toHaveClass('bg-white')
+    expect(screen.getByRole('link', { name: /Analyse/ })).toHaveClass('bg-band-ink')
   })
 
   it.each(['/spielbogen', '/spielbogen/new', '/kalender'])('markiert ORGA auf %s', (pfad) => {
     renderAt(pfad)
-    expect(screen.getByRole('link', { name: /Orga/ })).toHaveClass('bg-white')
+    expect(screen.getByRole('link', { name: /Orga/ })).toHaveClass('bg-band-ink')
   })
 
   it('hat keinen Spielbogen-Reiter mehr', () => {
@@ -112,7 +112,7 @@ describe('Layout Reiterleiste nach Rolle', () => {
   it('markiert beim Spieler den Kalender-Reiter auf /kalender', () => {
     auth.me = SPIELER
     renderAt('/kalender')
-    expect(screen.getByRole('link', { name: /Kalender/ })).toHaveClass('bg-white')
+    expect(screen.getByRole('link', { name: /Kalender/ })).toHaveClass('bg-band-ink')
   })
 
   it.each([ADMIN, SUPER])('zeigt $role fünf Reiter mit Orga', me => {

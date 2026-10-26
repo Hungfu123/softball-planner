@@ -76,6 +76,32 @@
   /* Eigener Breakpoint für die Planner-Werkbank: vier Spalten (Bogen, Feld,
      Coaches, Spieler) brauchen zusammen ~1300px Mindestbreite. Bei xl (1280px)
      liefen sie quer aus dem Viewport — ab 1440px passen sie. */
+  /* ---------------------------------------------------------------------------
+     Semantische Schicht fuer das Theme.
+
+     Die Palette oben sagt, WELCHE Farbe etwas hat. Diese Tokens sagen, WAS es ist:
+     Flaeche, Tinte, Linie. Nur das laesst sich umschalten — `text-navy-900` kann nicht
+     wissen, ob es Ueberschrift auf Papier oder Beschriftung auf dunklem Grund ist.
+
+     Die Werte hier sind exakt die heutigen. Das helle Theme sieht nach der Umstellung
+     aus wie vorher; neu ist nur, dass die Absicht im Namen steht.
+     Die dunklen Werte stehen weiter unten unter [data-theme="dark"].
+     --------------------------------------------------------------------------- */
+  --color-surface: #FBF6EC;        /* Seite */
+  --color-surface-raised: #FBF6EC; /* Karte darauf — cream-50, wie `Card` es hatte */
+  --color-surface-white: #FFFFFF;  /* die Stellen, die wirklich Weiß wollen (282 im Code) */
+  --color-surface-sunken: #FBF6EC; /* Eingabefeld, Mulde */
+  --color-line: #DDD2B8;           /* Trennlinie, Kartenrand */
+  --color-line-strong: #CCC09E;    /* betonte Linie */
+  --color-ink: #2A2520;            /* Fliesstext */
+  --color-ink-strong: #142B49;     /* Ueberschrift */
+  --color-ink-muted: #57514A;      /* Beiwerk */
+  --color-ink-faint: #6B655C;      /* Randnotiz */
+  --color-label: #2F5383;          /* Feldbeschriftung — im Hellen navy-500, wie gehabt */
+  --color-band: #142B49;           /* dunkles Band: Kopfzeile, dunkle Karten */
+  --color-band-ink: #FFFFFF;       /* Schrift auf dem Band */
+  --color-danger-ink: #B91C2A;     /* Rot als SCHRIFT (nicht als Flaeche) */
+
   --breakpoint-wide: 90rem;
 
   --font-display: "Saira Condensed", "Impact", sans-serif;
@@ -113,11 +139,12 @@ body {
   font-family: "Archivo", system-ui, -apple-system, sans-serif;
   /* Zahlen tabellarisch: Scores, Tabellen, Statistiken bleiben bündig (Emil) */
   font-variant-numeric: tabular-nums;
-  background-color: var(--color-cream-100);
-  /* Subtle paper-grain texture — gibt Cream organische Tiefe ohne Lesbarkeit zu beeinträchtigen */
+  background-color: var(--color-surface);
+  /* Subtle paper-grain texture — gibt Cream organische Tiefe ohne Lesbarkeit zu beeinträchtigen.
+     Im Dunklen aus: das Korn ist Papier, und dunkle Flaechen sind kein Papier (siehe unten). */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.04 0 0 0 0 0.04 0 0 0 0 0.05 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-attachment: fixed;
-  color: var(--color-gray-900);
+  color: var(--color-ink);
   scrollbar-gutter: stable;
 }
 
@@ -127,6 +154,60 @@ h1, h2, h3, h4 {
 }
 p {
   text-wrap: pretty;
+}
+
+
+/* ---------------------------------------------------------------------------
+   Dunkles Theme. Gespiegelte Logik des hellen: dort warmes Papier und kuehle Tinte,
+   hier kuehle Flaechen (Logo-Farbton 255,8°) und warme Schrift (Cream-Farbton 84,6°).
+
+   Nachgemessen im Browser (sRGB, WCAG 2.1), Tinte auf Seite / auf Karte:
+   weiss 14,3 / 11,0 — gedaempft 7,9 / 6,1 — Randnotiz 6,1 / 4,7. Der schwaechste Wert
+   liegt 0,2 ueber AA, also ohne Puffer: ink-faint gehoert nicht unter 12px und nicht
+   auf noch hellere Flaechen. Rot bleibt Rot als Flaeche; als SCHRIFT auf dunklem Grund
+   nimmt man softball-red-300 (siehe --color-danger-ink).
+
+   Alles hier steht in @media not print. Im Druck faellt die Seite damit von selbst
+   auf das helle Theme zurueck — ohne diese Klammer druckte der Dunkelmodus weisse
+   Schrift auf weisses Papier (nachgestellt, Lineup-Sheet und Trainingsplan betroffen).
+
+   Steht bewusst ausserhalb jeder Cascade-Layer: @theme schreibt seine Variablen in
+   eine Layer, und unbelayertes CSS gewinnt gegen jede Layer, unabhaengig von Spezifitaet.
+   --------------------------------------------------------------------------- */
+@media not print {
+  [data-theme="dark"] body {
+    background-image: none;
+  }
+
+  [data-theme="dark"] {
+    /* Die Seite ist das Blau vom Login (= navy-900 = das Logo). Alles andere liegt darum:
+       Karten heller, Kopfzeile tiefer. Gerechnet im selben Farbton, nichts gegriffen. */
+    --color-surface: #142B49;
+    --color-surface-raised: #273D5A;
+    --color-surface-white: #273D5A;   /* im Dunklen gibt es kein Weiss als Flaeche */
+    --color-surface-sunken: #0B1E37;
+    --color-line: #445977;
+    --color-line-strong: #617692;
+    --color-ink: #FFFFFF;
+    --color-ink-strong: #FFFFFF;
+    --color-ink-muted: #C7C0B1;
+    --color-ink-faint: #B0A99B;
+    /* Beschriftungen sind hier kein Beiwerk: sie sagen, was ins Feld gehoert. Die Rangfolge
+       zur Kartenueberschrift traegt im Dunklen die Schriftgroesse, nicht die Helligkeit. */
+    --color-label: #FFFFFF;
+    --color-band: #061A35;
+    --color-band-ink: #F4F0E6;
+    /* softball-red-500 schafft auf der Seite nur 3,4:1 und auf Karten 2,9:1 — als SCHRIFT
+       braucht es hier den hellen Ton. Als Flaeche (Knopf mit weisser Schrift) bleibt Rot Rot. */
+    --color-danger-ink: #FCA5A5;
+    /* Der helle Kartenschatten ist navy getoent und auf navy unsichtbar. */
+    --shadow-card: 0 12px 30px -14px rgb(0 0 0 / 0.6);
+
+    /* Der Tastatur-Fokus: Rot auf Dunkelblau ist schwach (siehe :focus-visible oben). */
+    --fokus-farbe: #FBF6EC;
+
+    color-scheme: dark;
+  }
 }
 
 /* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default.

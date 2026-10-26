@@ -20,7 +20,7 @@ export function Card({ children, padding = 'none', className = '', ...rest }: Pr
   return (
     <div
       {...rest}
-      className={`bg-cream-50 border border-cream-300 rounded-2xl shadow-card overflow-hidden ${PADDING[padding]} ${className}`}
+      className={`bg-surface-raised border border-line rounded-2xl shadow-card overflow-hidden ${PADDING[padding]} ${className}`}
     >
       {children}
     </div>
