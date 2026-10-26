@@ -129,9 +129,13 @@ p {
   text-wrap: pretty;
 }
 
-/* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default */
+/* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default.
+   Die Farbe steht in einer eigenen Variable, damit dunkle Flaechen sie umsetzen koennen:
+   Rot auf Navy ist schwach, und ein leeres fokussiertes Feld saehe aus wie ein Fehler.
+   Diese Regel liegt ausserhalb jeder Cascade-Layer und schlaegt deshalb jede Tailwind-Utility —
+   ueberschreiben laesst sie sich nur ueber die Variable, nicht ueber `focus-visible:outline-*`. */
 :focus-visible {
-  outline: 2px solid var(--color-softball-red-500);
+  outline: 2px solid var(--fokus-farbe, var(--color-softball-red-500));
   outline-offset: 2px;
 }
 
