@@ -408,21 +408,24 @@ export function WhatsappPollPage() {
 function stateInfo(state: WhatsappAccountStatus['state'], lastError: string | null): {
   headline: string
   detail: string
+  /** Die Rohmeldung des Servers. Sie gehört nicht in den ersten Satz — aber auch nicht
+   *  weggeworfen: wer den Container neu startet, will sie sehen. Deshalb aufklappbar. */
+  technik?: string | null
   tone: 'wait' | 'error'
 } | null {
   switch (state) {
     case 'UNREACHABLE':
       return {
         headline: 'WhatsApp-Dienst nicht erreichbar',
-        detail: lastError
-          ? `Der Sidecar antwortet nicht: ${lastError}`
-          : 'Der Sidecar antwortet nicht. Läuft der whatsapp-Container?',
+        detail: 'Der whatsapp-Container antwortet nicht. Umfragen bleiben so lange liegen; sobald er wieder läuft, verbindet sich die App von selbst.',
+        technik: lastError,
         tone: 'error',
       }
     case 'INIT_FAILED':
       return {
         headline: 'Dienst konnte nicht starten',
-        detail: lastError ? `${lastError} — Neuversuch läuft automatisch.` : 'Neuversuch läuft automatisch.',
+        detail: 'Der Neuversuch läuft automatisch — es ist nichts zu tun. Bleibt es dabei, hilft ein Neustart des Containers.',
+        technik: lastError,
         tone: 'error',
       }
     case 'LOGGED_OUT':
@@ -445,7 +448,12 @@ function AccountCard({ connected, status, qr, qrError }: {
   qrError: string | null
 }) {
   const info = qrError
-    ? { headline: 'QR-Code nicht abrufbar', detail: qrError, tone: 'error' as const }
+    ? {
+        headline: 'QR-Code nicht abrufbar',
+        detail: 'Der Dienst läuft, liefert aber keinen Code zum Scannen. Die Seite fragt weiter nach.',
+        technik: qrError,
+        tone: 'error' as const,
+      }
     : stateInfo(status?.state ?? null, status?.lastError ?? null)
   return (
     <Card padding="lg">
@@ -477,6 +485,18 @@ function AccountCard({ connected, status, qr, qrError }: {
           <div className="space-y-1 max-w-sm">
             <p className="text-sm font-semibold text-softball-red-700">{info.headline}</p>
             <p className="text-xs text-gray-600">{info.detail}</p>
+            {info.technik && (
+              <details className="text-left">
+                {/* Kein flex auf dem summary: das nimmt ihm den Aufklapp-Marker, und ohne
+                    den sieht die Zeile aus wie Text und nicht wie etwas zum Antippen. */}
+                <summary className="text-xs text-gray-500 cursor-pointer w-fit mx-auto py-3.5 px-1">
+                  Technische Meldung
+                </summary>
+                <p className="mt-1 rounded-lg bg-surface-sunken px-2 py-1.5 text-[11px] text-gray-500 break-all">
+                  {info.technik}
+                </p>
+              </details>
+            )}
             {status?.lastErrorAt && (
               <p className="text-xs text-gray-400">
                 Seit {new Date(status.lastErrorAt).toLocaleString('de-DE', {

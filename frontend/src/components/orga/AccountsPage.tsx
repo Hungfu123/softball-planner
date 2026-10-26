@@ -58,9 +58,7 @@ function KontoZeile({ eintrag, istSuperadmin, onAnlegen, onRolle, onScorer, onSp
             {konto.locked && <Badge color="red">Gesperrt</Badge>}
             {!konto.passwordChanged && <Badge color="amber">Startpasswort</Badge>}
           </div>
-        ) : (
-          <div className="text-xs text-gray-500">Noch kein Account — der Spieler kann sich nicht anmelden.</div>
-        )}
+        ) : null}
       </div>
 
       {konto ? (
@@ -208,7 +206,12 @@ export function AccountsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Accounts</h1>
+        <div>
+          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Accounts</h1>
+          {/* Einmal statt in jeder Zeile: zwanzigmal derselbe Satz ist kein Hinweis,
+              sondern Rauschen. Was die Zeile unterscheidet, sagt ohnehin der Knopf. */}
+          <p className="text-sm text-gray-500 mt-1">Wer hier keinen Account hat, kann sich nicht anmelden.</p>
+        </div>
         {ohneAccount > 0 && (
           <Button variant="navy" className="min-h-11" onClick={() => setDialog({ art: 'massenanlage' })}>
             Accounts für alle aktiven Spieler anlegen
