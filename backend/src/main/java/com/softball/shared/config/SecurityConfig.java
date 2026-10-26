@@ -1,5 +1,6 @@
 package com.softball.shared.config;
 
+import com.softball.shared.security.OhneBrowserDialog;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -22,6 +23,12 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final OhneBrowserDialog ohneBrowserDialog;
+
+    public SecurityConfig(final OhneBrowserDialog ohneBrowserDialog) {
+        this.ohneBrowserDialog = ohneBrowserDialog;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -33,7 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
-            .httpBasic(Customizer.withDefaults());
+            .httpBasic(basic -> basic.authenticationEntryPoint(ohneBrowserDialog));
         return http.build();
     }
 
