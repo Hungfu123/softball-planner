@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useTheme } from '@/hooks/useTheme'
 import { portalOverlayAttrs, portalOverlayClickable } from '@/components/shared/portalOverlay'
 
 function initialen(name: string): string {
@@ -12,6 +13,36 @@ function initialen(name: string): string {
 }
 
 const EINTRAG = 'flex items-center w-full min-h-11 px-4 text-left text-sm font-semibold text-navy-900 hover:bg-navy-800 hover:text-white active:scale-[0.97] transition-colors duration-200'
+
+/**
+ * Hell oder dunkel, direkt im Menü. Die Wahl liegt auch unter Konto — dort gehört sie
+ * hin, mit dem Satz „gilt nur auf diesem Gerät" daneben. Nur: dorthin führen drei
+ * Klicks hinter einem Eintrag namens „Konto & Passwort", und der sagt nichts über
+ * Darstellung. Etwas, das man je nach Tageszeit umlegt, darf nicht so weit weg liegen.
+ */
+function AnsichtWahl() {
+  const { theme, setTheme } = useTheme()
+  const knopf = (wert: 'light' | 'dark', text: string) => (
+    <button
+      type="button"
+      onClick={() => setTheme(wert)}
+      aria-pressed={theme === wert}
+      className={`min-h-11 flex-1 rounded-md font-display text-[11px] font-bold uppercase tracking-widest transition-colors ${
+        theme === wert ? 'bg-accent text-accent-ink' : 'text-navy-700 hover:bg-cream-300'
+      }`}
+    >
+      {text}
+    </button>
+  )
+  return (
+    <div className="px-3 py-2">
+      <div role="group" aria-label="Ansicht" className="flex gap-0.5 rounded-lg bg-cream-200 p-0.5">
+        {knopf('light', 'Hell')}
+        {knopf('dark', 'Dunkel')}
+      </div>
+    </div>
+  )
+}
 
 /**
  * Konto-Menü oben rechts: Kreis mit den Initialen, dahinter die Einträge, die der
@@ -92,6 +123,9 @@ export function KontoMenu() {
                   Historie
                 </Link>
               )}
+              <div className="border-t border-cream-300 mt-1 pt-1">
+                <AnsichtWahl />
+              </div>
               <button
                 role="menuitem"
                 type="button"

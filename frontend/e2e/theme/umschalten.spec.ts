@@ -39,6 +39,22 @@ test.describe('Der Umschalter im Konto', () => {
     await expect(wurzel).not.toHaveAttribute('data-theme', 'dark')
   })
 
+  test('liegt auch im Konto-Menü — einen Klick von überall', async ({ page }) => {
+    await page.goto('/training')
+    await page.waitForLoadState('networkidle')
+    const wurzel = page.locator('html')
+    await expect(wurzel).not.toHaveAttribute('data-theme', 'dark')
+
+    await page.getByRole('button', { name: 'Konto' }).click()
+    const menue = page.getByRole('menu', { name: 'Konto' })
+    await expect(menue).toBeVisible()
+    await menue.getByRole('button', { name: 'Dunkel' }).click()
+    await expect(wurzel).toHaveAttribute('data-theme', 'dark')
+
+    // Das Menü bleibt offen: wer die Ansicht umlegt, will sie sehen, nicht wegklicken.
+    await expect(menue.getByRole('button', { name: 'Dunkel' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
   test('blitzt beim Laden nicht hell auf', async ({ page }) => {
     await page.goto('/konto')
     await page.getByRole('button', { name: 'Dunkel' }).click()
