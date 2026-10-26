@@ -208,6 +208,147 @@ p {
 
     color-scheme: dark;
   }
+
+  /* -------------------------------------------------------------------------
+     Uebergangsschicht ("Shim"). Die App traegt an rund 3.770 Stellen feste
+     Paletten-Klassen (bg-cream-50, text-navy-900, border-cream-300 ...). Statt
+     sie einzeln auf Tokens umzuschreiben, wird hier im Dunkeln die Klasse selbst
+     umgedeutet. Moeglich, weil die Rolle an der Eigenschaft haengt und nicht an
+     der Farbe: text-navy-* ist immer Tinte, border-* immer Linie, bg-cream-*
+     immer Flaeche. Wo das nicht gilt (bg-navy-* ist mal Seite, mal Knopf), steht
+     der Elementtyp im Selektor.
+
+     Das ist ein Pflaster, keine Designsprache: text-navy-900 sagt weiterhin
+     nicht, was es meint. Es ist aber umkehrbar (eine Datei, keine Zeile in einer
+     Komponente) und laesst das helle Theme per Konstruktion unberuehrt. Wer eine
+     Datei ohnehin anfasst, ersetzt ihre Klassen durch Tokens und streicht sie
+     unten raus.
+
+     Nicht umgedeutet und deshalb Handarbeit:
+       - hover:/focus:-Varianten (eigene Klassen, eigene Farben)
+       - bg-navy-800/900 als Flaeche ausserhalb von Knoepfen
+       - text-white, text-cream-*, text-gray-300 (sitzen schon auf dunklem Grund)
+       - SVG-Attribute (fill=) in Playmaker und Diagrammen
+     ------------------------------------------------------------------------- */
+
+  /* Tinte */
+  [data-theme="dark"] .text-navy-900,
+  [data-theme="dark"] .text-navy-800,
+  [data-theme="dark"] .text-navy-700,
+  [data-theme="dark"] .text-navy-600,
+  [data-theme="dark"] .text-navy-500,
+  [data-theme="dark"] .text-gray-900,
+  [data-theme="dark"] .text-gray-800,
+  [data-theme="dark"] .text-gray-700 { color: var(--color-ink); }
+
+  [data-theme="dark"] .text-navy-400,
+  [data-theme="dark"] .text-navy-300,
+  [data-theme="dark"] .text-gray-600,
+  [data-theme="dark"] .text-gray-500 { color: var(--color-ink-muted); }
+
+  [data-theme="dark"] .text-gray-400 { color: var(--color-ink-faint); }
+
+  /* Flaechen. Die Zwischenstufen sind im Logo-Farbton gerechnet (H 255,8 / C 0,058),
+     damit sie auf derselben Leiter sitzen wie Seite, Karte und Linie. */
+  [data-theme="dark"] .bg-white,
+  [data-theme="dark"] .bg-cream-50,
+  [data-theme="dark"] .bg-cream-100 { background-color: var(--color-surface-raised); }
+  [data-theme="dark"] .bg-cream-200 { background-color: #354C6A; }  /* L* 41 */
+  [data-theme="dark"] .bg-cream-300 { background-color: #425978; }  /* L* 46 */
+  [data-theme="dark"] .bg-navy-50   { background-color: #1E3450; }  /* L* 32 */
+  [data-theme="dark"] .bg-navy-100  { background-color: #2D4361; }  /* L* 38 */
+
+  /* Linien */
+  [data-theme="dark"] .border-cream-200 { border-color: #354C6A; }
+  [data-theme="dark"] .border-cream-300,
+  [data-theme="dark"] .border-cream-400 { border-color: var(--color-line); }
+  [data-theme="dark"] .border-navy-400,
+  [data-theme="dark"] .border-navy-600 { border-color: var(--color-line-strong); }
+
+  /* Knopf-Fuellungen. Nur auf button/a: dieselbe Klasse ist anderswo die Seite
+     selbst (Spielbogen, Playmaker) und darf dort nicht aufgehellt werden.
+     #375987 = L* 46 bei C 0,085 — gesaettigter als die Leiter, damit ein Knopf
+     nach Knopf aussieht: 1,55:1 gegen die Karte, weisse Schrift darauf 7,1:1. */
+  [data-theme="dark"] button.bg-navy-800,
+  [data-theme="dark"] button.bg-navy-900,
+  [data-theme="dark"] a.bg-navy-800,
+  [data-theme="dark"] a.bg-navy-900 { background-color: #375987; }
+
+  /* Deaktiviert. disabled:opacity-50 blendet eine Navy-Fuellung im Dunkeln in die
+     Karte hinein (gemessen 1,08:1 — der Knopf war weg, nicht gedaempft). Deshalb
+     hier keine Transparenz, sondern eine eigene, entsaettigte Flaeche: grau statt
+     blau ist das Signal, 1,42:1 gegen die Karte macht sie sichtbar. */
+  [data-theme="dark"] button.bg-navy-800:disabled,
+  [data-theme="dark"] button.bg-navy-900:disabled,
+  [data-theme="dark"] button.bg-softball-red-600:disabled {
+    opacity: 1;
+    background-color: #4C535D;
+    color: var(--color-ink-faint);
+  }
+
+  /* Schleier hinter Modalen. bg-navy-900/60 liegt im Dunkeln auf einer Seite, die
+     selbst navy-900 ist — rechnerisch dieselbe Farbe, 1,00:1, der Schleier
+     existierte nicht mehr. Schwarz dimmt auch hier noch. */
+  [data-theme="dark"] .fixed.inset-0.bg-navy-900\/60,
+  [data-theme="dark"] .fixed.inset-0.bg-navy-900\/55 { background-color: rgb(0 0 0 / 0.7); }
+  [data-theme="dark"] .fixed.inset-0.bg-black\/40 { background-color: rgb(0 0 0 / 0.7); }
+
+  /* Halbdurchsichtige helle Blaetter (klebende Kopfzeilen, Glas-Leisten). Die Deckung
+     bleibt, nur die Farbe dreht — sonst stuende weisse Schrift auf weissem Glas.
+     bg-white/5 bis /20 sind das Gegenteil (helle Schleier auf dunklem Grund, z.B. im
+     Spielbogen) und bleiben deshalb unberuehrt. */
+  [data-theme="dark"] .bg-white\/95,
+  [data-theme="dark"] .bg-cream-50\/95,
+  [data-theme="dark"] .bg-cream-100\/95 { background-color: rgb(39 61 90 / 0.95); }
+  [data-theme="dark"] .bg-cream-50\/90 { background-color: rgb(39 61 90 / 0.9); }
+  [data-theme="dark"] .bg-white\/70,
+  [data-theme="dark"] .bg-cream-100\/70,
+  [data-theme="dark"] .bg-cream-200\/70,
+  [data-theme="dark"] .bg-cream-300\/70 { background-color: rgb(39 61 90 / 0.7); }
+  [data-theme="dark"] .bg-cream-50\/60,
+  [data-theme="dark"] .bg-cream-100\/60,
+  [data-theme="dark"] .bg-cream-200\/60 { background-color: rgb(39 61 90 / 0.6); }
+  [data-theme="dark"] .bg-white\/50,
+  [data-theme="dark"] .bg-cream-100\/50 { background-color: rgb(39 61 90 / 0.5); }
+  [data-theme="dark"] .bg-white\/40 { background-color: rgb(39 61 90 / 0.4); }
+  [data-theme="dark"] .bg-white\/35 { background-color: rgb(39 61 90 / 0.35); }
+  [data-theme="dark"] .bg-white\/30 { background-color: rgb(39 61 90 / 0.3); }
+  [data-theme="dark"] .bg-white\/25 { background-color: rgb(39 61 90 / 0.25); }
+
+  /* Status-Kaesten (Hinweis, Warnung, Erfolg). Im Hellen eine blasse Toenung mit
+     dunkler Schrift; im Dunkeln dreht beides. Die Flaechen sind bewusst etwa so hell
+     wie die Karte (1,0-1,4:1) — ein Status-Kasten unterscheidet sich durch den
+     FARBTON, nicht durch die Helligkeit, und seinen Rand hat er ohnehin. Keine
+     Alpha-Toenung von Rot ueber Navy: das ergibt Lila, nicht Rot. */
+  [data-theme="dark"] .bg-softball-red-50  { background-color: #4A2430; }
+  [data-theme="dark"] .bg-softball-red-100 { background-color: #6B2F3C; }
+  [data-theme="dark"] .bg-amber-50         { background-color: #4F3D1C; }
+  [data-theme="dark"] .bg-amber-100        { background-color: #634C22; }
+  [data-theme="dark"] .bg-emerald-50       { background-color: #184A36; }
+  [data-theme="dark"] .bg-emerald-100      { background-color: #1F6246; }
+
+  [data-theme="dark"] .border-softball-red-100,
+  [data-theme="dark"] .border-softball-red-200,
+  [data-theme="dark"] .border-softball-red-300 { border-color: #8E3B4A; }
+  [data-theme="dark"] .border-amber-200,
+  [data-theme="dark"] .border-amber-300 { border-color: #8A6B30; }
+  [data-theme="dark"] .border-emerald-200,
+  [data-theme="dark"] .border-emerald-300 { border-color: #2C7F5C; }
+
+  /* Status-Schrift. Die dunklen Stufen sind auf hellem Grund gewaehlt und waeren hier
+     unlesbar; die -300er Stufe sitzt auf der jeweiligen Toenung bei 6,5-7,2:1. */
+  [data-theme="dark"] .text-softball-red-600,
+  [data-theme="dark"] .text-softball-red-700,
+  [data-theme="dark"] .text-softball-red-800,
+  [data-theme="dark"] .text-softball-red-900 { color: var(--color-danger-ink); }
+  [data-theme="dark"] .text-amber-600,
+  [data-theme="dark"] .text-amber-700,
+  [data-theme="dark"] .text-amber-800,
+  [data-theme="dark"] .text-amber-900 { color: #FCD34D; }
+  [data-theme="dark"] .text-emerald-600,
+  [data-theme="dark"] .text-emerald-700,
+  [data-theme="dark"] .text-emerald-800,
+  [data-theme="dark"] .text-emerald-900 { color: #6EE7B7; }
 }
 
 /* Sichtbarer Tastatur-Fokus (wie Website): roter Ring statt unsichtbarem Default.
