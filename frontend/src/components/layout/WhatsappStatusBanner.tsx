@@ -25,7 +25,7 @@ function warningFor(status: WhatsappAccountStatus): { text: string; action: stri
     case 'UNREACHABLE':
     case 'INIT_FAILED':
       return { text: 'Der WhatsApp-Dienst ist nicht erreichbar — Umfragen werden nicht verschickt.', action: 'Details' }
-    // CONNECTING ist ein Übergangszustand von Sekunden — dafür kein Alarm.
+    // CONNECTING und PAIRING sind Übergangszustände von Sekunden — dafür kein Alarm.
     default:
       return null
   }

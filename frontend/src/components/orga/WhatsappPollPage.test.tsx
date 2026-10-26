@@ -17,7 +17,7 @@ let gameDays: GameDayResponse[] = []
 let trainings: { date: string; cancelled: boolean }[] = []
 const CONNECTED_STATUS: WhatsappAccountStatus = {
   connected: true, number: '123', name: 'Test', needsQr: false,
-  state: 'CONNECTED', lastError: null, lastErrorAt: null,
+  state: 'CONNECTED', lastError: null, lastErrorAt: null, lastPairingAt: null,
 }
 let status: WhatsappAccountStatus = CONNECTED_STATUS
 
