@@ -61,8 +61,9 @@ describe('AccountsPage', () => {
     zeige()
     expect(await screen.findByRole('listitem', { name: 'Anna' })).toBeInTheDocument()
     expect(within(zeile('Anna')).getByText('anna')).toBeInTheDocument()
-    expect(within(zeile('Cora')).getByText(/Noch kein Account/)).toBeInTheDocument()
+    // Der Knopf IST der Zustand — der Satz dazu steht einmal über der Liste.
     expect(within(zeile('Cora')).getByRole('button', { name: 'Account anlegen' })).toBeInTheDocument()
+    expect(within(zeile('Cora')).queryByText('cora')).toBeNull()
     expect(within(zeile('Anna')).queryByRole('button', { name: 'Account anlegen' })).toBeNull()
   })
 
@@ -86,7 +87,7 @@ describe('AccountsPage', () => {
     expect(h.deleteUser).not.toHaveBeenCalled()
     fireEvent.click(within(dialog).getByRole('button', { name: 'Löschen' }))
     await waitFor(() => expect(h.deleteUser).toHaveBeenCalledWith(11))
-    expect(await within(zeile('Bert')).findByText(/Noch kein Account/)).toBeInTheDocument()
+    expect(await within(zeile('Bert')).findByRole('button', { name: 'Account anlegen' })).toBeInTheDocument()
   })
 
   it('löscht nicht, wenn das Modal abgebrochen wird', async () => {
