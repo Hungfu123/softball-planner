@@ -6,7 +6,7 @@
     <link rel="alternate icon" type="image/png" href="/deadsox.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#122742" />
+    <meta name="theme-color" content="#142B49" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Softball" />
@@ -18,9 +18,20 @@
       <script>
       // Vor dem ersten Zeichnen, sonst blitzt beim Laden die helle Seite auf.
       // Pro Geraet gespeichert: abends am Handy dunkel, am Laptop hell.
+      //
+      // Ohne eigene Wahl entscheidet das Geraet. Wer sein Handy auf dunkel
+      // gestellt hat, hat damit schon gesagt, was er will — ihn beim ersten
+      // Besuch trotzdem anzublitzen waere, als hoerte man nicht zu. Die eigene
+      // Wahl schlaegt das System und gilt, bis sie geaendert wird.
       try {
         var t = localStorage.getItem('theme')
-        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t)
+        if (t !== 'dark' && t !== 'light') {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark')
+        // Die Browserleiste am Handy traegt dieselbe Farbe wie das Band darunter.
+        var m = document.querySelector('meta[name="theme-color"]')
+        if (m) m.setAttribute('content', t === 'dark' ? '#061A35' : '#142B49')
       } catch (e) { /* privates Fenster: dann eben hell */ }
     </script>
   </head>

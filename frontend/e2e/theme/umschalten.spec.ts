@@ -65,3 +65,44 @@ test.describe('Der Umschalter im Konto', () => {
     await seite.close()
   })
 })
+
+/*
+ * Ohne eigene Wahl entscheidet das Gerät. Wer sein Handy auf dunkel gestellt hat, hat
+ * damit schon gesagt, was er will. Die eigene Wahl schlägt das System — sonst wäre der
+ * Schalter im Konto eine Attrappe, sobald jemand sein System umstellt.
+ */
+test.describe('Ohne eigene Wahl entscheidet das Gerät', () => {
+  test.use({ colorScheme: 'dark' })
+
+  test('dunkles System heißt dunkle App — schon vor dem ersten Zeichnen', async ({ context }) => {
+    await seedAuth(context)
+    const page = await context.newPage()
+    await page.addInitScript(() => {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'interactive') {
+          ;(window as unknown as { __frueh?: string | null }).__frueh =
+            document.documentElement.getAttribute('data-theme')
+        }
+      })
+    })
+    await page.goto('/training')
+    expect(
+      await page.evaluate(() => (window as unknown as { __frueh?: string | null }).__frueh ?? null),
+    ).toBe('dark')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  })
+
+  test('die eigene Wahl schlägt das System und bleibt', async ({ context }) => {
+    await seedAuth(context)
+    const page = await context.newPage()
+    await page.goto('/konto')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+    await page.getByRole('button', { name: 'Hell' }).click()
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
+
+    // Neu laden: das System sagt weiterhin dunkel, die Wahl sagt hell. Die Wahl gewinnt.
+    await page.reload()
+    await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
+  })
+})
