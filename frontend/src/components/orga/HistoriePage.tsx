@@ -108,9 +108,12 @@ export function HistoriePage() {
   const [zeitraum, setZeitraum] = useState<Zeitraum>('7')
   const [von, setVon] = useState('')
   const [bis, setBis] = useState('')
+  // '' heißt alle Arten. LOGIN_FAILED steht bewusst nicht zur Wahl: die Art ist angelegt, aber
+  // kein Code schreibt sie — ein Filter, der immer leer bleibt, wäre schlimmer als keiner.
+  const [art, setArt] = useState<'' | 'LOGIN' | 'WRITE' | 'SCORING'>('')
   // Die Antwort trägt den Schlüssel der Anfrage, zu der sie gehört: passt er nicht mehr zu den
   // Filtern, lädt die Seite noch — und eine späte Antwort auf einen alten Filter zeigt sich nie.
-  const anfrage = `${nutzer}|${zeitraum}|${von}|${bis}`
+  const anfrage = `${nutzer}|${zeitraum}|${von}|${bis}|${art}`
   const [antwort, setAntwort] = useState<{ anfrage: string; liste: AuditEntry[] | null; fehler: string | null } | null>(null)
 
   useEffect(() => {
@@ -119,11 +122,11 @@ export function HistoriePage() {
 
   useEffect(() => {
     let aktiv = true
-    getAudit({ userId: nutzer ? Number(nutzer) : undefined, ...zeitfenster(zeitraum, von, bis) })
+    getAudit({ userId: nutzer ? Number(nutzer) : undefined, kind: art || undefined, ...zeitfenster(zeitraum, von, bis) })
       .then(liste => { if (aktiv) setAntwort({ anfrage, liste, fehler: null }) })
       .catch(e => { if (aktiv) setAntwort({ anfrage, liste: null, fehler: (e as Error).message }) })
     return () => { aktiv = false }
-  }, [anfrage, nutzer, zeitraum, von, bis])
+  }, [anfrage, nutzer, zeitraum, von, bis, art])
 
   const aktuell = antwort?.anfrage === anfrage ? antwort : null
   const verlauf = aktuell?.liste ?? null
@@ -161,6 +164,15 @@ export function HistoriePage() {
           </select>
         </div>
         <div>
+          <label htmlFor="historie-art" className={labelCls}>Aktivität</label>
+          <select id="historie-art" value={art} onChange={e => setArt(e.target.value as typeof art)} className={inputCls}>
+            <option value="">Alle</option>
+            <option value="LOGIN">Anmeldungen</option>
+            <option value="WRITE">Änderungen</option>
+            <option value="SCORING">Scoring</option>
+          </select>
+        </div>
+        <div>
           <label htmlFor="historie-zeitraum" className={labelCls}>Zeitraum</label>
           <select id="historie-zeitraum" value={zeitraum} onChange={e => zeitraumWechseln(e.target.value as Zeitraum)} className={inputCls}>
             <option value="1">Letzte 24 Stunden</option>
@@ -189,7 +201,7 @@ export function HistoriePage() {
         <EmptyState
           icon={<CrossBones size={40} />}
           title="Im gewählten Zeitraum ist nichts passiert."
-          description="Wähle einen größeren Zeitraum oder einen anderen Nutzer — Anmeldungen und Änderungen erscheinen hier, sobald jemand etwas tut."
+          description="Wähle einen größeren Zeitraum, eine andere Aktivität oder einen anderen Nutzer — Anmeldungen und Änderungen erscheinen hier, sobald jemand etwas tut."
         />
       )}
       {verlauf && verlauf.length > 0 && <Verlauf eintraege={verlauf} />}

@@ -158,6 +158,7 @@ import type {
   UserAccount,
   BulkCreateResult,
   AuditEntry,
+  AuditKind,
   LastSeen,
 } from '@/types'
 
@@ -848,11 +849,12 @@ export const setUserLocked = (id: number, locked: boolean) =>
 export const deleteUser = (id: number) => request<void>(`/users/${id}`, { method: 'DELETE' })
 
 // Historie (nur Superadmin). Der Verlauf hat keine Seitenbildung: immer mit Zeitraum fragen.
-export const getAudit = (filter: { userId?: number; from?: string; to?: string }) => {
+export const getAudit = (filter: { userId?: number; from?: string; to?: string; kind?: AuditKind }) => {
   const q = new URLSearchParams()
   if (filter.userId !== undefined) q.set('userId', String(filter.userId))
   if (filter.from) q.set('from', filter.from)
   if (filter.to) q.set('to', filter.to)
+  if (filter.kind) q.set('kind', filter.kind)
   const query = q.toString()
   return request<AuditEntry[]>(`/audit${query ? `?${query}` : ''}`)
 }
