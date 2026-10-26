@@ -54,7 +54,7 @@ const PLAYER_TABS: Tab[] = [
 export function Layout() {
   const toast = useToast()
   const location = useLocation()
-  const { istAdmin } = useRolle()
+  const { istAdmin, istBestaetigtAdmin } = useRolle()
   const tabs = istAdmin ? ADMIN_TABS : PLAYER_TABS
 
   const isSubPage = location.pathname.startsWith('/gameday/')
@@ -165,7 +165,11 @@ export function Layout() {
           </div>
         </header>
 
-        {istAdmin && <WhatsappStatusBanner />}
+        {/* Nicht istAdmin: solange /api/me unbeantwortet ist, gilt jeder als Admin, damit
+            niemandem Wege wegbrechen. Das Band ist aber kein Weg — es ist eine Meldung über
+            eine Anlage, an der ein Spieler ohnehin nichts tun kann, und „Details" führt auf
+            eine Admin-Seite, die ihn zurückwirft. Im Zweifel also lieber nicht zeigen. */}
+        {istBestaetigtAdmin && <WhatsappStatusBanner />}
 
         <main className={`${shell} pb-6 xl:pb-2 pt-2 sm:pt-4 safe-bottom`}>
           <Outlet />

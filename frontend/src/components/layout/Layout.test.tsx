@@ -13,8 +13,11 @@ const ADMIN: MeResponse = { username: 'anna', role: 'ADMIN', playerId: 3, player
 const SUPER: MeResponse = { ...ADMIN, username: 'hung', role: 'SUPERADMIN' }
 const SPIELER: MeResponse = { ...ADMIN, username: 'paul', role: 'PLAYER', playerId: 9, playerName: 'Paul Pitcher' }
 
-// Der Banner pollt die WhatsApp-Kopplung — für die Reiterleiste irrelevant.
-vi.mock('./WhatsappStatusBanner', () => ({ WhatsappStatusBanner: () => null }))
+// Der Banner pollt die WhatsApp-Kopplung — für die Reiterleiste irrelevant. Als Markierung
+// gerendert, damit geprüft werden kann, WER ihn überhaupt zu sehen bekommt.
+vi.mock('./WhatsappStatusBanner', () => ({
+  WhatsappStatusBanner: () => <div data-testid="whatsapp-band" />,
+}))
 
 function renderAt(pfad: string) {
   return render(
@@ -30,6 +33,36 @@ beforeEach(() => {
 })
 
 const isTab = (el: HTMLElement) => el.closest('nav') !== null
+
+describe('WhatsApp-Band', () => {
+  const band = () => screen.queryByTestId('whatsapp-band')
+
+  it.each([ADMIN, SUPER])('zeigt es $role', me => {
+    auth.me = me
+    renderAt('/')
+    expect(band()).toBeInTheDocument()
+  })
+
+  it('zeigt es einem Spieler nicht — er kann an der Anlage nichts tun', () => {
+    auth.me = SPIELER
+    renderAt('/')
+    expect(band()).toBeNull()
+  })
+
+  it('zeigt es auch bei unbeantwortetem /api/me nicht', () => {
+    // Dort gilt sonst jeder als Admin, damit niemandem Wege wegbrechen (RequireRole hängt am
+    // selben Wert). Das Band ist kein Weg: im Zweifel lieber nicht zeigen.
+    auth.me = null
+    renderAt('/')
+    expect(band()).toBeNull()
+  })
+
+  it('lässt die Reiter davon unberührt: unbekannt zeigt weiter die Admin-Leiste', () => {
+    auth.me = null
+    renderAt('/')
+    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(5)
+  })
+})
 
 describe('Layout Reiterleiste', () => {
   it('zeigt einem Admin fünf Reiter', () => {
