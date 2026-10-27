@@ -126,8 +126,14 @@ export function StartPage() {
           <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler} />
         </Kachel>
 
-        <Kachel titel={`Dein Jahr ${jahr}`} className="col-span-2 lg:col-span-2">
-          <JahresBand termine={termine} laden={laden} fehler={fehler} rahmenlos />
+        {/*
+          „Termine", nicht „Dein Jahr". Das Band zeigt den Kalender des VEREINS — alle
+          Spieltage, alle Trainings. Unter einem Kopf, der die eigenen Zahlen traegt, las
+          sich „Dein Jahr 2026 … 0 Spieltage" wie ein Widerspruch zu den 39,5 Spielen
+          darueber. Zwei Bloecke, die beide „dein Jahr" behaupten und Verschiedenes sagen.
+        */}
+        <Kachel titel={`Termine ${jahr}`} className="col-span-2 lg:col-span-2">
+          <JahresBand termine={termine} laden={laden} fehler={fehler} />
         </Kachel>
 
         {/*

@@ -1,6 +1,4 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { Abschnittsmarke } from '@/components/shared'
 import type { Termin } from '@/hooks/useTermine'
 import { heuteIso } from '@/hooks/useTermine'
 
@@ -40,12 +38,10 @@ function saeule(n: number, hoechste: number): string | number {
  * dieselbe Unterscheidung, die die App ueberall macht: Spieltag ist das Ereignis,
  * Training der Takt dazwischen.
  */
-export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
+export function JahresBand({ termine, laden, fehler }: {
   termine: Termin[]
   laden: boolean
   fehler: boolean
-  /** Innerhalb einer aufklappbaren Karte: kein zweiter Rahmen, keine zweite Ueberschrift. */
-  rahmenlos?: boolean
 }) {
   const jahr = new Date().getFullYear()
   const heute = heuteIso()
@@ -67,19 +63,16 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
   const offen = termine.filter(t => t.datum >= heute && t.datum.startsWith(String(jahr)))
   const offeneSpieltage = offen.filter(t => t.art === 'SPIELTAG').length
   const offeneTrainings = offen.filter(t => t.art === 'TRAINING').length
+  const spieltageGesamt = monate.reduce((n, m) => n + m.spieltage, 0)
+  const trainingsGesamt = monate.reduce((n, m) => n + m.trainings, 0)
 
+  /*
+   * Kein eigener Rahmen und kein eigener Name: die Kachel drumherum heisst schon
+   * „Termine {jahr}". Ein zweiter Bereich mit demselben Namen waere fuer einen
+   * Screenreader dieselbe Ueberschrift zweimal.
+   */
   return (
-    <section
-      aria-label={`Termine ${jahr}`}
-      className={rahmenlos ? '' : 'bg-surface-raised border border-line rounded-2xl shadow-card p-4'}
-    >
-      {!rahmenlos && (
-        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted mb-3">
-          <Abschnittsmarke size="sm" />
-          Dein Jahr {jahr}
-        </h2>
-      )}
-
+    <>
       {laden ? (
         <p className="text-sm text-ink-muted">Termine laden …</p>
       ) : fehler ? (
@@ -138,24 +131,34 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
             ))}
           </ol>
 
-          <p className="text-[11px] text-ink-muted mt-2 sm:mt-3 leading-relaxed">
-            Noch offen:{' '}
-            <span className="font-semibold text-ink">{offeneSpieltage}</span>{' '}
-            {offeneSpieltage === 1 ? 'Spieltag' : 'Spieltage'} ·{' '}
-            <span className="font-semibold text-ink">{offeneTrainings}</span>{' '}
-            {offeneTrainings === 1 ? 'Training' : 'Trainings'}
-          </p>
+          {/*
+            Die Zeile IST die Legende. Vorher stand hier nur „Noch offen: 0 Spieltage ·
+            28 Trainings" — eine Zahl ueber den Rest des Jahres unter zwoelf Saeulen, die
+            das ganze Jahr zeigen, und ohne ein Wort darueber, was rot und was blau ist.
+            Wer die Farben nicht kennt, sieht einen Verlauf ohne Gegenstand.
+
+            Jetzt tragen die beiden Punkte dieselben Farben wie die Saeulen und stehen
+            neben ihrer Zahl: erst die Menge des Jahres, dann was davon noch kommt.
+
+            „noch 3", nicht „3 offen". Offen ist ein Wort aus der Verwaltung — ein Termin
+            ist nicht offen, er kommt noch oder er war.
+          */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-muted mt-2 sm:mt-3">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm bg-softball-red-600 shrink-0" aria-hidden />
+              <span><span className="font-semibold text-ink">{spieltageGesamt}</span>{' '}
+                {spieltageGesamt === 1 ? 'Spieltag' : 'Spieltage'}</span>
+              <span className="text-ink-faint">· noch {offeneSpieltage}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-sm bg-bar shrink-0" aria-hidden />
+              <span><span className="font-semibold text-ink">{trainingsGesamt}</span>{' '}
+                {trainingsGesamt === 1 ? 'Training' : 'Trainings'}</span>
+              <span className="text-ink-faint">· noch {offeneTrainings}</span>
+            </span>
+          </div>
         </>
       )}
-
-      {!rahmenlos && (
-        <Link
-          to="/kalender"
-          className="font-display mt-1 inline-flex items-center min-h-11 text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors"
-        >
-          Kalender öffnen
-        </Link>
-      )}
-    </section>
+    </>
   )
 }
