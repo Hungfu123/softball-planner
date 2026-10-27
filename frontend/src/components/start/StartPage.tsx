@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight } from 'lucide-react'
 import * as api from '@/api/client'
-import type { Season } from '@/types'
+import type { Season, PlayerFormPoint } from '@/types'
 import { useRolle } from '@/hooks/useRolle'
 import { Abschnittsmarke } from '@/components/shared'
 import { useTermine, heuteIso, saisonAusTerminen, type Termin } from '@/hooks/useTermine'
 import { JahresBand } from '@/components/dashboard/JahresBand'
 import { Begruessung } from './Begruessung'
+import { useMeineZahlen } from './useMeineZahlen'
 
 const WOCHENTAG = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
@@ -65,6 +66,7 @@ export function StartPage() {
   const aktuelle = saisons.find(s => s.id === ausTerminen) ?? juengste(saisons)
   const seasonId = aktuelle?.id ?? null
   const seasonName = aktuelle?.name ?? null
+  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, seasonId)
 
   const naechsterSpieltag = useMemo(
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
@@ -83,6 +85,8 @@ export function StartPage() {
         playerId={me?.playerId ?? null}
         seasonId={seasonId}
         seasonName={seasonName}
+        daten={daten}
+        fehler={zahlenFehler}
         ladefehler={ladefehler}
       />
 
@@ -108,6 +112,17 @@ export function StartPage() {
         <Kachel titel={`Dein Jahr ${new Date().getFullYear()}`} className="col-span-2 lg:col-span-2">
           <JahresBand termine={termine} laden={laden} fehler={fehler} rahmenlos />
         </Kachel>
+
+        {/*
+          Nur ab lg. Am Handy ist die Hoehe das knappe Gut und diese beiden sind Nachschlag,
+          keine Antwort auf die Frage, mit der man die Seite oeffnet — dort fuehrt der Weg
+          ueber das Profil und den Kalender. Am Schreibtisch ist Platz, und leer gelassener
+          Platz ist auch eine Aussage, nur keine gute.
+        */}
+        <Zuletzt verlauf={daten?.verlauf ?? []} geladen={daten != null} fehler={zahlenFehler}
+                 playerId={me?.playerId ?? null} className="hidden lg:block lg:col-span-2" />
+        <WasAnsteht termine={termine} heute={heute} laden={laden} fehler={fehler}
+                    className="hidden lg:block lg:col-span-2" />
 
         <Zaehler />
       </div>
@@ -233,6 +248,90 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
  * die Schiedsrichter, und dann zaehlt man Balls, Strikes und Outs am Zaun mit. Genau das
  * steht deshalb schon in der zugeklappten Zeile.
  */
+/**
+ * Die letzten Spiele mit der eigenen Linie — "wie lief es zuletzt", nicht "wie steht es".
+ *
+ * Der Verlauf ist schon da (er traegt die Formkurve im Kopf), also kostet diese Kachel
+ * keinen einzigen zusaetzlichen Abruf.
+ */
+function Zuletzt({ verlauf, geladen, fehler, playerId, className = '' }: {
+  verlauf: PlayerFormPoint[]
+  geladen: boolean
+  fehler: boolean
+  playerId: number | null
+  className?: string
+}) {
+  const letzte = [...verlauf].reverse().slice(0, 4)
+  return (
+    <Kachel titel="Zuletzt" zu={playerId != null ? `/players/${playerId}` : undefined} className={className}>
+      {fehler ? (
+        <p className="text-sm text-ink-muted">Deine Spiele sind gerade nicht erreichbar.</p>
+      ) : !geladen ? (
+        <p className="text-sm text-ink-muted">Spiele laden …</p>
+      ) : letzte.length === 0 ? (
+        <p className="text-sm text-ink-muted">
+          In dieser Saison ist noch kein Spiel gezählt, in dem du dran warst.
+        </p>
+      ) : (
+        <ul className="divide-y divide-line">
+          {letzte.map(p => (
+            <li key={p.gameId} className="flex items-baseline justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
+              <span className="min-w-0 flex items-baseline gap-2">
+                <span className="font-display text-[11px] font-bold tabular-nums text-ink-faint shrink-0">
+                  {p.date ? new Date(p.date + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) : '–'}
+                </span>
+                <span className="text-sm text-ink truncate">{p.opponent ?? 'Gegner offen'}</span>
+              </span>
+              <span className="text-sm text-ink-muted tabular-nums shrink-0">
+                {p.hits} von {p.atBats}
+                {p.runsBattedIn > 0 && <span className="text-ink-faint"> · {p.runsBattedIn} RBI</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Kachel>
+  )
+}
+
+/** Die naechsten Termine in einer Liste — Spieltage und Trainings gemischt, wie der Kalender sie bringt. */
+function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
+  termine: Termin[]
+  heute: string
+  laden: boolean
+  fehler: boolean
+  className?: string
+}) {
+  const naechste = termine.filter(t => t.datum >= heute).slice(0, 5)
+  return (
+    <Kachel titel="Was ansteht" zu="/kalender" className={className}>
+      {fehler ? (
+        <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
+      ) : laden ? (
+        <p className="text-sm text-ink-muted">Termine laden …</p>
+      ) : naechste.length === 0 ? (
+        <p className="text-sm text-ink-muted">Nichts angesetzt.</p>
+      ) : (
+        <ul className="divide-y divide-line">
+          {naechste.map(t => (
+            <li key={`${t.art}-${t.id}`} className="flex items-baseline justify-between gap-3 py-1.5 first:pt-0 last:pb-0">
+              <span className="min-w-0 flex items-baseline gap-2">
+                <span className="font-display text-[11px] font-bold tabular-nums text-ink-faint shrink-0 w-16">
+                  {kurz(t.datum)}
+                </span>
+                <span className="text-sm text-ink truncate">{t.titel}</span>
+              </span>
+              <span className="text-[11px] text-ink-faint shrink-0">
+                {t.zeit ?? t.ort ?? ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Kachel>
+  )
+}
+
 function Zaehler() {
   return (
     <section

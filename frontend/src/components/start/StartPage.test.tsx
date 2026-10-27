@@ -102,9 +102,13 @@ describe('Startseite', () => {
     expect(await screen.findByRole('heading', { name: /Hallo Mia Meier/ })).toBeInTheDocument()
     const kopf = screen.getByRole('region', { name: 'Meine Zahlen' })
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
-    for (const label of ['AVG', 'OBP', 'Hits', 'Spiele']) {
+    for (const label of ['AVG', 'OBP', 'OPS', 'Spiele']) {
       expect(within(kopf).getByText(label)).toBeInTheDocument()
     }
+    // Hits ist eine Zaehlung, keine Guete — die steht im Profil, nicht auf der Startseite.
+    expect(within(kopf).queryByText('Hits')).not.toBeInTheDocument()
+    // OPS geht regelmaessig ueber 1; die Vorzahl muss stehen bleiben (ZAHLEN.ops = 1.27).
+    expect(within(kopf).getByText('1.270')).toBeInTheDocument()
     expect(within(kopf).getByRole('link', { name: /Ganzes Profil/ })).toHaveAttribute('href', '/players/7')
   })
 
@@ -180,6 +184,31 @@ describe('Startseite', () => {
     expect(screen.queryByText(/Beteiligung|Anwesend|Teilnehmer|Quote/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/\d+\s*%/)).not.toBeInTheDocument()
     expect(mockApi.getPlayerUsage).not.toHaveBeenCalled()
+  })
+
+  /*
+   * Am Schreibtisch ist Platz, den das Handy nicht hat. Diese beiden Kacheln sind
+   * Nachschlag, keine Antwort auf die Frage, mit der man die Seite oeffnet — deshalb
+   * stehen sie nur ab lg. Beide kosten keinen zusaetzlichen Abruf: der Verlauf traegt
+   * schon die Formkurve, die Termine schon die beiden Kacheln darueber.
+   */
+  it('zeigt am Schreibtisch zusätzlich die letzten Spiele und die nächsten Termine', async () => {
+    mockApi.getPlayerBattingTimeline.mockResolvedValue([
+      { gameId: 1, date: '2026-06-01', opponent: 'Berlin Bears', seasonId: 1, seasonName: null, year: 2026,
+        plateAppearances: 4, atBats: 4, hits: 2, walks: 0, strikeouts: 1, runsBattedIn: 2,
+        totalBases: 3, timesOnBase: 2, rollingAverage: 0.5 },
+    ])
+    rendern()
+    const zuletzt = await kachel('Zuletzt')
+    expect(zuletzt.className).toMatch(/hidden lg:block/)
+    await waitFor(() => expect(zuletzt.textContent).toMatch(/Berlin Bears/))
+    expect(zuletzt.textContent).toMatch(/2 von 4/)
+    expect(zuletzt.textContent).toMatch(/2 RBI/)
+
+    const ansteht = await kachel('Was ansteht')
+    expect(ansteht.className).toMatch(/hidden lg:block/)
+    expect(ansteht.textContent).toMatch(/Do · 18\. Juni/)
+    expect(ansteht).toHaveAttribute('href', '/kalender')
   })
 
   it('erklärt den Zähler, statt ihn nur zu verlinken', async () => {

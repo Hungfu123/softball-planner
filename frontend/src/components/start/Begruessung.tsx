@@ -1,20 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import * as api from '@/api/client'
 import { PositionBadges } from '@/components/players/PositionBadges'
-import type { Player, PlayerBattingStatsResponse, PlayerFormPoint, SeasonPlayerStats } from '@/types'
+import type { PlayerFormPoint } from '@/types'
+import type { MeineZahlen } from './useMeineZahlen'
 
-/** `.355` statt `0.355` — Schlagzahlen schreibt man im Baseball ohne die fuehrende Null. */
+/**
+ * `.355` statt `0.355` — Schlagzahlen schreibt man im Baseball ohne die fuehrende Null.
+ *
+ * Ab 1 bleibt die Stelle stehen: OPS ueberschreitet die 1 regelmaessig, und `1.010` ohne
+ * Vorzahl waere keine Konvention, sondern ein Lesefehler.
+ */
 function quote(v: number): string {
   const s = v.toFixed(3)
-  return s.startsWith('0') ? s.slice(1) : s
-}
-
-interface Daten {
-  schlag: PlayerBattingStatsResponse | null
-  spiele: SeasonPlayerStats | null
-  verlauf: PlayerFormPoint[]
-  spieler: Player | null
+  return s.startsWith('0.') ? s.slice(1) : s
 }
 
 /**
@@ -22,49 +20,21 @@ interface Daten {
  *
  * Das Erste, was man sieht, soll von einem selbst handeln — danach erst vom Verein.
  * Deshalb steht hier der Name, direkt darunter die Position (die Frage "wo spiele ich
- * eigentlich" beantwortet sonst keine Seite auf einen Blick) und dann vier Zahlen.
+ * eigentlich" beantwortet sonst keine Seite auf einen Blick) und dann drei Zahlen plus
+ * die Menge dahinter.
  *
- * Bewusst kompakt: der Block und die drei zugeklappten Karten darunter sollen auf einen
- * Handy-Bildschirm passen. Wer mehr will, hat das Profil einen Knopf entfernt.
- *
- * `fehler` trennt "noch nicht geschlagen" von "Server antwortet nicht". Ohne diese
- * Trennung sieht beides wie eine leere Bilanz aus, und das eine ist eine Aussage ueber
- * die Person, das andere ueber die Leitung.
+ * Die Daten kommen von aussen: den Verlauf braucht auch die Kachel mit den letzten
+ * Spielen, und zwei Haken holten dieselben Listen zweimal.
  */
-export function Begruessung({ name, playerId, seasonId, seasonName, ladefehler = false }: {
+export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehler, ladefehler = false }: {
   name: string | null
   playerId: number | null
   seasonId: number | null
   seasonName?: string | null
+  daten: MeineZahlen | null
+  fehler: boolean
   ladefehler?: boolean
 }) {
-  const [daten, setDaten] = useState<Daten | null>(null)
-  const [fehler, setFehler] = useState(false)
-  const schluessel = `${seasonId}:${playerId}`
-
-  useEffect(() => {
-    if (seasonId == null || playerId == null) return
-    let abgebrochen = false
-    setDaten(null)
-    setFehler(false)
-    Promise.all([
-      api.getSeasonBattingStats(seasonId),
-      api.getSeasonStats(seasonId),
-      api.getPlayerBattingTimeline(playerId).catch(() => [] as PlayerFormPoint[]),
-      api.getPlayer(playerId).catch(() => null),
-    ]).then(([schlag, spiele, verlauf, spieler]) => {
-      if (abgebrochen) return
-      setDaten({
-        schlag: schlag.find(s => s.playerId === playerId) ?? null,
-        spiele: spiele.find(s => s.playerId === playerId) ?? null,
-        verlauf: verlauf.filter(p => p.seasonId === seasonId),
-        spieler,
-      })
-    }).catch(() => { if (!abgebrochen) setFehler(true) })
-    return () => { abgebrochen = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schluessel])
-
   const leer = daten && !daten.schlag && !daten.spiele
 
   return (
@@ -125,9 +95,15 @@ export function Begruessung({ name, playerId, seasonId, seasonName, ladefehler =
         ) : (
           <>
             <dl className="grid grid-cols-4 gap-1.5 sm:gap-2">
+              {/*
+                AVG, OBP, OPS — und die Menge dahinter. Hits ist eine Zaehlung, keine Guete:
+                wer oft drankommt, hat viele, und zwei Zeilen tiefer im Profil stehen sie
+                ohnehin. OPS fasst Treffen und Auf-Base-Kommen in einer Zahl zusammen und
+                ist damit das Einzige hier, was man mit einem Blick vergleichen kann.
+              */}
               <Kennzahl wert={daten.schlag ? quote(daten.schlag.battingAverage) : '–'} label="AVG" />
               <Kennzahl wert={daten.schlag ? quote(daten.schlag.onBasePct) : '–'} label="OBP" />
-              <Kennzahl wert={daten.schlag ? String(daten.schlag.hits) : '–'} label="Hits" />
+              <Kennzahl wert={daten.schlag ? quote(daten.schlag.ops) : '–'} label="OPS" />
               <Kennzahl wert={daten.spiele ? String(daten.spiele.totalGames) : '–'} label="Spiele" />
             </dl>
             <Verlauf punkte={daten.verlauf} />
