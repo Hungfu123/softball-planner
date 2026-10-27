@@ -225,7 +225,17 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   fuer jeden Angemeldeten offen** und streicht Spielern die Teilnehmerzahl heraus — WANN
   trainiert wird, darf jeder wissen, WER da war, bleibt bei den Trainern. Der Waechter in
   `PlayerDashboard.test.tsx` prueft deshalb nicht auf das Wort „Training", sondern auf jede
-  Zahl zur Beteiligung. **Vorgabe des Zeitraums ist das laufende JAHR**, eine Saison daraus ist
+  Zahl zur Beteiligung. **Die EIGENE Anwesenheit sieht man seit dem 27.10.2026** (ausdrueckliche
+  Entscheidung des Betreibers): das Jahresband faerbt den Trainings-Balken je Monat soweit aus,
+  wie man da war (`GET /api/players/{id}/training-months?year=`), und die Legende zaehlt es
+  zusammen. Fremde Zahlen bleiben zu — der Endpunkt antwortet dort mit **403**, und
+  `/usage` nullt die Trainingsfelder weiter
+  (`CurrentUser.darfTrainingszahlenSehenVon`: Trainer immer, sonst nur bei sich selbst).
+  **Was dadurch NICHT sichtbar wird, ist die gewichtete Quote der Auto-Aufstellung** — die
+  `TrainingParticipationCalculator` rechnet ohne Termine mit eingeschraenktem Teilnehmerkreis
+  und bleibt bei den Trainern. Der Unterschied ist der ganze Punkt: eine Zaehlung ueber sich
+  selbst ist Auskunft, eine Quote im Vergleich ist ein Anspruch. `SpielerLeserechteIntegrationTest`
+  haelt beides fest. **Vorgabe des Zeitraums ist das laufende JAHR**, eine Saison daraus ist
   **waehlbar** (`bereich.ts` + `useMeineZahlen`: Jahr → `/api/years/{jahr}/batting-stats`
   + `/stats`, Saison → `/api/seasons/{id}/…`; der Verlauf kommt einmal ganz und wird auf
   `p.year` bzw. `p.seasonId` zugeschnitten). Ein Jahr traegt oft mehrere Saisons

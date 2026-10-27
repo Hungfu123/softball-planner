@@ -1,6 +1,7 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight } from 'lucide-react'
+import * as api from '@/api/client'
 import type { PlayerFormPoint } from '@/types'
 import { FeldMiniatur } from './FeldMiniatur'
 import { useRolle } from '@/hooks/useRolle'
@@ -82,6 +83,7 @@ export function StartPage() {
   const saisons = useSaisonsDesJahres(jahr)
   const bereich = bereichAus(wahl, jahr, saisons)
   const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, bereich)
+  const eigeneTrainings = useEigeneTrainings(me?.playerId ?? null, jahr)
 
   const naechsterSpieltag = useMemo(
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
@@ -133,7 +135,7 @@ export function StartPage() {
           darueber. Zwei Bloecke, die beide „dein Jahr" behaupten und Verschiedenes sagen.
         */}
         <Kachel titel={`Termine ${jahr}`} className="col-span-2 lg:col-span-2">
-          <JahresBand termine={termine} laden={laden} fehler={fehler} />
+          <JahresBand termine={termine} laden={laden} fehler={fehler} eigeneTrainings={eigeneTrainings} />
         </Kachel>
 
         {/*
@@ -540,4 +542,25 @@ function Zaehler() {
       <ChevronRight size={16} className="absolute right-3 top-3.5 sm:right-3.5 sm:top-4 text-spotlight-ink/60" aria-hidden />
     </Link>
   )
+}
+
+/**
+ * Die eigene Trainings-Anwesenheit je Monat — und nur die eigene.
+ *
+ * Seit dem 27.10.2026 darf man sie sehen (Entscheidung des Betreibers); fremde bleiben
+ * verborgen, der Server antwortet dort mit 403. Scheitert der Abruf, bleibt es bei `null`:
+ * das Band ist dann der reine Terminplan, so wie es vorher immer war. Eine fehlende Auskunft
+ * darf nicht wie „du warst nie da" aussehen.
+ */
+function useEigeneTrainings(playerId: number | null, jahr: number) {
+  const [monate, setMonate] = useState<Record<string, number> | null>(null)
+  useEffect(() => {
+    if (playerId == null) return
+    let abgebrochen = false
+    api.getPlayerTrainingMonths(playerId, jahr)
+      .then(m => { if (!abgebrochen) setMonate(m) })
+      .catch(() => { if (!abgebrochen) setMonate(null) })
+    return () => { abgebrochen = true }
+  }, [playerId, jahr])
+  return monate
 }

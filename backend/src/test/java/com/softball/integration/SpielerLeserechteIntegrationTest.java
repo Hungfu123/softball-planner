@@ -2,8 +2,11 @@ package com.softball.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.softball.MitSuperadmin;
+import com.softball.domain.model.Role;
 import com.softball.TestcontainersConfig;
+import com.softball.adapter.out.persistence.entity.AppUserEntity;
 import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.repository.SpringAppUserRepository;
 import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
 import com.softball.adapter.out.persistence.repository.SpringTrainingAttendanceRepository;
 import com.softball.adapter.out.persistence.repository.SpringTrainingRepository;
@@ -28,9 +31,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Was ein Spieler lesen darf — und die Trainingsbeteiligung, die er nie sieht, auch nicht die
- * eigene: die Auto-Aufstellung gewichtet sie, und wer seine Quote kennt, leitet daraus einen
- * Anspruch auf einen Lineup-Platz ab.
+ * Was ein Spieler lesen darf — und die Trainingsbeteiligung FREMDER Spieler, die er nie sieht.
+ * <p>
+ * Die eigenen Zahlen sieht er seit dem 27.10.2026 (Entscheidung des Betreibers). Bis dahin war
+ * auch die eigene Quote zu, mit der Begruendung: die Auto-Aufstellung gewichtet sie, und wer
+ * seine Zahl kennt, leitet daraus einen Anspruch auf einen Lineup-Platz ab. Geblieben ist die
+ * Haelfte, die wirklich traegt — der VERGLEICH mit dem Nebenmann. Ueber sich selbst darf man
+ * Bescheid wissen.
  * <p>
  * Die Berechtigung greift vor dem Controller: eine nicht vorhandene id liefert bei offenen
  * Endpunkten 404, bei geschlossenen 403. Daran unterscheiden die Tests, ohne Daten anzulegen.
@@ -51,27 +58,45 @@ class SpielerLeserechteIntegrationTest {
     @Autowired private SpringPlayerRepository playerRepository;
     @Autowired private SpringTrainingRepository trainingRepository;
     @Autowired private SpringTrainingAttendanceRepository attendanceRepository;
+    @Autowired private SpringAppUserRepository appUserRepository;
 
     private PlayerEntity player;
+    /** Der Account, der AN diesem Spieler haengt — ohne ihn gibt es kein „eigenes" Profil. */
+    private static final String EIGENER_NAME = "max-eigen";
 
     @BeforeEach
     void setUp() {
         player = new PlayerEntity("Max");
         player.setRegular(true);
         player = playerRepository.save(player);
+
+        final AppUserEntity konto = new AppUserEntity();
+        konto.setUsername(EIGENER_NAME);
+        konto.setPlayerId(player.getId());
+        konto.setPasswordHash("egal");
+        konto.setRole(Role.PLAYER);
+        konto.setCreatedAt(java.time.Instant.now());
+        appUserRepository.save(konto);
     }
 
     @AfterEach
     void tearDown() {
+        appUserRepository.findByUsernameIgnoreCase(EIGENER_NAME).ifPresent(appUserRepository::delete);
         attendanceRepository.deleteAll();
         trainingRepository.deleteAll();
         playerRepository.deleteAll();
+    }
+
+    /** Der Spieler selbst — der Account haengt an `player`. */
+    private RequestPostProcessor eigen() {
+        return user(EIGENER_NAME).roles("PLAYER");
     }
 
     // ---- Trainingszahlen bleiben verborgen ----
 
     @Test
     void spielerSiehtKeineTrainingszahlenImFremdenProfil() throws Exception {
+        // `SPIELER` haengt an keinem Spieler — fuer ihn ist jedes Profil ein fremdes.
         mockMvc.perform(get("/api/players/" + player.getId() + "/usage").with(SPIELER))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.trainingsTotal").value(org.hamcrest.Matchers.nullValue()))
@@ -79,14 +104,33 @@ class SpielerLeserechteIntegrationTest {
             .andExpect(jsonPath("$.gameDaysTotal").isNumber());
     }
 
+    /*
+     * Die Umkehr vom 27.10.2026: ueber sich selbst darf man Bescheid wissen. Der Vergleich mit
+     * dem Nebenmann war das Problem, nicht das Wissen — und der bleibt zu (Test darueber).
+     */
     @Test
-    void spielerSiehtKeineTrainingszahlenImEigenenProfil() throws Exception {
-        // Auch die eigene Quote bleibt zu: der Vergleich mit dem Nebenmann ist das Problem, nicht das Geheimnis.
+    void spielerSiehtDieEIGENENTrainingszahlen() throws Exception {
         mockMvc.perform(get("/api/players/" + player.getId() + "/usage").param("year", "2026")
-                .with(user("max").roles("PLAYER")))
+                .with(eigen()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.trainingsTotal").value(org.hamcrest.Matchers.nullValue()))
-            .andExpect(jsonPath("$.trainingsAttended").value(org.hamcrest.Matchers.nullValue()));
+            .andExpect(jsonPath("$.trainingsTotal").isNumber())
+            .andExpect(jsonPath("$.trainingsAttended").isNumber());
+    }
+
+    /** Die Monatskarte der Startseite — eigene ja, fremde 403. */
+    @Test
+    void monatskarteNurFuerSichSelbst() throws Exception {
+        mockMvc.perform(get("/api/players/" + player.getId() + "/training-months")
+                .param("year", "2026").with(eigen()))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/players/" + player.getId() + "/training-months")
+                .param("year", "2026").with(SPIELER))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/players/" + player.getId() + "/training-months")
+                .param("year", "2026").with(ADMIN))
+            .andExpect(status().isOk());
     }
 
     @Test

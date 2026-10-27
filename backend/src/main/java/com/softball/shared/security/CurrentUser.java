@@ -55,11 +55,12 @@ public class CurrentUser {
     }
 
     /**
-     * Darf der Angemeldete Trainingszahlen (Beteiligung, Teilnehmerzahl) sehen? Spieler nie, auch
-     * nicht die eigenen: die Auto-Aufstellung gewichtet sie, und wer seine Quote kennt, leitet
-     * daraus einen Anspruch auf einen Lineup-Platz ab. Die Entscheidung folgt den Berechtigungen
-     * der Anmeldung und ist verschlossen: wer keine Admin-Rolle traegt, sieht nichts, auch eine
-     * kuenftige Rolle nicht.
+     * Darf der Angemeldete FREMDE Trainingszahlen (Beteiligung, Teilnehmerzahl) sehen? Nur Trainer.
+     * Die Entscheidung folgt den Berechtigungen der Anmeldung und ist verschlossen: wer keine
+     * Admin-Rolle traegt, sieht nichts, auch eine kuenftige Rolle nicht.
+     *
+     * <p>Fuer die EIGENEN Zahlen gilt seit dem 27.10.2026 etwas anderes — siehe
+     * {@link #darfTrainingszahlenSehenVon(Long)}.
      */
     public boolean darfTrainingszahlenSehen() {
         final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -69,5 +70,26 @@ public class CurrentUser {
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(a -> ("ROLE_" + Role.ADMIN).equals(a) || ("ROLE_" + Role.SUPERADMIN).equals(a));
+    }
+
+    /**
+     * Darf der Angemeldete die Trainingszahlen DIESES Spielers sehen? Trainer immer, jeder
+     * andere nur bei sich selbst.
+     *
+     * <p>Bis zum 27.10.2026 war auch die eigene Zahl zu, mit der Begruendung: die
+     * Auto-Aufstellung gewichtet die Beteiligung, und wer seine Quote kennt, leitet daraus einen
+     * Anspruch auf einen Lineup-Platz ab. Der Betreiber hat das ausdruecklich geaendert — die
+     * eigene Anwesenheit darf man sehen, die des Nebenmanns nicht. Der VERGLEICH war das
+     * Problem, nicht das Wissen ueber sich selbst.
+     *
+     * <p>Was dadurch NICHT sichtbar wird: die gewichtete Quote der Auto-Aufstellung
+     * ({@code TrainingParticipationCalculator}, ohne Termine mit eingeschraenktem
+     * Teilnehmerkreis). Sichtbar ist die schlichte Anwesenheit — wie oft war ich da.
+     */
+    public boolean darfTrainingszahlenSehenVon(final Long playerId) {
+        if (darfTrainingszahlenSehen()) {
+            return true;
+        }
+        return playerId != null && find().map(u -> playerId.equals(u.getPlayerId())).orElse(false);
     }
 }

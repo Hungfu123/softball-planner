@@ -38,10 +38,15 @@ function saeule(n: number, hoechste: number): string | number {
  * dieselbe Unterscheidung, die die App ueberall macht: Spieltag ist das Ereignis,
  * Training der Takt dazwischen.
  */
-export function JahresBand({ termine, laden, fehler }: {
+export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
   termine: Termin[]
   laden: boolean
   fehler: boolean
+  /**
+   * Eigene Trainings-Anwesenheit je Monat (1..12). `null`, solange sie niemanden angeht
+   * oder noch nicht da ist — dann bleibt das Band der reine Terminplan.
+   */
+  eigeneTrainings?: Record<string, number> | null
 }) {
   const jahr = new Date().getFullYear()
   const heute = heuteIso()
@@ -65,6 +70,10 @@ export function JahresBand({ termine, laden, fehler }: {
   const offeneTrainings = offen.filter(t => t.art === 'TRAINING').length
   const spieltageGesamt = monate.reduce((n, m) => n + m.spieltage, 0)
   const trainingsGesamt = monate.reduce((n, m) => n + m.trainings, 0)
+  const eigene = eigeneTrainings ?? null
+  const eigeneGesamt = eigene ? Object.values(eigene).reduce((a, b) => a + b, 0) : null
+  /** Wie oft dieser Monat besucht wurde — nie mehr, als angesetzt war. */
+  const besucht = (i: number) => Math.min(eigene?.[String(i + 1)] ?? 0, monate[i].trainings)
 
   /*
    * Kein eigener Rahmen und kein eigener Name: die Kachel drumherum heisst schon
@@ -92,7 +101,8 @@ export function JahresBand({ termine, laden, fehler }: {
                   className="flex-1 max-w-[2.75rem] flex flex-col justify-end gap-px h-full"
                   title={gesamt === 0
                     ? `${MONATSNAMEN[i]}: nichts angesetzt`
-                    : `${MONATSNAMEN[i]}: ${m.spieltage} Spieltage, ${m.trainings} Trainings`}
+                    : `${MONATSNAMEN[i]}: ${m.spieltage} Spieltage, ${m.trainings} Trainings`
+                      + (eigene != null ? ` — du bei ${besucht(i)}` : '')}
                 >
                   {m.spieltage > 0 && (
                     <span
@@ -100,11 +110,38 @@ export function JahresBand({ termine, laden, fehler }: {
                       style={{ height: skala(m.spieltage) }}
                     />
                   )}
-                  {m.trainings > 0 && (
+                  {/*
+                    Mit eigener Anwesenheit spaltet sich der Trainings-Balken: unten voll
+                    eingefaerbt, wo man da war, darueber blass der Rest. Gefuellt heisst
+                    „warst du", blass heisst „warst du nicht oder kommt noch" — eine
+                    Bedeutung fuer die Fuellung im ganzen Band.
+
+                    Die Abblendung vergangener Monate entfaellt dann fuer die Trainings:
+                    zwei Helligkeiten fuer zwei verschiedene Dinge im selben Balken liest
+                    niemand auseinander. Fuer die Spieltage oben bleibt sie — dort gibt es
+                    nichts zu fuellen.
+                  */}
+                  {m.trainings > 0 && eigene == null && (
                     <span
                       className={`block w-full rounded-sm bg-bar ${vorbei ? 'opacity-30' : ''}`}
                       style={{ height: skala(m.trainings) }}
                     />
+                  )}
+                  {m.trainings > 0 && eigene != null && (
+                    <>
+                      {m.trainings - besucht(i) > 0 && (
+                        <span
+                          className="block w-full rounded-sm bg-bar opacity-30"
+                          style={{ height: skala(m.trainings - besucht(i)) }}
+                        />
+                      )}
+                      {besucht(i) > 0 && (
+                        <span
+                          className="block w-full rounded-sm bg-bar"
+                          style={{ height: skala(besucht(i)) }}
+                        />
+                      )}
+                    </>
                   )}
                   {gesamt === 0 && <span className="block w-full h-[2px] rounded-sm bg-bar-track" />}
                 </li>
@@ -154,6 +191,11 @@ export function JahresBand({ termine, laden, fehler }: {
               <span className="w-2 h-2 rounded-sm bg-bar shrink-0" aria-hidden />
               <span><span className="font-semibold text-ink">{trainingsGesamt}</span>{' '}
                 {trainingsGesamt === 1 ? 'Training' : 'Trainings'}</span>
+              {eigeneGesamt != null && (
+                <span className="text-ink-faint">
+                  · <span className="font-semibold text-ink">du {eigeneGesamt}</span>
+                </span>
+              )}
               <span className="text-ink-faint">· noch {offeneTrainings}</span>
             </span>
           </div>

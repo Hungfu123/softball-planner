@@ -23,6 +23,7 @@ vi.mock('@/api/client', () => ({
   getSeasonBattingStats: vi.fn(),
   getSeasonStats: vi.fn(),
   getPlayerBattingTimeline: vi.fn(),
+  getPlayerTrainingMonths: vi.fn(),
   getPlayer: vi.fn(),
   getPlayerUsage: vi.fn(),
 }))
@@ -105,6 +106,7 @@ describe('Startseite', () => {
       { playerId: 7, playerName: 'Mia Meier', totalGames: 12, positionCounts: {} } as SeasonPlayerStats,
     ])
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
+    mockApi.getPlayerTrainingMonths.mockResolvedValue({ '1': 1, '6': 2 })
     mockApi.getPlayer.mockResolvedValue(ICH)
   })
   afterEach(() => { vi.useRealTimers() })
@@ -179,7 +181,7 @@ describe('Startseite', () => {
     const jahr = await kachel('Termine 2026')
     // Die Zeile ist zugleich die Legende: Menge des Jahres, dann was davon noch kommt.
     expect(jahr.textContent).toMatch(/2\s*Spieltage\s*· noch 1/)
-    expect(jahr.textContent).toMatch(/3\s*Trainings\s*· noch 2/)
+    expect(jahr.textContent).toMatch(/3\s*Trainings\s*· du 3\s*· noch 2/)
   })
 
   /* Am Handy ist eine ganze Kachel das bessere Ziel als ein Wort darunter. */
@@ -217,15 +219,29 @@ describe('Startseite', () => {
   })
 
   /*
-   * Die Trainingsbeteiligung fliesst in die Auto-Aufstellung ein und bleibt vor Spielern
-   * verborgen, auch vor ihrer eigenen. Geheim ist die BETEILIGUNG, nicht der Termin.
+   * Seit dem 27.10.2026 sieht man die EIGENE Anwesenheit („du 3"), aber weiterhin nicht die
+   * QUOTE, die die Auto-Aufstellung gewichtet — und nicht die der anderen. Der Unterschied
+   * ist der ganze Punkt: eine Zahl ueber sich selbst ist Auskunft, eine Quote im Vergleich
+   * ist ein Anspruch. Deshalb steht hier eine Zaehlung und nirgends ein Prozentwert.
    */
-  it('sagt wann trainiert wird, aber nichts über die Beteiligung', async () => {
+  it('zeigt die eigene Anwesenheit, aber keine Quote und keine fremde Zahl', async () => {
     rendern()
-    await kachel('Nächstes Training')
-    expect(screen.queryByText(/Beteiligung|Anwesend|Teilnehmer|Quote/i)).not.toBeInTheDocument()
+    const jahr = await kachel('Termine 2026')
+    await waitFor(() => expect(jahr.textContent).toMatch(/du 3/))
+    expect(mockApi.getPlayerTrainingMonths).toHaveBeenCalledWith(7, 2026)
+
+    expect(screen.queryByText(/Beteiligung|Quote/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/\d+\s*%/)).not.toBeInTheDocument()
     expect(mockApi.getPlayerUsage).not.toHaveBeenCalled()
+  })
+
+  /* Ohne Auskunft bleibt das Band der reine Terminplan — nicht „du warst nie da". */
+  it('zeigt keine eigene Zahl, wenn der Abruf scheitert', async () => {
+    mockApi.getPlayerTrainingMonths.mockRejectedValue(new Error('403'))
+    rendern()
+    const jahr = await kachel('Termine 2026')
+    await waitFor(() => expect(jahr.textContent).toMatch(/Trainings/))
+    expect(jahr.textContent).not.toMatch(/du \d/)
   })
 
   /*
