@@ -19,6 +19,9 @@ vi.mock('@/api/client', () => ({
   getTrainings: vi.fn(),
   getYearBattingStats: vi.fn(),
   getYearStats: vi.fn(),
+  getYearSeasons: vi.fn(),
+  getSeasonBattingStats: vi.fn(),
+  getSeasonStats: vi.fn(),
   getPlayerBattingTimeline: vi.fn(),
   getPlayer: vi.fn(),
   getPlayerUsage: vi.fn(),
@@ -89,6 +92,13 @@ describe('Startseite', () => {
     mockApi.getAllGameDays.mockResolvedValue([spieltag(1, '2026-07-04'), spieltag(2, '2026-03-01')])
     mockApi.getTrainings.mockResolvedValue([
       training(1, '2026-06-18'), training(2, '2026-06-20'), training(3, '2026-01-10'),
+    ])
+    mockApi.getYearSeasons.mockResolvedValue([
+      { id: 1, name: 'Liga 2026', year: 2026 }, { id: 2, name: 'Trainingsspiele', year: 2026 },
+    ])
+    mockApi.getSeasonBattingStats.mockResolvedValue([{ ...ZAHLEN, battingAverage: 0.2, ops: 0.6 }])
+    mockApi.getSeasonStats.mockResolvedValue([
+      { playerId: 7, playerName: 'Mia Meier', totalGames: 1, positionCounts: {} } as SeasonPlayerStats,
     ])
     mockApi.getYearBattingStats.mockResolvedValue([ZAHLEN])
     mockApi.getYearStats.mockResolvedValue([
@@ -307,8 +317,9 @@ describe('Startseite', () => {
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
     expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2026)
     expect(mockApi.getYearStats).toHaveBeenCalledWith(2026)
-    // Der Zeitraum steht neben den Zahlen — und ist derselbe wie auf der Kachel darunter.
-    expect(within(kopf).getByText('2026')).toBeInTheDocument()
+    // Der Zeitraum steht waehlbar neben den Zahlen — Vorgabe ist das ganze Jahr.
+    expect(within(kopf).getByRole('combobox', { name: 'Zeitraum wählen' })).toHaveValue('jahr')
+    expect(mockApi.getSeasonBattingStats).not.toHaveBeenCalled()
     await kachel('Dein Jahr 2026')
   })
 
@@ -330,6 +341,45 @@ describe('Startseite', () => {
     const zuletzt = await kachel('Zuletzt')
     await waitFor(() => expect(zuletzt.textContent).toMatch(/Berlin Bears/))
     expect(zuletzt.textContent).not.toMatch(/Altes Jahr/)
+  })
+
+  /*
+   * Das Jahr ist die Vorgabe, nicht das Gesetz: wer wissen will, wie er in der Liga
+   * dasteht und nicht gemischt mit den Trainingsspielen, stellt hier um. Entscheidend
+   * ist, dass die Seite das NICHT selbst tut — genau daran ist sie vorher gescheitert.
+   */
+  it('lässt eine Saison des Jahres wählen und merkt sich die Wahl', async () => {
+    rendern()
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
+
+    const auswahl = within(kopf).getByRole('combobox', { name: 'Zeitraum wählen' })
+    fireEvent.change(auswahl, { target: { value: 's1' } })
+
+    await waitFor(() => expect(within(kopf).getByText('.200')).toBeInTheDocument())
+    expect(mockApi.getSeasonBattingStats).toHaveBeenCalledWith(1)
+    expect(within(kopf).getByText('1')).toBeInTheDocument()
+    expect(localStorage.getItem('startseite-bereich')).toBe('1')
+  })
+
+  /* Eine gemerkte Saison aus einem anderen Jahr ist kein Zeitraum, sondern ein Rest. */
+  it('fällt auf das Jahr zurück, wenn die gemerkte Saison nicht mehr dazugehört', async () => {
+    localStorage.setItem('startseite-bereich', '99')
+    rendern()
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
+    expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2026)
+    expect(mockApi.getSeasonBattingStats).not.toHaveBeenCalled()
+  })
+
+  /* Eine Auswahl mit einem einzigen Eintrag ist keine Auswahl. */
+  it('zeigt die Jahreszahl statt einer Auswahl, wenn das Jahr nur eine Saison hat', async () => {
+    mockApi.getYearSeasons.mockResolvedValue([{ id: 1, name: 'Liga 2026', year: 2026 }])
+    rendern()
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
+    expect(within(kopf).queryByRole('combobox', { name: 'Zeitraum wählen' })).not.toBeInTheDocument()
+    expect(within(kopf).getByText('2026')).toBeInTheDocument()
   })
 
   it('erklärt leere Zahlen: noch nicht geschlagen und wann sie kommen', async () => {

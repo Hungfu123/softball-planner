@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PositionBadges } from '@/components/players/PositionBadges'
 import { cumulativeSeries, MIN_AT_BATS, type CumulativePoint, type Metric } from '@/components/players/formSeries'
+import type { Season } from '@/types'
+import type { Bereich, Wahl } from './bereich'
 import type { MeineZahlen } from './useMeineZahlen'
+
+/*
+ * Derselbe Pfeil wie am Pillen-Select der hellen Seiten, nur hell gezeichnet: der Kopf ist
+ * in BEIDEN Themes dunkel, ein graues Zeichen verschwindet darauf.
+ */
+const PFEIL_HELL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-opacity='0.75' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`
 
 /**
  * Was die Zahl bedeutet, in einem Satz.
@@ -52,11 +60,17 @@ function quote(v: number): string {
  * Die Daten kommen von aussen: den Verlauf braucht auch die Kachel mit den letzten
  * Spielen, und zwei Haken holten dieselben Listen zweimal.
  */
-export function Begruessung({ name, playerId, jahr, daten, fehler }: {
+export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWahl, daten, fehler }: {
   name: string | null
   playerId: number | null
-  /** Der Zeitraum, den die Zahlen abdecken — dasselbe Jahr, das das Band darunter zeigt. */
+  /** Das laufende Jahr — die Vorgabe und der Rueckfall jeder Auswahl. */
   jahr: number
+  /** Der Zeitraum, den die Zahlen gerade abdecken. `null`, solange er nicht feststeht. */
+  bereich: Bereich | null
+  /** Die Saisons dieses Jahres. `null` = noch nicht geladen, leer = keine Auswahl. */
+  saisons: Season[] | null
+  wahl: Wahl
+  onWahl: (w: Wahl) => void
   daten: MeineZahlen | null
   fehler: boolean
 }) {
@@ -86,11 +100,9 @@ export function Begruessung({ name, playerId, jahr, daten, fehler }: {
           <h1 className="font-headline text-[1.75rem] sm:text-4xl lg:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-none">
             Hallo {name ?? 'zusammen'}
           </h1>
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {daten?.spieler && <PositionBadges player={daten.spieler} size="sm" tone="dark" />}
-            {/* Der Zeitraum der Zahlen, direkt neben ihnen. Hier stand einmal der Name
-                einer Saison — und zwar der falschen, weil ein Jahr mehrere traegt. */}
-            <span className="text-[11px] text-white/70 tabular-nums">{jahr}</span>
+            <Zeitraum jahr={jahr} saisons={saisons} wahl={wahl} onWahl={onWahl} />
           </div>
         </div>
         {playerId != null && (
@@ -111,11 +123,11 @@ export function Begruessung({ name, playerId, jahr, daten, fehler }: {
           </p>
         ) : fehler ? (
           <p className="text-sm text-white/70">Zahlen gerade nicht erreichbar.</p>
-        ) : !daten ? (
+        ) : !daten || !bereich ? (
           <p className="text-sm text-white/70">Zahlen laden …</p>
         ) : leer ? (
           <p className="text-sm text-white/70">
-            {jahr} noch nicht geschlagen.
+            {bereich.art === 'jahr' ? bereich.jahr : bereich.name} — noch nicht geschlagen.
           </p>
         ) : (
           <>
@@ -150,6 +162,52 @@ export function Begruessung({ name, playerId, jahr, daten, fehler }: {
     </section>
   )
 }
+
+/**
+ * Der Zeitraum der Zahlen — und zwar waehlbar, nicht geraten.
+ *
+ * Vorgabe ist das Jahr. Wer wissen will, wie er in der Liga dasteht (und nicht gemischt mit
+ * den Trainingsspielen), stellt hier um; die Wahl bleibt auf dem Geraet. Gibt es im Jahr nur
+ * eine Saison, gibt es nichts zu waehlen — dann steht die Jahreszahl einfach da.
+ *
+ * Nativ statt nachgebaut, wie der Pillen-Select der hellen Seiten: der System-Picker am
+ * Handy schlaegt jede eigene Liste. Die `<option>`-Zeilen bekommen eigene Farben, weil sie
+ * sonst die weisse Schrift des Selects in ein helles Systemmenue tragen.
+ */
+function Zeitraum({ jahr, saisons, wahl, onWahl }: {
+  jahr: number
+  saisons: Season[] | null
+  wahl: Wahl
+  onWahl: (w: Wahl) => void
+}) {
+  if (!saisons || saisons.length < 2) {
+    return <span className="text-[11px] text-white/70 tabular-nums">{jahr}</span>
+  }
+  return (
+    <select
+      aria-label="Zeitraum wählen"
+      value={wahl === 'jahr' ? 'jahr' : `s${wahl}`}
+      onChange={e => onWahl(e.target.value === 'jahr' ? 'jahr' : Number(e.target.value.slice(1)))}
+      className="appearance-none bg-no-repeat cursor-pointer max-w-[12rem] truncate
+        font-display text-[10px] font-bold tracking-widest uppercase
+        rounded-full border border-white/25 bg-white/10 text-white/85 pl-2.5 pr-6 py-1.5
+        hover:bg-white/20 transition-colors"
+      style={{
+        backgroundImage: PFEIL_HELL,
+        backgroundPosition: 'right 0.55rem center',
+        backgroundSize: '0.6rem',
+      }}
+    >
+      <option value="jahr" style={OPTION_STIL}>{jahr} gesamt</option>
+      {saisons.map(s => (
+        <option key={s.id} value={`s${s.id}`} style={OPTION_STIL}>{s.name}</option>
+      ))}
+    </select>
+  )
+}
+
+/** Dunkle Schrift auf hellem Grund — das Systemmenue erbt sonst das Weiss des Selects. */
+const OPTION_STIL = { color: '#142B49', backgroundColor: '#FFFFFF' } as const
 
 function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
   wert: string
