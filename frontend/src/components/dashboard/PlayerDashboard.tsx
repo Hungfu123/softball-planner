@@ -4,12 +4,10 @@ import * as api from '@/api/client'
 import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
 import { LoadingSkeleton } from '@/components/shared'
-import type {
-  GameDayResponse, GameResponse, LineupEntryResponse, MeResponse,
-  PlayerBattingStatsResponse, SeasonPlayerStats,
-} from '@/types'
+import type { GameDayResponse, GameResponse, LineupEntryResponse, MeResponse } from '@/types'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { UpcomingList } from './UpcomingList'
+import { PersoenlicheSpalte } from './PersoenlicheSpalte'
 
 /*
  * Die Startseite eines Spielers. Alles hier ist Auskunft: der Planer (/gameday/:id) ist
@@ -27,11 +25,6 @@ const KARTE = 'rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy
 const UEBERSCHRIFT = 'font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3'
 const LINK_KNOPF = 'font-display min-h-11 inline-flex items-center justify-center gap-2 px-4 rounded-lg text-[11px] font-extrabold tracking-widest uppercase'
 
-function fmtAvg(v: number): string {
-  const s = v.toFixed(3)
-  return s.startsWith('0') ? s.slice(1) : s
-}
-
 function heute(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -39,6 +32,7 @@ function heute(): string {
 function useNaechsterSpieltag() {
   const [laden, setLaden] = useState(true)
   const [seasonId, setSeasonId] = useState<number | null>(null)
+  const [seasonName, setSeasonName] = useState<string | null>(null)
   const [spieltage, setSpieltage] = useState<GameDayResponse[]>([])
   const [ladefehler, setLadefehler] = useState(false)
 
@@ -53,6 +47,7 @@ function useNaechsterSpieltag() {
         const tage = await api.getGameDays(aktuelle.id)
         if (abgebrochen) return
         setSeasonId(aktuelle.id)
+        setSeasonName(aktuelle.name)
         setSpieltage([...tage].sort((a, b) => a.date.localeCompare(b.date)))
       } catch {
         // Ein Ausfall ist nicht „kein Spiel": die Seite sagt es getrennt.
@@ -65,7 +60,7 @@ function useNaechsterSpieltag() {
   }, [])
 
   const kommende = useMemo(() => spieltage.filter(gd => gd.date >= heute()), [spieltage])
-  return { laden, ladefehler, seasonId, naechster: kommende[0] ?? null, danach: kommende.slice(1) }
+  return { laden, ladefehler, seasonId, seasonName, naechster: kommende[0] ?? null, danach: kommende.slice(1) }
 }
 
 function useAufstellungen(spieltag: GameDayResponse | null): Aufstellungen {
@@ -102,40 +97,6 @@ function useZusagen(spieltag: GameDayResponse | null): number[] | null | undefin
   return stand && spieltag && stand.id === spieltag.id ? stand.ids : undefined
 }
 
-function useMeineZahlen(seasonId: number | null, playerId: number | null) {
-  const [stand, setStand] = useState<{
-    key: string
-    /** true = Abruf gescheitert; dann sind schlag/spiele bedeutungslos. */
-    fehler: boolean
-    schlag: PlayerBattingStatsResponse | null
-    spiele: SeasonPlayerStats | null
-  } | null>(null)
-  const key = `${seasonId}:${playerId}`
-
-  useEffect(() => {
-    if (seasonId == null || playerId == null) return
-    let abgebrochen = false
-    Promise.all([
-      api.getSeasonBattingStats(seasonId),
-      api.getSeasonStats(seasonId),
-    ]).then(([schlag, spiele]) => {
-      if (abgebrochen) return
-      setStand({
-        key,
-        fehler: false,
-        schlag: schlag.find(s => s.playerId === playerId) ?? null,
-        spiele: spiele.find(s => s.playerId === playerId) ?? null,
-      })
-    }).catch(() => {
-      if (!abgebrochen) setStand({ key, fehler: true, schlag: null, spiele: null })
-    })
-    return () => { abgebrochen = true }
-  }, [seasonId, playerId, key])
-
-  return stand && stand.key === key ? stand : null
-}
-
-/** Eine Zeile je Spiel: wo steht der Spieler in dieser Aufstellung? */
 function meinePlatzierung(eintraege: LineupEntryResponse[] | null | undefined, playerId: number): string {
   if (eintraege === undefined) return 'Aufstellung lädt …'
   if (eintraege === null) return 'Die Aufstellung ist gerade nicht erreichbar — später nochmal reinschauen.'
@@ -257,52 +218,6 @@ function LineupLesen({ spieltag, aufstellungen, playerId }: {
   )
 }
 
-function Kachel({ wert, label }: { wert: string; label: string }) {
-  return (
-    <div className="rounded-xl bg-white/8 border border-white/15 px-3 py-3 text-center">
-      <div className="font-display text-3xl font-extrabold text-amber-400 leading-none">{wert}</div>
-      <div className="font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mt-1.5">{label}</div>
-    </div>
-  )
-}
-
-function MeineZahlen({ playerId, seasonId, ladefehler }: { playerId: number; seasonId: number | null; ladefehler: boolean }) {
-  const zahlen = useMeineZahlen(seasonId, playerId)
-  const nichts = zahlen && !zahlen.fehler && !zahlen.schlag && !zahlen.spiele
-  const nichtErreichbar = ladefehler || zahlen?.fehler
-  return (
-    <section aria-label="Meine Zahlen" className={KARTE}>
-      <h2 className={UEBERSCHRIFT}>Meine Zahlen</h2>
-      {nichtErreichbar ? (
-        <p className="text-sm text-white/65">Deine Zahlen sind gerade nicht erreichbar — später nochmal reinschauen.</p>
-      ) : seasonId == null ? (
-        <p className="text-sm text-white/65">
-          Es ist noch keine Saison angelegt. Sobald sie steht und du gespielt hast, erscheinen hier deine Zahlen.
-        </p>
-      ) : nichts ? (
-        <p className="text-sm text-white/65">
-          Du hast in dieser Saison noch nicht geschlagen. Sobald ein Spiel gezählt ist, in dem du dran warst, stehen hier deine Zahlen.
-        </p>
-      ) : zahlen ? (
-        <div className="grid grid-cols-2 gap-2">
-          <Kachel wert={zahlen.schlag ? fmtAvg(zahlen.schlag.battingAverage) : '–'} label="AVG" />
-          <Kachel wert={zahlen.schlag ? fmtAvg(zahlen.schlag.onBasePct) : '–'} label="OBP" />
-          <Kachel wert={zahlen.spiele ? String(zahlen.spiele.totalGames) : '–'} label="Spiele" />
-          <Kachel wert={zahlen.schlag ? String(zahlen.schlag.hits) : '–'} label="Hits" />
-        </div>
-      ) : (
-        <p className="text-sm text-white/65">Zahlen laden …</p>
-      )}
-      <Link
-        to={`/players/${playerId}`}
-        className={`${LINK_KNOPF} mt-3 w-full bg-invers hover:bg-navy-800 hover:text-white text-invers-ink transition-colors`}
-      >
-        Ganzes Profil
-      </Link>
-    </section>
-  )
-}
-
 function KeinSpiel({ ladefehler }: { ladefehler: boolean }) {
   if (ladefehler) {
     return (
@@ -355,7 +270,7 @@ function WerkzeugZeile() {
 export function PlayerDashboard() {
   const { me } = useRolle()
   const playerId = me?.playerId ?? null
-  const { laden, ladefehler, seasonId, naechster, danach } = useNaechsterSpieltag()
+  const { laden, ladefehler, seasonId, seasonName, naechster, danach } = useNaechsterSpieltag()
   const aufstellungen = useAufstellungen(naechster)
   const zusagen = useZusagen(naechster)
   const [alleZeigen, setAlleZeigen] = useState(false)
@@ -368,49 +283,56 @@ export function PlayerDashboard() {
     <div className="space-y-3 sm:space-y-4">
       {playerId == null && <Hinweis me={me} />}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-        <div className="lg:col-start-1 lg:row-start-1">
-          {naechster
-            ? <HeroNextGameDay gameDay={naechster} variant={heroVariant} />
-            : <KeinSpiel ladefehler={ladefehler} />}
-        </div>
+      {/* Das naechste Spiel steht ueber allem und ueber die ganze Breite — es ist die
+          Frage, mit der man die Seite oeffnet. */}
+      {naechster
+        ? <HeroNextGameDay gameDay={naechster} variant={heroVariant} />
+        : <KeinSpiel ladefehler={ladefehler} />}
 
-        {naechster && playerId != null && (
-          <div className="lg:col-start-1 lg:row-start-2">
-            <BinIchDabei spieltag={naechster} zusagen={zusagen} aufstellungen={aufstellungen} playerId={playerId} />
-          </div>
-        )}
+      {/* Direkt darunter, noch vor allem anderen: bin ICH dabei. */}
+      {naechster && playerId != null && (
+        <BinIchDabei spieltag={naechster} zusagen={zusagen} aufstellungen={aufstellungen} playerId={playerId} />
+      )}
 
-        {naechster && (
-          <div className="lg:col-span-2 lg:row-start-3">
+      {/*
+        Ab lg zweispaltig. Am Handy faellt es auf eine Spalte zusammen, und die
+        DOM-Reihenfolge ist dort die Lesereihenfolge — deshalb steht das Persoenliche
+        VOR der Aufstellung: erst "wann ist Training" und "wie stehe ich da", dann die
+        Namensliste. Am Schreibtisch schiebt `lg:col-start-2 lg:row-start-1` es zurueck
+        nach rechts oben.
+      */}
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] items-start">
+        <PersoenlicheSpalte
+          playerId={playerId}
+          seasonId={seasonId}
+          seasonName={seasonName}
+          ladefehler={ladefehler}
+          className="lg:col-start-2 lg:row-start-1"
+        />
+
+        <div className="min-w-0 space-y-3 sm:space-y-4 lg:col-start-1 lg:row-start-1">
+          {naechster && (
             <LineupLesen spieltag={naechster} aufstellungen={aufstellungen} playerId={playerId} />
-          </div>
-        )}
+          )}
 
-        {/* Ohne „Was kommt“ darunter spannt die Zahlenkarte beide Zeilen — sonst reisst sie unter dem Hero ein Loch. */}
-        {playerId != null && (
-          <div className={`lg:col-start-2 lg:row-start-1 ${danach.length === 0 ? 'lg:row-span-2' : ''}`}>
-            <MeineZahlen playerId={playerId} seasonId={seasonId} ladefehler={ladefehler} />
-          </div>
-        )}
+          {danach.length > 0 && (
+            <section aria-label="Was kommt">
+              <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2 px-1 mb-2">
+                <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
+                Was kommt
+              </h2>
+              <UpcomingList
+                gameDays={danach}
+                showAll={alleZeigen}
+                onShowAll={() => setAlleZeigen(true)}
+                onShowLess={() => setAlleZeigen(false)}
+              />
+            </section>
+          )}
 
-        {danach.length > 0 && (
-          <section aria-label="Was kommt" className="lg:col-start-2 lg:row-start-2">
-            <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2 px-1 mb-2">
-              <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
-              Was kommt
-            </h2>
-            <UpcomingList
-              gameDays={danach}
-              showAll={alleZeigen}
-              onShowAll={() => setAlleZeigen(true)}
-              onShowLess={() => setAlleZeigen(false)}
-            />
-          </section>
-        )}
+          <WerkzeugZeile />
+        </div>
       </div>
-
-      <WerkzeugZeile />
     </div>
   )
 }

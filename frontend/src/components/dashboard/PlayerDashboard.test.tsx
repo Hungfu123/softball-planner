@@ -3,7 +3,7 @@ import { render, screen, waitFor, within, fireEvent } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom'
 import type {
   GameDayResponse, LineupEntryResponse, MeResponse, Player,
-  PlayerBattingStatsResponse, SeasonPlayerStats,
+  PlayerBattingStatsResponse, SeasonPlayerStats, TrainingResponse,
 } from '@/types'
 
 const auth = vi.hoisted(() => ({ me: null as MeResponse | null }))
@@ -24,6 +24,10 @@ vi.mock('@/api/client', () => ({
   getSeasonBattingStats: vi.fn(),
   getSeasonStats: vi.fn(),
   getPlayerUsage: vi.fn(),
+  getAllGameDays: vi.fn(),
+  getTrainings: vi.fn(),
+  getPlayerBattingTimeline: vi.fn(),
+  getPlayer: vi.fn(),
 }))
 
 import * as api from '@/api/client'
@@ -64,6 +68,16 @@ const ZAHLEN: PlayerBattingStatsResponse = {
   ops: 1.27, qualified: true,
 }
 
+/*
+ * Wie das Backend es Spielern liefert: `attendeeCount` ist null, bevor die Antwort das
+ * Haus verlaesst (TrainingController). Die Vorgabe traegt die Null bewusst mit, damit
+ * ein Rueckbau im Backend hier und nicht erst in der App auffiele.
+ */
+const TRAINING: TrainingResponse = {
+  id: 1, date: '2099-06-18', time: '19:00', location: 'Halle Nord', cancelled: false,
+  attendeeCount: null, periodId: null, type: 'REGULAR', openToAll: true,
+}
+
 const ZUKUNFT = '2099-06-20'
 const ZUKUNFT_2 = '2099-07-04'
 const VERGANGEN = '2000-06-20'
@@ -85,6 +99,10 @@ describe('PlayerDashboard', () => {
     mockApi.getSeasonStats.mockResolvedValue([
       { playerId: 7, playerName: 'Mia Meier', totalGames: 12, positionCounts: {} } as SeasonPlayerStats,
     ])
+    mockApi.getAllGameDays.mockResolvedValue([gameDay(1, ZUKUNFT), gameDay(2, ZUKUNFT_2)])
+    mockApi.getTrainings.mockResolvedValue([TRAINING])
+    mockApi.getPlayerBattingTimeline.mockResolvedValue([])
+    mockApi.getPlayer.mockResolvedValue(ICH)
   })
 
   it('zeigt das nächste Spiel', async () => {
@@ -167,7 +185,9 @@ describe('PlayerDashboard', () => {
    * ausdrücklich zugelassen ist, macht den Test rot — egal wie es heißt oder ob es ein Label hat.
    */
   const ERLAUBTE_KNOEPFE = [/^Spiel \d+$/, /^\+ \d+ weitere/, /^Weniger anzeigen$/]
-  const ERLAUBTE_LINKS = [/^\/players\/7$/, /^\/orga\/playmaker$/, /^\/counter$/]
+  // `/kalender` ist fuer Spieler ein eigener Reiter (PLAYER_TABS) — die Termin-Karten
+  // verlinken dorthin, nicht in eine Werkbank.
+  const ERLAUBTE_LINKS = [/^\/players\/7$/, /^\/orga\/playmaker$/, /^\/counter$/, /^\/kalender$/]
 
   async function bedienbar() {
     await screen.findByRole('region', { name: 'Lineup' })
@@ -246,12 +266,26 @@ describe('PlayerDashboard', () => {
     expect(within(zahlen).getByText('Hits')).toBeInTheDocument()
   })
 
-  it('zeigt keine Trainingszahl', async () => {
+  /*
+   * Hier stand frueher: das Wort "Training" darf auf der Seite nicht vorkommen. Das war
+   * eine Abkuerzung, kein Kriterium — geheim ist die BETEILIGUNG (sie fliesst in die
+   * Auto-Aufstellung ein und bleibt auch vor der eigenen Person verborgen), nicht der
+   * Termin. Seit die Startseite sagt, wann trainiert wird, kommt das Wort vor und muss
+   * es auch. Geprueft wird deshalb, was tatsaechlich nicht herausdarf.
+   */
+  it('sagt wann trainiert wird, aber nichts über die Beteiligung', async () => {
     rendern()
-    const zahlen = await screen.findByRole('region', { name: 'Meine Zahlen' })
-    await waitFor(() => expect(within(zahlen).getByText('.500')).toBeInTheDocument())
-    expect(screen.queryByText(/Training/i)).not.toBeInTheDocument()
+    const karte = await screen.findByRole('region', { name: 'Nächstes Training' })
+    await waitFor(() => expect(within(karte).getByText(/19:00/)).toBeInTheDocument())
+    expect(within(karte).getByText(/Halle Nord/)).toBeInTheDocument()
+
+    expect(screen.queryByText(/Beteiligung|Anwesend|Teilnehmer|Quote|dabei gewesen/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/\d+\s*%/)).not.toBeInTheDocument()
     expect(mockApi.getPlayerUsage).not.toHaveBeenCalled()
+    // Die Vorgabe traegt `attendeeCount: null` wie das Backend. Stuende dort eine Zahl,
+    // duerfte sie trotzdem nirgends auftauchen — deshalb auch die Suche nach blossen
+    // Ziffern in der Karte selbst, abseits von Datum und Uhrzeit.
+    expect(within(karte).queryByText(/^\d+$/)).not.toBeInTheDocument()
   })
 
   it('verlinkt ins volle Profil', async () => {

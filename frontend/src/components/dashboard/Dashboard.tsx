@@ -4,6 +4,7 @@ import { useSeasons } from '@/hooks/useSeasons'
 import { useToastContext } from '@/components/layout/Layout'
 import { SeasonSelector } from './SeasonSelector'
 import { HeroNextGameDay } from './HeroNextGameDay'
+import { PersoenlicheSpalte } from './PersoenlicheSpalte'
 import { DashboardLoading } from './DashboardLoading'
 import { AwardBadges } from './AwardBadges'
 import { SeasonTileGrid } from './SeasonTileGrid'
@@ -28,7 +29,7 @@ import * as api from '@/api/client'
 export function Dashboard() {
   const { seasons, loading: seasonsLoading, create: createSeason, copyYear, update: updateSeason, remove: removeSeason } = useSeasons()
   const toast = useToastContext()
-  const { istAdmin } = useRolle()
+  const { istAdmin, me } = useRolle()
   const [selectedSeasonId, setSelectedSeasonId] = useState<number | null>(null)
   const [gameDays, setGameDays] = useState<GameDayResponse[]>([])
   // true bis der erste Spieltag-Fetch der aktuellen Saison fertig ist —
@@ -265,6 +266,23 @@ export function Dashboard() {
         </div>
       )}
 
+      {/*
+        Ab lg zweispaltig: links der Spielbetrieb, rechts das Persoenliche. Am Handy
+        faellt es auf eine Spalte zusammen, und die DOM-Reihenfolge ist dort die
+        Lesereihenfolge — deshalb steht die persoenliche Spalte VOR den Listen: nach
+        "wann ist das naechste Spiel" (Hero) kommt "wann ist Training" und "wie stehe
+        ich da", erst danach die Aufzaehlung aller Spieltage. Am Schreibtisch schiebt
+        `lg:col-start-2 lg:row-start-1` sie zurueck nach rechts oben.
+      */}
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] items-start">
+        <PersoenlicheSpalte
+          playerId={me?.playerId ?? null}
+          seasonId={selectedSeasonId}
+          seasonName={seasons.find(s => s.id === selectedSeasonId)?.name ?? null}
+          className="lg:col-start-2 lg:row-start-1"
+        />
+
+        <div className="min-w-0 space-y-3 sm:space-y-4 lg:col-start-1 lg:row-start-1">
       {selectedSeasonId && (
         <>
           {/* Anstehende + vergangene Spieltage — separate Listen */}
@@ -660,6 +678,8 @@ export function Dashboard() {
           </DetailSheet>
         </>
       )}
+        </div>
+      </div>
       {deleteGameDayId && (
         <ConfirmModal
           title="Spieltag löschen"
