@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { usePlays } from '@/hooks/usePlays'
 import { PlayBoard } from './PlayBoard'
 import { PlayRow } from './PlayRow'
@@ -22,7 +22,24 @@ import { useRolle } from '@/hooks/useRolle'
  */
 export default function PlaymakerOverview() {
   const { plays, categories, loading, error, duplicate, remove } = usePlays()
-  const [categoryId, setCategoryId] = useState<number | 'alle'>('alle')
+  /*
+   * Die Kategorie steht in der Adresse, nicht nur im Zustand.
+   *
+   * Damit laesst sie sich verlinken — die Playmaker-Kachel auf der Startseite fuehrt so
+   * direkt in eine Kategorie statt immer auf dieselbe ungefilterte Liste. Nebenbei
+   * ueberlebt die Auswahl den Zurueck-Pfeil und laesst sich weitergeben.
+   *
+   * `replace`: das Umstellen eines Filters ist kein Schritt, den man zurueckgehen will.
+   */
+  const [params, setParams] = useSearchParams()
+  const ausAdresse = Number(params.get('kategorie'))
+  const categoryId: number | 'alle' = Number.isFinite(ausAdresse) && ausAdresse > 0 ? ausAdresse : 'alle'
+  const setCategoryId = (wert: number | 'alle') => {
+    const neu = new URLSearchParams(params)
+    if (wert === 'alle') neu.delete('kategorie')
+    else neu.set('kategorie', String(wert))
+    setParams(neu, { replace: true })
+  }
   const [suche, setSuche] = useState('')
   const [zugeklappt, setZugeklappt] = useState<Set<number>>(leseZugeklappt)
   /**

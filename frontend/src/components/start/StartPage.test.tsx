@@ -25,11 +25,15 @@ vi.mock('@/api/client', () => ({
   getPlayerUsage: vi.fn(),
 }))
 
+vi.mock('@/api/plays', () => ({ getPlayCategories: vi.fn() }))
+
 import * as api from '@/api/client'
+import * as plays from '@/api/plays'
 import { StartPage } from './StartPage'
 import { COUNTER_STORAGE_KEY } from '@/hooks/useCounter'
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>
+const mockPlays = plays as unknown as Record<string, ReturnType<typeof vi.fn>>
 
 const ICH: Player = { id: 7, name: 'Mia Meier', regular: true, defaultBattingOrder: null }
 const ME: MeResponse = {
@@ -97,6 +101,10 @@ describe('Startseite', () => {
     ])
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
     mockApi.getPlayer.mockResolvedValue(ICH)
+    mockPlays.getPlayCategories.mockResolvedValue([
+      { id: 1, name: 'Cut-off & Relay', sortOrder: 1 },
+      { id: 2, name: 'Bunt-Defense', sortOrder: 2 },
+    ])
   })
   afterEach(() => { vi.useRealTimers() })
 
@@ -261,9 +269,15 @@ describe('Startseite', () => {
     mockApi.getAllGameDays.mockResolvedValue([spieltag(2, '2026-03-01')])  // nur Vergangenes
     rendern()
     const playmaker = await kachel('Playmaker')
-    expect(playmaker).toHaveAttribute('href', '/orga/playmaker')
     expect(playmaker.textContent).toMatch(/Spielzüge/)
     expect(screen.queryByLabelText('Nächster Spieltag')).not.toBeInTheDocument()
+
+    // Die Kategorien SIND der Ueberblick — und jede ist ein Weg in genau ihre Liste,
+    // nicht in dieselbe ungefilterte Seite wie alle anderen.
+    const bunt = await within(playmaker).findByRole('link', { name: 'Bunt-Defense' })
+    expect(bunt).toHaveAttribute('href', '/orga/playmaker?kategorie=2')
+    expect(within(playmaker).getByRole('link', { name: /Alle 2 Kategorien/ }))
+      .toHaveAttribute('href', '/orga/playmaker')
   })
 
   /* Waehrend des Ladens oder bei einem Ausfall waere der Tausch geraten, nicht gewusst. */
