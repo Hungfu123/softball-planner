@@ -68,7 +68,7 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
   return (
     <section
       aria-label="Meine Zahlen"
-      className="rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 px-4 py-3 sm:px-6 sm:py-5"
+      className="rounded-2xl bg-kopf text-spotlight-ink shadow-lg shadow-navy-900/15 px-4 py-3 sm:px-6 sm:py-5"
     >
       {/*
         Am Handy untereinander, ab lg nebeneinander: vier Kacheln ueber 1200px verteilt
