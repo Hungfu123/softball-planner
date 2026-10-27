@@ -41,6 +41,8 @@ import {
   Minus,
   Share2,
   Tally5,
+  Eye,
+  EyeOff,
   Archive,
   ArchiveRestore,
 } from 'lucide-react'
@@ -90,6 +92,8 @@ export const PlusMark = (p: IconProps) => <Plus size={p.size ?? 16} className={p
 export const MinusMark = (p: IconProps) => <Minus size={p.size ?? 16} className={p.className} />
 export const ShareIcon = (p: IconProps) => <Share2 size={p.size ?? 20} className={p.className} />
 export const CounterIcon = (p: IconProps) => <Tally5 size={p.size ?? 20} className={p.className} />
+export const AugeIcon = (p: IconProps) => <Eye size={p.size ?? 18} className={p.className} />
+export const AugeZuIcon = (p: IconProps) => <EyeOff size={p.size ?? 18} className={p.className} />
 
 // Custom SVGs — keine Lucide-Equivalente passen (Brand/Baseball-spezifisch)
 export function CrossBones({ size = 24, className }: IconProps) {

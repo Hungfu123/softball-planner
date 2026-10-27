@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/shared'
+import { AugeIcon, AugeZuIcon } from '@/icons'
 
 interface LoginPageProps {
   onLogin: (username: string, password: string) => void
@@ -34,6 +35,16 @@ const LABEL = 'font-display block text-[10px] tracking-widest uppercase font-bol
 export function LoginPage({ onLogin, error }: LoginPageProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  /*
+   * Das Passwort steht in der WhatsApp-Gruppe und wird abgetippt — oft am Handy, oft mit
+   * Zeichen, die man auf der Bildschirmtastatur erst suchen muss. Wer sich dabei vertippt,
+   * sieht nur „Anmeldung fehlgeschlagen" und weiss nicht, ob er den falschen Namen oder
+   * den falschen Buchstaben hat. Ein Blick aufs Eingetippte beantwortet das.
+   *
+   * Beginnt verborgen: offen anzufangen hiesse, das Passwort fuer jeden sichtbar zu machen,
+   * der zufaellig danebensteht. Zeigen ist eine Entscheidung, Verbergen die Vorgabe.
+   */
+  const [sichtbar, setSichtbar] = useState(false)
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -75,15 +86,36 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
 
           <div>
             <label htmlFor="password" className={LABEL}>Passwort</label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className={FELD}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={sichtbar ? 'text' : 'password'}
+                autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={`${FELD} pr-12`}
+              />
+              {/*
+                Im Feld statt darunter: der Schalter gehoert zu dem, was er zeigt. 44 Pixel
+                Fassflaeche, auch wenn das Zeichen 18 misst — getroffen wird der Knopf, nicht
+                das Auge. `tabIndex={-1}`, damit die Tabulatortaste vom Passwort direkt auf
+                „Ready Up" springt und nicht auf einen Umweg.
+              */}
+              <button
+                type="button"
+                onClick={() => setSichtbar(v => !v)}
+                aria-label={sichtbar ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                aria-pressed={sichtbar}
+                tabIndex={-1}
+                className="absolute right-0 top-0 h-full w-11 flex items-center justify-center text-navy-300 hover:text-white transition-colors cursor-pointer"
+              >
+                {sichtbar ? <AugeZuIcon /> : <AugeIcon />}
+              </button>
+            </div>
           </div>
 
           {/*
