@@ -7,6 +7,7 @@ import com.softball.adapter.dto.CreatePlayerRequest;
 import com.softball.adapter.dto.PlayerFormPointResponse;
 import com.softball.adapter.dto.PlayerResponse;
 import com.softball.adapter.dto.PlayerUsageResponse;
+import com.softball.adapter.dto.TrainingAnwesenheitResponse;
 import com.softball.adapter.dto.SetWhatsappNameRequest;
 import com.softball.adapter.dto.UpdateGenderRequest;
 import com.softball.adapter.dto.UpdatePlayerRequest;
@@ -79,12 +80,12 @@ public class PlayerController {
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/training-months")
-    public Map<Integer, Integer> getTrainingMonths(@PathVariable final Long id,
-                                                   @RequestParam(name = "year") final int year) {
+    public TrainingAnwesenheitResponse getTrainingMonths(@PathVariable final Long id,
+                                                         @RequestParam(name = "year") final int year) {
         if (!currentUser.darfTrainingszahlenSehenVon(id)) {
             throw new AccessDeniedException("Trainingszahlen anderer Spieler");
         }
-        return playerProfileService.getTrainingMonths(id, year);
+        return TrainingAnwesenheitResponse.from(playerProfileService.getTrainingMonths(id, year));
     }
 
     @PostMapping

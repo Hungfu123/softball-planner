@@ -235,7 +235,17 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   `TrainingParticipationCalculator` rechnet ohne Termine mit eingeschraenktem Teilnehmerkreis
   und bleibt bei den Trainern. Der Unterschied ist der ganze Punkt: eine Zaehlung ueber sich
   selbst ist Auskunft, eine Quote im Vergleich ist ein Anspruch. `SpielerLeserechteIntegrationTest`
-  haelt beides fest. **Vorgabe des Zeitraums ist das laufende JAHR**, eine Saison daraus ist
+  haelt beides fest. Dieselbe Antwort traegt `verpasstSeitdem` — wie viele Termine seit dem
+  letzten Mal gelaufen sind, **zu denen der ganze Kader geladen war** (`openToAll`, nicht
+  abgesagt, nicht in der Zukunft, und der besuchte Termin zaehlt nicht gegen einen). Ab **10**
+  fragt die Trainings-Kachel nach: „Lange nicht da gewesen. Komm doch wieder vorbei." — **ohne
+  Zahl und ohne Datum**, denn „seit 11 Terminen" waere Buchhaltung ueber einen Menschen, und
+  anstelle der Zeile „Danach …", weil wer weg war einen Grund fuer den naechsten Termin braucht
+  und keinen Ausblick auf den uebernaechsten. `null` heisst **noch nie da gewesen** und
+  schweigt: „lange nicht gesehen" ist die falsche Anrede fuer einen, den es noch nie gab. Die
+  Schwelle ist bewusst hoch (rund fuenf Wochen) — ein Hinweis ueber Anwesenheit, der zu Unrecht
+  kommt, ist ein Vorwurf. `PlayerProfileIntegrationTest` pinnt die vier Faelle, die NICHT
+  zaehlen. **Vorgabe des Zeitraums ist das laufende JAHR**, eine Saison daraus ist
   **waehlbar** (`bereich.ts` + `useMeineZahlen`: Jahr → `/api/years/{jahr}/batting-stats`
   + `/stats`, Saison → `/api/seasons/{id}/…`; der Verlauf kommt einmal ganz und wird auf
   `p.year` bzw. `p.seasonId` zugeschnitten). Ein Jahr traegt oft mehrere Saisons

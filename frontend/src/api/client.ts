@@ -173,14 +173,23 @@ export const updatePlayer = (id: number, data: { name?: string; regular?: boolea
 export const getPlayer = (id: number) =>
   request<Player>(`/players/${id}`)
 
+export interface TrainingAnwesenheit {
+  /** Monat (1..12) auf Anzahl besuchter Trainings. Ein Monat ohne Anwesenheit fehlt. */
+  monate: Record<string, number>
+  /**
+   * Termine seit dem letzten Mal, zu denen der ganze Kader geladen war. `null` = noch nie da
+   * gewesen — „lange nicht gesehen" ist die falsche Anrede fuer einen, den es noch nie gab.
+   */
+  verpasstSeitdem: number | null
+}
+
 /**
- * Anwesenheit im Training je Monat eines Jahres — Monat (1..12) auf Anzahl.
+ * Die eigene Trainings-Anwesenheit eines Jahres.
  *
- * Nur fuer sich selbst oder als Trainer; sonst antwortet der Server mit 403. Ein Monat ohne
- * Anwesenheit fehlt in der Karte, statt mit einer Null dazustehen.
+ * Nur fuer sich selbst oder als Trainer; sonst antwortet der Server mit 403.
  */
 export const getPlayerTrainingMonths = (id: number, jahr: number) =>
-  request<Record<string, number>>(`/players/${id}/training-months?year=${jahr}`)
+  request<TrainingAnwesenheit>(`/players/${id}/training-months?year=${jahr}`)
 export const getPlayerBattingTimeline = (id: number) =>
   request<PlayerFormPoint[]>(`/players/${id}/batting-timeline`)
 
