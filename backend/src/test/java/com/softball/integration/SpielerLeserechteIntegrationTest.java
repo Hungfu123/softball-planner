@@ -117,6 +117,20 @@ class SpielerLeserechteIntegrationTest {
             .andExpect(jsonPath("$.trainingsAttended").isNumber());
     }
 
+    /**
+     * Wer noch nie im Training war, bekommt KEINE Abwesenheits-Ansprache: „lange nicht gesehen"
+     * ist die falsche Anrede fuer einen, den es noch nie gab. Ohne Anwesenheit bleibt
+     * {@code verpasstSeitdem} null, und die Startseite schweigt.
+     */
+    @Test
+    void ohneJedeAnwesenheitKeineAnsprache() throws Exception {
+        mockMvc.perform(get("/api/players/" + player.getId() + "/training-months")
+                .param("year", "2026").with(eigen()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.verpasstSeitdem").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.monate").exists());
+    }
+
     /** Die Monatskarte der Startseite — eigene ja, fremde 403. */
     @Test
     void monatskarteNurFuerSichSelbst() throws Exception {

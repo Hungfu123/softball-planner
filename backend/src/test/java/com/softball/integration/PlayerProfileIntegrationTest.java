@@ -7,11 +7,15 @@ import com.softball.adapter.out.persistence.entity.AtBatEntity;
 import com.softball.adapter.out.persistence.entity.GameEntity;
 import com.softball.adapter.out.persistence.entity.PlayerEntity;
 import com.softball.adapter.out.persistence.entity.SeasonEntity;
+import com.softball.adapter.out.persistence.entity.TrainingAttendanceEntity;
+import com.softball.adapter.out.persistence.entity.TrainingEntity;
 import com.softball.adapter.out.persistence.repository.SpringAtBatRepository;
 import com.softball.adapter.out.persistence.repository.SpringGameDayRepository;
 import com.softball.adapter.out.persistence.repository.SpringGameRepository;
 import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
 import com.softball.adapter.out.persistence.repository.SpringSeasonRepository;
+import com.softball.adapter.out.persistence.repository.SpringTrainingAttendanceRepository;
+import com.softball.adapter.out.persistence.repository.SpringTrainingRepository;
 import com.softball.domain.model.AtBatResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -323,5 +328,47 @@ class PlayerProfileIntegrationTest {
         ab.setRbi(0);
         ab.setCreatedBy("test");
         atBatRepository.save(ab);
+    }
+
+    // ---- Wie lange war ich nicht mehr da? ----
+
+    @Autowired private SpringTrainingRepository trainingRepository;
+    @Autowired private SpringTrainingAttendanceRepository attendanceRepository;
+
+    private TrainingEntity training(final LocalDate datum, final boolean fuerAlle, final boolean abgesagt) {
+        final TrainingEntity t = new TrainingEntity(datum, "19:00", "Halle");
+        t.setOpenToAll(fuerAlle);
+        t.setCancelled(abgesagt);
+        return trainingRepository.save(t);
+    }
+
+    /**
+     * Gezaehlt wird, was man haette wahrnehmen KOENNEN — und nur das.
+     *
+     * Vier Dinge zaehlen nicht gegen einen, und jedes davon waere ein Vorwurf, der nicht traegt:
+     * der Termin, bei dem man war; ein abgesagter (da war niemand); einer, zu dem nur Pitcher und
+     * Catcher geladen waren (den hat man nicht versaeumt); und einer, der noch bevorsteht.
+     */
+    @Test
+    void zaehltNurVersaeumteTermineZuDenenAlleGeladenWaren() throws Exception {
+        final PlayerEntity spieler = playerRepository.save(new PlayerEntity("Abwesend"));
+        final LocalDate heute = LocalDate.now();
+
+        final TrainingEntity besucht = training(heute.minusDays(40), true, false);
+        attendanceRepository.save(new TrainingAttendanceEntity(besucht, spieler, true));
+
+        training(heute.minusDays(30), true, false);   // zaehlt
+        training(heute.minusDays(20), true, false);   // zaehlt
+        training(heute.minusDays(10), true, true);    // abgesagt
+        training(heute.minusDays(5), false, false);   // nur P/C
+        training(heute.plusDays(3), true, false);     // steht noch bevor
+
+        mockMvc.perform(get("/api/players/" + spieler.getId() + "/training-months")
+                .param("year", String.valueOf(heute.getYear())))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.verpasstSeitdem").value(2));
+
+        attendanceRepository.deleteAll();
+        trainingRepository.deleteAll();
     }
 }

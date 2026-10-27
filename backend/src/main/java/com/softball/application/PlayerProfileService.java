@@ -7,6 +7,7 @@ import com.softball.domain.model.Player;
 import com.softball.domain.model.PlayerFormPoint;
 import com.softball.domain.model.PlayerUsage;
 import com.softball.domain.model.Training;
+import com.softball.domain.model.TrainingAnwesenheit;
 import com.softball.domain.model.TrainingAttendance;
 import com.softball.domain.model.UsageScope;
 import com.softball.domain.port.out.AtBatRepository;
@@ -152,23 +153,49 @@ public class PlayerProfileService {
      * Abgesagte Trainings fallen raus — bei einem abgesagten Termin war niemand da.
      */
     @Transactional(readOnly = true)
-    public Map<Integer, Integer> getTrainingMonths(final Long playerId, final int year) {
+    public TrainingAnwesenheit getTrainingMonths(final Long playerId, final int year) {
         if (!playerRepository.existsById(playerId)) {
             throw new ResourceNotFoundException("Player", playerId);
         }
         final Map<Integer, Integer> jeMonat = new HashMap<>();
+        LocalDate zuletzt = null;
         for (final TrainingAttendance a : attendanceRepository.findByPlayerId(playerId)) {
             if (!a.isPresent() || a.getTraining() == null) {
                 continue;
             }
             final Training t = a.getTraining();
-            if (t.isCancelled() || t.getDate() == null || t.getDate().getYear() != year) {
+            if (t.isCancelled() || t.getDate() == null) {
                 continue;
             }
-            jeMonat.merge(t.getDate().getMonthValue(), 1, Integer::sum);
+            if (t.getDate().getYear() == year) {
+                jeMonat.merge(t.getDate().getMonthValue(), 1, Integer::sum);
+            }
+            // Ueber alle Jahre: wer im Dezember zuletzt da war, ist im Januar nicht „noch nie".
+            if (zuletzt == null || t.getDate().isAfter(zuletzt)) {
+                zuletzt = t.getDate();
+            }
         }
-        return jeMonat;
+        return new TrainingAnwesenheit(jeMonat, zuletzt == null ? null : verpasstSeit(zuletzt));
     }
+
+    /**
+     * Wie viele Termine seit diesem Tag gelaufen sind, zu denen der GANZE Kader geladen war.
+     *
+     * `openToAll` ist der Kern: wer kein Pitcher und kein Catcher ist, hat eine Nur-P/C-Einheit
+     * nicht versaeumt, und ein Hinweis, der ihm das vorhaelt, waere schlicht falsch. Abgesagte
+     * Termine fallen ebenfalls raus — bei einem abgesagten Training war niemand da.
+     *
+     * Gezaehlt wird STRENG NACH dem Tag: das Training, bei dem man zuletzt war, zaehlt nicht
+     * gegen einen.
+     */
+    private int verpasstSeit(final LocalDate zuletzt) {
+        final LocalDate heute = LocalDate.now();
+        return (int) trainingRepository.findAllByOrderByDateDesc().stream()
+            .filter(t -> t.getDate() != null && t.isOpenToAll() && !t.isCancelled())
+            .filter(t -> t.getDate().isAfter(zuletzt) && !t.getDate().isAfter(heute))
+            .count();
+    }
+
 
     private List<Integer> battingOrders(final Long playerId, final UsageScope scope) {
         if (scope.seasonId() != null) {

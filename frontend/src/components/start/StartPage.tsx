@@ -83,7 +83,7 @@ export function StartPage() {
   const saisons = useSaisonsDesJahres(jahr)
   const bereich = bereichAus(wahl, jahr, saisons)
   const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, bereich)
-  const eigeneTrainings = useEigeneTrainings(me?.playerId ?? null, jahr)
+  const anwesenheit = useEigeneTrainings(me?.playerId ?? null, jahr)
 
   const naechsterSpieltag = useMemo(
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
@@ -125,7 +125,8 @@ export function StartPage() {
         </Kachel>
 
         <Kachel titel="Nächstes Training" zu="/kalender">
-          <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler} />
+          <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler}
+                          verpasst={anwesenheit?.verpasstSeitdem ?? null} />
         </Kachel>
 
         {/*
@@ -135,7 +136,7 @@ export function StartPage() {
           darueber. Zwei Bloecke, die beide „dein Jahr" behaupten und Verschiedenes sagen.
         */}
         <Kachel titel={`Termine ${jahr}`} className="col-span-2 lg:col-span-2">
-          <JahresBand termine={termine} laden={laden} fehler={fehler} eigeneTrainings={eigeneTrainings} />
+          <JahresBand termine={termine} laden={laden} fehler={fehler} eigeneTrainings={anwesenheit?.monate ?? null} />
         </Kachel>
 
         {/*
@@ -235,9 +236,22 @@ function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; 
   )
 }
 
-function TrainingInhalt({ naechstes, danach, laden, fehler }: {
+/**
+ * Ab wie vielen versaeumten Terminen die Kachel nachfragt.
+ *
+ * Zehn, also rund fuenf Wochen bei zwei Einheiten je Woche — eine ausdrueckliche Entscheidung
+ * des Betreibers gegen die fruehere Schwelle. Lieber zu spaet fragen als jemanden ansprechen,
+ * der im Urlaub oder krank war: ein Hinweis, der oft kommt, wird ueberlesen, und ein Hinweis
+ * ueber Anwesenheit, der zu Unrecht kommt, ist ein Vorwurf.
+ */
+const NACHFRAGE_AB = 10
+
+function TrainingInhalt({ naechstes, danach, laden, fehler, verpasst }: {
   naechstes?: Termin; danach?: Termin; laden: boolean; fehler: boolean
+  /** Termine seit dem letzten Mal. `null` = unbekannt oder noch nie da gewesen. */
+  verpasst?: number | null
 }) {
+  const vermisst = verpasst != null && verpasst >= NACHFRAGE_AB
   if (laden) return <p className="text-sm text-ink-muted">Termine laden …</p>
   if (fehler) return <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
   if (!naechstes) {
@@ -269,7 +283,22 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
           </p>
         )}
       </div>
-      {danach && <p className="text-[11px] text-ink-faint mt-2">Danach {kurz(danach.datum)}</p>}
+      {/*
+        Die Nachfrage steht ANSTELLE der Zeile „Danach …": wer lange weg war, braucht keinen
+        Ausblick auf den uebernaechsten Termin, sondern einen Grund fuer den naechsten. Und die
+        Kachel waere sonst zwei Zeilen hoeher — am Handy der Unterschied zwischen passt und
+        scrollt.
+
+        Kein Datum, keine Zahl: „seit 11 Terminen" waere Buchhaltung ueber einen Menschen. Was
+        die Zeile tut, ist einladen.
+      */}
+      {vermisst ? (
+        <p className="text-[11px] text-label font-semibold mt-2 leading-snug">
+          Lange nicht da gewesen. Komm doch wieder vorbei.
+        </p>
+      ) : (
+        danach && <p className="text-[11px] text-ink-faint mt-2">Danach {kurz(danach.datum)}</p>
+      )}
     </>
   )
 }
@@ -553,7 +582,7 @@ function Zaehler() {
  * darf nicht wie „du warst nie da" aussehen.
  */
 function useEigeneTrainings(playerId: number | null, jahr: number) {
-  const [monate, setMonate] = useState<Record<string, number> | null>(null)
+  const [monate, setMonate] = useState<api.TrainingAnwesenheit | null>(null)
   useEffect(() => {
     if (playerId == null) return
     let abgebrochen = false

@@ -106,7 +106,7 @@ describe('Startseite', () => {
       { playerId: 7, playerName: 'Mia Meier', totalGames: 12, positionCounts: {} } as SeasonPlayerStats,
     ])
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
-    mockApi.getPlayerTrainingMonths.mockResolvedValue({ '1': 1, '6': 2 })
+    mockApi.getPlayerTrainingMonths.mockResolvedValue({ monate: { '1': 1, '6': 2 }, verpasstSeitdem: 0 })
     mockApi.getPlayer.mockResolvedValue(ICH)
   })
   afterEach(() => { vi.useRealTimers() })
@@ -399,6 +399,42 @@ describe('Startseite', () => {
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
     expect(within(kopf).queryByRole('combobox', { name: 'Zeitraum wählen' })).not.toBeInTheDocument()
     expect(within(kopf).getByText('2026')).toBeInTheDocument()
+  })
+
+  /*
+   * Wer lange weg war, bekommt eine Einladung — keine Abrechnung. Deshalb steht in der Zeile
+   * keine Zahl und kein Datum: „seit 11 Terminen" waere Buchhaltung ueber einen Menschen.
+   * Die Schwelle ist bewusst hoch (10 Termine, rund fuenf Wochen): ein Hinweis, der zu Unrecht
+   * kommt, ist ein Vorwurf.
+   */
+  it('lädt zurück ins Training, wenn jemand lange weg war — ohne Zahl und ohne Datum', async () => {
+    mockApi.getPlayerTrainingMonths.mockResolvedValue({ monate: {}, verpasstSeitdem: 10 })
+    rendern()
+    const k = await kachel('Nächstes Training')
+    await waitFor(() => expect(k.textContent).toMatch(/Lange nicht da gewesen/))
+    expect(k.textContent).toMatch(/Komm doch wieder vorbei/)
+    expect(k.textContent).not.toMatch(/10|Termine/)
+    // Statt des Ausblicks auf den uebernaechsten Termin — wer weg war, braucht einen Grund
+    // fuer den naechsten, keinen Ausblick auf den danach.
+    expect(k.textContent).not.toMatch(/Danach/)
+  })
+
+  it('schweigt knapp unter der Schwelle', async () => {
+    mockApi.getPlayerTrainingMonths.mockResolvedValue({ monate: {}, verpasstSeitdem: 9 })
+    rendern()
+    const k = await kachel('Nächstes Training')
+    await waitFor(() => expect(k.textContent).toMatch(/Do · 18\. Juni/))
+    expect(k.textContent).not.toMatch(/Lange nicht/)
+    expect(k.textContent).toMatch(/Danach/)
+  })
+
+  /* Noch nie da gewesen ist kein „lange nicht gesehen" — das ist die falsche Anrede. */
+  it('spricht niemanden an, der noch nie im Training war', async () => {
+    mockApi.getPlayerTrainingMonths.mockResolvedValue({ monate: {}, verpasstSeitdem: null })
+    rendern()
+    const k = await kachel('Nächstes Training')
+    await waitFor(() => expect(k.textContent).toMatch(/Do · 18\. Juni/))
+    expect(k.textContent).not.toMatch(/Lange nicht/)
   })
 
   it('erklärt leere Zahlen: noch nicht geschlagen und wann sie kommen', async () => {
