@@ -312,9 +312,12 @@ function Playmaker() {
 
 /**
  * Ohne Erklaerung ist "Counter" ein Knopf, den niemand drueckt: der Name sagt nicht, wofuer
- * man ihn braucht. Gebraucht wird er, wenn man selbst umpirt — in der Liga stellen die Teams
- * die Schiedsrichter, und dann zaehlt man Balls, Strikes und Outs am Zaun mit. Genau das
- * steht deshalb schon in der zugeklappten Zeile.
+ * man ihn braucht. Gebraucht wird er beim Umpen — in der Liga stellen die Teams die
+ * Schiedsrichter selbst, und wer Head oder Field macht, zaehlt Balls, Strikes und Outs am
+ * Zaun mit. Genau das steht deshalb schon in der zugeklappten Zeile.
+ *
+ * „Umpen", nicht „Umpiren": das ist das Wort, das im Team benutzt wird. Die App spricht
+ * die Sprache des Kaders, nicht die des Regelbuchs.
  */
 /**
  * Die letzten Spiele mit der eigenen Linie — "wie lief es zuletzt", nicht "wie steht es".
@@ -501,7 +504,7 @@ function Zaehler() {
           /* Eine Zeile. Was gezaehlt wird, steht unter den Lampen — der Satz muss es nicht
              wiederholen, und zwei Zeilen kosteten die Seite ihren letzten Rand. */
           <p className="text-sm text-spotlight-ink/80 leading-snug">
-            Beim Umpiren mitzählen.
+            Beim Umpen mitzählen.
           </p>
         )}
       </div>

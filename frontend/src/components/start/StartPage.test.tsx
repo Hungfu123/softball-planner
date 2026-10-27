@@ -267,7 +267,7 @@ describe('Startseite', () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
     expect(karte).toHaveAttribute('href', '/counter')
-    expect(within(karte).getByText(/Umpiren/)).toBeInTheDocument()
+    expect(within(karte).getByText(/Umpen/)).toBeInTheDocument()
     // Kein Etikett — und nichts, was vorgelesen würde.
     expect(within(karte).queryByText('Beispiel')).not.toBeInTheDocument()
     expect(within(karte).queryByRole('img', { name: /^Ball:/ })).not.toBeInTheDocument()
@@ -282,7 +282,7 @@ describe('Startseite', () => {
     }))
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
-    expect(within(karte).queryByText(/umpirest/)).not.toBeInTheDocument()
+    expect(within(karte).queryByText(/Umpen/)).not.toBeInTheDocument()
     // Was wirklich gezaehlt wird, traegt keine Beispiel-Marke.
     expect(within(karte).queryByText('Beispiel')).not.toBeInTheDocument()
     // "3. Inning" steht zweimal da: sichtbar und noch einmal ausgeschrieben fuer
