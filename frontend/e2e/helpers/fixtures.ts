@@ -122,22 +122,44 @@ function escapeRegex(s: string): string {
  * als haette die Anwendung versagt. Das Netz riss also dort, wo es halten sollte, und drei
  * Pushes hintereinander war CI deswegen rot, ohne dass am Produktivcode etwas war.
  *
- * Die Pause VOR dem Griff bleibt und ist keine Schlamperei: der Runner steckt in einem
- * `motion.g` und wandert nach dem letzten Ereignis noch zu seiner neuen Base. Sichtbar ist
- * er dabei die ganze Zeit — nur eben nicht dort, wo man hinklickt. „Warte, bis es sichtbar
- * ist" ersetzt das NICHT; ohne die Pause gingen alle drei Steal-Tests zuverlaessig daneben.
+ * Der Runner steckt in einem `motion.g` und wandert nach dem letzten Ereignis noch zu seiner
+ * neuen Base. Sichtbar ist er dabei die ganze Zeit — nur eben nicht dort, wo man hinklickt.
+ * „Warte, bis es sichtbar ist" reicht also nicht; ohne jede Pause gingen alle drei
+ * Steal-Tests zuverlaessig daneben.
  *
- * `force: true` bleibt aus demselben Grund: waehrend der Bewegung ist das Element nie
- * „stabil" im Sinne von Playwright.
+ * Statt einer geratenen Pause (vorher 800 ms) wird jetzt gewartet, bis er WIRKLICH steht:
+ * `bisRuhig` misst seine Lage, bis sie sich zweimal nicht mehr aendert. Eine feste Zahl ist
+ * auf einem ausgelasteten CI-Laeufer immer zu kurz — man kann sie nur raten, und geraten
+ * war sie dreimal falsch.
+ *
+ * `force: true` bleibt: waehrend der Bewegung gilt das Element Playwright nie als „stabil",
+ * und die eigene Wartung oben ersetzt genau diese Pruefung.
  */
+/**
+ * Wartet, bis ein Element nicht mehr wandert: zwei gleiche Messungen hintereinander.
+ *
+ * Deterministisch statt geraten — eine laufende Animation dauert so lange, wie sie dauert,
+ * und auf einem ausgelasteten Laeufer eben laenger. Nach vier Sekunden gibt die Schleife
+ * auf und laesst den Aufrufer weitermachen; dann liegt das Problem ohnehin woanders und
+ * soll als Testfehler sichtbar werden, nicht hier als Haenger.
+ */
+async function bisRuhig(ort: { boundingBox(): Promise<{ x: number; y: number } | null> }): Promise<void> {
+  let vorher: { x: number; y: number } | null = null
+  for (let i = 0; i < 40; i++) {
+    const jetzt = await ort.boundingBox()
+    if (jetzt && vorher && jetzt.x === vorher.x && jetzt.y === vorher.y) return
+    vorher = jetzt
+    await new Promise(r => setTimeout(r, 100))
+  }
+}
+
 export async function recordStealingViaUI(page: Page, runnerPlayerId: number, type: 'STOLEN_BASE' | 'CAUGHT_STEALING'): Promise<void> {
   const name = await getPlayerName(runnerPlayerId)
   const displayName = name.length > 7 ? name.slice(0, 6) + '…' : name
-  // Die Bewegung des vorigen Ereignisses ausklingen lassen — siehe oben.
-  await page.waitForTimeout(800)
   // The runner <text> sits inside a <motion.g>; the <g> is the click target.
   const runnerGroup = page.locator('svg g').filter({ hasText: displayName }).first()
   await runnerGroup.waitFor({ state: 'visible' })
+  await bisRuhig(runnerGroup)
   await runnerGroup.click({ force: true })
 
   const label = type === 'STOLEN_BASE' ? /Stolen Base/i : /Caught Stealing/i
