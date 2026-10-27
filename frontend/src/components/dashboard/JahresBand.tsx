@@ -72,7 +72,9 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
         <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
       ) : (
         <>
-          <ol className="flex items-end gap-1" style={{ height: MAX_HOEHE }}>
+          {/* Deckel auf die Saeulenbreite: ueber die ganze Breite eines Tablets gezogen
+              werden aus Balken Kloetze, breiter als hoch — dann liest man keine Menge mehr. */}
+          <ol className="flex items-end justify-center gap-1" style={{ height: MAX_HOEHE }}>
             {monate.map((m, i) => {
               const gesamt = m.spieltage + m.trainings
               const vorbei = i < aktuellerMonat
@@ -80,7 +82,7 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
               return (
                 <li
                   key={i}
-                  className="flex-1 flex flex-col justify-end gap-px h-full"
+                  className="flex-1 max-w-[2.75rem] flex flex-col justify-end gap-px h-full"
                   title={gesamt === 0
                     ? `${MONATSNAMEN[i]}: nichts angesetzt`
                     : `${MONATSNAMEN[i]}: ${m.spieltage} Spieltage, ${m.trainings} Trainings`}
@@ -103,9 +105,9 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
             })}
           </ol>
 
-          <ol className="flex gap-1 mt-1.5" aria-hidden>
+          <ol className="flex justify-center gap-1 mt-1.5" aria-hidden>
             {MONATE.map((m, i) => (
-              <li key={i} className="flex-1 min-w-0">
+              <li key={i} className="flex-1 max-w-[2.75rem] min-w-0">
                 {/* Der laufende Monat traegt einen Strich, nicht nur eine andere Helligkeit:
                     "wo stehe ich gerade" darf nicht an einer Nuance haengen. */}
                 <span
