@@ -137,9 +137,9 @@ export function StatsDrawer({ open, onClose, players, stats, avgPresent, totalTr
                       <div key={p.id} className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-center px-3 py-2 border-b border-cream-100 last:border-b-0">
                         <div className="min-w-0">
                           <div data-stats-row-name className="text-sm font-medium text-navy-900 truncate">{p.name}</div>
-                          <div className="h-1.5 bg-cream-200 rounded-full overflow-hidden mt-1">
+                          <div className="h-1.5 bg-bar-track rounded-full overflow-hidden mt-1">
                             <div
-                              className="h-full bg-navy-700 transition-all duration-300"
+                              className="h-full bg-bar transition-all duration-300"
                               style={{ width: `${ratio * 100}%` }}
                             />
                           </div>

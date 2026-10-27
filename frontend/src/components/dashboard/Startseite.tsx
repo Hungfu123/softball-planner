@@ -14,7 +14,7 @@ export function Startseite() {
   const [versucht, setVersucht] = useState(false)
   if (me === null) {
     return (
-      <div role="status" className="rounded-2xl bg-navy-900 text-white p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15 max-w-xl mx-auto">
+      <div role="status" className="rounded-2xl bg-spotlight text-spotlight-ink p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15 max-w-xl mx-auto">
         <div className="mx-auto mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 text-white/80">
           <CrossBones size={24} />
         </div>
@@ -26,7 +26,7 @@ export function Startseite() {
           type="button"
           disabled={versucht}
           onClick={async () => { setVersucht(true); try { await neuLaden() } finally { setVersucht(false) } }}
-          className="font-display min-h-11 px-5 rounded-lg bg-white/95 hover:bg-navy-800 hover:text-white text-navy-900 text-[11px] font-extrabold tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-60"
+          className="font-display min-h-11 px-5 rounded-lg bg-invers hover:bg-navy-800 hover:text-white text-invers-ink text-[11px] font-extrabold tracking-widest uppercase cursor-pointer transition-colors disabled:opacity-60"
         >
           Erneut versuchen
         </button>

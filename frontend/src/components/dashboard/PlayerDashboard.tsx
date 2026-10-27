@@ -23,7 +23,7 @@ import { UpcomingList } from './UpcomingList'
 /** null = Aufstellung nicht ladbar, undefined = lädt noch. */
 type Aufstellungen = Record<number, LineupEntryResponse[] | null | undefined>
 
-const KARTE = 'rounded-2xl bg-navy-900 text-white shadow-lg shadow-navy-900/15 p-4 sm:p-5'
+const KARTE = 'rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 p-4 sm:p-5'
 const UEBERSCHRIFT = 'font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3'
 const LINK_KNOPF = 'font-display min-h-11 inline-flex items-center justify-center gap-2 px-4 rounded-lg text-[11px] font-extrabold tracking-widest uppercase'
 
@@ -295,7 +295,7 @@ function MeineZahlen({ playerId, seasonId, ladefehler }: { playerId: number; sea
       )}
       <Link
         to={`/players/${playerId}`}
-        className={`${LINK_KNOPF} mt-3 w-full bg-white/95 hover:bg-navy-800 hover:text-white text-navy-900 transition-colors`}
+        className={`${LINK_KNOPF} mt-3 w-full bg-invers hover:bg-navy-800 hover:text-white text-invers-ink transition-colors`}
       >
         Ganzes Profil
       </Link>
@@ -306,7 +306,7 @@ function MeineZahlen({ playerId, seasonId, ladefehler }: { playerId: number; sea
 function KeinSpiel({ ladefehler }: { ladefehler: boolean }) {
   if (ladefehler) {
     return (
-      <section className="rounded-2xl bg-navy-900 text-white p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15">
+      <section className="rounded-2xl bg-spotlight text-spotlight-ink p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15">
         <div className="mx-auto mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 text-white/80">
           <CrossBones size={24} />
         </div>
@@ -318,7 +318,7 @@ function KeinSpiel({ ladefehler }: { ladefehler: boolean }) {
     )
   }
   return (
-    <section className="rounded-2xl bg-navy-900 text-white p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15">
+    <section className="rounded-2xl bg-spotlight text-spotlight-ink p-6 sm:p-8 text-center shadow-lg shadow-navy-900/15">
       <div className="mx-auto mb-3 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 text-white/80">
         <CrossBones size={24} />
       </div>
