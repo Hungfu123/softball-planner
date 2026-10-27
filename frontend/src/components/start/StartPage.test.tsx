@@ -181,7 +181,10 @@ describe('Startseite', () => {
     const jahr = await kachel('Termine 2026')
     // Die Zeile ist zugleich die Legende: Menge des Jahres, dann was davon noch kommt.
     expect(jahr.textContent).toMatch(/2\s*Spieltage\s*· noch 1/)
-    expect(jahr.textContent).toMatch(/3\s*Trainings\s*· du 3\s*· noch 2/)
+    expect(jahr.textContent).toMatch(/3\s*Trainings\s*· du 3/)
+    // Nur bei den Spieltagen steht, was noch kommt: danach richtet sich ein Wochenende.
+    // Trainings laufen im Takt weiter, da plant niemand nach einer Restzahl.
+    expect(jahr.textContent).not.toMatch(/Trainings\s*·\s*du 3\s*·\s*noch/)
   })
 
   /* Am Handy ist eine ganze Kachel das bessere Ziel als ein Wort darunter. */
