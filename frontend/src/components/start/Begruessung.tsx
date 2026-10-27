@@ -246,14 +246,20 @@ function Verlauf({ reihe, metrik }: { reihe: CumulativePoint[]; metrik: Metric }
         vectorEffect="non-scaling-stroke"
       />
       {/*
-        Das letzte Stueck in Rot statt eines Punktes. `preserveAspectRatio="none"` zieht die
-        Zeichnung in x auseinander — ein <circle> wird darin zum liegenden Strich und haette
-        am rechten Rand obendrein die Haelfte verloren.
+        Das letzte Stueck in der Farbe der Kennzahlen, nicht in Rot.
+        
+        Die Kurve ist eine eigene Zahl, und Rot gehoert auf dieser Seite dem Spielbetrieb —
+        den Abschnittsstrichen und den Spieltag-Balken im Jahresband. Der rote Punkt war ein
+        Rest aus der Zeit, als auch die Ziffern rot waren.
+
+        Eine Linie statt eines Punktes, weil `preserveAspectRatio="none"` die Zeichnung in x
+        auseinanderzieht: ein <circle> wird darin zum liegenden Strich und haette am rechten
+        Rand obendrein die Haelfte verloren.
       */}
       <polyline
         points={pfad.schluss}
         fill="none"
-        stroke="var(--color-softball-red-500)"
+        stroke="var(--color-kennzahl)"
         strokeWidth="2.5"
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
