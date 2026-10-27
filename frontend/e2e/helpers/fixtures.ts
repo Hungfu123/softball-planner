@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test'
+import { test as base, expect } from '@playwright/test'
 import { seedAuth } from './auth'
 import { ensureTestGame, teardownTestGameDay, resetScoring, setBattingSide } from './api'
 
@@ -113,18 +113,39 @@ function escapeRegex(s: string): string {
  * We locate the runner's `<text>` then click its parent `<g>` with `force: true`
  * because framer-motion keyframe animation keeps the element "unstable".
  */
+/**
+ * Einen Steal ueber die Oberflaeche erfassen.
+ *
+ * Gewartet wird auf ZUSTAENDE, nicht auf Uhrzeiten. Vorher standen hier feste Pausen
+ * (800/300/500 ms), die auf einem ausgelasteten CI-Laeufer regelmaessig zu kurz waren: der
+ * Griff ging ins Leere, der Steal fand nie statt, und der Test meldete einen leeren Base —
+ * als haette die Anwendung versagt. Das Netz riss also dort, wo es halten sollte, und drei
+ * Pushes hintereinander war CI deswegen rot, ohne dass am Produktivcode etwas war.
+ *
+ * Die Pause VOR dem Griff bleibt und ist keine Schlamperei: der Runner steckt in einem
+ * `motion.g` und wandert nach dem letzten Ereignis noch zu seiner neuen Base. Sichtbar ist
+ * er dabei die ganze Zeit — nur eben nicht dort, wo man hinklickt. „Warte, bis es sichtbar
+ * ist" ersetzt das NICHT; ohne die Pause gingen alle drei Steal-Tests zuverlaessig daneben.
+ *
+ * `force: true` bleibt aus demselben Grund: waehrend der Bewegung ist das Element nie
+ * „stabil" im Sinne von Playwright.
+ */
 export async function recordStealingViaUI(page: Page, runnerPlayerId: number, type: 'STOLEN_BASE' | 'CAUGHT_STEALING'): Promise<void> {
   const name = await getPlayerName(runnerPlayerId)
   const displayName = name.length > 7 ? name.slice(0, 6) + '…' : name
-  // Wait for any in-flight animation to roughly settle.
+  // Die Bewegung des vorigen Ereignisses ausklingen lassen — siehe oben.
   await page.waitForTimeout(800)
   // The runner <text> sits inside a <motion.g>; the <g> is the click target.
   const runnerGroup = page.locator('svg g').filter({ hasText: displayName }).first()
+  await runnerGroup.waitFor({ state: 'visible' })
   await runnerGroup.click({ force: true })
-  await page.waitForTimeout(300)
+
   const label = type === 'STOLEN_BASE' ? /Stolen Base/i : /Caught Stealing/i
-  await page.getByRole('button', { name: label }).click()
-  await page.waitForTimeout(500)
+  const knopf = page.getByRole('button', { name: label })
+  await knopf.waitFor({ state: 'visible' })
+  await knopf.click()
+  // Das Blatt schliesst sich, wenn das Ereignis durch ist — darauf warten statt auf 500 ms.
+  await expect(knopf).toBeHidden()
 }
 
 /**

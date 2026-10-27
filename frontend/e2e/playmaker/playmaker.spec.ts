@@ -38,9 +38,18 @@ async function aufraeumen(page: Page, titel: string) {
   }, titel)
 }
 
-/** Mittelpunkt eines Markers in Bildschirmkoordinaten. */
+/**
+ * Mittelpunkt eines Markers in Bildschirmkoordinaten.
+ *
+ * Erst WARTEN, dann messen. `boundingBox()` fragt den Stand in genau diesem Augenblick ab
+ * und gibt `null` zurueck, wenn das Feld noch nicht gezeichnet ist — ohne zu warten. Unter
+ * Last in der CI traf das regelmaessig zu und meldete „Marker SS nicht gefunden", als waere
+ * der Marker weg; da war er nur noch nicht da. Der Griff selbst war nie das Problem.
+ */
 async function markerMitte(page: Page, kuerzel: string) {
-  const box = await page.locator(`[data-marker="defender"][data-id="${kuerzel}"] circle`).boundingBox()
+  const marker = page.locator(`[data-marker="defender"][data-id="${kuerzel}"] circle`)
+  await marker.waitFor({ state: 'visible' })
+  const box = await marker.boundingBox()
   if (!box) throw new Error(`Marker ${kuerzel} nicht gefunden`)
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
