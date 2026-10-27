@@ -9,6 +9,13 @@ interface Props {
   disabled?: boolean
 }
 
+/*
+ * Die Seite, auf der man steht, ist abgeschaltet — man kann sie nicht nochmal waehlen.
+ * `disabled` allein sagt aber "nicht verfuegbar", nicht "schon gewaehlt". Beides sieht
+ * im DOM gleich aus, und genau daran ist es gescheitert: die Regel, die ausgegraute
+ * Knoepfe im Dunkeln zurueckhaltend faerbt, hat die rote GAST-Pille mit uebermalt.
+ * `aria-pressed` trennt die beiden Faelle — fuer Screenreader wie fuer CSS.
+ */
 export function BogenSideToggle({ currentSide, homeTeamName, awayTeamName, onSwitchSide, disabled }: Props) {
   const battingTeam = currentSide === 'HOME' ? homeTeamName : awayTeamName
   return (
@@ -17,6 +24,7 @@ export function BogenSideToggle({ currentSide, homeTeamName, awayTeamName, onSwi
         <button
           onClick={currentSide !== 'HOME' ? onSwitchSide : undefined}
           disabled={disabled || currentSide === 'HOME'}
+          aria-pressed={currentSide === 'HOME'}
           className={`font-display px-5 py-1.5 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
             ${currentSide === 'HOME'
               ? 'bg-navy-800 text-white'
@@ -28,6 +36,7 @@ export function BogenSideToggle({ currentSide, homeTeamName, awayTeamName, onSwi
         <button
           onClick={currentSide !== 'AWAY' ? onSwitchSide : undefined}
           disabled={disabled || currentSide === 'AWAY'}
+          aria-pressed={currentSide === 'AWAY'}
           className={`font-display px-5 py-1.5 text-xs font-bold tracking-widest rounded-full uppercase transition-colors cursor-pointer
             ${currentSide === 'AWAY'
               ? 'bg-softball-red-600 text-white'

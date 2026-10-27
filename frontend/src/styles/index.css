@@ -375,9 +375,14 @@ p {
      Jetzt dieselbe Familie, eine Spur unter der Karte, dazu eine Kante. Das liest
      sich als abgeschaltet und bleibt sichtbar: WCAG 1.4.3 nimmt die Schrift eines
      inaktiven Bedienelements aus, seine Flaeche nicht. */
-  [data-theme="dark"] button.bg-navy-800:disabled,
-  [data-theme="dark"] button.bg-navy-900:disabled,
-  [data-theme="dark"] button.bg-softball-red-600:disabled {
+  /* `:not([aria-pressed="true"])`: ein abgeschalteter Knopf kann zweierlei heissen —
+     "nicht verfuegbar" oder "schon gewaehlt". Der zweite Fall ist eine Auswahl und
+     darf nicht zurueckgenommen werden. Ohne diese Ausnahme wurde die rote GAST-Pille
+     im Spielbogen grau: sie ist abgeschaltet, weil man die laufende Seite nicht noch
+     einmal waehlen kann. */
+  [data-theme="dark"] button.bg-navy-800:disabled:not([aria-pressed="true"]),
+  [data-theme="dark"] button.bg-navy-900:disabled:not([aria-pressed="true"]),
+  [data-theme="dark"] button.bg-softball-red-600:disabled:not([aria-pressed="true"]) {
     opacity: 1;
     background-color: #2E4057;
     color: var(--color-ink-faint);

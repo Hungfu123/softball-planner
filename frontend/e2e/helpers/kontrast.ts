@@ -101,7 +101,12 @@ export async function messeKontrast(page: Page, wurzel?: string): Promise<Messun
       // WCAG 1.4.3 nimmt inaktive Bedienelemente aus: ein ausgegrauter Knopf DARF
       // schwach sein, das ist seine Aussage. Sichtbar bleiben muss er trotzdem —
       // dafuer steht die Flaeche, nicht die Schrift.
-      if (el.closest('button:disabled,fieldset:disabled,[disabled],[aria-disabled="true"]')) return
+      // Ausgenommen ist das INAKTIVE Bedienelement. Ein abgeschalteter Knopf, der
+      // zugleich gedrueckt ist, meint "schon gewaehlt" — das ist eine Aussage, die
+      // lesbar bleiben muss. Genau so war die rote GAST-Pille im Spielbogen aus jeder
+      // Messung gefallen, waehrend sie im Dunkeln grau wurde.
+      const abgeschaltet = el.closest('button:disabled,fieldset:disabled,[disabled],[aria-disabled="true"]')
+      if (abgeschaltet && abgeschaltet.getAttribute('aria-pressed') !== 'true') return
 
       const imSvg = !!(el as SVGElement).ownerSVGElement
       const gemalt = imSvg && cs.fill !== 'none' ? cs.fill : cs.color
