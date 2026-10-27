@@ -277,7 +277,7 @@ function Playmaker() {
   return (
     <section
       aria-label="Playmaker"
-      className="col-span-2 lg:col-span-2 bg-surface-raised border border-line rounded-2xl shadow-card p-4 min-w-0"
+      className="col-span-1 lg:col-span-2 bg-surface-raised border border-line rounded-2xl shadow-card p-3.5 sm:p-4 min-w-0"
     >
       <div className="flex items-baseline justify-between gap-3 mb-2">
         <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted">
@@ -294,10 +294,16 @@ function Playmaker() {
       {kategorien.length > 0 ? (
         <ul className="flex flex-wrap gap-1.5">
           {kategorien.map((k, i) => (
-            // Am Handy wird aus acht Kategorien eine Wand — und vier brauchen schon zwei
-            // Zeilen. Drei sagen genug, der Rest steht eine Beruehrung weiter.
-            // Am Schreibtisch ist Platz fuer alle.
-            <li key={k.id} className={i >= 3 ? 'hidden lg:block' : ''}>
+            /*
+              Drei Stufen, weil jede Chip-ZEILE Seitenhoehe kostet und die Kachel je nach
+              Breite anders viele je Zeile fasst: am Handy passt einer, auf dem Tablet
+              zwei, am Schreibtisch drei.
+
+              Zwei / vier / alle acht. Erst hiess es "ab sm alle" — auf dem Tablet wuchs die
+              Kachel damit auf vier Chip-Zeilen und die Seite sprang von 0 auf 155 Pixel
+              Ueberhang. "Alle 8" sagt ohnehin, wie viel dahintersteckt.
+            */
+            <li key={k.id} className={i >= 4 ? 'hidden lg:block' : i >= 2 ? 'hidden sm:block' : ''}>
               <Link
                 to={`/orga/playmaker?kategorie=${k.id}`}
                 className="inline-flex items-center min-h-11 px-3 rounded-lg bg-surface-hover border border-line text-[11px] font-semibold text-ink-muted hover:text-ink hover:border-line-strong transition-colors"
@@ -420,12 +426,12 @@ function Lampenreihe({ label, count, total, an, beispiel = false }: {
   beispiel?: boolean
 }) {
   return (
-    <div className="text-center">
-      <div className="font-display text-[10px] font-bold tracking-[0.18em] uppercase text-spotlight-ink/70">
+    <div className="flex items-center gap-2 lg:block lg:text-center">
+      <div className="font-display text-[10px] font-bold tracking-[0.18em] uppercase text-spotlight-ink/70 w-11 lg:w-auto">
         {label}
       </div>
       <div
-        className="mt-1.5 flex justify-center gap-1.5"
+        className="flex gap-1.5 lg:mt-1.5 lg:justify-center"
         role="img"
         aria-label={`${label}: ${count} von ${total}${beispiel ? ' (Beispiel)' : ''}`}
       >
@@ -486,7 +492,7 @@ function Zaehler() {
       // und ein Trainer landete auf Orga statt da, wo er hergekommen ist.
       state={{ zurueck: '/' }}
       aria-label="Counter"
-      className="relative col-span-2 lg:col-span-4 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-9 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4
+      className="relative col-span-1 lg:col-span-2 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-8 sm:pr-9 flex flex-col gap-3
         transition-[filter,box-shadow,border-color,transform] duration-200 ease-[var(--ease-out-strong)]
         hover:brightness-110 hover:border-white/40 hover:shadow-lg hover:shadow-navy-900/40
         active:scale-[0.99] active:brightness-125 motion-reduce:active:scale-100"
@@ -525,7 +531,9 @@ function Zaehler() {
         )}
       </div>
 
-      <div className={`flex shrink-0 items-start gap-4 sm:gap-5 ${laeuft ? '' : 'opacity-75'}`}>
+      {/* In der halben Kachel passen drei Gruppen nicht nebeneinander (184 von 150 Pixeln).
+          Gestapelt mit der Beschriftung NEBEN den Punkten kostet jede Reihe 22 statt 36. */}
+      <div className={`flex flex-col gap-1.5 shrink-0 lg:flex-row lg:items-start lg:gap-5 ${laeuft ? '' : 'opacity-75'}`}>
         <Lampenreihe label="Ball" count={lampen.balls} total={3} an="bg-[#FBF6EC]" beispiel={!laeuft} />
         <Lampenreihe label="Strike" count={lampen.strikes} total={2} an="bg-amber-400" beispiel={!laeuft} />
         <Lampenreihe label="Out" count={lampen.outs} total={2} an="bg-softball-red-400" beispiel={!laeuft} />
@@ -534,7 +542,7 @@ function Zaehler() {
       {/* Absolut gesetzt statt im Fluss: am Handy liegen Text und Lampen untereinander,
           und der Pfeil gehoert trotzdem nach oben rechts — dorthin, wo ihn die anderen
           Kacheln haben. `pr-9` haelt ihm die Spalte frei. */}
-      <ChevronRight size={16} className="absolute right-3.5 top-4 text-spotlight-ink/60" aria-hidden />
+      <ChevronRight size={16} className="absolute right-3 top-3.5 sm:right-3.5 sm:top-4 text-spotlight-ink/60" aria-hidden />
     </Link>
   )
 }
