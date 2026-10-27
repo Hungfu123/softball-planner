@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Badge, Button, Card, EmptyState, LoadingSkeleton } from '@/components/shared'
+import { Badge, Button, Card, EmptyState, LoadingSkeleton, Abschnittsmarke } from '@/components/shared'
 import { CrossBones } from '@/icons'
 import { getAudit, getLastSeen } from '@/api/client'
 import type { AuditEntry, AuditKind, LastSeen, Role } from '@/types'
@@ -174,7 +174,7 @@ export function HistoriePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Historie</h1>
+      <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase"><Abschnittsmarke size="lg" />Historie</h1>
 
       <div role="note" className="rounded-xl border border-cream-300 bg-cream-100 px-4 py-3 text-sm text-navy-900">
         Zeigt das Konto, nicht die Person: Passwörter sind geteilt, und ein Admin kann das eines anderen

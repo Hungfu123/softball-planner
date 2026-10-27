@@ -19,7 +19,7 @@ import { usePlayers } from '@/hooks/usePlayers'
 import * as api from '@/api/client'
 import { useToastContext } from '@/components/layout/Layout'
 import { PlusCircle, Pencil, TrashBin, CrossBones, GripHandle, ArchiveIcon, ArchiveRestoreIcon, ChevronRight } from '@/icons'
-import { EmptyState, ConfirmModal, Button, ResponsiveSheet } from '@/components/shared'
+import { EmptyState, ConfirmModal, Button, ResponsiveSheet, Abschnittsmarke } from '@/components/shared'
 import { PlayerManagerSkeleton } from './PlayerManagerSkeleton'
 import { WhatsappVotersTab } from './WhatsappVotersTab'
 import { GenderSheet } from './GenderSheet'
@@ -264,7 +264,7 @@ export function PlayerManager() {
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto p-4 space-y-4">
         <div className="flex items-end justify-between gap-3 flex-wrap">
-          <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
+          <h1 className="inline-flex items-center gap-2.5 font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide"><Abschnittsmarke size="lg" />
             Kader {players.length > 0 && <span className="text-navy-500 font-bold">({activePlayers.length})</span>}
           </h1>
           <div className="flex gap-1.5">

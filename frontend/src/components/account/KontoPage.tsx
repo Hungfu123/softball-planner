@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useTheme } from '@/hooks/useTheme'
 import { useToastContext } from '@/components/layout/Layout'
-import { Button, Card } from '@/components/shared'
+import { Button, Card, Abschnittsmarke } from '@/components/shared'
 import { changePassword, changeUsername, setAuth, storedCredentials } from '@/api/client'
 
 const inputCls =
@@ -152,7 +152,7 @@ export function KontoPage() {
   const { me } = useAuth()
   return (
     <div className="space-y-4 max-w-xl">
-      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-ink-strong tracking-wide uppercase">Konto & Passwort</h1>
+      <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-ink-strong tracking-wide uppercase"><Abschnittsmarke size="lg" />Konto & Passwort</h1>
 
       {me && me.passwordChanged === false && (
         <div role="status" className="rounded-xl border border-amber-400/60 bg-amber-400/10 px-4 py-3 text-sm text-ink">

@@ -4,7 +4,7 @@ import { usePlayerProfile } from '@/hooks/usePlayerProfile'
 import type { ProfileScope } from '@/hooks/usePlayerProfile'
 import { useToastContext } from '@/components/layout/Layout'
 import { ArchiveIcon, ArchiveRestoreIcon, ChevronLeft, CrossBones, DotsVertical, Pencil } from '@/icons'
-import { EmptyState, LoadingSkeleton, ResponsiveSheet, SELECT_PILL_CLASS, SELECT_PILL_STYLE } from '@/components/shared'
+import { EmptyState, LoadingSkeleton, ResponsiveSheet, SELECT_PILL_CLASS, SELECT_PILL_STYLE, Abschnittsmarke } from '@/components/shared'
 import { GENDER_LABELS, GENDER_SHORT } from '@/types'
 import * as api from '@/api/client'
 import { FormChart } from './FormChart'
@@ -373,7 +373,7 @@ export function PlayerProfilePage() {
         <div className="grid gap-4 lg:grid-cols-2 items-start">
           <div className="space-y-4">
           <section className="bg-cream-50 border border-cream-200 rounded-2xl px-4 py-4 shadow-card">
-            <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900 mb-1">
+            <h2 className="inline-flex items-center gap-2 font-display text-sm font-extrabold uppercase tracking-wide text-navy-900 mb-1"><Abschnittsmarke size="sm" />
               Form
             </h2>
             <FormChart
@@ -387,7 +387,7 @@ export function PlayerProfilePage() {
 
           {usage && (
             <section className={`bg-white border border-cream-300 rounded-2xl px-4 py-4 ${scopeFade}`} aria-busy={scopeLoading}>
-              <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">
+              <h2 className="inline-flex items-center gap-2 font-display text-sm font-extrabold uppercase tracking-wide text-navy-900"><Abschnittsmarke size="sm" />
                 Einsatz und Verfügbarkeit
               </h2>
               <p className="text-xs text-gray-500 mt-0.5 mb-3">
@@ -398,7 +398,7 @@ export function PlayerProfilePage() {
           )}
 
           <section className={`bg-white border border-cream-300 rounded-2xl px-4 py-4 ${scopeFade}`} aria-busy={scopeLoading}>
-            <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">
+            <h2 className="inline-flex items-center gap-2 font-display text-sm font-extrabold uppercase tracking-wide text-navy-900"><Abschnittsmarke size="sm" />
               Stärken und Schwächen
             </h2>
             <p className="text-xs text-gray-500 mt-0.5 mb-3">
