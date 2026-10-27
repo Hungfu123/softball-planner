@@ -185,9 +185,12 @@ describe('PlayerDashboard', () => {
    * ausdrücklich zugelassen ist, macht den Test rot — egal wie es heißt oder ob es ein Label hat.
    */
   const ERLAUBTE_KNOEPFE = [/^Spiel \d+$/, /^\+ \d+ weitere/, /^Weniger anzeigen$/]
-  // `/kalender` ist fuer Spieler ein eigener Reiter (PLAYER_TABS) — die Termin-Karten
-  // verlinken dorthin, nicht in eine Werkbank.
-  const ERLAUBTE_LINKS = [/^\/players\/7$/, /^\/counter$/, /^\/kalender$/]
+  /*
+   * Der Spielbetrieb ist seit dem 27.10.2026 wieder nur Spielbetrieb: Zahlen, Termine
+   * und Zaehler stehen auf der Startseite. Hier darf gar nichts mehr verlinkt sein —
+   * die Liste ist leer, und das ist die schaerfste Fassung, die es je hatte.
+   */
+  const ERLAUBTE_LINKS: RegExp[] = []
 
   async function bedienbar() {
     await screen.findByRole('region', { name: 'Lineup' })
@@ -253,92 +256,30 @@ describe('PlayerDashboard', () => {
     expect(within(lineup).queryByText('Tom Test')).not.toBeInTheDocument()
   })
 
-  it('zeigt vier Kennzahlen: AVG, OBP, Spiele, Hits', async () => {
-    rendern()
-    const zahlen = await screen.findByRole('region', { name: 'Meine Zahlen' })
-    await waitFor(() => expect(within(zahlen).getByText('.500')).toBeInTheDocument())
-    expect(within(zahlen).getByText('AVG')).toBeInTheDocument()
-    expect(within(zahlen).getByText('.550')).toBeInTheDocument()
-    expect(within(zahlen).getByText('OBP')).toBeInTheDocument()
-    expect(within(zahlen).getByText('12')).toBeInTheDocument()
-    expect(within(zahlen).getByText('Spiele')).toBeInTheDocument()
-    expect(within(zahlen).getByText('9')).toBeInTheDocument()
-    expect(within(zahlen).getByText('Hits')).toBeInTheDocument()
-  })
+  
 
-  /*
-   * Hier stand frueher: das Wort "Training" darf auf der Seite nicht vorkommen. Das war
-   * eine Abkuerzung, kein Kriterium — geheim ist die BETEILIGUNG (sie fliesst in die
-   * Auto-Aufstellung ein und bleibt auch vor der eigenen Person verborgen), nicht der
-   * Termin. Seit die Startseite sagt, wann trainiert wird, kommt das Wort vor und muss
-   * es auch. Geprueft wird deshalb, was tatsaechlich nicht herausdarf.
-   */
-  it('sagt wann trainiert wird, aber nichts über die Beteiligung', async () => {
-    rendern()
-    const karte = await screen.findByRole('region', { name: 'Nächstes Training' })
-    await waitFor(() => expect(within(karte).getByText(/19:00/)).toBeInTheDocument())
-    expect(within(karte).getByText(/Halle Nord/)).toBeInTheDocument()
-
-    expect(screen.queryByText(/Beteiligung|Anwesend|Teilnehmer|Quote|dabei gewesen/i)).not.toBeInTheDocument()
-    expect(screen.queryByText(/\d+\s*%/)).not.toBeInTheDocument()
-    expect(mockApi.getPlayerUsage).not.toHaveBeenCalled()
-    // Die Vorgabe traegt `attendeeCount: null` wie das Backend. Stuende dort eine Zahl,
-    // duerfte sie trotzdem nirgends auftauchen — deshalb auch die Suche nach blossen
-    // Ziffern in der Karte selbst, abseits von Datum und Uhrzeit.
-    expect(within(karte).queryByText(/^\d+$/)).not.toBeInTheDocument()
-  })
-
-  it('verlinkt ins volle Profil', async () => {
-    rendern()
-    const link = await screen.findByRole('link', { name: /Ganzes Profil/ })
-    expect(link).toHaveAttribute('href', '/players/7')
-  })
-
-  it('erklärt leere Zahlen: noch nicht geschlagen und wann sie kommen', async () => {
-    mockApi.getSeasonBattingStats.mockResolvedValue([])
-    mockApi.getSeasonStats.mockResolvedValue([])
-    rendern()
-    const zahlen = await screen.findByRole('region', { name: 'Meine Zahlen' })
-    expect(await within(zahlen).findByText(/noch nicht geschlagen/)).toBeInTheDocument()
-    expect(within(zahlen).getByRole('link', { name: /Ganzes Profil/ })).toBeInTheDocument()
-  })
-
+  
+  
   it('kommt ohne nächstes Spiel zurecht (Saisonende)', async () => {
     mockApi.getGameDays.mockResolvedValue([gameDay(3, VERGANGEN)])
     rendern()
     expect(await screen.findByText(/Kein Spiel angesetzt/)).toBeInTheDocument()
     expect(screen.getByText(/WhatsApp/)).toBeInTheDocument()
     expect(mockApi.getLineup).not.toHaveBeenCalled()
-    // Zahlen bleiben trotzdem da
-    const zahlen = screen.getByRole('region', { name: 'Meine Zahlen' })
-    await waitFor(() => expect(within(zahlen).getByText('.500')).toBeInTheDocument())
   })
 
   it('kommt ganz ohne Saison zurecht', async () => {
     mockApi.getSeasons.mockResolvedValue([])
     rendern()
     expect(await screen.findByText(/Kein Spiel angesetzt/)).toBeInTheDocument()
-    const zahlen = screen.getByRole('region', { name: 'Meine Zahlen' })
-    expect(within(zahlen).getByText(/noch keine Saison angelegt/)).toBeInTheDocument()
-    expect(within(zahlen).queryByText(/noch nicht geschlagen/)).not.toBeInTheDocument()
   })
 
-  it('sagt „gerade nicht erreichbar" statt „nicht geschlagen", wenn der Abruf der Zahlen scheitert', async () => {
-    mockApi.getSeasonBattingStats.mockRejectedValue(new Error('500'))
-    rendern()
-    const zahlen = await screen.findByRole('region', { name: 'Meine Zahlen' })
-    expect(await within(zahlen).findByText(/gerade nicht erreichbar/)).toBeInTheDocument()
-    expect(within(zahlen).queryByText(/noch nicht geschlagen/)).not.toBeInTheDocument()
-    expect(within(zahlen).queryByText('AVG')).not.toBeInTheDocument()
-  })
-
+  
   it('sagt „nicht erreichbar" statt „Saison durch", wenn die Spieltage nicht laden', async () => {
     mockApi.getGameDays.mockRejectedValue(new Error('500'))
     rendern()
     expect(await screen.findByText(/Spiele gerade nicht erreichbar/)).toBeInTheDocument()
     expect(screen.queryByText(/Saison durch/)).not.toBeInTheDocument()
-    const zahlen = screen.getByRole('region', { name: 'Meine Zahlen' })
-    expect(within(zahlen).getByText(/gerade nicht erreichbar/)).toBeInTheDocument()
   })
 
   it('nimmt die Saison mit dem höchsten Jahr, nicht die letzte der Liste', async () => {
@@ -349,7 +290,6 @@ describe('PlayerDashboard', () => {
     rendern()
     await screen.findByText('Berlin Bears')
     expect(mockApi.getGameDays).toHaveBeenCalledWith(9)
-    await waitFor(() => expect(mockApi.getSeasonBattingStats).toHaveBeenCalledWith(9))
   })
 
   it('stürzt nicht, wenn me noch null ist, und sagt warum Persönliches fehlt', async () => {
@@ -372,24 +312,5 @@ describe('PlayerDashboard', () => {
     expect(within(kommt).getByText(/04\.07\./)).toBeInTheDocument()
   })
 
-  /*
-   * Der Playmaker stand hier mit und ist raus: ein Taktikbrett sucht niemand am Spieltag
-   * auf der Startseite. Der Zaehler bleibt — aber nur mit dem Satz, der sagt, wofuer man
-   * ihn braucht. "Counter" allein ist ein Knopf, den niemand drueckt.
-   */
-  it('erklärt den Zähler, statt ihn nur zu verlinken — und bleibt 44 px hoch', async () => {
-    rendern()
-    const karte = await screen.findByRole('region', { name: 'Zähler' })
-    expect(within(karte).getByText(/umpirest/)).toBeInTheDocument()
-    expect(within(karte).getByText(/ohne Netz/)).toBeInTheDocument()
-    const link = within(karte).getByRole('link', { name: /Zähler öffnen/ })
-    expect(link).toHaveAttribute('href', '/counter')
-    expect(link.className).toMatch(/min-h-11/)
-  })
 
-  it('verlinkt den Playmaker nicht mehr von der Startseite', async () => {
-    rendern()
-    await screen.findByRole('region', { name: 'Zähler' })
-    expect(screen.queryByRole('link', { name: /Playmaker/ })).not.toBeInTheDocument()
   })
-})

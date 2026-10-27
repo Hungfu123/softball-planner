@@ -60,22 +60,29 @@ describe('WhatsApp-Band', () => {
   it('lässt die Reiter davon unberührt: unbekannt zeigt weiter die Admin-Leiste', () => {
     auth.me = null
     renderAt('/')
-    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(5)
+    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(6)
   })
 })
 
 describe('Layout Reiterleiste', () => {
-  it('zeigt einem Admin fünf Reiter', () => {
+  it('zeigt einem Admin sechs Reiter', () => {
     renderAt('/')
-    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(5)
+    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(6)
   })
 
-  it('zeigt die richtigen fünf Reiter in dieser Reihenfolge mit diesen Zielen', () => {
+  /*
+   * Start und Spielbetrieb sind seit dem 27.10.2026 getrennt: `/` ist die eigene
+   * Startseite, die Werkbank liegt auf `/spielbetrieb`. Am Handy gibt es kein Logo,
+   * das zurueck nach `/` fuehrt — deshalb braucht Start einen eigenen Reiter.
+   */
+  it('zeigt die richtigen sechs Reiter in dieser Reihenfolge mit diesen Zielen', () => {
     renderAt('/')
     const tabs = screen.getAllByRole('link').filter(isTab)
-    expect(tabs.map(t => t.getAttribute('href'))).toEqual(['/', '/training', '/players', '/stats', '/orga'])
+    expect(tabs.map(t => t.getAttribute('href'))).toEqual(
+      ['/', '/spielbetrieb', '/training', '/players', '/stats', '/orga'])
     // Jeder Reiter trägt Kurz- und Langlabel im DOM (CSS blendet eines aus), Kurzlabel zuerst.
     expect(tabs.map(t => t.textContent)).toEqual([
+      'StartStart',
       'SpieleSpielbetrieb',
       'TrainingTraining',
       'SpielerSpieler',
@@ -101,12 +108,13 @@ describe('Layout Reiterleiste', () => {
 })
 
 describe('Layout Reiterleiste nach Rolle', () => {
-  it('zeigt einem Spieler drei Reiter: Start, Analyse, Kalender', () => {
+  it('zeigt einem Spieler vier Reiter: Start, Spielbetrieb, Analyse, Kalender', () => {
     auth.me = SPIELER
     renderAt('/')
     const tabs = screen.getAllByRole('link').filter(isTab)
-    expect(tabs.map(t => t.getAttribute('href'))).toEqual(['/', '/stats', '/kalender'])
-    expect(tabs.map(t => t.textContent)).toEqual(['StartStart', 'AnalyseAnalyse', 'KalenderKalender'])
+    expect(tabs.map(t => t.getAttribute('href'))).toEqual(['/', '/spielbetrieb', '/stats', '/kalender'])
+    expect(tabs.map(t => t.textContent)).toEqual(
+      ['StartStart', 'SpieleSpielbetrieb', 'AnalyseAnalyse', 'KalenderKalender'])
   })
 
   it('markiert beim Spieler den Kalender-Reiter auf /kalender', () => {
@@ -115,11 +123,12 @@ describe('Layout Reiterleiste nach Rolle', () => {
     expect(screen.getByRole('link', { name: /Kalender/ })).toHaveClass('bg-band-ink')
   })
 
-  it.each([ADMIN, SUPER])('zeigt $role fünf Reiter mit Orga', me => {
+  it.each([ADMIN, SUPER])('zeigt $role sechs Reiter mit Orga', me => {
     auth.me = me
     renderAt('/')
     const tabs = screen.getAllByRole('link').filter(isTab)
-    expect(tabs.map(t => t.getAttribute('href'))).toEqual(['/', '/training', '/players', '/stats', '/orga'])
+    expect(tabs.map(t => t.getAttribute('href'))).toEqual(
+      ['/', '/spielbetrieb', '/training', '/players', '/stats', '/orga'])
   })
 })
 

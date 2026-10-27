@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { seedAuth } from '../helpers/auth'
+import { seedAuth, seedDashboardSaison } from '../helpers/auth'
 import { messeHover, bericht } from '../helpers/kontrast'
 
 /*
@@ -15,11 +15,13 @@ import { messeHover, bericht } from '../helpers/kontrast'
  * kostet Zeit. Genommen sind die vier mit den meisten anfassbaren Zeilen.
  */
 
-const SEITEN = ['/', '/training', '/players', '/orga']
+const SEITEN = ['/', '/spielbetrieb', '/training', '/players', '/orga']
 
 test.describe('Kontrast unter dem Zeiger', () => {
   test.beforeEach(async ({ context }) => {
     await seedAuth(context)
+    // Sonst zeigt /spielbetrieb nur den Leerzustand und die Hero-Karte wird nie ueberfahren.
+    await seedDashboardSaison(context)
   })
 
   for (const pfad of SEITEN) {

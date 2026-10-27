@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
-import { Home, Dumbbell, Users, BarChart3, Mail, CalendarDays, type LucideIcon } from 'lucide-react'
+import { Home, Dumbbell, Users, BarChart3, Mail, CalendarDays, CalendarCheck, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { WhatsappStatusBanner } from './WhatsappStatusBanner'
 import { KontoMenu } from './KontoMenu'
@@ -34,7 +34,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 type Tab = { path: string; label: string; shortLabel: string; Icon: LucideIcon; extraPaths?: string[] }
 
 const ADMIN_TABS: Tab[] = [
-  { path: '/', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: Home },
+  { path: '/', label: 'Start', shortLabel: 'Start', Icon: Home },
+  { path: '/spielbetrieb', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: CalendarCheck },
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
@@ -47,6 +48,7 @@ const ADMIN_TABS: Tab[] = [
  */
 const PLAYER_TABS: Tab[] = [
   { path: '/', label: 'Start', shortLabel: 'Start', Icon: Home },
+  { path: '/spielbetrieb', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: CalendarCheck },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
   { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
 ]
@@ -94,7 +96,7 @@ export function Layout() {
     <ToastCtx.Provider value={toast}>
       <div className="min-h-screen bg-surface">
         <header className="bg-band text-band-ink sticky top-0 z-50 shadow-md no-print border-b-[3px] border-softball-red-600 safe-top">
-          <div className={`${shell} h-14 flex items-center gap-3`}>
+          <div className={`${shell} h-14 flex items-center gap-2 sm:gap-3`}>
             {isSubPage && (
               <Link to="/" className="p-1 hover:bg-navy-700 rounded-lg shrink-0" aria-label="Zurück">
                 <ChevronLeft size={22} />
@@ -142,14 +144,17 @@ export function Layout() {
                 390px, scrollWidth <= clientWidth, data-scroll-hint false. Die kompakte
                 Variante hat die 44px-Targets, die auf dem Tablet ohnehin richtig sind.
               */}
-              <div className="flex items-stretch gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
+              {/* gap-0.5 statt gap-1 und px-1.5 statt px-2 am Handy: mit dem sechsten Reiter
+                  (Start) lief die Leiste bei 390px um 2px ueber. Jetzt passt sie dort und bei
+                  412px sauber; unter 375px bleibt der gebaute Scroll-Hinweis zustaendig. */}
+              <div className="flex items-stretch gap-0.5 sm:gap-1 lg:gap-1.5 ml-auto mr-auto lg:mr-0">
                 {tabs.map(tab => {
                   const active = activeTab === tab.path
                   return (
                     <Link
                       key={tab.path}
                       to={tab.path}
-                      className={`font-display shrink-0 flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-1.5 min-w-11 min-h-11 lg:min-w-0 px-2 lg:px-3 py-1 lg:py-1.5 text-nav lg:text-xs font-bold tracking-wide lg:tracking-widest rounded-lg lg:rounded-full transition-colors duration-200 whitespace-nowrap ${
+                      className={`font-display shrink-0 flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-1.5 min-w-11 min-h-11 lg:min-w-0 px-1.5 sm:px-2 lg:px-3 py-1 lg:py-1.5 text-nav lg:text-xs font-bold tracking-wide lg:tracking-widest rounded-lg lg:rounded-full transition-colors duration-200 whitespace-nowrap ${
                         active ? 'bg-band-ink text-band' : 'text-band-ink/70 hover:text-band-ink hover:bg-band-ink/10'
                       }`}
                     >

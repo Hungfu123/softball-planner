@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { Startseite } from '@/components/dashboard/Startseite'
+import { StartPage } from '@/components/start/StartPage'
 import { PlayerManager } from '@/components/players/PlayerManager'
 import { PlayerProfilePage } from '@/components/players/PlayerProfilePage'
 import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
@@ -44,7 +45,13 @@ export const routes: RouteObject[] = [
     element: <RequireAuth><Layout /></RequireAuth>,
     errorElement: <ChunkErrorBoundary />,
     children: [
-      { path: '/', element: <Startseite />, errorElement: <ChunkErrorBoundary /> },
+      /*
+       * `/` ist die eigene Startseite, nicht die des Vereins: Name, Position, Zahlen und
+       * drei zugeklappte Antworten. Der Spielbetrieb ist eine Werkbank und hat seit dem
+       * 27.10.2026 seine eigene Adresse — zusammen auf einer Seite wurde beides lang.
+       */
+      { path: '/', element: <StartPage />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/spielbetrieb', element: <Startseite />, errorElement: <ChunkErrorBoundary /> },
       { path: '/kalender', element: <LazyCalendar />, errorElement: <ChunkErrorBoundary /> },
       { path: '/training', element: <RequireRole mind="ADMIN"><LazyTrainingToday /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/players', element: <RequireRole mind="ADMIN"><PlayerManager /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
