@@ -24,6 +24,9 @@ public record CreateBulkTrainingRequest(
 
     String location,
 
+    /** Ort je ISO-Wochentag; was fehlt, erbt `location`. */
+    Map<Integer, String> weekdayLocations,
+
     String periodName,
 
     String type,

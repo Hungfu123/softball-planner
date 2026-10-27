@@ -1,5 +1,7 @@
 package com.softball.adapter.out.persistence.entity;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -36,6 +38,11 @@ public class TrainingPeriodEntity {
     @Column(name = "weekday_times")
     private String weekdayTimes;
 
+    /** JSON, nicht CSV: ein Ortsname darf ein Komma enthalten, eine Uhrzeit nie. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "weekday_locations", columnDefinition = "jsonb", nullable = false)
+    private String weekdayLocations = "{}";
+
     @Column(name = "pc_only_weekdays")
     private String pcOnlyWeekdays;
 
@@ -68,6 +75,9 @@ public class TrainingPeriodEntity {
     public void setTime(final String time) { this.time = time; }
     public String getLocation() { return location; }
     public void setLocation(final String location) { this.location = location; }
+
+    public String getWeekdayLocations() { return weekdayLocations; }
+    public void setWeekdayLocations(final String weekdayLocations) { this.weekdayLocations = weekdayLocations; }
 
     public String getWeekdayTimes() { return weekdayTimes; }
     public void setWeekdayTimes(final String weekdayTimes) { this.weekdayTimes = weekdayTimes; }

@@ -26,6 +26,12 @@ public record UpdateTrainingPeriodRequest(
 
     String location,
 
+    /**
+     * Ort je ISO-Wochentag. Was hier fehlt, erbt den Ort der Periode — `location` bleibt der
+     * Regelfall, diese Karte die Ausnahme.
+     */
+    Map<Integer, String> weekdayLocations,
+
     Integer cycleWeeks,
 
     List<Integer> activeWeeksInCycle,
