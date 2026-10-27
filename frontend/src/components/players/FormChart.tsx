@@ -14,8 +14,15 @@ import {
 const PAD = { top: 16, right: 14, bottom: 28, left: 40 }
 const FALLBACK_WIDTH = 720
 
+/*
+ * Tokens, keine Paletten-Variablen. Der Shim deutet KLASSEN um, nicht `--color-navy-800`
+ * — eine Kurve, die direkt aus der Palette malt, bleibt im Dunkeln dunkel. Genau so
+ * verschwand die Formkurve: #193253 auf einer Karte in #273D5A sind 1,25:1.
+ * `--color-bar` ist dafuer gebaut: im Hellen derselbe Wert wie bisher, im Dunkeln hell.
+ * Der letzte Punkt bleibt Rot — er zeigt auf beiden Gruenden.
+ */
 const INK = {
-  primary: 'var(--color-navy-800)',
+  primary: 'var(--color-bar)',
   last: 'var(--color-softball-red-600)',
 }
 
@@ -48,8 +55,8 @@ const INK = {
  * erkennt die Reihen trotzdem.
  */
 const COMPARE_STYLES = [
-  { ink: '#5964C5', dash: '6 4' },
-  { ink: '#0F766E', dash: '1.5 4' },
+  { ink: 'var(--color-serie-b)', dash: '6 4' },
+  { ink: 'var(--color-serie-c)', dash: '1.5 4' },
 ] as const
 
 export const MAX_COMPARE = COMPARE_STYLES.length
@@ -281,7 +288,7 @@ export function FormChart({
           <g key={g}>
             <line
               x1={PAD.left} x2={W - PAD.right} y1={y(g)} y2={y(g)}
-              stroke="var(--color-cream-300)" strokeWidth="1" strokeDasharray="3 4"
+              stroke="var(--color-line)" strokeWidth="1" strokeDasharray="3 4"
             />
             <text
               x={PAD.left - 6} y={y(g) + 3} textAnchor="end"
@@ -326,7 +333,7 @@ export function FormChart({
               key={p.gameId}
               cx={xs[i]} cy={y(p[metric])} r={activeIndex === i ? 5 : isLast ? 4.5 : 3}
               className="transition-[r] duration-150"
-              fill={activeIndex === i || isLast ? ink : 'var(--color-cream-50)'}
+              fill={activeIndex === i || isLast ? ink : 'var(--color-surface-raised)'}
               stroke={ink} strokeWidth="2"
             />
           )
@@ -337,7 +344,7 @@ export function FormChart({
         {activeIndex != null && (
           <line
             x1={xs[activeIndex]} x2={xs[activeIndex]} y1={PAD.top} y2={H - PAD.bottom}
-            stroke="var(--color-gray-400)" strokeWidth="1" pointerEvents="none"
+            stroke="var(--color-ink-faint)" strokeWidth="1" pointerEvents="none"
           />
         )}
 
@@ -368,7 +375,7 @@ export function FormChart({
                 zweites Gitter quer zum ersten nimmt der Kurve die Aufmerksamkeit. */}
             <line
               x1={t.x} x2={t.x} y1={H - PAD.bottom} y2={H - PAD.bottom + 4}
-              stroke="var(--color-cream-400)" strokeWidth="1"
+              stroke="var(--color-line-strong)" strokeWidth="1"
             />
             <text x={t.x} y={H - 8} textAnchor="middle" className="fill-gray-400 text-[10px]">{t.label}</text>
           </g>

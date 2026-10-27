@@ -113,6 +113,10 @@
      DUNKLER sein als die Karte, sonst sieht man den leeren Teil nicht mehr und
      der Balken wird zu einem Strich, der im Nichts aufhoert. */
   --color-bar-track: #E8E0CA;
+  /* Zwei Vergleichsreihen in der Formkurve. Eigener Farbton UND eigener Strich,
+     damit sie sich auch ohne Farbe unterscheiden. */
+  --color-serie-b: #5964C5;
+  --color-serie-c: #0F766E;
   --schimmer: rgb(255 255 255 / 0.7);
   /* Der hervorgehobene Block: Kennzahlen-Kachel, Profilkopf, Vergleichstafel.
      Auf Papier wird so etwas zum dunklen Klotz — es faellt auf, weil es die
@@ -266,6 +270,11 @@ p {
        Karte verschwand der leere Teil, und 50 % sahen aus wie ein Strich, der
        mitten im Nichts endet. 1,5:1 gegen die Karte, 5,0:1 gegen den Balken. */
     --color-bar-track: #0A1F3A;
+    /* Indigo und Petrol sind auf Navy dunkel auf dunkel. Dieselben Toene, nach oben
+       gedreht und im Farbton vom Blau der Hauptlinie weggezogen: 5,1:1 und 6,0:1
+       gegen die Karte, damit auch die Namen in der Legende lesbar bleiben. */
+    --color-serie-b: #B8A6F5;
+    --color-serie-c: #5FD3BE;
     --schimmer: rgb(255 255 255 / 0.1);
     /* Eine Stufe ueber der Karte: 1,6:1 gegen die Seite, 1,2:1 gegen gewoehnliche
        Karten. Weisse Schrift steht darauf bei 9,0:1. */
