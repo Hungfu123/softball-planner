@@ -8,8 +8,22 @@ const MONATE = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
 const MONATSNAMEN = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
 
-/** Hoehe der hoechsten Saeule. Darunter wird linear skaliert, mit 3px Mindesthoehe je Art. */
-const MAX_HOEHE = 52
+/**
+ * Die Saeulen fuellen ihre Spalte ANTEILIG, die Hoehe der Spalte steht am Rahmen.
+ *
+ * Vorher waren es feste Pixel, und damit war das Band auf jedem Geraet gleich hoch. Am
+ * Handy ist die Hoehe aber das knappe Gut: dort steht die Spalte auf 44px (`h-11`), am
+ * Schreibtisch auf 52. Prozent statt Pixel macht den Unterschied zu einer einzigen Klasse.
+ *
+ * `max(3px, …)` haelt einen einzelnen Termin sichtbar — ohne das verschwaende ein Monat
+ * mit einem Training gegen einen mit zwanzig auf unter einen Pixel.
+ */
+const MINDEST_HOEHE = '3px'
+
+/** Anteil der hoechsten Saeule, als CSS-Hoehe. 0 bleibt 0 — kein Balken, kein Mindestmass. */
+function saeule(n: number, hoechste: number): string | number {
+  return n === 0 ? 0 : `max(${MINDEST_HOEHE}, ${((n / hoechste) * 100).toFixed(1)}%)`
+}
 
 /**
  * Das Jahr auf einen Blick: zwoelf Saeulen, eine je Monat.
@@ -74,11 +88,11 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
         <>
           {/* Deckel auf die Saeulenbreite: ueber die ganze Breite eines Tablets gezogen
               werden aus Balken Kloetze, breiter als hoch — dann liest man keine Menge mehr. */}
-          <ol className="flex items-end justify-center gap-1" style={{ height: MAX_HOEHE }}>
+          <ol className="flex items-end justify-center gap-1 h-11 sm:h-[3.25rem]">
             {monate.map((m, i) => {
               const gesamt = m.spieltage + m.trainings
               const vorbei = i < aktuellerMonat
-              const skala = (n: number) => (n === 0 ? 0 : Math.max(3, (n / hoechste) * MAX_HOEHE))
+              const skala = (n: number) => saeule(n, hoechste)
               return (
                 <li
                   key={i}
@@ -124,7 +138,7 @@ export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
             ))}
           </ol>
 
-          <p className="text-[11px] text-ink-muted mt-3 leading-relaxed">
+          <p className="text-[11px] text-ink-muted mt-2 sm:mt-3 leading-relaxed">
             Noch offen:{' '}
             <span className="font-semibold text-ink">{offeneSpieltage}</span>{' '}
             {offeneSpieltage === 1 ? 'Spieltag' : 'Spieltage'} ·{' '}

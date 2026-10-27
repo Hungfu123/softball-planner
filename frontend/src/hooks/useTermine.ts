@@ -92,20 +92,3 @@ export function heuteIso(): string {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-
-/**
- * Die Saison, in der man GERADE steckt: die des Spieltags, der heute am naechsten liegt.
- *
- * Nicht "die mit dem hoechsten Jahr". Das waere eine Aussage ueber die Stammdaten, nicht
- * ueber den Spielbetrieb — eine verirrte Saison (im Entwicklungsbestand lag eine mit Jahr
- * 2101 aus einem E2E-Lauf) verdraengt damit die laufende, und die Startseite meldet dem
- * Spieler, er habe "noch nicht geschlagen". Der naechstgelegene Spieltag weiss es besser.
- *
- * `null`, solange keine Spieltage da sind — dann entscheidet die Jahreszahl weiter.
- */
-export function saisonAusTerminen(termine: Termin[], heute: string): number | null {
-  const spieltage = termine.filter(t => t.art === 'SPIELTAG' && t.seasonId != null)
-  if (spieltage.length === 0) return null
-  const kuenftig = spieltage.find(t => t.datum >= heute)
-  return (kuenftig ?? spieltage[spieltage.length - 1]).seasonId
-}

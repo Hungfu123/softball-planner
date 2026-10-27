@@ -15,11 +15,10 @@ vi.mock('@/hooks/useRolle', () => ({
 }))
 
 vi.mock('@/api/client', () => ({
-  getSeasons: vi.fn(),
   getAllGameDays: vi.fn(),
   getTrainings: vi.fn(),
-  getSeasonBattingStats: vi.fn(),
-  getSeasonStats: vi.fn(),
+  getYearBattingStats: vi.fn(),
+  getYearStats: vi.fn(),
   getPlayerBattingTimeline: vi.fn(),
   getPlayer: vi.fn(),
   getPlayerUsage: vi.fn(),
@@ -87,13 +86,12 @@ describe('Startseite', () => {
     localStorage.clear()
     auth.me = ME
     vi.clearAllMocks()
-    mockApi.getSeasons.mockResolvedValue([{ id: 1, name: 'Saison 2026', year: 2026 }])
     mockApi.getAllGameDays.mockResolvedValue([spieltag(1, '2026-07-04'), spieltag(2, '2026-03-01')])
     mockApi.getTrainings.mockResolvedValue([
       training(1, '2026-06-18'), training(2, '2026-06-20'), training(3, '2026-01-10'),
     ])
-    mockApi.getSeasonBattingStats.mockResolvedValue([ZAHLEN])
-    mockApi.getSeasonStats.mockResolvedValue([
+    mockApi.getYearBattingStats.mockResolvedValue([ZAHLEN])
+    mockApi.getYearStats.mockResolvedValue([
       { playerId: 7, playerName: 'Mia Meier', totalGames: 12, positionCounts: {} } as SeasonPlayerStats,
     ])
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
@@ -295,16 +293,55 @@ describe('Startseite', () => {
     expect(within(kopf).queryByText('AVG')).not.toBeInTheDocument()
   })
 
+  /*
+   * Der Zeitraum ist das JAHR, nicht eine Saison daraus.
+   *
+   * Vorher suchte die Seite sich die Saison des naechstgelegenen Spieltags. Wer im selben
+   * Jahr eine Liga-Saison und eine fuer Trainingsspiele hat, bekam damit die Bilanz der
+   * zuletzt angesetzten — ein Spiel, keine Quoten — unter einer Kachel, die "Dein Jahr"
+   * ueberschrieb. Dieser Test haelt Kopf und Band auf demselben Zeitraum.
+   */
+  it('nimmt die Zahlen des ganzen Jahres, nicht die einer einzelnen Saison', async () => {
+    rendern()
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
+    expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2026)
+    expect(mockApi.getYearStats).toHaveBeenCalledWith(2026)
+    // Der Zeitraum steht neben den Zahlen — und ist derselbe wie auf der Kachel darunter.
+    expect(within(kopf).getByText('2026')).toBeInTheDocument()
+    await kachel('Dein Jahr 2026')
+  })
+
+  /*
+   * Der Verlauf kommt ungefiltert vom Server (alle Jahre). Die Kurve im Kopf und die
+   * Kachel "Zuletzt" zeigen nur das laufende Jahr — sonst zoege ein Spiel von 2024 die
+   * Jahresbilanz mit.
+   */
+  it('lässt Spiele anderer Jahre aus dem Verlauf heraus', async () => {
+    mockApi.getPlayerBattingTimeline.mockResolvedValue([
+      { gameId: 9, date: '2024-05-01', opponent: 'Altes Jahr', seasonId: 9, seasonName: null, year: 2024,
+        plateAppearances: 3, atBats: 3, hits: 1, walks: 0, strikeouts: 0, runsBattedIn: 0,
+        totalBases: 1, timesOnBase: 1, rollingAverage: 0.33 },
+      { gameId: 1, date: '2026-06-01', opponent: 'Berlin Bears', seasonId: 1, seasonName: null, year: 2026,
+        plateAppearances: 4, atBats: 4, hits: 2, walks: 0, strikeouts: 1, runsBattedIn: 2,
+        totalBases: 3, timesOnBase: 2, rollingAverage: 0.5 },
+    ])
+    rendern()
+    const zuletzt = await kachel('Zuletzt')
+    await waitFor(() => expect(zuletzt.textContent).toMatch(/Berlin Bears/))
+    expect(zuletzt.textContent).not.toMatch(/Altes Jahr/)
+  })
+
   it('erklärt leere Zahlen: noch nicht geschlagen und wann sie kommen', async () => {
-    mockApi.getSeasonBattingStats.mockResolvedValue([])
-    mockApi.getSeasonStats.mockResolvedValue([])
+    mockApi.getYearBattingStats.mockResolvedValue([])
+    mockApi.getYearStats.mockResolvedValue([])
     rendern()
     const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
     expect(await within(kopf).findByText(/noch nicht geschlagen/)).toBeInTheDocument()
   })
 
   it('sagt „gerade nicht erreichbar" statt „nicht geschlagen", wenn die Zahlen scheitern', async () => {
-    mockApi.getSeasonBattingStats.mockRejectedValue(new Error('500'))
+    mockApi.getYearBattingStats.mockRejectedValue(new Error('500'))
     rendern()
     const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
     expect(await within(kopf).findByText(/gerade nicht erreichbar/)).toBeInTheDocument()

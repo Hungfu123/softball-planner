@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight } from 'lucide-react'
-import * as api from '@/api/client'
-import type { Season, PlayerFormPoint } from '@/types'
+import type { PlayerFormPoint } from '@/types'
 import { FeldMiniatur } from './FeldMiniatur'
 import { useRolle } from '@/hooks/useRolle'
 import { Abschnittsmarke } from '@/components/shared'
-import { useTermine, heuteIso, saisonAusTerminen, type Termin } from '@/hooks/useTermine'
+import { useTermine, heuteIso, type Termin } from '@/hooks/useTermine'
 import { readCounterState } from '@/hooks/useCounter'
 import { isInitial } from '@/utils/counterRules'
 import { JahresBand } from '@/components/dashboard/JahresBand'
@@ -63,13 +62,17 @@ export function StartPage() {
   const { me } = useRolle()
   const { termine, laden, fehler } = useTermine()
   const heute = heuteIso()
-  const { saisons, ladefehler } = useSaisons()
-  // Der naechstgelegene Spieltag weiss besser als die Jahreszahl, in welcher Saison wir sind.
-  const ausTerminen = saisonAusTerminen(termine, heute)
-  const aktuelle = saisons.find(s => s.id === ausTerminen) ?? juengste(saisons)
-  const seasonId = aktuelle?.id ?? null
-  const seasonName = aktuelle?.name ?? null
-  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, seasonId)
+  /*
+   * Das laufende Jahr traegt die ganze Seite — Kopf UND Band.
+   *
+   * Vorher suchte der Kopf sich eine Saison: die des naechstgelegenen Spieltags. Wer im
+   * selben Jahr eine Liga-Saison und eine fuer Trainingsspiele hat, bekam damit die Bilanz
+   * der zuletzt angesetzten zu sehen — ein Spiel, keine Quoten — waehrend die Kachel
+   * darunter "Dein Jahr 2026" ueberschrieb. Ein Zeitraum je Seite, und zwar der, der
+   * drauf steht.
+   */
+  const jahr = new Date().getFullYear()
+  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, jahr)
 
   const naechsterSpieltag = useMemo(
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
@@ -82,15 +85,13 @@ export function StartPage() {
   )
 
   return (
-    <div className="space-y-2.5 sm:space-y-4">
+    <div className="space-y-2 sm:space-y-4">
       <Begruessung
         name={me?.playerName ?? null}
         playerId={me?.playerId ?? null}
-        seasonId={seasonId}
-        seasonName={seasonName}
+        jahr={jahr}
         daten={daten}
         fehler={zahlenFehler}
-        ladefehler={ladefehler}
       />
 
       {/*
@@ -103,7 +104,7 @@ export function StartPage() {
         (zwoelf Saeulen), also bekommt es sie. Der Zaehler ist eine Handlung, keine Auskunft
         — eine flache Zeile am Fuss.
       */}
-      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
           <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
         </Kachel>
@@ -112,7 +113,7 @@ export function StartPage() {
           <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler} />
         </Kachel>
 
-        <Kachel titel={`Dein Jahr ${new Date().getFullYear()}`} className="col-span-2 lg:col-span-2">
+        <Kachel titel={`Dein Jahr ${jahr}`} className="col-span-2 lg:col-span-2">
           <JahresBand termine={termine} laden={laden} fehler={fehler} rahmenlos />
         </Kachel>
 
@@ -154,7 +155,7 @@ function Kachel({ titel, zu, className = '', children }: {
   const inhalt = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted mb-2.5">
+        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-wider sm:tracking-widest uppercase text-ink-muted mb-2 sm:mb-2.5">
           <Abschnittsmarke size="sm" />
           {titel}
         </h2>
@@ -163,7 +164,7 @@ function Kachel({ titel, zu, className = '', children }: {
       {children}
     </>
   )
-  const stil = `bg-surface-raised border border-line rounded-2xl shadow-card p-4 min-w-0 block ${className}`
+  const stil = `bg-surface-raised border border-line rounded-2xl shadow-card p-3.5 sm:p-4 min-w-0 block ${className}`
   if (zu) {
     return (
       <Link
@@ -203,7 +204,7 @@ function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; 
       {wann(spieltag.datum) && (
         <p className="text-xs font-semibold text-label mt-1">{wann(spieltag.datum)}</p>
       )}
-      <p className="text-sm text-ink-muted mt-2 line-clamp-2">{spieltag.titel}</p>
+      <p className="text-sm text-ink-muted mt-2 line-clamp-1 sm:line-clamp-2">{spieltag.titel}</p>
       {spieltag.ort && (
         <p className="text-sm text-ink-muted mt-1 inline-flex items-center gap-1.5">
           <MapPin size={13} className="shrink-0" /> {spieltag.ort}
@@ -231,15 +232,19 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
       {wann(naechstes.datum) && (
         <p className="text-xs font-semibold text-label mt-1">{wann(naechstes.datum)}</p>
       )}
-      <div className="mt-2 space-y-1">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:block sm:space-y-1">
         {naechstes.zeit && (
           <p className="text-sm text-ink-muted inline-flex items-center gap-1.5">
             <Clock size={13} className="shrink-0" /> {naechstes.zeit}
           </p>
         )}
+        {/* Einzeilig: ein Hallenname wie "Halle Welheimer Mark" bricht in der halben
+            Kachel auf zwei Zeilen, und die zweite sagt nichts, was die erste nicht schon
+            andeutet. Ab sm ist Platz, dort darf er ausgeschrieben stehen. */}
         {naechstes.ort && (
-          <p className="text-sm text-ink-muted inline-flex items-center gap-1.5">
-            <MapPin size={13} className="shrink-0" /> {naechstes.ort}
+          <p className="text-sm text-ink-muted inline-flex items-center gap-1.5 min-w-0 max-w-full">
+            <MapPin size={13} className="shrink-0" />
+            <span className="truncate sm:whitespace-normal">{naechstes.ort}</span>
           </p>
         )}
       </div>
@@ -285,9 +290,9 @@ function Playmaker() {
           liest sich als Streusel — und in die Ecke geschoben wie ein vergessenes Wasserzeichen.
           Der Ausschnitt selbst liegt symmetrisch um HOME, also genuegt das Zentrieren hier.
           `pointer-events-none`, damit der Tipp die Kachel trifft und nicht das Bild. */}
-      <FeldMiniatur className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 w-24 sm:w-28 text-ink-faint" />
+      <FeldMiniatur className="pointer-events-none absolute bottom-2.5 sm:bottom-3 left-1/2 -translate-x-1/2 w-[5.25rem] sm:w-28 text-ink-faint" />
       {/* Platzhalter: haelt die Hoehe frei, die das Feld darunter einnimmt. */}
-      <div className="h-[5.5rem] sm:h-24" />
+      <div className="h-[4.75rem] sm:h-24" />
     </Link>
   )
 }
@@ -456,13 +461,13 @@ function Zaehler() {
       // und ein Trainer landete auf Orga statt da, wo er hergekommen ist.
       state={{ zurueck: '/' }}
       aria-label="Counter"
-      className="relative col-span-1 lg:col-span-2 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-8 sm:pr-9 flex flex-col gap-3
+      className="relative col-span-1 lg:col-span-2 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-8 sm:pr-9 flex flex-col gap-2.5 sm:gap-3
         transition-[filter,box-shadow,border-color,transform] duration-200 ease-[var(--ease-out-strong)]
         hover:brightness-110 hover:border-white/40 hover:shadow-lg hover:shadow-navy-900/40
         active:scale-[0.99] active:brightness-125 motion-reduce:active:scale-100"
     >
       <div className="flex-1 min-w-0">
-        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase mb-2">
+        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-wider sm:tracking-widest uppercase mb-1.5 sm:mb-2">
           <Abschnittsmarke size="sm" />
           Counter
         </h2>
@@ -483,7 +488,7 @@ function Zaehler() {
           /* Eine Zeile. Was gezaehlt wird, steht unter den Lampen — der Satz muss es nicht
              wiederholen, und zwei Zeilen kosteten die Seite ihren letzten Rand. */
           <p className="text-sm text-spotlight-ink/80 leading-snug">
-            Beim Umpiren: antippen und zählen.
+            Beim Umpiren mitzählen.
           </p>
         )}
       </div>
@@ -501,7 +506,7 @@ function Zaehler() {
         In der halben Kachel passen drei Gruppen nicht nebeneinander (184 von 150 Pixeln),
         deshalb gestapelt mit der Beschriftung NEBEN den Punkten: 22 statt 36 Pixel je Reihe.
       */}
-      <div className="flex flex-col gap-1.5 shrink-0 lg:flex-row lg:items-start lg:gap-5">
+      <div className="flex flex-col gap-1 sm:gap-1.5 shrink-0 lg:flex-row lg:items-start lg:gap-5">
         <Lampenreihe label="Ball" count={lampen.balls} total={3} an="bg-[#FBF6EC]" dekor={!laeuft} />
         <Lampenreihe label="Strike" count={lampen.strikes} total={2} an="bg-amber-400" dekor={!laeuft} />
         <Lampenreihe label="Out" count={lampen.outs} total={2} an="bg-softball-red-400" dekor={!laeuft} />
@@ -513,21 +518,4 @@ function Zaehler() {
       <ChevronRight size={16} className="absolute right-3 top-3.5 sm:right-3.5 sm:top-4 text-spotlight-ink/60" aria-hidden />
     </Link>
   )
-}
-
-/** Die juengste Saison — hoechstes Jahr, bei Gleichstand hoechste id. `findAll` liefert unsortiert. */
-function juengste(saisons: Season[]): Season | undefined {
-  return [...saisons].sort((a, b) => a.year - b.year || a.id - b.id).at(-1)
-}
-
-function useSaisons() {
-  const [stand, setStand] = useState<{ saisons: Season[]; ladefehler: boolean }>({ saisons: [], ladefehler: false })
-  useEffect(() => {
-    let abgebrochen = false
-    api.getSeasons()
-      .then(saisons => { if (!abgebrochen) setStand({ saisons, ladefehler: false }) })
-      .catch(() => { if (!abgebrochen) setStand({ saisons: [], ladefehler: true }) })
-    return () => { abgebrochen = true }
-  }, [])
-  return stand
 }

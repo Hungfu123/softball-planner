@@ -11,12 +11,16 @@ import type { MeineZahlen } from './useMeineZahlen'
  * Mal. Die Schwellen stammen aus dem Glossar (`StatsGlossarySheet`) — dieselbe Auskunft,
  * nur hier in der Schreibweise der Kacheln (.300 statt 30 %), damit nicht zwei Notationen
  * nebeneinander stehen.
+ *
+ * Jeder Satz passt am Handy in EINE Zeile (unter etwa 60 Zeichen). Die zweite Zeile kostete
+ * die Seite ihren letzten Rand, und was sie trug, war Beiwerk: dass in die OBP auch
+ * Hit-by-Pitch zaehlt, steht im Glossar und aendert nichts daran, wie man die Zahl liest.
  */
 const ERKLAERUNG: Record<Metric, string> = {
-  average: 'Treffer ÷ Versuche — wie oft du triffst, wenn du schlägst. Gut ab .300.',
-  onBase: 'Wie oft du überhaupt auf Base kommst, Walks und Hit-by-Pitch mitgezählt. Gut ab .380.',
+  average: 'Treffer ÷ Versuche — wie oft du triffst. Gut ab .300.',
+  onBase: 'Wie oft du überhaupt auf Base kommst. Gut ab .380.',
   slugging: 'Wie kräftig du triffst: Bases pro Versuch. Gut ab .450.',
-  ops: 'Auf-Base-Quote plus Schlagkraft in einer Zahl. Stark ab .800.',
+  ops: 'Auf-Base-Quote plus Schlagkraft. Stark ab .800.',
 }
 
 /** Die drei Quoten im Kopf, in dieser Reihenfolge. SLG steht im Profil, nicht hier. */
@@ -48,14 +52,13 @@ function quote(v: number): string {
  * Die Daten kommen von aussen: den Verlauf braucht auch die Kachel mit den letzten
  * Spielen, und zwei Haken holten dieselben Listen zweimal.
  */
-export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehler, ladefehler = false }: {
+export function Begruessung({ name, playerId, jahr, daten, fehler }: {
   name: string | null
   playerId: number | null
-  seasonId: number | null
-  seasonName?: string | null
+  /** Der Zeitraum, den die Zahlen abdecken — dasselbe Jahr, das das Band darunter zeigt. */
+  jahr: number
   daten: MeineZahlen | null
   fehler: boolean
-  ladefehler?: boolean
 }) {
   const [metrik, setMetrik] = useState<Metric>('average')
   // Dieselbe Rechnung wie im Profil — zwei Definitionen derselben Quote waeren eine zu viel.
@@ -68,7 +71,7 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
   return (
     <section
       aria-label="Meine Zahlen"
-      className="rounded-2xl bg-kopf text-spotlight-ink shadow-lg shadow-navy-900/15 px-4 py-3 sm:px-6 sm:py-5"
+      className="rounded-2xl bg-kopf text-spotlight-ink shadow-lg shadow-navy-900/15 px-4 py-2.5 sm:px-6 sm:py-5"
     >
       {/*
         Am Handy untereinander, ab lg nebeneinander: vier Kacheln ueber 1200px verteilt
@@ -85,7 +88,9 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
           </h1>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {daten?.spieler && <PositionBadges player={daten.spieler} size="sm" tone="dark" />}
-            {seasonName && <span className="text-[11px] text-white/70 truncate">{seasonName}</span>}
+            {/* Der Zeitraum der Zahlen, direkt neben ihnen. Hier stand einmal der Name
+                einer Saison — und zwar der falschen, weil ein Jahr mehrere traegt. */}
+            <span className="text-[11px] text-white/70 tabular-nums">{jahr}</span>
           </div>
         </div>
         {playerId != null && (
@@ -99,20 +104,18 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
         )}
       </div>
 
-      <div className="mt-4 md:mt-0 md:w-[22rem] lg:w-[34rem] xl:w-[40rem] md:shrink-0">
+      <div className="mt-3 md:mt-0 md:w-[22rem] lg:w-[34rem] xl:w-[40rem] md:shrink-0">
         {playerId == null ? (
           <p className="text-sm text-white/70">
             Noch keinem Spieler zugeordnet — sag dem Trainer Bescheid.
           </p>
-        ) : fehler || ladefehler ? (
+        ) : fehler ? (
           <p className="text-sm text-white/70">Zahlen gerade nicht erreichbar.</p>
-        ) : seasonId == null ? (
-          <p className="text-sm text-white/70">Noch keine Saison angelegt.</p>
         ) : !daten ? (
           <p className="text-sm text-white/70">Zahlen laden …</p>
         ) : leer ? (
           <p className="text-sm text-white/70">
-            In dieser Saison noch nicht geschlagen.
+            {jahr} noch nicht geschlagen.
           </p>
         ) : (
           <>
@@ -165,10 +168,10 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
   const inhalt = (
     <>
       <span className="block font-display text-xl sm:text-2xl lg:text-3xl font-extrabold text-kennzahl leading-none tabular-nums">{wert}</span>
-      <span className={`block font-display text-[10px] font-bold tracking-widest uppercase ${tinte} mt-1.5`}>{label}</span>
+      <span className={`block font-display text-[10px] font-bold tracking-widest uppercase ${tinte} mt-1 sm:mt-1.5`}>{label}</span>
     </>
   )
-  const grund = 'relative rounded-xl px-1.5 py-2 sm:py-2.5 text-center block w-full'
+  const grund = 'relative rounded-xl px-1.5 py-1.5 sm:py-2.5 text-center block w-full'
   if (!onWaehlen) {
     return <div className={`${grund} bg-white/8 border border-white/15`}>{inhalt}</div>
   }
