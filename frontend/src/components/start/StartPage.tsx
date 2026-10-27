@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight } from 'lucide-react'
 import * as api from '@/api/client'
 import type { Season, PlayerFormPoint } from '@/types'
+import { getPlayCategories } from '@/api/plays'
+import type { PlayCategory } from '@/components/playmaker/board/types'
 import { useRolle } from '@/hooks/useRolle'
 import { Abschnittsmarke } from '@/components/shared'
 import { useTermine, heuteIso, saisonAusTerminen, type Termin } from '@/hooks/useTermine'
@@ -113,14 +115,7 @@ export function StartPage() {
           darunter ohnehin ("Noch offen: 0 Spieltage").
         */}
         {zeigePlaymaker ? (
-          <Kachel titel="Playmaker" zu="/orga/playmaker">
-            <p className="font-display text-xl font-extrabold tracking-wide uppercase text-ink leading-none">
-              Spielzüge
-            </p>
-            <p className="text-sm text-ink-muted mt-2 leading-snug">
-              Laufwege und Cut-offs, bis es wieder losgeht.
-            </p>
-          </Kachel>
+          <Playmaker />
         ) : (
           <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
             <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
@@ -261,6 +256,63 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
       </div>
       {danach && <p className="text-[11px] text-ink-faint mt-2">Danach {kurz(danach.datum)}</p>}
     </>
+  )
+}
+
+/**
+ * Der Playmaker als Kachel: die Kategorien, jede ein Weg hinein.
+ *
+ * "Spielzuege ansehen" allein ist ein Knopf ohne Auskunft — man weiss nicht, was einen
+ * erwartet. Die acht Kategorien SIND der Ueberblick, und sie kosten 391 Byte.
+ *
+ * Die Liste der Plays selbst waere der naheliegende Inhalt, kostet aber 143 KB: an jedem
+ * Play haengen alle Spielzug-Schritte mit saemtlichen Spielerpositionen. Das laedt man
+ * nicht, um vier Namen zu zeigen. Ein schlanker Listen-Endpunkt waere der saubere Weg,
+ * falls hier je Anzahlen stehen sollen.
+ *
+ * Die Kachel traegt kein `zu`: sie enthaelt selbst Links, und Links in Links gibt es nicht.
+ */
+function Playmaker() {
+  const [kategorien, setKategorien] = useState<PlayCategory[]>([])
+  useEffect(() => {
+    let abgebrochen = false
+    getPlayCategories()
+      .then(k => { if (!abgebrochen) setKategorien(k) })
+      .catch(() => { /* Ohne Kategorien bleibt die Kachel ihr Titel und der Weg hinein. */ })
+    return () => { abgebrochen = true }
+  }, [])
+
+  return (
+    <Kachel titel="Playmaker">
+      <p className="font-display text-lg font-extrabold tracking-wide uppercase text-ink leading-none">
+        Spielzüge
+      </p>
+      {kategorien.length > 0 && (
+        <ul className="flex flex-wrap gap-1 mt-2">
+          {kategorien.map((k, i) => (
+            <li
+              key={k.id}
+              // Am Handy ist die Kachel halb so breit; ab der vierten Kategorie wird aus
+              // dem Ueberblick eine Wand. Am Schreibtisch ist Platz fuer alle.
+              className={i >= 3 ? 'hidden lg:block' : ''}
+            >
+              <Link
+                to={`/orga/playmaker?kategorie=${k.id}`}
+                className="inline-flex items-center min-h-8 px-2 rounded-md bg-surface-hover text-[11px] font-semibold text-ink-muted hover:text-ink transition-colors"
+              >
+                {k.name}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link
+        to="/orga/playmaker"
+        className="font-display mt-2 inline-flex items-center min-h-11 text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors"
+      >
+        {kategorien.length > 0 ? `Alle ${kategorien.length} Kategorien` : 'Playmaker öffnen'}
+      </Link>
+    </Kachel>
   )
 }
 
