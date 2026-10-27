@@ -216,6 +216,18 @@ export async function helleFlaechenOhneDunkleTinte(page: Page): Promise<Flaeche[
       if (grund === null || grund < 0.5) return
       const tinte = leucht(cs.color)
       if (tinte !== null && tinte < 0.2) return // bewusste Umkehrung: heller Grund, dunkle Tinte
+      /*
+       * Wo keine Schrift steht, gibt es keine Tinte zu beurteilen. `color` erbt trotzdem —
+       * deshalb meldete der Pruefer einen 28x26 grossen Datenbalken (bg-amber-400 im
+       * Spiele-Protokoll) als "helle Flaeche ohne dunkle Schrift". Auf dem Balken steht
+       * nichts; er ist eine Markierung, keine Flaeche zum Lesen.
+       *
+       * Die Ausnahme hat eine Grenze: eine GROSSE helle Flaeche ohne jeden Text ist weiter
+       * ein Befund — genau so sieht eine vergessene Seite aus, die hinter dem Dunkel
+       * aufblitzt. Unter rund 100x100 Pixeln kann das keine Seite sein.
+       */
+      const traegtText = (el.textContent ?? '').trim() !== ''
+      if (!traegtText && r.width * r.height < 10000) return
       const klassen = (el as HTMLElement).className
       treffer.push({
         wo: `${el.tagName.toLowerCase()}.${String(typeof klassen === 'string' ? klassen : '')

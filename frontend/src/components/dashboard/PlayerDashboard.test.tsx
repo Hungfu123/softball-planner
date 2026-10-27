@@ -187,7 +187,7 @@ describe('PlayerDashboard', () => {
   const ERLAUBTE_KNOEPFE = [/^Spiel \d+$/, /^\+ \d+ weitere/, /^Weniger anzeigen$/]
   // `/kalender` ist fuer Spieler ein eigener Reiter (PLAYER_TABS) — die Termin-Karten
   // verlinken dorthin, nicht in eine Werkbank.
-  const ERLAUBTE_LINKS = [/^\/players\/7$/, /^\/orga\/playmaker$/, /^\/counter$/, /^\/kalender$/]
+  const ERLAUBTE_LINKS = [/^\/players\/7$/, /^\/counter$/, /^\/kalender$/]
 
   async function bedienbar() {
     await screen.findByRole('region', { name: 'Lineup' })
@@ -372,13 +372,24 @@ describe('PlayerDashboard', () => {
     expect(within(kommt).getByText(/04\.07\./)).toBeInTheDocument()
   })
 
-  it('hat eine Werkzeug-Zeile mit Playmaker und Counter, je mindestens 44 px hoch', async () => {
+  /*
+   * Der Playmaker stand hier mit und ist raus: ein Taktikbrett sucht niemand am Spieltag
+   * auf der Startseite. Der Zaehler bleibt — aber nur mit dem Satz, der sagt, wofuer man
+   * ihn braucht. "Counter" allein ist ein Knopf, den niemand drueckt.
+   */
+  it('erklärt den Zähler, statt ihn nur zu verlinken — und bleibt 44 px hoch', async () => {
     rendern()
-    const playmaker = await screen.findByRole('link', { name: /Playmaker/ })
-    const counter = screen.getByRole('link', { name: /Counter/ })
-    expect(playmaker).toHaveAttribute('href', '/orga/playmaker')
-    expect(counter).toHaveAttribute('href', '/counter')
-    expect(playmaker.className).toMatch(/min-h-11/)
-    expect(counter.className).toMatch(/min-h-11/)
+    const karte = await screen.findByRole('region', { name: 'Zähler' })
+    expect(within(karte).getByText(/umpirest/)).toBeInTheDocument()
+    expect(within(karte).getByText(/ohne Netz/)).toBeInTheDocument()
+    const link = within(karte).getByRole('link', { name: /Zähler öffnen/ })
+    expect(link).toHaveAttribute('href', '/counter')
+    expect(link.className).toMatch(/min-h-11/)
+  })
+
+  it('verlinkt den Playmaker nicht mehr von der Startseite', async () => {
+    rendern()
+    await screen.findByRole('region', { name: 'Zähler' })
+    expect(screen.queryByRole('link', { name: /Playmaker/ })).not.toBeInTheDocument()
   })
 })

@@ -152,13 +152,15 @@ function Verlauf({ punkte }: { punkte: PlayerFormPoint[] }) {
     const hoch = Math.max(...werte)
     const tief = Math.min(...werte)
     const spanne = hoch - tief || 1
-    const B = 100, H = 24
+    const B = 100, H = 24, LUFT = 3
     const punkteStr = werte.map((v, i) => {
       const x = (i / (werte.length - 1)) * B
-      const y = H - ((v - tief) / spanne) * H
+      const y = H - LUFT - ((v - tief) / spanne) * (H - 2 * LUFT)
       return `${x.toFixed(1)},${y.toFixed(1)}`
     })
-    return { d: punkteStr.join(' '), letzter: punkteStr[punkteStr.length - 1].split(',') }
+    // Die Flaeche: dieselbe Kurve, unten am Rahmen entlang zurueck.
+    const flaeche = [`0,${H}`, ...punkteStr, `${B},${H}`].join(' ')
+    return { d: punkteStr.join(' '), flaeche, schluss: punkteStr.slice(-2).join(' ') }
   }, [punkte])
 
   if (!pfad) return null
@@ -166,10 +168,16 @@ function Verlauf({ punkte }: { punkte: PlayerFormPoint[] }) {
     <svg
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
-      className="w-full h-7 mt-3 overflow-visible"
+      className="w-full h-8 mt-3.5 overflow-visible"
       role="img"
       aria-label="Verlauf des Schlagdurchschnitts in dieser Saison"
     >
+      {/*
+        Flaeche statt blosser Linie. Eine fast waagerechte Kurve in einem 32px hohen Streifen
+        sieht aus wie ein Trennstrich — die Fuellung macht auf den ersten Blick klar, dass hier
+        etwas gemessen wird und nicht etwas getrennt.
+      */}
+      <polygon points={pfad.flaeche} fill="rgb(255 255 255 / 0.12)" stroke="none" />
       <polyline
         points={pfad.d}
         fill="none"
@@ -179,11 +187,18 @@ function Verlauf({ punkte }: { punkte: PlayerFormPoint[] }) {
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
       />
-      <circle
-        cx={pfad.letzter[0]}
-        cy={pfad.letzter[1]}
-        r="2.5"
-        fill="var(--color-softball-red-500)"
+      {/*
+        Das letzte Stueck in Rot statt eines Punktes. `preserveAspectRatio="none"` zieht die
+        Zeichnung in x auseinander — ein <circle> wird darin zum liegenden Strich, und am
+        rechten Rand haette es obendrein die Haelfte verloren. Eine Linie vertraegt die
+        Streckung, weil sie in x ohnehin keine Form hat.
+      */}
+      <polyline
+        points={pfad.schluss}
+        fill="none"
+        stroke="var(--color-softball-red-500)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
       />
     </svg>

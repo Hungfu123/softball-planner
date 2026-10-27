@@ -82,13 +82,29 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                 ? 'bg-softball-red-600/20 border-softball-red-400/40 hover:bg-softball-red-600/30'
                 : 'bg-white/8 border-white/15 hover:bg-white/15'
               const cls = klickbar ? rohCls : ohneKlickstile(rohCls)
+              /*
+               * Hebt die ganze Zeile schon an, hebt der Ausschnitt darin NICHT noch einmal.
+               * Sonst liegen vier weisse Schleier uebereinander (Zeile, Zeilen-Hover,
+               * Link-Hover, Abzeichen): im Hellen stapeln die sich auf navy-900 und bleiben
+               * dunkel, im Dunkeln starten sie auf dem helleren Block und klettern aus dem
+               * Lesbaren — weisse Schrift landete bei 3,9:1. Zwei verschiedene Helligkeiten
+               * innerhalb einer Zeile, die als Ganzes klickbar ist, waeren ohnehin eine
+               * Auskunft ueber nichts. */
+              const teilHover = klickbar ? '' : ' hover:bg-white/10'
               // Im Dunkeln ist der Block selbst heller — weisse Tinte mit Deckung verliert
               // hier den Spielraum, den sie auf dem hellen Theme noch hatte (3,7:1 statt 4,5).
+              /*
+               * Das offene Spiel traegt eine Kontur, keine Fuellung. Vorher war es ein
+               * vierter weisser Schleier (Block, Zeile, Zeilen-Hover, Abzeichen) — unter dem
+               * Zeiger blieben davon 4,3:1 fuer weisse Schrift. Ein Rahmen nimmt dem Stapel
+               * eine Stufe und sagt nebenbei, was gemeint ist: gespielt ist gefuellt, offen
+               * ist umrandet. Dasselbe Paar wie bei der Pille rechts.
+               */
               const numCls = finished
                 ? 'bg-white/10 text-white/75'
                 : isLive
                 ? 'bg-softball-red-500 text-white'
-                : 'bg-white/15 text-white'
+                : 'border border-white/35 text-white'
               return (
                 <div
                   key={g.id}
@@ -97,7 +113,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                   <GatedLink
                     erlaubt={istAdmin}
                     to={`/gameday/${gameDay.id}?game=${routeIdx}`}
-                    className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-l-lg hover:bg-white/5"
+                    className={`flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-l-lg${teilHover}`}
                     aria-label={`Lineup für Spiel ${displayNum}`}
                   >
                     <span className={`font-display w-5 h-5 sm:w-6 sm:h-6 rounded text-[10px] sm:text-[11px] font-extrabold flex items-center justify-center shrink-0 ${numCls}`}>
@@ -117,7 +133,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                   <GatedLink
                     erlaubt={darfScoren}
                     to={`/gameday/${gameDay.id}/scoring/${routeIdx}`}
-                    className="shrink-0 flex items-center min-h-11 px-1.5 rounded-md hover:bg-white/10"
+                    className={`shrink-0 flex items-center min-h-11 px-1.5 rounded-md${teilHover}`}
                     aria-label={`${finished ? 'Stats' : 'Live-Scoring'} für Spiel ${displayNum}`}
                   >
                     {finished ? (
