@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight } from 'lucide-react'
 import * as api from '@/api/client'
 import type { Season, PlayerFormPoint } from '@/types'
-import { getPlayCategories } from '@/api/plays'
-import type { PlayCategory } from '@/components/playmaker/board/types'
+import { FeldMiniatur } from './FeldMiniatur'
 import { useRolle } from '@/hooks/useRolle'
 import { Abschnittsmarke } from '@/components/shared'
 import { useTermine, heuteIso, saisonAusTerminen, type Termin } from '@/hooks/useTermine'
@@ -252,71 +251,45 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
 }
 
 /**
- * Der Playmaker als Kachel: die Kategorien, jede ein Weg hinein.
+ * Der Playmaker als Kachel: das Feld, und ein Tipp fuehrt hinein.
  *
- * "Spielzuege ansehen" allein ist ein Knopf ohne Auskunft — man weiss nicht, was einen
- * erwartet. Die acht Kategorien SIND der Ueberblick, und sie kosten 391 Byte.
+ * Erst standen hier die acht Kategorien als Chips. Sie waren zwar der ehrliche Ueberblick,
+ * sahen in der halben Kachel aber aus wie eine Stichwortliste — und jede Zeile kostete
+ * 44 Pixel Seitenhoehe. Das Feld sagt dasselbe in einem Blick und braucht keine Daten:
+ * gezeichnet aus derselben Geometrie wie das echte Board.
  *
- * Die Liste der Plays selbst waere der naheliegende Inhalt, kostet aber 143 KB: an jedem
- * Play haengen alle Spielzug-Schritte mit saemtlichen Spielerpositionen. Das laedt man
- * nicht, um vier Namen zu zeigen. Ein schlanker Listen-Endpunkt waere der saubere Weg,
- * falls hier je Anzahlen stehen sollen.
- *
- * Die Kachel traegt kein `zu`: sie enthaelt selbst Links, und Links in Links gibt es nicht.
+ * Die Kategorien sind damit nicht verloren, sie stehen eine Beruehrung weiter in der
+ * Uebersicht — die ihren Filter seitdem in der Adresse traegt.
  */
 function Playmaker() {
-  const [kategorien, setKategorien] = useState<PlayCategory[]>([])
-  useEffect(() => {
-    let abgebrochen = false
-    getPlayCategories()
-      .then(k => { if (!abgebrochen) setKategorien(k) })
-      .catch(() => { /* Ohne Kategorien bleibt die Kachel ihr Titel und der Weg hinein. */ })
-    return () => { abgebrochen = true }
-  }, [])
-
   return (
-    <section
+    <Link
+      to="/orga/playmaker"
       aria-label="Playmaker"
-      className="col-span-1 lg:col-span-2 bg-surface-raised border border-line rounded-2xl shadow-card p-3.5 sm:p-4 min-w-0"
+      className="relative col-span-1 lg:col-span-2 overflow-hidden bg-surface-raised border border-line rounded-2xl shadow-card p-3.5 sm:p-4 min-w-0 block
+        transition-[border-color,box-shadow,transform] duration-200 ease-[var(--ease-out-strong)]
+        hover:border-line-strong hover:shadow-lg active:scale-[0.99] motion-reduce:active:scale-100"
     >
-      <div className="flex items-baseline justify-between gap-3 mb-2">
+      <div className="flex items-start justify-between gap-2">
         <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted">
           <Abschnittsmarke size="sm" />
           Playmaker
         </h2>
-        <Link
-          to="/orga/playmaker"
-          className="font-display text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors shrink-0"
-        >
-          {kategorien.length > 0 ? `Alle ${kategorien.length}` : 'Öffnen'}
-        </Link>
+        <ChevronRight size={16} className="shrink-0 text-ink-faint" aria-hidden />
       </div>
-      {kategorien.length > 0 ? (
-        <ul className="flex flex-wrap gap-1.5">
-          {kategorien.map((k, i) => (
-            /*
-              Drei Stufen, weil jede Chip-ZEILE Seitenhoehe kostet und die Kachel je nach
-              Breite anders viele je Zeile fasst: am Handy passt einer, auf dem Tablet
-              zwei, am Schreibtisch drei.
-
-              Zwei / vier / alle acht. Erst hiess es "ab sm alle" — auf dem Tablet wuchs die
-              Kachel damit auf vier Chip-Zeilen und die Seite sprang von 0 auf 155 Pixel
-              Ueberhang. "Alle 8" sagt ohnehin, wie viel dahintersteckt.
-            */
-            <li key={k.id} className={i >= 4 ? 'hidden lg:block' : i >= 2 ? 'hidden sm:block' : ''}>
-              <Link
-                to={`/orga/playmaker?kategorie=${k.id}`}
-                className="inline-flex items-center min-h-11 px-3 rounded-lg bg-surface-hover border border-line text-[11px] font-semibold text-ink-muted hover:text-ink hover:border-line-strong transition-colors"
-              >
-                {k.name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm text-ink-muted">Laufwege, Cut-offs, Standards.</p>
-      )}
-    </section>
+      <p className="text-sm text-ink-muted mt-1 leading-snug">Spielzüge ansehen</p>
+      {/*
+        Das Feld liegt angeschnitten am unteren Rand: ein Ausschnitt wirkt wie ein Blick auf
+        etwas Groesseres, ein zentriertes Vollbild wie ein Logo. `pointer-events-none`, damit
+        der Tipp immer die Kachel trifft.
+      */}
+      {/* Ganz sichtbar, nicht angeschnitten: eine Strichzeichnung, von der man die Haelfte
+          sieht, liest sich als Streusel. `pointer-events-none`, damit der Tipp die Kachel
+          trifft und nicht das Bild. */}
+      <FeldMiniatur className="pointer-events-none absolute bottom-3 right-3 w-24 sm:w-28 text-ink-faint" />
+      {/* Platzhalter: haelt die Hoehe frei, die das Feld darunter einnimmt. */}
+      <div className="h-[5.5rem] sm:h-24" />
+    </Link>
   )
 }
 
@@ -526,7 +499,7 @@ function Zaehler() {
           /* Eine Zeile. Was gezaehlt wird, steht unter den Lampen — der Satz muss es nicht
              wiederholen, und zwei Zeilen kosteten die Seite ihren letzten Rand. */
           <p className="text-sm text-spotlight-ink/80 leading-snug">
-            Wenn du selbst umpirest: antippen und zählen.
+            Beim Umpiren: antippen und zählen.
           </p>
         )}
       </div>
