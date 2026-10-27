@@ -246,41 +246,19 @@ describe('Startseite', () => {
   })
 
   /*
-   * Solange nichts laeuft, zeigt die Kachel einen Beispielstand statt drei Reihen
-   * erloschener Punkte — an denen sah man nicht einmal, dass es Lampen sind.
+   * Solange nichts laeuft, steht auf der Kachel nur, wofuer man sie braucht — keine Lampen.
    *
-   * Dass es ein Beispiel ist, muss dabeistehen: eine vorgetaeuschte Zaehlung waere
-   * schlimmer als gar keine. Deshalb die Marke im Titel UND der Zusatz in jeder
-   * Lampenreihe — wer vorgelesen bekommt, sieht die Marke nicht.
+   * Einmal stand hier ein Beispielstand, damit die Kachel nicht leer wirkt. Eine Zaehlung,
+   * die keine ist, muss man aber erklaeren ("Beispiel"), und was man erklaeren muss, hat
+   * auf einer Kachel nichts verloren.
    */
-  /*
-   * Der Playmaker steht dauerhaft auf der Seite, nicht nur in der spielfreien Zeit: man
-   * soll ihn SEHEN, ohne dass erst die Saison enden muss.
-   *
-   * Erst standen dort die acht Kategorien als Chips — der ehrliche Ueberblick, aber in der
-   * halben Kachel eine Stichwortliste, und jede Zeile kostete 44 Pixel Seitenhoehe. Das
-   * Feld sagt dasselbe in einem Blick und braucht keine Daten.
-   */
-  it('zeigt den Playmaker als Feld, und die ganze Kachel führt hin', async () => {
-    rendern()
-    const playmaker = await screen.findByRole('link', { name: 'Playmaker' })
-    expect(playmaker).toHaveAttribute('href', '/orga/playmaker')
-    expect(playmaker.textContent).toMatch(/Spielzüge ansehen/)
-    // Das Bild ist fuer Screenreader nichts — die Ueberschrift traegt die Bedeutung.
-    expect(playmaker.querySelector('svg[aria-hidden="true"]')).toBeTruthy()
-    // Und die Spieltag-Kachel bleibt daneben stehen.
-    expect(await kachel('Nächster Spieltag')).toBeInTheDocument()
-  })
-
-  it('zeigt einen Beispielstand, solange keiner läuft — und sagt, dass es einer ist', async () => {
+  it('zeigt ohne laufenden Zähler keine Lampen, sondern nur wofür', async () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
     expect(karte).toHaveAttribute('href', '/counter')
     expect(within(karte).getByText(/Umpiren/)).toBeInTheDocument()
-    expect(within(karte).getByText('Beispiel')).toBeInTheDocument()
-    expect(within(karte).getByRole('img', { name: 'Ball: 2 von 3 (Beispiel)' })).toBeInTheDocument()
-    expect(within(karte).getByRole('img', { name: 'Strike: 1 von 2 (Beispiel)' })).toBeInTheDocument()
-    expect(within(karte).getByRole('img', { name: 'Out: 1 von 2 (Beispiel)' })).toBeInTheDocument()
+    expect(within(karte).queryByText('Beispiel')).not.toBeInTheDocument()
+    expect(within(karte).queryByRole('img', { name: /^Ball:/ })).not.toBeInTheDocument()
   })
 
   it('zeigt den laufenden Counter statt der Erklärung', async () => {
