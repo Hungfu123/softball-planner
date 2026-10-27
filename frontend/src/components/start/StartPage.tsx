@@ -2,17 +2,18 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, MapPin, ChevronRight } from 'lucide-react'
 import * as api from '@/api/client'
-import type { PlayerFormPoint } from '@/types'
+import type { PlayerFormPoint, WeatherResponse } from '@/types'
+import { weatherIcon } from '@/components/dashboard/weatherIcon'
 import { FeldMiniatur } from './FeldMiniatur'
 import { useRolle } from '@/hooks/useRolle'
 import { Abschnittsmarke } from '@/components/shared'
-import { useTermine, heuteIso, type Termin } from '@/hooks/useTermine'
+import { useTermine, heuteIso, type Termin, type TerminArt } from '@/hooks/useTermine'
 import { readCounterState } from '@/hooks/useCounter'
 import { isInitial } from '@/utils/counterRules'
 import { JahresBand } from '@/components/dashboard/JahresBand'
 import { Begruessung } from './Begruessung'
-import { useMeineZahlen, useSaisonsDesJahres } from './useMeineZahlen'
-import { bereichAus, gemerkteWahl, merkeWahl, type Wahl } from './bereich'
+import { useMeineZahlen, useJahre } from './useMeineZahlen'
+import { gemerktesJahr, jahreZurWahl, merkeJahr } from './bereich'
 
 const WOCHENTAG = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
@@ -65,25 +66,20 @@ export function StartPage() {
   const { termine, laden, fehler } = useTermine()
   const heute = heuteIso()
   /*
-   * Das laufende Jahr traegt die ganze Seite — Kopf UND Band.
+   * EIN Jahr traegt die ganze Seite — Kopf UND Terminband.
    *
-   * Vorher suchte der Kopf sich eine Saison: die des naechstgelegenen Spieltags. Wer im
-   * selben Jahr eine Liga-Saison und eine fuer Trainingsspiele hat, bekam damit die Bilanz
-   * der zuletzt angesetzten zu sehen — ein Spiel, keine Quoten — waehrend die Kachel
-   * darunter "Dein Jahr 2026" ueberschrieb. Ein Zeitraum je Seite, und zwar der, der
-   * drauf steht.
+   * Die Seite suchte sich einmal eine Saison aus (die des naechstgelegenen Spieltags) und
+   * zeigte dann die Bilanz einer Nebensaison mit einem Spiel darin, waehrend die Kachel
+   * darunter das ganze Jahr ueberschrieb. Daher die Regel: ein Zeitraum je Seite, und zwar
+   * der, der drauf steht. Beim Wechsel zieht deshalb alles mit, nicht nur der Kopf.
    */
-  const jahr = new Date().getFullYear()
-  /*
-   * Die Wahl ist der gemerkte Wunsch, der Bereich das, was daraus im Licht der wirklich
-   * vorhandenen Saisons wird. Abgeleitet statt in einem Effekt nachgezogen: sonst zeigte
-   * die Seite erst die Jahreszahlen und ersetzte sie eine Umdrehung spaeter.
-   */
-  const [wahl, setWahl] = useState<Wahl>(gemerkteWahl)
-  const saisons = useSaisonsDesJahres(jahr)
-  const bereich = bereichAus(wahl, jahr, saisons)
-  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, bereich)
+  const laufendesJahr = new Date().getFullYear()
+  const [jahr, setJahr] = useState(() => gemerktesJahr(laufendesJahr))
+  const jahre = jahreZurWahl(useJahre(), laufendesJahr)
+  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, jahr)
   const anwesenheit = useEigeneTrainings(me?.playerId ?? null, jahr)
+  const trainingWetter = useWetter(naechsterTermin(termine, heute, 'TRAINING'), api.getTrainingWeather)
+  const spieltagWetter = useWetter(naechsterTermin(termine, heute, 'SPIELTAG'), api.getGameDayWeather)
 
   const naechsterSpieltag = useMemo(
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
@@ -101,10 +97,8 @@ export function StartPage() {
         name={me?.playerName ?? null}
         playerId={me?.playerId ?? null}
         jahr={jahr}
-        bereich={bereich}
-        saisons={saisons}
-        wahl={wahl}
-        onWahl={w => { setWahl(w); merkeWahl(w) }}
+        jahre={jahre}
+        onJahr={j => { setJahr(j); merkeJahr(j) }}
         daten={daten}
         fehler={zahlenFehler}
       />
@@ -121,12 +115,12 @@ export function StartPage() {
       */}
       <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
-          <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
+          <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} wetter={spieltagWetter} />
         </Kachel>
 
         <Kachel titel="Nächstes Training" zu="/kalender">
           <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler}
-                          verpasst={anwesenheit?.verpasstSeitdem ?? null} />
+                          verpasst={anwesenheit?.verpasstSeitdem ?? null} wetter={trainingWetter} />
         </Kachel>
 
         {/*
@@ -136,7 +130,8 @@ export function StartPage() {
           darueber. Zwei Bloecke, die beide „dein Jahr" behaupten und Verschiedenes sagen.
         */}
         <Kachel titel={`Termine ${jahr}`} className="col-span-2 lg:col-span-2">
-          <JahresBand termine={termine} laden={laden} fehler={fehler} eigeneTrainings={anwesenheit?.monate ?? null} />
+          <JahresBand termine={termine} laden={laden} fehler={fehler} jahr={jahr}
+                      eigeneTrainings={anwesenheit?.monate ?? null} />
         </Kachel>
 
         {/*
@@ -204,7 +199,11 @@ function Kachel({ titel, zu, className = '', children }: {
   return <section aria-label={titel} className={stil}>{inhalt}</section>
 }
 
-function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; laden: boolean; fehler: boolean }) {
+function SpieltagInhalt({ spieltag, laden, fehler, wetter }: {
+  spieltag: Termin | null; laden: boolean; fehler: boolean
+  /** Vorhersage fuer den Spieltag. `null` ausserhalb des Vorhersagefensters. */
+  wetter?: WeatherResponse | null
+}) {
   if (laden) return <p className="text-sm text-ink-muted">Termine laden …</p>
   if (fehler) {
     return (
@@ -232,7 +231,28 @@ function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; 
           <MapPin size={13} className="shrink-0" /> {spieltag.ort}
         </p>
       )}
+      {/* Beim Spieltag kostet das Wetter eine zusaetzliche Zeile — anders als beim Training
+          gibt es hier nichts, das es abloesen koennte. Es kommt nur, wenn es eins gibt. */}
+      {wetter && <Wetterzeile wetter={wetter} />}
     </>
+  )
+}
+
+/**
+ * Temperaturspanne und Regenwahrscheinlichkeit in einer Zeile.
+ *
+ * Rot erst ab 50 Prozent, und nur dort: Regen ist das einzige Negative in dieser Zeile, und
+ * Rot bleibt in dieser App dem Negativen vorbehalten.
+ */
+function Wetterzeile({ wetter }: { wetter: WeatherResponse }) {
+  return (
+    <p className="text-[11px] text-ink-muted mt-2 inline-flex items-center gap-1.5">
+      {weatherIcon(wetter.wmoCode, 14, 'shrink-0')}
+      <span className="tabular-nums">{wetter.tempMin}–{wetter.tempMax}°</span>
+      <span className={`tabular-nums ${wetter.precipitationProbabilityPct >= 50 ? 'text-danger-ink font-semibold' : 'text-ink-faint'}`}>
+        {wetter.precipitationProbabilityPct}&thinsp;% Regen
+      </span>
+    </p>
   )
 }
 
@@ -246,10 +266,12 @@ function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; 
  */
 const NACHFRAGE_AB = 10
 
-function TrainingInhalt({ naechstes, danach, laden, fehler, verpasst }: {
+function TrainingInhalt({ naechstes, danach, laden, fehler, verpasst, wetter }: {
   naechstes?: Termin; danach?: Termin; laden: boolean; fehler: boolean
   /** Termine seit dem letzten Mal. `null` = unbekannt oder noch nie da gewesen. */
   verpasst?: number | null
+  /** Vorhersage fuer den naechsten Termin. `null` ausserhalb des Vorhersagefensters. */
+  wetter?: WeatherResponse | null
 }) {
   const vermisst = verpasst != null && verpasst >= NACHFRAGE_AB
   if (laden) return <p className="text-sm text-ink-muted">Termine laden …</p>
@@ -292,10 +314,22 @@ function TrainingInhalt({ naechstes, danach, laden, fehler, verpasst }: {
         Kein Datum, keine Zahl: „seit 11 Terminen" waere Buchhaltung ueber einen Menschen. Was
         die Zeile tut, ist einladen.
       */}
+      {/*
+        Eine Zeile, drei Anwaerter, in dieser Reihenfolge:
+        1. Die Nachfrage, wenn jemand lange weg war — sie kommt selten und waere unter einer
+           Wetterangabe verschenkt.
+        2. Das Wetter, solange es eins gibt. Die Vorhersage reicht gut zwei Wochen; danach
+           antwortet der Server mit nichts, und genau dann traegt der Ausblick.
+        3. „Danach …" — der uebernaechste Termin.
+        Keine zwei davon gleichzeitig: die Kachel waere sonst zwei Zeilen hoeher, und am
+        Handy ist das der Unterschied zwischen passt und scrollt.
+      */}
       {vermisst ? (
         <p className="text-[11px] text-label font-semibold mt-2 leading-snug">
           Lange nicht da gewesen. Komm doch wieder vorbei.
         </p>
+      ) : wetter ? (
+        <Wetterzeile wetter={wetter} />
       ) : (
         danach && <p className="text-[11px] text-ink-faint mt-2">Danach {kurz(danach.datum)}</p>
       )}
@@ -592,4 +626,32 @@ function useEigeneTrainings(playerId: number | null, jahr: number) {
     return () => { abgebrochen = true }
   }, [playerId, jahr])
   return monate
+}
+
+/** Der naechste Termin dieser Art ab heute — oder `null`. */
+function naechsterTermin(termine: Termin[], heute: string, art: TerminArt): number | null {
+  return termine.find(t => t.art === art && t.datum >= heute)?.id ?? null
+}
+
+/**
+ * Die Vorhersage fuer einen Termin. Spieltag und Training haben eigene Endpunkte, aber
+ * dieselbe Antwort — deshalb kommt der Abruf als Argument herein.
+ *
+ * `null` heisst: keine. Das ist der Normalfall ausserhalb des Vorhersagefensters (gut zwei
+ * Wochen) und auch die Antwort bei einem Fehler. Beim Training traegt dann wieder der
+ * Ausblick auf den uebernaechsten, beim Spieltag faellt die Zeile ganz weg. Eine erfundene
+ * Zahl waere hier schlimmer als keine.
+ */
+function useWetter(id: number | null, holen: (id: number) => Promise<WeatherResponse | null>) {
+  const [wetter, setWetter] = useState<WeatherResponse | null>(null)
+  useEffect(() => {
+    if (id == null) { setWetter(null); return }
+    let abgebrochen = false
+    holen(id)
+      .then(w => { if (!abgebrochen) setWetter(w) })
+      .catch(() => { if (!abgebrochen) setWetter(null) })
+    return () => { abgebrochen = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+  return wetter
 }

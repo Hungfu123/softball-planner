@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as api from '@/api/client'
-import type { Player, PlayerBattingStatsResponse, PlayerFormPoint, Season, SeasonPlayerStats } from '@/types'
-import { bereichSchluessel, type Bereich } from './bereich'
+import type { Player, PlayerBattingStatsResponse, PlayerFormPoint, SeasonPlayerStats } from '@/types'
 
 export interface MeineZahlen {
   schlag: PlayerBattingStatsResponse | null
@@ -12,37 +11,31 @@ export interface MeineZahlen {
 }
 
 /**
- * Die eigenen Zahlen eines Zeitraums — EINMAL geladen, von mehreren Kacheln benutzt.
+ * Die eigenen Zahlen eines JAHRES — EINMAL geladen, von mehreren Kacheln benutzt.
  *
- * Vorgabe ist das JAHR, eine Saison daraus ist waehlbar (siehe `bereich.ts`). Ein Jahr
- * traegt oft mehrere Saisons nebeneinander (Liga, Trainingsspiele, Turnier), und keine
- * davon ist „die" Saison — deshalb rechnet die Vorgabe sie zusammen, statt eine zu raten.
+ * Jahr, nicht Saison. Ein Jahr traegt oft mehrere Saisons nebeneinander (Liga, Turnier,
+ * Trainingsspiele), und keine davon ist „die" Saison — die Seite rechnet sie zusammen,
+ * statt eine zu raten. Genau daran ist sie einmal gescheitert.
  *
  * Der Verlauf kommt in einem Stueck vom Server (alle Jahre) und wird hier zugeschnitten:
- * der Zeitraum-Wechsel kostet damit keinen Abruf fuer die Kurve, nur fuer die Summen.
+ * ein Jahreswechsel kostet damit keinen Abruf fuer die Kurve, nur fuer die Summen.
  *
  * `fehler` trennt "noch nicht geschlagen" von "Server antwortet nicht". Ohne diese Trennung
  * sieht beides wie eine leere Bilanz aus, und das eine ist eine Aussage ueber die Person,
  * das andere ueber die Leitung.
  */
-export function useMeineZahlen(playerId: number | null, bereich: Bereich | null) {
+export function useMeineZahlen(playerId: number | null, jahr: number) {
   const [daten, setDaten] = useState<MeineZahlen | null>(null)
   const [fehler, setFehler] = useState(false)
-  const schluessel = bereich ? `${bereichSchluessel(bereich)}:${playerId}` : null
+  const schluessel = `${jahr}:${playerId}`
 
   useEffect(() => {
-    if (playerId == null || bereich == null) return
+    if (playerId == null) return
     let abgebrochen = false
     setDaten(null)
     setFehler(false)
-    const summen = bereich.art === 'jahr'
-      ? Promise.all([api.getYearBattingStats(bereich.jahr), api.getYearStats(bereich.jahr)])
-      : Promise.all([api.getSeasonBattingStats(bereich.seasonId), api.getSeasonStats(bereich.seasonId)])
-    const passt = bereich.art === 'jahr'
-      ? (p: PlayerFormPoint) => p.year === bereich.jahr
-      : (p: PlayerFormPoint) => p.seasonId === bereich.seasonId
     Promise.all([
-      summen,
+      Promise.all([api.getYearBattingStats(jahr), api.getYearStats(jahr)]),
       api.getPlayerBattingTimeline(playerId).catch(() => [] as PlayerFormPoint[]),
       api.getPlayer(playerId).catch(() => null),
     ]).then(([[schlag, spiele], verlauf, spieler]) => {
@@ -50,7 +43,7 @@ export function useMeineZahlen(playerId: number | null, bereich: Bereich | null)
       setDaten({
         schlag: schlag.find(s => s.playerId === playerId) ?? null,
         spiele: spiele.find(s => s.playerId === playerId) ?? null,
-        verlauf: verlauf.filter(passt),
+        verlauf: verlauf.filter(p => p.year === jahr),
         spieler,
       })
     }).catch(() => { if (!abgebrochen) setFehler(true) })
@@ -62,21 +55,20 @@ export function useMeineZahlen(playerId: number | null, bereich: Bereich | null)
 }
 
 /**
- * Die Saisons eines Jahres — fuer die Auswahl neben den Zahlen.
+ * Die Jahre, in denen ueberhaupt gespielt wurde — fuer die Auswahl neben den Zahlen.
  *
- * `null` heisst „noch nicht da": solange steht eine gemerkte Saison nicht fest, und die
- * Seite wartet lieber einen Atemzug, als erst die Jahreszahlen zu zeigen und sie gleich
- * darauf zu ersetzen. Scheitert der Abruf, bleibt es bei der leeren Liste — dann gibt es
- * eben keine Auswahl, und das Jahr steht trotzdem da.
+ * Scheitert der Abruf, bleibt die Liste leer; `jahreZurWahl` setzt das laufende Jahr ohnehin
+ * immer dazu, und mit einem einzigen Eintrag gibt es schlicht nichts zu waehlen. Eine
+ * fehlende Liste darf die Seite nicht aufhalten.
  */
-export function useSaisonsDesJahres(jahr: number): Season[] | null {
-  const [saisons, setSaisons] = useState<Season[] | null>(null)
+export function useJahre(): number[] {
+  const [jahre, setJahre] = useState<number[]>([])
   useEffect(() => {
     let abgebrochen = false
-    api.getYearSeasons(jahr)
-      .then(s => { if (!abgebrochen) setSaisons(s) })
-      .catch(() => { if (!abgebrochen) setSaisons([]) })
+    api.getDistinctYears()
+      .then(j => { if (!abgebrochen) setJahre(j) })
+      .catch(() => { if (!abgebrochen) setJahre([]) })
     return () => { abgebrochen = true }
-  }, [jahr])
-  return saisons
+  }, [])
+  return jahre
 }

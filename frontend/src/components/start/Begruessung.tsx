@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PositionBadges } from '@/components/players/PositionBadges'
 import { cumulativeSeries, MIN_AT_BATS, type CumulativePoint, type Metric } from '@/components/players/formSeries'
-import type { Season } from '@/types'
-import type { Bereich, Wahl } from './bereich'
 import type { MeineZahlen } from './useMeineZahlen'
 
 /*
@@ -60,27 +58,32 @@ function quote(v: number): string {
  * Die Daten kommen von aussen: den Verlauf braucht auch die Kachel mit den letzten
  * Spielen, und zwei Haken holten dieselben Listen zweimal.
  */
-export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWahl, daten, fehler }: {
+export function Begruessung({ name, playerId, jahr, jahre, onJahr, daten, fehler }: {
   name: string | null
   playerId: number | null
-  /** Das laufende Jahr — die Vorgabe und der Rueckfall jeder Auswahl. */
+  /** Das gewaehlte Jahr — Kopf UND Terminband zeigen dasselbe. */
   jahr: number
-  /** Der Zeitraum, den die Zahlen gerade abdecken. `null`, solange er nicht feststeht. */
-  bereich: Bereich | null
-  /** Die Saisons dieses Jahres. `null` = noch nicht geladen, leer = keine Auswahl. */
-  saisons: Season[] | null
-  wahl: Wahl
-  onWahl: (w: Wahl) => void
+  /** Die Jahre zur Wahl, neueste zuerst. Mit einem Eintrag gibt es nichts zu waehlen. */
+  jahre: number[]
+  onJahr: (jahr: number) => void
   daten: MeineZahlen | null
   fehler: boolean
 }) {
   const [metrik, setMetrik] = useState<Metric>('average')
+  /*
+   * Welches Spiel der Kurve gerade angetippt ist. Am Handy gibt es kein Hover — ohne Tipp
+   * waere die Kurve eine Richtung ohne Zahlen. Die Auskunft loest den Erklaersatz ab, an
+   * derselben Stelle und in derselben Hoehe: die Seite darf beim Antippen nicht springen.
+   */
+  const [punkt, setPunkt] = useState<number | null>(null)
   // Dieselbe Rechnung wie im Profil — zwei Definitionen derselben Quote waeren eine zu viel.
   const reihe = useMemo(
     () => cumulativeSeries(daten?.verlauf ?? []).filter(p => !p.provisional),
     [daten],
   )
   const leer = daten && !daten.schlag && !daten.spiele
+  // Ein Wechsel der Kennzahl verwirft die Auswahl: der alte Punkt gehoert zu einer anderen Zahl.
+  const waehleMetrik = (m: Metric) => { setMetrik(m); setPunkt(null) }
 
   return (
     <section
@@ -102,7 +105,7 @@ export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWa
           </h1>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {daten?.spieler && <PositionBadges player={daten.spieler} size="sm" tone="dark" />}
-            <Zeitraum jahr={jahr} saisons={saisons} wahl={wahl} onWahl={onWahl} />
+            <Zeitraum jahr={jahr} jahre={jahre} onJahr={onJahr} />
           </div>
         </div>
         {playerId != null && (
@@ -123,11 +126,11 @@ export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWa
           </p>
         ) : fehler ? (
           <p className="text-sm text-white/70">Zahlen gerade nicht erreichbar.</p>
-        ) : !daten || !bereich ? (
+        ) : !daten ? (
           <p className="text-sm text-white/70">Zahlen laden …</p>
         ) : leer ? (
           <p className="text-sm text-white/70">
-            {bereich.art === 'jahr' ? bereich.jahr : bereich.name} — noch nicht geschlagen.
+            {jahr} — noch nicht geschlagen.
           </p>
         ) : (
           <>
@@ -146,15 +149,24 @@ export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWa
                   wert={daten.schlag ? quote(k.wert(daten.schlag)) : '–'}
                   label={k.label}
                   gewaehlt={metrik === k.metrik}
-                  onWaehlen={() => setMetrik(k.metrik)}
+                  onWaehlen={() => waehleMetrik(k.metrik)}
                 />
               ))}
               <Kennzahl wert={daten.spiele ? String(daten.spiele.totalGames) : '–'} label="Spiele" />
             </div>
-            <Verlauf reihe={reihe} metrik={metrik} />
-            <p className="text-[11px] sm:text-xs text-white/75 leading-snug sm:leading-relaxed mt-1.5 sm:mt-2">
-              {ERKLAERUNG[metrik]}
-            </p>
+            <Verlauf reihe={reihe} metrik={metrik} punkt={punkt} onPunkt={setPunkt} />
+            {punkt != null && reihe[punkt] ? (
+              <p className="text-[11px] sm:text-xs text-white leading-snug sm:leading-relaxed mt-1.5 sm:mt-2 animate-[einblenden_200ms_var(--ease-out-strong)]">
+                <span className="font-semibold tabular-nums text-kennzahl">{quote(reihe[punkt][metrik])}</span>
+                {' '}nach {reihe[punkt].atBats} At-Bats
+                {reihe[punkt].opponent && <span className="text-white/70"> · {reihe[punkt].opponent}</span>}
+                <span className="text-white/70"> · {reihe[punkt].gameHits} von {reihe[punkt].gameAtBats}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] sm:text-xs text-white/75 leading-snug sm:leading-relaxed mt-1.5 sm:mt-2">
+                {ERKLAERUNG[metrik]}
+              </p>
+            )}
           </>
         )}
       </div>
@@ -164,11 +176,14 @@ export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWa
 }
 
 /**
- * Der Zeitraum der Zahlen — und zwar waehlbar, nicht geraten.
+ * Der Zeitraum der Zahlen — ein JAHR, waehlbar, nicht geraten.
  *
- * Vorgabe ist das Jahr. Wer wissen will, wie er in der Liga dasteht (und nicht gemischt mit
- * den Trainingsspielen), stellt hier um; die Wahl bleibt auf dem Geraet. Gibt es im Jahr nur
- * eine Saison, gibt es nichts zu waehlen — dann steht die Jahreszahl einfach da.
+ * Jahre und nicht Saisons: eine Saison ist ein Ausschnitt (Liga, Turnier, Trainingsspiele),
+ * ein Jahr ist das, was im naechsten wiederkommt. Wer im Januar 2027 nachsieht, wie 2026
+ * lief, fragt nach dem Jahr. Die Wahl bleibt auf dem Geraet und zieht das Terminband mit —
+ * eine Seite, ein Zeitraum.
+ *
+ * Gibt es nur ein Jahr, gibt es nichts zu waehlen; dann steht die Jahreszahl einfach da.
  *
  * Nativ statt nachgebaut: der System-Picker am Handy schlaegt jede eigene Liste. Aber
  * NICHT als Pille wie auf den hellen Seiten — daneben stehen die Positions-Chips, und eine
@@ -180,20 +195,19 @@ export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWa
  * lassen: das Polster liegt im negativen Rand. Die `<option>`-Zeilen bekommen eigene
  * Farben, weil sie sonst die helle Schrift des Selects in ein helles Systemmenue tragen.
  */
-function Zeitraum({ jahr, saisons, wahl, onWahl }: {
+function Zeitraum({ jahr, jahre, onJahr }: {
   jahr: number
-  saisons: Season[] | null
-  wahl: Wahl
-  onWahl: (w: Wahl) => void
+  jahre: number[]
+  onJahr: (jahr: number) => void
 }) {
-  if (!saisons || saisons.length < 2) {
+  if (jahre.length < 2) {
     return <span className="text-[11px] text-white/70 tabular-nums">{jahr}</span>
   }
   return (
     <select
-      aria-label="Zeitraum wählen"
-      value={wahl === 'jahr' ? 'jahr' : `s${wahl}`}
-      onChange={e => onWahl(e.target.value === 'jahr' ? 'jahr' : Number(e.target.value.slice(1)))}
+      aria-label="Jahr wählen"
+      value={String(jahr)}
+      onChange={e => onJahr(Number(e.target.value))}
       className="appearance-none bg-no-repeat cursor-pointer max-w-[12rem] truncate
         text-[11px] text-white/70 hover:text-white transition-colors
         border-0 bg-transparent rounded px-0 pr-4 py-1.5 -my-1.5
@@ -204,9 +218,8 @@ function Zeitraum({ jahr, saisons, wahl, onWahl }: {
         backgroundSize: '0.6rem',
       }}
     >
-      <option value="jahr" style={OPTION_STIL}>{jahr} gesamt</option>
-      {saisons.map(s => (
-        <option key={s.id} value={`s${s.id}`} style={OPTION_STIL}>{s.name}</option>
+      {jahre.map(j => (
+        <option key={j} value={String(j)} style={OPTION_STIL}>{j}</option>
       ))}
     </select>
   )
@@ -267,7 +280,12 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
  * zeigt. Punkte unter `MIN_AT_BATS` At-Bats sind schon draussen: ein 1-aus-1 im ersten Spiel
  * ergibt kumulativ 1.000 und zoege die ganze Kurve schief.
  */
-function Verlauf({ reihe, metrik }: { reihe: CumulativePoint[]; metrik: Metric }) {
+function Verlauf({ reihe, metrik, punkt, onPunkt }: {
+  reihe: CumulativePoint[]
+  metrik: Metric
+  punkt: number | null
+  onPunkt: (i: number | null) => void
+}) {
   const pfad = useMemo(() => {
     const werte = reihe.map(p => p[metrik])
     if (werte.length < 2) return null
@@ -284,6 +302,13 @@ function Verlauf({ reihe, metrik }: { reihe: CumulativePoint[]; metrik: Metric }
       d: punkteStr.join(' '),
       flaeche: [`0,${H}`, ...punkteStr, `${B},${H}`].join(' '),
       schluss: punkteStr.slice(-2).join(' '),
+      // Fuer den Tipp: die Lage jedes Punktes, und wie breit sein Streifen ist.
+      stellen: werte.map((v, i) => ({
+        x: (i / (werte.length - 1)) * B,
+        y: H - LUFT - ((v - tief) / spanne) * (H - 2 * LUFT),
+      })),
+      breite: B / werte.length,
+      H, B,
     }
   }, [reihe, metrik])
 
@@ -298,7 +323,7 @@ function Verlauf({ reihe, metrik }: { reihe: CumulativePoint[]; metrik: Metric }
     <svg
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
-      className="w-full h-6 sm:h-8 mt-2.5 sm:mt-3.5 overflow-visible"
+      className="w-full h-6 sm:h-8 mt-2.5 sm:mt-3.5 overflow-visible touch-manipulation"
       role="img"
       aria-label={`Verlauf von ${metrik === 'average' ? 'AVG' : metrik === 'onBase' ? 'OBP' : 'OPS'} über ${reihe.length} Spiele`}
     >
@@ -331,6 +356,42 @@ function Verlauf({ reihe, metrik }: { reihe: CumulativePoint[]; metrik: Metric }
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
       />
+      {/*
+        Der angetippte Punkt als senkrechter Strich samt Kugel. Ein Strich, weil
+        `preserveAspectRatio="none"` die Zeichnung in x auseinanderzieht — ein <circle>
+        wuerde darin zum liegenden Ei. Die Kugel bekommt deshalb `r` in y und wird ueber
+        `vectorEffect` nicht mitgedehnt; gezeichnet ist sie als kurzes, dickes Stueck Linie.
+      */}
+      {punkt != null && pfad.stellen[punkt] && (
+        <>
+          <line
+            x1={pfad.stellen[punkt].x} x2={pfad.stellen[punkt].x}
+            y1={0} y2={pfad.H}
+            stroke="rgb(255 255 255 / 0.35)" strokeWidth="1" vectorEffect="non-scaling-stroke"
+          />
+          <line
+            x1={pfad.stellen[punkt].x} x2={pfad.stellen[punkt].x}
+            y1={pfad.stellen[punkt].y} y2={pfad.stellen[punkt].y}
+            stroke="var(--color-kennzahl)" strokeWidth="6" strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </>
+      )}
+      {/*
+        Unsichtbare Streifen als Fassflaeche: die Linie selbst ist 1,5 Pixel breit und am
+        Handy nicht zu treffen. Jeder Streifen gehoert zu einem Spiel; noch einmal darauf
+        nimmt die Auswahl zurueck.
+      */}
+      {pfad.stellen.map((st, i) => (
+        <rect
+          key={i}
+          x={Math.max(0, st.x - pfad.breite / 2)} y={0}
+          width={pfad.breite} height={pfad.H}
+          fill="transparent"
+          className="cursor-pointer"
+          onClick={() => onPunkt(punkt === i ? null : i)}
+        />
+      ))}
     </svg>
   )
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Termin } from '@/hooks/useTermine'
 import { heuteIso } from '@/hooks/useTermine'
 
@@ -38,18 +38,25 @@ function saeule(n: number, hoechste: number): string | number {
  * dieselbe Unterscheidung, die die App ueberall macht: Spieltag ist das Ereignis,
  * Training der Takt dazwischen.
  */
-export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
+export function JahresBand({ termine, laden, fehler, jahr, eigeneTrainings }: {
   termine: Termin[]
   laden: boolean
   fehler: boolean
+  /** Das Jahr, das die Seite gerade zeigt — dasselbe wie im Kopf darueber. */
+  jahr: number
   /**
    * Eigene Trainings-Anwesenheit je Monat (1..12). `null`, solange sie niemanden angeht
    * oder noch nicht da ist — dann bleibt das Band der reine Terminplan.
    */
   eigeneTrainings?: Record<string, number> | null
 }) {
-  const jahr = new Date().getFullYear()
-  const aktuellerMonat = new Date().getMonth()
+  /*
+   * Der Monatsstrich und die Abblendung gelten nur im LAUFENDEN Jahr. In einem vergangenen
+   * ist alles vorbei, in einem kuenftigen nichts — ein „hier stehst du" mitten im Jahr 2024
+   * waere schlicht gelogen.
+   */
+  const heuteJahr = new Date().getFullYear()
+  const aktuellerMonat = jahr === heuteJahr ? new Date().getMonth() : jahr < heuteJahr ? 12 : -1
 
   const monate = useMemo(() => {
     const leer = Array.from({ length: 12 }, () => ({ spieltage: 0, trainings: 0 }))
@@ -80,6 +87,17 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
   const besucht = (i: number) => Math.min(eigene?.[String(i + 1)] ?? 0, monate[i].trainings)
 
   /*
+   * Welcher Monat gerade angetippt ist. Am Handy gibt es kein Hover — der `title` am Balken
+   * war dort eine Auskunft, die niemand bekommt. Ein Tipp stellt sie unter das Band, an die
+   * Stelle der Legende: dieselbe Zeile, dieselbe Hoehe, kein Sprung.
+   *
+   * Noch einmal auf denselben Monat tippen nimmt die Auswahl zurueck — ein Schalter, der nur
+   * einrastet, ist eine Sackgasse.
+   */
+  const [gewaehlt, setGewaehlt] = useState<number | null>(null)
+  const tippen = (i: number) => setGewaehlt(a => (a === i ? null : i))
+
+  /*
    * Kein eigener Rahmen und kein eigener Name: die Kachel drumherum heisst schon
    * „Termine {jahr}". Ein zweiter Bereich mit demselben Namen waere fuer einen
    * Screenreader dieselbe Ueberschrift zweimal.
@@ -99,15 +117,29 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
               const gesamt = m.spieltage + m.trainings
               const vorbei = i < aktuellerMonat
               const skala = (n: number) => saeule(n, hoechste)
+              const dran = gewaehlt === i
+              const beschriftung = gesamt === 0
+                ? `${MONATSNAMEN[i]}: nichts angesetzt`
+                : `${MONATSNAMEN[i]}: ${m.spieltage} Spieltage, ${m.trainings} Trainings`
+                  + (eigene != null ? ` — du bei ${besucht(i)}` : '')
               return (
-                <li
-                  key={i}
-                  className="flex-1 max-w-[2.75rem] flex flex-col justify-end gap-px h-full"
-                  title={gesamt === 0
-                    ? `${MONATSNAMEN[i]}: nichts angesetzt`
-                    : `${MONATSNAMEN[i]}: ${m.spieltage} Spieltage, ${m.trainings} Trainings`
-                      + (eigene != null ? ` — du bei ${besucht(i)}` : '')}
-                >
+                <li key={i} className="flex-1 max-w-[2.75rem] h-full">
+                  {/*
+                    Der ganze Monatsstreifen ist die Fassflaeche, nicht nur der Balken: ein
+                    Monat ohne Termine ist 2 Pixel hoch und waere sonst nicht zu treffen.
+                    `aria-pressed` sagt vor, was man sieht — welcher Monat offen ist.
+                  */}
+                  <button
+                    type="button"
+                    onClick={() => tippen(i)}
+                    aria-pressed={dran}
+                    aria-label={beschriftung}
+                    title={beschriftung}
+                    className={`w-full h-full flex flex-col justify-end gap-px cursor-pointer rounded-sm
+                      transition-[transform,opacity] duration-200 ease-[var(--ease-out-strong)]
+                      motion-reduce:transition-none ${dran ? 'scale-y-105 origin-bottom' : ''}
+                      ${gewaehlt != null && !dran ? 'opacity-55' : ''}`}
+                  >
                   {m.spieltage > 0 && (
                     <span
                       className={`block w-full rounded-sm bg-softball-red-600 ${vorbei ? 'opacity-30' : ''}`}
@@ -148,6 +180,7 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
                     </>
                   )}
                   {gesamt === 0 && <span className="block w-full h-[2px] rounded-sm bg-bar-track" />}
+                  </button>
                 </li>
               )
             })}
@@ -185,12 +218,38 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
             einmal und ist wieder weg: sie laufen im Takt weiter, da plant niemand nach einer
             Restzahl. Bei den Spieltagen schon — danach richtet sich ein Wochenende.
           */}
+          {/*
+            Eine Zeile, zwei Zustaende: ohne Auswahl die Legende, mit Auswahl der Monat. Sie
+            tauschen sich an derselben Stelle aus und sind gleich hoch — die Seite darf beim
+            Antippen nicht springen, sonst tippt man daneben.
+          */}
+          {gewaehlt != null ? (
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[11px] text-ink-muted mt-2 sm:mt-3 animate-[einblenden_200ms_var(--ease-out-strong)]">
+              <span className="font-display font-bold uppercase tracking-wide text-ink">{MONATSNAMEN[gewaehlt]}</span>
+              {monate[gewaehlt].spieltage + monate[gewaehlt].trainings === 0 ? (
+                <span>nichts angesetzt</span>
+              ) : (
+                <>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-sm bg-softball-red-600 shrink-0" aria-hidden />
+                    <span className="font-semibold text-ink">{monate[gewaehlt].spieltage}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-sm bg-bar shrink-0" aria-hidden />
+                    <span className="font-semibold text-ink">{monate[gewaehlt].trainings}</span>
+                    {eigene != null && <span className="text-ink-faint">· du {besucht(gewaehlt)}</span>}
+                  </span>
+                </>
+              )}
+            </div>
+          ) : (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-muted mt-2 sm:mt-3">
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-sm bg-softball-red-600 shrink-0" aria-hidden />
               <span><span className="font-semibold text-ink">{spieltageGesamt}</span>{' '}
                 {spieltageGesamt === 1 ? 'Spieltag' : 'Spieltage'}</span>
-              <span className="text-ink-faint">· noch {offeneSpieltage}</span>
+              {/* „noch" nur im laufenden Jahr: in einem vergangenen kommt nichts mehr. */}
+              {jahr === heuteJahr && <span className="text-ink-faint">· noch {offeneSpieltage}</span>}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-sm bg-bar shrink-0" aria-hidden />
@@ -203,6 +262,7 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
               )}
             </span>
           </div>
+          )}
         </>
       )}
     </>

@@ -1,65 +1,47 @@
-import type { Season } from '@/types'
+/**
+ * Der Zeitraum der Startseite: ein JAHR.
+ *
+ * Erst war es eine geratene Saison — der Fehler, mit dem alles anfing. Dann das laufende Jahr
+ * mit waehlbarer Saison. Jetzt das Jahr, und zwar waehlbar: eine Saison ist ein Ausschnitt
+ * (Liga, Turnier, Trainingsspiele), ein Jahr ist das, was im naechsten wiederkommt. Wer im
+ * Januar 2027 nachsehen will, wie 2026 lief, fragt nach dem Jahr und nicht nach „Ruhr Fun Liga".
+ *
+ * Die Seite traegt EINEN Zeitraum: Kopf und Terminband zeigen dasselbe Jahr. Das ist keine
+ * Schoenheit, sondern die Lehre aus dem Fehler — zwei Zeitraeume nebeneinander, und der
+ * kleinere gewinnt, ohne dass es jemand merkt.
+ */
+const SCHLUESSEL = 'startseite-jahr'
 
 /**
- * Der Zeitraum, den der Kopf der Startseite zeigt: das ganze Jahr oder eine Saison daraus.
+ * Das gemerkte Jahr, pro Geraet — oder das laufende.
  *
- * Die Vorgabe ist das JAHR, und das ist keine Bequemlichkeit, sondern die Lehre aus dem
- * Fehler davor: die Seite suchte sich selbst eine Saison aus (die des naechstgelegenen
- * Spieltags) und zeigte dann stillschweigend die Bilanz einer Nebensaison mit einem Spiel
- * darin. Ein Zeitraum, den die Seite waehlt, ist eine Falle; einer, den der Mensch waehlt,
- * ist eine Auskunft. Deshalb steht die Auswahl sichtbar neben den Zahlen.
+ * Der `localStorage` kann in einem privaten Fenster werfen, deshalb der Fang. Ein Wert, der
+ * kein Jahr ist, wird verworfen statt geraten.
  */
-export type Bereich =
-  | { art: 'jahr'; jahr: number }
-  | { art: 'saison'; seasonId: number; name: string }
-
-/** Was gemerkt wird — die Saison-id oder „das ganze Jahr". */
-export type Wahl = number | 'jahr'
-
-const SCHLUESSEL = 'startseite-bereich'
-
-/**
- * Die letzte Wahl, pro Geraet. Faellt auf das Jahr zurueck, wenn nichts (Gueltiges) dasteht.
- *
- * Eine Saison-id aus einem vergangenen Jahr bleibt hier stehen, bis das neue Jahr seine
- * Saisons kennt — `bereichAus` wirft sie dann weg. Der `localStorage` kann in einem
- * privaten Fenster werfen, deshalb der Fang.
- */
-export function gemerkteWahl(): Wahl {
+export function gemerktesJahr(laufendes: number): number {
   try {
-    const roh = localStorage.getItem(SCHLUESSEL)
-    if (roh == null || roh === 'jahr') return 'jahr'
-    const id = Number(roh)
-    return Number.isInteger(id) && id > 0 ? id : 'jahr'
+    const roh = Number(localStorage.getItem(SCHLUESSEL))
+    return Number.isInteger(roh) && roh >= 2000 && roh <= 2200 ? roh : laufendes
   } catch {
-    return 'jahr'
+    return laufendes
   }
 }
 
-export function merkeWahl(wahl: Wahl): void {
+export function merkeJahr(jahr: number): void {
   try {
-    localStorage.setItem(SCHLUESSEL, String(wahl))
+    localStorage.setItem(SCHLUESSEL, String(jahr))
   } catch {
     // Kein Speicher, kein Gedaechtnis — die Seite funktioniert trotzdem.
   }
 }
 
 /**
- * Wahl + Saisonliste → Zeitraum. `null` heisst „weiss ich noch nicht", und solange ruft
- * die Seite gar nichts ab: eine gemerkte Saison darf nicht erst die Jahreszahlen laden und
- * sie eine Umdrehung spaeter wieder ersetzen.
+ * Die Jahre zur Auswahl: die mit Saisons, dazu IMMER das laufende.
  *
- * Eine gemerkte Saison, die es in diesem Jahr nicht gibt (Jahreswechsel, geloeschte
- * Saison), faellt still auf das Jahr zurueck.
+ * Das laufende Jahr gehoert auch dann in die Liste, wenn noch keine Saison dafuer angelegt
+ * ist — im Januar steht sonst das eigene Jahr nicht zur Wahl. Neueste zuerst: wer nachsieht,
+ * meint meist das letzte, nicht das erste.
  */
-export function bereichAus(wahl: Wahl, jahr: number, saisons: Season[] | null): Bereich | null {
-  if (wahl === 'jahr') return { art: 'jahr', jahr }
-  if (saisons == null) return null
-  const treffer = saisons.find(s => s.id === wahl)
-  return treffer ? { art: 'saison', seasonId: treffer.id, name: treffer.name } : { art: 'jahr', jahr }
-}
-
-/** Der Schluessel, der einen Abruf ausloest — zwei Zeitraeume sind nie derselbe. */
-export function bereichSchluessel(b: Bereich): string {
-  return b.art === 'jahr' ? `jahr:${b.jahr}` : `saison:${b.seasonId}`
+export function jahreZurWahl(ausDenSaisons: number[], laufendes: number): number[] {
+  return [...new Set([laufendes, ...ausDenSaisons])].sort((a, b) => b - a)
 }
