@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Card } from '@/components/shared'
+import { Card, Abschnittsmarke } from '@/components/shared'
 import { SendIcon, CounterIcon, CalendarIcon, CrossBones, ClipboardListIcon } from '@/icons'
 import { Mail, Receipt, ChevronRight, Users, History } from 'lucide-react'
 import { useRolle } from '@/hooks/useRolle'
@@ -50,7 +50,7 @@ export function OrgaHome() {
   const { istSuperadmin } = useRolle()
   return (
     <div className="space-y-4">
-      <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Orga</h1>
+      <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase"><Abschnittsmarke size="lg" />Orga</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Kachel to="/counter" icon={<CounterIcon size={20} />} titel="Counter" untertitel="Balls, Strikes, Outs und Score am Feld" />

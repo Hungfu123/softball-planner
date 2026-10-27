@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRolle } from '@/hooks/useRolle'
 import { useToastContext } from '@/components/layout/Layout'
-import { Badge, Button, Card, ConfirmModal, EmptyState, LoadingSkeleton } from '@/components/shared'
+import { Badge, Button, Card, ConfirmModal, EmptyState, LoadingSkeleton, Abschnittsmarke } from '@/components/shared'
 import { CrossBones, TrashBin } from '@/icons'
 import {
   bulkCreateUsers, createUser, deleteUser, getPlayers, getUsers,
@@ -207,7 +207,7 @@ export function AccountsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">Accounts</h1>
+          <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase"><Abschnittsmarke size="lg" />Accounts</h1>
           {/* Einmal statt in jeder Zeile: zwanzigmal derselbe Satz ist kein Hinweis,
               sondern Rauschen. Was die Zeile unterscheidet, sagt ohnehin der Knopf. */}
           <p className="text-sm text-gray-500 mt-1">Wer hier keinen Account hat, kann sich nicht anmelden.</p>

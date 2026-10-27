@@ -25,6 +25,7 @@ import { SharePlanDrawer } from './SharePlanDrawer'
 import { AddBeginnerGroupDrawer } from './AddBeginnerGroupDrawer'
 import { PeriodManagerDrawer } from './PeriodManagerDrawer'
 import { useToastContext } from '@/components/layout/Layout'
+import { Abschnittsmarke } from '@/components/shared'
 
 type MobileTab = 'anwesenheit' | 'plan'
 type AttendanceSort = 'alpha' | 'frequency' | 'decided'
@@ -320,7 +321,7 @@ export function TrainingTodayPage() {
     return (
       <div className="min-h-screen p-4">
         <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto p-4 space-y-4">
-          <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
+          <h1 className="inline-flex items-center gap-2.5 font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide"><Abschnittsmarke size="lg" />
             Training
           </h1>
           {trainingsLoading ? (
@@ -337,7 +338,7 @@ export function TrainingTodayPage() {
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto p-4 space-y-4">
         <div className="flex items-baseline justify-between">
-          <h1 className="font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide">
+          <h1 className="inline-flex items-center gap-2.5 font-headline text-3xl font-extrabold text-navy-900 uppercase tracking-wide"><Abschnittsmarke size="lg" />
             Training
           </h1>
           <div className="flex items-center gap-2 flex-wrap justify-end">

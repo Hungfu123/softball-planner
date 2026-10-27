@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as api from '@/api/client'
-import { Button, Card, EmptyState, LoadingSkeleton } from '@/components/shared'
+import { Button, Card, EmptyState, LoadingSkeleton, Abschnittsmarke } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
 import { useCoachBilling } from '@/hooks/useCoachBilling'
 import type { TrainingResponse } from '@/types'
@@ -162,7 +162,7 @@ export function TrainerabrechnungPage() {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link to="/orga" className="text-xs text-gray-500 hover:text-navy-900">‹ Orga</Link>
-          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
+          <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase"><Abschnittsmarke size="lg" />
             Trainerabrechnung
           </h1>
         </div>

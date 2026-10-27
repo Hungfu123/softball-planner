@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSpielbogenList } from '@/hooks/useSpielbogenList'
-import { Button, EmptyState, ConfirmModal } from '@/components/shared'
+import { Button, EmptyState, ConfirmModal, Abschnittsmarke } from '@/components/shared'
 import { SpielbogenListSkeleton } from './SpielbogenListSkeleton'
 import { CrossBones, PlusCircle, TrashBin, Pencil } from '@/icons'
 import type { SpielbogenResponse, BogenStatus } from '@/types'
@@ -29,7 +29,7 @@ export default function SpielbogenList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-headline text-3xl font-extrabold tracking-wide uppercase text-navy-900">Spielbogen</h1>
+        <h1 className="inline-flex items-center gap-2.5 font-headline text-3xl font-extrabold tracking-wide uppercase text-navy-900"><Abschnittsmarke size="lg" />Spielbogen</h1>
         <Link to="/spielbogen/new">
           <Button variant="primary" icon={<PlusCircle size={16} />}>Neuer Spielbogen</Button>
         </Link>

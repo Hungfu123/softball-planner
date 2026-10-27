@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import * as api from '@/api/client'
 import type { GameDayResponse, Season, TeamDirectoryEntry } from '@/types'
 import { CrossBones, PlusCircle } from '@/icons'
-import { Button } from '@/components/shared'
+import { Button, Abschnittsmarke } from '@/components/shared'
 import { useToastContext } from '@/components/layout/Layout'
 import { useRolle } from '@/hooks/useRolle'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
@@ -174,7 +174,7 @@ export function TeamDirectoryPage() {
     <div className="min-h-screen">
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase">
+          <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-navy-900 tracking-wide uppercase"><Abschnittsmarke size="lg" />
             Gegner
             {directory.length > 0 && <span className="text-navy-500 font-bold text-xl"> ({directory.length})</span>}
           </h1>

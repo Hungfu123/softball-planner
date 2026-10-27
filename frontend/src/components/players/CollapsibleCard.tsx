@@ -1,6 +1,7 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ChevronRight } from '@/icons'
+import { Abschnittsmarke } from '@/components/shared'
 
 /**
  * Karte, die am Handy zugeklappt startet und ab `sm` offen.
@@ -34,7 +35,7 @@ export function CollapsibleCard({ title, subtitle, summary, children }: {
         className="w-full min-h-11 flex items-start justify-between gap-3 text-left cursor-pointer"
       >
         <span className="min-w-0">
-          <h2 className="font-display text-sm font-extrabold uppercase tracking-wide text-navy-900">
+          <h2 className="inline-flex items-center gap-2 font-display text-sm font-extrabold uppercase tracking-wide text-navy-900"><Abschnittsmarke size="sm" />
             {title}
           </h2>
           <p className="text-xs text-gray-500 mt-0.5">{open ? subtitle : summary}</p>
