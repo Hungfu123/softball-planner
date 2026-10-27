@@ -26,10 +26,12 @@ const MAX_HOEHE = 52
  * dieselbe Unterscheidung, die die App ueberall macht: Spieltag ist das Ereignis,
  * Training der Takt dazwischen.
  */
-export function JahresBand({ termine, laden, fehler }: {
+export function JahresBand({ termine, laden, fehler, rahmenlos = false }: {
   termine: Termin[]
   laden: boolean
   fehler: boolean
+  /** Innerhalb einer aufklappbaren Karte: kein zweiter Rahmen, keine zweite Ueberschrift. */
+  rahmenlos?: boolean
 }) {
   const jahr = new Date().getFullYear()
   const heute = heuteIso()
@@ -53,11 +55,16 @@ export function JahresBand({ termine, laden, fehler }: {
   const offeneTrainings = offen.filter(t => t.art === 'TRAINING').length
 
   return (
-    <section aria-label={`Termine ${jahr}`} className="bg-surface-raised border border-line rounded-2xl shadow-card p-4">
-      <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted mb-3">
-        <Abschnittsmarke size="sm" />
-        Dein Jahr {jahr}
-      </h2>
+    <section
+      aria-label={`Termine ${jahr}`}
+      className={rahmenlos ? '' : 'bg-surface-raised border border-line rounded-2xl shadow-card p-4'}
+    >
+      {!rahmenlos && (
+        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted mb-3">
+          <Abschnittsmarke size="sm" />
+          Dein Jahr {jahr}
+        </h2>
+      )}
 
       {laden ? (
         <p className="text-sm text-ink-muted">Termine laden …</p>
@@ -125,12 +132,14 @@ export function JahresBand({ termine, laden, fehler }: {
         </>
       )}
 
-      <Link
-        to="/kalender"
-        className="font-display mt-1 inline-flex items-center min-h-11 text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors"
-      >
-        Kalender öffnen
-      </Link>
+      {!rahmenlos && (
+        <Link
+          to="/kalender"
+          className="font-display mt-1 inline-flex items-center min-h-11 text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors"
+        >
+          Kalender öffnen
+        </Link>
+      )}
     </section>
   )
 }

@@ -26,6 +26,9 @@ import { messeKontrast, bericht, helleFlaechenOhneDunkleTinte, bloeckeOhneRand }
 
 const SEITEN = [
   '/',
+  // Seit dem 27.10.2026 getrennt: `/` ist die eigene Startseite, die Werkbank liegt hier.
+  // Beide gehoeren gemessen — die Hero-Karte steht nur noch auf dieser.
+  '/spielbetrieb',
   '/training',
   '/players',
   '/players/1',

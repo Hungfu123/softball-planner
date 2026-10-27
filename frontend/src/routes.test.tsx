@@ -187,7 +187,11 @@ describe('Routing: Rollen', () => {
     expect(router.state.location.pathname).toBe(pfad)
   })
 
-  describe('Startseite je Rolle', () => {
+  /*
+   * Seit dem 27.10.2026 liegt die Werkbank auf `/spielbetrieb`; `/` ist die eigene
+   * Startseite und fuer alle Rollen dieselbe Seite. Die Rollenweiche sitzt also hier.
+   */
+  describe('Spielbetrieb je Rolle', () => {
     // Keine Saison: beide Dashboards landen in ihrem Leerzustand, an dem man sie unterscheidet.
     async function startseite(me: MeResponse) {
       localStorage.setItem('auth', btoa('x:x'))
@@ -198,7 +202,7 @@ describe('Routing: Rollen', () => {
             ? Promise.resolve({ ok: true, status: 200, json: async () => [] })
             : new Promise(() => {}),
       ))
-      const router = createMemoryRouter(routes, { initialEntries: ['/'] })
+      const router = createMemoryRouter(routes, { initialEntries: ['/spielbetrieb'] })
       render(<AuthProvider><RouterProvider router={router} /></AuthProvider>)
     }
 
@@ -221,7 +225,7 @@ describe('Routing: Rollen', () => {
           ? Promise.resolve({ ok: true, status: 200, json: async () => [] })
           : new Promise(() => {})
       }))
-      const router = createMemoryRouter(routes, { initialEntries: ['/'] })
+      const router = createMemoryRouter(routes, { initialEntries: ['/spielbetrieb'] })
       render(<AuthProvider><RouterProvider router={router} /></AuthProvider>)
 
       expect(await screen.findByText('Dein Konto wird noch geladen')).toBeInTheDocument()

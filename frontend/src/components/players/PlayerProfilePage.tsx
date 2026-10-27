@@ -8,7 +8,7 @@ import { EmptyState, LoadingSkeleton, ResponsiveSheet, SELECT_PILL_CLASS, SELECT
 import { GENDER_LABELS, GENDER_SHORT } from '@/types'
 import * as api from '@/api/client'
 import { FormChart } from './FormChart'
-import { CollapsibleCard } from './CollapsibleCard'
+import { CollapsibleCard } from '@/components/shared'
 import { GameLog } from './GameLog'
 import { GenderSheet } from './GenderSheet'
 import { SeasonTable } from './SeasonTable'

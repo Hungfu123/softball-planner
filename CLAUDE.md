@@ -209,17 +209,25 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 
 - **Zwei Themes seit dem 26.10.2026** (`data-theme="dark"` am `<html>`, Schalter unter `/konto`, Wahl im `localStorage` pro Gerät). Die Werte stehen als semantische Tokens in `styles/index.css` — `--color-surface/-raised/-sunken`, `--color-ink/-muted/-faint`, `--color-line`, `--color-band`: die Palette sagt WELCHE Farbe, die Tokens sagen WAS. Neue UI nimmt die Tokens, nicht `bg-cream-50`/`text-navy-900`. Vier Rollen tragen die Gestaltung: **`surface`/`surface-raised`/`surface-sunken`** (Seite, Karte, Mulde), **`ink`/`ink-muted`/`ink-faint`** mit `line`/`line-strong`, **`accent`** (gefüllt und aktiv — der gewählte Reiter, die primäre Schaltfläche, die besetzte Kachel) und **`spotlight`** (der hervorgehobene Block — Kennzahlen-Kachel, Profilkopf). Dazu `band` für Rahmen (Kopfleiste, Scoreboard) und `bar` für Datenbalken. **`band` und `spotlight` nicht verwechseln:** auf Papier sehen beide gleich aus (dunkler Klotz auf Cream), aber Rahmen darf zurücktreten und Betonung muss nach vorn — im Dunkeln heißt das entgegengesetzte Richtungen. Die alten Paletten-Klassen tragen noch ~3.770 Stellen; ein **Shim** am Ende des Dunkel-Blocks deutet sie im Dunkeln um. Wer eine Datei ohnehin anfasst, stellt sie auf Tokens um — der Shim ist ein Pflaster und soll schrumpfen. Alles Dunkle steht in `@media not print`, damit der Druck von selbst hell bleibt; die Regeln liegen **außerhalb jeder Cascade-Layer** (`@theme` schreibt in eine Layer, unbelayertes CSS gewinnt gegen jede Layer). Drei Prüfungen halten das: `kontrast.spec.ts` misst 19 Seiten in beiden Themes und ist rot, wenn der Dunkelmodus schlechter ist als der helle (nicht gegen feste Zahlen, sondern gegeneinander) und wenn eine helle Fläche ohne dunkle Schrift übrigbleibt; `hover.spec.ts` fährt dasselbe mit dem Zeiger ab; `umschalten.spec.ts` prüft den Schalter selbst samt Systemvorgabe. **Im Dunkeln geht ein Hover nach OBEN** — im Hellen wird er dunkler, dieselbe Farbe für beide macht ihn unsichtbar.
 - **Die Analyse-/Statistik-UI ist dunkel GEBAUT** (ANALYSE-Seite, TrendChart/SeasonBreakdown, Box Scores: Navy-Hintergrund, Cream-Karten, Cream-Linie) — und bleibt das in **beiden** Themes. Das ist Gestaltung der Seite, nicht das Theme. Nicht ins Helle umbauen. Rot (`softball-red`) bleibt NEGATIVEN Signalen vorbehalten (Niederlage, Stranding), positive Zahlen (Hits) in warmem Amber (`amber-400`) — Rot nie für positive Werte.
-- **Die Startseite (`/`) ist Spielbetrieb UND Profil.** Links die Rollen-Haelfte (Trainer:
-  Saisonwahl, Spieltagslisten, Kacheln — Spieler: Zusage-Status und Aufstellung zum Lesen),
-  rechts fuer beide dieselbe `PersoenlicheSpalte`: naechstes Training, eigene Saisonzahlen
-  mit Formkurve, Jahresband als Mini-Kalender. Ab `lg` zweispaltig; am Handy ist die
-  DOM-Reihenfolge die Lesereihenfolge, deshalb steht die persoenliche Spalte im Markup VOR
-  den Listen und wird am Schreibtisch per `lg:col-start-2 lg:row-start-1` nach rechts
-  geschoben. Die Termine kommen aus `useTermine` (Spieltage + Trainings in einer Liste) und
-  werden EINMAL geladen. **`GET /api/trainings` ist bewusst fuer jeden Angemeldeten offen**
-  und streicht Spielern die Teilnehmerzahl heraus — WANN trainiert wird, darf jeder wissen,
-  WER da war, bleibt bei den Trainern. Der Waechter in `PlayerDashboard.test.tsx` prueft
-  deshalb nicht mehr auf das Wort „Training", sondern auf jede Zahl zur Beteiligung.
+- **`/` ist die eigene Startseite, `/spielbetrieb` die Werkbank** (getrennt seit dem
+  27.10.2026 — zusammen auf einer Seite wurde beides lang). Die Startseite ist ein **Bento**:
+  oben der Begruessungsblock (Name, Positions-Chips, vier Kennzahlen, Formkurve als Funke),
+  darunter Kacheln in verschiedenen Groessen — Spieltag und Training teilen sich eine Reihe,
+  das Jahresband bekommt die Breite seiner zwoelf Saeulen, der Zaehler eine flache Zeile.
+  **Jede Kachel traegt ihre Antwort im Klartext**, nichts ist zugeklappt: vier gleiche
+  Klappzeilen sahen monoton aus und versteckten Auskunft, die ohnehin Platz hat. Die beiden
+  Termin-Kacheln sind selbst der Link (ganze Flaeche statt einer Wortzeile darunter).
+  Gemessen passt alles ohne Scrollen ab **390x844**; bei 360x740 fehlen rund 100 Pixel — das
+  ist die Grenze, keine Zusicherung. `/spielbetrieb` traegt weiter die Rollenweiche
+  (`Startseite` → `Dashboard` oder `PlayerDashboard`). Die Termine kommen aus `useTermine`
+  (Spieltage + Trainings in einer Liste, EINMAL geladen); **`GET /api/trainings` ist bewusst
+  fuer jeden Angemeldeten offen** und streicht Spielern die Teilnehmerzahl heraus — WANN
+  trainiert wird, darf jeder wissen, WER da war, bleibt bei den Trainern. Der Waechter in
+  `PlayerDashboard.test.tsx` prueft deshalb nicht auf das Wort „Training", sondern auf jede
+  Zahl zur Beteiligung. **Die laufende Saison kommt vom naechstgelegenen Spieltag**
+  (`saisonAusTerminen`), nicht vom hoechsten Jahr: eine verirrte Testsaison mit Jahr 2101
+  verdraengte sonst die echte und meldete dem Spieler, er habe „noch nicht geschlagen".
+  Mockdaten zum Ansehen: `node scripts/seed-startseite.mjs`.
 - German throughout (labels, error messages, copy).
 - Dark navy hover on secondary buttons (navy-800 + white) — keep this; user has corrected attempts to soften it before.
 - Custom pencil cursor on editable text fields.

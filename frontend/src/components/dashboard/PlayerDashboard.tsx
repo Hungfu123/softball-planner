@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import * as api from '@/api/client'
 import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
-import { LoadingSkeleton, Abschnittsmarke } from '@/components/shared'
+import { LoadingSkeleton } from '@/components/shared'
 import type { GameDayResponse, GameResponse, LineupEntryResponse, MeResponse } from '@/types'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { UpcomingList } from './UpcomingList'
-import { PersoenlicheSpalte } from './PersoenlicheSpalte'
 
 /*
  * Die Startseite eines Spielers. Alles hier ist Auskunft: der Planer (/gameday/:id) ist
@@ -23,7 +21,6 @@ type Aufstellungen = Record<number, LineupEntryResponse[] | null | undefined>
 
 const KARTE = 'rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 p-4 sm:p-5'
 const UEBERSCHRIFT = 'font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3'
-const LINK_KNOPF = 'font-display min-h-11 inline-flex items-center justify-center gap-2 px-4 rounded-lg text-[11px] font-extrabold tracking-widest uppercase'
 
 function heute(): string {
   return new Date().toISOString().slice(0, 10)
@@ -257,41 +254,10 @@ function Hinweis({ me }: { me: MeResponse | null }) {
   )
 }
 
-/**
- * Der Zaehler, mit einem Satz dazu.
- *
- * Ohne Erklaerung ist "Counter" ein Knopf, den niemand drueckt: der Name sagt nicht, wofuer
- * man ihn braucht. Gebraucht wird er, wenn man selbst umpirt — in der Liga stellen die Teams
- * die Schiedsrichter, und dann zaehlt man Balls, Strikes und Outs am Zaun mit.
- *
- * Der Playmaker stand hier mit: ein Taktikbrett ist nichts, was man am Spieltag auf der
- * Startseite sucht. Er bleibt ueber die Navigation erreichbar.
- */
-function Zaehler() {
-  return (
-    <section aria-label="Zähler" className="bg-surface-raised border border-line rounded-2xl shadow-card p-4">
-      <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted mb-2">
-        <Abschnittsmarke size="sm" />
-        Zähler
-      </h2>
-      <p className="text-sm text-ink-muted leading-relaxed mb-3">
-        Wenn du ein Spiel umpirest: Balls, Strikes, Outs und der Spielstand — groß genug fürs
-        Feld und ohne Netz.
-      </p>
-      <Link
-        to="/counter"
-        className={`${LINK_KNOPF} min-h-11 w-full bg-cream-50 border border-cream-300 text-navy-900 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors`}
-      >
-        Zähler öffnen
-      </Link>
-    </section>
-  )
-}
-
 export function PlayerDashboard() {
   const { me } = useRolle()
   const playerId = me?.playerId ?? null
-  const { laden, ladefehler, seasonId, seasonName, naechster, danach } = useNaechsterSpieltag()
+  const { laden, ladefehler, naechster, danach } = useNaechsterSpieltag()
   const aufstellungen = useAufstellungen(naechster)
   const zusagen = useZusagen(naechster)
   const [alleZeigen, setAlleZeigen] = useState(false)
@@ -315,45 +281,24 @@ export function PlayerDashboard() {
         <BinIchDabei spieltag={naechster} zusagen={zusagen} aufstellungen={aufstellungen} playerId={playerId} />
       )}
 
-      {/*
-        Ab lg zweispaltig. Am Handy faellt es auf eine Spalte zusammen, und die
-        DOM-Reihenfolge ist dort die Lesereihenfolge — deshalb steht das Persoenliche
-        VOR der Aufstellung: erst "wann ist Training" und "wie stehe ich da", dann die
-        Namensliste. Am Schreibtisch schiebt `lg:col-start-2 lg:row-start-1` es zurueck
-        nach rechts oben.
-      */}
-      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem] items-start">
-        <PersoenlicheSpalte
-          playerId={playerId}
-          seasonId={seasonId}
-          seasonName={seasonName}
-          ladefehler={ladefehler}
-          className="lg:col-start-2 lg:row-start-1"
-        />
+      {naechster && (
+        <LineupLesen spieltag={naechster} aufstellungen={aufstellungen} playerId={playerId} />
+      )}
 
-        <div className="min-w-0 space-y-3 sm:space-y-4 lg:col-start-1 lg:row-start-1">
-          {naechster && (
-            <LineupLesen spieltag={naechster} aufstellungen={aufstellungen} playerId={playerId} />
-          )}
-
-          {danach.length > 0 && (
-            <section aria-label="Was kommt">
-              <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2 px-1 mb-2">
-                <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
-                Was kommt
-              </h2>
-              <UpcomingList
-                gameDays={danach}
-                showAll={alleZeigen}
-                onShowAll={() => setAlleZeigen(true)}
-                onShowLess={() => setAlleZeigen(false)}
-              />
-            </section>
-          )}
-
-          <Zaehler />
-        </div>
-      </div>
+      {danach.length > 0 && (
+        <section aria-label="Was kommt">
+          <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-navy-900 inline-flex items-center gap-2 px-1 mb-2">
+            <span className="w-1 h-4 bg-softball-red-600 rounded-full shrink-0" />
+            Was kommt
+          </h2>
+          <UpcomingList
+            gameDays={danach}
+            showAll={alleZeigen}
+            onShowAll={() => setAlleZeigen(true)}
+            onShowLess={() => setAlleZeigen(false)}
+          />
+        </section>
+      )}
     </div>
   )
 }
