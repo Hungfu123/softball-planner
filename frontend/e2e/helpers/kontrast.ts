@@ -230,3 +230,101 @@ export async function helleFlaechenOhneDunkleTinte(page: Page): Promise<Flaeche[
     return treffer
   })
 }
+
+export type Verschwunden = { wo: string; farbe: string; dahinter: string; kontrast: number; gross: string }
+
+/**
+ * Bloecke, die sich als Block ausgeben und trotzdem keinen Rand haben.
+ *
+ * Die drei Text-Pruefungen messen Schrift auf Flaeche. Sie waren gruen, als die
+ * Hero-Karte auf der Startseite und die ganze Spieler-Startseite im Dunkeln exakt
+ * die Seitenfarbe trugen: die Schrift darauf stand ja weiterhin bestens lesbar da.
+ * Nur die Karte war weg. Flaeche gegen Flaeche hat niemand gemessen.
+ *
+ * Gesucht wird deshalb das, was ein Mensch sofort sieht: etwas, das sich mit
+ * Rundung, Schatten oder beidem als eigener Block ANKUENDIGT, dabei eine deckende
+ * eigene Farbe traegt — und sich von dem, was dahinterliegt, nicht mehr abhebt.
+ *
+ * Absichtlich eng geschnitten, damit der Pruefer nicht laut wird, wo nichts ist:
+ *   - nur deckende Hintergruende (Alpha >= 0,95); halbdurchsichtige Schleier sollen
+ *     mit ihrem Grund verschmelzen, das ist ihr Zweck
+ *   - nur Bloecke ab 48x24 Pixeln — ein Punkt oder eine Haarlinie ist keine Karte
+ *   - nur mit Rundung >= 8px ODER Schatten; ein eckiges <div> ohne Schatten ist
+ *     meist Aufbau, kein Block
+ *   - ein eigener sichtbarer Rahmen rettet den Block: dann traegt die Linie den Rand
+ *
+ * 1,10:1 ist die Grenze fuer "verschwunden", nicht fuer "schwach". Was knapp darueber
+ * liegt, bleibt eine Ermessensfrage und gehoert nicht in ein Tor.
+ */
+export async function bloeckeOhneRand(page: Page): Promise<Verschwunden[]> {
+  return page.evaluate(() => {
+    const cv = document.createElement('canvas')
+    cv.width = cv.height = 1
+    const cx = cv.getContext('2d', { willReadFrequently: true })!
+    const rgba = (css: string): number[] => {
+      cx.clearRect(0, 0, 1, 1)
+      cx.fillStyle = '#000'
+      cx.fillStyle = css
+      cx.fillRect(0, 0, 1, 1)
+      const d = cx.getImageData(0, 0, 1, 1).data
+      return [d[0], d[1], d[2], d[3] / 255]
+    }
+    const leucht = (c: number[]) => {
+      const [r, g, b] = c.slice(0, 3).map(v => {
+        v /= 255
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+      })
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    }
+    const K = (a: number[], b: number[]) => {
+      const x = leucht(a), y = leucht(b)
+      return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2)
+    }
+    // Die erste deckende Flaeche oberhalb dieses Elements.
+    const grundDahinter = (el: Element): number[] => {
+      let p = el.parentElement
+      while (p) {
+        const c = rgba(getComputedStyle(p).backgroundColor)
+        if (c[3] >= 0.95) return c
+        p = p.parentElement
+      }
+      return rgba(getComputedStyle(document.documentElement).backgroundColor)
+    }
+
+    const treffer: Verschwunden[] = []
+    document.querySelectorAll('*').forEach(el => {
+      const cs = getComputedStyle(el)
+      if (cs.visibility === 'hidden' || cs.display === 'none' || cs.opacity === '0') return
+      const r = el.getBoundingClientRect()
+      if (r.width < 48 || r.height < 24) return
+      const eigen = rgba(cs.backgroundColor)
+      if (eigen[3] < 0.95) return
+      const rund = Math.max(...[cs.borderTopLeftRadius, cs.borderTopRightRadius,
+        cs.borderBottomLeftRadius, cs.borderBottomRightRadius].map(v => parseFloat(v) || 0))
+      const schatten = cs.boxShadow !== 'none'
+      if (rund < 8 && !schatten) return
+      // Ein sichtbarer eigener Rahmen zieht die Kante, auch ohne Farbunterschied.
+      // `outline` zaehlt mit: der abgeschaltete Knopf im Dunkeln traegt seine Kante
+      // genau so, weil die Fuellung allein zu nah an der Karte liegt.
+      const kante = (farbe: string, breite: string) => {
+        const c = rgba(farbe)
+        return parseFloat(breite) > 0 && c[3] > 0.3 && K(c, eigen) >= 1.2
+      }
+      if (kante(cs.borderTopColor, cs.borderTopWidth)) return
+      if (cs.outlineStyle !== 'none' && kante(cs.outlineColor, cs.outlineWidth)) return
+      const dahinter = grundDahinter(el)
+      const k = K(eigen, dahinter)
+      if (k >= 1.1) return
+      const klassen = (el as HTMLElement).className
+      treffer.push({
+        wo: `${el.tagName.toLowerCase()}.${String(typeof klassen === 'string' ? klassen : '')
+          .split(' ').slice(0, 4).join('.')}`,
+        farbe: cs.backgroundColor,
+        dahinter: `rgb(${dahinter.slice(0, 3).map(Math.round).join(' ')})`,
+        kontrast: k,
+        gross: `${Math.round(r.width)}x${Math.round(r.height)}`,
+      })
+    })
+    return treffer
+  })
+}

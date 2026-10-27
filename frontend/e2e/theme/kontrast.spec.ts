@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { seedAuth } from '../helpers/auth'
-import { messeKontrast, bericht, helleFlaechenOhneDunkleTinte } from '../helpers/kontrast'
+import { seedAuth, seedDashboardSaison } from '../helpers/auth'
+import { messeKontrast, bericht, helleFlaechenOhneDunkleTinte, bloeckeOhneRand } from '../helpers/kontrast'
 
 /*
  * Haelt der Dunkelmodus, was das helle Theme kann?
@@ -88,6 +88,8 @@ test('Die Anmeldemaske bleibt lesbar', async ({ page }) => {
 test.describe('Kontrast in beiden Themes', () => {
   test.beforeEach(async ({ context }) => {
     await seedAuth(context)
+    // Sonst zeigt `/` nur den Leerzustand und die Hero-Karte wird nie gemessen.
+    await seedDashboardSaison(context)
   })
 
   for (const pfad of SEITEN) {
@@ -111,6 +113,14 @@ test.describe('Kontrast in beiden Themes', () => {
       expect(
         dunkel.unsichtbar,
         `Unsichtbarer Text im Dunkelmodus auf ${pfad}:\n${bericht(dunkel.unsichtbar)}`,
+      ).toHaveLength(0)
+
+      const randlos = await bloeckeOhneRand(page)
+      expect(
+        randlos,
+        `Bloecke ohne Rand im Dunkelmodus auf ${pfad} — sie geben sich mit Rundung oder ` +
+          `Schatten als eigene Karte aus, tragen aber die Farbe dessen, worauf sie liegen:\n` +
+          randlos.map(b => `    ${b.wo} ${b.gross} ${b.farbe} auf ${b.dahinter} = ${b.kontrast}:1`).join('\n'),
       ).toHaveLength(0)
 
       const hell_geblieben = await helleFlaechenOhneDunkleTinte(page)
