@@ -217,16 +217,21 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   **Jede Kachel traegt ihre Antwort im Klartext**, nichts ist zugeklappt: vier gleiche
   Klappzeilen sahen monoton aus und versteckten Auskunft, die ohnehin Platz hat. Die beiden
   Termin-Kacheln sind selbst der Link (ganze Flaeche statt einer Wortzeile darunter).
-  Gemessen passt alles ohne Scrollen ab **390x844**; bei 360x740 fehlen rund 100 Pixel — das
-  ist die Grenze, keine Zusicherung. `/spielbetrieb` traegt weiter die Rollenweiche
+  Gemessen (volle Daten, ohne das Admin-Banner) passt alles ohne Scrollen ab **412x780**;
+  bei 393x760 fehlen rund 15, bei 360x740 rund 35 Pixel — das ist die Grenze, keine
+  Zusicherung. `/spielbetrieb` traegt weiter die Rollenweiche
   (`Startseite` → `Dashboard` oder `PlayerDashboard`). Die Termine kommen aus `useTermine`
   (Spieltage + Trainings in einer Liste, EINMAL geladen); **`GET /api/trainings` ist bewusst
   fuer jeden Angemeldeten offen** und streicht Spielern die Teilnehmerzahl heraus — WANN
   trainiert wird, darf jeder wissen, WER da war, bleibt bei den Trainern. Der Waechter in
   `PlayerDashboard.test.tsx` prueft deshalb nicht auf das Wort „Training", sondern auf jede
-  Zahl zur Beteiligung. **Die laufende Saison kommt vom naechstgelegenen Spieltag**
-  (`saisonAusTerminen`), nicht vom hoechsten Jahr: eine verirrte Testsaison mit Jahr 2101
-  verdraengte sonst die echte und meldete dem Spieler, er habe „noch nicht geschlagen".
+  Zahl zur Beteiligung. **Der Zeitraum der Startseite ist das laufende JAHR**, nicht eine Saison
+  daraus (`useMeineZahlen` → `/api/years/{jahr}/batting-stats` + `/stats`, Verlauf auf
+  `p.year` gefiltert). Ein Jahr traegt oft mehrere Saisons nebeneinander (Liga,
+  Trainingsspiele, Turnier), und keine davon ist „die" Saison: die Seite suchte sich frueher
+  die des naechstgelegenen Spieltags aus und zeigte dann die Bilanz einer Nebensaison mit
+  einem Spiel darin — unter einer Kachel, die „Dein Jahr 2026" ueberschrieb. **Ein Zeitraum
+  je Seite, und zwar der, der drauf steht.**
   Mockdaten zum Ansehen: `node scripts/seed-startseite.mjs`.
 - German throughout (labels, error messages, copy).
 - Dark navy hover on secondary buttons (navy-800 + white) — keep this; user has corrected attempts to soften it before.
