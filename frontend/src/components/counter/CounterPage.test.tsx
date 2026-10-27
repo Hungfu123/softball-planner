@@ -49,9 +49,9 @@ describe('CounterPage — Zurück-Pfeil nach Rolle', () => {
     await new Promise(r => setTimeout(r, 10))
   }
 
-  it('führt Spieler direkt aufs Dashboard statt über Orga', async () => {
+  it('führt Spieler direkt auf die Startseite statt über Orga', async () => {
     await alsRolle('PLAYER')
-    expect(screen.getByRole('link', { name: 'Zurück' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Zurück zur Startseite' })).toHaveAttribute('href', '/')
   })
 
   it('führt Admins weiter zur Orga', async () => {

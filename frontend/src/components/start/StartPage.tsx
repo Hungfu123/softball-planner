@@ -160,7 +160,14 @@ function Kachel({ titel, zu, className = '', children }: {
   const stil = `bg-surface-raised border border-line rounded-2xl shadow-card p-4 min-w-0 block ${className}`
   if (zu) {
     return (
-      <Link to={zu} aria-label={titel} className={`${stil} hover:border-line-strong transition-colors`}>
+      <Link
+        to={zu}
+        // Sagt der Zielseite, wohin ihr Zurück zeigt — sonst entschiede dort die Rolle,
+        // und ein Trainer landete auf dem Kader statt da, wo er hergekommen ist.
+        state={{ zurueck: '/' }}
+        aria-label={titel}
+        className={`${stil} hover:border-line-strong transition-colors`}
+      >
         {inhalt}
       </Link>
     )
@@ -343,11 +350,13 @@ function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
  * FLAECHE um, und eine brennende Lampe saehe dort aus wie eine erloschene. Eine Birne
  * wechselt die Farbe nicht mit dem Theme.
  */
-function Lampenreihe({ label, count, total, an }: {
+function Lampenreihe({ label, count, total, an, beispiel = false }: {
   label: string
   count: number
   total: number
   an: string
+  /** Gezeigt wird ein Musterstand, nicht gezaehlt — das muss auch vorgelesen werden. */
+  beispiel?: boolean
 }) {
   return (
     <div className="flex items-center gap-2 sm:block sm:text-center">
@@ -357,7 +366,7 @@ function Lampenreihe({ label, count, total, an }: {
       <div
         className="flex gap-1.5 sm:mt-1.5 sm:justify-center"
         role="img"
-        aria-label={`${label}: ${count} von ${total}`}
+        aria-label={`${label}: ${count} von ${total}${beispiel ? ' (Beispiel)' : ''}`}
       >
         {Array.from({ length: total }, (_, i) => (
           <span
@@ -395,13 +404,26 @@ function Lampenreihe({ label, count, total, an }: {
  * Kachel ist das Ziel, wie bei `Kachel` auch, und ein Knopf in einem Link wäre ohnehin
  * verschachtelte Interaktion.
  */
+/**
+ * Ein typischer Stand: zwei Balls, ein Strike, ein Out. Nicht alles aus, nicht alles an.
+ *
+ * Drei Reihen erloschener Punkte sagen nichts — man sieht nicht einmal, dass es Lampen
+ * sind. Der Beispielstand zeigt in einem Blick, was das Werkzeug tut. Dass es ein Beispiel
+ * ist, steht daneben: eine vorgetaeuschte Zaehlung waere schlimmer als gar keine.
+ */
+const BEISPIEL = { balls: 2, strikes: 1, outs: 1 }
+
 function Zaehler() {
   const [stand] = useState(readCounterState)
   const laeuft = !isInitial(stand)
+  const lampen = laeuft ? stand : BEISPIEL
 
   return (
     <Link
       to="/counter"
+      // Sagt dem Counter, wohin sein Zurück zeigt — sonst entschiede dort die Rolle,
+      // und ein Trainer landete auf Orga statt da, wo er hergekommen ist.
+      state={{ zurueck: '/' }}
       aria-label="Counter"
       className="relative col-span-2 lg:col-span-4 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-9 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4
         transition-[filter,box-shadow,border-color,transform] duration-200 ease-[var(--ease-out-strong)]
@@ -412,6 +434,13 @@ function Zaehler() {
         <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase mb-2">
           <Abschnittsmarke size="sm" />
           Counter
+          {/* /60 ergab 4,43:1 auf dem im Dunkeln helleren Block — knapp unter AA, vom
+              Kontrast-Pruefer gefunden. Deckung waechst mit der Flaeche. */}
+          {!laeuft && (
+            <span className="font-display text-[10px] font-bold tracking-widest uppercase text-spotlight-ink/75 border border-white/25 rounded px-1.5 py-0.5">
+              Beispiel
+            </span>
+          )}
         </h2>
         {laeuft ? (
           <p className="font-display text-xl font-extrabold tracking-wide uppercase leading-none tabular-nums">
@@ -435,10 +464,10 @@ function Zaehler() {
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5 shrink-0 sm:flex-row sm:items-start sm:gap-5">
-        <Lampenreihe label="Ball" count={stand.balls} total={3} an="bg-[#FBF6EC]" />
-        <Lampenreihe label="Strike" count={stand.strikes} total={2} an="bg-amber-400" />
-        <Lampenreihe label="Out" count={stand.outs} total={2} an="bg-softball-red-400" />
+      <div className={`flex flex-col gap-1.5 shrink-0 sm:flex-row sm:items-start sm:gap-5 ${laeuft ? '' : 'opacity-75'}`}>
+        <Lampenreihe label="Ball" count={lampen.balls} total={3} an="bg-[#FBF6EC]" beispiel={!laeuft} />
+        <Lampenreihe label="Strike" count={lampen.strikes} total={2} an="bg-amber-400" beispiel={!laeuft} />
+        <Lampenreihe label="Out" count={lampen.outs} total={2} an="bg-softball-red-400" beispiel={!laeuft} />
       </div>
 
       {/* Absolut gesetzt statt im Fluss: am Handy liegen Text und Lampen untereinander,

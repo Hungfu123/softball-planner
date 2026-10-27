@@ -244,15 +244,23 @@ describe('Startseite', () => {
     expect(ansteht).toHaveAttribute('href', '/kalender')
   })
 
-  it('erklärt den Counter, solange keiner läuft — und die ganze Kachel führt hin', async () => {
+  /*
+   * Solange nichts laeuft, zeigt die Kachel einen Beispielstand statt drei Reihen
+   * erloschener Punkte — an denen sah man nicht einmal, dass es Lampen sind.
+   *
+   * Dass es ein Beispiel ist, muss dabeistehen: eine vorgetaeuschte Zaehlung waere
+   * schlimmer als gar keine. Deshalb die Marke im Titel UND der Zusatz in jeder
+   * Lampenreihe — wer vorgelesen bekommt, sieht die Marke nicht.
+   */
+  it('zeigt einen Beispielstand, solange keiner läuft — und sagt, dass es einer ist', async () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
     expect(karte).toHaveAttribute('href', '/counter')
     expect(within(karte).getByText(/umpirest/)).toBeInTheDocument()
-    // Lampen aus: 0 von 3 Balls, 0 von 2 Strikes, 0 von 2 Outs.
-    expect(within(karte).getByRole('img', { name: 'Ball: 0 von 3' })).toBeInTheDocument()
-    expect(within(karte).getByRole('img', { name: 'Strike: 0 von 2' })).toBeInTheDocument()
-    expect(within(karte).getByRole('img', { name: 'Out: 0 von 2' })).toBeInTheDocument()
+    expect(within(karte).getByText('Beispiel')).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Ball: 2 von 3 (Beispiel)' })).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Strike: 1 von 2 (Beispiel)' })).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Out: 1 von 2 (Beispiel)' })).toBeInTheDocument()
   })
 
   it('zeigt den laufenden Counter statt der Erklärung', async () => {
@@ -263,6 +271,8 @@ describe('Startseite', () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
     expect(within(karte).queryByText(/umpirest/)).not.toBeInTheDocument()
+    // Was wirklich gezaehlt wird, traegt keine Beispiel-Marke.
+    expect(within(karte).queryByText('Beispiel')).not.toBeInTheDocument()
     // "3. Inning" steht zweimal da: sichtbar und noch einmal ausgeschrieben fuer
     // Screenreader. Der Tafel-Stand "4 : 2" gibt es nur sichtbar.
     const stand = within(karte).getByText(/4 : 2/)
