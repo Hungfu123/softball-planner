@@ -74,4 +74,48 @@ describe('LoginPage', () => {
 
     expect(onLogin).toHaveBeenCalledWith('maria', 'geheim')
   })
+
+  /*
+   * Das Passwort wird aus der WhatsApp-Gruppe abgetippt, oft am Handy. Wer sich vertippt,
+   * sieht sonst nur „Anmeldung fehlgeschlagen" und weiss nicht, welches der beiden Felder
+   * schuld ist. Entscheidend ist dabei die Vorgabe: VERBORGEN. Offen anzufangen hiesse,
+   * das Passwort jedem zu zeigen, der danebensteht.
+   */
+  it('zeigt das Passwort erst auf Wunsch — und beginnt verborgen', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage onLogin={() => {}} error={null} />
+      </MemoryRouter>,
+    )
+
+    const passwort = screen.getByLabelText('Passwort')
+    expect(passwort).toHaveAttribute('type', 'password')
+
+    const schalter = screen.getByRole('button', { name: 'Passwort anzeigen' })
+    expect(schalter).toHaveAttribute('aria-pressed', 'false')
+
+    fireEvent.click(schalter)
+    expect(passwort).toHaveAttribute('type', 'text')
+    expect(screen.getByRole('button', { name: 'Passwort verbergen' })).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Passwort verbergen' }))
+    expect(passwort).toHaveAttribute('type', 'password')
+  })
+
+  /* Der Schalter darf das Absenden nicht stoeren: sichtbar oder nicht, es geht dasselbe raus. */
+  it('schickt dasselbe Passwort, ob sichtbar oder nicht', () => {
+    const onLogin = vi.fn()
+    render(
+      <MemoryRouter>
+        <LoginPage onLogin={onLogin} error={null} />
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText('Benutzername'), { target: { value: 'maria' } })
+    fireEvent.change(screen.getByLabelText('Passwort'), { target: { value: 'geheim' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Passwort anzeigen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ready Up' }))
+
+    expect(onLogin).toHaveBeenCalledWith('maria', 'geheim')
+  })
 })
