@@ -144,14 +144,17 @@ export function JahresBand({ termine, laden, fehler, jahr, eigeneTrainings }: {
                     aria-pressed={dran}
                     aria-label={beschriftung}
                     title={beschriftung}
-                    className={`w-full h-full flex flex-col justify-end gap-px cursor-pointer rounded-sm
+                    className={`w-full h-full flex flex-col justify-end cursor-pointer rounded-sm
                       transition-[transform,opacity] duration-200 ease-[var(--ease-out-strong)]
                       motion-reduce:transition-none ${dran ? 'scale-y-105 origin-bottom' : ''}
                       ${gewaehlt != null && !dran ? 'opacity-55' : ''}`}
                   >
+                  {/* `mb-px` statt `gap-px` an der Spalte: der Spalt trennt SPIELTAGE von
+                      TRAININGS — zwei verschiedene Dinge. Innerhalb der Trainings darf
+                      keiner sein, dort ist es ein Balken mit zwei Teilen. */}
                   {m.spieltage > 0 && (
                     <span
-                      className={`block w-full rounded-sm bg-softball-red-600 ${vorbei ? 'opacity-30' : ''}`}
+                      className={`block w-full rounded-sm bg-softball-red-600 ${m.trainings > 0 ? 'mb-px' : ''} ${vorbei ? 'opacity-30' : ''}`}
                       style={{ height: skala(m.spieltage) }}
                     />
                   )}
@@ -172,17 +175,23 @@ export function JahresBand({ termine, laden, fehler, jahr, eigeneTrainings }: {
                       style={{ height: skala(m.trainings) }}
                     />
                   )}
+                  {/*
+                    Ein Balken, zwei Teile: unten voll eingefaerbt, wo man da war, darueber
+                    blass der Rest. Kein Spalt und keine Ecken dazwischen — sonst liest man
+                    zwei Balken, wo einer gemeint ist. Rund ist nur, was nach aussen zeigt;
+                    fehlt der eine Teil, ist der andere rundum rund.
+                  */}
                   {m.trainings > 0 && eigene != null && (
                     <>
                       {m.trainings - besucht(i) > 0 && (
                         <span
-                          className="block w-full rounded-sm bg-bar opacity-30"
+                          className={`block w-full bg-bar opacity-30 rounded-t-sm ${besucht(i) === 0 ? 'rounded-b-sm' : ''}`}
                           style={{ height: skala(m.trainings - besucht(i)) }}
                         />
                       )}
                       {besucht(i) > 0 && (
                         <span
-                          className="block w-full rounded-sm bg-bar"
+                          className={`block w-full bg-bar rounded-b-sm ${m.trainings - besucht(i) === 0 ? 'rounded-t-sm' : ''}`}
                           style={{ height: skala(besucht(i)) }}
                         />
                       )}
