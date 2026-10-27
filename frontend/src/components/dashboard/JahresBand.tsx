@@ -239,13 +239,21 @@ export function JahresBand({ termine, laden, fehler, jahr, eigeneTrainings }: {
                 <span>nichts angesetzt</span>
               ) : (
                 <>
+                  {/*
+                    Mit WORT, nicht nur mit Punkt. Der Punkt allein setzt voraus, dass man die
+                    Legende daneben sieht — die steht aber an derselben Stelle und ist gerade
+                    deshalb weg. Wer einen Monat antippt, sieht die Farberklaerung also nie
+                    zusammen mit der Zahl.
+                  */}
                   <span className="inline-flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-sm bg-softball-red-600 shrink-0" aria-hidden />
-                    <span className="font-semibold text-ink">{monate[gewaehlt].spieltage}</span>
+                    <span><span className="font-semibold text-ink">{monate[gewaehlt].spieltage}</span>{' '}
+                      {monate[gewaehlt].spieltage === 1 ? 'Spieltag' : 'Spieltage'}</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-sm bg-bar shrink-0" aria-hidden />
-                    <span className="font-semibold text-ink">{monate[gewaehlt].trainings}</span>
+                    <span><span className="font-semibold text-ink">{monate[gewaehlt].trainings}</span>{' '}
+                      {monate[gewaehlt].trainings === 1 ? 'Training' : 'Trainings'}</span>
                     {eigene != null && <span className="text-ink-faint">· du {besucht(gewaehlt)}</span>}
                   </span>
                 </>

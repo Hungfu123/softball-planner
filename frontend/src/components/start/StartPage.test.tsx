@@ -501,6 +501,47 @@ describe('Startseite', () => {
     expect(k.textContent).not.toMatch(/Lange nicht/)
   })
 
+  /*
+   * Durch die Kurve ZIEHEN, nicht nur tippen: am Handy ist das der natuerliche Griff, und
+   * die Linie ist 1,5 Pixel breit — treffen kann man sie ohnehin nicht. Welches Spiel
+   * gemeint ist, entscheidet die Position des Fingers.
+   *
+   * jsdom misst nichts, deshalb werden Rechteck und Zeigerfang von Hand gestellt. Geprueft
+   * wird die Rechnung dahinter: halbe Breite => mittleres Spiel.
+   */
+  it('lässt durch die Kurve ziehen, nicht nur tippen', async () => {
+    mockApi.getPlayerBattingTimeline.mockResolvedValue(
+      Array.from({ length: 5 }, (_, i) => ({
+        gameId: i + 1, date: `2026-06-0${i + 1}`, opponent: `Gegner ${i + 1}`, seasonId: 1,
+        // 10 At-Bats je Spiel: darunter gilt ein Punkt als vorlaeufig und faellt aus der
+        // Kurve (MIN_AT_BATS) — mit 4 blieben von fuenf Spielen nur drei uebrig.
+        seasonName: null, year: 2026, plateAppearances: 10, atBats: 10, hits: 5, walks: 0,
+        strikeouts: 0, runsBattedIn: 0, totalBases: 5, timesOnBase: 5, rollingAverage: 0.5,
+      })),
+    )
+    const { container } = render(<MemoryRouter><StartPage /></MemoryRouter>)
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    const svg = await waitFor(() => {
+      const s = container.querySelector('svg[role="img"]')
+      if (!s) throw new Error('noch keine Kurve')
+      return s
+    })
+
+    svg.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 24,
+      right: 100, bottom: 24, x: 0, y: 0, toJSON: () => ({}) })
+    const flaeche = svg.querySelectorAll('rect')[svg.querySelectorAll('rect').length - 1]
+    Object.assign(flaeche, { setPointerCapture: () => {}, hasPointerCapture: () => true })
+
+    fireEvent.pointerDown(flaeche, { clientX: 0, pointerId: 1 })
+    await waitFor(() => expect(kopf.textContent).toMatch(/Gegner 1/))
+
+    // Ziehen nach rechts: der Text wandert mit, ohne neues Aufsetzen.
+    fireEvent.pointerMove(flaeche, { clientX: 100, pointerId: 1 })
+    await waitFor(() => expect(kopf.textContent).toMatch(/Gegner 5/))
+    fireEvent.pointerMove(flaeche, { clientX: 50, pointerId: 1 })
+    await waitFor(() => expect(kopf.textContent).toMatch(/Gegner 3/))
+  })
+
   it('erklärt leere Zahlen: noch nicht geschlagen und wann sie kommen', async () => {
     mockApi.getYearBattingStats.mockResolvedValue([])
     mockApi.getYearStats.mockResolvedValue([])

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PositionBadges } from '@/components/players/PositionBadges'
 import { cumulativeSeries, MIN_AT_BATS, type CumulativePoint, type Metric } from '@/components/players/formSeries'
@@ -296,6 +296,24 @@ function Verlauf({ reihe, metrik, punkt, onPunkt }: {
   punkt: number | null
   onPunkt: (i: number | null) => void
 }) {
+  const svgRef = useRef<SVGSVGElement>(null)
+  /* Ob seit dem Aufsetzen gezogen wurde — nur ein reiner Tipp nimmt die Auswahl zurueck. */
+  const gezogen = useRef(false)
+  const warVorher = useRef<number | null>(null)
+
+  /**
+   * Welches Spiel unter dem Finger liegt — aus der Bildschirm-x, nicht aus einem Treffer.
+   *
+   * Der Finger darf zwischen zwei Punkten stehen; genommen wird der naechste. Gerechnet
+   * wird gegen die gemessene Breite des SVG, weil `preserveAspectRatio="none"` die
+   * Zeichnung in x dehnt — die 100 des viewBox sind keine Pixel.
+   */
+  function indexAus(clientX: number): number {
+    const r = svgRef.current?.getBoundingClientRect()
+    if (!r || r.width === 0 || reihe.length < 2) return 0
+    const anteil = (clientX - r.left) / r.width
+    return Math.max(0, Math.min(reihe.length - 1, Math.round(anteil * (reihe.length - 1))))
+  }
   const pfad = useMemo(() => {
     const werte = reihe.map(p => p[metrik])
     if (werte.length < 2) return null
@@ -333,7 +351,14 @@ function Verlauf({ reihe, metrik, punkt, onPunkt }: {
     <svg
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
-      className="w-full h-6 sm:h-8 mt-2.5 sm:mt-3.5 overflow-visible touch-manipulation"
+      ref={svgRef}
+      /*
+        `pan-y`: waagerecht gehoert die Geste uns (Ziehen durch die Spiele), senkrecht dem
+        Browser (die Seite scrollt weiter). `none` waere bequemer zu schreiben und wuerde
+        das Scrollen ueber der halben Kopfbreite abwuergen.
+      */
+      style={{ touchAction: 'pan-y' }}
+      className="w-full h-6 sm:h-8 mt-2.5 sm:mt-3.5 overflow-visible cursor-ew-resize"
       role="img"
       aria-label={`Verlauf von ${metrik === 'average' ? 'AVG' : metrik === 'onBase' ? 'OBP' : 'OPS'} über ${reihe.length} Spiele`}
     >
@@ -388,20 +413,34 @@ function Verlauf({ reihe, metrik, punkt, onPunkt }: {
         </>
       )}
       {/*
-        Unsichtbare Streifen als Fassflaeche: die Linie selbst ist 1,5 Pixel breit und am
-        Handy nicht zu treffen. Jeder Streifen gehoert zu einem Spiel; noch einmal darauf
-        nimmt die Auswahl zurueck.
+        EINE Flaeche statt zwoelf Streifen: so laesst sich durch die Spiele ZIEHEN, nicht nur
+        tippen. Welches Spiel gemeint ist, entscheidet die Position des Fingers, nicht ein
+        getroffenes Element — die Linie selbst ist 1,5 Pixel breit und am Handy ohnehin kein
+        Ziel.
+
+        `setPointerCapture`: die Geste gehoert ab dem Aufsetzen diesem Element, auch wenn der
+        Finger darueber hinauswandert. Ohne das endet das Ziehen an der Kante.
       */}
-      {pfad.stellen.map((st, i) => (
-        <rect
-          key={i}
-          x={Math.max(0, st.x - pfad.breite / 2)} y={0}
-          width={pfad.breite} height={pfad.H}
-          fill="transparent"
-          className="cursor-pointer"
-          onClick={() => onPunkt(punkt === i ? null : i)}
-        />
-      ))}
+      <rect
+        x={0} y={0} width={pfad.B} height={pfad.H}
+        fill="transparent"
+        onPointerDown={e => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          gezogen.current = false
+          warVorher.current = punkt
+          onPunkt(indexAus(e.clientX))
+        }}
+        onPointerMove={e => {
+          if (!e.currentTarget.hasPointerCapture(e.pointerId)) return
+          gezogen.current = true
+          onPunkt(indexAus(e.clientX))
+        }}
+        onPointerUp={e => {
+          const i = indexAus(e.clientX)
+          // Nur ein Tipp auf das schon Gewaehlte macht die Auswahl wieder zu.
+          if (!gezogen.current && warVorher.current === i) onPunkt(null)
+        }}
+      />
     </svg>
   )
 }
