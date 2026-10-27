@@ -25,15 +25,12 @@ vi.mock('@/api/client', () => ({
   getPlayerUsage: vi.fn(),
 }))
 
-vi.mock('@/api/plays', () => ({ getPlayCategories: vi.fn() }))
 
 import * as api from '@/api/client'
-import * as plays from '@/api/plays'
 import { StartPage } from './StartPage'
 import { COUNTER_STORAGE_KEY } from '@/hooks/useCounter'
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>
-const mockPlays = plays as unknown as Record<string, ReturnType<typeof vi.fn>>
 
 const ICH: Player = { id: 7, name: 'Mia Meier', regular: true, defaultBattingOrder: null }
 const ME: MeResponse = {
@@ -101,10 +98,6 @@ describe('Startseite', () => {
     ])
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
     mockApi.getPlayer.mockResolvedValue(ICH)
-    mockPlays.getPlayCategories.mockResolvedValue([
-      { id: 1, name: 'Cut-off & Relay', sortOrder: 1 },
-      { id: 2, name: 'Bunt-Defense', sortOrder: 2 },
-    ])
   })
   afterEach(() => { vi.useRealTimers() })
 
@@ -262,35 +255,28 @@ describe('Startseite', () => {
    */
   /*
    * Der Playmaker steht dauerhaft auf der Seite, nicht nur in der spielfreien Zeit: man
-   * soll ihn SEHEN, ohne dass erst die Saison enden muss. Die Kategorien sind der
-   * Ueberblick, und jede fuehrt in genau ihre Liste statt alle auf dieselbe Seite.
+   * soll ihn SEHEN, ohne dass erst die Saison enden muss.
+   *
+   * Erst standen dort die acht Kategorien als Chips — der ehrliche Ueberblick, aber in der
+   * halben Kachel eine Stichwortliste, und jede Zeile kostete 44 Pixel Seitenhoehe. Das
+   * Feld sagt dasselbe in einem Blick und braucht keine Daten.
    */
-  it('zeigt den Playmaker immer, mit den Kategorien als Weg hinein', async () => {
+  it('zeigt den Playmaker als Feld, und die ganze Kachel führt hin', async () => {
     rendern()
-    const playmaker = await kachel('Playmaker')
-    const bunt = await within(playmaker).findByRole('link', { name: 'Bunt-Defense' })
-    expect(bunt).toHaveAttribute('href', '/orga/playmaker?kategorie=2')
-    expect(within(playmaker).getByRole('link', { name: /Alle 2/ }))
-      .toHaveAttribute('href', '/orga/playmaker')
+    const playmaker = await screen.findByRole('link', { name: 'Playmaker' })
+    expect(playmaker).toHaveAttribute('href', '/orga/playmaker')
+    expect(playmaker.textContent).toMatch(/Spielzüge ansehen/)
+    // Das Bild ist fuer Screenreader nichts — die Ueberschrift traegt die Bedeutung.
+    expect(playmaker.querySelector('svg[aria-hidden="true"]')).toBeTruthy()
     // Und die Spieltag-Kachel bleibt daneben stehen.
     expect(await kachel('Nächster Spieltag')).toBeInTheDocument()
-  })
-
-  /* Ohne Kategorien bleibt die Kachel ihr Titel und der Weg hinein — kein leerer Kasten. */
-  it('bleibt brauchbar, wenn die Kategorien nicht laden', async () => {
-    mockPlays.getPlayCategories.mockRejectedValue(new Error('500'))
-    rendern()
-    const playmaker = await kachel('Playmaker')
-    await waitFor(() => expect(playmaker.textContent).toMatch(/Laufwege/))
-    expect(within(playmaker).getByRole('link', { name: /Öffnen/ }))
-      .toHaveAttribute('href', '/orga/playmaker')
   })
 
   it('zeigt einen Beispielstand, solange keiner läuft — und sagt, dass es einer ist', async () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
     expect(karte).toHaveAttribute('href', '/counter')
-    expect(within(karte).getByText(/umpirest/)).toBeInTheDocument()
+    expect(within(karte).getByText(/Umpiren/)).toBeInTheDocument()
     expect(within(karte).getByText('Beispiel')).toBeInTheDocument()
     expect(within(karte).getByRole('img', { name: 'Ball: 2 von 3 (Beispiel)' })).toBeInTheDocument()
     expect(within(karte).getByRole('img', { name: 'Strike: 1 von 2 (Beispiel)' })).toBeInTheDocument()
