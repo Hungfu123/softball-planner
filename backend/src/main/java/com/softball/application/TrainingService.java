@@ -72,7 +72,9 @@ public class TrainingService {
     public List<TrainingResponse> createBulk(final List<Integer> weekdays, final LocalDate startDate,
                                               final LocalDate endDate, final String time,
                                               final Map<Integer, String> weekdayTimes,
-                                              final String location, final String periodName,
+                                              final String location,
+                                              final Map<Integer, String> weekdayLocations,
+                                              final String periodName,
                                               final String type, final Integer cycleWeeksParam,
                                               final List<Integer> activeWeeksInCycleParam,
                                               final List<Integer> pcOnlyWeekdays) {
@@ -119,6 +121,7 @@ public class TrainingService {
             period.setTime(time);
             period.setWeekdayTimes(weekdayTimes);
             period.setLocation(location);
+            period.setWeekdayLocations(weekdayLocations);
             period.setCycleWeeks(cycleWeeks);
             period.setActiveWeeksInCycle(activeWeeksInCycle);
             period.setPcOnlyWeekdays(pcOnly);
@@ -137,19 +140,32 @@ public class TrainingService {
             .findByDateIn(Set.copyOf(candidateDates)).stream()
             .collect(Collectors.toMap(Training::getDate, t -> t));
 
+        /*
+         * Der Ort haengt am Wochentag, nicht an der Periode: im Winter liegt der Montag in der
+         * einen Halle und der Donnerstag in der anderen. Ohne eigenen Eintrag faellt es auf den
+         * Ort der Periode zurueck — die Regel steht in `TrainingPeriod.ortFuer`, damit sie nicht
+         * an jeder Aufrufstelle neu geschrieben (und irgendwann vergessen) wird.
+         */
+        final Map<Integer, String> orte = weekdayLocations != null ? weekdayLocations : Map.of();
+        final java.util.function.IntFunction<String> ortFuer = tag -> {
+            final String eigener = orte.get(tag);
+            return eigener != null && !eigener.isBlank() ? eigener : location;
+        };
+
         final List<TrainingResponse> results = new ArrayList<>();
         for (final LocalDate d : candidateDates) {
             final String dayTime = weekdayTimes.get(d.getDayOfWeek().getValue());
+            final String dayOrt = ortFuer.apply(d.getDayOfWeek().getValue());
             final Training existing = existingByDate.get(d);
             if (existing != null) {
                 existing.setTime(dayTime);
-                if (location != null) existing.setLocation(location);
+                if (dayOrt != null) existing.setLocation(dayOrt);
                 if (type != null) existing.setType(type);
                 existing.setOpenToAll(!pcOnly.contains(d.getDayOfWeek().getValue()));
                 if (period != null) existing.setPeriod(period);
                 results.add(TrainingResponse.from(trainingRepository.save(existing)));
             } else {
-                Training training = new Training(d, dayTime, location);
+                Training training = new Training(d, dayTime, dayOrt);
                 if (type != null) training.setType(type);
                 training.setOpenToAll(!pcOnly.contains(d.getDayOfWeek().getValue()));
                 training.setPeriod(period);

@@ -70,7 +70,9 @@ public class TrainingPeriodService {
     public TrainingPeriodResponse update(final Long periodId, final String name, final LocalDate startDate,
                                           final LocalDate endDate, final List<Integer> weekdays,
                                           final String time, final Map<Integer, String> weekdayTimes,
-                                          final String location, final Integer cycleWeeksParam,
+                                          final String location,
+                                          final Map<Integer, String> weekdayLocations,
+                                          final Integer cycleWeeksParam,
                                           final List<Integer> activeWeeksInCycleParam,
                                           final List<Integer> pcOnlyWeekdays) {
         final List<Integer> pcOnly = pcOnlyWeekdays != null ? pcOnlyWeekdays : List.of();
@@ -112,6 +114,7 @@ public class TrainingPeriodService {
         period.setTime(time);
         period.setWeekdayTimes(weekdayTimes);
         period.setLocation(location);
+        period.setWeekdayLocations(weekdayLocations);
         period.setCycleWeeks(cycleWeeks);
         period.setActiveWeeksInCycle(activeWeeksInCycle);
         period.setPcOnlyWeekdays(pcOnly);
@@ -123,7 +126,8 @@ public class TrainingPeriodService {
             safeWeekdays, startDate, endDate, today, existing, cycleWeeks, activeWeeksInCycle);
 
         for (final LocalDate date : plan.datesToCreate()) {
-            Training training = new Training(date, weekdayTimes.get(date.getDayOfWeek().getValue()), location);
+            Training training = new Training(date, weekdayTimes.get(date.getDayOfWeek().getValue()),
+                saved.ortFuer(date.getDayOfWeek().getValue()));
             training.setOpenToAll(saved.isOpenToAllOn(date.getDayOfWeek().getValue()));
             training.setPeriod(saved);
             training = trainingRepository.save(training);
@@ -143,8 +147,16 @@ public class TrainingPeriodService {
             }
             final String expected = weekdayTimes.get(t.getDate().getDayOfWeek().getValue());
             final boolean open = saved.isOpenToAllOn(t.getDate().getDayOfWeek().getValue());
-            if ((expected != null && !expected.equals(t.getTime())) || open != t.isOpenToAll()) {
+            /*
+             * Der Ort wandert mit, wie die Uhrzeit: wer den Montag in eine andere Halle legt,
+             * meint die kuenftigen Montage, nicht nur die neu angelegten. Vergangene Termine
+             * bleiben unangetastet — sie haben stattgefunden, wo sie stattgefunden haben.
+             */
+            final String ort = saved.ortFuer(t.getDate().getDayOfWeek().getValue());
+            final boolean ortNeu = ort != null && !ort.equals(t.getLocation());
+            if ((expected != null && !expected.equals(t.getTime())) || open != t.isOpenToAll() || ortNeu) {
                 if (expected != null) t.setTime(expected);
+                if (ortNeu) t.setLocation(ort);
                 t.setOpenToAll(open);
                 trainingRepository.save(t);
             }

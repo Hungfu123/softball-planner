@@ -381,6 +381,8 @@ export interface TrainingPeriodResponse {
   weekdays: number[]
   time: string | null
   weekdayTimes: Record<number, string>
+  /** Ort je ISO-Wochentag. Was hier fehlt, erbt `location` — die Ausnahme, nicht die Regel. */
+  weekdayLocations?: Record<number, string>
   location: string | null
   cycleWeeks: number
   activeWeeksInCycle: number[]

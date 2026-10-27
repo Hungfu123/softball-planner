@@ -580,4 +580,49 @@ class TrainingIntegrationTest {
                 )))))
             .andExpect(status().isNotFound());
     }
+
+    /**
+     * Ort je Wochentag: im Winter liegt der Montag in der einen Halle, der Donnerstag in der
+     * anderen. Was keinen eigenen Eintrag hat, erbt den Ort der Periode — damit bleibt der
+     * Sommer, wo alles auf demselben Platz liegt, ein einziges Feld.
+     */
+    @Test
+    void bulkCreate_ortJeWochentag_undRueckfallAufDenOrtDerPeriode() throws Exception {
+        mockMvc.perform(post("/api/trainings/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "weekdays", List.of(1, 4),
+                    "startDate", "2026-03-02",
+                    "endDate", "2026-03-05",
+                    "weekdayTimes", Map.of("1", "20:00", "4", "19:00"),
+                    "location", "Platz Düsseldorf",
+                    // Nur der Montag weicht ab; der Donnerstag erbt.
+                    "weekdayLocations", Map.of("1", "Halle Welheimer Mark")))))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.length()").value(2));
+
+        mockMvc.perform(get("/api/trainings"))
+            .andExpect(jsonPath("$[?(@.date == '2026-03-02')].location").value("Halle Welheimer Mark"))
+            .andExpect(jsonPath("$[?(@.date == '2026-03-05')].location").value("Platz Düsseldorf"));
+    }
+
+    /** Ein Ortsname darf ein Komma tragen — deshalb JSON und nicht die CSV-Form der Uhrzeiten. */
+    @Test
+    void ortMitKommaUeberlebtDasSpeichern() throws Exception {
+        mockMvc.perform(post("/api/trainings/bulk")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "weekdays", List.of(1),
+                    "startDate", "2026-03-02",
+                    "endDate", "2026-03-02",
+                    "weekdayTimes", Map.of("1", "20:00"),
+                    "periodName", "Komma-Periode",
+                    "weekdayLocations", Map.of("1", "Halle Nord, Bottrop")))))
+            .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/trainings/periods"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[?(@.name == 'Komma-Periode')].weekdayLocations.1")
+                .value("Halle Nord, Bottrop"));
+    }
 }

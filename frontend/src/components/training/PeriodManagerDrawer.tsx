@@ -20,6 +20,8 @@ type FormState = {
   endDate: string
   weekdays: number[]
   weekdayTimes: Record<number, string>
+  /** Ort je Wochentag. Leer = der Ort der Periode gilt. */
+  weekdayLocations: Record<number, string>
   location: string
   cycleWeeks: number
   activeWeeksInCycle: number[]
@@ -27,7 +29,7 @@ type FormState = {
   pcOnlyWeekdays: number[]
 }
 
-const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, location: '', cycleWeeks: 1, activeWeeksInCycle: [1], pcOnlyWeekdays: [] }
+const EMPTY_FORM: FormState = { id: null, name: '', startDate: '', endDate: '', weekdays: [], weekdayTimes: {}, weekdayLocations: {}, location: '', cycleWeeks: 1, activeWeeksInCycle: [1], pcOnlyWeekdays: [] }
 
 type Props = {
   open: boolean
@@ -35,8 +37,8 @@ type Props = {
   periods: TrainingPeriodResponse[]
   activePeriodId: number | null
   onSelect: (id: number | null) => void
-  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; periodName?: string; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) => Promise<void>
-  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) => Promise<void>
+  onCreate: (data: { weekdays: number[]; startDate: string; endDate: string; weekdayTimes: Record<number, string>; location?: string; weekdayLocations?: Record<number, string>; periodName?: string; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) => Promise<void>
+  onUpdate: (id: number, data: { name: string; startDate: string; endDate: string; weekdays: number[]; weekdayTimes: Record<number, string>; location?: string | null; weekdayLocations?: Record<number, string>; cycleWeeks?: number; activeWeeksInCycle?: number[]; pcOnlyWeekdays?: number[] }) => Promise<void>
   onDelete: (id: number) => Promise<void>
 }
 
@@ -50,7 +52,8 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     const weekdayTimes: Record<number, string> = {}
     p.weekdays.forEach(w => { weekdayTimes[w] = p.weekdayTimes?.[w] ?? p.time ?? '18:00' })
     setForm({
-      id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], weekdayTimes, location: p.location ?? '',
+      id: p.id, name: p.name, startDate: p.startDate, endDate: p.endDate, weekdays: [...p.weekdays], weekdayTimes,
+      weekdayLocations: { ...(p.weekdayLocations ?? {}) }, location: p.location ?? '',
       cycleWeeks: p.cycleWeeks ?? 1, activeWeeksInCycle: p.activeWeeksInCycle?.length ? [...p.activeWeeksInCycle] : [1],
       pcOnlyWeekdays: [...(p.pcOnlyWeekdays ?? [])],
     })
@@ -63,8 +66,10 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     setForm(f => {
       if (f.weekdays.includes(value)) {
         const weekdayTimes = { ...f.weekdayTimes }
+        const weekdayLocations = { ...f.weekdayLocations }
         delete weekdayTimes[value]
-        return { ...f, weekdays: f.weekdays.filter(w => w !== value), weekdayTimes }
+        delete weekdayLocations[value]
+        return { ...f, weekdays: f.weekdays.filter(w => w !== value), weekdayTimes, weekdayLocations }
       }
       const defaultTime = Object.values(f.weekdayTimes)[0] ?? '18:00'
       return {
@@ -87,6 +92,16 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
 
   const setWeekdayTime = (value: number, time: string) => {
     setForm(f => ({ ...f, weekdayTimes: { ...f.weekdayTimes, [value]: time } }))
+  }
+
+  /** Leer heisst: dieser Tag nimmt den Ort der Periode. Darum wird der Eintrag dann entfernt. */
+  function setWeekdayLocation(value: number, ort: string) {
+    setForm(f => {
+      const weekdayLocations = { ...f.weekdayLocations }
+      if (ort.trim()) weekdayLocations[value] = ort
+      else delete weekdayLocations[value]
+      return { ...f, weekdayLocations }
+    })
   }
 
   const setCycleWeeks = (weeks: number) => {
@@ -114,9 +129,9 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
     setSaving(true)
     try {
       if (form.id == null) {
-        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, periodName: form.name.trim(), cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle, pcOnlyWeekdays: form.pcOnlyWeekdays })
+        await onCreate({ weekdays: form.weekdays, startDate: form.startDate, endDate: form.endDate, weekdayTimes: form.weekdayTimes, location: form.location || undefined, weekdayLocations: form.weekdayLocations, periodName: form.name.trim(), cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle, pcOnlyWeekdays: form.pcOnlyWeekdays })
       } else {
-        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null, cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle, pcOnlyWeekdays: form.pcOnlyWeekdays })
+        await onUpdate(form.id, { name: form.name.trim(), startDate: form.startDate, endDate: form.endDate, weekdays: form.weekdays, weekdayTimes: form.weekdayTimes, location: form.location || null, weekdayLocations: form.weekdayLocations, cycleWeeks: form.cycleWeeks, activeWeeksInCycle: form.activeWeeksInCycle, pcOnlyWeekdays: form.pcOnlyWeekdays })
       }
       cancelEdit()
     } finally {
@@ -226,18 +241,34 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
               </div>
               {form.weekdays.length > 0 && (
                 <div>
-                  <span className="text-[11px] text-navy-500 uppercase tracking-wide">Uhrzeit je Wochentag</span>
+                  <span className="text-[11px] text-navy-500 uppercase tracking-wide">Zeit und Ort je Wochentag</span>
                   <div className="space-y-1.5 mt-1">
                     {WEEKDAYS.filter(w => form.weekdays.includes(w.value)).map(w => {
                       const pcOnly = form.pcOnlyWeekdays.includes(w.value)
                       return (
-                        <div key={w.value} className="flex items-center gap-2">
+                        <div key={w.value} className="flex items-center gap-2 flex-wrap">
                           <span className="w-8 text-xs font-bold text-navy-700">{w.label}</span>
                           <input
                             type="time"
                             value={form.weekdayTimes[w.value] ?? ''}
                             onChange={e => setWeekdayTime(w.value, e.target.value)}
-                            className="flex-1 h-10 px-3 rounded-lg border border-cream-300 text-sm"
+                            className="w-28 h-10 px-3 rounded-lg border border-cream-300 text-sm"
+                          />
+                          {/*
+                            Der Ort steht NEBEN der Uhrzeit, nicht in einer eigenen Liste: beides
+                            beschreibt denselben Wochentag, und zwei Listen untereinander muesste
+                            man im Kopf wieder zusammenfuehren.
+
+                            Leer lassen heisst „wie die Periode" — deshalb traegt das Feld den
+                            Ort der Periode als Platzhalter. Im Sommer, wo alles auf demselben
+                            Platz liegt, bleibt es damit bei dem EINEN Feld unten.
+                          */}
+                          <input
+                            value={form.weekdayLocations[w.value] ?? ''}
+                            onChange={e => setWeekdayLocation(w.value, e.target.value)}
+                            placeholder={form.location || 'wie oben'}
+                            aria-label={`Ort am ${w.label}`}
+                            className="flex-1 min-w-24 h-10 px-3 rounded-lg border border-cream-300 text-sm"
                           />
                           {/* Wer ist eingeladen? Nur-P/C-Termine zaehlen nicht in die
                               Trainingsbeteiligung — niemandem darf als versaeumt
@@ -268,7 +299,7 @@ export function PeriodManagerDrawer({ open, onClose, periods, activePeriodId, on
                 </div>
               )}
               <label className="block">
-                <span className="text-[11px] text-navy-500 uppercase tracking-wide">Ort</span>
+                <span className="text-[11px] text-navy-500 uppercase tracking-wide">Ort (für alle Tage)</span>
                 <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className="w-full h-10 px-3 rounded-lg border border-cream-300 text-sm" placeholder="Park" />
               </label>
               {form.id != null && (

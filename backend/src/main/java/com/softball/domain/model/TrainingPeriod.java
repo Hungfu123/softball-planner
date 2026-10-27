@@ -15,6 +15,7 @@ public class TrainingPeriod {
     private String time;
     private String location;
     private Map<Integer, String> weekdayTimes = new LinkedHashMap<>();
+    private Map<Integer, String> weekdayLocations = new LinkedHashMap<>();
     /**
      * ISO-Wochentage dieser Periode, an denen nur Pitcher und Catcher eingeladen sind.
      *
@@ -56,6 +57,23 @@ public class TrainingPeriod {
     public void setTime(final String time) { this.time = time; }
     public String getLocation() { return location; }
     public void setLocation(final String location) { this.location = location; }
+
+    public Map<Integer, String> getWeekdayLocations() { return weekdayLocations; }
+    public void setWeekdayLocations(final Map<Integer, String> weekdayLocations) {
+        this.weekdayLocations = weekdayLocations != null ? weekdayLocations : new LinkedHashMap<>();
+    }
+
+    /**
+     * Der Ort fuer einen Wochentag: der eigene, sonst der der Periode.
+     *
+     * Die Rueckfall-Regel steht HIER und nirgends sonst. Wer sie an jeder Aufrufstelle neu
+     * schreibt, hat sie beim naechsten Mal an einer Stelle vergessen — und dann stuende an
+     * einem Termin kein Ort, obwohl die Periode einen hat.
+     */
+    public String ortFuer(final int isoWochentag) {
+        final String eigener = weekdayLocations.get(isoWochentag);
+        return eigener != null && !eigener.isBlank() ? eigener : location;
+    }
 
     public Map<Integer, String> getWeekdayTimes() { return weekdayTimes; }
     public void setWeekdayTimes(final Map<Integer, String> weekdayTimes) { this.weekdayTimes = weekdayTimes != null ? weekdayTimes : new LinkedHashMap<>(); }
