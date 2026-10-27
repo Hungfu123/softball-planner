@@ -135,17 +135,21 @@
   /*
    * Der Profilkopf der Startseite und die grosse Zahl darin.
    *
-   * Rot und Grund gehoeren zusammen, deshalb stehen sie nebeneinander. Auf der normalen,
-   * aufgehellten Kachel (#40587A) gibt es kein sattes Rot, das man lesen kann: Markenrot
-   * #CC2936 schafft dort 1,4:1. Dunkle Kaestchen unter den Zahlen waren der erste Ausweg
-   * und sahen aus wie Kaestchen. Dunkel wird deshalb der BLOCK, nicht die Kachel — die
-   * behaelt ihr gewohntes Aussehen, bekommt aber einen tieferen Grund, und darauf traegt
-   * #FF6B6B 5,1:1.
+   * Amber, nicht Rot — nach einem Umweg ueber beides und einem Blick auf die ganze Seite.
    *
-   * Nebenwirkung, erwuenscht: alles andere auf dem Block gewinnt ebenfalls Kontrast.
+   * Rot hat hier schon ZWEI Aufgaben: die Abschnittsstriche und die Spieltag-Balken im
+   * Jahresband. Eine dritte macht aus einem Signal eine Dekoration; im roten Entwurf
+   * stritten die vier Zahlen mit dem Band und den Strichen um dieselbe Aufmerksamkeit.
+   * So macht jede Farbe eine Sache: Rot den Spielbetrieb, Amber die eigenen Zahlen,
+   * `--color-bar` die Datenmarken. Dieselbe Trennung gilt auf der Analyse-Seite, wo
+   * Hits seit je in Amber stehen und Rot den Niederlagen gehoert.
+   *
+   * Der tiefe Grund bleibt: auf ihm steht Amber bei 6,9:1 statt 4,4:1 auf der alten,
+   * aufgehellten Kachel. Wer doch wieder Rot will, dreht hier #FF6B6B hinein — es trug
+   * dort 5,1:1 und ist die einzige rote Variante, die auf dieser Flaeche haelt.
    */
   --color-kopf: #0F2037;
-  --color-kennzahl: #FF6B6B;
+  --color-kennzahl: #FBBF24;
   --color-band-ink: #FFFFFF;       /* Schrift auf dem Band */
   --color-danger-ink: #B91C2A;     /* Rot als SCHRIFT (nicht als Flaeche) */
 
