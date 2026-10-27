@@ -135,12 +135,19 @@
   /*
    * Die grosse Zahl im Profilkopf — Rot, wie der Betreiber es wollte.
    *
-   * Markenrot taugt dafuer nicht: auf dem Block schafft #CC2936 nur 1,4:1, die Ziffer waere
-   * weg. Erst eine MULDE statt eines Sockels unter der Zahl gibt Rot Luft; auf ihr steht
-   * #FF8787 bei 5,0:1 und bleibt dabei rot statt rosa. Der Block ist in beiden Themes
-   * dunkel, deshalb gilt derselbe Wert hier wie dort.
+   * Auf der aufgehellten Kachel (#40587A) ist das eine Frage der Physik, nicht des
+   * Geschmacks: Markenrot #CC2936 schafft dort 1,4:1 und waere schlicht weg, #FF8A80 kommt
+   * auf 3,2:1 und ist damit das schwaechste der lesbaren. Jedes Rot, das man dort lesen
+   * kann, ist hell. #FCA5A5 ist der Rotton der eigenen Palette (softball-red-300) und steht
+   * bei 3,8:1 — ueber der Schwelle fuer grosse Schrift (3:1), mit Abstand.
+   *
+   * Satteres Rot braucht einen dunklen Grund unter der Ziffer. Das war einmal gebaut
+   * (Mulde statt Sockel, 5,0:1) und wurde verworfen, weil die dunklen Kaestchen nicht
+   * gefielen. Wer es wieder will, dreht hier den Wert und dort die Fuellung.
+   *
+   * Der Block ist in beiden Themes dunkel, deshalb gilt derselbe Wert hier wie dort.
    */
-  --color-kennzahl: #FF8787;
+  --color-kennzahl: #FCA5A5;
   --color-band-ink: #FFFFFF;       /* Schrift auf dem Band */
   --color-danger-ink: #B91C2A;     /* Rot als SCHRIFT (nicht als Flaeche) */
 

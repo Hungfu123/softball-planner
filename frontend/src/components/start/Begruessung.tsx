@@ -175,14 +175,9 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
       <span className={`block font-display text-[10px] font-bold tracking-widest uppercase ${tinte} mt-1.5`}>{label}</span>
     </>
   )
-  /*
-    Mulde statt Sockel: eine dunkle Vertiefung gibt der roten Ziffer den Kontrast, den sie
-    auf der aufgehellten Flaeche nicht hatte (5,0:1 statt 3,1:1). Nebenbei sieht eine
-    eingelassene Zahl nach Anzeigetafel aus, und genau das ist sie.
-  */
   const grund = 'relative rounded-xl px-1.5 py-2 sm:py-2.5 text-center block w-full'
   if (!onWaehlen) {
-    return <div className={`${grund} bg-black/22 border border-white/10`}>{inhalt}</div>
+    return <div className={`${grund} bg-white/8 border border-white/15`}>{inhalt}</div>
   }
   return (
     <button
@@ -192,12 +187,8 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
       aria-label={`${label} — Kurve anzeigen`}
       className={`${grund} cursor-pointer transition-colors ${
         gewaehlt
-          // Gewaehlt heisst TIEFER, nicht heller. Erst war es umgekehrt, und damit war
-          // ausgerechnet die gewaehlte Zahl die blasseste (4,4:1 gegen 5,2 der anderen) —
-          // die Auswahl sah aus wie der Ausreisser. Jetzt sitzt sie am tiefsten, der
-          // Rahmen hellt auf, und die wichtigste Ziffer hat den besten Kontrast (5,8:1).
-          ? 'bg-black/38 border border-white/40'
-          : 'bg-black/22 border border-white/10 hover:bg-black/30'
+          ? 'bg-white/12 border border-white/50'
+          : 'bg-white/8 border border-white/15 hover:bg-white/12'
       }`}
     >
       {inhalt}
