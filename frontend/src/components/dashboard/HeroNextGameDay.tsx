@@ -20,11 +20,25 @@ function formatHeroDate(dateStr: string) {
 export function HeroNextGameDay({ gameDay, variant }: Props) {
   const { istAdmin, darfScoren } = useRolle()
   const stripeLabel = variant === 'today' ? 'Heute · Nächster Spieltag' : variant === 'upcoming' ? 'Nächster Spieltag' : 'Letzter Spieltag'
-  const stripeBg = variant === 'past' ? 'bg-navy-700' : 'bg-softball-red-600'
+  /*
+   * Rot ruft, der vergangene Spieltag nicht — der traegt nur eine Aufschrift. Im
+   * Hellen war das navy-700 auf navy-900: eine Stufe heller als der Block darunter.
+   * Fest kodiert geht das im Dunkeln schief, wo der Block selbst schon heller ist.
+   * Weiss mit Deckung rechnet die Stufe stattdessen aus dem aus, was gerade
+   * dahinterliegt — und zeigt in beiden Themes nach oben.
+   */
+  const stripeBg = variant === 'past' ? 'bg-white/10' : 'bg-softball-red-600'
 
   return (
-    <div className="rounded-2xl overflow-hidden shadow-lg shadow-navy-900/15">
-      <div className={`${stripeBg} text-white px-4 py-1.5 flex items-center gap-2 font-display text-[11px] font-bold tracking-widest uppercase`}>
+    /*
+     * Der Block ist Betonung, nicht Rahmen: `spotlight`, nicht `band`. Mit
+     * bg-navy-900 war er im Dunkeln exakt die Seitenfarbe — die Karte hatte
+     * keine Raender mehr, der Schatten darunter faellt auf Navy ohnehin aus.
+     * Die Fuellung sitzt aussen, damit die Aufschrift oben sich gegen sie
+     * aufhellen kann statt gegen die Seite.
+     */
+    <div className="rounded-2xl overflow-hidden bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15">
+      <div className={`${stripeBg} px-4 py-1.5 flex items-center gap-2 font-display text-[11px] font-bold tracking-widest uppercase`}>
         {variant === 'today' && (
           <span className="relative flex w-2 h-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
@@ -33,7 +47,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
         )}
         {stripeLabel}
       </div>
-      <div className="bg-navy-900 text-white px-3.5 py-2.5 sm:px-5 sm:py-4 md:py-5">
+      <div className="px-3.5 py-2.5 sm:px-5 sm:py-4 md:py-5">
         <div className="flex items-start justify-between gap-3">
           <div className="font-display font-extrabold text-lg sm:text-2xl md:text-3xl tracking-wide leading-none">
             {formatHeroDate(gameDay.date)}
@@ -68,8 +82,10 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                 ? 'bg-softball-red-600/20 border-softball-red-400/40 hover:bg-softball-red-600/30'
                 : 'bg-white/8 border-white/15 hover:bg-white/15'
               const cls = klickbar ? rohCls : ohneKlickstile(rohCls)
+              // Im Dunkeln ist der Block selbst heller — weisse Tinte mit Deckung verliert
+              // hier den Spielraum, den sie auf dem hellen Theme noch hatte (3,7:1 statt 4,5).
               const numCls = finished
-                ? 'bg-white/10 text-white/60'
+                ? 'bg-white/10 text-white/75'
                 : isLive
                 ? 'bg-softball-red-500 text-white'
                 : 'bg-white/15 text-white'
@@ -121,7 +137,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
                         Live
                       </span>
                     ) : (
-                      <span className="font-display text-[10px] font-bold tracking-widest uppercase inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-white/80 border border-white/15">
+                      <span className="font-display text-[10px] font-bold tracking-widest uppercase inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 text-white border border-white/15">
                         Offen
                       </span>
                     )}
@@ -134,7 +150,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
         {istAdmin && (
           <Link
             to={`/gameday/${gameDay.id}`}
-            className="font-display mt-2 sm:mt-3 w-full h-9 sm:h-10 rounded-lg bg-white/95 hover:bg-white text-navy-900 font-extrabold text-[11px] sm:text-xs tracking-widest uppercase flex items-center justify-center gap-1.5 transition-colors"
+            className="font-display mt-2 sm:mt-3 w-full h-9 sm:h-10 rounded-lg bg-invers hover:bg-invers/90 text-invers-ink font-extrabold text-[11px] sm:text-xs tracking-widest uppercase flex items-center justify-center gap-1.5 transition-colors"
           >
             <ClipboardList size={13} /> Lineup verwalten
           </Link>

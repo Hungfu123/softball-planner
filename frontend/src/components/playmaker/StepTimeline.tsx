@@ -54,7 +54,7 @@ export function StepTimeline({
         springe(Math.round(t * (count - 1)))
       }}
     >
-      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-cream-200">
+      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-bar-track">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-bar"
           style={{ width: `${anteil}%` }}

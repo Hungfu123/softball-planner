@@ -16,7 +16,7 @@ export function DashboardLoading() {
           <div className="skeleton-shimmer h-2.5 w-40 rounded-full bg-white/30" />
         </div>
         {/* Navy-Body */}
-        <div className="bg-navy-900 px-3.5 py-2.5 sm:px-5 sm:py-4 md:py-5 space-y-2.5 sm:space-y-3">
+        <div className="bg-spotlight px-3.5 py-2.5 sm:px-5 sm:py-4 md:py-5 space-y-2.5 sm:space-y-3">
           {/* Datum + Standort-Zeile */}
           <div className="flex items-center justify-between gap-3">
             <div className="skeleton-shimmer h-7 sm:h-8 w-36 sm:w-52 rounded-md bg-white/15" />

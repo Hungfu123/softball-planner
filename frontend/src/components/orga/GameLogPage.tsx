@@ -817,7 +817,7 @@ function SlotProfile({ slots, gameCount, allGames, comparison }: {
             <div key={s.slot}>
               <div className="flex items-center gap-3" title={`Platz ${s.slot}: ${s.plateAppearances}× am Schlag · AVG ${fmtRate(s.battingAverage)} · OBP ${fmtRate(s.onBasePct)}`}>
                 <span className="font-display text-xs font-extrabold text-gray-400 tabular-nums w-5 text-right shrink-0">{s.slot}.</span>
-                <div className="flex-1 h-5 bg-cream-200/70 rounded-full overflow-hidden">
+                <div className="flex-1 h-5 bg-bar-track rounded-full overflow-hidden">
                   <div className="h-full flex rounded-full overflow-hidden">
                     <div className="h-full bg-bar" style={{ width: `${avgShare * 100}%` }} />
                     <div className="h-full bg-navy-400" style={{ width: `${(obp - avgShare) * 100}%` }} />
@@ -1383,7 +1383,7 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
           {stranded.slice(0, 10).map(([name, times]) => (
             <div key={name} className="flex items-center gap-2.5" title={`${name}: ${times}× gestrandet`}>
               <span className="text-[11px] font-semibold text-navy-900 w-20 shrink-0 truncate">{name}</span>
-              <div className="flex-1 h-4 bg-cream-200/70 rounded-full overflow-hidden">
+              <div className="flex-1 h-4 bg-bar-track rounded-full overflow-hidden">
                 <div className="h-full bg-softball-red-500/80 rounded-full" style={{ width: `${(times / maxStranded) * 100}%` }} />
               </div>
               <span className="font-display text-[11px] font-extrabold tabular-nums text-softball-red-600 w-8 text-right shrink-0">×{times}</span>
@@ -1405,7 +1405,7 @@ function SeasonBreakdown({ logs }: { logs: TeamGameLogResponse[] }) {
             {outMakers.byPlayer.slice(0, 10).map(([name, times]) => (
               <div key={name} className="flex items-center gap-2.5" title={`${name}: ${times}× das letzte Aus bei Runnern auf Base`}>
                 <span className="text-[11px] font-semibold text-navy-900 w-20 shrink-0 truncate">{name}</span>
-                <div className="flex-1 h-4 bg-cream-200/70 rounded-full overflow-hidden">
+                <div className="flex-1 h-4 bg-bar-track rounded-full overflow-hidden">
                   <div className="h-full bg-bar rounded-full" style={{ width: `${(times / maxOutMakers) * 100}%` }} />
                 </div>
                 <span className="font-display text-[11px] font-extrabold tabular-nums text-navy-800 w-8 text-right shrink-0">×{times}</span>

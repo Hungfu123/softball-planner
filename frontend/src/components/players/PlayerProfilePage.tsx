@@ -446,7 +446,7 @@ export function PlayerProfilePage() {
                       {shown.map(([position, count]) => (
                         <li key={position} className="flex items-center gap-3">
                           <span className="w-28 shrink-0 text-xs text-navy-900">{POSITION_NAMES[position] ?? position}</span>
-                          <span className="flex-1 h-2 bg-cream-200 rounded-full overflow-hidden">
+                          <span className="flex-1 h-2 bg-bar-track rounded-full overflow-hidden">
                             <span
                               className="block h-full bg-bar rounded-full"
                               style={{ width: `${(count / max) * 100}%` }}

@@ -82,7 +82,7 @@ export function UsagePanel({ usage, trainingsOutOfScope = false }: {
             {orders.map(({ slot, count }) => (
               <li key={slot} className="flex-1 flex flex-col items-center gap-1">
                 <span
-                  className={`w-full rounded-sm ${count > 0 ? 'bg-navy-700' : 'bg-cream-200'}`}
+                  className={`w-full rounded-sm ${count > 0 ? 'bg-bar' : 'bg-bar-track'}`}
                   style={{ height: `${count > 0 ? 8 + (count / maxOrderCount) * 28 : 4}px` }}
                   title={count > 0 ? `${count}× auf Platz ${slot}` : `nie auf Platz ${slot}`}
                 />
@@ -127,7 +127,7 @@ function Ratio({ label, explain, value, total, unit }: {
           </span>
         </span>
       </div>
-      <div className="h-2 bg-cream-200 rounded-full overflow-hidden">
+      <div className="h-2 bg-bar-track rounded-full overflow-hidden">
         <span className="block h-full bg-bar rounded-full" style={{ width: `${share * 100}%` }} />
       </div>
     </div>

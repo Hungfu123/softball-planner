@@ -163,7 +163,7 @@ export function Dashboard() {
       <div className="flex flex-col items-center justify-center py-12 sm:py-20 px-4 text-center">
         <div className="relative mb-6">
           <div className="absolute inset-0 bg-softball-red-600 blur-2xl opacity-30 rounded-full" />
-          <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-navy-900 text-cream-50 shadow-lg shadow-navy-900/30 border-2 border-softball-red-600">
+          <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/30 border-2 border-softball-red-600">
             <CrossBones size={40} />
           </div>
         </div>

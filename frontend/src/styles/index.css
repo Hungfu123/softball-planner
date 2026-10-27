@@ -109,6 +109,10 @@
   /* Datenbalken. Eigene Rolle, weil keine Schrift darauf steht: der Balken darf
      heller sein, als es fuer Text zulaessig waere. */
   --color-bar: #193253;
+  /* Das Gleis, in dem der Balken liegt. Eine Rinne, kein Sockel: sie muss
+     DUNKLER sein als die Karte, sonst sieht man den leeren Teil nicht mehr und
+     der Balken wird zu einem Strich, der im Nichts aufhoert. */
+  --color-bar-track: #E8E0CA;
   --schimmer: rgb(255 255 255 / 0.7);
   /* Der hervorgehobene Block: Kennzahlen-Kachel, Profilkopf, Vergleichstafel.
      Auf Papier wird so etwas zum dunklen Klotz — es faellt auf, weil es die
@@ -118,6 +122,12 @@
      darf ruhig zuruecktreten. */
   --color-spotlight: #142B49;
   --color-spotlight-ink: #FFFFFF;
+  /* Die helle Schaltflaeche auf einem dunklen Block — die Umkehrung, und damit das
+     auffaelligste Element darin. Eigene Rolle, weil sie NICHT dasselbe ist wie die
+     Schrift auf dem Block: Schrift will reines Weiss, eine Flaeche in dieser Groesse
+     blendet damit im Dunkeln. */
+  --color-invers: #FFFFFF;
+  --color-invers-ink: #142B49;
   --color-band-ink: #FFFFFF;       /* Schrift auf dem Band */
   --color-danger-ink: #B91C2A;     /* Rot als SCHRIFT (nicht als Flaeche) */
 
@@ -250,11 +260,21 @@ p {
     --color-accent-ink: #FFFFFF;
     /* 3,1:1 gegen das Gleis — einen Balken muss man ablesen koennen. */
     --color-bar: #6C9BD6;
+    /* Die Rinne bleibt eine Rinne. Dass `bg-cream-200` im Dunkeln eine Stufe
+       nach OBEN geht, stimmt fuer eine Schiene, auf der etwas liegt — fuer ein
+       Gleis, in dem etwas fehlt, ist es genau falsch herum: bei 1,3:1 gegen die
+       Karte verschwand der leere Teil, und 50 % sahen aus wie ein Strich, der
+       mitten im Nichts endet. 1,5:1 gegen die Karte, 5,0:1 gegen den Balken. */
+    --color-bar-track: #0A1F3A;
     --schimmer: rgb(255 255 255 / 0.1);
     /* Eine Stufe ueber der Karte: 1,6:1 gegen die Seite, 1,2:1 gegen gewoehnliche
        Karten. Weisse Schrift steht darauf bei 9,0:1. */
     --color-spotlight: #2F4A6E;
     --color-spotlight-ink: #FFFFFF;
+    /* Gedaempftes Papier statt reinem Weiss: hell genug, um der Blickfang im Block
+       zu bleiben (11,3:1 gegen ihn), ohne nachts zu blenden. Schrift darauf 12,2:1. */
+    --color-invers: #E6E0D2;
+    --color-invers-ink: #142B49;
     --color-band-ink: #F4F0E6;
     /* softball-red-500 schafft auf der Seite nur 3,4:1 und auf Karten 2,9:1 — als SCHRIFT
        braucht es hier den hellen Ton. Als Flaeche (Knopf mit weisser Schrift) bleibt Rot Rot. */
@@ -400,8 +420,12 @@ p {
   /* Halbdurchsichtige helle Blaetter (klebende Kopfzeilen, Glas-Leisten). Die Deckung
      bleibt, nur die Farbe dreht — sonst stuende weisse Schrift auf weissem Glas.
      bg-white/5 bis /20 sind das Gegenteil (helle Schleier auf dunklem Grund, z.B. im
-     Spielbogen) und bleiben deshalb unberuehrt. */
-  [data-theme="dark"] .bg-white\/95,
+     Spielbogen) und bleiben deshalb unberuehrt.
+     `bg-white/95` stand frueher mit hier und war falsch einsortiert: es trug keine
+     Glasleiste, sondern die drei hellen Schaltflaechen auf dunklen Bloecken ("Lineup
+     verwalten", "Ganzes Profil", "Erneut versuchen"). Aus dem auffaelligsten Element
+     des Blocks wurde so die zurueckhaltendste Platte. Sie tragen jetzt
+     `bg-spotlight-ink text-spotlight` — die Umkehrung des Blocks, in beiden Themes. */
   [data-theme="dark"] .bg-cream-50\/95,
   [data-theme="dark"] .bg-cream-100\/95 { background-color: rgb(39 61 90 / 0.95); }
   [data-theme="dark"] .bg-cream-50\/90 { background-color: rgb(39 61 90 / 0.9); }

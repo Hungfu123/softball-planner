@@ -94,7 +94,7 @@ export function StrengthsPanel({ playerId, allTime }: {
               </span>
             </span>
           </div>
-          <div className="relative h-2 bg-cream-200 rounded-full">
+          <div className="relative h-2 bg-bar-track rounded-full">
             <div
               className="absolute inset-y-0 left-0 bg-bar rounded-full"
               style={{ width: `${Math.min(100, (value / scale) * 100)}%` }}
