@@ -102,24 +102,17 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
       <div className="mt-4 md:mt-0 md:w-[22rem] lg:w-[34rem] xl:w-[40rem] md:shrink-0">
         {playerId == null ? (
           <p className="text-sm text-white/70">
-            Dein Konto ist noch keinem Spieler zugeordnet. Sag dem Trainer Bescheid — dann stehen
-            hier deine Position und deine Zahlen.
+            Noch keinem Spieler zugeordnet — sag dem Trainer Bescheid.
           </p>
         ) : fehler || ladefehler ? (
-          <p className="text-sm text-white/70">
-            Deine Zahlen sind gerade nicht erreichbar — später nochmal reinschauen.
-          </p>
+          <p className="text-sm text-white/70">Zahlen gerade nicht erreichbar.</p>
         ) : seasonId == null ? (
-          <p className="text-sm text-white/70">
-            Es ist noch keine Saison angelegt. Sobald sie steht und du gespielt hast, stehen hier
-            deine Zahlen.
-          </p>
+          <p className="text-sm text-white/70">Noch keine Saison angelegt.</p>
         ) : !daten ? (
           <p className="text-sm text-white/70">Zahlen laden …</p>
         ) : leer ? (
           <p className="text-sm text-white/70">
-            In dieser Saison hast du noch nicht geschlagen. Sobald ein Spiel gezählt ist, in dem du
-            dran warst, stehen die Zahlen hier.
+            In dieser Saison noch nicht geschlagen.
           </p>
         ) : (
           <>
