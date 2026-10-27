@@ -6,17 +6,25 @@
  * Passt zu BattingStatsTable-Spaltenbild:
  *   # | Spieler | Schlag | Treffer | AVG | Quote | Walks | K | HR | SB
  */
+/**
+ * Der Platzhalter der Statistik-Tabelle — in ihrer Form, nicht als Spinner.
+ *
+ * Die Balken liegen auf `bar-track`, der Rolle „Rinne": da liegt noch nichts. Vorher war es
+ * `cream-200`, also eine helle FLAECHE — im Dunkeln deutet der Shim Cremetoene nach oben um,
+ * und aus der Rinne wurde ein Block. Ein Skelett, das heller ist als die Karte, sieht aus
+ * wie Inhalt, nicht wie fehlender Inhalt.
+ */
 export function StatsTableSkeleton() {
   return (
     <div role="status" aria-busy="true" aria-live="polite">
       <span className="sr-only">Statistiken werden geladen…</span>
 
-      <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
+      <div className="bg-surface-raised border border-line rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             {/* Header-Reihe */}
             <thead>
-              <tr className="bg-navy-900">
+              <tr className="bg-band">
                 {/* # */}
                 <th className="px-3 py-2.5 text-left w-8">
                   <div className="skeleton-shimmer h-2.5 w-3 rounded-full bg-white/20" />
@@ -65,54 +73,54 @@ export function StatsTableSkeleton() {
               {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
                 <tr
                   key={i}
-                  className={`border-b border-cream-200 last:border-0 ${i % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'}`}
+                  className={`border-b border-line last:border-0 ${i % 2 === 1 ? 'bg-surface-sunken' : 'bg-surface-raised'}`}
                 >
                   {/* Rang */}
                   <td className="px-3 py-2.5 text-left">
-                    <div className="skeleton-shimmer h-3.5 w-3.5 rounded bg-cream-200" />
+                    <div className="skeleton-shimmer h-3.5 w-3.5 rounded bg-bar-track" />
                   </td>
                   {/* Spieler-Name — breiter, variiert für natürlichen Look */}
                   <td className="px-3 py-2.5">
                     <div
-                      className={`skeleton-shimmer h-3.5 rounded-full bg-cream-300 ${
+                      className={`skeleton-shimmer h-3.5 rounded-full bg-bar-track ${
                         i % 4 === 0 ? 'w-28' : i % 4 === 1 ? 'w-20' : i % 4 === 2 ? 'w-24' : 'w-32'
                       }`}
                     />
                   </td>
                   {/* Schlag */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-3 w-6 rounded-full bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-3 w-6 rounded-full bg-bar-track ml-auto" />
                   </td>
                   {/* Treffer */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-3 w-5 rounded-full bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-3 w-5 rounded-full bg-bar-track ml-auto" />
                   </td>
                   {/* AVG — etwas breiter (3-stellige Dezimalzahl) */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-4 w-10 rounded bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-4 w-10 rounded bg-bar-track ml-auto" />
                   </td>
                   {/* Quote mit Bar-Platzhalter */}
                   <td className="px-3 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <div className="skeleton-shimmer w-12 h-1.5 rounded-full bg-cream-200" />
-                      <div className="skeleton-shimmer h-3 w-8 rounded-full bg-cream-200" />
+                      <div className="skeleton-shimmer w-12 h-1.5 rounded-full bg-bar-track" />
+                      <div className="skeleton-shimmer h-3 w-8 rounded-full bg-bar-track" />
                     </div>
                   </td>
                   {/* Walks */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-bar-track ml-auto" />
                   </td>
                   {/* K */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-bar-track ml-auto" />
                   </td>
                   {/* HR */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-bar-track ml-auto" />
                   </td>
                   {/* SB */}
                   <td className="px-3 py-2.5 text-right">
-                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-cream-200 ml-auto" />
+                    <div className="skeleton-shimmer h-3 w-4 rounded-full bg-bar-track ml-auto" />
                   </td>
                 </tr>
               ))}
