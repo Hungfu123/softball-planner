@@ -3,6 +3,7 @@ import { ConfirmModal } from '@/components/shared'
 import { hasAuth } from '@/api/client'
 import { useOptionalAuth } from '@/components/auth/AuthProvider'
 import { useCounter } from '@/hooks/useCounter'
+import { useZurueck, zurueckSatz } from '@/hooks/useZurueck'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { CounterBoard } from './CounterBoard'
 import { CounterPad } from './CounterPad'
@@ -35,15 +36,26 @@ export default function CounterPage() {
   useWakeLock()
 
   const loggedIn = hasAuth()
-  // Spieler sehen Orga nicht; für sie führt der Pfeil direkt aufs Dashboard.
-  const zurueck = useOptionalAuth()?.me?.role === 'PLAYER' ? '/' : '/orga'
+  /*
+   * Der Pfeil führt dorthin zurück, wo man hergekommen ist.
+   *
+   * Es gibt zwei Eingänge: die Counter-Kachel auf der Startseite und die Orga-Übersicht.
+   * Vorher entschied die ROLLE — ein Trainer, der von der Startseite kam, landete auf Orga,
+   * also auf einer Seite, die er nie geöffnet hatte. Jetzt sagt der Link beim Hergehen, wohin
+   * das Zurück zeigt.
+   *
+   * Die Prüfung der Angabe steckt in `useZurueck`; ohne Angabe bleibt es bei der alten
+   * Regel: Spieler sehen Orga nicht.
+   */
+  const rolle = useOptionalAuth()?.me?.role
+  const zurueck = useZurueck(rolle === 'PLAYER' ? '/' : '/orga')
 
   return (
     <div className="flex h-svh flex-col overflow-y-auto bg-cream-100">
       <CounterBoard
         state={counter.state}
         backTo={loggedIn ? zurueck : undefined}
-        backLabel={loggedIn ? (zurueck === '/' ? 'Zurück' : 'Zurück zur Orga') : undefined}
+        backLabel={loggedIn ? zurueckSatz(zurueck) : undefined}
       />
 
       <CounterPad

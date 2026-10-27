@@ -91,6 +91,7 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
         {playerId != null && (
           <Link
             to={`/players/${playerId}`}
+            state={{ zurueck: '/' }}
             className="font-display min-h-11 inline-flex items-center px-4 rounded-lg bg-invers hover:bg-navy-800 hover:text-white text-invers-ink text-[11px] font-extrabold tracking-widest uppercase transition-colors shrink-0 lg:self-end"
           >
             Ganzes Profil

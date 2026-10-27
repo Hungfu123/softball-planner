@@ -15,6 +15,7 @@ import { SeasonTable } from './SeasonTable'
 import { UsagePanel } from './UsagePanel'
 import { PositionBadges } from './PositionBadges'
 import { useRolle } from '@/hooks/useRolle'
+import { useZurueck, zurueckLabel } from '@/hooks/useZurueck'
 import { PositionProfileSheet } from './PositionProfileSheet'
 import { StrengthsPanel } from './StrengthsPanel'
 import type { PlayerFormPoint } from '@/types'
@@ -38,6 +39,7 @@ export function PlayerProfilePage() {
   const { id } = useParams<{ id: string }>()
   const playerId = Number(id)
   const navigate = useNavigate()
+  const zurueck = useZurueck(istAdmin ? '/players' : '/')
   const toast = useToastContext()
   const [scope, setScope] = useState<ProfileScope>({ kind: 'all' })
   const { player, timeline, gameStats, battingField, usage, loading, scopeLoading, error, savePositions, rename, setArchived, setGender } =
@@ -185,12 +187,14 @@ export function PlayerProfilePage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-md md:max-w-2xl lg:max-w-5xl mx-auto p-4 space-y-4">
+        {/* Dorthin zurück, wo man hergekommen ist — wer von der Startseite kam, will nicht
+            auf dem Kader landen. Ohne Angabe entscheidet wie bisher die Rolle. */}
         <button
-          onClick={() => navigate(istAdmin ? '/players' : '/')}
+          onClick={() => navigate(zurueck)}
           className="inline-flex items-center gap-1 min-h-11 -my-3 -ml-2 pl-2 pr-3 text-sm font-semibold text-gray-500 hover:text-navy-900 cursor-pointer"
         >
           <ChevronLeft size={16} />
-          {istAdmin ? 'Kader' : 'Start'}
+          {zurueckLabel(zurueck)}
         </button>
 
         {/* Kopf — dunkel wie das Feld, damit Name und Zahlen zusammen eine Einheit bilden */}
