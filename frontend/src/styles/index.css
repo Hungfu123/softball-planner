@@ -298,7 +298,13 @@ p {
   [data-theme="dark"] .text-navy-500,
   [data-theme="dark"] .text-gray-900,
   [data-theme="dark"] .text-gray-800,
-  [data-theme="dark"] .text-gray-700 { color: var(--color-ink); }
+  [data-theme="dark"] .text-gray-700,
+  /* gray-950 traegt Kartenueberschriften (Saison-Statistik, Spieltag-Karte,
+     aufklappbare Abschnitte). Fast schwarz, also im Dunkeln fast weg — und
+     ausgerechnet auf dem Text, der eine Karte benennt. Gefunden erst, als ich
+     die benutzten Klassen gegen die umgedeuteten gestellt habe: die Seiten,
+     auf denen diese Karten stehen, sind in der Dev-Datenbank leer. */
+  [data-theme="dark"] .text-gray-950 { color: var(--color-ink); }
 
   [data-theme="dark"] .text-navy-400,
   [data-theme="dark"] .text-navy-300,
@@ -306,6 +312,8 @@ p {
   [data-theme="dark"] .text-gray-500 { color: var(--color-ink-muted); }
 
   [data-theme="dark"] .text-gray-400 { color: var(--color-ink-faint); }
+  /* Dunkles Rot mit Deckung: auf Papier eine gedaempfte Warnung, im Dunkeln weg. */
+  [data-theme="dark"] .text-softball-red-700\/70 { color: rgb(252 165 165 / 0.8); }
 
   /* In SVG malt `fill`, nicht `color` — eine Regel fuer .text-gray-400 erreicht einen
      Achsenbeschrifter also nicht. Tailwind hat dafuer eigene Klassen, und die fielen
@@ -326,6 +334,15 @@ p {
   [data-theme="dark"] .bg-cream-300 { background-color: #425978; }  /* L* 46 */
   [data-theme="dark"] .bg-navy-50   { background-color: #1E3450; }  /* L* 32 */
   [data-theme="dark"] .bg-navy-100  { background-color: #2D4361; }  /* L* 38 */
+
+  /* Mittlere Navy-Fuellungen. Zwei Bedeutungen, eine Klasse: der nicht gewaehlte Punkt
+     im Trainings-Waehler und das mittlere Feld einer Legende. Beide brauchen dasselbe —
+     gefuellt, aber erkennbar UNTER dem Akzent. Bei navy-400 (#547199) waere der Abstand
+     zum Akzent im Dunkeln 1,15:1 gewesen, also praktisch keiner: der gewaehlte Punkt
+     haette ausgesehen wie der nicht gewaehlte. */
+  [data-theme="dark"] .bg-navy-400 { background-color: #2F4A6E; }
+  /* navy-600 dagegen IST die Auswahl (angehaktes Kaestchen, gesetzte Position). */
+  [data-theme="dark"] .bg-navy-600 { background-color: var(--color-accent); }
 
   /* Linien */
   [data-theme="dark"] .border-cream-200 { border-color: #354C6A; }
@@ -444,6 +461,69 @@ p {
   [data-theme="dark"] .text-emerald-700,
   [data-theme="dark"] .text-emerald-800,
   [data-theme="dark"] .text-emerald-900 { color: #6EE7B7; }
+
+  /* -------------------------------------------------------------------------
+     Nachzuegler. Gefunden nicht durch Hinsehen, sondern durch den Waechter in
+     styles/palette-abdeckung.test.ts: er stellt jede benutzte Paletten-Klasse gegen
+     die hier umgedeuteten und laesst nichts stillschweigend durchfallen. Beim ersten
+     Lauf waren es fuenfzig — nach drei Runden, in denen ich den Shim jeweils fuer
+     vollstaendig gehalten hatte.
+     ------------------------------------------------------------------------- */
+
+  /* Weitere Farbfamilien, die als Toenung + dunkle Schrift auftreten: die Saison-
+     Farben im Kalender, die Blau-Plakette, die Himmel-Hinweise im Scoring. Dieselbe
+     Mechanik wie bei Rot/Amber/Gruen — Flaeche dunkel, Schrift hell. */
+  [data-theme="dark"] .bg-sky-50 { background-color: #17384E; }
+  [data-theme="dark"] .bg-sky-100,
+  [data-theme="dark"] .bg-blue-100 { background-color: #1E4765; }
+  [data-theme="dark"] .bg-teal-50 { background-color: #10403B; }
+  [data-theme="dark"] .bg-rose-50 { background-color: #4A2430; }
+  [data-theme="dark"] .bg-cream-400 { background-color: #4E668A; }
+  [data-theme="dark"] .bg-navy-200 { background-color: #3B5277; }
+
+  [data-theme="dark"] .text-sky-600,
+  [data-theme="dark"] .text-sky-700,
+  [data-theme="dark"] .text-sky-800,
+  [data-theme="dark"] .text-blue-700 { color: #7DD3FC; }
+  [data-theme="dark"] .text-teal-600,
+  [data-theme="dark"] .text-teal-700 { color: #5EEAD4; }
+  [data-theme="dark"] .text-rose-600,
+  [data-theme="dark"] .text-rose-700 { color: #FDA4AF; }
+  [data-theme="dark"] .text-orange-600 { color: #FDBA74; }
+  [data-theme="dark"] .text-green-700 { color: #6EE7B7; }
+  [data-theme="dark"] .text-zinc-500 { color: var(--color-ink-muted); }
+  [data-theme="dark"] .text-amber-900\/85 { color: rgb(252 211 77 / 0.9); }
+  [data-theme="dark"] .active\:text-softball-red-700:active,
+  [data-theme="dark"] .hover\:text-softball-red-800:hover { color: var(--color-danger-ink); }
+
+  /* Status-Toenungen mit Deckung. Alpha ueber Navy ergibt den falschen Farbton, also
+     auch hier die eigene dunkle Flaeche — mit der urspruenglichen Deckung. */
+  [data-theme="dark"] .bg-emerald-50\/50 { background-color: rgb(24 74 54 / 0.6); }
+  [data-theme="dark"] .bg-emerald-50\/40 { background-color: rgb(24 74 54 / 0.5); }
+  [data-theme="dark"] .bg-softball-red-50\/50 { background-color: rgb(74 36 48 / 0.6); }
+  [data-theme="dark"] .bg-softball-red-50\/40 { background-color: rgb(74 36 48 / 0.5); }
+  [data-theme="dark"] .bg-amber-50\/70 { background-color: rgb(79 61 28 / 0.8); }
+  [data-theme="dark"] .bg-navy-50\/60 { background-color: rgb(53 76 106 / 0.6); }
+
+  /* Navy mit Deckung auf hellem Grund — im Dunkeln braucht es den hellen Schleier. */
+  [data-theme="dark"] .bg-navy-900\/15 { background-color: rgb(255 255 255 / 0.2); }
+  [data-theme="dark"] .bg-navy-900\/70 { background-color: rgb(255 255 255 / 0.28); }
+  [data-theme="dark"] .bg-navy-700\/60 { background-color: rgb(255 255 255 / 0.22); }
+
+  /* Hover-Varianten, die beim letzten Durchgang noch fehlten. */
+  [data-theme="dark"] .hover\:bg-navy-50\/50:hover,
+  [data-theme="dark"] .hover\:bg-navy-300:hover,
+  [data-theme="dark"] .hover\:bg-gray-100:hover,
+  [data-theme="dark"] .hover\:bg-cream-200\/60:hover { background-color: var(--color-surface-hover); }
+  [data-theme="dark"] .group:hover .group-hover\:bg-softball-red-50,
+  [data-theme="dark"] .hover\:bg-softball-red-50\/40:hover { background-color: rgb(74 36 48 / 0.7); }
+
+  /* Linien und Fokusringe in dunklen Stufen. */
+  [data-theme="dark"] .border-gray-400 { border-color: var(--color-line-strong); }
+  [data-theme="dark"] .focus\:ring-navy-400:focus,
+  [data-theme="dark"] .focus\:ring-navy-500:focus,
+  [data-theme="dark"] .focus\:ring-navy-600:focus,
+  [data-theme="dark"] .focus-visible\:ring-navy-600:focus-visible { --tw-ring-color: var(--color-line-strong); }
 
   /* -------------------------------------------------------------------------
      Hover, Fokus, Druck. Der Kontrast-Test faehrt nie mit der Maus ueber etwas —
