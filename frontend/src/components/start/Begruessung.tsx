@@ -75,12 +75,12 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
         lassen die Zahlen in der Flaeche schwimmen, und der Name haette rechts von sich
         nichts als Luft. Nebeneinander traegt jede Haelfte ihre eigene Breite.
       */}
-      <div className="lg:flex lg:items-end lg:justify-between lg:gap-8">
+      <div className="md:flex md:items-center md:justify-between md:gap-6 lg:gap-8">
       {/* Am Handy sitzt der Profil-Knopf rechts oben; ab lg direkt neben dem Namen —
           `justify-between` wuerde ihn dort in die Luecke zur Zahlenreihe schieben. */}
-      <div className="flex items-start justify-between gap-3 flex-wrap lg:flex-1 lg:min-w-0 lg:justify-start lg:gap-6">
+      <div className="flex items-start justify-between gap-3 flex-wrap md:flex-1 md:min-w-0 md:justify-start md:gap-5">
         <div className="min-w-0">
-          <h1 className="font-headline text-[1.75rem] sm:text-4xl font-black uppercase tracking-tight leading-none">
+          <h1 className="font-headline text-[1.75rem] sm:text-4xl lg:text-5xl xl:text-6xl font-black uppercase tracking-tight leading-none">
             Hallo {name ?? 'zusammen'}
           </h1>
           <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -92,14 +92,14 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
           <Link
             to={`/players/${playerId}`}
             state={{ zurueck: '/' }}
-            className="font-display min-h-11 inline-flex items-center px-4 rounded-lg bg-invers hover:bg-navy-800 hover:text-white text-invers-ink text-[11px] font-extrabold tracking-widest uppercase transition-colors shrink-0 lg:self-end"
+            className="font-display min-h-11 inline-flex items-center px-4 rounded-lg bg-invers hover:bg-navy-800 hover:text-white text-invers-ink text-[11px] font-extrabold tracking-widest uppercase transition-colors shrink-0"
           >
             Ganzes Profil
           </Link>
         )}
       </div>
 
-      <div className="mt-4 lg:mt-0 lg:w-[30rem] lg:shrink-0">
+      <div className="mt-4 md:mt-0 md:w-[22rem] lg:w-[34rem] xl:w-[40rem] md:shrink-0">
         {playerId == null ? (
           <p className="text-sm text-white/70">
             Dein Konto ist noch keinem Spieler zugeordnet. Sag dem Trainer Bescheid — dann stehen
@@ -171,11 +171,11 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
   const tinte = onWaehlen ? 'text-white' : 'text-white/75'
   const inhalt = (
     <>
-      <span className="block font-display text-xl sm:text-2xl font-extrabold text-amber-400 leading-none tabular-nums">{wert}</span>
+      <span className="block font-display text-xl sm:text-2xl lg:text-3xl font-extrabold text-amber-400 leading-none tabular-nums">{wert}</span>
       <span className={`block font-display text-[10px] font-bold tracking-widest uppercase ${tinte} mt-1.5`}>{label}</span>
     </>
   )
-  const grund = 'rounded-xl px-1.5 py-2 sm:py-2.5 text-center block w-full'
+  const grund = 'relative rounded-xl px-1.5 py-2 sm:py-2.5 text-center block w-full'
   if (!onWaehlen) {
     return <div className={`${grund} bg-white/8 border border-white/15`}>{inhalt}</div>
   }
@@ -187,11 +187,24 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
       aria-label={`${label} — Kurve anzeigen`}
       className={`${grund} cursor-pointer transition-colors ${
         gewaehlt
-          ? 'bg-white/18 border border-white/45'
+          // /18 drueckte die Amber-Ziffern auf 3,28:1. Sie bestehen das nur, weil sie als
+          // grosse Schrift zaehlen (>= 18,66px fett, Schwelle 3:1) — das ist zu knapp fuer
+          // die wichtigste Zahl der Seite. Die Auswahl traegt ohnehin der Rahmen.
+          ? 'bg-white/12 border border-white/50'
           : 'bg-white/8 border border-white/15 hover:bg-white/12'
       }`}
     >
       {inhalt}
+      {/*
+        Rot bekommt hier eine Aufgabe, statt die Zahl zu faerben: es markiert, welche
+        Kennzahl gerade gewaehlt ist — dasselbe Muster wie die Abschnittsmarke.
+        Als ZIFFERNFARBE taugt es nicht: Markenrot schafft auf dieser Kachel 1,74:1
+        (gemessen), Pastellrot 3,82 — und Pastellrot ist `--color-danger-ink`, also die
+        Farbe, die im Dunkeln Fehlertexte traegt. Ein Schlagdurchschnitt ist kein Fehler.
+      */}
+      {gewaehlt && (
+        <span aria-hidden className="absolute inset-x-6 -bottom-px h-[3px] rounded-full bg-softball-red-500" />
+      )}
     </button>
   )
 }

@@ -116,15 +116,15 @@ export function StartPage() {
         </Kachel>
 
         {/*
-          Nur ab lg. Am Handy ist die Hoehe das knappe Gut und diese beiden sind Nachschlag,
+          Erst ab md. Am Handy ist die Hoehe das knappe Gut und diese beiden sind Nachschlag,
           keine Antwort auf die Frage, mit der man die Seite oeffnet — dort fuehrt der Weg
           ueber das Profil und den Kalender. Am Schreibtisch ist Platz, und leer gelassener
           Platz ist auch eine Aussage, nur keine gute.
         */}
         <Zuletzt verlauf={daten?.verlauf ?? []} geladen={daten != null} fehler={zahlenFehler}
-                 playerId={me?.playerId ?? null} className="hidden lg:block lg:col-span-2" />
+                 playerId={me?.playerId ?? null} className="hidden md:block md:col-span-1 lg:col-span-2" />
         <WasAnsteht termine={termine} heute={heute} laden={laden} fehler={fehler}
-                    className="hidden lg:block lg:col-span-2" />
+                    className="hidden md:block md:col-span-1 lg:col-span-2" />
 
         <Zaehler />
       </div>
@@ -359,12 +359,12 @@ function Lampenreihe({ label, count, total, an, beispiel = false }: {
   beispiel?: boolean
 }) {
   return (
-    <div className="flex items-center gap-2 sm:block sm:text-center">
-      <div className="font-display text-[10px] font-bold tracking-[0.18em] uppercase text-spotlight-ink/70 w-11 sm:w-auto">
+    <div className="text-center">
+      <div className="font-display text-[10px] font-bold tracking-[0.18em] uppercase text-spotlight-ink/70">
         {label}
       </div>
       <div
-        className="flex gap-1.5 sm:mt-1.5 sm:justify-center"
+        className="mt-1.5 flex justify-center gap-1.5"
         role="img"
         aria-label={`${label}: ${count} von ${total}${beispiel ? ' (Beispiel)' : ''}`}
       >
@@ -459,12 +459,12 @@ function Zaehler() {
           /* Eine Zeile. Was gezaehlt wird, steht unter den Lampen — der Satz muss es nicht
              wiederholen, und zwei Zeilen kosteten die Seite ihren letzten Rand. */
           <p className="text-sm text-spotlight-ink/80 leading-snug">
-            Wenn du selbst umpirest — läuft ohne Netz.
+            Wenn du selbst umpirest: antippen und zählen.
           </p>
         )}
       </div>
 
-      <div className={`flex flex-col gap-1.5 shrink-0 sm:flex-row sm:items-start sm:gap-5 ${laeuft ? '' : 'opacity-75'}`}>
+      <div className={`flex shrink-0 items-start gap-4 sm:gap-5 ${laeuft ? '' : 'opacity-75'}`}>
         <Lampenreihe label="Ball" count={lampen.balls} total={3} an="bg-[#FBF6EC]" beispiel={!laeuft} />
         <Lampenreihe label="Strike" count={lampen.strikes} total={2} an="bg-amber-400" beispiel={!laeuft} />
         <Lampenreihe label="Out" count={lampen.outs} total={2} an="bg-softball-red-400" beispiel={!laeuft} />

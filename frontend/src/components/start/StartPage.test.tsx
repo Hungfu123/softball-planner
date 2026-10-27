@@ -220,9 +220,9 @@ describe('Startseite', () => {
   })
 
   /*
-   * Am Schreibtisch ist Platz, den das Handy nicht hat. Diese beiden Kacheln sind
+   * Ab Tablet-Breite ist Platz, den das Handy nicht hat. Diese beiden Kacheln sind
    * Nachschlag, keine Antwort auf die Frage, mit der man die Seite oeffnet — deshalb
-   * stehen sie nur ab lg. Beide kosten keinen zusaetzlichen Abruf: der Verlauf traegt
+   * stehen sie erst ab md. Beide kosten keinen zusaetzlichen Abruf: der Verlauf traegt
    * schon die Formkurve, die Termine schon die beiden Kacheln darueber.
    */
   it('zeigt am Schreibtisch zusätzlich die letzten Spiele und die nächsten Termine', async () => {
@@ -233,13 +233,13 @@ describe('Startseite', () => {
     ])
     rendern()
     const zuletzt = await kachel('Zuletzt')
-    expect(zuletzt.className).toMatch(/hidden lg:block/)
+    expect(zuletzt.className).toMatch(/hidden md:block/)
     await waitFor(() => expect(zuletzt.textContent).toMatch(/Berlin Bears/))
     expect(zuletzt.textContent).toMatch(/2 von 4/)
     expect(zuletzt.textContent).toMatch(/2 RBI/)
 
     const ansteht = await kachel('Was ansteht')
-    expect(ansteht.className).toMatch(/hidden lg:block/)
+    expect(ansteht.className).toMatch(/hidden md:block/)
     expect(ansteht.textContent).toMatch(/Do · 18\. Juni/)
     expect(ansteht).toHaveAttribute('href', '/kalender')
   })
