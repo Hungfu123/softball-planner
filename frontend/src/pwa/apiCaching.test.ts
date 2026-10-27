@@ -6,21 +6,52 @@ const erste = (a: { url: URL; request: { method: string } }) =>
   API_RUNTIME_CACHING.find(r => r.urlPattern(a))
 
 describe('Service-Worker-Regeln für /api', () => {
-  it('die NetworkOnly-Regel steht vor der allgemeinen NetworkFirst-Regel', () => {
+  /* Reihenfolge ist die Regel: streng zuerst, schnell danach, vorsichtig zuletzt. */
+  it('ordnet die Regeln von streng nach nachgiebig', () => {
     expect(API_RUNTIME_CACHING[0].handler).toBe('NetworkOnly')
-    expect(API_RUNTIME_CACHING[1].handler).toBe('NetworkFirst')
+    expect(API_RUNTIME_CACHING[1].handler).toBe('StaleWhileRevalidate')
+    expect(API_RUNTIME_CACHING[2].handler).toBe('NetworkFirst')
   })
 
-  it.each(['/api/me', '/api/players/7/usage', '/api/trainings'])('%s kommt nie aus dem Cache', p => {
+  it.each([
+    '/api/me',
+    '/api/players/7/usage',
+    '/api/players/7/training-months',
+    '/api/trainings',
+  ])('%s kommt nie aus dem Cache', p => {
     expect(erste(get(p))?.handler).toBe('NetworkOnly')
   })
 
   it('mit Query-String gilt dasselbe (der Pfad zählt)', () => {
     expect(erste(get('/api/players/7/usage?year=2026'))?.handler).toBe('NetworkOnly')
+    expect(erste(get('/api/players/7/training-months?year=2026'))?.handler).toBe('NetworkOnly')
     expect(erste(get('/api/trainings?periodId=3'))?.handler).toBe('NetworkOnly')
   })
 
-  it.each(['/api/players', '/api/seasons', '/api/gamedays/4', '/api/trainings/stats', '/api/players/7/form'])(
+  /*
+   * Lesestoff, der sich selten aendert und fuer alle gleich aussieht: sofort aus dem Cache,
+   * Erneuerung im Hintergrund. Das ist der Unterschied zwischen „die Seite ist da" und
+   * „die Seite laedt".
+   */
+  it.each([
+    '/api/stats/all-time/batting',
+    '/api/years/2026/batting-stats',
+    '/api/years/2026/stats',
+    '/api/seasons',
+    '/api/seasons/years',
+    '/api/seasons/3/batting-stats',
+    '/api/gamedays/all',
+    '/api/plays',
+    '/api/drills',
+  ])('%s kommt sofort aus dem Cache und wird nachgeladen', p => {
+    expect(erste(get(p))?.handler).toBe('StaleWhileRevalidate')
+  })
+
+  /*
+   * Was man gerade selbst aendert, bleibt NetworkFirst: ein Lineup, ein einzelner Spieltag,
+   * ein Spielstand. Dort waere eine Sekunde alter Stand eine falsche Auskunft, keine schnelle.
+   */
+  it.each(['/api/players', '/api/gamedays/4', '/api/trainings/stats', '/api/players/7/form', '/api/games/9/lineup'])(
     '%s bleibt NetworkFirst',
     p => {
       expect(erste(get(p))?.handler).toBe('NetworkFirst')
