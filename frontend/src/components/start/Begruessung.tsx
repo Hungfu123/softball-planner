@@ -127,7 +127,17 @@ export function Begruessung({ name, playerId, jahr, jahre, onJahr, daten, fehler
         ) : fehler ? (
           <p className="text-sm text-white/70">Zahlen gerade nicht erreichbar.</p>
         ) : !daten ? (
-          <p className="text-sm text-white/70">Zahlen laden …</p>
+          /* Der Kopf ist in BEIDEN Themes dunkel — hier traegt `bar-track` nicht, die
+             Platzhalter brauchen die helle Tinte des Blocks. */
+          <div role="status" aria-label="Lade Zahlen">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="skeleton-shimmer bg-white/10 rounded-xl h-[51px] sm:h-[59px]" aria-hidden />
+              ))}
+            </div>
+            <div className="skeleton-shimmer bg-white/10 rounded h-6 sm:h-8 mt-2.5 sm:mt-3.5" aria-hidden />
+            <div className="skeleton-shimmer bg-white/10 rounded h-3 w-2/3 mt-2.5" aria-hidden />
+          </div>
         ) : leer ? (
           <p className="text-sm text-white/70">
             {jahr} — noch nicht geschlagen.

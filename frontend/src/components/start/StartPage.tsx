@@ -6,7 +6,7 @@ import type { PlayerFormPoint, WeatherResponse } from '@/types'
 import { weatherIcon } from '@/components/dashboard/weatherIcon'
 import { FeldMiniatur } from './FeldMiniatur'
 import { useRolle } from '@/hooks/useRolle'
-import { Abschnittsmarke } from '@/components/shared'
+import { Abschnittsmarke, Platzhalter } from '@/components/shared'
 import { useTermine, heuteIso, type Termin, type TerminArt } from '@/hooks/useTermine'
 import { readCounterState } from '@/hooks/useCounter'
 import { isInitial } from '@/utils/counterRules'
@@ -199,12 +199,30 @@ function Kachel({ titel, zu, className = '', children }: {
   return <section aria-label={titel} className={stil}>{inhalt}</section>
 }
 
+/**
+ * Der Platzhalter einer Termin-Kachel — in der FORM dessen, was kommt.
+ *
+ * Vorher stand hier „Termine laden …". Text als Ladezustand hat zwei Nachteile: er sieht aus
+ * wie eine Antwort (man liest ihn, bevor man merkt, dass er keine ist), und er ist anders
+ * hoch als der Inhalt, den er vertritt — die Seite springt, sobald die Daten da sind. Drei
+ * Balken in den Massen von Datum, Zusatz und Ort springen nicht und behaupten nichts.
+ */
+function TerminPlatzhalter() {
+  return (
+    <div className="space-y-2" role="status" aria-label="Lade Termine">
+      <Platzhalter className="h-5 w-3/4" />
+      <Platzhalter className="h-3.5 w-1/2" />
+      <Platzhalter className="h-3.5 w-2/3" />
+    </div>
+  )
+}
+
 function SpieltagInhalt({ spieltag, laden, fehler, wetter }: {
   spieltag: Termin | null; laden: boolean; fehler: boolean
   /** Vorhersage fuer den Spieltag. `null` ausserhalb des Vorhersagefensters. */
   wetter?: WeatherResponse | null
 }) {
-  if (laden) return <p className="text-sm text-ink-muted">Termine laden …</p>
+  if (laden) return <TerminPlatzhalter />
   if (fehler) {
     return (
       <p className="text-sm text-ink-muted">Termine nicht erreichbar.</p>
@@ -274,7 +292,7 @@ function TrainingInhalt({ naechstes, danach, laden, fehler, verpasst, wetter }: 
   wetter?: WeatherResponse | null
 }) {
   const vermisst = verpasst != null && verpasst >= NACHFRAGE_AB
-  if (laden) return <p className="text-sm text-ink-muted">Termine laden …</p>
+  if (laden) return <TerminPlatzhalter />
   if (fehler) return <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
   if (!naechstes) {
     return (
@@ -409,7 +427,7 @@ function Zuletzt({ verlauf, geladen, fehler, playerId, className = '' }: {
       {fehler ? (
         <p className="text-sm text-ink-muted">Spiele nicht erreichbar.</p>
       ) : !geladen ? (
-        <p className="text-sm text-ink-muted">Spiele laden …</p>
+        <ListenPlatzhalter zeilen={4} />
       ) : letzte.length === 0 ? (
         <p className="text-sm text-ink-muted">Noch kein gezähltes Spiel.</p>
       ) : (
@@ -434,6 +452,20 @@ function Zuletzt({ verlauf, geladen, fehler, playerId, className = '' }: {
   )
 }
 
+/** Platzhalter fuer eine Liste: so viele Zeilen, wie gleich dastehen werden. */
+function ListenPlatzhalter({ zeilen }: { zeilen: number }) {
+  return (
+    <div className="divide-y divide-line" role="status" aria-label="Lade Liste">
+      {Array.from({ length: zeilen }, (_, i) => (
+        <div key={i} className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+          <Platzhalter className="h-3.5 flex-1 max-w-[60%]" />
+          <Platzhalter className="h-3.5 w-10 shrink-0" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** Die naechsten Termine in einer Liste — Spieltage und Trainings gemischt, wie der Kalender sie bringt. */
 function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
   termine: Termin[]
@@ -448,7 +480,7 @@ function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
       {fehler ? (
         <p className="text-sm text-ink-muted">Termine nicht erreichbar.</p>
       ) : laden ? (
-        <p className="text-sm text-ink-muted">Termine laden …</p>
+        <ListenPlatzhalter zeilen={5} />
       ) : naechste.length === 0 ? (
         <p className="text-sm text-ink-muted">Nichts angesetzt.</p>
       ) : (
