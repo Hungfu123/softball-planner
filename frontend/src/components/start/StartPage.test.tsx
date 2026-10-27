@@ -261,32 +261,29 @@ describe('Startseite', () => {
    * Lampenreihe — wer vorgelesen bekommt, sieht die Marke nicht.
    */
   /*
-   * November bis Maerz steht in der Spieltag-Kachel nichts als eine Entschuldigung. Der
-   * Platz zeigt dann den Playmaker: etwas zu tun, statt etwas zu bedauern. Dass kein
-   * Spieltag ansteht, sagt das Jahresband darunter ohnehin.
+   * Der Playmaker steht dauerhaft auf der Seite, nicht nur in der spielfreien Zeit: man
+   * soll ihn SEHEN, ohne dass erst die Saison enden muss. Die Kategorien sind der
+   * Ueberblick, und jede fuehrt in genau ihre Liste statt alle auf dieselbe Seite.
    */
-  it('zeigt ohne kommenden Spieltag den Playmaker auf dessen Platz', async () => {
-    mockApi.getAllGameDays.mockResolvedValue([spieltag(2, '2026-03-01')])  // nur Vergangenes
+  it('zeigt den Playmaker immer, mit den Kategorien als Weg hinein', async () => {
     rendern()
     const playmaker = await kachel('Playmaker')
-    expect(playmaker.textContent).toMatch(/Spielzüge/)
-    expect(screen.queryByLabelText('Nächster Spieltag')).not.toBeInTheDocument()
-
-    // Die Kategorien SIND der Ueberblick — und jede ist ein Weg in genau ihre Liste,
-    // nicht in dieselbe ungefilterte Seite wie alle anderen.
     const bunt = await within(playmaker).findByRole('link', { name: 'Bunt-Defense' })
     expect(bunt).toHaveAttribute('href', '/orga/playmaker?kategorie=2')
-    expect(within(playmaker).getByRole('link', { name: /Alle 2 Kategorien/ }))
+    expect(within(playmaker).getByRole('link', { name: /Alle 2/ }))
       .toHaveAttribute('href', '/orga/playmaker')
+    // Und die Spieltag-Kachel bleibt daneben stehen.
+    expect(await kachel('Nächster Spieltag')).toBeInTheDocument()
   })
 
-  /* Waehrend des Ladens oder bei einem Ausfall waere der Tausch geraten, nicht gewusst. */
-  it('tauscht nicht, wenn der Abruf gescheitert ist', async () => {
-    mockApi.getAllGameDays.mockRejectedValue(new Error('500'))
+  /* Ohne Kategorien bleibt die Kachel ihr Titel und der Weg hinein — kein leerer Kasten. */
+  it('bleibt brauchbar, wenn die Kategorien nicht laden', async () => {
+    mockPlays.getPlayCategories.mockRejectedValue(new Error('500'))
     rendern()
-    const spieltagKachel = await kachel('Nächster Spieltag')
-    await waitFor(() => expect(spieltagKachel.textContent).toMatch(/nicht erreichbar/))
-    expect(screen.queryByLabelText('Playmaker')).not.toBeInTheDocument()
+    const playmaker = await kachel('Playmaker')
+    await waitFor(() => expect(playmaker.textContent).toMatch(/Laufwege/))
+    expect(within(playmaker).getByRole('link', { name: /Öffnen/ }))
+      .toHaveAttribute('href', '/orga/playmaker')
   })
 
   it('zeigt einen Beispielstand, solange keiner läuft — und sagt, dass es einer ist', async () => {
