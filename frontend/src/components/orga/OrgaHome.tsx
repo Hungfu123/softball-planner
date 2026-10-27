@@ -96,8 +96,8 @@ export function OrgaHome() {
       <h1 className="inline-flex items-center gap-2.5 font-headline text-2xl sm:text-3xl font-extrabold text-ink-strong tracking-wide uppercase"><Abschnittsmarke size="lg" />Orga</h1>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
-        <Kachel to="/counter" icon={<CounterIcon size={20} />} titel="Counter" kurz="Am Feld mitzählen" untertitel="Balls, Strikes, Outs und Score am Feld" />
-        <Kachel to="/orga/whatsapp-umfrage" icon={<SendIcon size={20} />} titel="WhatsApp-Umfragen" kurz="Trainings abstimmen" untertitel="Wöchentliche Trainings-Abstimmungen" />
+        <Kachel to="/counter" icon={<CounterIcon size={20} />} titel="Counter" kurz="Beim Umpiren zählen" untertitel="Balls, Strikes, Outs und Score beim Umpiren" />
+        <Kachel to="/orga/whatsapp-umfrage" icon={<SendIcon size={20} />} titel="WhatsApp-Umfragen" kurz="Training und Spieltage" untertitel="Abstimmungen für Trainings und Spieltage" />
         <Kachel to="/orga/trainerabrechnung" icon={<Receipt size={20} />} titel="Trainerabrechnung" kurz="Stunden abrechnen" untertitel="Stunden eines Monats als Bogen für den Hochschulsport" />
         <Kachel to="/orga/accounts" icon={<Users size={20} />} titel="Accounts" kurz="Rollen und Rechte" untertitel="Anmeldungen, Rollen und Scorer-Rechte des Kaders" />
       </div>
