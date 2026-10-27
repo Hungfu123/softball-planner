@@ -49,7 +49,6 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
   eigeneTrainings?: Record<string, number> | null
 }) {
   const jahr = new Date().getFullYear()
-  const heute = heuteIso()
   const aktuellerMonat = new Date().getMonth()
 
   const monate = useMemo(() => {
@@ -65,9 +64,14 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
   }, [termine, jahr])
 
   const hoechste = Math.max(1, ...monate.map(m => m.spieltage + m.trainings))
-  const offen = termine.filter(t => t.datum >= heute && t.datum.startsWith(String(jahr)))
-  const offeneSpieltage = offen.filter(t => t.art === 'SPIELTAG').length
-  const offeneTrainings = offen.filter(t => t.art === 'TRAINING').length
+  /*
+   * „noch 3" steht nur bei den Spieltagen. Wie viele Spiele noch kommen, plant man — danach
+   * richtet sich ein Wochenende. Wie viele Trainings noch kommen, plant niemand: sie laufen
+   * im Takt weiter, und die Zahl waere eine Verabredung mit dem Kalender, keine Auskunft.
+   */
+  const offeneSpieltage = termine.filter(
+    t => t.art === 'SPIELTAG' && t.datum >= heuteIso() && t.datum.startsWith(String(jahr)),
+  ).length
   const spieltageGesamt = monate.reduce((n, m) => n + m.spieltage, 0)
   const trainingsGesamt = monate.reduce((n, m) => n + m.trainings, 0)
   const eigene = eigeneTrainings ?? null
@@ -170,15 +174,16 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
 
           {/*
             Die Zeile IST die Legende. Vorher stand hier nur „Noch offen: 0 Spieltage ·
-            28 Trainings" — eine Zahl ueber den Rest des Jahres unter zwoelf Saeulen, die
-            das ganze Jahr zeigen, und ohne ein Wort darueber, was rot und was blau ist.
-            Wer die Farben nicht kennt, sieht einen Verlauf ohne Gegenstand.
+            28 Trainings" — eine Zahl ueber den REST des Jahres unter zwoelf Saeulen, die das
+            GANZE Jahr zeigen, und ohne ein Wort darueber, was rot und was blau ist. Wer die
+            Farben nicht kennt, sieht einen Verlauf ohne Gegenstand.
 
             Jetzt tragen die beiden Punkte dieselben Farben wie die Saeulen und stehen
-            neben ihrer Zahl: erst die Menge des Jahres, dann was davon noch kommt.
+            neben ihrer Zahl.
 
-            „noch 3", nicht „3 offen". Offen ist ein Wort aus der Verwaltung — ein Termin
-            ist nicht offen, er kommt noch oder er war.
+            Was noch KOMMT, steht nur bei den Spieltagen. Bei den Trainings stand es auch
+            einmal und ist wieder weg: sie laufen im Takt weiter, da plant niemand nach einer
+            Restzahl. Bei den Spieltagen schon — danach richtet sich ein Wochenende.
           */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-ink-muted mt-2 sm:mt-3">
             <span className="inline-flex items-center gap-1.5">
@@ -196,7 +201,6 @@ export function JahresBand({ termine, laden, fehler, eigeneTrainings }: {
                   · <span className="font-semibold text-ink">du {eigeneGesamt}</span>
                 </span>
               )}
-              <span className="text-ink-faint">· noch {offeneTrainings}</span>
             </span>
           </div>
         </>
