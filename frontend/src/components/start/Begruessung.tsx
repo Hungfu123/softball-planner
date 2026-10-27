@@ -171,13 +171,18 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
   const tinte = onWaehlen ? 'text-white' : 'text-white/75'
   const inhalt = (
     <>
-      <span className="block font-display text-xl sm:text-2xl lg:text-3xl font-extrabold text-amber-400 leading-none tabular-nums">{wert}</span>
+      <span className="block font-display text-xl sm:text-2xl lg:text-3xl font-extrabold text-kennzahl leading-none tabular-nums">{wert}</span>
       <span className={`block font-display text-[10px] font-bold tracking-widest uppercase ${tinte} mt-1.5`}>{label}</span>
     </>
   )
+  /*
+    Mulde statt Sockel: eine dunkle Vertiefung gibt der roten Ziffer den Kontrast, den sie
+    auf der aufgehellten Flaeche nicht hatte (5,0:1 statt 3,1:1). Nebenbei sieht eine
+    eingelassene Zahl nach Anzeigetafel aus, und genau das ist sie.
+  */
   const grund = 'relative rounded-xl px-1.5 py-2 sm:py-2.5 text-center block w-full'
   if (!onWaehlen) {
-    return <div className={`${grund} bg-white/8 border border-white/15`}>{inhalt}</div>
+    return <div className={`${grund} bg-black/22 border border-white/10`}>{inhalt}</div>
   }
   return (
     <button
@@ -187,24 +192,15 @@ function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
       aria-label={`${label} — Kurve anzeigen`}
       className={`${grund} cursor-pointer transition-colors ${
         gewaehlt
-          // /18 drueckte die Amber-Ziffern auf 3,28:1. Sie bestehen das nur, weil sie als
-          // grosse Schrift zaehlen (>= 18,66px fett, Schwelle 3:1) — das ist zu knapp fuer
-          // die wichtigste Zahl der Seite. Die Auswahl traegt ohnehin der Rahmen.
-          ? 'bg-white/12 border border-white/50'
-          : 'bg-white/8 border border-white/15 hover:bg-white/12'
+          // Gewaehlt heisst TIEFER, nicht heller. Erst war es umgekehrt, und damit war
+          // ausgerechnet die gewaehlte Zahl die blasseste (4,4:1 gegen 5,2 der anderen) —
+          // die Auswahl sah aus wie der Ausreisser. Jetzt sitzt sie am tiefsten, der
+          // Rahmen hellt auf, und die wichtigste Ziffer hat den besten Kontrast (5,8:1).
+          ? 'bg-black/38 border border-white/40'
+          : 'bg-black/22 border border-white/10 hover:bg-black/30'
       }`}
     >
       {inhalt}
-      {/*
-        Rot bekommt hier eine Aufgabe, statt die Zahl zu faerben: es markiert, welche
-        Kennzahl gerade gewaehlt ist — dasselbe Muster wie die Abschnittsmarke.
-        Als ZIFFERNFARBE taugt es nicht: Markenrot schafft auf dieser Kachel 1,74:1
-        (gemessen), Pastellrot 3,82 — und Pastellrot ist `--color-danger-ink`, also die
-        Farbe, die im Dunkeln Fehlertexte traegt. Ein Schlagdurchschnitt ist kein Fehler.
-      */}
-      {gewaehlt && (
-        <span aria-hidden className="absolute inset-x-6 -bottom-px h-[3px] rounded-full bg-softball-red-500" />
-      )}
     </button>
   )
 }
