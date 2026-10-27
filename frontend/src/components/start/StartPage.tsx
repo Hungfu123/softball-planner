@@ -76,9 +76,6 @@ export function StartPage() {
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
     [termine, heute],
   )
-  // Erst wenn feststeht, dass keiner kommt — waehrend des Ladens oder bei einem Ausfall
-  // waere der Tausch geraten, nicht gewusst.
-  const zeigePlaymaker = !laden && !fehler && naechsterSpieltag == null
   const trainings = useMemo(
     () => termine.filter(t => t.art === 'TRAINING' && t.datum >= heute)
       .sort((a, b) => a.datum.localeCompare(b.datum)),
@@ -108,19 +105,9 @@ export function StartPage() {
         — eine flache Zeile am Fuss.
       */}
       <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        {/*
-          Ohne kommenden Spieltag ist diese Kachel monatelang tot — November bis Maerz steht
-          dort nichts als eine Entschuldigung. Der Platz zeigt dann den Playmaker: etwas zu
-          tun, statt etwas zu bedauern. Dass kein Spieltag ansteht, sagt das Jahresband
-          darunter ohnehin ("Noch offen: 0 Spieltage").
-        */}
-        {zeigePlaymaker ? (
-          <Playmaker />
-        ) : (
-          <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
-            <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
-          </Kachel>
-        )}
+        <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
+          <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
+        </Kachel>
 
         <Kachel titel="Nächstes Training" zu="/kalender">
           <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler} />
@@ -141,7 +128,12 @@ export function StartPage() {
         <WasAnsteht termine={termine} heute={heute} laden={laden} fehler={fehler}
                     className="hidden md:block md:col-span-1 lg:col-span-2" />
 
+        {/*
+          Die beiden Werkzeuge am Fuss. Am Handy untereinander, ab lg nebeneinander — dort
+          kostet der Playmaker damit keine einzige Zeile Hoehe.
+        */}
         <Zaehler />
+        <Playmaker />
       </div>
     </div>
   )
@@ -283,36 +275,42 @@ function Playmaker() {
   }, [])
 
   return (
-    <Kachel titel="Playmaker">
-      <p className="font-display text-lg font-extrabold tracking-wide uppercase text-ink leading-none">
-        Spielzüge
-      </p>
-      {kategorien.length > 0 && (
-        <ul className="flex flex-wrap gap-1 mt-2">
+    <section
+      aria-label="Playmaker"
+      className="col-span-2 lg:col-span-2 bg-surface-raised border border-line rounded-2xl shadow-card p-4 min-w-0"
+    >
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted">
+          <Abschnittsmarke size="sm" />
+          Playmaker
+        </h2>
+        <Link
+          to="/orga/playmaker"
+          className="font-display text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors shrink-0"
+        >
+          {kategorien.length > 0 ? `Alle ${kategorien.length}` : 'Öffnen'}
+        </Link>
+      </div>
+      {kategorien.length > 0 ? (
+        <ul className="flex flex-wrap gap-1.5">
           {kategorien.map((k, i) => (
-            <li
-              key={k.id}
-              // Am Handy ist die Kachel halb so breit; ab der vierten Kategorie wird aus
-              // dem Ueberblick eine Wand. Am Schreibtisch ist Platz fuer alle.
-              className={i >= 3 ? 'hidden lg:block' : ''}
-            >
+            // Am Handy wird aus acht Kategorien eine Wand — und vier brauchen schon zwei
+            // Zeilen. Drei sagen genug, der Rest steht eine Beruehrung weiter.
+            // Am Schreibtisch ist Platz fuer alle.
+            <li key={k.id} className={i >= 3 ? 'hidden lg:block' : ''}>
               <Link
                 to={`/orga/playmaker?kategorie=${k.id}`}
-                className="inline-flex items-center min-h-8 px-2 rounded-md bg-surface-hover text-[11px] font-semibold text-ink-muted hover:text-ink transition-colors"
+                className="inline-flex items-center min-h-11 px-3 rounded-lg bg-surface-hover border border-line text-[11px] font-semibold text-ink-muted hover:text-ink hover:border-line-strong transition-colors"
               >
                 {k.name}
               </Link>
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="text-sm text-ink-muted">Laufwege, Cut-offs, Standards.</p>
       )}
-      <Link
-        to="/orga/playmaker"
-        className="font-display mt-2 inline-flex items-center min-h-11 text-[11px] font-bold tracking-widest uppercase text-label hover:text-ink underline decoration-line underline-offset-4 hover:decoration-ink-muted transition-colors"
-      >
-        {kategorien.length > 0 ? `Alle ${kategorien.length} Kategorien` : 'Playmaker öffnen'}
-      </Link>
-    </Kachel>
+    </section>
   )
 }
 
