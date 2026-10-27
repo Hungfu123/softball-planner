@@ -218,20 +218,27 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   Klappzeilen sahen monoton aus und versteckten Auskunft, die ohnehin Platz hat. Die beiden
   Termin-Kacheln sind selbst der Link (ganze Flaeche statt einer Wortzeile darunter).
   Gemessen (volle Daten, ohne das Admin-Banner) passt alles ohne Scrollen ab **412x780**;
-  bei 393x760 fehlen rund 15, bei 360x740 rund 35 Pixel — das ist die Grenze, keine
+  bei 393x760 fehlen rund 20, bei 360x740 rund 40 Pixel — das ist die Grenze, keine
   Zusicherung. `/spielbetrieb` traegt weiter die Rollenweiche
   (`Startseite` → `Dashboard` oder `PlayerDashboard`). Die Termine kommen aus `useTermine`
   (Spieltage + Trainings in einer Liste, EINMAL geladen); **`GET /api/trainings` ist bewusst
   fuer jeden Angemeldeten offen** und streicht Spielern die Teilnehmerzahl heraus — WANN
   trainiert wird, darf jeder wissen, WER da war, bleibt bei den Trainern. Der Waechter in
   `PlayerDashboard.test.tsx` prueft deshalb nicht auf das Wort „Training", sondern auf jede
-  Zahl zur Beteiligung. **Der Zeitraum der Startseite ist das laufende JAHR**, nicht eine Saison
-  daraus (`useMeineZahlen` → `/api/years/{jahr}/batting-stats` + `/stats`, Verlauf auf
-  `p.year` gefiltert). Ein Jahr traegt oft mehrere Saisons nebeneinander (Liga,
-  Trainingsspiele, Turnier), und keine davon ist „die" Saison: die Seite suchte sich frueher
-  die des naechstgelegenen Spieltags aus und zeigte dann die Bilanz einer Nebensaison mit
-  einem Spiel darin — unter einer Kachel, die „Dein Jahr 2026" ueberschrieb. **Ein Zeitraum
-  je Seite, und zwar der, der drauf steht.**
+  Zahl zur Beteiligung. **Vorgabe des Zeitraums ist das laufende JAHR**, eine Saison daraus ist
+  **waehlbar** (`bereich.ts` + `useMeineZahlen`: Jahr → `/api/years/{jahr}/batting-stats`
+  + `/stats`, Saison → `/api/seasons/{id}/…`; der Verlauf kommt einmal ganz und wird auf
+  `p.year` bzw. `p.seasonId` zugeschnitten). Ein Jahr traegt oft mehrere Saisons
+  nebeneinander (Liga, Trainingsspiele, Turnier), und keine davon ist „die" Saison: die
+  Seite suchte sich frueher selbst eine aus (die des naechstgelegenen Spieltags) und zeigte
+  dann stillschweigend die Bilanz einer Nebensaison mit einem Spiel darin — unter einer
+  Kachel, die „Dein Jahr 2026" ueberschrieb. **Ein Zeitraum, den die Seite waehlt, ist eine
+  Falle; einer, den der Mensch waehlt, ist eine Auskunft** — deshalb steht die Auswahl
+  sichtbar neben den Zahlen (nativer Pillen-Select wie im Profil, nur hell gezeichnet; bei
+  hoechstens einer Saison im Jahr steht dort schlicht die Jahreszahl). Die Wahl liegt im
+  `localStorage` (`startseite-bereich`) und **faellt auf das Jahr zurueck**, sobald die
+  gemerkte Saison nicht mehr zum laufenden Jahr gehoert. Die Kachel „Dein Jahr" bleibt
+  davon unberuehrt — sie zeigt Termine, keine Schlagzahlen.
   Mockdaten zum Ansehen: `node scripts/seed-startseite.mjs`.
 - German throughout (labels, error messages, copy).
 - Dark navy hover on secondary buttons (navy-800 + white) — keep this; user has corrected attempts to soften it before.

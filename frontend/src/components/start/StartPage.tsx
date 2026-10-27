@@ -10,7 +10,8 @@ import { readCounterState } from '@/hooks/useCounter'
 import { isInitial } from '@/utils/counterRules'
 import { JahresBand } from '@/components/dashboard/JahresBand'
 import { Begruessung } from './Begruessung'
-import { useMeineZahlen } from './useMeineZahlen'
+import { useMeineZahlen, useSaisonsDesJahres } from './useMeineZahlen'
+import { bereichAus, gemerkteWahl, merkeWahl, type Wahl } from './bereich'
 
 const WOCHENTAG = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 
@@ -72,7 +73,15 @@ export function StartPage() {
    * drauf steht.
    */
   const jahr = new Date().getFullYear()
-  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, jahr)
+  /*
+   * Die Wahl ist der gemerkte Wunsch, der Bereich das, was daraus im Licht der wirklich
+   * vorhandenen Saisons wird. Abgeleitet statt in einem Effekt nachgezogen: sonst zeigte
+   * die Seite erst die Jahreszahlen und ersetzte sie eine Umdrehung spaeter.
+   */
+  const [wahl, setWahl] = useState<Wahl>(gemerkteWahl)
+  const saisons = useSaisonsDesJahres(jahr)
+  const bereich = bereichAus(wahl, jahr, saisons)
+  const { daten, fehler: zahlenFehler } = useMeineZahlen(me?.playerId ?? null, bereich)
 
   const naechsterSpieltag = useMemo(
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
@@ -90,6 +99,10 @@ export function StartPage() {
         name={me?.playerName ?? null}
         playerId={me?.playerId ?? null}
         jahr={jahr}
+        bereich={bereich}
+        saisons={saisons}
+        wahl={wahl}
+        onWahl={w => { setWahl(w); merkeWahl(w) }}
         daten={daten}
         fehler={zahlenFehler}
       />
