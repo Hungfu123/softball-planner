@@ -69,6 +69,16 @@ function load(): Stored {
   }
 }
 
+/**
+ * Der gespeicherte Stand, ohne den Zaehler zu mounten.
+ *
+ * Die Startseite zeigt ihn nur an und zaehlt nicht mit — sie braucht weder die
+ * Aktionen noch den Verlauf, und sie soll beim Aufbau nichts zurueckschreiben.
+ */
+export function readCounterState(): CounterState {
+  return load().current
+}
+
 function save(stored: Stored) {
   try {
     localStorage.setItem(COUNTER_STORAGE_KEY, JSON.stringify(stored))

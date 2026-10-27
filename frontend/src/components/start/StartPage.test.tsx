@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, within, waitFor } from '@testing-library/react'
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import type { GameDayResponse, MeResponse, Player, PlayerBattingStatsResponse, SeasonPlayerStats, TrainingResponse } from '@/types'
 
@@ -27,6 +27,7 @@ vi.mock('@/api/client', () => ({
 
 import * as api from '@/api/client'
 import { StartPage } from './StartPage'
+import { COUNTER_STORAGE_KEY } from '@/hooks/useCounter'
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>
 
@@ -81,6 +82,8 @@ describe('Startseite', () => {
     // in den 5-Sekunden-Abbruch, ohne dass an der Seite etwas falsch war.
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(HEUTE)
+    // Der Counter liegt im localStorage und ueberlebt sonst in den naechsten Test.
+    localStorage.clear()
     auth.me = ME
     vi.clearAllMocks()
     mockApi.getSeasons.mockResolvedValue([{ id: 1, name: 'Saison 2026', year: 2026 }])
@@ -109,6 +112,36 @@ describe('Startseite', () => {
     expect(within(kopf).queryByText('Hits')).not.toBeInTheDocument()
     // OPS geht regelmaessig ueber 1; die Vorzahl muss stehen bleiben (ZAHLEN.ops = 1.27).
     expect(within(kopf).getByText('1.270')).toBeInTheDocument()
+  })
+
+  /*
+   * Die Abkuerzungen sind Fachsprache, und ein gutes Drittel des Kaders liest sie zum
+   * ersten Mal. Ein Tipp auf die Zahl legt die Kurve darunter um UND schreibt hin, was
+   * sie bedeutet — die Erklaerung steht dort, wo man gerade hinsieht, nicht in einem
+   * Glossar zwei Seiten weiter.
+   */
+  it('erklärt die Zahl, auf die man tippt, und legt die Kurve um', async () => {
+    rendern()
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
+
+    const avg = within(kopf).getByRole('button', { name: /^AVG/ })
+    expect(avg).toHaveAttribute('aria-pressed', 'true')
+    expect(within(kopf).getByText(/Treffer ÷ Versuche/)).toBeInTheDocument()
+
+    fireEvent.click(within(kopf).getByRole('button', { name: /^OPS/ }))
+    expect(within(kopf).getByRole('button', { name: /^OPS/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(avg).toHaveAttribute('aria-pressed', 'false')
+    expect(within(kopf).getByText(/Auf-Base-Quote plus Schlagkraft/)).toBeInTheDocument()
+    expect(within(kopf).queryByText(/Treffer ÷ Versuche/)).not.toBeInTheDocument()
+  })
+
+  /* "Spiele" ist keine Quote — dahinter steckt keine Kurve, also auch kein Schalter. */
+  it('macht aus „Spiele" keinen Schalter', async () => {
+    rendern()
+    const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
+    expect(within(kopf).queryByRole('button', { name: /^Spiele/ })).not.toBeInTheDocument()
     expect(within(kopf).getByRole('link', { name: /Ganzes Profil/ })).toHaveAttribute('href', '/players/7')
   })
 
@@ -211,13 +244,33 @@ describe('Startseite', () => {
     expect(ansteht).toHaveAttribute('href', '/kalender')
   })
 
-  it('erklärt den Zähler, statt ihn nur zu verlinken', async () => {
+  it('erklärt den Counter, solange keiner läuft — und die ganze Kachel führt hin', async () => {
     rendern()
-    const karte = await screen.findByRole('region', { name: 'Zähler' })
+    const karte = await screen.findByRole('link', { name: 'Counter' })
+    expect(karte).toHaveAttribute('href', '/counter')
     expect(within(karte).getByText(/umpirest/)).toBeInTheDocument()
-    const link = within(karte).getByRole('link', { name: /Zähler öffnen/ })
-    expect(link).toHaveAttribute('href', '/counter')
-    expect(link.className).toMatch(/min-h-11/)
+    // Lampen aus: 0 von 3 Balls, 0 von 2 Strikes, 0 von 2 Outs.
+    expect(within(karte).getByRole('img', { name: 'Ball: 0 von 3' })).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Strike: 0 von 2' })).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Out: 0 von 2' })).toBeInTheDocument()
+  })
+
+  it('zeigt den laufenden Counter statt der Erklärung', async () => {
+    localStorage.setItem(COUNTER_STORAGE_KEY, JSON.stringify({
+      current: { balls: 2, strikes: 1, outs: 1, inning: 3, half: 'bottom', home: 4, away: 2 },
+      history: [],
+    }))
+    rendern()
+    const karte = await screen.findByRole('link', { name: 'Counter' })
+    expect(within(karte).queryByText(/umpirest/)).not.toBeInTheDocument()
+    // "3. Inning" steht zweimal da: sichtbar und noch einmal ausgeschrieben fuer
+    // Screenreader. Der Tafel-Stand "4 : 2" gibt es nur sichtbar.
+    const stand = within(karte).getByText(/4 : 2/)
+    expect(stand.textContent).toMatch(/3\. Inning/)
+    expect(within(karte).getByText(/Heim 4, Gast 2/)).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Ball: 2 von 3' })).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Strike: 1 von 2' })).toBeInTheDocument()
+    expect(within(karte).getByRole('img', { name: 'Out: 1 von 2' })).toBeInTheDocument()
   })
 
   it('sagt einem Konto ohne Spieler, was zu tun ist — statt leerer Zahlen', async () => {

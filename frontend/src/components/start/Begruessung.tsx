@@ -1,8 +1,30 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PositionBadges } from '@/components/players/PositionBadges'
-import type { PlayerFormPoint } from '@/types'
+import { cumulativeSeries, MIN_AT_BATS, type CumulativePoint, type Metric } from '@/components/players/formSeries'
 import type { MeineZahlen } from './useMeineZahlen'
+
+/**
+ * Was die Zahl bedeutet, in einem Satz.
+ *
+ * Die Abkuerzungen sind Fachsprache, und ein gutes Drittel des Kaders liest sie zum ersten
+ * Mal. Die Schwellen stammen aus dem Glossar (`StatsGlossarySheet`) — dieselbe Auskunft,
+ * nur hier in der Schreibweise der Kacheln (.300 statt 30 %), damit nicht zwei Notationen
+ * nebeneinander stehen.
+ */
+const ERKLAERUNG: Record<Metric, string> = {
+  average: 'Treffer ÷ Versuche — wie oft du triffst, wenn du schlägst. Gut ab .300.',
+  onBase: 'Wie oft du überhaupt auf Base kommst, Walks und Hit-by-Pitch mitgezählt. Gut ab .380.',
+  slugging: 'Wie kräftig du triffst: Bases pro Versuch. Gut ab .450.',
+  ops: 'Auf-Base-Quote plus Schlagkraft in einer Zahl. Stark ab .800.',
+}
+
+/** Die drei Quoten im Kopf, in dieser Reihenfolge. SLG steht im Profil, nicht hier. */
+const KACHELN: { metrik: Metric; label: string; wert: (z: NonNullable<MeineZahlen['schlag']>) => number }[] = [
+  { metrik: 'average', label: 'AVG', wert: z => z.battingAverage },
+  { metrik: 'onBase', label: 'OBP', wert: z => z.onBasePct },
+  { metrik: 'ops', label: 'OPS', wert: z => z.ops },
+]
 
 /**
  * `.355` statt `0.355` — Schlagzahlen schreibt man im Baseball ohne die fuehrende Null.
@@ -35,12 +57,18 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
   fehler: boolean
   ladefehler?: boolean
 }) {
+  const [metrik, setMetrik] = useState<Metric>('average')
+  // Dieselbe Rechnung wie im Profil — zwei Definitionen derselben Quote waeren eine zu viel.
+  const reihe = useMemo(
+    () => cumulativeSeries(daten?.verlauf ?? []).filter(p => !p.provisional),
+    [daten],
+  )
   const leer = daten && !daten.schlag && !daten.spiele
 
   return (
     <section
       aria-label="Meine Zahlen"
-      className="rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 px-4 py-3.5 sm:px-6 sm:py-5"
+      className="rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 px-4 py-3 sm:px-6 sm:py-5"
     >
       {/*
         Am Handy untereinander, ab lg nebeneinander: vier Kacheln ueber 1200px verteilt
@@ -94,19 +122,30 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
           </p>
         ) : (
           <>
-            <dl className="grid grid-cols-4 gap-1.5 sm:gap-2">
-              {/*
-                AVG, OBP, OPS — und die Menge dahinter. Hits ist eine Zaehlung, keine Guete:
-                wer oft drankommt, hat viele, und zwei Zeilen tiefer im Profil stehen sie
-                ohnehin. OPS fasst Treffen und Auf-Base-Kommen in einer Zahl zusammen und
-                ist damit das Einzige hier, was man mit einem Blick vergleichen kann.
-              */}
-              <Kennzahl wert={daten.schlag ? quote(daten.schlag.battingAverage) : '–'} label="AVG" />
-              <Kennzahl wert={daten.schlag ? quote(daten.schlag.onBasePct) : '–'} label="OBP" />
-              <Kennzahl wert={daten.schlag ? quote(daten.schlag.ops) : '–'} label="OPS" />
+            {/*
+              AVG, OBP, OPS — und die Menge dahinter. Hits ist eine Zaehlung, keine Guete:
+              wer oft drankommt, hat viele, und im Profil stehen sie ohnehin.
+
+              Die drei Quoten sind Schalter: ein Tipp legt die Kurve darunter auf diese Zahl
+              um und schreibt dazu, was sie bedeutet. "Spiele" ist kein Schalter — dahinter
+              steckt keine Quote und also auch keine Kurve.
+            */}
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+              {KACHELN.map(k => (
+                <Kennzahl
+                  key={k.metrik}
+                  wert={daten.schlag ? quote(k.wert(daten.schlag)) : '–'}
+                  label={k.label}
+                  gewaehlt={metrik === k.metrik}
+                  onWaehlen={() => setMetrik(k.metrik)}
+                />
+              ))}
               <Kennzahl wert={daten.spiele ? String(daten.spiele.totalGames) : '–'} label="Spiele" />
-            </dl>
-            <Verlauf punkte={daten.verlauf} />
+            </div>
+            <Verlauf reihe={reihe} metrik={metrik} />
+            <p className="text-[11px] sm:text-xs text-white/75 leading-snug sm:leading-relaxed mt-1.5 sm:mt-2">
+              {ERKLAERUNG[metrik]}
+            </p>
           </>
         )}
       </div>
@@ -115,13 +154,44 @@ export function Begruessung({ name, playerId, seasonId, seasonName, daten, fehle
   )
 }
 
-function Kennzahl({ wert, label }: { wert: string; label: string }) {
+function Kennzahl({ wert, label, gewaehlt, onWaehlen }: {
+  wert: string
+  label: string
+  gewaehlt?: boolean
+  onWaehlen?: () => void
+}) {
+  /*
+   * Volle Tinte auf den Schaltern, /75 auf der stillen Kachel.
+   *
+   * Die gewaehlte Kachel ist heller gefuellt — darauf fiel /75 auf 3,89:1, gemessen vom
+   * Kontrast-Pruefer. Die Deckung muss mit der Flaeche mitwachsen, und ein Schalter darf
+   * ohnehin lauter sein als eine Anzeige.
+   */
+  const tinte = onWaehlen ? 'text-white' : 'text-white/75'
+  const inhalt = (
+    <>
+      <span className="block font-display text-xl sm:text-2xl font-extrabold text-amber-400 leading-none tabular-nums">{wert}</span>
+      <span className={`block font-display text-[10px] font-bold tracking-widest uppercase ${tinte} mt-1.5`}>{label}</span>
+    </>
+  )
+  const grund = 'rounded-xl px-1.5 py-2 sm:py-2.5 text-center block w-full'
+  if (!onWaehlen) {
+    return <div className={`${grund} bg-white/8 border border-white/15`}>{inhalt}</div>
+  }
   return (
-    <div className="rounded-xl bg-white/8 border border-white/15 px-1.5 py-2 sm:py-2.5 text-center">
-      <dd className="font-display text-xl sm:text-2xl font-extrabold text-amber-400 leading-none tabular-nums">{wert}</dd>
-      {/* /60 waere auf dem im Dunkeln helleren Block nur 3,8:1 — die Deckung muss mitwachsen. */}
-      <dt className="font-display text-[10px] font-bold tracking-widest uppercase text-white/75 mt-1.5">{label}</dt>
-    </div>
+    <button
+      type="button"
+      onClick={onWaehlen}
+      aria-pressed={gewaehlt}
+      aria-label={`${label} — Kurve anzeigen`}
+      className={`${grund} cursor-pointer transition-colors ${
+        gewaehlt
+          ? 'bg-white/18 border border-white/45'
+          : 'bg-white/8 border border-white/15 hover:bg-white/12'
+      }`}
+    >
+      {inhalt}
+    </button>
   )
 }
 
@@ -131,10 +201,14 @@ function Kennzahl({ wert, label }: { wert: string; label: string }) {
  * Ein Funke, kein Diagramm — er sagt "es geht aufwaerts" oder "es flacht ab". Gefuellt,
  * weil eine fast waagerechte Linie in einem 32px hohen Streifen wie ein Trennstrich
  * aussieht. Die Tinte ist weiss mit Deckung, weil der Block in BEIDEN Themes dunkel ist.
+ *
+ * Gezeichnet wird die laufende Gesamtquote aus `formSeries` — dieselbe, die das Profil
+ * zeigt. Punkte unter `MIN_AT_BATS` At-Bats sind schon draussen: ein 1-aus-1 im ersten Spiel
+ * ergibt kumulativ 1.000 und zoege die ganze Kurve schief.
  */
-function Verlauf({ punkte }: { punkte: PlayerFormPoint[] }) {
+function Verlauf({ reihe, metrik }: { reihe: CumulativePoint[]; metrik: Metric }) {
   const pfad = useMemo(() => {
-    const werte = punkte.map(p => p.rollingAverage).filter((v): v is number => typeof v === 'number')
+    const werte = reihe.map(p => p[metrik])
     if (werte.length < 2) return null
     const hoch = Math.max(...werte)
     const tief = Math.min(...werte)
@@ -150,16 +224,22 @@ function Verlauf({ punkte }: { punkte: PlayerFormPoint[] }) {
       flaeche: [`0,${H}`, ...punkteStr, `${B},${H}`].join(' '),
       schluss: punkteStr.slice(-2).join(' '),
     }
-  }, [punkte])
+  }, [reihe, metrik])
 
-  if (!pfad) return null
+  if (!pfad) {
+    return (
+      <p className="text-[11px] text-white/70 mt-3">
+        Die Kurve beginnt ab {MIN_AT_BATS} At-Bats — davor sagt ein Schnitt mehr, als er weiß.
+      </p>
+    )
+  }
   return (
     <svg
       viewBox="0 0 100 24"
       preserveAspectRatio="none"
-      className="w-full h-7 sm:h-8 mt-3 sm:mt-3.5 overflow-visible"
+      className="w-full h-6 sm:h-8 mt-2.5 sm:mt-3.5 overflow-visible"
       role="img"
-      aria-label="Verlauf des Schlagdurchschnitts in dieser Saison"
+      aria-label={`Verlauf von ${metrik === 'average' ? 'AVG' : metrik === 'onBase' ? 'OBP' : 'OPS'} über ${reihe.length} Spiele`}
     >
       <polygon points={pfad.flaeche} fill="rgb(255 255 255 / 0.12)" stroke="none" />
       <polyline

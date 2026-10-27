@@ -13,7 +13,7 @@ describe('ShareCounterButton', () => {
     vi.stubGlobal('navigator', { share, clipboard: navigator.clipboard })
 
     render(<ShareCounterButton />)
-    fireEvent.click(screen.getByRole('button', { name: 'Zähler teilen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Counter teilen' }))
 
     await waitFor(() =>
       expect(share).toHaveBeenCalledWith(
@@ -30,7 +30,7 @@ describe('ShareCounterButton', () => {
     })
 
     render(<ShareCounterButton />)
-    fireEvent.click(screen.getByRole('button', { name: 'Zähler teilen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Counter teilen' }))
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/counter')))
     expect(await screen.findByText('Link kopiert')).toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('ShareCounterButton', () => {
     })
 
     render(<ShareCounterButton />)
-    fireEvent.click(screen.getByRole('button', { name: 'Zähler teilen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Counter teilen' }))
 
     expect(await screen.findByText('Kopieren nicht möglich')).toBeInTheDocument()
   })
@@ -56,7 +56,7 @@ describe('ShareCounterButton', () => {
     vi.stubGlobal('navigator', { share, clipboard: { writeText } })
 
     render(<ShareCounterButton />)
-    fireEvent.click(screen.getByRole('button', { name: 'Zähler teilen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Counter teilen' }))
 
     await waitFor(() => expect(share).toHaveBeenCalled())
     expect(writeText).not.toHaveBeenCalled()
