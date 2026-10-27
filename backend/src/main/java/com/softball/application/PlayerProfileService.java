@@ -6,6 +6,7 @@ import com.softball.domain.model.Game;
 import com.softball.domain.model.Player;
 import com.softball.domain.model.PlayerFormPoint;
 import com.softball.domain.model.PlayerUsage;
+import com.softball.domain.model.Training;
 import com.softball.domain.model.TrainingAttendance;
 import com.softball.domain.model.UsageScope;
 import com.softball.domain.port.out.AtBatRepository;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +139,35 @@ public class PlayerProfileService {
             LocalDate.now(),
             scope
         );
+    }
+
+    /**
+     * Anwesenheit je Monat eines Jahres: Monat (1..12) auf Anzahl der besuchten Trainings.
+     *
+     * Die SCHLICHTE Anwesenheit, nicht die gewichtete Quote der Auto-Aufstellung: Termine mit
+     * eingeschraenktem Teilnehmerkreis zaehlen hier mit, wenn man da war, und fehlen sonst
+     * einfach. „Wie oft war ich da" ist eine andere Frage als „wie verlaesslich bin ich", und
+     * nur die erste beantwortet diese Karte.
+     *
+     * Abgesagte Trainings fallen raus — bei einem abgesagten Termin war niemand da.
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, Integer> getTrainingMonths(final Long playerId, final int year) {
+        if (!playerRepository.existsById(playerId)) {
+            throw new ResourceNotFoundException("Player", playerId);
+        }
+        final Map<Integer, Integer> jeMonat = new HashMap<>();
+        for (final TrainingAttendance a : attendanceRepository.findByPlayerId(playerId)) {
+            if (!a.isPresent() || a.getTraining() == null) {
+                continue;
+            }
+            final Training t = a.getTraining();
+            if (t.isCancelled() || t.getDate() == null || t.getDate().getYear() != year) {
+                continue;
+            }
+            jeMonat.merge(t.getDate().getMonthValue(), 1, Integer::sum);
+        }
+        return jeMonat;
     }
 
     private List<Integer> battingOrders(final Long playerId, final UsageScope scope) {

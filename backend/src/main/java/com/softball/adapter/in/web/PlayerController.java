@@ -1,6 +1,7 @@
 package com.softball.adapter.in.web;
 
 import com.softball.shared.security.CurrentUser;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.CreatePlayerRequest;
 import com.softball.adapter.dto.PlayerFormPointResponse;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @PreAuthorize("hasRole('ADMIN')")
 @RestController
@@ -65,7 +67,24 @@ public class PlayerController {
             : year != null ? UsageScope.ofYear(year)
             : UsageScope.all();
         return PlayerUsageResponse.from(playerProfileService.getUsage(id, scope),
-            currentUser.darfTrainingszahlenSehen());
+            currentUser.darfTrainingszahlenSehenVon(id));
+    }
+
+    /**
+     * Wie oft dieser Spieler in jedem Monat eines Jahres im Training war — Monat (1..12) auf Anzahl.
+     *
+     * Eigene Zahlen oder Trainer; sonst 403. Ein leerer Monat fehlt in der Karte, statt mit einer
+     * Null dazustehen: „nicht da" und „kein Training angesetzt" sind verschiedene Aussagen, und
+     * welche davon gilt, weiss der Terminplan, nicht diese Antwort.
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}/training-months")
+    public Map<Integer, Integer> getTrainingMonths(@PathVariable final Long id,
+                                                   @RequestParam(name = "year") final int year) {
+        if (!currentUser.darfTrainingszahlenSehenVon(id)) {
+            throw new AccessDeniedException("Trainingszahlen anderer Spieler");
+        }
+        return playerProfileService.getTrainingMonths(id, year);
     }
 
     @PostMapping

@@ -55,6 +55,9 @@ class MethodSecurityCoverageTest {
         "PlayerController#getOne",
         "PlayerController#getBattingTimeline",
         "PlayerController#getUsage",
+        // Traegt eine Trainingszahl — und ist trotzdem offen, weil der Controller selbst
+        // prueft, WESSEN Zahl: die eigene ja (seit dem 27.10.2026), eine fremde 403.
+        "PlayerController#getTrainingMonths",
         // SeasonController
         "SeasonController#getAll",
         "SeasonController#getById",

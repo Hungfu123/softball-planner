@@ -173,6 +173,14 @@ export const updatePlayer = (id: number, data: { name?: string; regular?: boolea
 export const getPlayer = (id: number) =>
   request<Player>(`/players/${id}`)
 
+/**
+ * Anwesenheit im Training je Monat eines Jahres — Monat (1..12) auf Anzahl.
+ *
+ * Nur fuer sich selbst oder als Trainer; sonst antwortet der Server mit 403. Ein Monat ohne
+ * Anwesenheit fehlt in der Karte, statt mit einer Null dazustehen.
+ */
+export const getPlayerTrainingMonths = (id: number, jahr: number) =>
+  request<Record<string, number>>(`/players/${id}/training-months?year=${jahr}`)
 export const getPlayerBattingTimeline = (id: number) =>
   request<PlayerFormPoint[]>(`/players/${id}/batting-timeline`)
 
