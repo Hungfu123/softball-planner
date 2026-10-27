@@ -74,6 +74,9 @@ export function StartPage() {
     () => termine.find(t => t.art === 'SPIELTAG' && t.datum >= heute) ?? null,
     [termine, heute],
   )
+  // Erst wenn feststeht, dass keiner kommt — waehrend des Ladens oder bei einem Ausfall
+  // waere der Tausch geraten, nicht gewusst.
+  const zeigePlaymaker = !laden && !fehler && naechsterSpieltag == null
   const trainings = useMemo(
     () => termine.filter(t => t.art === 'TRAINING' && t.datum >= heute)
       .sort((a, b) => a.datum.localeCompare(b.datum)),
@@ -103,9 +106,26 @@ export function StartPage() {
         — eine flache Zeile am Fuss.
       */}
       <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
-          <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
-        </Kachel>
+        {/*
+          Ohne kommenden Spieltag ist diese Kachel monatelang tot — November bis Maerz steht
+          dort nichts als eine Entschuldigung. Der Platz zeigt dann den Playmaker: etwas zu
+          tun, statt etwas zu bedauern. Dass kein Spieltag ansteht, sagt das Jahresband
+          darunter ohnehin ("Noch offen: 0 Spieltage").
+        */}
+        {zeigePlaymaker ? (
+          <Kachel titel="Playmaker" zu="/orga/playmaker">
+            <p className="font-display text-xl font-extrabold tracking-wide uppercase text-ink leading-none">
+              Spielzüge
+            </p>
+            <p className="text-sm text-ink-muted mt-2 leading-snug">
+              Laufwege und Cut-offs, bis es wieder losgeht.
+            </p>
+          </Kachel>
+        ) : (
+          <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
+            <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
+          </Kachel>
+        )}
 
         <Kachel titel="Nächstes Training" zu="/kalender">
           <TrainingInhalt naechstes={trainings[0]} danach={trainings[1]} laden={laden} fehler={fehler} />
@@ -179,17 +199,12 @@ function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; 
   if (laden) return <p className="text-sm text-ink-muted">Termine laden …</p>
   if (fehler) {
     return (
-      <p className="text-sm text-ink-muted">
-        Die Termine sind gerade nicht erreichbar. Das heißt nicht, dass nichts ansteht.
-      </p>
+      <p className="text-sm text-ink-muted">Termine nicht erreichbar.</p>
     )
   }
   if (!spieltag) {
     return (
-      <p className="text-sm text-ink-muted">
-        Kein Spieltag angesetzt. Sobald er steht, erscheint er hier — die Anfrage dazu kommt wie
-        gewohnt per WhatsApp.
-      </p>
+      <p className="text-sm text-ink-muted">Kein Spieltag angesetzt.</p>
     )
   }
   return (
@@ -219,9 +234,7 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
   if (fehler) return <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
   if (!naechstes) {
     return (
-      <p className="text-sm text-ink-muted">
-        Kein Training angesetzt. Sobald die nächste Periode steht, erscheint es hier.
-      </p>
+      <p className="text-sm text-ink-muted">Kein Training angesetzt.</p>
     )
   }
   return (
@@ -274,13 +287,11 @@ function Zuletzt({ verlauf, geladen, fehler, playerId, className = '' }: {
   return (
     <Kachel titel="Zuletzt" zu={playerId != null ? `/players/${playerId}` : undefined} className={className}>
       {fehler ? (
-        <p className="text-sm text-ink-muted">Deine Spiele sind gerade nicht erreichbar.</p>
+        <p className="text-sm text-ink-muted">Spiele nicht erreichbar.</p>
       ) : !geladen ? (
         <p className="text-sm text-ink-muted">Spiele laden …</p>
       ) : letzte.length === 0 ? (
-        <p className="text-sm text-ink-muted">
-          In dieser Saison ist noch kein Spiel gezählt, in dem du dran warst.
-        </p>
+        <p className="text-sm text-ink-muted">Noch kein gezähltes Spiel.</p>
       ) : (
         <ul className="divide-y divide-line">
           {letzte.map(p => (
@@ -315,7 +326,7 @@ function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
   return (
     <Kachel titel="Was ansteht" zu="/kalender" className={className}>
       {fehler ? (
-        <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
+        <p className="text-sm text-ink-muted">Termine nicht erreichbar.</p>
       ) : laden ? (
         <p className="text-sm text-ink-muted">Termine laden …</p>
       ) : naechste.length === 0 ? (

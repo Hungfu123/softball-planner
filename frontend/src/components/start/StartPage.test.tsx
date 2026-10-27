@@ -252,6 +252,29 @@ describe('Startseite', () => {
    * schlimmer als gar keine. Deshalb die Marke im Titel UND der Zusatz in jeder
    * Lampenreihe — wer vorgelesen bekommt, sieht die Marke nicht.
    */
+  /*
+   * November bis Maerz steht in der Spieltag-Kachel nichts als eine Entschuldigung. Der
+   * Platz zeigt dann den Playmaker: etwas zu tun, statt etwas zu bedauern. Dass kein
+   * Spieltag ansteht, sagt das Jahresband darunter ohnehin.
+   */
+  it('zeigt ohne kommenden Spieltag den Playmaker auf dessen Platz', async () => {
+    mockApi.getAllGameDays.mockResolvedValue([spieltag(2, '2026-03-01')])  // nur Vergangenes
+    rendern()
+    const playmaker = await kachel('Playmaker')
+    expect(playmaker).toHaveAttribute('href', '/orga/playmaker')
+    expect(playmaker.textContent).toMatch(/Spielzüge/)
+    expect(screen.queryByLabelText('Nächster Spieltag')).not.toBeInTheDocument()
+  })
+
+  /* Waehrend des Ladens oder bei einem Ausfall waere der Tausch geraten, nicht gewusst. */
+  it('tauscht nicht, wenn der Abruf gescheitert ist', async () => {
+    mockApi.getAllGameDays.mockRejectedValue(new Error('500'))
+    rendern()
+    const spieltagKachel = await kachel('Nächster Spieltag')
+    await waitFor(() => expect(spieltagKachel.textContent).toMatch(/nicht erreichbar/))
+    expect(screen.queryByLabelText('Playmaker')).not.toBeInTheDocument()
+  })
+
   it('zeigt einen Beispielstand, solange keiner läuft — und sagt, dass es einer ist', async () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
