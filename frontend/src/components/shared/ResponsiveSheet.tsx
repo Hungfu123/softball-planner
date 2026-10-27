@@ -53,7 +53,10 @@ export function ResponsiveSheet({ open, onClose, title, children, footer, maxWid
               const target = e.target as HTMLElement | null
               if (target?.closest('[data-portal-overlay]')) e.preventDefault()
             }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl overflow-hidden max-h-[90vh] flex flex-col focus:outline-none"
+            // `dvh`, nicht `vh`: mit `interactive-widget=resizes-content` (index.html) schrumpft
+            // das Fenster bei offener Tastatur, und das Sheet schrumpft mit, statt unter ihr zu
+            // verschwinden. Ohne Tastatur ist beides dasselbe.
+            className="fixed bottom-0 left-0 right-0 z-50 bg-cream-50 rounded-t-2xl overflow-hidden max-h-[90dvh] flex flex-col focus:outline-none"
           >
             <Drawer.Title className="sr-only">{title}</Drawer.Title>
             <div className="w-12 h-1.5 bg-cream-300 rounded-full mx-auto mt-3 shrink-0" />

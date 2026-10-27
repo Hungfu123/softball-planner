@@ -5,7 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/deadsox.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      `interactive-widget=resizes-content`: wenn die Bildschirmtastatur aufgeht, schrumpft das
+      LAYOUT-Fenster mit, statt nur das sichtbare. Ohne das bleibt die Seite voll hoch, die
+      Tastatur legt sich darueber, und alles mit `position: fixed` — allen voran das
+      Bottom-Sheet — liegt zur Haelfte darunter. Man scrollt dann in einem Bereich, den es
+      fuer den Browser gar nicht gibt, und die Geste landet irgendwo.
+
+      Die Angabe wirkt NUR bei offener Tastatur; ohne sie aendert sich an keiner Seite etwas.
+      iOS kennt sie nicht und ignoriert sie — dort bleibt es bei vauls eigener Korrektur.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#142B49" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
