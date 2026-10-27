@@ -19,11 +19,11 @@ vi.mock('@/api/client', () => ({
   getTrainings: vi.fn(),
   getYearBattingStats: vi.fn(),
   getYearStats: vi.fn(),
-  getYearSeasons: vi.fn(),
-  getSeasonBattingStats: vi.fn(),
-  getSeasonStats: vi.fn(),
+  getDistinctYears: vi.fn(),
   getPlayerBattingTimeline: vi.fn(),
   getPlayerTrainingMonths: vi.fn(),
+  getTrainingWeather: vi.fn(),
+  getGameDayWeather: vi.fn(),
   getPlayer: vi.fn(),
   getPlayerUsage: vi.fn(),
 }))
@@ -94,19 +94,15 @@ describe('Startseite', () => {
     mockApi.getTrainings.mockResolvedValue([
       training(1, '2026-06-18'), training(2, '2026-06-20'), training(3, '2026-01-10'),
     ])
-    mockApi.getYearSeasons.mockResolvedValue([
-      { id: 1, name: 'Liga 2026', year: 2026 }, { id: 2, name: 'Trainingsspiele', year: 2026 },
-    ])
-    mockApi.getSeasonBattingStats.mockResolvedValue([{ ...ZAHLEN, battingAverage: 0.2, ops: 0.6 }])
-    mockApi.getSeasonStats.mockResolvedValue([
-      { playerId: 7, playerName: 'Mia Meier', totalGames: 1, positionCounts: {} } as SeasonPlayerStats,
-    ])
+    mockApi.getDistinctYears.mockResolvedValue([2026, 2025])
     mockApi.getYearBattingStats.mockResolvedValue([ZAHLEN])
     mockApi.getYearStats.mockResolvedValue([
       { playerId: 7, playerName: 'Mia Meier', totalGames: 12, positionCounts: {} } as SeasonPlayerStats,
     ])
     mockApi.getPlayerBattingTimeline.mockResolvedValue([])
     mockApi.getPlayerTrainingMonths.mockResolvedValue({ monate: { '1': 1, '6': 2 }, verpasstSeitdem: 0 })
+    mockApi.getTrainingWeather.mockResolvedValue(null)
+    mockApi.getGameDayWeather.mockResolvedValue(null)
     mockApi.getPlayer.mockResolvedValue(ICH)
   })
   afterEach(() => { vi.useRealTimers() })
@@ -336,9 +332,8 @@ describe('Startseite', () => {
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
     expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2026)
     expect(mockApi.getYearStats).toHaveBeenCalledWith(2026)
-    // Der Zeitraum steht waehlbar neben den Zahlen — Vorgabe ist das ganze Jahr.
-    expect(within(kopf).getByRole('combobox', { name: 'Zeitraum wählen' })).toHaveValue('jahr')
-    expect(mockApi.getSeasonBattingStats).not.toHaveBeenCalled()
+    // Das Jahr steht waehlbar neben den Zahlen, Vorgabe ist das laufende.
+    expect(within(kopf).getByRole('combobox', { name: 'Jahr wählen' })).toHaveValue('2026')
     await kachel('Termine 2026')
   })
 
@@ -367,37 +362,52 @@ describe('Startseite', () => {
    * dasteht und nicht gemischt mit den Trainingsspielen, stellt hier um. Entscheidend
    * ist, dass die Seite das NICHT selbst tut — genau daran ist sie vorher gescheitert.
    */
-  it('lässt eine Saison des Jahres wählen und merkt sich die Wahl', async () => {
+  /*
+   * Jahre, nicht Saisons: eine Saison ist ein Ausschnitt, ein Jahr ist das, was im naechsten
+   * wiederkommt. Entscheidend ist, dass das Terminband MITZIEHT — zwei Zeitraeume auf einer
+   * Seite waren der Fehler, an dem die Startseite einmal gescheitert ist.
+   */
+  it('lässt das Jahr wählen, merkt es sich — und das Terminband zieht mit', async () => {
     rendern()
     const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
 
-    const auswahl = within(kopf).getByRole('combobox', { name: 'Zeitraum wählen' })
-    fireEvent.change(auswahl, { target: { value: 's1' } })
+    fireEvent.change(within(kopf).getByRole('combobox', { name: 'Jahr wählen' }), { target: { value: '2025' } })
 
-    await waitFor(() => expect(within(kopf).getByText('.200')).toBeInTheDocument())
-    expect(mockApi.getSeasonBattingStats).toHaveBeenCalledWith(1)
-    expect(within(kopf).getByText('1')).toBeInTheDocument()
-    expect(localStorage.getItem('startseite-bereich')).toBe('1')
+    await waitFor(() => expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2025))
+    expect(mockApi.getYearStats).toHaveBeenCalledWith(2025)
+    await kachel('Termine 2025')
+    expect(localStorage.getItem('startseite-jahr')).toBe('2025')
   })
 
-  /* Eine gemerkte Saison aus einem anderen Jahr ist kein Zeitraum, sondern ein Rest. */
-  it('fällt auf das Jahr zurück, wenn die gemerkte Saison nicht mehr dazugehört', async () => {
-    localStorage.setItem('startseite-bereich', '99')
+  /* Im vergangenen Jahr kommt nichts mehr — „noch 1" waere dort schlicht falsch. */
+  it('lässt „noch" weg, sobald ein vergangenes Jahr gewählt ist', async () => {
     rendern()
     const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
-    expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2026)
-    expect(mockApi.getSeasonBattingStats).not.toHaveBeenCalled()
+    fireEvent.change(within(kopf).getByRole('combobox', { name: 'Jahr wählen' }), { target: { value: '2025' } })
+
+    const band = await kachel('Termine 2025')
+    await waitFor(() => expect(band.textContent).toMatch(/Spieltage/))
+    expect(band.textContent).not.toMatch(/noch \d/)
+  })
+
+  /* Ein gemerktes Jahr ueberlebt den Besuch — darum geht es: naechstes Jahr nachsehen, wie dieses lief. */
+  it('nimmt beim Öffnen das zuletzt gewählte Jahr', async () => {
+    localStorage.setItem('startseite-jahr', '2025')
+    rendern()
+    await screen.findByRole('region', { name: 'Meine Zahlen' })
+    await waitFor(() => expect(mockApi.getYearBattingStats).toHaveBeenCalledWith(2025))
+    await kachel('Termine 2025')
   })
 
   /* Eine Auswahl mit einem einzigen Eintrag ist keine Auswahl. */
-  it('zeigt die Jahreszahl statt einer Auswahl, wenn das Jahr nur eine Saison hat', async () => {
-    mockApi.getYearSeasons.mockResolvedValue([{ id: 1, name: 'Liga 2026', year: 2026 }])
+  it('zeigt die Jahreszahl statt einer Auswahl, wenn es nur ein Jahr gibt', async () => {
+    mockApi.getDistinctYears.mockResolvedValue([2026])
     rendern()
     const kopf = await screen.findByRole('region', { name: 'Meine Zahlen' })
     await waitFor(() => expect(within(kopf).getByText('.500')).toBeInTheDocument())
-    expect(within(kopf).queryByRole('combobox', { name: 'Zeitraum wählen' })).not.toBeInTheDocument()
+    expect(within(kopf).queryByRole('combobox', { name: 'Jahr wählen' })).not.toBeInTheDocument()
     expect(within(kopf).getByText('2026')).toBeInTheDocument()
   })
 
@@ -417,6 +427,60 @@ describe('Startseite', () => {
     // Statt des Ausblicks auf den uebernaechsten Termin — wer weg war, braucht einen Grund
     // fuer den naechsten, keinen Ausblick auf den danach.
     expect(k.textContent).not.toMatch(/Danach/)
+  })
+
+  /*
+   * Das Wetter loest „Danach …" ab, solange es eins gibt — es sagt mehr ueber den naechsten
+   * Termin als das Datum des uebernaechsten. Ausserhalb des Vorhersagefensters antwortet der
+   * Server mit nichts, und dann traegt wieder der Ausblick. Nie beides: das waere eine Zeile
+   * mehr, und am Handy ist das der Unterschied zwischen passt und scrollt.
+   */
+  it('zeigt das Wetter statt des übernächsten Termins', async () => {
+    mockApi.getTrainingWeather.mockResolvedValue({
+      tempMin: 8, tempMax: 14, wmoCode: 61, precipitationProbabilityPct: 70, hours: [],
+    })
+    rendern()
+    const k = await kachel('Nächstes Training')
+    await waitFor(() => expect(k.textContent).toMatch(/8–14°/))
+    expect(k.textContent).toMatch(/70.*% Regen/)
+    expect(k.textContent).not.toMatch(/Danach/)
+  })
+
+  /* Beim Spieltag kommt das Wetter dazu — dort gibt es keine Zeile, die es ablösen könnte. */
+  it('zeigt das Wetter auch beim Spieltag, wenn es eins gibt', async () => {
+    mockApi.getGameDayWeather.mockResolvedValue({
+      tempMin: 12, tempMax: 21, wmoCode: 1, precipitationProbabilityPct: 10, hours: [],
+    })
+    rendern()
+    const k = await kachel('Nächster Spieltag')
+    await waitFor(() => expect(k.textContent).toMatch(/12–21°/))
+    expect(k.textContent).toMatch(/10.*% Regen/)
+  })
+
+  it('lässt die Wetterzeile beim Spieltag weg, wenn es keine Vorhersage gibt', async () => {
+    rendern()
+    const k = await kachel('Nächster Spieltag')
+    await waitFor(() => expect(k.textContent).toMatch(/Berlin Bears/))
+    expect(k.textContent).not.toMatch(/Regen/)
+  })
+
+  it('fällt auf „Danach" zurück, wenn es keine Vorhersage gibt', async () => {
+    rendern()
+    const k = await kachel('Nächstes Training')
+    await waitFor(() => expect(k.textContent).toMatch(/Danach/))
+    expect(k.textContent).not.toMatch(/°/)
+  })
+
+  /* Die Nachfrage schlaegt das Wetter: sie kommt selten und waere darunter verschenkt. */
+  it('stellt die Nachfrage über das Wetter', async () => {
+    mockApi.getPlayerTrainingMonths.mockResolvedValue({ monate: {}, verpasstSeitdem: 12 })
+    mockApi.getTrainingWeather.mockResolvedValue({
+      tempMin: 8, tempMax: 14, wmoCode: 61, precipitationProbabilityPct: 70, hours: [],
+    })
+    rendern()
+    const k = await kachel('Nächstes Training')
+    await waitFor(() => expect(k.textContent).toMatch(/Lange nicht da gewesen/))
+    expect(k.textContent).not.toMatch(/8–14°/)
   })
 
   it('schweigt knapp unter der Schwelle', async () => {
