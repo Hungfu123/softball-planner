@@ -176,7 +176,10 @@ export function Layout() {
             eine Admin-Seite, die ihn zurückwirft. Im Zweifel also lieber nicht zeigen. */}
         {istBestaetigtAdmin && <WhatsappStatusBanner />}
 
-        <main className={`${shell} pb-6 xl:pb-2 pt-2 sm:pt-4 safe-bottom`}>
+        {/* Am Handy pb-3: 24px unter der letzten Karte sind dort Luxus, und die Startseite
+            braucht jeden Pixel, um ohne Scrollen auszukommen. `safe-bottom` traegt den
+            Home-Indikator weiterhin. Ab sm bleibt es bei der alten Luft. */}
+        <main className={`${shell} pb-3 sm:pb-6 xl:pb-2 pt-2 sm:pt-4 safe-bottom`}>
           <Outlet />
         </main>
 

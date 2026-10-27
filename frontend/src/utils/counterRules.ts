@@ -30,6 +30,20 @@ export const INITIAL_STATE: CounterState = {
   away: 0,
 }
 
+/**
+ * Der Zaehler steht noch so da, wie er aufgeht — es wurde nichts gezaehlt.
+ *
+ * Die Startseite entscheidet daran, ob sie den Stand zeigt oder stattdessen erklaert,
+ * wofuer man den Zaehler ueberhaupt braucht.
+ */
+export function isInitial(s: CounterState): boolean {
+  return (
+    s.balls === 0 && s.strikes === 0 && s.outs === 0 &&
+    s.inning === 1 && s.half === 'top' &&
+    s.home === 0 && s.away === 0
+  )
+}
+
 function clearCount(s: CounterState): CounterState {
   return { ...s, balls: 0, strikes: 0 }
 }

@@ -117,7 +117,7 @@ export function LoginPage({ onLogin, error }: LoginPageProps) {
             to="/counter"
             className="font-display inline-flex items-center min-h-11 px-3 text-[11px] font-bold uppercase tracking-widest text-navy-300 underline decoration-white/25 underline-offset-4 hover:text-white hover:decoration-white"
           >
-            Nur Zähler öffnen
+            Nur Counter öffnen
           </Link>
         </p>
       </form>

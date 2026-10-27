@@ -6,6 +6,8 @@ import type { Season, PlayerFormPoint } from '@/types'
 import { useRolle } from '@/hooks/useRolle'
 import { Abschnittsmarke } from '@/components/shared'
 import { useTermine, heuteIso, saisonAusTerminen, type Termin } from '@/hooks/useTermine'
+import { readCounterState } from '@/hooks/useCounter'
+import { isInitial } from '@/utils/counterRules'
 import { JahresBand } from '@/components/dashboard/JahresBand'
 import { Begruessung } from './Begruessung'
 import { useMeineZahlen } from './useMeineZahlen'
@@ -79,7 +81,7 @@ export function StartPage() {
   )
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-2.5 sm:space-y-4">
       <Begruessung
         name={me?.playerName ?? null}
         playerId={me?.playerId ?? null}
@@ -100,7 +102,7 @@ export function StartPage() {
         (zwoelf Saeulen), also bekommt es sie. Der Zaehler ist eine Handlung, keine Auskunft
         — eine flache Zeile am Fuss.
       */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2.5 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Kachel titel="Nächster Spieltag" zu="/spielbetrieb">
           <SpieltagInhalt spieltag={naechsterSpieltag} laden={laden} fehler={fehler} />
         </Kachel>
@@ -332,23 +334,118 @@ function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
   )
 }
 
-function Zaehler() {
+/**
+ * Die Lampenreihe der Tafel, nur klein. Dieselben Farben und dieselbe Anordnung wie in
+ * `CounterBoard` — Kachel und Ziel sollen ein Gegenstand sein und nicht zwei.
+ *
+ * Das Creme der Ball-Lampe steht als Festwert da statt als Paletten-Klasse: die
+ * Shim-Schicht im Stylesheet deutet die hellen Cremetoene im dunklen Theme zu einer
+ * FLAECHE um, und eine brennende Lampe saehe dort aus wie eine erloschene. Eine Birne
+ * wechselt die Farbe nicht mit dem Theme.
+ */
+function Lampenreihe({ label, count, total, an }: {
+  label: string
+  count: number
+  total: number
+  an: string
+}) {
   return (
-    <section
-      aria-label="Zähler"
-      className="col-span-2 lg:col-span-4 bg-surface-raised border border-line rounded-2xl shadow-card p-4 flex flex-col sm:flex-row sm:items-center gap-3"
-    >
-      <p className="text-sm text-ink-muted leading-relaxed flex-1 min-w-0">
-        <span className="font-display font-bold tracking-widest uppercase text-[11px] text-ink mr-2">Zähler</span>
-        Wenn du selbst umpirest: Balls, Strikes, Outs — groß genug fürs Feld, läuft ohne Netz.
-      </p>
-      <Link
-        to="/counter"
-        className="font-display min-h-11 inline-flex items-center justify-center px-4 rounded-lg bg-cream-50 border border-cream-300 text-navy-900 hover:bg-navy-800 hover:text-white hover:border-navy-800 text-[11px] font-extrabold tracking-widest uppercase transition-colors shrink-0"
+    <div className="flex items-center gap-2 sm:block sm:text-center">
+      <div className="font-display text-[10px] font-bold tracking-[0.18em] uppercase text-spotlight-ink/70 w-11 sm:w-auto">
+        {label}
+      </div>
+      <div
+        className="flex gap-1.5 sm:mt-1.5 sm:justify-center"
+        role="img"
+        aria-label={`${label}: ${count} von ${total}`}
       >
-        Zähler öffnen
-      </Link>
-    </section>
+        {Array.from({ length: total }, (_, i) => (
+          <span
+            key={i}
+            className={`h-3 w-3 rounded-full ring-1 ring-inset ring-white/25 ${i < count ? an : 'bg-white/10'}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Der Counter als Kachel — das Werkzeug selbst in klein, nicht seine Beschreibung.
+ *
+ * Die einzige Kachel, die eine HANDLUNG ist; der Rest der Seite ist Auskunft. Sie darf sich
+ * deshalb wie ein Knopf anfuehlen: heller Rand und Schein unter dem Zeiger, ein kurzes
+ * Einsinken beim Druecken. Am Handy gibt es keinen Hover — dort traegt allein das Einsinken
+ * die Rueckmeldung, und genau deswegen steht es hier und nicht nur der Hover.
+ *
+ * Jede andere Kachel dieser Seite trägt eine Auskunft: ein Datum, ein Band, Zahlen. Diese
+ * trug bisher nur einen Satz und einen Knopf, und ein Satz über ein Werkzeug sieht nie so
+ * aus, als wäre etwas los. Die Lampenreihe schon.
+ *
+ * Zwei Zustände, und der Unterschied ist der Grund für den Umbau: läuft noch ein Spiel,
+ * steht der Stand da und die Kachel lädt zum Weiterzählen ein. Steht der Counter auf
+ * Anfang, sind die Lampen dunkel und der Satz erklärt wieder, wofür man ihn braucht.
+ *
+ * Der Stand kommt einmal beim Aufbau aus dem localStorage. Die Startseite zählt nicht mit
+ * — sie schaut nach.
+ *
+ * `spotlight` statt Papier: die Kachel ist die einzige HANDLUNG auf einer Seite voller
+ * Auskunft, und `spotlight` ist die Rolle, die dafür schon da ist (im Hellen ein dunkler
+ * Klotz, im Dunkeln die hellste Fläche). Der eigene Knopf ist deshalb weg: die ganze
+ * Kachel ist das Ziel, wie bei `Kachel` auch, und ein Knopf in einem Link wäre ohnehin
+ * verschachtelte Interaktion.
+ */
+function Zaehler() {
+  const [stand] = useState(readCounterState)
+  const laeuft = !isInitial(stand)
+
+  return (
+    <Link
+      to="/counter"
+      aria-label="Counter"
+      className="relative col-span-2 lg:col-span-4 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-9 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4
+        transition-[filter,box-shadow,border-color,transform] duration-200 ease-[var(--ease-out-strong)]
+        hover:brightness-110 hover:border-white/40 hover:shadow-lg hover:shadow-navy-900/40
+        active:scale-[0.99] active:brightness-125 motion-reduce:active:scale-100"
+    >
+      <div className="flex-1 min-w-0">
+        <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase mb-2">
+          <Abschnittsmarke size="sm" />
+          Counter
+        </h2>
+        {laeuft ? (
+          <p className="font-display text-xl font-extrabold tracking-wide uppercase leading-none tabular-nums">
+            <span aria-hidden>
+              {stand.inning}. Inning{' '}
+              <span className="text-softball-red-400">{stand.half === 'top' ? '▲' : '▼'}</span>
+              <span className="text-spotlight-ink/50"> · </span>
+              {stand.home} : {stand.away}
+            </span>
+            <span className="sr-only">
+              Läuft: {stand.inning}. Inning, {stand.half === 'top' ? 'oben' : 'unten'},
+              {' '}Heim {stand.home}, Gast {stand.away}
+            </span>
+          </p>
+        ) : (
+          /* Eine Zeile. Was gezaehlt wird, steht unter den Lampen — der Satz muss es nicht
+             wiederholen, und zwei Zeilen kosteten die Seite ihren letzten Rand. */
+          <p className="text-sm text-spotlight-ink/80 leading-snug">
+            Wenn du selbst umpirest — läuft ohne Netz.
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5 shrink-0 sm:flex-row sm:items-start sm:gap-5">
+        <Lampenreihe label="Ball" count={stand.balls} total={3} an="bg-[#FBF6EC]" />
+        <Lampenreihe label="Strike" count={stand.strikes} total={2} an="bg-amber-400" />
+        <Lampenreihe label="Out" count={stand.outs} total={2} an="bg-softball-red-400" />
+      </div>
+
+      {/* Absolut gesetzt statt im Fluss: am Handy liegen Text und Lampen untereinander,
+          und der Pfeil gehoert trotzdem nach oben rechts — dorthin, wo ihn die anderen
+          Kacheln haben. `pr-9` haelt ihm die Spalte frei. */}
+      <ChevronRight size={16} className="absolute right-3.5 top-4 text-spotlight-ink/60" aria-hidden />
+    </Link>
   )
 }
 

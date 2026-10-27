@@ -4,14 +4,14 @@ import { MemoryRouter } from 'react-router-dom'
 import { LoginPage } from './LoginPage'
 
 describe('LoginPage', () => {
-  it('zeigt einen Link zum Zähler, der ohne Anmeldung erreichbar ist', () => {
+  it('zeigt einen Link zum Counter, der ohne Anmeldung erreichbar ist', () => {
     render(
       <MemoryRouter>
         <LoginPage onLogin={() => {}} error={null} />
       </MemoryRouter>,
     )
 
-    const link = screen.getByRole('link', { name: 'Nur Zähler öffnen' })
+    const link = screen.getByRole('link', { name: 'Nur Counter öffnen' })
     expect(link).toHaveAttribute('href', '/counter')
   })
 

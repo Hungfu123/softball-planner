@@ -122,7 +122,10 @@ export function CounterBoard({ state, backTo, backLabel }: Props) {
       </div>
 
       <div className="flex shrink-0 border-t border-white/15 pt-3">
-        <Lamps label="Ball" count={state.balls} total={3} onClass="bg-cream-50" />
+        {/* Festwert statt Paletten-Klasse: der Shim deutet die hellen Cremetoene im
+            dunklen Theme zu einer Flaeche um — die brennende Ball-Lampe war dort navy
+            und damit von einer erloschenen nicht zu unterscheiden. */}
+        <Lamps label="Ball" count={state.balls} total={3} onClass="bg-[#FBF6EC]" />
         <Lamps label="Strike" count={state.strikes} total={2} onClass="bg-amber-400" />
         <Lamps label="Out" count={state.outs} total={2} onClass="bg-softball-red-400" />
       </div>

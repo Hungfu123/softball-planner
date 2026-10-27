@@ -38,7 +38,7 @@ export function ShareCounterButton() {
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Softball-Zähler', url })
+        await navigator.share({ title: 'Softball-Counter', url })
         return
       } catch (err) {
         // Abbruch im Teilen-Blatt ist kein Fehler — kein Fallback, keine Meldung.
@@ -64,8 +64,8 @@ export function ShareCounterButton() {
       <button
         type="button"
         onClick={handleShare}
-        aria-label="Zähler teilen"
-        title="Zähler teilen"
+        aria-label="Counter teilen"
+        title="Counter teilen"
         className="rounded-lg p-2 text-navy-100/70 hover:bg-white/10 hover:text-white cursor-pointer"
       >
         <ShareIcon size={20} />
