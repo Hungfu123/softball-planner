@@ -170,9 +170,15 @@ export function Begruessung({ name, playerId, jahr, bereich, saisons, wahl, onWa
  * den Trainingsspielen), stellt hier um; die Wahl bleibt auf dem Geraet. Gibt es im Jahr nur
  * eine Saison, gibt es nichts zu waehlen — dann steht die Jahreszahl einfach da.
  *
- * Nativ statt nachgebaut, wie der Pillen-Select der hellen Seiten: der System-Picker am
- * Handy schlaegt jede eigene Liste. Die `<option>`-Zeilen bekommen eigene Farben, weil sie
- * sonst die weisse Schrift des Selects in ein helles Systemmenue tragen.
+ * Nativ statt nachgebaut: der System-Picker am Handy schlaegt jede eigene Liste. Aber
+ * NICHT als Pille wie auf den hellen Seiten — daneben stehen die Positions-Chips, und eine
+ * umrandete Pille zwischen ihnen las sich wie ein dritter Chip, nur lauter. Chips sind
+ * Daten, das hier ist ein Schalter; er sieht deshalb aus wie die Zeile, die vorher da
+ * stand, und traegt nur ein Pfeilchen dazu.
+ *
+ * `py-1.5 -my-1.5` gibt ihm eine Fassflaeche von 29 Pixeln, ohne die Zeile wachsen zu
+ * lassen: das Polster liegt im negativen Rand. Die `<option>`-Zeilen bekommen eigene
+ * Farben, weil sie sonst die helle Schrift des Selects in ein helles Systemmenue tragen.
  */
 function Zeitraum({ jahr, saisons, wahl, onWahl }: {
   jahr: number
@@ -189,12 +195,12 @@ function Zeitraum({ jahr, saisons, wahl, onWahl }: {
       value={wahl === 'jahr' ? 'jahr' : `s${wahl}`}
       onChange={e => onWahl(e.target.value === 'jahr' ? 'jahr' : Number(e.target.value.slice(1)))}
       className="appearance-none bg-no-repeat cursor-pointer max-w-[12rem] truncate
-        font-display text-[10px] font-bold tracking-widest uppercase
-        rounded-full border border-white/25 bg-white/10 text-white/85 pl-2.5 pr-6 py-1.5
-        hover:bg-white/20 transition-colors"
+        text-[11px] text-white/70 hover:text-white transition-colors
+        border-0 bg-transparent rounded px-0 pr-4 py-1.5 -my-1.5
+        focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
       style={{
         backgroundImage: PFEIL_HELL,
-        backgroundPosition: 'right 0.55rem center',
+        backgroundPosition: 'right center',
         backgroundSize: '0.6rem',
       }}
     >
