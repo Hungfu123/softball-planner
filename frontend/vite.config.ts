@@ -53,10 +53,22 @@ export default defineConfig({
     rollupOptions: {
       external: ['html2canvas'],
       output: {
+        /*
+         * Was in ein eigenes Buendel gehoert, entscheidet nicht die Groesse, sondern die
+         * LEBENSDAUER: Fremdcode aendert sich selten, eigener Code bei jedem Deploy. Getrennt
+         * bleibt der Fremdteil im Browser-Zwischenspeicher liegen, waehrend die App neu kommt.
+         *
+         * `motion` und `lucide-react` kamen dazu, nachdem der Eintrittsbrocken auf 928 KB
+         * (265 KB gezippt) gewachsen war — er muss geladen UND ausgewertet sein, bevor das
+         * erste Pixel steht, und auf einem mittleren Android kostet gerade das Auswerten
+         * die gefuehlte Sekunde.
+         */
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
           'vendor-pdf': ['jspdf', 'jspdf-autotable'],
+          'vendor-motion': ['motion', 'motion/react'],
+          'vendor-icons': ['lucide-react'],
         },
       },
     },

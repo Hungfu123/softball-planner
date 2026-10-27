@@ -25,6 +25,18 @@ const PlaySetupPage = lazy(() => import('@/components/playmaker/PlaySetupPage'))
 const PlayEditorPage = lazy(() => import('@/components/playmaker/PlayEditorPage'))
 const FreiesFeldPage = lazy(() => import('@/components/playmaker/FreiesFeldPage'))
 const PlayViewerPage = lazy(() => import('@/components/playmaker/PlayViewerPage'))
+/*
+ * Schwere Seiten, auf denen niemand LANDET: der Planer, die Umfragen, der Kader, das
+ * Spielerprofil, der Aufstellungsbogen. Sie lagen im Eintrittsbuendel und mussten geladen
+ * und ausgewertet sein, bevor die Startseite ihr erstes Pixel zeigt — obwohl man sie
+ * fruehestens nach einem Klick sieht.
+ */
+const GameDayPlanner = lazy(() => import('@/components/planner/GameDayPlanner').then(m => ({ default: m.GameDayPlanner })))
+const WhatsappPollPage = lazy(() => import('@/components/orga/WhatsappPollPage').then(m => ({ default: m.WhatsappPollPage })))
+const PlayerManager = lazy(() => import('@/components/players/PlayerManager').then(m => ({ default: m.PlayerManager })))
+const PlayerProfilePage = lazy(() => import('@/components/players/PlayerProfilePage').then(m => ({ default: m.PlayerProfilePage })))
+const LineupSheet = lazy(() => import('@/components/export/LineupSheet').then(m => ({ default: m.LineupSheet })))
+const InvitationListPage = lazy(() => import('@/components/orga/InvitationListPage').then(m => ({ default: m.InvitationListPage })))
 
 export function LazyScoring() {
   // ScoringPage läuft außerhalb des Layouts — eigener ToastProvider nötig,
@@ -98,4 +110,28 @@ export function LazyAccounts() {
 
 export function LazyHistorie() {
   return <Suspense fallback={<LoadingSkeleton />}><HistoriePage /></Suspense>
+}
+
+export function LazyGameDayPlanner() {
+  return <Suspense fallback={<LoadingSkeleton />}><GameDayPlanner /></Suspense>
+}
+
+export function LazyWhatsappPoll() {
+  return <Suspense fallback={<LoadingSkeleton />}><WhatsappPollPage /></Suspense>
+}
+
+export function LazyPlayerManager() {
+  return <Suspense fallback={<LoadingSkeleton />}><PlayerManager /></Suspense>
+}
+
+export function LazyPlayerProfile() {
+  return <Suspense fallback={<LoadingSkeleton />}><PlayerProfilePage /></Suspense>
+}
+
+export function LazyLineupSheet() {
+  return <Suspense fallback={<LoadingSkeleton />}><LineupSheet /></Suspense>
+}
+
+export function LazyInvitationList() {
+  return <Suspense fallback={<LoadingSkeleton />}><InvitationListPage /></Suspense>
 }

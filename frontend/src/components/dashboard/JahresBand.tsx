@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Platzhalter } from '@/components/shared'
 import type { Termin } from '@/hooks/useTermine'
 import { heuteIso } from '@/hooks/useTermine'
 
@@ -105,7 +106,15 @@ export function JahresBand({ termine, laden, fehler, jahr, eigeneTrainings }: {
   return (
     <>
       {laden ? (
-        <p className="text-sm text-ink-muted">Termine laden …</p>
+        /* In der Form des Bandes: zwoelf Saeulen und eine Zeile darunter. */
+        <div role="status" aria-label="Lade Termine">
+          <div className="flex items-end justify-center gap-1 h-11 sm:h-[3.25rem]">
+            {Array.from({ length: 12 }, (_, i) => (
+              <Platzhalter key={i} className="flex-1 max-w-[2.75rem] h-full rounded-sm" />
+            ))}
+          </div>
+          <Platzhalter className="h-3 w-2/3 mt-4" />
+        </div>
       ) : fehler ? (
         <p className="text-sm text-ink-muted">Die Termine sind gerade nicht erreichbar.</p>
       ) : (

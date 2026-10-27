@@ -2,21 +2,21 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { Startseite } from '@/components/dashboard/Startseite'
 import { StartPage } from '@/components/start/StartPage'
-import { PlayerManager } from '@/components/players/PlayerManager'
-import { PlayerProfilePage } from '@/components/players/PlayerProfilePage'
-import { GameDayPlanner } from '@/components/planner/GameDayPlanner'
-import { LineupSheet } from '@/components/export/LineupSheet'
 import { RequireAuth } from '@/components/auth/AuthProvider'
 import { RequireRole } from '@/components/auth/RequireRole'
 import { ChunkErrorBoundary } from '@/components/shared/ChunkErrorBoundary'
-import { InvitationListPage } from '@/components/orga/InvitationListPage'
 import { OrgaHome } from '@/components/orga/OrgaHome'
-import { WhatsappPollPage } from '@/components/orga/WhatsappPollPage'
 import { TeamDirectoryPage } from '@/components/orga/TeamDirectoryPage'
 import { GameLogPage } from '@/components/orga/GameLogPage'
 import { KontoPage } from '@/components/account/KontoPage'
 import {
   LazyAccounts,
+  LazyGameDayPlanner,
+  LazyInvitationList,
+  LazyLineupSheet,
+  LazyPlayerManager,
+  LazyPlayerProfile,
+  LazyWhatsappPoll,
   LazyCalendar,
   LazyHistorie,
   LazyCounter,
@@ -54,15 +54,15 @@ export const routes: RouteObject[] = [
       { path: '/spielbetrieb', element: <Startseite />, errorElement: <ChunkErrorBoundary /> },
       { path: '/kalender', element: <LazyCalendar />, errorElement: <ChunkErrorBoundary /> },
       { path: '/training', element: <RequireRole mind="ADMIN"><LazyTrainingToday /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
-      { path: '/players', element: <RequireRole mind="ADMIN"><PlayerManager /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
-      { path: '/players/:id', element: <PlayerProfilePage />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/gameday/:id', element: <RequireRole mind="ADMIN"><GameDayPlanner /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/players', element: <RequireRole mind="ADMIN"><LazyPlayerManager /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/players/:id', element: <LazyPlayerProfile />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/gameday/:id', element: <RequireRole mind="ADMIN"><LazyGameDayPlanner /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/stats', element: <LazyStats />, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen', element: <RequireRole mind="ADMIN"><LazySpielbogenList /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/spielbogen/new', element: <RequireRole mind="ADMIN"><LazySpielbogenWizard /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga', element: <RequireRole mind="ADMIN"><OrgaHome /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga/einladungen', element: <RequireRole mind="ADMIN"><InvitationListPage /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
-      { path: '/orga/whatsapp-umfrage', element: <RequireRole mind="ADMIN"><WhatsappPollPage /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/einladungen', element: <RequireRole mind="ADMIN"><LazyInvitationList /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
+      { path: '/orga/whatsapp-umfrage', element: <RequireRole mind="ADMIN"><LazyWhatsappPoll /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/trainerabrechnung', element: <RequireRole mind="ADMIN"><LazyTrainerabrechnung /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker', element: <LazyPlaymaker />, errorElement: <ChunkErrorBoundary /> },
       { path: '/orga/playmaker/neu', element: <RequireRole mind="ADMIN"><LazyPlaySetup /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
@@ -77,7 +77,7 @@ export const routes: RouteObject[] = [
   // Einzige Route ohne RequireAuth — der Zähler soll ohne Anmeldung laufen.
   { path: '/counter', element: <LazyCounter />, errorElement: <ChunkErrorBoundary /> },
   { path: '/spielbogen/:id', element: <RequireAuth><RequireRole mind="ADMIN"><LazySpielbogenPage /></RequireRole></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
-  { path: '/gameday/:id/export', element: <RequireAuth><LineupSheet /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  { path: '/gameday/:id/export', element: <RequireAuth><LazyLineupSheet /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/gameday/:id/scoring/:gameIndex', element: <RequireAuth><RequireRole scorer><LazyScoring /></RequireRole></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   // Wie die ScoringPage ausserhalb des Layouts: beide fuellen den Bildschirm per h-dvh,
   // innerhalb der Navigation waere der Rest zwangslaeufig ueberlang und die Seite wuerde

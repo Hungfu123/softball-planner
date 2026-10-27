@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { setAuth, hasAuth, clearAuth, UNAUTHORIZED_EVENT } from '@/api/client'
 import type { MeResponse } from '@/types'
 import { LoginPage } from './LoginPage'
+import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 
 interface AuthValue {
   loggedIn: boolean
@@ -181,9 +182,14 @@ export function useOptionalAuth(): AuthValue | null {
 export function RequireAuth({ children }: { children: ReactNode }) {
   const auth = useAuth()
   if (auth.pruefend) {
+    /*
+     * Derselbe Softball wie ueberall sonst, nicht ein eigener Ring. Dies ist der ERSTE
+     * Ladezustand, den jemand zu sehen bekommt — wenn ausgerechnet der anders aussieht als
+     * der Rest, wirkt die App an ihrer sichtbarsten Stelle zusammengesetzt.
+     */
     return (
-      <div role="status" aria-label="Anmeldung wird geprüft" className="min-h-dvh flex items-center justify-center">
-        <div className="h-8 w-8 rounded-full border-2 border-cream-300 border-t-softball-red-600 animate-spin" />
+      <div className="min-h-dvh flex items-center justify-center bg-surface">
+        <LoadingSkeleton variant="ball" label="Anmeldung wird geprüft" />
       </div>
     )
   }
