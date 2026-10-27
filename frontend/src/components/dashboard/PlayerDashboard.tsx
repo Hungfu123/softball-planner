@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import * as api from '@/api/client'
 import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
-import { LoadingSkeleton } from '@/components/shared'
+import { LoadingSkeleton, Abschnittsmarke } from '@/components/shared'
 import type { GameDayResponse, GameResponse, LineupEntryResponse, MeResponse } from '@/types'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { UpcomingList } from './UpcomingList'
@@ -257,13 +257,34 @@ function Hinweis({ me }: { me: MeResponse | null }) {
   )
 }
 
-function WerkzeugZeile() {
-  const cls = `${LINK_KNOPF} flex-1 bg-cream-50 border border-cream-300 text-navy-900 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors`
+/**
+ * Der Zaehler, mit einem Satz dazu.
+ *
+ * Ohne Erklaerung ist "Counter" ein Knopf, den niemand drueckt: der Name sagt nicht, wofuer
+ * man ihn braucht. Gebraucht wird er, wenn man selbst umpirt — in der Liga stellen die Teams
+ * die Schiedsrichter, und dann zaehlt man Balls, Strikes und Outs am Zaun mit.
+ *
+ * Der Playmaker stand hier mit: ein Taktikbrett ist nichts, was man am Spieltag auf der
+ * Startseite sucht. Er bleibt ueber die Navigation erreichbar.
+ */
+function Zaehler() {
   return (
-    <nav aria-label="Werkzeuge" className="flex gap-2">
-      <Link to="/orga/playmaker" className={`${cls} min-h-11`}>Playmaker</Link>
-      <Link to="/counter" className={`${cls} min-h-11`}>Counter</Link>
-    </nav>
+    <section aria-label="Zähler" className="bg-surface-raised border border-line rounded-2xl shadow-card p-4">
+      <h2 className="font-display inline-flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-ink-muted mb-2">
+        <Abschnittsmarke size="sm" />
+        Zähler
+      </h2>
+      <p className="text-sm text-ink-muted leading-relaxed mb-3">
+        Wenn du ein Spiel umpirest: Balls, Strikes, Outs und der Spielstand — groß genug fürs
+        Feld und ohne Netz.
+      </p>
+      <Link
+        to="/counter"
+        className={`${LINK_KNOPF} min-h-11 w-full bg-cream-50 border border-cream-300 text-navy-900 hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors`}
+      >
+        Zähler öffnen
+      </Link>
+    </section>
   )
 }
 
@@ -330,7 +351,7 @@ export function PlayerDashboard() {
             </section>
           )}
 
-          <WerkzeugZeile />
+          <Zaehler />
         </div>
       </div>
     </div>
