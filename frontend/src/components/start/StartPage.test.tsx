@@ -176,10 +176,10 @@ describe('Startseite', () => {
     expect(training.textContent).toMatch(/19:00/)
     expect(training.textContent).toMatch(/Halle Nord/)
 
-    const jahr = await kachel('Dein Jahr 2026')
-    expect(jahr.textContent).toMatch(/Noch offen:/)
-    expect(jahr.textContent).toMatch(/1\s*Spieltag/)
-    expect(jahr.textContent).toMatch(/2\s*Trainings/)
+    const jahr = await kachel('Termine 2026')
+    // Die Zeile ist zugleich die Legende: Menge des Jahres, dann was davon noch kommt.
+    expect(jahr.textContent).toMatch(/2\s*Spieltage\s*· noch 1/)
+    expect(jahr.textContent).toMatch(/3\s*Trainings\s*· noch 2/)
   })
 
   /* Am Handy ist eine ganze Kachel das bessere Ziel als ein Wort darunter. */
@@ -320,7 +320,7 @@ describe('Startseite', () => {
     // Der Zeitraum steht waehlbar neben den Zahlen — Vorgabe ist das ganze Jahr.
     expect(within(kopf).getByRole('combobox', { name: 'Zeitraum wählen' })).toHaveValue('jahr')
     expect(mockApi.getSeasonBattingStats).not.toHaveBeenCalled()
-    await kachel('Dein Jahr 2026')
+    await kachel('Termine 2026')
   })
 
   /*
