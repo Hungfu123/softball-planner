@@ -198,10 +198,10 @@ function SpieltagInhalt({ spieltag, laden, fehler }: { spieltag: Termin | null; 
       <p className="font-display text-xl font-extrabold tracking-wide uppercase text-ink leading-none">
         {kurz(spieltag.datum)}
       </p>
+      {/* Nicht noch eine Zeile Versalien: ueber dem Datum steht schon eine, und zwei
+          geschriene Zeilen uebereinander liest niemand als zwei Dinge. */}
       {wann(spieltag.datum) && (
-        <p className="font-display text-[11px] font-bold tracking-widest uppercase text-label mt-1.5">
-          {wann(spieltag.datum)}
-        </p>
+        <p className="text-xs font-semibold text-label mt-1">{wann(spieltag.datum)}</p>
       )}
       <p className="text-sm text-ink-muted mt-2 line-clamp-2">{spieltag.titel}</p>
       {spieltag.ort && (
@@ -229,9 +229,7 @@ function TrainingInhalt({ naechstes, danach, laden, fehler }: {
         {kurz(naechstes.datum)}
       </p>
       {wann(naechstes.datum) && (
-        <p className="font-display text-[11px] font-bold tracking-widest uppercase text-label mt-1.5">
-          {wann(naechstes.datum)}
-        </p>
+        <p className="text-xs font-semibold text-label mt-1">{wann(naechstes.datum)}</p>
       )}
       <div className="mt-2 space-y-1">
         {naechstes.zeit && (
@@ -283,10 +281,11 @@ function Playmaker() {
         etwas Groesseres, ein zentriertes Vollbild wie ein Logo. `pointer-events-none`, damit
         der Tipp immer die Kachel trifft.
       */}
-      {/* Ganz sichtbar, nicht angeschnitten: eine Strichzeichnung, von der man die Haelfte
-          sieht, liest sich als Streusel. `pointer-events-none`, damit der Tipp die Kachel
-          trifft und nicht das Bild. */}
-      <FeldMiniatur className="pointer-events-none absolute bottom-3 right-3 w-24 sm:w-28 text-ink-faint" />
+      {/* Ganz sichtbar und mittig: eine Strichzeichnung, von der man die Haelfte sieht,
+          liest sich als Streusel — und in die Ecke geschoben wie ein vergessenes Wasserzeichen.
+          Der Ausschnitt selbst liegt symmetrisch um HOME, also genuegt das Zentrieren hier.
+          `pointer-events-none`, damit der Tipp die Kachel trifft und nicht das Bild. */}
+      <FeldMiniatur className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 w-24 sm:w-28 text-ink-faint" />
       {/* Platzhalter: haelt die Hoehe frei, die das Feld darunter einnimmt. */}
       <div className="h-[5.5rem] sm:h-24" />
     </Link>
@@ -390,21 +389,22 @@ function WasAnsteht({ termine, heute, laden, fehler, className = '' }: {
  * FLAECHE um, und eine brennende Lampe saehe dort aus wie eine erloschene. Eine Birne
  * wechselt die Farbe nicht mit dem Theme.
  */
-function Lampenreihe({ label, count, total, an }: {
+function Lampenreihe({ label, count, total, an, dekor = false }: {
   label: string
   count: number
   total: number
   an: string
+  /** Abbildung, keine Auskunft: dann ist die Reihe fuer Screenreader nicht vorhanden. */
+  dekor?: boolean
 }) {
   return (
-    <div className="flex items-center gap-2 lg:block lg:text-center">
+    <div className="flex items-center gap-2 lg:block lg:text-center" aria-hidden={dekor || undefined}>
       <div className="font-display text-[10px] font-bold tracking-[0.18em] uppercase text-spotlight-ink/70 w-11 lg:w-auto">
         {label}
       </div>
       <div
         className="flex gap-1.5 lg:mt-1.5 lg:justify-center"
-        role="img"
-        aria-label={`${label}: ${count} von ${total}`}
+        {...(dekor ? {} : { role: 'img', 'aria-label': `${label}: ${count} von ${total}` })}
       >
         {Array.from({ length: total }, (_, i) => (
           <span
@@ -445,6 +445,9 @@ function Lampenreihe({ label, count, total, an }: {
 function Zaehler() {
   const [stand] = useState(readCounterState)
   const laeuft = !isInitial(stand)
+  // Ein typischer Stand als Abbildung: nicht alles aus, nicht alles an. Drei Reihen
+  // erloschener Punkte sagen nichts — man saehe nicht einmal, dass es Lampen sind.
+  const lampen = laeuft ? stand : { balls: 2, strikes: 1, outs: 1 }
 
   return (
     <Link
@@ -453,10 +456,7 @@ function Zaehler() {
       // und ein Trainer landete auf Orga statt da, wo er hergekommen ist.
       state={{ zurueck: '/' }}
       aria-label="Counter"
-      // `self-start`: ohne den Beispielstand ist die Kachel nur noch Titel und Satz. Auf die
-      // Hoehe des Playmakers gestreckt waere sie halb leer — die Luecke gehoert der Seite,
-      // nicht der Karte. Laeuft ein Zaehler, waechst sie von selbst mit den Lampen.
-      className="relative self-start col-span-1 lg:col-span-2 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-8 sm:pr-9 flex flex-col gap-3
+      className="relative col-span-1 lg:col-span-2 bg-spotlight text-spotlight-ink border border-white/15 rounded-2xl shadow-card p-3.5 sm:p-4 pr-8 sm:pr-9 flex flex-col gap-3
         transition-[filter,box-shadow,border-color,transform] duration-200 ease-[var(--ease-out-strong)]
         hover:brightness-110 hover:border-white/40 hover:shadow-lg hover:shadow-navy-900/40
         active:scale-[0.99] active:brightness-125 motion-reduce:active:scale-100"
@@ -489,19 +489,23 @@ function Zaehler() {
       </div>
 
       {/*
-        Lampen nur, wenn wirklich gezaehlt wird. Ein Beispielstand stand hier einmal, damit
-        die Kachel nicht leer wirkt — aber eine Zaehlung, die keine ist, muss man erklaeren
-        ("Beispiel"), und was man erklaeren muss, hat auf einer Kachel nichts verloren.
+        Laeuft ein Zaehler, stehen hier sein Stand und seine Lampen — eine Auskunft, die
+        vorgelesen wird. Laeuft keiner, steht dasselbe Bild als ABBILDUNG da: so sieht das
+        Werkzeug aus, wie das Feld auf der Playmaker-Kachel daneben.
+
+        Der Unterschied steckt nicht im Bild, sondern im Anspruch. Einmal trugen die
+        erloschenen Lampen echte Vorlese-Beschriftungen ("Ball: 2 von 3") und brauchten
+        deshalb ein Etikett "Beispiel" — eine Zaehlung, die keine ist, muss man erklaeren.
+        Als Abbildung behauptet sie nichts und ist fuer Screenreader schlicht nicht da.
+
         In der halben Kachel passen drei Gruppen nicht nebeneinander (184 von 150 Pixeln),
         deshalb gestapelt mit der Beschriftung NEBEN den Punkten: 22 statt 36 Pixel je Reihe.
       */}
-      {laeuft && (
-        <div className="flex flex-col gap-1.5 shrink-0 lg:flex-row lg:items-start lg:gap-5">
-          <Lampenreihe label="Ball" count={stand.balls} total={3} an="bg-[#FBF6EC]" />
-          <Lampenreihe label="Strike" count={stand.strikes} total={2} an="bg-amber-400" />
-          <Lampenreihe label="Out" count={stand.outs} total={2} an="bg-softball-red-400" />
-        </div>
-      )}
+      <div className="flex flex-col gap-1.5 shrink-0 lg:flex-row lg:items-start lg:gap-5">
+        <Lampenreihe label="Ball" count={lampen.balls} total={3} an="bg-[#FBF6EC]" dekor={!laeuft} />
+        <Lampenreihe label="Strike" count={lampen.strikes} total={2} an="bg-amber-400" dekor={!laeuft} />
+        <Lampenreihe label="Out" count={lampen.outs} total={2} an="bg-softball-red-400" dekor={!laeuft} />
+      </div>
 
       {/* Absolut gesetzt statt im Fluss: am Handy liegen Text und Lampen untereinander,
           und der Pfeil gehoert trotzdem nach oben rechts — dorthin, wo ihn die anderen

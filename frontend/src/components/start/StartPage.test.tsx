@@ -246,19 +246,25 @@ describe('Startseite', () => {
   })
 
   /*
-   * Solange nichts laeuft, steht auf der Kachel nur, wofuer man sie braucht — keine Lampen.
+   * Solange nichts laeuft, sind die Lampen eine ABBILDUNG: so sieht das Werkzeug aus, wie
+   * das Feld auf der Playmaker-Kachel daneben.
    *
-   * Einmal stand hier ein Beispielstand, damit die Kachel nicht leer wirkt. Eine Zaehlung,
-   * die keine ist, muss man aber erklaeren ("Beispiel"), und was man erklaeren muss, hat
-   * auf einer Kachel nichts verloren.
+   * Der Unterschied zum laufenden Zaehler steckt nicht im Bild, sondern im Anspruch.
+   * Einmal trugen die Lampen auch im Ruhezustand echte Vorlese-Beschriftungen
+   * ("Ball: 2 von 3") und brauchten deshalb ein Etikett "Beispiel" — eine Zaehlung, die
+   * keine ist, muss man erklaeren. Als Abbildung behauptet sie nichts und ist fuer
+   * Screenreader schlicht nicht da. Genau das prueft dieser Test.
    */
-  it('zeigt ohne laufenden Zähler keine Lampen, sondern nur wofür', async () => {
+  it('zeigt die Lampen ohne laufenden Zähler als Bild, nicht als Auskunft', async () => {
     rendern()
     const karte = await screen.findByRole('link', { name: 'Counter' })
     expect(karte).toHaveAttribute('href', '/counter')
     expect(within(karte).getByText(/Umpiren/)).toBeInTheDocument()
+    // Kein Etikett — und nichts, was vorgelesen würde.
     expect(within(karte).queryByText('Beispiel')).not.toBeInTheDocument()
     expect(within(karte).queryByRole('img', { name: /^Ball:/ })).not.toBeInTheDocument()
+    // Sichtbar ist sie trotzdem.
+    expect(within(karte).getByText('Ball')).toBeInTheDocument()
   })
 
   it('zeigt den laufenden Counter statt der Erklärung', async () => {
