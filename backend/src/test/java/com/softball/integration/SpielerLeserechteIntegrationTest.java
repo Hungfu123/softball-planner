@@ -398,11 +398,27 @@ class SpielerLeserechteIntegrationTest {
      * genau dann, wenn das Spiel losgeht.
      */
     @Test
-    void einScorerSiehtDieAufstellungAuchOhneFreigabe() throws Exception {
+    void einScorerSiehtDieAufstellungAmSpieltagAuchOhneFreigabe() throws Exception {
+        legeScorerAn();
+        final long[] ids = spieltagMitAufstellung(berlinHeute());
+
+        pruefeAlleFuenf(ids[0], ids[1], scorer(), true);
+    }
+
+    /**
+     * Ein Scorer ist kein eigener Rang: vor dem Spieltag liest er dasselbe wie jeder andere
+     * Spieler, sonst waere er genau das Leck, gegen das die Grenze gebaut ist.
+     */
+    @Test
+    void einScorerSiehtDieAufstellungVorDemSpieltagNicht() throws Exception {
         legeScorerAn();
         final long[] ids = kuenftigerSpieltag();
 
-        pruefeAlleFuenf(ids[0], ids[1], scorer(), true);
+        pruefeAlleFuenf(ids[0], ids[1], scorer(), false);
+    }
+
+    private static LocalDate berlinHeute() {
+        return LocalDate.now(java.time.ZoneId.of("Europe/Berlin"));
     }
 
     /**
@@ -431,12 +447,18 @@ class SpielerLeserechteIntegrationTest {
         pruefeAlleFuenf(ids[0], ids[1], SPIELER, true);
     }
 
-    /** Heute ist noch kein Gestern: der laufende Spieltag bleibt bis zur Freigabe zu. */
+    /**
+     * Heute ist noch kein Gestern: der laufende Spieltag oeffnet sich ohne Freigabe erst ab
+     * 07:00 Berliner Zeit. Die Grenze selbst prueft {@code AufstellungSichtbarkeitTest} mit
+     * fester Uhr; hier liest der Test die echte, deshalb folgt die Erwartung ihr.
+     */
     @Test
-    void derHeutigeSpieltagIstNochNichtVergangen() throws Exception {
-        final long[] ids = spieltagMitAufstellung(LocalDate.now());
+    void derHeutigeSpieltagOeffnetSichOhneFreigabeErstAbSieben() throws Exception {
+        final long[] ids = spieltagMitAufstellung(berlinHeute());
+        final boolean nachSieben = !java.time.ZonedDateTime.now(java.time.ZoneId.of("Europe/Berlin"))
+            .toLocalTime().isBefore(java.time.LocalTime.of(7, 0));
 
-        pruefeAlleFuenf(ids[0], ids[1], SPIELER, false);
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, nachSieben);
     }
 
     /**
@@ -482,12 +504,21 @@ class SpielerLeserechteIntegrationTest {
     }
 
     @Test
-    void einScorerZaehltIhnVorherSchon() throws Exception {
+    void einScorerZaehltIhnAmSpieltagSchon() throws Exception {
+        legeScorerAn();
+        final LocalDate datum = berlinHeute();
+        spieltagMitAufstellung(datum);
+
+        pruefeEinsatzStatistik(datum, scorer(), true);
+    }
+
+    @Test
+    void einScorerZaehltIhnVorDemSpieltagNicht() throws Exception {
         legeScorerAn();
         final LocalDate datum = LocalDate.now().plusDays(30);
         spieltagMitAufstellung(datum);
 
-        pruefeEinsatzStatistik(datum, scorer(), true);
+        pruefeEinsatzStatistik(datum, scorer(), false);
     }
 
     @Test
@@ -533,16 +564,26 @@ class SpielerLeserechteIntegrationTest {
     }
 
     @Test
-    void derTrainerUndDerScorerSehenSieAuchVorher() throws Exception {
+    void derTrainerSiehtSieVorDemSpieltagUndDerScorerAmSpieltag() throws Exception {
         legeScorerAn();
-        final long[] ids = kuenftigerSpieltag();
+        final long[] kuenftig = kuenftigerSpieltag();
+        final long[] heute = spieltagMitAufstellung(berlinHeute());
 
-        for (final RequestPostProcessor wer : List.of(ADMIN, SUPERADMIN, scorer())) {
-            mockMvc.perform(get("/api/games/" + ids[1] + "/batting-stats").with(wer))
+        for (final RequestPostProcessor wer : List.of(ADMIN, SUPERADMIN)) {
+            mockMvc.perform(get("/api/games/" + kuenftig[1] + "/batting-stats").with(wer))
                 .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
-            mockMvc.perform(get("/api/gamedays/" + ids[0] + "/batting-stats").with(wer))
+            mockMvc.perform(get("/api/gamedays/" + kuenftig[0] + "/batting-stats").with(wer))
                 .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
         }
+        mockMvc.perform(get("/api/games/" + kuenftig[1] + "/batting-stats").with(scorer()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(get("/api/gamedays/" + kuenftig[0] + "/batting-stats").with(scorer()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+
+        mockMvc.perform(get("/api/games/" + heute[1] + "/batting-stats").with(scorer()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+        mockMvc.perform(get("/api/gamedays/" + heute[0] + "/batting-stats").with(scorer()))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
     }
 
     @Test
@@ -588,9 +629,9 @@ class SpielerLeserechteIntegrationTest {
     }
 
     @Test
-    void derScorerSiehtDenBatterAuchOhneFreigabe() throws Exception {
+    void derScorerSiehtDenBatterAmSpieltagAuchOhneFreigabe() throws Exception {
         legeScorerAn();
-        final long[] ids = kuenftigerSpieltag();
+        final long[] ids = spieltagMitAufstellung(berlinHeute());
 
         for (final RequestPostProcessor wer : List.of(ADMIN, scorer())) {
             mockMvc.perform(get("/api/games/" + ids[1] + "/scoreboard").with(wer))

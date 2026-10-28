@@ -11,6 +11,7 @@ import com.softball.domain.port.out.GameStaffRepository;
 import com.softball.domain.port.out.LineupEntryRepository;
 import com.softball.domain.port.out.SubstitutionRepository;
 import com.softball.domain.service.AufstellungsFingerabdruck;
+import com.softball.shared.security.AufstellungSichtbarkeit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class GameDayService {
     private final SeasonService seasonService;
     private final AvailabilityService availabilityService;
     private final GameScoringService gameScoringService;
+    private final AufstellungSichtbarkeit sichtbarkeit;
 
     public GameDayService(final GameDayRepository gameDayRepository,
                           final LineupEntryRepository lineupEntryRepository,
@@ -42,7 +44,8 @@ public class GameDayService {
                           final SubstitutionRepository substitutionRepository,
                           final SeasonService seasonService,
                           final AvailabilityService availabilityService,
-                          final GameScoringService gameScoringService) {
+                          final GameScoringService gameScoringService,
+                          final AufstellungSichtbarkeit sichtbarkeit) {
         this.gameDayRepository = gameDayRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.atBatRepository = atBatRepository;
@@ -51,6 +54,7 @@ public class GameDayService {
         this.seasonService = seasonService;
         this.availabilityService = availabilityService;
         this.gameScoringService = gameScoringService;
+        this.sichtbarkeit = sichtbarkeit;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +69,7 @@ public class GameDayService {
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
         final Set<Long> geaendert = spieltageMitGeaenderterAufstellung(days);
         return days.stream()
-            .map(d -> GameDayResponse.from(d, counts, liveScores, geaendert.contains(d.getId())))
+            .map(d -> GameDayResponse.from(d, counts, liveScores, geaendert.contains(d.getId()), sichtbarkeit.lage(d)))
             .toList();
     }
 
@@ -89,7 +93,8 @@ public class GameDayService {
             .toList();
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
-        return GameDayResponse.from(gameDay, counts, liveScores, istSeitDerFreigabeGeaendert(gameDay));
+        return GameDayResponse.from(gameDay, counts, liveScores, istSeitDerFreigabeGeaendert(gameDay),
+            sichtbarkeit.lage(gameDay));
     }
 
     /**
