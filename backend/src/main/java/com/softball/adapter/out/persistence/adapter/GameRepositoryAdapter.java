@@ -31,6 +31,11 @@ public class GameRepositoryAdapter implements GameRepository {
     }
 
     @Override
+    public Optional<Long> findGameDayIdByGameId(final Long gameId) {
+        return repo.findGameDayId(gameId);
+    }
+
+    @Override
     public Game save(final Game game) {
         // For game updates, load existing and update fields
         if (game.getId() != null) {

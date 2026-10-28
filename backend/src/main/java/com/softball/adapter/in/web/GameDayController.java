@@ -11,6 +11,7 @@ import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
 import com.softball.application.LineupSuggestionService;
 import com.softball.application.SubstitutionService;
+import com.softball.shared.security.AufstellungSichtbarkeit;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -30,19 +31,22 @@ public class GameDayController {
     private final LineupSuggestionService lineupSuggestionService;
     private final SubstitutionService substitutionService;
     private final GameDayVoteSyncService voteSyncService;
+    private final AufstellungSichtbarkeit sichtbarkeit;
 
     public GameDayController(final GameDayService gameDayService,
                              final LineupService lineupService,
                              final GameStaffService gameStaffService,
                              final LineupSuggestionService lineupSuggestionService,
                              final SubstitutionService substitutionService,
-                             final GameDayVoteSyncService voteSyncService) {
+                             final GameDayVoteSyncService voteSyncService,
+                             final AufstellungSichtbarkeit sichtbarkeit) {
         this.gameDayService = gameDayService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
         this.lineupSuggestionService = lineupSuggestionService;
         this.substitutionService = substitutionService;
         this.voteSyncService = voteSyncService;
+        this.sichtbarkeit = sichtbarkeit;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -88,9 +92,13 @@ public class GameDayController {
         return gameDayService.releaseLineupsAsDto(id, request.released());
     }
 
+    /** Leer statt 403, solange die Aufstellung nicht steht — siehe {@link AufstellungSichtbarkeit}. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/{id}/lineups")
     public GameDayLineupsResponse getLineups(@PathVariable final Long id) {
+        if (!sichtbarkeit.darfSehen(id)) {
+            return new GameDayLineupsResponse(Map.of(), Map.of(), Map.of());
+        }
         final GameDay gameDay = gameDayService.findById(id);
         final List<Long> gameIds = gameDay.getGames().stream().map(g -> g.getId()).toList();
 
@@ -101,9 +109,16 @@ public class GameDayController {
         return new GameDayLineupsResponse(lineups, staff, substitutions);
     }
 
+    /**
+     * Der Name klingt nach Statistik, der Inhalt sind Positionen je Spiel und Spieler — das IST
+     * die Aufstellung in anderer Form und faellt unter dieselbe Grenze.
+     */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/{id}/stats")
     public List<GameDayPlayerStats> getStats(@PathVariable final Long id) {
+        if (!sichtbarkeit.darfSehen(id)) {
+            return List.of();
+        }
         return gameDayService.getStats(id);
     }
 

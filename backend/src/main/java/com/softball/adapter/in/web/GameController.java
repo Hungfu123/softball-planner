@@ -10,6 +10,7 @@ import com.softball.application.LineupSuggestionService;
 import com.softball.application.SubstitutionService;
 import com.softball.domain.model.Game;
 import com.softball.domain.port.out.AtBatRepository;
+import com.softball.shared.security.AufstellungSichtbarkeit;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,13 +28,15 @@ public class GameController {
     private final SubstitutionService substitutionService;
     private final AtBatRepository atBatRepository;
     private final GameScoringService gameScoringService;
+    private final AufstellungSichtbarkeit sichtbarkeit;
 
     public GameController(final GameService gameService, final LineupService lineupService,
                           final GameStaffService gameStaffService,
                           final LineupSuggestionService lineupSuggestionService,
                           final SubstitutionService substitutionService,
                           final AtBatRepository atBatRepository,
-                          final GameScoringService gameScoringService) {
+                          final GameScoringService gameScoringService,
+                          final AufstellungSichtbarkeit sichtbarkeit) {
         this.gameService = gameService;
         this.lineupService = lineupService;
         this.gameStaffService = gameStaffService;
@@ -41,6 +44,7 @@ public class GameController {
         this.substitutionService = substitutionService;
         this.atBatRepository = atBatRepository;
         this.gameScoringService = gameScoringService;
+        this.sichtbarkeit = sichtbarkeit;
     }
 
     private GameResponse toResponseWithLive(final Game game) {
@@ -94,9 +98,13 @@ public class GameController {
         return toResponseWithLive(gameService.reopenGame(id));
     }
 
+    /** Leer statt 403, solange die Aufstellung nicht steht — siehe {@link AufstellungSichtbarkeit}. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/lineup")
     public List<LineupEntryResponse> getLineup(@PathVariable final Long id) {
+        if (!sichtbarkeit.darfSehenFuerSpiel(id)) {
+            return List.of();
+        }
         return lineupService.getLineup(id).stream().map(LineupEntryResponse::from).toList();
     }
 
@@ -117,9 +125,13 @@ public class GameController {
         return lineupSuggestionService.suggest(id);
     }
 
+    /** Wer Base-Coach ist, gehoert zur Aufstellung und faellt unter dieselbe Grenze. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/staff")
     public List<GameStaffResponse> getStaff(@PathVariable final Long id) {
+        if (!sichtbarkeit.darfSehenFuerSpiel(id)) {
+            return List.of();
+        }
         return gameStaffService.getStaff(id).stream().map(GameStaffResponse::from).toList();
     }
 
@@ -133,9 +145,13 @@ public class GameController {
         return gameService.swapGames(gameId1, gameId2).stream().map(this::toResponseWithLive).toList();
     }
 
+    /** Eine Auswechslung verraet die Aufstellung von beiden Seiten — dieselbe Grenze. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/substitutions")
     public List<SubstitutionResponse> getSubstitutions(@PathVariable final Long id) {
+        if (!sichtbarkeit.darfSehenFuerSpiel(id)) {
+            return List.of();
+        }
         return substitutionService.getSubstitutions(id).stream().map(SubstitutionResponse::from).toList();
     }
 

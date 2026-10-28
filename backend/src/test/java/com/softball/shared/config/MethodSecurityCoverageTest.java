@@ -65,6 +65,9 @@ class MethodSecurityCoverageTest {
         "SeasonController#getYears",
         // GameController
         "GameController#getGame",
+        // Die drei tragen die Aufstellung — und sind trotzdem offen, weil sie selbst pruefen,
+        // WAS sie herausgeben: vor der Freigabe eine leere Liste, kein 403
+        // (AufstellungSichtbarkeit; Trainer, Scorer, freigegeben oder vergangen sehen alles).
         "GameController#getLineup",
         "GameController#getStaff",
         "GameController#getSubstitutions",
@@ -72,6 +75,8 @@ class MethodSecurityCoverageTest {
         "GameDayController#getBySeasonId",
         "GameDayController#getAll",
         "GameDayController#getById",
+        // Dieselbe Grenze wie oben — getStats klingt nach Statistik, ist aber die Aufstellung
+        // in anderer Form (Positionen je Spiel und Spieler).
         "GameDayController#getLineups",
         "GameDayController#getStats",
         // LeagueTeamController

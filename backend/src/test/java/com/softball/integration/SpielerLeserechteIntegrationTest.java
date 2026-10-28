@@ -6,8 +6,15 @@ import com.softball.domain.model.Role;
 import com.softball.TestcontainersConfig;
 import com.softball.adapter.out.persistence.entity.AppUserEntity;
 import com.softball.adapter.out.persistence.entity.PlayerEntity;
+import com.softball.adapter.out.persistence.entity.SeasonEntity;
 import com.softball.adapter.out.persistence.repository.SpringAppUserRepository;
+import com.softball.adapter.out.persistence.repository.SpringGameDayRepository;
+import com.softball.adapter.out.persistence.repository.SpringGameRepository;
+import com.softball.adapter.out.persistence.repository.SpringGameStaffRepository;
+import com.softball.adapter.out.persistence.repository.SpringLineupEntryRepository;
 import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
+import com.softball.adapter.out.persistence.repository.SpringSeasonRepository;
+import com.softball.adapter.out.persistence.repository.SpringSubstitutionRepository;
 import com.softball.adapter.out.persistence.repository.SpringTrainingAttendanceRepository;
 import com.softball.adapter.out.persistence.repository.SpringTrainingRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +29,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -59,13 +67,23 @@ class SpielerLeserechteIntegrationTest {
     @Autowired private SpringTrainingRepository trainingRepository;
     @Autowired private SpringTrainingAttendanceRepository attendanceRepository;
     @Autowired private SpringAppUserRepository appUserRepository;
+    @Autowired private SpringSeasonRepository seasonRepository;
+    @Autowired private SpringGameDayRepository gameDayRepository;
+    @Autowired private SpringGameRepository gameRepository;
+    @Autowired private SpringLineupEntryRepository lineupEntryRepository;
+    @Autowired private SpringGameStaffRepository gameStaffRepository;
+    @Autowired private SpringSubstitutionRepository substitutionRepository;
 
     private PlayerEntity player;
+    private SeasonEntity season;
+    private PlayerEntity coach;
     /** Der Account, der AN diesem Spieler haengt — ohne ihn gibt es kein „eigenes" Profil. */
     private static final String EIGENER_NAME = "max-eigen";
 
     @BeforeEach
     void setUp() {
+        season = null;
+        coach = null;
         player = new PlayerEntity("Max");
         player.setRegular(true);
         player = playerRepository.save(player);
@@ -82,8 +100,15 @@ class SpielerLeserechteIntegrationTest {
     @AfterEach
     void tearDown() {
         appUserRepository.findByUsernameIgnoreCase(EIGENER_NAME).ifPresent(appUserRepository::delete);
+        appUserRepository.findByUsernameIgnoreCase(SCORER_NAME).ifPresent(appUserRepository::delete);
         attendanceRepository.deleteAll();
         trainingRepository.deleteAll();
+        substitutionRepository.deleteAll();
+        gameStaffRepository.deleteAll();
+        lineupEntryRepository.deleteAll();
+        gameRepository.deleteAll();
+        gameDayRepository.deleteAll();
+        seasonRepository.deleteAll();
         playerRepository.deleteAll();
     }
 
@@ -252,6 +277,174 @@ class SpielerLeserechteIntegrationTest {
         mockMvc.perform(put("/api/games/1/coach-rotation").with(SPIELER)
                 .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isForbidden());
         mockMvc.perform(post("/api/games/1/scoring/undo").with(SPIELER)).andExpect(status().isForbidden());
+    }
+
+    // ---- Die Aufstellung ist zu, bis sie steht ----
+
+    /** Ein Spieler-Account MIT Scorer-Recht — fuer ihn faellt die Lesegrenze. */
+    private static final String SCORER_NAME = "sam-scorer";
+
+    private RequestPostProcessor scorer() {
+        return user(SCORER_NAME).roles("PLAYER");
+    }
+
+    /**
+     * Ein Spieltag mit allem, was die fuenf Endpunkte herausgeben: Aufstellung, Base-Coach
+     * und eine Auswechslung. Gibt Spieltag-id und die id des ersten Spiels zurueck.
+     */
+    private long[] spieltagMitAufstellung(final LocalDate datum) throws Exception {
+        if (season == null) {
+            season = seasonRepository.save(new SeasonEntity("Saison " + datum.getYear(), datum.getYear()));
+        }
+        if (coach == null) {
+            coach = playerRepository.save(new PlayerEntity("Conny"));
+        }
+        final String tagBody = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "date", datum.toString(), "label", "Spieltag " + datum))))
+            .andExpect(status().isCreated())
+            .andReturn().getResponse().getContentAsString();
+        final long gameDayId = objectMapper.readTree(tagBody).get("id").asLong();
+        final long gameId = objectMapper.readTree(tagBody).get("games").get(0).get("id").asLong();
+
+        mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "playerIds", List.of(player.getId(), coach.getId())))))
+            .andExpect(status().isOk());
+        mockMvc.perform(put("/api/games/" + gameId + "/lineup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(
+                    Map.of("playerId", player.getId(), "position", "SS", "battingOrder", 1)))))
+            .andExpect(status().isOk());
+        mockMvc.perform(put("/api/games/" + gameId + "/staff")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(
+                    Map.of("playerId", coach.getId(), "role", "BASE_COACH_1ST")))))
+            .andExpect(status().isOk());
+        mockMvc.perform(post("/api/games/" + gameId + "/substitutions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "playerOutId", player.getId(), "playerInId", coach.getId(), "inning", 3))))
+            .andExpect(status().isOk());
+
+        return new long[] {gameDayId, gameId};
+    }
+
+    /** Ein Spieltag in der Zukunft: nur die Freigabe kann ihn oeffnen. */
+    private long[] kuenftigerSpieltag() throws Exception {
+        return spieltagMitAufstellung(LocalDate.now().plusDays(30));
+    }
+
+    private void freigeben(final long gameDayId) throws Exception {
+        mockMvc.perform(put("/api/gamedays/" + gameDayId + "/lineups/release")
+                .contentType(MediaType.APPLICATION_JSON).content("{\"released\":true}"))
+            .andExpect(status().isOk());
+    }
+
+    /** Die fuenf Endpunkte, die die Aufstellung herausgeben — in einer Form, in anderer Form. */
+    private void pruefeAlleFuenf(final long gameDayId, final long gameId,
+                                 final RequestPostProcessor wer, final boolean sichtbar) throws Exception {
+        final org.springframework.test.web.servlet.ResultMatcher array =
+            sichtbar ? jsonPath("$").isNotEmpty() : jsonPath("$").isEmpty();
+        final org.springframework.test.web.servlet.ResultMatcher lineups =
+            sichtbar ? jsonPath("$.lineups").isNotEmpty() : jsonPath("$.lineups").isEmpty();
+
+        mockMvc.perform(get("/api/games/" + gameId + "/lineup").with(wer))
+            .andExpect(status().isOk()).andExpect(array);
+        mockMvc.perform(get("/api/games/" + gameId + "/staff").with(wer))
+            .andExpect(status().isOk()).andExpect(array);
+        mockMvc.perform(get("/api/games/" + gameId + "/substitutions").with(wer))
+            .andExpect(status().isOk()).andExpect(array);
+        mockMvc.perform(get("/api/gamedays/" + gameDayId + "/lineups").with(wer))
+            .andExpect(status().isOk()).andExpect(lineups);
+        // Der Name klingt nach Statistik, der Inhalt sind Positionen je Spiel und Spieler —
+        // das IST die Aufstellung in anderer Form.
+        mockMvc.perform(get("/api/gamedays/" + gameDayId + "/stats").with(wer))
+            .andExpect(status().isOk()).andExpect(array);
+    }
+
+    @Test
+    void vorDerFreigabeSiehtEinSpielerWederAufstellungNochPositionen() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, false);
+    }
+
+    @Test
+    void nachDerFreigabeSiehtErAlles() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+        freigeben(ids[0]);
+
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, true);
+    }
+
+    @Test
+    void derAdminSiehtVorherSchon() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+
+        pruefeAlleFuenf(ids[0], ids[1], ADMIN, true);
+        pruefeAlleFuenf(ids[0], ids[1], SUPERADMIN, true);
+    }
+
+    /**
+     * Der wichtigste Fall des ganzen Vorhabens: wer scoren darf, oeffnet den Spielbogen eines
+     * Spieltags, der noch nicht freigegeben ist. Ohne diesen Zweig waere der Bogen leer —
+     * genau dann, wenn das Spiel losgeht.
+     */
+    @Test
+    void einScorerSiehtDieAufstellungAuchOhneFreigabe() throws Exception {
+        legeScorerAn();
+        final long[] ids = kuenftigerSpieltag();
+
+        pruefeAlleFuenf(ids[0], ids[1], scorer(), true);
+    }
+
+    /**
+     * Ein Angemeldeter ohne verknuepften Spieler darf die Pruefung nicht umwerfen. In der
+     * Datenbank ist {@code app_user.player_id} NOT NULL, den Fall gibt es dort also nicht —
+     * sehr wohl aber den Angemeldeten ganz ohne Account-Zeile, und fuer die Regel ist das
+     * dasselbe: {@code CurrentUser.find()} ist leer. Erwartet wird eine leere Liste, kein 500.
+     */
+    @Test
+    void einAccountOhneVerknuepftenSpielerFaelltNichtUm() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+        assertThat(appUserRepository.findByUsernameIgnoreCase("spieler")).isEmpty();
+
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, false);
+    }
+
+    /**
+     * „Noch nicht sehen" heisst BEVOR sie steht, nicht NIE WIEDER: der Spiele-Log unter
+     * {@code /teams/spiele} laedt fuer jedes vergangene Spiel die Schlagreihenfolge, und
+     * niemand gibt hundert alte Spieltage nachtraeglich frei.
+     */
+    @Test
+    void einVergangenerSpieltagBleibtFuerSpielerLesbar() throws Exception {
+        final long[] ids = spieltagMitAufstellung(LocalDate.now().minusDays(1));
+
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, true);
+    }
+
+    /** Heute ist noch kein Gestern: der laufende Spieltag bleibt bis zur Freigabe zu. */
+    @Test
+    void derHeutigeSpieltagIstNochNichtVergangen() throws Exception {
+        final long[] ids = spieltagMitAufstellung(LocalDate.now());
+
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, false);
+    }
+
+    private void legeScorerAn() {
+        final PlayerEntity sam = playerRepository.save(new PlayerEntity("Sam"));
+        final AppUserEntity konto = new AppUserEntity();
+        konto.setUsername(SCORER_NAME);
+        konto.setPlayerId(sam.getId());
+        konto.setPasswordHash("egal");
+        konto.setRole(Role.PLAYER);
+        konto.setMayScore(true);
+        konto.setCreatedAt(java.time.Instant.now());
+        appUserRepository.save(konto);
     }
 
     private long legeTrainingAn(final String datum) throws Exception {
