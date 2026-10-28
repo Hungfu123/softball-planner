@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import * as api from '@/api/client'
 import { generatePdf, type GameData } from '@/utils/pdfExport'
+import { baseCoachSatz } from '@/utils/baseCoachSatz'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsauskunft'
 import type { GameDayResponse, Season } from '@/types'
@@ -17,7 +18,7 @@ export function LineupSheet() {
       const gd = await api.getGameDay(Number(id))
       setGameDay(gd)
 
-      const [{ lineups, staff, substitutions }, seasons] = await Promise.all([
+      const [{ lineups, staff, substitutions, baseCoaches }, seasons] = await Promise.all([
         api.getGameDayLineups(gd.id),
         api.getSeasons(),
       ])
@@ -27,6 +28,7 @@ export function LineupSheet() {
         lineup: lineups[String(g.id)] ?? [],
         staff: staff[String(g.id)] ?? [],
         substitutions: substitutions?.[String(g.id)] ?? [],
+        baseCoaches: baseCoaches?.[String(g.id)],
       })))
       setLoading(false)
     }
@@ -73,7 +75,7 @@ export function LineupSheet() {
 
       {/* Games — stacked, tight */}
       <div className="space-y-5">
-        {games.map(({ game, lineup, staff }, index) => (
+        {games.map(({ game, lineup, staff, baseCoaches }, index) => (
           <div key={game.id} className={`break-inside-avoid${index > 0 && index % 3 === 0 ? ' break-before-page' : ''}`}>
             <h2 className="text-xs font-bold text-gray-800 border-b-2 border-navy-800 pb-0.5">
               Spiel {game.gameNumber}
@@ -108,6 +110,10 @@ export function LineupSheet() {
                     ))}
                 </tbody>
               </table>
+            )}
+
+            {lineup.length > 0 && baseCoachSatz(baseCoaches) && (
+              <p className="text-[10px] text-gray-400 mt-1">{baseCoachSatz(baseCoaches)}</p>
             )}
 
             {/* Bench per game */}
