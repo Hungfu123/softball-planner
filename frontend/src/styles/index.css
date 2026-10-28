@@ -1002,6 +1002,46 @@ select,
   touch-action: manipulation;
 }
 
+/* Beschriftungen von Bedienelementen sind kein Text zum Markieren: langes Draufhalten
+   markierte am Handy das Wort im Knopf statt zu drücken. NICHT auf `body` und nicht auf
+   `a` — Adressen, Fehlermeldungen und Namen will man kopieren können. */
+button,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Die Antippfarbe des Browsers ist ein graublauer Blitz über dem ganzen Element und
+   das lauteste „das ist eine Webseite"-Signal am Handy. Ganz abschalten geht hier
+   NICHT: von 461 Knöpfen tragen rund 60 ein eigenes `active:`, der Rest stünde ohne
+   jede Rückmeldung da. Stattdessen derselbe Blitz in Navy und schwach — Rückmeldung
+   bleibt, der Fremdkörper verschwindet. */
+html {
+  -webkit-tap-highlight-color: rgb(20 43 73 / 0.08);
+  /* Querformat blaeht sonst einzelne Absaetze auf (iOS/Android-Textvergroesserung). */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Kein Ziehen-zum-Neuladen und kein Gummiband der ganzen Seite: die App hat eigene
+   Scrollbereiche, und auf der Scoring-Seite (h-dvh, kein Scrollen) ruckelte der ganze
+   Schirm, wenn man über das Ende hinaus wischte. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+/* iOS zoomt beim Hineintippen in jedes Feld unter 16px — und zoomt nicht zurück.
+   Genau das ist der Grund, aus dem Leute `user-scalable=no` setzen; das waere die
+   falsche Antwort (Zoom ist hier der Weg zum Detail). Also die Ursache beheben, und
+   nur am Touchgeraet: am Schreibtisch bleiben die Felder so klein wie gezeichnet. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 /* Trefferflaeche auf 44px bringen, OHNE das Layout zu veraendern — die
    Scoring-Seite hat ein festes Hoehenbudget (siehe h-dvh), groessere Buttons
    wuerden sie wieder zum Scrollen bringen. Das Pseudo-Element liegt zentriert
