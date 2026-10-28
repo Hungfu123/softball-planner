@@ -49,8 +49,19 @@ public final class AufstellungsLageRegel {
 
     private AufstellungsLageRegel() {}
 
+    /**
+     * Ob der Spieltag nach Berliner Kalender heute ist. Die Lage kann das nicht sagen: ein
+     * heutiger, freigegebener Spieltag vor 07:00 traegt {@code FREIGEGEBEN}, genau wie ein
+     * kuenftiger. Der Browser darf es nicht selbst rechnen (er kennt weder Berlin noch die Uhr
+     * des Servers), deshalb steht es in derselben Regel und derselben Uhr wie die Lage.
+     */
+    public static boolean istHeute(final GameDay gameDay, final Clock clock) {
+        final LocalDate datum = gameDay.getDate();
+        return datum != null && datum.equals(berlinJetzt(clock).toLocalDate());
+    }
+
     public static AufstellungsLage lage(final GameDay gameDay, final Clock clock) {
-        final ZonedDateTime jetzt = clock.instant().atZone(BERLIN);
+        final ZonedDateTime jetzt = berlinJetzt(clock);
         final LocalDate heute = jetzt.toLocalDate();
         final LocalDate datum = gameDay.getDate();
         if (datum != null && datum.isBefore(heute)) {
@@ -64,5 +75,10 @@ public final class AufstellungsLageRegel {
             return AufstellungsLage.FREIGEGEBEN;
         }
         return heuteSpieltag ? AufstellungsLage.HEUTE_VOR_SIEBEN : AufstellungsLage.GESPERRT;
+    }
+
+    /** Die einzige Stelle, die die Uhr liest — zwei Lesarten derselben Uhr koennten auseinanderlaufen. */
+    private static ZonedDateTime berlinJetzt(final Clock clock) {
+        return clock.instant().atZone(BERLIN);
     }
 }

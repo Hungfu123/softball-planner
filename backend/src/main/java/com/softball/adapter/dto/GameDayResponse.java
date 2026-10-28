@@ -22,18 +22,20 @@ public record GameDayResponse(
     List<GameResponse> games,
     OffsetDateTime lineupsReleasedAt,
     boolean lineupsChangedSinceRelease,
-    AufstellungsLage aufstellungsLage
+    AufstellungsLage aufstellungsLage,
+    boolean istHeute
 ) {
     /**
      * Es gibt bewusst keine Kurzform ohne {@code lineupsChangedSinceRelease} und Lage: der Haken
      * liesse sich ohne Datenbank nicht berechnen, und ein stillschweigendes {@code false}
-     * waere falsch, die Lage braucht die Uhr. Antworten bauen {@code GameDayService.findByIdAsDto} und Verwandte.
+     * waere falsch, die Lage und {@code istHeute} brauchen die Uhr. Antworten bauen {@code GameDayService.findByIdAsDto} und Verwandte.
      */
     public static GameDayResponse from(final GameDay gameDay,
                                         final Map<Long, Long> atBatCountByGameId,
                                         final Map<Long, Integer> liveScoreUsByGameId,
                                         final boolean lineupsChangedSinceRelease,
-                                        final AufstellungsLage aufstellungsLage) {
+                                        final AufstellungsLage aufstellungsLage,
+                                        final boolean istHeute) {
         return new GameDayResponse(
             gameDay.getId(),
             gameDay.getDate(),
@@ -48,7 +50,8 @@ public record GameDayResponse(
                 .collect(Collectors.toList()),
             zonenbehaftet(gameDay.getLineupsReleasedAt()),
             lineupsChangedSinceRelease,
-            aufstellungsLage
+            aufstellungsLage,
+            istHeute
         );
     }
 

@@ -70,7 +70,7 @@ public class GameDayService {
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
         final Set<Long> geaendert = spieltageMitGeaenderterAufstellung(days);
         return days.stream()
-            .map(d -> GameDayResponse.from(d, counts, liveScores, geaendert.contains(d.getId()), AufstellungsLageRegel.lage(d, clock)))
+            .map(d -> GameDayResponse.from(d, counts, liveScores, geaendert.contains(d.getId()), AufstellungsLageRegel.lage(d, clock), AufstellungsLageRegel.istHeute(d, clock)))
             .toList();
     }
 
@@ -95,7 +95,7 @@ public class GameDayService {
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
         return GameDayResponse.from(gameDay, counts, liveScores, istSeitDerFreigabeGeaendert(gameDay),
-            AufstellungsLageRegel.lage(gameDay, clock));
+            AufstellungsLageRegel.lage(gameDay, clock), AufstellungsLageRegel.istHeute(gameDay, clock));
     }
 
     /**
