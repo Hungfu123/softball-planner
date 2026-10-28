@@ -24,11 +24,19 @@ import java.time.ZonedDateTime;
  *       keine Planung. Das steht VOR der Freigabe, damit ein vergangener, freigegebener
  *       Spieltag nicht als {@code FREIGEGEBEN} gilt (er bliebe fuer Spieler fuer immer der
  *       "naechste" Spieltag).</li>
+ *   <li>heute, ab 07:00 -> {@code OFFEN_AB_SIEBEN} (auch wenn freigegeben)</li>
  *   <li>freigegeben -> {@code FREIGEGEBEN}</li>
- *   <li>heute, ab 07:00 -> {@code OFFEN_AB_SIEBEN}</li>
  *   <li>heute, vor 07:00 -> {@code HEUTE_VOR_SIEBEN}</li>
  *   <li>sonst -> {@code GESPERRT}</li>
  * </ol>
+ *
+ * <p>Die Lage sagt, WARUM etwas sichtbar ist. Ist es sichtbar, weil der Tag da ist, schlaegt das
+ * "weil freigegeben wurde": nur in der ersten Lesart ist die Freigabe folgenlos, und nur so
+ * bietet die Oberflaeche keinen "zuruecknehmen"-Knopf an, der nichts bewirkt (und dessen
+ * Rueckfrage, die Aufstellung verschwinde wieder, luege). Bewusst verloren geht dabei: am
+ * Spieltag ab 07:00 hat die Oberflaeche keine Freigabe-Lage mehr, an der sie "seit der Freigabe
+ * geaendert" haengen koennte — ab dann
+ * sehen ohnehin alle den Live-Stand, das ist die Praemisse des Vorhabens. Nicht zurueckbauen.
  *
  * <p>Berlin kommt NUR hier vor: der Zeitpunkt der {@link Clock} wird ausdruecklich umgerechnet,
  * die Zone des Containers spielt keine Rolle und wird nirgends umgestellt (viele Spalten sind
@@ -48,14 +56,13 @@ public final class AufstellungsLageRegel {
         if (datum != null && datum.isBefore(heute)) {
             return AufstellungsLage.OFFEN_VERGANGEN;
         }
+        final boolean heuteSpieltag = datum != null && datum.equals(heute);
+        if (heuteSpieltag && !jetzt.toLocalTime().isBefore(SCHWELLE)) {
+            return AufstellungsLage.OFFEN_AB_SIEBEN;
+        }
         if (gameDay.getLineupsReleasedAt() != null) {
             return AufstellungsLage.FREIGEGEBEN;
         }
-        if (datum != null && datum.equals(heute)) {
-            return jetzt.toLocalTime().isBefore(SCHWELLE)
-                    ? AufstellungsLage.HEUTE_VOR_SIEBEN
-                    : AufstellungsLage.OFFEN_AB_SIEBEN;
-        }
-        return AufstellungsLage.GESPERRT;
+        return heuteSpieltag ? AufstellungsLage.HEUTE_VOR_SIEBEN : AufstellungsLage.GESPERRT;
     }
 }
