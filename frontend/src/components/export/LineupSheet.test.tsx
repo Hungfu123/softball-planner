@@ -43,14 +43,26 @@ describe('LineupSheet', () => {
   })
 
   it('sagt vor der Freigabe, dass die Aufstellung noch nicht steht', async () => {
-    mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: null }))
+    mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: null, aufstellungsLage: 'GESPERRT' }))
     rendern()
     expect(await screen.findByText('Die Aufstellung steht noch nicht. Sobald sie steht, findest du sie hier.')).toBeInTheDocument()
     expect(screen.queryByText('Kein Lineup')).not.toBeInTheDocument()
   })
 
   it('sagt bei einem vergangenen, leeren, nie freigegebenen Spieltag „Kein Lineup"', async () => {
-    mockApi.getGameDay.mockResolvedValue(spieltag({ date: '2000-06-20', lineupsReleasedAt: null }))
+    mockApi.getGameDay.mockResolvedValue(spieltag({ date: '2000-06-20', lineupsReleasedAt: null, aufstellungsLage: 'OFFEN_VERGANGEN' }))
+    rendern()
+    expect(await screen.findByText('Kein Lineup')).toBeInTheDocument()
+    expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+  })
+
+  it('sagt bei gesperrtem Spieltag nicht „steht noch nicht", wenn ein anderes Spiel Einträge hat', async () => {
+    const gd = spieltag({ lineupsReleasedAt: null, aufstellungsLage: 'GESPERRT' })
+    gd.games.push({ ...gd.games[0], id: 11, gameNumber: 2 })
+    mockApi.getGameDay.mockResolvedValue(gd)
+    mockApi.getGameDayLineups.mockResolvedValue({
+      lineups: { '10': [eintrag(1)] }, staff: {}, substitutions: {},
+    })
     rendern()
     expect(await screen.findByText('Kein Lineup')).toBeInTheDocument()
     expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
@@ -95,7 +107,7 @@ describe('LineupSheet', () => {
   })
 
   it('bleibt nach der Freigabe bei „Kein Lineup", wenn nichts eingetragen ist', async () => {
-    mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
+    mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00', aufstellungsLage: 'FREIGEGEBEN' }))
     rendern()
     expect(await screen.findByText('Kein Lineup')).toBeInTheDocument()
     expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()

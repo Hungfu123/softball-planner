@@ -393,7 +393,8 @@ class AufstellungFreigabeIntegrationTest {
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
             .andExpect(jsonPath("$.lineups").isNotEmpty());
         mockMvc.perform(get("/api/gamedays/" + id))
-            .andExpect(jsonPath("$.aufstellungsLage").value("GESPERRT"));
+            .andExpect(jsonPath("$.aufstellungsLage").value("GESPERRT"))
+            .andExpect(jsonPath("$.istHeute").value(false));
     }
 
     @Test
@@ -433,7 +434,8 @@ class AufstellungFreigabeIntegrationTest {
 
         uhr.setzeAuf("2026-07-04T04:59:00Z");
         mockMvc.perform(get("/api/gamedays/" + id))
-            .andExpect(jsonPath("$.aufstellungsLage").value("FREIGEGEBEN"));
+            .andExpect(jsonPath("$.aufstellungsLage").value("FREIGEGEBEN"))
+            .andExpect(jsonPath("$.istHeute").value(true));
         uhr.setzeAuf("2026-07-04T05:01:00Z");
         mockMvc.perform(get("/api/gamedays/" + id))
             .andExpect(jsonPath("$.aufstellungsLage").value("OFFEN_AB_SIEBEN"));

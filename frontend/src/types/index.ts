@@ -130,6 +130,8 @@ export interface GameDayResponse {
   lineupsReleasedAt?: string | null
   lineupsChangedSinceRelease?: boolean
   aufstellungsLage?: AufstellungsLage
+  /** Berliner Kalender, vom Backend gerechnet; fehlend = false. Die Lage kann das nicht sagen (freigegeben + vor 7 Uhr = FREIGEGEBEN). */
+  istHeute?: boolean
 }
 
 export interface LeagueTeamResponse {

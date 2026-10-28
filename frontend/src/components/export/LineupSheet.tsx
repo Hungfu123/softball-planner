@@ -4,7 +4,7 @@ import * as api from '@/api/client'
 import { generatePdf, type GameData } from '@/utils/pdfExport'
 import { baseCoachSatz } from '@/utils/baseCoachSatz'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
-import { NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsauskunft'
+import { stehtNochNicht, NOCH_NICHT_FREIGEGEBEN } from '@/utils/aufstellungsLage'
 import type { GameDayResponse, Season } from '@/types'
 
 export function LineupSheet() {
@@ -53,6 +53,9 @@ export function LineupSheet() {
       weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
     })
 
+  // Der Satz gilt dem ganzen Spieltag: hat der Betrachter fuer irgendein Spiel Eintraege, ist nichts gesperrt.
+  const keineSichtbar = stehtNochNicht(gameDay, games.some(g => g.lineup.length > 0))
+
   return (
     <div className="max-w-md mx-auto p-4">
       {/* Controls */}
@@ -89,7 +92,7 @@ export function LineupSheet() {
 
             {lineup.length === 0 ? (
               <p className="text-xs text-gray-400 py-1">
-                {stehtNochNicht(gameDay) ? NOCH_NICHT_FREIGEGEBEN : 'Kein Lineup'}
+                {keineSichtbar ? NOCH_NICHT_FREIGEGEBEN : 'Kein Lineup'}
               </p>
             ) : (
               <table className="w-full text-xs leading-tight">

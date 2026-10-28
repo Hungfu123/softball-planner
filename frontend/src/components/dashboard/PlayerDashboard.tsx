@@ -4,7 +4,7 @@ import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
 import { LoadingSkeleton } from '@/components/shared'
 import type { GameDayResponse, GameResponse, LineupEntryResponse, MeResponse } from '@/types'
-import { NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsauskunft'
+import { istVergangen, NOCH_KEINE_AUFSTELLUNG, NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsLage'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { UpcomingList } from './UpcomingList'
 
@@ -22,10 +22,6 @@ type Aufstellungen = Record<number, LineupEntryResponse[] | null | undefined>
 
 const KARTE = 'rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 p-4 sm:p-5'
 const UEBERSCHRIFT = 'font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3'
-
-function heute(): string {
-  return new Date().toISOString().slice(0, 10)
-}
 
 function useNaechsterSpieltag() {
   const [laden, setLaden] = useState(true)
@@ -57,7 +53,7 @@ function useNaechsterSpieltag() {
     return () => { abgebrochen = true }
   }, [])
 
-  const kommende = useMemo(() => spieltage.filter(gd => gd.date >= heute()), [spieltage])
+  const kommende = useMemo(() => spieltage.filter(gd => !istVergangen(gd)), [spieltage])
   return { laden, ladefehler, seasonId, seasonName, naechster: kommende[0] ?? null, danach: kommende.slice(1) }
 }
 
@@ -135,7 +131,7 @@ function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
           </p>
         </>
       )}
-      {stehtNochNicht(spieltag) && spieltag.games.every(g => aufstellungen[g.id]?.length === 0) ? (
+      {stehtNochNicht(spieltag, !spieltag.games.every(g => aufstellungen[g.id]?.length === 0)) ? (
         <p className="text-sm text-white/65 mt-3">{NOCH_NICHT_FREIGEGEBEN}</p>
       ) : (
       <ul className="mt-3 space-y-2">
@@ -164,7 +160,7 @@ function LineupLesen({ spieltag, aufstellungen, playerId }: {
   const aktiv = spiele.find(g => g.id === gewaehlt) ?? spiele.find(g => !g.endedAt) ?? spiele[0]
   const eintraege = aktiv ? aufstellungen[aktiv.id] : undefined
   // Die Freigabe erklaert nur die Leere, sie verbirgt nichts: Eintraege werden immer gezeigt.
-  const keineSichtbar = stehtNochNicht(spieltag) && !spiele.some(g => (aufstellungen[g.id]?.length ?? 0) > 0)
+  const keineSichtbar = stehtNochNicht(spieltag, spiele.some(g => (aufstellungen[g.id]?.length ?? 0) > 0))
   const sortiert = eintraege ? [...eintraege].sort((a, b) => a.battingOrder - b.battingOrder) : []
 
   return (
@@ -193,9 +189,7 @@ function LineupLesen({ spieltag, aufstellungen, playerId }: {
       )}
       {eintraege && eintraege.length === 0 && (
         <p className="text-sm text-white/65">
-          {keineSichtbar
-            ? NOCH_NICHT_FREIGEGEBEN
-            : 'Für dieses Spiel gibt es noch keine Aufstellung. Sobald der Trainer sie macht, steht sie hier.'}
+          {keineSichtbar ? NOCH_NICHT_FREIGEGEBEN : NOCH_KEINE_AUFSTELLUNG}
         </p>
       )}
       {sortiert.length > 0 && (
@@ -273,7 +267,7 @@ export function PlayerDashboard() {
 
   if (laden) return <LoadingSkeleton variant="ball" />
 
-  const heroVariant = naechster?.date === heute() ? 'today' : 'upcoming'
+  const heroVariant = naechster?.istHeute ? 'today' : 'upcoming'
 
   return (
     <div className="space-y-3 sm:space-y-4">

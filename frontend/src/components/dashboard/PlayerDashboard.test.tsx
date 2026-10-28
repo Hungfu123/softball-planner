@@ -32,6 +32,7 @@ vi.mock('@/api/client', () => ({
 
 import * as api from '@/api/client'
 import { PlayerDashboard } from './PlayerDashboard'
+import { NOCH_NICHT_FREIGEGEBEN } from '@/utils/aufstellungsLage'
 
 const mockApi = api as unknown as Record<string, ReturnType<typeof vi.fn>>
 
@@ -43,8 +44,19 @@ const ME: MeResponse = {
   username: 'mia', role: 'PLAYER', playerId: 7, playerName: 'Mia Meier', mayScore: false, passwordChanged: true,
 }
 
+/*
+ * Die Lage rechnet das Backend; der Mock spiegelt sie grob, damit die Tests sie nicht je Zeile
+ * mitschreiben muessen. Wer eine bestimmte Lage prueft, setzt sie in `extra` ausdruecklich.
+ */
+function lageFuer(date: string, freigegeben: boolean): GameDayResponse['aufstellungsLage'] {
+  if (date < '2026-01-01') return 'OFFEN_VERGANGEN'
+  return freigegeben ? 'FREIGEGEBEN' : 'GESPERRT'
+}
+
 function gameDay(id: number, date: string, extra: Partial<GameDayResponse> = {}): GameDayResponse {
+  const freigegeben = (extra.lineupsReleasedAt === undefined ? 'ja' : extra.lineupsReleasedAt) !== null
   return {
+    aufstellungsLage: lageFuer(date, freigegeben),
     id, date, label: 'Spieltag', location: 'Sportplatz Nord', seasonId: 1,
     // Wie im echten Backend: die Saison-Liste liefert die Zusagen leer, nur der Einzelabruf füllt sie.
     availablePlayers: [],
@@ -216,12 +228,53 @@ describe('PlayerDashboard', () => {
       expect(await within(block).findAllByText(/Die Aufstellung steht noch nicht/)).toHaveLength(1)
     })
 
-    it('sagt bei einem vergangenen, leeren Spieltag nicht „steht noch nicht"', async () => {
-      // Das Dashboard listet nur kommende Spieltage; die Regel gilt trotzdem an beiden Stellen (siehe LineupSheet).
-      const { stehtNochNicht } = await import('@/utils/aufstellungsauskunft')
-      expect(stehtNochNicht({ date: VERGANGEN, lineupsReleasedAt: null })).toBe(false)
-      expect(stehtNochNicht({ date: ZUKUNFT, lineupsReleasedAt: null })).toBe(true)
-      expect(stehtNochNicht({ date: ZUKUNFT, lineupsReleasedAt: '2099-01-01T08:00:00' })).toBe(false)
+    it('sagt vor 7 Uhr am Spieltag, dass die Aufstellung noch nicht steht', async () => {
+      mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT, { ...NICHT_FREIGEGEBEN, aufstellungsLage: 'HEUTE_VOR_SIEBEN', istHeute: true })])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      expect(await within(lineup).findByText(/Die Aufstellung steht noch nicht/)).toBeInTheDocument()
+    })
+
+    it('sagt bei offenem Spieltag und leerem Spiel den anderen Satz', async () => {
+      mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT, { ...NICHT_FREIGEGEBEN, aufstellungsLage: 'OFFEN_AB_SIEBEN', istHeute: true })])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      expect(await within(lineup).findByText(/Für dieses Spiel gibt es noch keine Aufstellung/)).toBeInTheDocument()
+      expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+    })
+
+    it('sagt bei gesperrtem Spieltag nicht „steht noch nicht", wenn ein Spiel Einträge hat (Admin, Spiel 2 leer)', async () => {
+      mockApi.getLineup.mockImplementation((id: number) =>
+        Promise.resolve(id === 10 ? [eintrag(ANDERE, 'P', 1)] : []))
+      mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      await waitFor(() => expect(within(lineup).getAllByRole('listitem')).toHaveLength(1))
+      fireEvent.click(screen.getByRole('button', { name: 'Spiel 2' }))
+      expect(await within(lineup).findByText(/Für dieses Spiel gibt es noch keine Aufstellung/)).toBeInTheDocument()
+      expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+    })
+
+    it('sagt bei Netzfehler weder das eine noch das andere', async () => {
+      mockApi.getLineup.mockRejectedValue(new Error('500'))
+      rendern()
+      expect(await screen.findAllByText(/nicht erreichbar/)).not.toHaveLength(0)
+      expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/noch keine Aufstellung/)).not.toBeInTheDocument()
+    })
+
+    it('„Bin ich dabei?" und die Lineup-Karte sagen denselben Satz', async () => {
+      rendern()
+      const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
+      const lineup = screen.getByRole('region', { name: 'Lineup' })
+      expect(await within(block).findByText(NOCH_NICHT_FREIGEGEBEN)).toBeInTheDocument()
+      expect(await within(lineup).findByText(NOCH_NICHT_FREIGEGEBEN)).toBeInTheDocument()
+    })
+
+    it('zeigt einen vergangenen Spieltag nicht als kommenden', async () => {
+      mockApi.getGameDays.mockResolvedValue([gameDay(1, VERGANGEN, NICHT_FREIGEGEBEN)])
+      rendern()
+      expect(await screen.findByText(/Kein Spiel angesetzt/)).toBeInTheDocument()
     })
 
     it('unterscheidet freigegeben-aber-leer von nicht-freigegeben', async () => {
@@ -341,6 +394,18 @@ describe('PlayerDashboard', () => {
 
   
   
+  it('sagt „Heute" nach istHeute, auch wenn die Lage FREIGEGEBEN trägt (vor 7 Uhr)', async () => {
+    mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT, { aufstellungsLage: 'FREIGEGEBEN', istHeute: true })])
+    rendern()
+    expect(await screen.findByText(/Heute · Nächster Spieltag/)).toBeInTheDocument()
+  })
+
+  it('sagt nicht „Heute", wenn istHeute fehlt', async () => {
+    rendern()
+    expect(await screen.findByText('Nächster Spieltag')).toBeInTheDocument()
+    expect(screen.queryByText(/Heute · /)).not.toBeInTheDocument()
+  })
+
   it('kommt ohne nächstes Spiel zurecht (Saisonende)', async () => {
     mockApi.getGameDays.mockResolvedValue([gameDay(3, VERGANGEN)])
     rendern()
