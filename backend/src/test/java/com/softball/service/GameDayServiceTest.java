@@ -45,8 +45,8 @@ class GameDayServiceTest {
     @Mock
     private com.softball.application.GameScoringService gameScoringService;
 
-    @Mock
-    private com.softball.shared.security.AufstellungSichtbarkeit sichtbarkeit;
+    @org.mockito.Spy
+    private java.time.Clock clock = java.time.Clock.systemUTC();
 
     @InjectMocks
     private GameDayService gameDayService;
