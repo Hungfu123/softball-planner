@@ -20,10 +20,17 @@ public interface SpringLineupEntryRepository extends JpaRepository<LineupEntryEn
         """)
     List<Long> findGameDayIdsByPlayerId(Long playerId);
 
+    /*
+     * Die drei Schlagplatz-Abfragen zaehlen nur VERGANGENE Spieltage (< heute). Zweierlei haengt
+     * daran: das Einsatz-Profil sagt zu, nur Gewesenes zu zaehlen — und ohne die Grenze verriete
+     * das Histogramm den Schlagplatz im noch nicht gespielten, nicht freigegebenen Spiel. Die
+     * Grenze ist fuer alle Rollen dieselbe, die Antwort bleibt also cachebar.
+     */
     @Query("""
         SELECT le.battingOrder FROM LineupEntryEntity le
         WHERE (le.player.id = :playerId OR le.dhBatterPlayer.id = :playerId)
           AND le.battingOrder IS NOT NULL
+          AND le.game.gameDay.date < CURRENT_DATE
         """)
     List<Integer> findBattingOrdersByPlayerId(Long playerId);
 
@@ -31,6 +38,7 @@ public interface SpringLineupEntryRepository extends JpaRepository<LineupEntryEn
         SELECT le.battingOrder FROM LineupEntryEntity le
         WHERE (le.player.id = :playerId OR le.dhBatterPlayer.id = :playerId)
           AND le.battingOrder IS NOT NULL
+          AND le.game.gameDay.date < CURRENT_DATE
           AND EXTRACT(YEAR FROM le.game.gameDay.date) = :year
         """)
     List<Integer> findBattingOrdersByPlayerIdAndYear(Long playerId, int year);
@@ -39,6 +47,7 @@ public interface SpringLineupEntryRepository extends JpaRepository<LineupEntryEn
         SELECT le.battingOrder FROM LineupEntryEntity le
         WHERE (le.player.id = :playerId OR le.dhBatterPlayer.id = :playerId)
           AND le.battingOrder IS NOT NULL
+          AND le.game.gameDay.date < CURRENT_DATE
           AND le.game.gameDay.season.id = :seasonId
         """)
     List<Integer> findBattingOrdersByPlayerIdAndSeason(Long playerId, long seasonId);

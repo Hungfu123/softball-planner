@@ -25,6 +25,9 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -171,7 +174,7 @@ class BattingStatsServiceTest {
         when(lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(10L))
             .thenReturn(List.of(khangEntry));
 
-        final List<PlayerBattingStatsResponse> stats = service.getGameStats(10L);
+        final List<PlayerBattingStatsResponse> stats = service.getGameStats(10L, true);
 
         // Beide Spieler dabei: Khang aus Lineup, Hung aus AtBat
         final Set<Long> ids = stats.stream().map(PlayerBattingStatsResponse::playerId).collect(java.util.stream.Collectors.toSet());
@@ -194,7 +197,7 @@ class BattingStatsServiceTest {
         when(stealingRepository.findByGameIdInOrderByIdAsc(List.of(10L, 20L))).thenReturn(List.of());
         when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L, 20L))).thenReturn(List.of());
 
-        final List<PlayerBattingStatsResponse> stats = service.getGameDayStats(5L);
+        final List<PlayerBattingStatsResponse> stats = service.getGameDayStats(5L, true);
 
         assertThat(stats).hasSize(1);
         assertThat(stats.get(0).hits()).isEqualTo(2);
@@ -205,9 +208,45 @@ class BattingStatsServiceTest {
     void gameDayStats_emptyListIfNoGames() {
         when(gameRepository.findByGameDayIdOrderByGameNumberAsc(999L)).thenReturn(List.of());
 
-        final List<PlayerBattingStatsResponse> stats = service.getGameDayStats(999L);
+        final List<PlayerBattingStatsResponse> stats = service.getGameDayStats(999L, true);
 
         assertThat(stats).isEmpty();
+    }
+
+    /**
+     * Die Lesegrenze greift am Lineup-Keim: ohne Aufstellung bleibt nur, was aus At-Bats und
+     * Steals kommt. Ein Spiel vor dem Anpfiff liefert dann nichts statt der ganzen Aufstellung —
+     * und die Aufstellung wird gar nicht erst abgefragt.
+     */
+    @Test
+    void gameStats_ohneAufstellungBleibtNurWerGeschlagenHat() {
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(10L))
+            .thenReturn(List.of(atBat(hung, AtBatResult.SINGLE)));
+        when(stealingRepository.findByGameIdOrderByIdAsc(10L)).thenReturn(List.of());
+
+        final List<PlayerBattingStatsResponse> stats = service.getGameStats(10L, false);
+
+        assertThat(stats).extracting(PlayerBattingStatsResponse::playerId).containsExactly(hung.getId());
+        verify(lineupEntryRepository, never()).findByGameIdOrderByBattingOrderAsc(anyLong());
+    }
+
+    @Test
+    void gameStats_ohneAufstellungUndOhneAtBatsBleibtNichts() {
+        when(atBatRepository.findByGameIdOrderBySequenceAsc(10L)).thenReturn(List.of());
+        when(stealingRepository.findByGameIdOrderByIdAsc(10L)).thenReturn(List.of());
+
+        assertThat(service.getGameStats(10L, false)).isEmpty();
+    }
+
+    @Test
+    void gameDayStats_ohneAufstellungBleibtNurWerGeschlagenHat() {
+        when(gameRepository.findByGameDayIdOrderByGameNumberAsc(5L))
+            .thenReturn(List.of(game1, game2));
+        when(atBatRepository.findByGameIdInOrderBySequenceAsc(List.of(10L, 20L))).thenReturn(List.of());
+        when(stealingRepository.findByGameIdInOrderByIdAsc(List.of(10L, 20L))).thenReturn(List.of());
+
+        assertThat(service.getGameDayStats(5L, false)).isEmpty();
+        verify(lineupEntryRepository, never()).findByGameIdInOrderByBattingOrderAsc(any());
     }
 
     // --- Sortierung ---

@@ -509,6 +509,141 @@ class SpielerLeserechteIntegrationTest {
         pruefeEinsatzStatistik(datum, SPIELER, true);
     }
 
+    // ---- Vier weitere Tueren, durch die dieselbe Aufstellung sichtbar war ----
+
+    /**
+     * Ohne At-Bats ist {@code /games/{id}/batting-stats} exakt die Aufstellung und sonst nichts:
+     * {@code collectPlayers} nimmt jeden Lineup-Spieler auf, auch ohne einen einzigen Schlag.
+     * Darf der Anfragende sie nicht sehen, faellt der Lineup-Keim weg — uebrig bleibt, was aus
+     * At-Bats und Steals kommt, bei einem Spiel vor dem Anpfiff also nichts.
+     */
+    @Test
+    void vorDerFreigabeSindDieSchlagzahlenEinesUngespieltenSpielsLeer() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+
+        mockMvc.perform(get("/api/games/" + ids[1] + "/batting-stats").with(SPIELER))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+    }
+
+    /** Derselbe Weg ueber alle Spiele eines Tages — eigener Test, damit er eigenstaendig rot wird. */
+    @Test
+    void vorDerFreigabeSindAuchDieSchlagzahlenDesSpieltagsLeer() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+
+        mockMvc.perform(get("/api/gamedays/" + ids[0] + "/batting-stats").with(SPIELER))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void derTrainerUndDerScorerSehenSieAuchVorher() throws Exception {
+        legeScorerAn();
+        final long[] ids = kuenftigerSpieltag();
+
+        for (final RequestPostProcessor wer : List.of(ADMIN, SUPERADMIN, scorer())) {
+            mockMvc.perform(get("/api/games/" + ids[1] + "/batting-stats").with(wer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+            mockMvc.perform(get("/api/gamedays/" + ids[0] + "/batting-stats").with(wer))
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+        }
+    }
+
+    @Test
+    void nachDerFreigabeSiehtSieAuchDerSpieler() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+        freigeben(ids[0]);
+
+        mockMvc.perform(get("/api/games/" + ids[1] + "/batting-stats").with(SPIELER))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+        mockMvc.perform(get("/api/gamedays/" + ids[0] + "/batting-stats").with(SPIELER))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+    }
+
+    /**
+     * Die andere Haelfte derselben Regel: ein GESPIELTES Spiel behaelt seine Schlagzahlen, auch
+     * wenn es nie freigegeben wurde — sonst naehme die Grenze rueckwirkend weg, was heute da ist.
+     */
+    @Test
+    void einVergangenesSpielBehaeltSeineSchlagzahlen() throws Exception {
+        final long[] ids = spieltagMitAufstellung(LocalDate.now().minusDays(1));
+
+        mockMvc.perform(get("/api/games/" + ids[1] + "/batting-stats").with(SPIELER))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+        mockMvc.perform(get("/api/gamedays/" + ids[0] + "/batting-stats").with(SPIELER))
+            .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
+    }
+
+    /**
+     * Das Scoreboard eines Spiels ohne At-Bats nennt den Leadoff-Hitter namentlich und mit
+     * Schlagplatz 1 — fuer ein Spiel, das noch nicht begonnen hat. Spielstand, Inning und Outs
+     * bleiben fuer jeden sichtbar, nur die drei Batter-Felder gehen zu.
+     */
+    @Test
+    void vorDerFreigabeNenntDasScoreboardKeinenBatter() throws Exception {
+        final long[] ids = kuenftigerSpieltag();
+
+        mockMvc.perform(get("/api/games/" + ids[1] + "/scoreboard").with(SPIELER))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.currentBatterId").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.currentBatterName").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.currentBatterOrder").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.gameId").isNumber());
+    }
+
+    @Test
+    void derScorerSiehtDenBatterAuchOhneFreigabe() throws Exception {
+        legeScorerAn();
+        final long[] ids = kuenftigerSpieltag();
+
+        for (final RequestPostProcessor wer : List.of(ADMIN, scorer())) {
+            mockMvc.perform(get("/api/games/" + ids[1] + "/scoreboard").with(wer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.currentBatterName").value("Max"))
+                .andExpect(jsonPath("$.currentBatterOrder").value(1));
+        }
+    }
+
+    /**
+     * Das Einsatz-Profil sagt zu, nur Vergangenes zu zaehlen — und genau das schuetzt hier den
+     * Schlagplatz: ein kuenftiger Spieltag taucht im Histogramm nicht auf, fuer niemanden.
+     * Es ist bewusst KEIN Freigabe-Zweig: die Antwort bleibt fuer alle Rollen dieselbe.
+     */
+    @Test
+    void dasEinsatzProfilZaehltKeinenKuenftigenSchlagplatz() throws Exception {
+        final LocalDate datum = LocalDate.now().plusDays(30);
+        spieltagMitAufstellung(datum);
+
+        for (final RequestPostProcessor wer : List.of(SPIELER, ADMIN)) {
+            mockMvc.perform(get("/api/players/" + player.getId() + "/usage").with(wer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.battingOrderCounts").isEmpty());
+            mockMvc.perform(get("/api/players/" + player.getId() + "/usage")
+                    .param("year", String.valueOf(datum.getYear())).with(wer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.battingOrderCounts").isEmpty());
+            mockMvc.perform(get("/api/players/" + player.getId() + "/usage")
+                    .param("seasonId", String.valueOf(season.getId())).with(wer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.battingOrderCounts").isEmpty());
+        }
+    }
+
+    /** Gegenprobe: ein vergangener Spieltag zaehlt sehr wohl — sonst waere die Grenze zu scharf. */
+    @Test
+    void einVergangenerSchlagplatzZaehltWeiterhin() throws Exception {
+        final LocalDate datum = LocalDate.now().minusDays(1);
+        spieltagMitAufstellung(datum);
+
+        mockMvc.perform(get("/api/players/" + player.getId() + "/usage").with(SPIELER))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.battingOrderCounts.1").value(1));
+        mockMvc.perform(get("/api/players/" + player.getId() + "/usage")
+                .param("year", String.valueOf(datum.getYear())).with(SPIELER))
+            .andExpect(jsonPath("$.battingOrderCounts.1").value(1));
+        mockMvc.perform(get("/api/players/" + player.getId() + "/usage")
+                .param("seasonId", String.valueOf(season.getId())).with(SPIELER))
+            .andExpect(jsonPath("$.battingOrderCounts.1").value(1));
+    }
+
     private void legeScorerAn() {
         final PlayerEntity sam = playerRepository.save(new PlayerEntity("Sam"));
         final AppUserEntity konto = new AppUserEntity();

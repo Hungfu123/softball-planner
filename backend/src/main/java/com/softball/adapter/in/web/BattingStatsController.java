@@ -55,16 +55,22 @@ public class BattingStatsController {
         return gameAnalysisService.getBattingSlots(gameIds);
     }
 
+    /**
+     * Ohne At-Bats ist diese Antwort exakt die Aufstellung — deshalb faellt der Lineup-Keim weg,
+     * wenn der Anfragende sie nicht sehen darf. Ein gespieltes Spiel behaelt seine Schlagzahlen,
+     * auch wenn es nie freigegeben wurde.
+     */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/games/{gameId}/batting-stats")
     public List<PlayerBattingStatsResponse> getGameStats(@PathVariable final Long gameId) {
-        return battingStatsService.getGameStats(gameId);
+        return battingStatsService.getGameStats(gameId, sichtbarkeit.darfSehenFuerSpiel(gameId));
     }
 
+    /** Derselbe Schnitt ueber alle Spiele eines Tages. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/gamedays/{gameDayId}/batting-stats")
     public List<PlayerBattingStatsResponse> getGameDayStats(@PathVariable final Long gameDayId) {
-        return battingStatsService.getGameDayStats(gameDayId);
+        return battingStatsService.getGameDayStats(gameDayId, sichtbarkeit.darfSehen(gameDayId));
     }
 
     @PreAuthorize("isAuthenticated()")

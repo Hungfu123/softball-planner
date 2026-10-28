@@ -50,31 +50,53 @@ public class BattingStatsService {
         this.playerRepository = playerRepository;
     }
 
+    /**
+     * @param mitAufstellung darf der Anfragende die Aufstellung sehen? Die Aufstellung ist der
+     *        einzige Keim in {@link #collectPlayers}, der Spieler OHNE At-Bat aufnimmt — bei
+     *        einem Spiel, das noch nicht angefangen hat, waere die Antwort exakt die
+     *        Aufstellung und sonst nichts. Ist sie verborgen, wird nur aus At-Bats und Steals
+     *        aufgesammelt: ein kuenftiges Spiel liefert dann nichts, ein gespieltes alles.
+     */
     @Transactional(readOnly = true)
-    public List<PlayerBattingStatsResponse> getGameStats(final Long gameId) {
+    public List<PlayerBattingStatsResponse> getGameStats(final Long gameId, final boolean mitAufstellung) {
         final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
         final List<BaseRunningEvent> steals = stealingRepository.findByGameIdOrderByIdAsc(gameId);
-        final List<LineupEntry> lineup = lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId);
+        final List<LineupEntry> lineup = mitAufstellung
+            ? lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId)
+            : List.of();
 
         final List<Player> players = collectPlayers(atBats, steals, lineup);
         return toResponses(calculator.calculateForPlayers(players, atBats, steals));
     }
 
+    /** @param mitAufstellung siehe {@link #getGameStats(Long, boolean)}. */
     @Transactional(readOnly = true)
-    public List<PlayerBattingStatsResponse> getGameDayStats(final Long gameDayId) {
-        return toResponses(getGameDayBattingStats(gameDayId));
+    public List<PlayerBattingStatsResponse> getGameDayStats(final Long gameDayId, final boolean mitAufstellung) {
+        return toResponses(gameDayBattingStats(gameDayId, mitAufstellung));
     }
 
-    /** Domänen-Aggregation pro Spieltag (für Awards & DTO-Wiederverwendung). */
+    /**
+     * Domänen-Aggregation pro Spieltag (für Awards & DTO-Wiederverwendung).
+     *
+     * <p>Mit Aufstellung: die Auszeichnungen brauchen keine Lesegrenze, weil
+     * {@code GamedayAwardCalculator} mindestens zwei Plate Appearances (bzw. einen Steal oder
+     * Walk) verlangt — wer nur aufgestellt ist, taucht dort nie auf.
+     */
     @Transactional(readOnly = true)
     public List<BattingStats> getGameDayBattingStats(final Long gameDayId) {
+        return gameDayBattingStats(gameDayId, true);
+    }
+
+    private List<BattingStats> gameDayBattingStats(final Long gameDayId, final boolean mitAufstellung) {
         final List<Game> games = gameRepository.findByGameDayIdOrderByGameNumberAsc(gameDayId);
         final List<Long> gameIds = games.stream().map(Game::getId).toList();
         if (gameIds.isEmpty()) return List.of();
 
         final List<AtBat> atBats = atBatRepository.findByGameIdInOrderBySequenceAsc(gameIds);
         final List<BaseRunningEvent> steals = stealingRepository.findByGameIdInOrderByIdAsc(gameIds);
-        final List<LineupEntry> lineups = lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds);
+        final List<LineupEntry> lineups = mitAufstellung
+            ? lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds)
+            : List.of();
 
         final List<Player> players = collectPlayers(atBats, steals, lineups);
         return calculator.calculateForPlayers(players, atBats, steals);
