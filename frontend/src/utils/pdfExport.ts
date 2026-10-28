@@ -190,7 +190,9 @@ export interface GameData {
  * zweiter Zeilenumbruch würde die Aufstellung in das Feld-Diagramm schieben.
  * Mit langen Vornamen (`1B Maximilian · 3B Alexander`) wächst der Satz über die
  * Breite, deshalb schrumpft die Schrift bis 5 pt, damit nichts abgeschnitten
- * wird. Reicht auch das nicht, wird hart mit „…" gekürzt — ein verstümmelter
+ * wird. Die 5 pt sind nicht gemessen und keine Gestaltungsentscheidung: der
+ * längste realistische Satz braucht bei 7 pt rund 40 mm von 160 mm, die Grenze
+ * greift praktisch nie und sichert nur gegen absurde Namen ab. Reicht auch das nicht, wird hart mit „…" gekürzt — ein verstümmelter
  * Satz ist besser als ein verschobenes Layout. Gekürzt statt umbrochen wird
  * bewusst erst am Ende: Kürzen verschweigt Information, Schrumpfen nicht.
  */
