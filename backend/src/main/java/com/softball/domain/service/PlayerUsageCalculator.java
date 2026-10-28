@@ -65,7 +65,9 @@ public class PlayerUsageCalculator {
         int played = 0;
         for (final GameDay gd : past) {
             if (availableGameDayIds.contains(gd.getId())) available++;
-            if (playedGameDayIds.contains(gd.getId())) played++;
+            // Gespielt zaehlt nur, was vor heute liegt: am Spieltagmorgen steht die Aufstellung
+            // schon, und ein Zaehler, der genau bei den Aufgestellten steigt, verraet sie.
+            if (playedGameDayIds.contains(gd.getId()) && gd.getDate().isBefore(today)) played++;
         }
 
         // Saison-Zuschnitt laesst Trainings aussen vor: sie gehoeren zu keiner Saison.

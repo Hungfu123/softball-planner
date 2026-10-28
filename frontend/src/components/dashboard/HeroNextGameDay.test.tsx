@@ -65,13 +65,13 @@ describe('HeroNextGameDay — was sich anfassen lässt', () => {
 describe('HeroNextGameDay — Erinnerung an die Freigabe', () => {
   beforeEach(() => { rolle.istAdmin = true; rolle.darfScoren = false })
 
-  function mit(teil: Partial<GameDayResponse>, anzahl = 9) {
+  function mit(teil: Partial<GameDayResponse>, anzahl = 9, variant: 'upcoming' | 'today' | 'past' = 'upcoming') {
     const tag: GameDayResponse = {
       ...SPIELTAG,
       ...teil,
       games: SPIELTAG.games.map(g => ({ ...g, lineupEntryCount: anzahl })),
     }
-    return render(<MemoryRouter><HeroNextGameDay gameDay={tag} variant="upcoming" /></MemoryRouter>)
+    return render(<MemoryRouter><HeroNextGameDay gameDay={tag} variant={variant} /></MemoryRouter>)
   }
 
   it('erinnert den Admin an die fehlende Freigabe', () => {
@@ -93,6 +93,11 @@ describe('HeroNextGameDay — Erinnerung an die Freigabe', () => {
   it('meldet sich wieder, wenn sich danach etwas geaendert hat', () => {
     mit({ lineupsReleasedAt: '2099-10-20T10:00:00+02:00', lineupsChangedSinceRelease: true })
     expect(screen.getByRole('link', { name: /Seit der Freigabe geändert/i })).toHaveAttribute('href', '/gameday/4')
+  })
+
+  it('schweigt an einem vergangenen Spieltag — den sieht ohnehin jeder, freigegeben wird nur der naechste', () => {
+    mit({ lineupsReleasedAt: null }, 9, 'past')
+    expect(screen.queryByText(/freigegeben/i)).not.toBeInTheDocument()
   })
 
   it('zeigt einem Spieler nichts davon', () => {
