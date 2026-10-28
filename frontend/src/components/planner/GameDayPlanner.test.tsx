@@ -177,6 +177,15 @@ describe('GameDayPlanner — Übernahme-Wege bleiben synchron', () => {
     }
   })
 
+  it('reicht aufstellungsLage an die Freigabe-Leiste durch', async () => {
+    gameDay = { ...gameDay, aufstellungsLage: 'OFFEN_AB_SIEBEN' }
+    vi.mocked(getGameDay).mockResolvedValue(gameDay)
+
+    renderPlanner()
+
+    expect(await screen.findByText('Für alle sichtbar · seit 7 Uhr')).toBeInTheDocument()
+  })
+
   it('WhatsApp-Übernahme räumt Lineup/Staff auf wie das manuelle Anwesend-Modal', async () => {
     const updated: GameDayResponse = {
       ...gameDay,
