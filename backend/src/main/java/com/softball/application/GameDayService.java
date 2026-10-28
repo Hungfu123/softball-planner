@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -109,10 +110,19 @@ public class GameDayService {
         final List<GameDay> freigegeben = days.stream()
             .filter(d -> d.getLineupsReleasedAt() != null)
             .toList();
-        if (freigegeben.isEmpty()) return Set.of();
+        final Map<Long, String> abdruecke = aktuelleAbdruecke(freigegeben);
+        return freigegeben.stream()
+            .filter(d -> !abdruecke.get(d.getId()).equals(d.getLineupsReleasedHash()))
+            .map(GameDay::getId)
+            .collect(Collectors.toSet());
+    }
+
+    /** Fingerabdruck des heutigen Standes je Spieltag; drei Abfragen fuer alle zusammen. */
+    private Map<Long, String> aktuelleAbdruecke(final List<GameDay> days) {
+        if (days.isEmpty()) return Map.of();
 
         final Map<Long, Long> spieltagJeSpiel = new HashMap<>();
-        for (final GameDay day : freigegeben) {
+        for (final GameDay day : days) {
             for (final Game game : day.getGames()) {
                 if (game.getId() != null) spieltagJeSpiel.put(game.getId(), day.getId());
             }
@@ -128,14 +138,38 @@ public class GameDayService {
             : substitutionRepository.findByGameIdIn(gameIds).stream()
                 .collect(Collectors.groupingBy(e -> spieltagJeSpiel.get(e.getGame().getId())));
 
-        return freigegeben.stream()
-            .filter(d -> !AufstellungsFingerabdruck.von(
-                    aufstellung.getOrDefault(d.getId(), List.of()),
-                    staff.getOrDefault(d.getId(), List.of()),
-                    wechsel.getOrDefault(d.getId(), List.of()))
-                .equals(d.getLineupsReleasedHash()))
-            .map(GameDay::getId)
-            .collect(Collectors.toSet());
+        final Map<Long, String> abdruecke = new HashMap<>();
+        for (final GameDay day : days) {
+            abdruecke.put(day.getId(), AufstellungsFingerabdruck.von(
+                aufstellung.getOrDefault(day.getId(), List.of()),
+                staff.getOrDefault(day.getId(), List.of()),
+                wechsel.getOrDefault(day.getId(), List.of())));
+        }
+        return abdruecke;
+    }
+
+    /**
+     * Der Schalter: freigeben merkt sich Zeitpunkt und Fingerabdruck des heutigen Standes,
+     * zuruecknehmen loescht beides. Erneut freigeben ist dasselbe wie freigeben und setzt
+     * damit den "geaendert"-Haken zurueck.
+     */
+    @Transactional
+    public GameDay setLineupsReleased(final Long gameDayId, final boolean released) {
+        final GameDay gameDay = findById(gameDayId);
+        if (released) {
+            gameDay.setLineupsReleasedAt(LocalDateTime.now());
+            gameDay.setLineupsReleasedHash(aktuelleAbdruecke(List.of(gameDay)).get(gameDayId));
+        } else {
+            gameDay.setLineupsReleasedAt(null);
+            gameDay.setLineupsReleasedHash(null);
+        }
+        log.info("Spieltag {}: Aufstellung {}", gameDayId, released ? "freigegeben" : "zurueckgenommen");
+        return gameDayRepository.save(gameDay);
+    }
+
+    @Transactional
+    public GameDayResponse releaseLineupsAsDto(final Long gameDayId, final boolean released) {
+        return toResponseWithLive(setLineupsReleased(gameDayId, released));
     }
 
     @Transactional(readOnly = true)
