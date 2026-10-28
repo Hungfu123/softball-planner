@@ -5,8 +5,8 @@ import com.softball.adapter.dto.*;
 import com.softball.domain.model.GameDay;
 import com.softball.domain.model.GameStaff;
 import com.softball.domain.model.LineupEntry;
-import com.softball.application.GameDayService;
 import com.softball.domain.service.BaseCoachRegel;
+import com.softball.application.GameDayService;
 import com.softball.application.GameDayVoteSyncService;
 import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @PreAuthorize("hasRole('ADMIN')")
@@ -103,12 +104,14 @@ public class GameDayController {
         final GameDay gameDay = gameDayService.findById(id);
         final List<Long> gameIds = gameDay.getGames().stream().map(g -> g.getId()).toList();
 
-        final Map<Long, List<LineupEntryResponse>> lineups = lineupService.getLineupsForGames(gameIds);
-        final Map<Long, List<GameStaffResponse>> staff = gameStaffService.getStaffForGames(gameIds);
-        final Map<Long, List<SubstitutionResponse>> substitutions = substitutionService.getSubstitutionsForGames(gameIds);
-
+        // Aufstellung und Staff werden einmal als Modell geladen; DTO-Maps und Base-Coach-Auskunft
+        // werden daraus abgeleitet. Spiele ohne Eintraege fehlen in den DTO-Maps (wie bisher),
+        // baseCoaches traegt dagegen einen Schluessel fuer jedes Spiel.
         final Map<Long, List<LineupEntry>> lineupModels = lineupService.getLineupModelsForGames(gameIds);
         final Map<Long, List<GameStaff>> staffModels = gameStaffService.getStaffModelsForGames(gameIds);
+        final Map<Long, List<LineupEntryResponse>> lineups = abbilden(lineupModels, LineupEntryResponse::from);
+        final Map<Long, List<GameStaffResponse>> staff = abbilden(staffModels, GameStaffResponse::from);
+        final Map<Long, List<SubstitutionResponse>> substitutions = substitutionService.getSubstitutionsForGames(gameIds);
         final Map<Long, BaseCoachResponse> baseCoaches = gameIds.stream().collect(Collectors.toMap(
             gameId -> gameId,
             gameId -> BaseCoachResponse.from(BaseCoachRegel.fuer(
@@ -116,6 +119,12 @@ public class GameDayController {
                 staffModels.getOrDefault(gameId, List.of())))));
 
         return new GameDayLineupsResponse(lineups, staff, substitutions, baseCoaches);
+    }
+
+    private static <M, D> Map<Long, List<D>> abbilden(final Map<Long, List<M>> modelle, final Function<M, D> zuDto) {
+        return modelle.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> e.getValue().stream().map(zuDto).toList()));
     }
 
     /**

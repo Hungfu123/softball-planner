@@ -60,7 +60,7 @@ class BaseCoachAuskunftIntegrationTest {
     void setUp() {
         season = seasonRepository.save(new SeasonEntity("Saison 2026", 2026));
         spieler = new ArrayList<>();
-        for (final String name : List.of("Ann", "Ben", "Cem", "Dora", "Eva", "Finn", "Gina", "Hans", "Ida", "Jonas", "Jan")) {
+        for (final String name : List.of("Ann", "Ben", "Cem", "Dora", "Eva", "Finn", "Gina", "Hans", "Ida", "Jonas", "Jan", "Kim")) {
             spieler.add(playerRepository.save(new PlayerEntity(name)));
         }
     }
@@ -78,7 +78,7 @@ class BaseCoachAuskunftIntegrationTest {
     private long spieltagMitZehnerAufstellung() throws Exception {
         final String body = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("date", LocalDate.now().plusDays(7).toString(), "label", "Spieltag 1"))))
+                .content(objectMapper.writeValueAsString(Map.of("date", LocalDate.now().plusDays(7).toString(), "label", "Spieltag 1", "numberOfGames", 2))))
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
         final long id = objectMapper.readTree(body).get("id").asLong();
@@ -102,6 +102,11 @@ class BaseCoachAuskunftIntegrationTest {
     private long ersteSpielId(final long gameDayId) throws Exception {
         final String body = mockMvc.perform(get("/api/gamedays/" + gameDayId)).andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).get("games").get(0).get("id").asLong();
+    }
+
+    private long zweiteSpielId(final long gameDayId) throws Exception {
+        final String body = mockMvc.perform(get("/api/gamedays/" + gameDayId)).andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(body).get("games").get(1).get("id").asLong();
     }
 
     private void gibFrei(final long id) throws Exception {
@@ -158,5 +163,41 @@ class BaseCoachAuskunftIntegrationTest {
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[0]").value(9))
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[1]").value(10));
+    }
+
+    @Test
+    void einSpielOhneAufstellungTraegtLeereWerteUndDieMapsKeinenSchluesselDafuer() throws Exception {
+        final long id = spieltagMitZehnerAufstellung();
+        final long volles = ersteSpielId(id);
+        final long leeres = zweiteSpielId(id);
+
+        // lineups/staff fehlen fuer Spiele ohne Eintraege (so war es schon immer, groupingBy);
+        // baseCoaches traegt dagegen einen Schluessel fuer jedes Spiel.
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
+            .andExpect(jsonPath("$.lineups['" + volles + "'].length()").value(10))
+            .andExpect(jsonPath("$.lineups['" + leeres + "']").doesNotExist())
+            .andExpect(jsonPath("$.staff['" + leeres + "']").doesNotExist())
+            .andExpect(jsonPath("$.baseCoaches.length()").value(2))
+            .andExpect(jsonPath("$.baseCoaches['" + volles + "'].startSlots.length()").value(2))
+            .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].startSlots.length()").value(0))
+            .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].firstBase").doesNotExist())
+            .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].thirdBase").doesNotExist());
+    }
+
+    @Test
+    void sindBeideBasesBenanntIstDieStartlisteLeer() throws Exception {
+        final long id = spieltagMitZehnerAufstellung();
+        final long spielId = ersteSpielId(id);
+        mockMvc.perform(put("/api/games/" + spielId + "/staff")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(List.of(
+                    Map.of("playerId", spieler.get(10).getId(), "role", "BASE_COACH_1ST"),
+                    Map.of("playerId", spieler.get(11).getId(), "role", "BASE_COACH_3RD")))))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].firstBase").value("Jan"))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].thirdBase").value("Kim"))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots.length()").value(0));
     }
 }

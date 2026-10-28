@@ -56,12 +56,9 @@ public class LineupService {
 
     @Transactional(readOnly = true)
     public Map<Long, List<LineupEntryResponse>> getLineupsForGames(final List<Long> gameIds) {
-        if (gameIds.isEmpty()) return Map.of();
-        return lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds).stream()
-            .collect(Collectors.groupingBy(
-                e -> e.getGame().getId(),
-                Collectors.mapping(LineupEntryResponse::from, Collectors.toList())
-            ));
+        return getLineupModelsForGames(gameIds).entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> e.getValue().stream().map(LineupEntryResponse::from).toList()));
     }
 
     /** Dasselbe als Domaenenmodelle, nach Schlagplatz sortiert. */
