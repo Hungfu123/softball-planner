@@ -48,6 +48,8 @@ function gameDay(id: number, date: string, extra: Partial<GameDayResponse> = {})
     id, date, label: 'Spieltag', location: 'Sportplatz Nord', seasonId: 1,
     // Wie im echten Backend: die Saison-Liste liefert die Zusagen leer, nur der Einzelabruf füllt sie.
     availablePlayers: [],
+    // Vorgabe: freigegeben — das Bestandsverhalten. Die Tests zur Sperre setzen null.
+    lineupsReleasedAt: '2099-01-01T08:00:00', lineupsChangedSinceRelease: false,
     games: [{
       id: id * 10, gameNumber: 1, opponentTeam: { id: 1, name: 'Berlin Bears', ownTeam: false },
       scoreUs: null, scoreThem: null, gameDayId: id, lineupEntryCount: 2,
@@ -159,6 +161,58 @@ describe('PlayerDashboard', () => {
     expect(await within(block).findByText(/noch keine Aufstellung/)).toBeInTheDocument()
     const lineup = screen.getByRole('region', { name: 'Lineup' })
     expect(within(lineup).getByText(/noch keine Aufstellung/)).toBeInTheDocument()
+  })
+
+  describe('vor der Freigabe', () => {
+    const NICHT_FREIGEGEBEN = { lineupsReleasedAt: null }
+
+    beforeEach(() => {
+      // Wie das Backend es liefert: kein Fehler, nur leere Listen.
+      mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT, NICHT_FREIGEGEBEN)])
+      mockApi.getGameDay.mockImplementation((id: number) =>
+        Promise.resolve(gameDay(id, ZUKUNFT, { ...NICHT_FREIGEGEBEN, availablePlayers: [ICH, ANDERE] })))
+      mockApi.getLineup.mockResolvedValue([])
+    })
+
+    function zweiSpiele(extra: Partial<GameDayResponse>) {
+      const gd = gameDay(1, ZUKUNFT, extra)
+      gd.games.push({ ...gd.games[0], id: 11, gameNumber: 2 })
+      return gd
+    }
+
+    it('sagt vor der Freigabe, dass die Aufstellung noch nicht steht', async () => {
+      mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      expect(await within(lineup).findByText(/Die Aufstellung steht noch nicht\. Sobald sie steht, findest du sie hier\./)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Spiel 2' })).not.toBeInTheDocument()
+      expect(within(lineup).queryByText(/Für dieses Spiel gibt es noch keine Aufstellung/)).not.toBeInTheDocument()
+    })
+
+    it('zeigt die Zusage auch vor der Freigabe', async () => {
+      rendern()
+      expect(await screen.findByText('Du bist dabei')).toBeInTheDocument()
+      const block = screen.getByRole('region', { name: 'Bin ich dabei' })
+      expect(within(block).getByText(/Die Aufstellung steht noch nicht/)).toBeInTheDocument()
+      expect(within(block).queryByText(/Es gibt noch keine Aufstellung/)).not.toBeInTheDocument()
+    })
+
+    it('unterscheidet freigegeben-aber-leer von nicht-freigegeben', async () => {
+      mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT)])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      expect(await within(lineup).findByText('Für dieses Spiel gibt es noch keine Aufstellung. Sobald der Trainer sie macht, steht sie hier.')).toBeInTheDocument()
+      expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+    })
+
+    it('zeigt nach der Freigabe die volle Liste wie bisher', async () => {
+      mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT)])
+      mockApi.getLineup.mockResolvedValue([eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      await waitFor(() => expect(within(lineup).getAllByRole('listitem')).toHaveLength(2))
+      expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+    })
   })
 
   it('erkennt den Spieler als DH-Schlagmann', async () => {

@@ -85,7 +85,11 @@ export function LineupSheet() {
             </h2>
 
             {lineup.length === 0 ? (
-              <p className="text-xs text-gray-400 py-1">Kein Lineup</p>
+              <p className="text-xs text-gray-400 py-1">
+                {gameDay.lineupsReleasedAt
+                  ? 'Kein Lineup'
+                  : 'Die Aufstellung steht noch nicht. Sobald sie steht, findest du sie hier.'}
+              </p>
             ) : (
               <table className="w-full text-xs leading-tight">
                 <tbody>
