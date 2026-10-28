@@ -5,6 +5,7 @@ import com.softball.domain.model.GameDay;
 import com.softball.domain.model.Role;
 import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.port.out.GameRepository;
+import com.softball.domain.service.AufstellungsLageRegel;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -13,10 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.function.Predicate;
 
 /**
@@ -55,9 +52,8 @@ import java.util.function.Predicate;
  * <p>Wer nicht sehen darf, bekommt eine LEERE Antwort, keinen Fehler — darueber entscheiden
  * die Endpunkte, nicht diese Klasse.
  *
- * <p>Die Berliner Zeit entsteht HIER, durch die ausdrueckliche Umrechnung des Zeitpunkts der
- * {@link Clock}; die Zone des Containers spielt keine Rolle und wird nirgends umgestellt
- * (viele Spalten sind {@code TIMESTAMP} ohne Zone, jede historische Zeit wuerde sich verschieben).
+ * <p>Die Lage selbst (inklusive Berliner Zeit) rechnet {@link AufstellungsLageRegel} in der
+ * Domaene; diese Klasse sagt nur, welche Lage fuer wen offen ist.
  *
  * <p>Kein {@code @RequestScope}: die Klasse haelt keinen Zustand. Sie liest aber
  * {@link CurrentUser} und den SecurityContext und funktioniert deshalb nur innerhalb einer
@@ -71,9 +67,6 @@ import java.util.function.Predicate;
  */
 @Component
 public class AufstellungSichtbarkeit {
-
-    private static final ZoneId BERLIN = ZoneId.of("Europe/Berlin");
-    private static final LocalTime SCHWELLE = LocalTime.of(7, 0);
 
     private final ScoringPermission scoring;
     private final GameDayRepository gameDayRepository;
@@ -92,21 +85,7 @@ public class AufstellungSichtbarkeit {
 
     /** Wo dieser Spieltag steht — fuer jeden Betrachter gleich, siehe Klassendoku. */
     public AufstellungsLage lage(final GameDay gameDay) {
-        final ZonedDateTime jetzt = clock.instant().atZone(BERLIN);
-        final LocalDate heute = jetzt.toLocalDate();
-        final LocalDate datum = gameDay.getDate();
-        if (datum != null && datum.isBefore(heute)) {
-            return AufstellungsLage.OFFEN_VERGANGEN;
-        }
-        if (gameDay.getLineupsReleasedAt() != null) {
-            return AufstellungsLage.FREIGEGEBEN;
-        }
-        if (datum != null && datum.equals(heute)) {
-            return jetzt.toLocalTime().isBefore(SCHWELLE)
-                    ? AufstellungsLage.HEUTE_VOR_SIEBEN
-                    : AufstellungsLage.OFFEN_AB_SIEBEN;
-        }
-        return AufstellungsLage.GESPERRT;
+        return AufstellungsLageRegel.lage(gameDay, clock);
     }
 
     /** Darf der Angemeldete die Aufstellungen dieses Spieltags sehen? */

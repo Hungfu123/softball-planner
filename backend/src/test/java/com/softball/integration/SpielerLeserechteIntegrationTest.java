@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestcontainersConfig.class)
+@Import({TestcontainersConfig.class, com.softball.SetzbareUhr.Konfiguration.class})
 @MitSuperadmin
 class SpielerLeserechteIntegrationTest {
 
@@ -62,6 +62,7 @@ class SpielerLeserechteIntegrationTest {
     private static final RequestPostProcessor SUPERADMIN = user("super").roles("SUPERADMIN");
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private com.softball.SetzbareUhr uhr;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private SpringPlayerRepository playerRepository;
     @Autowired private SpringTrainingRepository trainingRepository;
@@ -99,6 +100,7 @@ class SpielerLeserechteIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        uhr.freigeben();
         appUserRepository.findByUsernameIgnoreCase(EIGENER_NAME).ifPresent(appUserRepository::delete);
         appUserRepository.findByUsernameIgnoreCase(SCORER_NAME).ifPresent(appUserRepository::delete);
         attendanceRepository.deleteAll();
@@ -332,7 +334,7 @@ class SpielerLeserechteIntegrationTest {
 
     /** Ein Spieltag in der Zukunft: nur die Freigabe kann ihn oeffnen. */
     private long[] kuenftigerSpieltag() throws Exception {
-        return spieltagMitAufstellung(LocalDate.now().plusDays(30));
+        return spieltagMitAufstellung(berlinHeute().plusDays(30));
     }
 
     private void freigeben(final long gameDayId) throws Exception {
@@ -442,23 +444,36 @@ class SpielerLeserechteIntegrationTest {
      */
     @Test
     void einVergangenerSpieltagBleibtFuerSpielerLesbar() throws Exception {
-        final long[] ids = spieltagMitAufstellung(LocalDate.now().minusDays(1));
+        final long[] ids = spieltagMitAufstellung(berlinHeute().minusDays(1));
 
         pruefeAlleFuenf(ids[0], ids[1], SPIELER, true);
     }
 
     /**
      * Heute ist noch kein Gestern: der laufende Spieltag oeffnet sich ohne Freigabe erst ab
-     * 07:00 Berliner Zeit. Die Grenze selbst prueft {@code AufstellungSichtbarkeitTest} mit
-     * fester Uhr; hier liest der Test die echte, deshalb folgt die Erwartung ihr.
+     * 07:00 BERLINER Zeit. Die Uhr ist festgesetzt (Sommer UTC+2, Winter UTC+1), die Erwartung
+     * steht als Literal da — nichts wird aus derselben Uhr nachgerechnet.
      */
-    @Test
-    void derHeutigeSpieltagOeffnetSichOhneFreigabeErstAbSieben() throws Exception {
-        final long[] ids = spieltagMitAufstellung(berlinHeute());
-        final boolean nachSieben = !java.time.ZonedDateTime.now(java.time.ZoneId.of("Europe/Berlin"))
-            .toLocalTime().isBefore(java.time.LocalTime.of(7, 0));
+    private void pruefeSiebenUhr(final LocalDate tag, final String vorSieben, final String nachSieben) throws Exception {
+        legeScorerAn();
+        final long[] ids = spieltagMitAufstellung(tag);
 
-        pruefeAlleFuenf(ids[0], ids[1], SPIELER, nachSieben);
+        uhr.setzeAuf(vorSieben);
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, false);
+        pruefeAlleFuenf(ids[0], ids[1], scorer(), true);
+
+        uhr.setzeAuf(nachSieben);
+        pruefeAlleFuenf(ids[0], ids[1], SPIELER, true);
+    }
+
+    @Test
+    void derHeutigeSpieltagOeffnetSichImSommerErstAbSiebenBerliner() throws Exception {
+        pruefeSiebenUhr(LocalDate.of(2026, 7, 4), "2026-07-04T04:59:00Z", "2026-07-04T05:01:00Z");
+    }
+
+    @Test
+    void derHeutigeSpieltagOeffnetSichImWinterErstAbSiebenBerliner() throws Exception {
+        pruefeSiebenUhr(LocalDate.of(2027, 1, 9), "2027-01-09T05:59:00Z", "2027-01-09T06:01:00Z");
     }
 
     /**
@@ -488,7 +503,7 @@ class SpielerLeserechteIntegrationTest {
 
     @Test
     void vorDerFreigabeZaehltDerSpieltagInKeinerEinsatzStatistik() throws Exception {
-        final LocalDate datum = LocalDate.now().plusDays(30);
+        final LocalDate datum = berlinHeute().plusDays(30);
         spieltagMitAufstellung(datum);
 
         pruefeEinsatzStatistik(datum, SPIELER, false);
@@ -496,7 +511,7 @@ class SpielerLeserechteIntegrationTest {
 
     @Test
     void derTrainerZaehltIhnVorherSchon() throws Exception {
-        final LocalDate datum = LocalDate.now().plusDays(30);
+        final LocalDate datum = berlinHeute().plusDays(30);
         spieltagMitAufstellung(datum);
 
         pruefeEinsatzStatistik(datum, ADMIN, true);
@@ -515,7 +530,7 @@ class SpielerLeserechteIntegrationTest {
     @Test
     void einScorerZaehltIhnVorDemSpieltagNicht() throws Exception {
         legeScorerAn();
-        final LocalDate datum = LocalDate.now().plusDays(30);
+        final LocalDate datum = berlinHeute().plusDays(30);
         spieltagMitAufstellung(datum);
 
         pruefeEinsatzStatistik(datum, scorer(), false);
@@ -523,7 +538,7 @@ class SpielerLeserechteIntegrationTest {
 
     @Test
     void nachDerFreigabeZaehltErFuerJeden() throws Exception {
-        final LocalDate datum = LocalDate.now().plusDays(30);
+        final LocalDate datum = berlinHeute().plusDays(30);
         final long[] ids = spieltagMitAufstellung(datum);
         freigeben(ids[0]);
 
@@ -532,7 +547,7 @@ class SpielerLeserechteIntegrationTest {
 
     @Test
     void einVergangenerSpieltagZaehltFuerJeden() throws Exception {
-        final LocalDate datum = LocalDate.now().minusDays(1);
+        final LocalDate datum = berlinHeute().minusDays(1);
         spieltagMitAufstellung(datum);
 
         pruefeEinsatzStatistik(datum, SPIELER, true);
@@ -603,7 +618,7 @@ class SpielerLeserechteIntegrationTest {
      */
     @Test
     void einVergangenesSpielBehaeltSeineSchlagzahlen() throws Exception {
-        final long[] ids = spieltagMitAufstellung(LocalDate.now().minusDays(1));
+        final long[] ids = spieltagMitAufstellung(berlinHeute().minusDays(1));
 
         mockMvc.perform(get("/api/games/" + ids[1] + "/batting-stats").with(SPIELER))
             .andExpect(status().isOk()).andExpect(jsonPath("$").isNotEmpty());
@@ -641,6 +656,17 @@ class SpielerLeserechteIntegrationTest {
         }
     }
 
+    @Test
+    void derScorerSiehtDenBatterVorDemSpieltagNicht() throws Exception {
+        legeScorerAn();
+        final long[] ids = kuenftigerSpieltag();
+
+        mockMvc.perform(get("/api/games/" + ids[1] + "/scoreboard").with(scorer()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.currentBatterName").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.currentBatterOrder").value(org.hamcrest.Matchers.nullValue()));
+    }
+
     /**
      * Das Einsatz-Profil sagt zu, nur Vergangenes zu zaehlen — und genau das schuetzt hier den
      * Schlagplatz: ein kuenftiger Spieltag taucht im Histogramm nicht auf, fuer niemanden.
@@ -648,7 +674,7 @@ class SpielerLeserechteIntegrationTest {
      */
     @Test
     void dasEinsatzProfilZaehltKeinenKuenftigenSchlagplatz() throws Exception {
-        final LocalDate datum = LocalDate.now().plusDays(30);
+        final LocalDate datum = berlinHeute().plusDays(30);
         spieltagMitAufstellung(datum);
 
         for (final RequestPostProcessor wer : List.of(SPIELER, ADMIN)) {
@@ -669,7 +695,7 @@ class SpielerLeserechteIntegrationTest {
     /** Gegenprobe: ein vergangener Spieltag zaehlt sehr wohl — sonst waere die Grenze zu scharf. */
     @Test
     void einVergangenerSchlagplatzZaehltWeiterhin() throws Exception {
-        final LocalDate datum = LocalDate.now().minusDays(1);
+        final LocalDate datum = berlinHeute().minusDays(1);
         spieltagMitAufstellung(datum);
 
         mockMvc.perform(get("/api/players/" + player.getId() + "/usage").with(SPIELER))

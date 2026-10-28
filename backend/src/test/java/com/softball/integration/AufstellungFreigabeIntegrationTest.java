@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(TestcontainersConfig.class)
+@Import({TestcontainersConfig.class, com.softball.SetzbareUhr.Konfiguration.class})
 @MitSuperadmin
 class AufstellungFreigabeIntegrationTest {
 
@@ -51,6 +51,9 @@ class AufstellungFreigabeIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private com.softball.SetzbareUhr uhr;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -90,6 +93,7 @@ class AufstellungFreigabeIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        uhr.freigeben();
         appUserRepository.findByUsername("scorer-freigabe").ifPresent(a -> appUserRepository.deleteById(a.getId()));
         lineupEntryRepository.deleteAll();
         gameRepository.deleteAll();
@@ -359,7 +363,10 @@ class AufstellungFreigabeIntegrationTest {
     private static final java.time.ZoneId BERLIN = java.time.ZoneId.of("Europe/Berlin");
 
     /** Ein Scorer ist ein PLAYER-Konto mit may_score; die Regel liest das aus der Datenbank. */
-    private RequestPostProcessor scorerKonto() {
+    private void legeScorerKontoAn() {
+        if (appUserRepository.findByUsername("scorer-freigabe").isPresent()) {
+            return;
+        }
         final var account = new com.softball.domain.model.AppUser();
         account.setPlayerId(spieler.getId());
         account.setUsername("scorer-freigabe");
@@ -368,6 +375,10 @@ class AufstellungFreigabeIntegrationTest {
         account.setMayScore(true);
         account.setCreatedAt(java.time.Instant.now());
         appUserRepository.save(account);
+    }
+
+    private RequestPostProcessor scorerKonto() {
+        legeScorerKontoAn();
         return user("scorer-freigabe").roles("PLAYER");
     }
 
@@ -387,12 +398,31 @@ class AufstellungFreigabeIntegrationTest {
 
     @Test
     void scorerSiehtDenHeutigenSpieltagAuchVorSieben() throws Exception {
-        final long id = neuerSpieltag(LocalDate.now(BERLIN));
+        final long id = neuerSpieltag(LocalDate.of(2026, 7, 4));
         stelleAufstellung(id);
+        uhr.setzeAuf("2026-07-04T04:59:00Z"); // 06:59 Berlin (UTC+2)
 
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.aufstellungsLage").value("HEUTE_VOR_SIEBEN"));
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(scorerKonto()))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.lineups").isNotEmpty());
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(SPIELER))
+            .andExpect(jsonPath("$.lineups").isEmpty());
+    }
+
+    /** Ab 07:00 Berliner Zeit sehen alle — ohne dass freigegeben wurde. */
+    @Test
+    void abSiebenSiehtJederDenHeutigenSpieltagOhneDassFreigegebenWurde() throws Exception {
+        final long id = neuerSpieltag(LocalDate.of(2026, 7, 4));
+        stelleAufstellung(id);
+        uhr.setzeAuf("2026-07-04T05:01:00Z"); // 07:01 Berlin (UTC+2)
+
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(SPIELER))
+            .andExpect(jsonPath("$.lineups").isNotEmpty());
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.aufstellungsLage").value("OFFEN_AB_SIEBEN"))
+            .andExpect(jsonPath("$.lineupsReleasedAt").doesNotExist());
     }
 
     @Test

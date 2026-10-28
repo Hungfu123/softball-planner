@@ -135,6 +135,24 @@ class AufstellungSichtbarkeitTest {
     }
 
     @Test
+    void darfSehenFuerSpielFolgtDerLageDesSpieltagsEinesNichtTrainers() {
+        angemeldetAls(Role.PLAYER.name());
+        when(scoring.darfSchreiben(any())).thenReturn(false);
+        when(gameRepository.findGameDayIdByGameId(7L)).thenReturn(Optional.of(1L));
+        when(gameRepository.findGameDayIdByGameId(8L)).thenReturn(Optional.empty());
+        final AufstellungSichtbarkeit regel = zu("2026-07-04T10:00:00Z");
+
+        when(gameDayRepository.findById(1L)).thenReturn(Optional.of(spieltag(LocalDate.of(2026, 7, 11))));
+        assertThat(regel.darfSehenFuerSpiel(7L)).isFalse();
+
+        when(gameDayRepository.findById(1L)).thenReturn(Optional.of(freigegeben(LocalDate.of(2026, 7, 11))));
+        assertThat(regel.darfSehenFuerSpiel(7L)).isTrue();
+
+        assertThat(regel.darfSehenFuerSpiel(8L)).isFalse();
+        assertThat(regel.darfSehenFuerSpiel(null)).isFalse();
+    }
+
+    @Test
     void scorerSiehtDenHeutigenSpieltagAuchVorSieben() {
         angemeldetAls(Role.PLAYER.name());
         when(scoring.darfSchreiben(any())).thenReturn(true);
