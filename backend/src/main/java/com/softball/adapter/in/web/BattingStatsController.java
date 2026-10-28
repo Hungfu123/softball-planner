@@ -11,6 +11,7 @@ import com.softball.application.BattingStatsService;
 import com.softball.application.GameAnalysisService;
 import com.softball.application.SeasonService;
 import com.softball.application.StatsService;
+import com.softball.shared.security.AufstellungSichtbarkeit;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,15 +27,18 @@ public class BattingStatsController {
     private final StatsService statsService;
     private final SeasonService seasonService;
     private final GameAnalysisService gameAnalysisService;
+    private final AufstellungSichtbarkeit sichtbarkeit;
 
     public BattingStatsController(final BattingStatsService battingStatsService,
                                    final StatsService statsService,
                                    final SeasonService seasonService,
-                                   final GameAnalysisService gameAnalysisService) {
+                                   final GameAnalysisService gameAnalysisService,
+                                   final AufstellungSichtbarkeit sichtbarkeit) {
         this.battingStatsService = battingStatsService;
         this.statsService = statsService;
         this.seasonService = seasonService;
         this.gameAnalysisService = gameAnalysisService;
+        this.sichtbarkeit = sichtbarkeit;
     }
 
     /** Team-Offensiv-Verlauf pro gespieltem Spiel: Hits, Walks, On-Base, LOB, Inning-Zahlen. */
@@ -75,10 +79,11 @@ public class BattingStatsController {
         return battingStatsService.getYearStats(year);
     }
 
+    /** Gezaehlte Aufstellung — dieselbe Grenze wie {@code /seasons/{id}/stats}. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/years/{year}/stats")
     public List<SeasonPlayerStats> getYearStats(@PathVariable final int year) {
-        return statsService.getYearStats(year);
+        return statsService.getYearStats(year, sichtbarkeit.filter());
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -93,10 +98,11 @@ public class BattingStatsController {
         return battingStatsService.getAllTimeStats();
     }
 
+    /** Gezaehlte Aufstellung — dieselbe Grenze wie {@code /seasons/{id}/stats}. */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/stats/all-time/games")
     public List<SeasonPlayerStats> getAllTimeStats() {
-        return statsService.getAllTimeStats();
+        return statsService.getAllTimeStats(sichtbarkeit.filter());
     }
 
     @PreAuthorize("isAuthenticated()")

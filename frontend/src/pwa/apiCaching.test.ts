@@ -18,6 +18,11 @@ describe('Service-Worker-Regeln für /api', () => {
     '/api/players/7/usage',
     '/api/players/7/training-months',
     '/api/trainings',
+    // Gezaehlte Aufstellung: ein Trainer sieht dort die noch nicht freigegebenen Spieltage,
+    // ein Spieler nicht. Geteilt gecacht landete genau das wieder auf dem Schirm.
+    '/api/seasons/3/stats',
+    '/api/years/2026/stats',
+    '/api/stats/all-time/games',
   ])('%s kommt nie aus dem Cache', p => {
     expect(erste(get(p))?.handler).toBe('NetworkOnly')
   })
@@ -36,10 +41,11 @@ describe('Service-Worker-Regeln für /api', () => {
   it.each([
     '/api/stats/all-time/batting',
     '/api/years/2026/batting-stats',
-    '/api/years/2026/stats',
     '/api/seasons',
     '/api/seasons/years',
     '/api/seasons/3/batting-stats',
+    // Haengt an gespielten Spielen, nicht an der Planung — bleibt schnell.
+    '/api/seasons/3/awards',
     '/api/gamedays/all',
     '/api/plays',
     '/api/drills',

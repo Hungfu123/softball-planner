@@ -61,6 +61,8 @@ class MethodSecurityCoverageTest {
         // SeasonController
         "SeasonController#getAll",
         "SeasonController#getById",
+        // Gezaehlte Aufstellung — offen, weil der Controller selbst filtert: Spieltage, deren
+        // Aufstellung der Anfragende nicht sehen darf, zaehlen nicht mit (AufstellungSichtbarkeit).
         "SeasonController#getStats",
         "SeasonController#getYears",
         // GameController
@@ -92,9 +94,11 @@ class MethodSecurityCoverageTest {
         "BattingStatsController#getGameDayStats",
         "BattingStatsController#getSeasonStats",
         "BattingStatsController#getYearBattingStats",
+        // Dieselbe gefilterte Zaehlung wie SeasonController#getStats, nur ueber ein Jahr.
         "BattingStatsController#getYearStats",
         "BattingStatsController#getYearSeasons",
         "BattingStatsController#getAllTimeBattingStats",
+        // Dieselbe gefilterte Zaehlung, ueber alles.
         "BattingStatsController#getAllTimeStats",
         "BattingStatsController#getOpponentBattingOverview",
         "BattingStatsController#getOpponentBattingStats",
