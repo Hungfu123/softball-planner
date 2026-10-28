@@ -45,6 +45,9 @@ class GameDayServiceTest {
     @Mock
     private com.softball.application.GameScoringService gameScoringService;
 
+    @Mock
+    private com.softball.shared.security.AufstellungSichtbarkeit sichtbarkeit;
+
     @InjectMocks
     private GameDayService gameDayService;
 

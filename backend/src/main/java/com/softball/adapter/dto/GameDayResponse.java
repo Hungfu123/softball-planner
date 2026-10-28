@@ -1,5 +1,6 @@
 package com.softball.adapter.dto;
 
+import com.softball.domain.model.AufstellungsLage;
 import com.softball.domain.model.Game;
 import com.softball.domain.model.GameDay;
 
@@ -20,17 +21,19 @@ public record GameDayResponse(
     Set<PlayerResponse> availablePlayers,
     List<GameResponse> games,
     OffsetDateTime lineupsReleasedAt,
-    boolean lineupsChangedSinceRelease
+    boolean lineupsChangedSinceRelease,
+    AufstellungsLage aufstellungsLage
 ) {
     /**
-     * Es gibt bewusst keine Kurzform ohne {@code lineupsChangedSinceRelease}: der Haken
+     * Es gibt bewusst keine Kurzform ohne {@code lineupsChangedSinceRelease} und Lage: der Haken
      * liesse sich ohne Datenbank nicht berechnen, und ein stillschweigendes {@code false}
-     * waere falsch. Antworten bauen {@code GameDayService.findByIdAsDto} und Verwandte.
+     * waere falsch, die Lage braucht die Uhr. Antworten bauen {@code GameDayService.findByIdAsDto} und Verwandte.
      */
     public static GameDayResponse from(final GameDay gameDay,
                                         final Map<Long, Long> atBatCountByGameId,
                                         final Map<Long, Integer> liveScoreUsByGameId,
-                                        final boolean lineupsChangedSinceRelease) {
+                                        final boolean lineupsChangedSinceRelease,
+                                        final AufstellungsLage aufstellungsLage) {
         return new GameDayResponse(
             gameDay.getId(),
             gameDay.getDate(),
@@ -44,7 +47,8 @@ public record GameDayResponse(
                 .map(g -> mapGame(g, atBatCountByGameId, liveScoreUsByGameId))
                 .collect(Collectors.toList()),
             zonenbehaftet(gameDay.getLineupsReleasedAt()),
-            lineupsChangedSinceRelease
+            lineupsChangedSinceRelease,
+            aufstellungsLage
         );
     }
 

@@ -76,6 +76,9 @@ class AufstellungFreigabeIntegrationTest {
     @Autowired
     private SpringPlayerRepository playerRepository;
 
+    @Autowired
+    private com.softball.domain.port.out.AppUserRepository appUserRepository;
+
     private SeasonEntity season;
     private PlayerEntity spieler;
 
@@ -87,6 +90,7 @@ class AufstellungFreigabeIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        appUserRepository.findByUsername("scorer-freigabe").ifPresent(a -> appUserRepository.deleteById(a.getId()));
         lineupEntryRepository.deleteAll();
         gameRepository.deleteAll();
         gameDayRepository.deleteAll();
@@ -350,5 +354,53 @@ class AufstellungFreigabeIntegrationTest {
         mockMvc.perform(get("/api/gamedays/" + id))
             .andExpect(jsonPath("$.lineupsReleasedAt").doesNotExist())
             .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
+    }
+
+    private static final java.time.ZoneId BERLIN = java.time.ZoneId.of("Europe/Berlin");
+
+    /** Ein Scorer ist ein PLAYER-Konto mit may_score; die Regel liest das aus der Datenbank. */
+    private RequestPostProcessor scorerKonto() {
+        final var account = new com.softball.domain.model.AppUser();
+        account.setPlayerId(spieler.getId());
+        account.setUsername("scorer-freigabe");
+        account.setPasswordHash("{noop}x");
+        account.setRole(com.softball.domain.model.Role.PLAYER);
+        account.setMayScore(true);
+        account.setCreatedAt(java.time.Instant.now());
+        appUserRepository.save(account);
+        return user("scorer-freigabe").roles("PLAYER");
+    }
+
+    @Test
+    void scorerSiehtKuenftigenNichtFreigegebenenSpieltagNicht() throws Exception {
+        final long id = neuerSpieltag(LocalDate.now(BERLIN).plusDays(7));
+        stelleAufstellung(id);
+
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(scorerKonto()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lineups").isEmpty());
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
+            .andExpect(jsonPath("$.lineups").isNotEmpty());
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.aufstellungsLage").value("GESPERRT"));
+    }
+
+    @Test
+    void scorerSiehtDenHeutigenSpieltagAuchVorSieben() throws Exception {
+        final long id = neuerSpieltag(LocalDate.now(BERLIN));
+        stelleAufstellung(id);
+
+        mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(scorerKonto()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lineups").isNotEmpty());
+    }
+
+    @Test
+    void einVergangenerFreigegebenerSpieltagTraegtDieLageVergangen() throws Exception {
+        final long id = neuerSpieltag(LocalDate.now(BERLIN).minusDays(7));
+        freigeben(id, "a".repeat(64));
+
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.aufstellungsLage").value("OFFEN_VERGANGEN"));
     }
 }
