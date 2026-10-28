@@ -111,10 +111,18 @@ class AufstellungSichtbarkeitTest {
     }
 
     @Test
-    void freigegebenSchlaegtHeuteUndZukunft() {
-        final AufstellungSichtbarkeit regel = zu("2026-07-04T04:00:00Z");
+    void freigegebenHeuteVorSiebenUndKuenftig_istFreigegeben() {
+        final AufstellungSichtbarkeit regel = zu("2026-07-04T04:59:00Z"); // 06:59 Berlin
         assertThat(regel.lage(freigegeben(LocalDate.of(2026, 7, 4)))).isEqualTo(AufstellungsLage.FREIGEGEBEN);
         assertThat(regel.lage(freigegeben(LocalDate.of(2026, 7, 11)))).isEqualTo(AufstellungsLage.FREIGEGEBEN);
+    }
+
+    @Test
+    void freigegebenHeuteAbSieben_istOffenAbSieben() {
+        assertThat(zu("2026-07-04T05:01:00Z").lage(freigegeben(LocalDate.of(2026, 7, 4))))
+            .isEqualTo(AufstellungsLage.OFFEN_AB_SIEBEN);
+        assertThat(zu("2026-01-10T06:01:00Z").lage(freigegeben(LocalDate.of(2026, 1, 10))))
+            .isEqualTo(AufstellungsLage.OFFEN_AB_SIEBEN);
     }
 
     @Test

@@ -4,9 +4,10 @@ package com.softball.domain.model;
  * Wo ein Spieltag auf dem Weg zur sichtbaren Aufstellung steht. Unabhaengig davon, WER fragt —
  * deshalb steht sie am Spieltag-DTO und nicht an der Anfrage.
  *
- * <p>Die Reihenfolge der Pruefung ist Teil der Bedeutung: {@link #OFFEN_VERGANGEN} kommt vor
- * {@link #FREIGEGEBEN}, damit ein gespielter Spieltag nie als "freigegeben" gilt (der haette
- * sonst fuer immer einen "zuruecknehmen"-Knopf und bliebe fuer Spieler der naechste Spieltag).
+ * <p>Die Reihenfolge der Pruefung ist Teil der Bedeutung: {@link #OFFEN_VERGANGEN} und
+ * {@link #OFFEN_AB_SIEBEN} kommen vor {@link #FREIGEGEBEN}. Die Lage sagt, WARUM etwas sichtbar
+ * ist; wo der Tag selbst es oeffnet, ist die Freigabe folgenlos und darf keinen
+ * "zuruecknehmen"-Knopf bekommen (siehe {@code AufstellungsLageRegel}).
  */
 public enum AufstellungsLage {
     /** Noch nicht freigegeben und nicht heute: nur Trainer sehen sie. */

@@ -29,14 +29,16 @@ import java.util.function.Predicate;
  *       — der Spiele-Log laedt fuer jedes vergangene Spiel die Schlagreihenfolge. Diese
  *       Pruefung steht VOR der Freigabe, damit ein vergangener, freigegebener Spieltag nicht
  *       als {@code FREIGEGEBEN} gilt (siehe {@link AufstellungsLage}).</li>
- *   <li>{@code lineupsReleasedAt != null} -> {@code FREIGEGEBEN}: sie steht, jeder darf lesen.</li>
  *   <li>heute und ab 07:00 Berliner Zeit -> {@code OFFEN_AB_SIEBEN}: der Rueckfall, wenn
  *       die Freigabe vergessen wurde. Ab morgens, nicht ab Mitternacht, denn um Mitternacht
  *       baut der Trainer unter Umstaenden noch um. Das ist KEINE automatische Freigabe:
- *       {@code lineupsReleasedAt} bleibt leer.</li>
+ *       {@code lineupsReleasedAt} bleibt leer. Steht VOR {@code FREIGEGEBEN}: die Lage sagt,
+ *       warum sichtbar ist, und "weil der Tag da ist" schlaegt "weil freigegeben".</li>
+ *   <li>{@code lineupsReleasedAt != null} -> {@code FREIGEGEBEN}: sie steht, jeder darf lesen.</li>
  *   <li>heute vor 07:00 -> {@code HEUTE_VOR_SIEBEN}</li>
  *   <li>sonst -> {@code GESPERRT}</li>
  * </ol>
+ * Die Begruendung der Reihenfolge steht an {@link AufstellungsLageRegel}.
  *
  * <p>Wer sieht: <b>Trainer</b> (ADMIN/SUPERADMIN) immer — sie stellen sie ja auf, und
  * dafuer wird die Datenbank nicht gefragt. Alle anderen sehen {@code FREIGEGEBEN},

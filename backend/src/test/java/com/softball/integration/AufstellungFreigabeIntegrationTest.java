@@ -425,6 +425,20 @@ class AufstellungFreigabeIntegrationTest {
             .andExpect(jsonPath("$.lineupsReleasedAt").doesNotExist());
     }
 
+    /** Der Knopf "zuruecknehmen" haengt an FREIGEGEBEN; ab 07:00 am Spieltag bewirkte er nichts. */
+    @Test
+    void freigegebenAmSpieltagTraegtDieLageJeNachUhr() throws Exception {
+        final long id = neuerSpieltag(LocalDate.of(2026, 7, 4));
+        freigeben(id, "a".repeat(64));
+
+        uhr.setzeAuf("2026-07-04T04:59:00Z");
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.aufstellungsLage").value("FREIGEGEBEN"));
+        uhr.setzeAuf("2026-07-04T05:01:00Z");
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.aufstellungsLage").value("OFFEN_AB_SIEBEN"));
+    }
+
     @Test
     void einVergangenerFreigegebenerSpieltagTraegtDieLageVergangen() throws Exception {
         final long id = neuerSpieltag(LocalDate.now(BERLIN).minusDays(7));
