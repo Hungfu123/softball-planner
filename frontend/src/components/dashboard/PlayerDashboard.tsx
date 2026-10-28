@@ -19,6 +19,9 @@ import { UpcomingList } from './UpcomingList'
 /** null = Aufstellung nicht ladbar, undefined = lädt noch. */
 type Aufstellungen = Record<number, LineupEntryResponse[] | null | undefined>
 
+/** Dieselbe Auskunft in beiden Karten — und nicht „noch keine Aufstellung": die kann längst stehen. */
+const NOCH_NICHT_FREIGEGEBEN = 'Die Aufstellung steht noch nicht. Sobald sie steht, findest du sie hier.'
+
 const KARTE = 'rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 p-4 sm:p-5'
 const UEBERSCHRIFT = 'font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3'
 
@@ -140,7 +143,7 @@ function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
             <span className="block font-display text-[11px] font-bold tracking-widest uppercase text-white/60">
               {`Spiel ${i + 1} gegen ${g.opponentTeam?.name ?? 'Gegner offen'}`}
             </span>
-            <span className="block text-sm mt-0.5">{meinePlatzierung(aufstellungen[g.id], playerId)}</span>
+            <span className="block text-sm mt-0.5">{spieltag.lineupsReleasedAt ? meinePlatzierung(aufstellungen[g.id], playerId) : NOCH_NICHT_FREIGEGEBEN}</span>
           </li>
         ))}
       </ul>
@@ -158,12 +161,13 @@ function LineupLesen({ spieltag, aufstellungen, playerId }: {
   // Standard: das erste Spiel, das noch läuft oder aussteht.
   const aktiv = spiele.find(g => g.id === gewaehlt) ?? spiele.find(g => !g.endedAt) ?? spiele[0]
   const eintraege = aktiv ? aufstellungen[aktiv.id] : undefined
+  const freigegeben = Boolean(spieltag.lineupsReleasedAt)
   const sortiert = eintraege ? [...eintraege].sort((a, b) => a.battingOrder - b.battingOrder) : []
 
   return (
     <section aria-label="Lineup" className={KARTE}>
       <h2 className={UEBERSCHRIFT}>Lineup</h2>
-      {spiele.length > 1 && (
+      {freigegeben && spiele.length > 1 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {spiele.map((g, i) => (
             <button
@@ -180,16 +184,17 @@ function LineupLesen({ spieltag, aufstellungen, playerId }: {
           ))}
         </div>
       )}
-      {eintraege === undefined && <p className="text-sm text-white/65">Aufstellung lädt …</p>}
-      {eintraege === null && (
+      {!freigegeben && <p className="text-sm text-white/65">{NOCH_NICHT_FREIGEGEBEN}</p>}
+      {freigegeben && eintraege === undefined && <p className="text-sm text-white/65">Aufstellung lädt …</p>}
+      {freigegeben && eintraege === null && (
         <p className="text-sm text-white/65">Die Aufstellung ist gerade nicht erreichbar — später nochmal reinschauen.</p>
       )}
-      {eintraege && eintraege.length === 0 && (
+      {freigegeben && eintraege && eintraege.length === 0 && (
         <p className="text-sm text-white/65">
           Für dieses Spiel gibt es noch keine Aufstellung. Sobald der Trainer sie macht, steht sie hier.
         </p>
       )}
-      {sortiert.length > 0 && (
+      {freigegeben && sortiert.length > 0 && (
         <ol className="space-y-1">
           {sortiert.map(e => {
             const ich = playerId != null && (e.player.id === playerId || e.dhBatterPlayer?.id === playerId)

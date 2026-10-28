@@ -118,6 +118,9 @@ export interface GameDayResponse {
   seasonId: number
   availablePlayers: Player[]
   games: GameResponse[]
+  /** ISO-Zeitpunkt der Freigabe; null/fehlend = nicht freigegeben (Spieler sehen dann leere Listen). */
+  lineupsReleasedAt?: string | null
+  lineupsChangedSinceRelease?: boolean
 }
 
 export interface LeagueTeamResponse {
