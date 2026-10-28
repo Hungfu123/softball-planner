@@ -3,8 +3,13 @@ import * as api from '@/api/client'
 import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
 import { LoadingSkeleton } from '@/components/shared'
-import type { GameDayResponse, GameResponse, LineupEntryResponse, MeResponse } from '@/types'
-import { alleLeer, istVergangen, NOCH_KEINE_AUFSTELLUNG, NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsLage'
+import type {
+  GameDayLineupsResponse, GameDayResponse, GameResponse, LineupEntryResponse, MeResponse, Player,
+} from '@/types'
+import type { Aufstellungen } from '@/utils/aufstellungsLage'
+import { alleLeer, aufstellungenJeSpiel, istVergangen, NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsLage'
+import { Aufstellungsansicht } from './Aufstellungsansicht'
+import { KARTE, UEBERSCHRIFT } from './karte'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { UpcomingList } from './UpcomingList'
 
@@ -16,12 +21,6 @@ import { UpcomingList } from './UpcomingList'
  *
  * Keine Trainingszahl, kein Link in den Planer, kein Bearbeiten-Knopf.
  */
-
-/** null = Aufstellung nicht ladbar, undefined = lädt noch. */
-type Aufstellungen = Record<number, LineupEntryResponse[] | null | undefined>
-
-const KARTE = 'rounded-2xl bg-spotlight text-spotlight-ink shadow-lg shadow-navy-900/15 p-4 sm:p-5'
-const UEBERSCHRIFT = 'font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3'
 
 function useNaechsterSpieltag() {
   const [laden, setLaden] = useState(true)
@@ -57,19 +56,22 @@ function useNaechsterSpieltag() {
   return { laden, ladefehler, seasonId, seasonName, naechster: kommende[0] ?? null, danach: kommende.slice(1) }
 }
 
-function useAufstellungen(spieltag: GameDayResponse | null): Aufstellungen {
-  const [stand, setStand] = useState<{ id: number; daten: Aufstellungen } | null>(null)
+/**
+ * EIN Abruf fuer den ganzen Spieltag statt einer je Spiel: er bringt Aufstellungen, Staff
+ * und die Base-Coach-Auskunft zusammen. Faellt er aus, heisst das „nicht erreichbar" —
+ * nicht „steht noch nicht". null = nicht ladbar, undefined = laedt noch.
+ */
+function useAufstellungen(spieltag: GameDayResponse | null): GameDayLineupsResponse | null | undefined {
+  const [stand, setStand] = useState<{ id: number; daten: GameDayLineupsResponse | null } | null>(null)
   useEffect(() => {
     if (!spieltag) return
     let abgebrochen = false
-    Promise.all(spieltag.games.map(g =>
-      api.getLineup(g.id).then(l => [g.id, l] as const).catch(() => [g.id, null] as const),
-    )).then(paare => {
-      if (!abgebrochen) setStand({ id: spieltag.id, daten: Object.fromEntries(paare) })
-    })
+    api.getGameDayLineups(spieltag.id)
+      .catch(() => null)
+      .then(daten => { if (!abgebrochen) setStand({ id: spieltag.id, daten }) })
     return () => { abgebrochen = true }
   }, [spieltag])
-  return stand && spieltag && stand.id === spieltag.id ? stand.daten : {}
+  return stand && spieltag && stand.id === spieltag.id ? stand.daten : undefined
 }
 
 /**
@@ -77,18 +79,18 @@ function useAufstellungen(spieltag: GameDayResponse | null): Aufstellungen {
  * `availablePlayers` bewusst leer (N+1). Wer die Liste fragt, sagt jedem „nicht dabei".
  * null = nicht ladbar, undefined = lädt noch.
  */
-function useZusagen(spieltag: GameDayResponse | null): number[] | null | undefined {
-  const [stand, setStand] = useState<{ id: number; ids: number[] | null } | null>(null)
+function useZusagen(spieltag: GameDayResponse | null): Player[] | null | undefined {
+  const [stand, setStand] = useState<{ id: number; spieler: Player[] | null } | null>(null)
   useEffect(() => {
     if (!spieltag) return
     let abgebrochen = false
     api.getGameDay(spieltag.id)
-      .then(gd => gd.availablePlayers.map(p => p.id))
+      .then(gd => gd.availablePlayers)
       .catch(() => null)
-      .then(ids => { if (!abgebrochen) setStand({ id: spieltag.id, ids }) })
+      .then(spieler => { if (!abgebrochen) setStand({ id: spieltag.id, spieler }) })
     return () => { abgebrochen = true }
   }, [spieltag])
-  return stand && spieltag && stand.id === spieltag.id ? stand.ids : undefined
+  return stand && spieltag && stand.id === spieltag.id ? stand.spieler : undefined
 }
 
 function meinePlatzierung(eintraege: LineupEntryResponse[] | null | undefined, playerId: number): string {
@@ -110,7 +112,7 @@ function meinePlatzierung(eintraege: LineupEntryResponse[] | null | undefined, p
 
 function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
   spieltag: GameDayResponse
-  zusagen: number[] | null | undefined
+  zusagen: Player[] | null | undefined
   aufstellungen: Aufstellungen
   playerId: number
 }) {
@@ -121,7 +123,7 @@ function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
         <p className="text-sm text-white/65">Zusageliste lädt …</p>
       ) : zusagen === null ? (
         <p className="text-sm text-white/65">Die Zusageliste ist gerade nicht erreichbar — später nochmal reinschauen.</p>
-      ) : zusagen.includes(playerId) ? (
+      ) : zusagen.some(p => p.id === playerId) ? (
         <p className="font-display text-xl font-extrabold tracking-wide uppercase text-amber-400">Du bist dabei</p>
       ) : (
         <>
@@ -144,75 +146,6 @@ function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
           </li>
         ))}
       </ul>
-      )}
-    </section>
-  )
-}
-
-function LineupLesen({ spieltag, aufstellungen, playerId }: {
-  spieltag: GameDayResponse
-  aufstellungen: Aufstellungen
-  playerId: number | null
-}) {
-  const spiele = spieltag.games
-  const [gewaehlt, setGewaehlt] = useState<number | null>(null)
-  // Standard: das erste Spiel, das noch läuft oder aussteht.
-  const aktiv = spiele.find(g => g.id === gewaehlt) ?? spiele.find(g => !g.endedAt) ?? spiele[0]
-  const eintraege = aktiv ? aufstellungen[aktiv.id] : undefined
-  // Die Freigabe erklaert nur die Leere, sie verbirgt nichts: Eintraege werden immer gezeigt.
-  const keineSichtbar = stehtNochNicht(spieltag, alleLeer(spiele, aufstellungen))
-  const sortiert = eintraege ? [...eintraege].sort((a, b) => a.battingOrder - b.battingOrder) : []
-
-  return (
-    <section aria-label="Lineup" className={KARTE}>
-      <h2 className={UEBERSCHRIFT}>Lineup</h2>
-      {!keineSichtbar && spiele.length > 1 && (
-        <div className="flex flex-wrap gap-2 mb-3">
-          {spiele.map((g, i) => (
-            <button
-              key={g.id}
-              type="button"
-              onClick={() => setGewaehlt(g.id)}
-              aria-pressed={g.id === aktiv?.id}
-              className={`font-display min-h-11 min-w-11 px-4 rounded-lg text-[11px] font-extrabold tracking-widest uppercase cursor-pointer border ${
-                g.id === aktiv?.id ? 'bg-white text-navy-900 border-white' : 'bg-white/8 text-white border-white/15 hover:bg-navy-800'
-              }`}
-            >
-              {`Spiel ${i + 1}`}
-            </button>
-          ))}
-        </div>
-      )}
-      {eintraege === undefined && <p className="text-sm text-white/65">Aufstellung lädt …</p>}
-      {eintraege === null && (
-        <p className="text-sm text-white/65">Die Aufstellung ist gerade nicht erreichbar — später nochmal reinschauen.</p>
-      )}
-      {eintraege && eintraege.length === 0 && (
-        <p className="text-sm text-white/65">
-          {keineSichtbar ? NOCH_NICHT_FREIGEGEBEN : NOCH_KEINE_AUFSTELLUNG}
-        </p>
-      )}
-      {sortiert.length > 0 && (
-        <ol className="space-y-1">
-          {sortiert.map(e => {
-            const ich = playerId != null && (e.player.id === playerId || e.dhBatterPlayer?.id === playerId)
-            return (
-              <li
-                key={e.id}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 border ${ich ? 'bg-amber-400/15 border-amber-400/50' : 'bg-white/5 border-white/10'}`}
-              >
-                <span className="font-display w-6 text-center text-sm font-extrabold text-white/60">{e.battingOrder}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-semibold truncate">{e.player.name}</span>
-                  {e.dhBatterPlayer && (
-                    <span className="block text-[11px] text-white/60 truncate">DH: {e.dhBatterPlayer.name}</span>
-                  )}
-                </span>
-                <span className="font-display text-xs font-bold tracking-widest uppercase text-white/80">{e.position ?? '–'}</span>
-              </li>
-            )
-          })}
-        </ol>
       )}
     </section>
   )
@@ -261,8 +194,9 @@ export function PlayerDashboard() {
   const { me } = useRolle()
   const playerId = me?.playerId ?? null
   const { laden, ladefehler, naechster, danach } = useNaechsterSpieltag()
-  const aufstellungen = useAufstellungen(naechster)
+  const daten = useAufstellungen(naechster)
   const zusagen = useZusagen(naechster)
+  const aufstellungen = naechster ? aufstellungenJeSpiel(naechster.games, daten) : {}
   const [alleZeigen, setAlleZeigen] = useState(false)
 
   if (laden) return <LoadingSkeleton variant="ball" />
@@ -284,8 +218,9 @@ export function PlayerDashboard() {
         <BinIchDabei spieltag={naechster} zusagen={zusagen} aufstellungen={aufstellungen} playerId={playerId} />
       )}
 
+      {/* Darunter, unter der Falte: wie steht das Team. Wer mehr wissen will, macht hier auf. */}
       {naechster && (
-        <LineupLesen spieltag={naechster} aufstellungen={aufstellungen} playerId={playerId} />
+        <Aufstellungsansicht spieltag={naechster} daten={daten} zusagen={zusagen} playerId={playerId} />
       )}
 
       {danach.length > 0 && (
