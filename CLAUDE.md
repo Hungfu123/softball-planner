@@ -165,6 +165,52 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   diesen zu und bleibt für alles andere streng, und ein zweiter Test prüft die eigentliche
   Zusicherung — die Seite funktioniert, **wenn `/api/me` scheitert**. Details: `docs/PLAYMAKER.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
+- **Freigabe der Aufstellung** (`game_days.lineups_released_at` + `lineups_released_hash`,
+  V73, seit dem 28.10.2026): **Spieler sehen die Aufstellung eines Spieltags erst, wenn der
+  Trainer sie freigibt** — vorher nichts, auch nicht den eigenen Platz. Wer seinen Platz
+  kennt, kennt die halbe Aufstellung. Vier Zweige geben frei, und zwar an **einer** Stelle
+  (`shared/security/AufstellungSichtbarkeit`): Admin, **Scorer** (`@scoring.darfSchreiben`),
+  freigegeben, **oder der Spieltag liegt in der Vergangenheit** (`date < heute`). Der
+  Scorer-Zweig ist nicht Bequemlichkeit, sondern Pflicht — ohne ihn wäre der Spielbogen leer,
+  wenn ein Spieler mit Scorer-Recht ein nicht freigegebenes Spiel scoren soll. Der
+  Vergangenheits-Zweig ebenso: `/teams/spiele` lädt für jedes gespielte Spiel die
+  Schlagreihenfolge, und niemand gibt hundert alte Spieltage nachträglich frei. **Geantwortet
+  wird leer, nicht mit 403** — die Oberfläche trägt den leeren Fall ohnehin, einen Fehler
+  trüge sie nicht.
+  **Die Grenze sitzt an mehr Stellen, als man denkt.** Beim Bauen kamen nacheinander sechs
+  weitere Wege ans Licht, über die dieselben Daten herauskamen: `/gamedays/{id}/stats`
+  (Positionen je Spiel, der Name klingt nach Statistik), `StatsService` hinter
+  `/seasons/{id}/stats`, `/years/{y}/stats` und `/stats/all-time/games` (zählt `LineupEntry`,
+  also Namen und Positionen), `/games/{id}/batting-stats` und `/gamedays/{id}/batting-stats`
+  (der Lineup-Keim in `collectPlayers` — bei einem Spiel ohne At-Bats ist die Antwort **exakt
+  die Aufstellung**), `/games/{id}/scoreboard` (`resolveCurrentBatter` liefert vor dem ersten
+  At-Bat den Leadoff-Hitter samt Schlagplatz 1) und `/players/{id}/usage` (Schlagplätze ohne
+  Datumsfilter). **Wer hier etwas anfasst, geht von den DATEN aus, nicht von den Endpunkten:**
+  wer liest `LineupEntry`, `GameStaff`, `Substitution` oder abgeleitete Positionsangaben, und
+  auf welchem Weg landet das bei einem Spieler? Ein gespieltes Spiel behält dabei **alle**
+  Zahlen, auch wenn es nie freigegeben wurde.
+  **Die Zusage ist keine Aufstellung:** „Du bist dabei" kommt aus `availablePlayers` und bleibt
+  sichtbar — das beantwortet, ob man am Samstag gebraucht wird, nicht wo man steht.
+  **Nach der Freigabe gilt immer der Live-Stand.** Ändert sich danach etwas, meldet
+  `lineupsChangedSinceRelease` dem Trainer „Seit der Freigabe geändert" — eine **Auskunft für
+  ihn, keine Sperre für die Spieler**; „Erneut freigeben" setzt den Haken zurück und ändert
+  sonst nichts. Erkannt wird das über einen **Fingerabdruck** (`domain/service/
+  AufstellungsFingerabdruck`, SHA-256 über Schlagplätze, Positionen, DH, Coaches,
+  Auswechslungen, Spiel-id, sortiert) — **nicht** über einen zweiten Zeitstempel: es gibt rund
+  ein Dutzend Wege, eine Aufstellung zu ändern (Lineup, Staff, Substitutions, Swap,
+  Auto-Aufstellung, Undo, Lineup-Sets, Verfügbarkeits-Kaskade, Import, Live-Scoring), und einen
+  davon zu vergessen ergäbe einen Haken, der stillschweigend falsch steht. Ein Vergleich kann
+  nichts vergessen und fängt auch das Löschen. Der Haken wird **nur für Spieltage ab heute**
+  gerechnet — `/api/calendar.ics` ist `permitAll()` und wird gepollt; ein vergangener Spieltag
+  meldet deshalb immer `false`.
+  **Die Oberfläche verbirgt nichts, sie erklärt nur Leere** (`utils/aufstellungsauskunft.ts`,
+  `stehtNochNicht`): sind Einträge da, werden sie gezeigt — sonst entscheidet der Grund den
+  Satz („Die Aufstellung steht noch nicht." gegen „Für dieses Spiel gibt es noch keine
+  Aufstellung."). Eine Oberfläche, die nach der Freigabe statt nach den Daten entscheidet,
+  wirft einem Scorer seine Daten weg. **Bestehende Spieltage sind nach der Migration nicht
+  freigegeben** — die Alternative wäre gewesen, alle Altdaten stillschweigend zu
+  veröffentlichen. `SpielerLeserechteIntegrationTest` und `AufstellungFreigabeIntegrationTest`
+  halten das Ganze fest.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.
 
@@ -203,7 +249,16 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 - **No icon libraries** — custom SVG icons in `src/icons/index.tsx`. CrossBones for empty states, Pencil for edit, etc. `lucide-react` exists in deps but prefer the custom set.
 - **Modals over `confirm()`** — every create/edit/delete uses a dark-backdrop modal. Reusable `ConfirmModal` for destructive actions.
 - **Hover-reveal** for edit/delete affordances (pencil, trash icons appear on row hover).
-- **PWA** — service worker via `vite-plugin-pwa`. `/api`, `/drills`, `/actuator` are excluded from `navigateFallback`. API GETs cached `NetworkFirst` with 5s timeout.
+- **PWA** — service worker via `vite-plugin-pwa`. `/api`, `/drills`, `/actuator` are excluded
+  from `navigateFallback`. API GETs cached `NetworkFirst` with 5s timeout. Zwei Ausnahmen in
+  `src/pwa/apiCaching.ts`, und der Cache-Schlüssel ist **nur die URL** — das ist der Grund für
+  beide: **rollenabhängige** Antworten laufen `NetworkOnly` (sonst bekäme ein Spieler die
+  gespeicherte Antwort eines Trainers), **seltener Lesestoff** läuft `StaleWhileRevalidate`.
+  In den Lesestoff gehört **nichts, was man in der App selbst bearbeitet** — Lineup,
+  Spielstand, Umfrage, **Plays**. Plays standen dort einen halben Tag lang, und wer ein Play
+  bearbeitete, bekam danach die Fassung von vorher. **Gefunden hat das keine Prüfung, sondern
+  ein E2E-Lauf gegen den gebauten JAR:** CI testet gegen den Vite-Dev-Server, und der
+  registriert gar keinen Service Worker.
 
 ## UI/UX preferences
 
