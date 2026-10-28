@@ -205,6 +205,8 @@ export function GameDayPlanner() {
     const games = gameDay.games.map(g => ({ id: g.id, gameNumber: g.gameNumber }))
     try {
       const skipped = await lineup.saveAllGames(games)
+      // Die Freigabe-Leiste liest Aufstellungsstand und Haken aus dem Spieltag.
+      setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
       if (skipped.length === 0) {
         toast.show('Alle Lineups gespeichert')
@@ -271,6 +273,7 @@ export function GameDayPlanner() {
         return
       }
       await lineupSets.create(name)
+      if (gameDay) setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
       setSaveSetOpen(false)
       toast.show(`Set „${name}" + alle Lineups gespeichert`, 'success')
@@ -292,6 +295,7 @@ export function GameDayPlanner() {
         return
       }
       await lineupSets.overwrite(target.id)
+      if (gameDay) setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
       setActiveSetId(target.id)
       setOverwriteSet(null)

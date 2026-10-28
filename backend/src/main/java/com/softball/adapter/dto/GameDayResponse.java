@@ -4,7 +4,8 @@ import com.softball.domain.model.Game;
 import com.softball.domain.model.GameDay;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +19,7 @@ public record GameDayResponse(
     Long seasonId,
     Set<PlayerResponse> availablePlayers,
     List<GameResponse> games,
-    LocalDateTime lineupsReleasedAt,
+    OffsetDateTime lineupsReleasedAt,
     boolean lineupsChangedSinceRelease
 ) {
     /**
@@ -42,9 +43,17 @@ public record GameDayResponse(
             gameDay.getGames().stream()
                 .map(g -> mapGame(g, atBatCountByGameId, liveScoreUsByGameId))
                 .collect(Collectors.toList()),
-            gameDay.getLineupsReleasedAt(),
+            zonenbehaftet(gameDay.getLineupsReleasedAt()),
             lineupsChangedSinceRelease
         );
+    }
+
+    /**
+     * Die Datenbank haelt die Wanduhrzeit des Servers ohne Zone. Der Browser darf sie nicht
+     * raten: ohne Offset las er sie als lokale Zeit und zeigte bei UTC-Server zwei Stunden zu frueh.
+     */
+    private static OffsetDateTime zonenbehaftet(final java.time.LocalDateTime zeit) {
+        return zeit == null ? null : zeit.atZone(ZoneId.systemDefault()).toOffsetDateTime();
     }
 
     private static GameResponse mapGame(final Game game,
