@@ -1,8 +1,8 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season, CoachRotationPair } from '@/types'
+import type { GameDayResponse, LineupEntryResponse, GameStaffResponse, SubstitutionResponse, Season, BaseCoachAuskunft } from '@/types'
 import { FIELD_POSITIONS } from '@/types'
-import { resolveRotation } from './coachRotation'
+import { baseCoachSatz } from './baseCoachSatz'
 
 /**
  * Returns a short display name suitable for the field diagram.
@@ -176,85 +176,43 @@ export interface GameData {
     opponentTeam: { id: number; name: string } | null
     scoreUs: number | null
     scoreThem: number | null
-    firstBaseCoachRotation?: CoachRotationPair | null
-    thirdBaseCoachRotation?: CoachRotationPair | null
-    firstBaseCoachRotationReversed?: boolean
-    thirdBaseCoachRotationReversed?: boolean
   }
   lineup: LineupEntryResponse[]
   staff: GameStaffResponse[]
   substitutions: SubstitutionResponse[]
+  baseCoaches?: BaseCoachAuskunft
 }
 
 /**
- * Kompakt 1-zeilig im gleichen Style wie "1B Coach: Mike".
- * Keine eigene Eyebrow — einfach Prefix "3B Coach Rotation:" + Beschreibung.
- * ASCII-only.
+ * Zeichnet den Coach-Satz in einer Zeile, 7 pt Grau, und gibt die Zeilenhöhe zurück.
+ *
+ * Die Zeile darf nie umbrechen: alles darunter steht an festen y-Werten, ein
+ * zweiter Zeilenumbruch würde die Aufstellung in das Feld-Diagramm schieben.
+ * Mit langen Vornamen (`1B Maximilian · 3B Alexander`) wächst der Satz über die
+ * Breite, deshalb schrumpft die Schrift bis 5 pt, damit nichts abgeschnitten
+ * wird. Reicht auch das nicht, wird hart mit „…" gekürzt — ein verstümmelter
+ * Satz ist besser als ein verschobenes Layout. Gekürzt statt umbrochen wird
+ * bewusst erst am Ende: Kürzen verschweigt Information, Schrumpfen nicht.
  */
-function drawCoachRotationCompact(
-  doc: jsPDF,
-  x: number,
-  y: number,
-  w: number,
-  pair: CoachRotationPair,
-  lineup: LineupEntryResponse[],
-  baseLabel: '1B' | '3B',
-  reversed: boolean,
-): number {
-  const resolved = resolveRotation(pair, lineup.map(e => ({
-    battingOrder: e.battingOrder,
-    position: e.position,
-    player: { name: e.player.name },
-  })), reversed)
-  void w
+function drawCoachSatz(doc: jsPDF, x: number, y: number, maxW: number, satz: string): number {
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(150, 150, 150)
 
-  const cy = y + 2.5
-  let cx = x
+  let size = 7
+  doc.setFontSize(size)
+  while (size > 5 && doc.getTextWidth(satz) > maxW) {
+    size -= 0.5
+    doc.setFontSize(size)
+  }
+  let text = satz
+  while (text.length > 1 && doc.getTextWidth(text) > maxW) {
+    text = text.slice(0, -2) + '…'
+  }
+  doc.text(text, x, y + 2.5)
 
-  // Prefix: "3B Coach: " (gleiche Optik wie "1B Coach: Mike")
   doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(`${baseLabel} Coach: `, cx, cy)
-  cx += doc.getTextWidth(`${baseLabel} Coach: `)
-
-  // Primary fett navy
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(resolved.primary.name, cx, cy)
-  cx += doc.getTextWidth(resolved.primary.name)
-
-  // Separator
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text('. ', cx, cy)
-  cx += doc.getTextWidth('. ')
-
-  // Backup name fett navy
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(resolved.backup.name, cx, cy)
-  cx += doc.getTextWidth(resolved.backup.name)
-
-  // " coacht bei Schlag "
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(' coacht bei Schlag ', cx, cy)
-  cx += doc.getTextWidth(' coacht bei Schlag ')
-
-  // Range fett navy
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(resolved.backupCoverRange, cx, cy)
-  cx += doc.getTextWidth(resolved.backupCoverRange)
-
-  // Closing: "bis Dat vom Schlag zurück ist"
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text(`, bis ${resolved.primary.name} vom Schlag zurück ist.`, cx, cy)
-
   doc.setTextColor(0, 0, 0)
-  return y + 4
+  return 3.5
 }
 
 export function generatePdf(gameDay: GameDayResponse, games: GameData[], season: Season | null) {
@@ -377,6 +335,13 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       y += 2
     }
 
+    // Coach-Satz direkt unter der Bank (bzw. unter der Tabelle, wenn die Bank leer ist)
+    const coachSatz = baseCoachSatz(games[gameIndex].baseCoaches)
+    if (coachSatz) {
+      drawCoachSatz(doc, contentLeft, y - 1.5, contentRight - contentLeft, coachSatz)
+      y += 3
+    }
+
     y += 5
   }
 
@@ -429,7 +394,7 @@ export function generateLineupWithFieldPdf(
   y += 8
 
   for (let gi = 0; gi < games.length; gi++) {
-    const { game, lineup, staff, substitutions } = games[gi]
+    const { game, lineup, staff, substitutions, baseCoaches } = games[gi]
 
     // Page-Break nach jeweils 3 Games
     if (gi > 0 && gi % 3 === 0) {
@@ -452,40 +417,9 @@ export function generateLineupWithFieldPdf(
     doc.setTextColor(0, 0, 0)
     y += 4
 
-    // --- Coach-Zeilen (3B zuerst weil wichtiger, 1B danach) ---
-    // Jede Base bekommt eine Zeile: entweder Staff-Coach oder Rotation aus Lineup.
-    const subInIds = new Map(substitutions.map(s => [s.playerIn.id, s]))
-    const fullW = pageWidth - 2 * margin
-
-    const drawStaffLine = (baseLabel: '1B' | '3B', staffMember: GameStaffResponse): void => {
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(120, 120, 120)
-      const sub = subInIds.get(staffMember.player.id)
-      const text = sub
-        ? `${baseLabel} Coach: ${staffMember.player.name} (${sub.playerOut.name} ab ${sub.inning + 1}. Inning)`
-        : `${baseLabel} Coach: ${staffMember.player.name}`
-      doc.text(text, lineupX, y + 2.5)
-      doc.setTextColor(0, 0, 0)
-    }
-
-    const drawCoachRow = (baseLabel: '1B' | '3B'): void => {
-      const role = baseLabel === '1B' ? 'BASE_COACH_1ST' : 'BASE_COACH_3RD'
-      const staffMember = staff.find(s => s.role === role)
-      const rotation = baseLabel === '1B' ? game.firstBaseCoachRotation : game.thirdBaseCoachRotation
-      const rotationReversed = baseLabel === '1B'
-        ? (game.firstBaseCoachRotationReversed ?? false)
-        : (game.thirdBaseCoachRotationReversed ?? false)
-      if (staffMember) {
-        drawStaffLine(baseLabel, staffMember)
-        y += 3.5
-      } else if (rotation) {
-        y = drawCoachRotationCompact(doc, lineupX, y, fullW, rotation, lineup, baseLabel, rotationReversed)
-      }
-    }
-
-    drawCoachRow('1B')
-    drawCoachRow('3B')
+    // --- Coach-Satz: eine Zeile über beide Spalten (Lineup + Feld) ---
+    const coachSatz = baseCoachSatz(baseCoaches)
+    if (coachSatz) y += drawCoachSatz(doc, lineupX, y, blockWidth, coachSatz)
 
     const contentTopY = y
     let lineupBottomY = contentTopY

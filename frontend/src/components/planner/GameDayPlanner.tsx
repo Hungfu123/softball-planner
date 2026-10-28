@@ -489,12 +489,13 @@ export function GameDayPlanner() {
 
   const loadGameData = async () => {
     if (!gameDay) return null
-    const { lineups, staff, substitutions } = await api.getGameDayLineups(gameDay.id)
+    const { lineups, staff, substitutions, baseCoaches } = await api.getGameDayLineups(gameDay.id)
     return gameDay.games.map(g => ({
       game: g,
       lineup: lineups[String(g.id)] ?? [],
       staff: staff[String(g.id)] ?? [],
       substitutions: substitutions?.[String(g.id)] ?? [],
+      baseCoaches: baseCoaches?.[String(g.id)],
     }))
   }
 

@@ -56,6 +56,34 @@ describe('LineupSheet', () => {
     expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
   })
 
+  const eintrag = (n: number) => ({
+    id: n, battingOrder: n, position: 'P', dhBatterPlayer: null,
+    player: { id: n, name: `Spieler ${n}` },
+  })
+
+  it('zeigt den Coach-Satz unter der Aufstellung', async () => {
+    mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
+    mockApi.getGameDayLineups.mockResolvedValue({
+      lineups: { '10': Array.from({ length: 10 }, (_, i) => eintrag(i + 1)) },
+      staff: {}, substitutions: {},
+      baseCoaches: { '10': { firstBase: null, thirdBase: null, startSlots: [9, 10] } },
+    })
+    rendern()
+    expect(await screen.findByText('Coaches: zuletzt aus · #9 #10')).toBeInTheDocument()
+  })
+
+  it('schweigt, wenn es keine Coaches gibt', async () => {
+    mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
+    mockApi.getGameDayLineups.mockResolvedValue({
+      lineups: { '10': [eintrag(1)] }, staff: {}, substitutions: {},
+      baseCoaches: { '10': { firstBase: null, thirdBase: null, startSlots: [] } },
+    })
+    rendern()
+    expect(await screen.findByText('Spieler 1')).toBeInTheDocument()
+    expect(screen.queryByText(/zuletzt aus/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Coaches/)).not.toBeInTheDocument()
+  })
+
   it('bleibt nach der Freigabe bei „Kein Lineup", wenn nichts eingetragen ist', async () => {
     mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
     rendern()
