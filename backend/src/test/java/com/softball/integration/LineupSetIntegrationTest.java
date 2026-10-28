@@ -164,8 +164,11 @@ class LineupSetIntegrationTest {
             .andExpect(jsonPath("$[0].entries.length()").value(2));
     }
 
+    // "Anwenden" ist kein Backend-Vorgang, sondern ein Zurueckspielen durch das Frontend (drei PUTs).
+    // Backendseitig bleibt als Restrisiko, dass ein Alt-Set nach dem Wegfall der Rotationstabelle
+    // noch gelesen und ueberschrieben werden kann — genau das prueft dieser Test.
     @Test
-    void altesSetLaesstSichOhneRotationsfeldAnwenden() throws Exception {
+    void altesSetSpeichertUndUeberschreibtOhneRotationsfeld() throws Exception {
         final PlayerEntity coach = playerRepository.save(new PlayerEntity("Eva"));
         mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
                 .contentType(MediaType.APPLICATION_JSON)

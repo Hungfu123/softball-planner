@@ -31,8 +31,8 @@ Auto-Generation auch verfügbar: `docs/03-LINEUP-AUTO-GENERATE.md`.
 - Snapshot des ganzen Spieltags: Verfügbare Spieler + Lineups aller Games + Base-Coaches.
 - `POST /api/gamedays/{id}/lineup-sets` neu anlegen, `PUT /api/lineup-sets/{id}` **mit aktuellem Stand überschreiben** (ID, Name und Sortierung bleiben), `PATCH` umbenennen, `DELETE` löschen.
 - Frontend: `LineupSetBar` (Pills + ⋯-Menü mit Überschreiben/Umbenennen/Löschen), `useLineupSets`. Überschreiben speichert erst alle Game-Lineups, dann snapshotet das Backend — gleiche Reihenfolge wie "Als Set speichern".
-- **Coach-Rotation ist Teil des Sets** (seit V57, Tabelle `lineup_set_game_rotation`, eine Zeile je `game_number` mit 1B/3B-Pair + reversed-Flag). `captureCurrentState` liest sie von den Games mit, `applySet` schreibt sie per `setCoachRotation` zurück. Zeilen ohne Rotation werden nicht gespeichert; **Alt-Sets (vor V57) haben keine Zeilen → Rotation wird beim Anwenden geleert**, statt die des vorher geladenen Sets zu erben.
-- Der Planner zieht nach `applySet` `getGameDay` neu — sonst zeigen die 1B/3B-Badges im Lineup den alten Stand, u. a. weil `GameStaffService.setStaff` die Rotation serverseitig löscht, sobald ein Coach-Slot besetzt wird.
+- Ein Set trägt Verfügbare, Aufstellung und Base Coaches — mehr nicht. Die frühere Coach-Rotation (Pair-Paare, V57) ist ersatzlos entfallen; V74 hat Tabelle `lineup_set_game_rotation` und die Rotationsspalten an `games` gedroppt.
+- Der Planner zieht nach `applySet` `getGameDay` neu — **muss bleiben**: die Freigabe-Leiste liest Aufstellungsstand und Freigabe-Haken aus dem Spieltag und zeigte sonst nach „Set anwenden" veraltete Zustände.
 
 ## Frontend Files
 - `components/lineup/LineupBuilder.tsx` — Drag-Drop via @dnd-kit

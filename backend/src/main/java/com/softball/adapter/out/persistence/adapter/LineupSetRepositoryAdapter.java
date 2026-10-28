@@ -38,11 +38,9 @@ public class LineupSetRepositoryAdapter implements LineupSetRepository {
     @Transactional
     public LineupSet save(final LineupSet lineupSet) {
         if (lineupSet.getId() != null) {
-            // Hibernate ersetzt ersetzte Kinder-Zeilen in einem Flush per insert-before-delete —
-            // ein Unique-Constraint an den Kinder-Zeilen knallt dann,
-            // obwohl das Ergebnis korrekt waere ("Datensatz wird noch referenziert"-400).
-            // Deshalb zweiphasig: erst die alten Kinder weglaschen (eigener Flush),
-            // dann die neuen speichern.
+            // Hibernate ersetzt Kinder-Zeilen in einem Flush per insert-before-delete.
+            // Zweiphasig (erst die alten Kinder weglassen und flushen, dann die neuen speichern)
+            // stimmt das Ergebnis unabhaengig von der Flush-Reihenfolge.
             repo.findById(lineupSet.getId()).ifPresent(existing -> {
                 existing.getEntries().clear();
                 existing.getStaff().clear();
