@@ -24,6 +24,8 @@ public class GameDayMapper {
     public GameDay toDomain(final GameDayEntity entity) {
         if (entity == null) return null;
         final GameDay gd = new GameDay(entity.getId(), entity.getDate(), entity.getLabel(), entity.getLocation());
+        gd.setLineupsReleasedAt(entity.getLineupsReleasedAt());
+        gd.setLineupsReleasedHash(entity.getLineupsReleasedHash());
         if (entity.getSeason() != null) {
             final Season season = new Season(entity.getSeason().getId(), entity.getSeason().getName(), entity.getSeason().getYear());
             gd.setSeason(season);
@@ -65,6 +67,8 @@ public class GameDayMapper {
         if (domain == null) return null;
         final GameDayEntity entity = new GameDayEntity(domain.getDate(), domain.getLabel(), domain.getLocation(), seasonEntity);
         entity.setId(domain.getId());
+        entity.setLineupsReleasedAt(domain.getLineupsReleasedAt());
+        entity.setLineupsReleasedHash(domain.getLineupsReleasedHash());
         return entity;
     }
 
@@ -72,6 +76,8 @@ public class GameDayMapper {
         entity.setDate(domain.getDate());
         entity.setLabel(domain.getLabel());
         entity.setLocation(domain.getLocation());
+        entity.setLineupsReleasedAt(domain.getLineupsReleasedAt());
+        entity.setLineupsReleasedHash(domain.getLineupsReleasedHash());
         syncGames(entity, domain);
     }
 

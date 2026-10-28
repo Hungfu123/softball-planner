@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,12 @@ public class GameDayEntity {
     private String label;
 
     private String location;
+
+    @Column(name = "lineups_released_at")
+    private LocalDateTime lineupsReleasedAt;
+
+    @Column(name = "lineups_released_hash", length = 64)
+    private String lineupsReleasedHash;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "season_id", nullable = false)
@@ -68,5 +75,9 @@ public class GameDayEntity {
     public void setAvailablePlayersList(final List<PlayerEntity> players) { this.availablePlayers = new HashSet<>(players); }
     public List<GameEntity> getGames() { return games; }
     public void setGames(final List<GameEntity> games) { this.games = games; }
+    public LocalDateTime getLineupsReleasedAt() { return lineupsReleasedAt; }
+    public void setLineupsReleasedAt(final LocalDateTime lineupsReleasedAt) { this.lineupsReleasedAt = lineupsReleasedAt; }
+    public String getLineupsReleasedHash() { return lineupsReleasedHash; }
+    public void setLineupsReleasedHash(final String lineupsReleasedHash) { this.lineupsReleasedHash = lineupsReleasedHash; }
     public Long getSeasonId() { return season != null ? season.getId() : null; }
 }

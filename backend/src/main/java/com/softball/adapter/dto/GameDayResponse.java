@@ -4,6 +4,7 @@ import com.softball.domain.model.Game;
 import com.softball.domain.model.GameDay;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,7 +17,9 @@ public record GameDayResponse(
     String location,
     Long seasonId,
     Set<PlayerResponse> availablePlayers,
-    List<GameResponse> games
+    List<GameResponse> games,
+    LocalDateTime lineupsReleasedAt,
+    boolean lineupsChangedSinceRelease
 ) {
     public static GameDayResponse from(final GameDay gameDay) {
         return from(gameDay, Map.of(), Map.of());
@@ -25,6 +28,13 @@ public record GameDayResponse(
     public static GameDayResponse from(final GameDay gameDay,
                                         final Map<Long, Long> atBatCountByGameId,
                                         final Map<Long, Integer> liveScoreUsByGameId) {
+        return from(gameDay, atBatCountByGameId, liveScoreUsByGameId, false);
+    }
+
+    public static GameDayResponse from(final GameDay gameDay,
+                                        final Map<Long, Long> atBatCountByGameId,
+                                        final Map<Long, Integer> liveScoreUsByGameId,
+                                        final boolean lineupsChangedSinceRelease) {
         return new GameDayResponse(
             gameDay.getId(),
             gameDay.getDate(),
@@ -36,7 +46,9 @@ public record GameDayResponse(
                 .collect(Collectors.toSet()),
             gameDay.getGames().stream()
                 .map(g -> mapGame(g, atBatCountByGameId, liveScoreUsByGameId))
-                .collect(Collectors.toList())
+                .collect(Collectors.toList()),
+            gameDay.getLineupsReleasedAt(),
+            lineupsChangedSinceRelease
         );
     }
 

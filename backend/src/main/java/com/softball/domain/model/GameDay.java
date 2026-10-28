@@ -1,6 +1,7 @@
 package com.softball.domain.model;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +15,10 @@ public class GameDay {
     private Season season;
     private Set<Player> availablePlayers = new HashSet<>();
     private List<Game> games = new ArrayList<>();
+    /** Wann der Trainer die Aufstellung freigegeben hat; null = nicht freigegeben. */
+    private LocalDateTime lineupsReleasedAt;
+    /** Fingerabdruck der Aufstellung zum Zeitpunkt der Freigabe. */
+    private String lineupsReleasedHash;
 
     public GameDay() {}
 
@@ -45,6 +50,10 @@ public class GameDay {
     public void setAvailablePlayers(final Set<Player> availablePlayers) { this.availablePlayers = availablePlayers; }
     public List<Game> getGames() { return games; }
     public void setGames(final List<Game> games) { this.games = games; }
+    public LocalDateTime getLineupsReleasedAt() { return lineupsReleasedAt; }
+    public void setLineupsReleasedAt(final LocalDateTime lineupsReleasedAt) { this.lineupsReleasedAt = lineupsReleasedAt; }
+    public String getLineupsReleasedHash() { return lineupsReleasedHash; }
+    public void setLineupsReleasedHash(final String lineupsReleasedHash) { this.lineupsReleasedHash = lineupsReleasedHash; }
     public Long getSeasonId() { return season != null ? season.getId() : null; }
 
     public void setAvailablePlayersList(final List<Player> players) {
