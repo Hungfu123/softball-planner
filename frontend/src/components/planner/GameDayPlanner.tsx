@@ -697,6 +697,7 @@ export function GameDayPlanner() {
             </div>
           </div>
           <FreigabeLeiste
+            lage={gameDay.aufstellungsLage ?? 'GESPERRT'}
             freigegebenSeit={gameDay.lineupsReleasedAt ?? null}
             seitdemGeaendert={gameDay.lineupsChangedSinceRelease ?? false}
             hatAufstellung={gameDay.games.some(g => g.lineupEntryCount > 0)}

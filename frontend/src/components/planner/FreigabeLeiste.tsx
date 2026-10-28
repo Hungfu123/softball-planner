@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
+import type { AufstellungsLage } from '@/types'
 
 interface Props {
+  lage: AufstellungsLage
   freigegebenSeit: string | null
   seitdemGeaendert: boolean
   hatAufstellung: boolean
@@ -18,12 +20,14 @@ function seitText(iso: string): string {
 const knopf =
   'shrink-0 px-2.5 py-1 text-xs rounded-lg font-semibold cursor-pointer border border-line-strong text-ink-muted hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted disabled:hover:border-line-strong'
 
-// Zustand des Spieltags, kein Werkzeug. Der dritte Zustand ist eine Auskunft fuer den Trainer:
-// Spieler sehen nach der Freigabe immer den Live-Stand, der Haken sperrt nichts.
-export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellung, umschalten }: Props) {
+// Beantwortet genau eine Frage: sehen die Spieler die Aufstellung gerade? Die Lage kommt fertig
+// aus dem Backend (dort sitzt die 7-Uhr-Regel samt Zeitzone) — hier wird nichts umgerechnet.
+// Die Freigabe ist nur einer der Gruende fuer ein Ja. "Seit der Freigabe geaendert" bleibt als
+// Zusatz, weil der Trainer sonst nicht erfaehrt, dass die Spieler etwas Altes sehen.
+// Punktfarben: accent = sichtbar, amber = du koenntest etwas tun, grau = nichts zu tun.
+export function FreigabeLeiste({ lage, freigegebenSeit, seitdemGeaendert, hatAufstellung, umschalten }: Props) {
   const [fragt, setFragt] = useState(false)
   const [laeuft, setLaeuft] = useState(false)
-  const freigegeben = freigegebenSeit !== null
 
   const ausfuehren = async (released: boolean) => {
     setLaeuft(true)
@@ -34,14 +38,42 @@ export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellu
     }
   }
 
-  const punkt = freigegeben && !seitdemGeaendert
-    ? 'bg-accent'
-    : hatAufstellung ? 'bg-amber-400' : 'bg-line-strong'
+  const freigegeben = lage === 'FREIGEGEBEN' && freigegebenSeit !== null
+  const geaendert = freigegeben && seitdemGeaendert
 
+  let punkt: string
   let text: string
-  if (!freigegeben) text = 'Noch nicht für Spieler freigegeben'
-  else if (seitdemGeaendert) text = `Seit der Freigabe geändert · ${seitText(freigegebenSeit)}`
-  else text = `Für Spieler freigegeben · ${seitText(freigegebenSeit)}`
+  switch (lage) {
+    case 'GESPERRT':
+      punkt = hatAufstellung ? 'bg-amber-400' : 'bg-line-strong'
+      text = hatAufstellung ? 'Noch nicht für Spieler freigegeben' : 'Noch nichts aufgestellt'
+      break
+    case 'FREIGEGEBEN':
+      punkt = geaendert ? 'bg-amber-400' : 'bg-accent'
+      text = freigegebenSeit === null
+        ? 'Für Spieler sichtbar'
+        : `${geaendert ? 'Seit der Freigabe geändert' : 'Für Spieler sichtbar'} · ${seitText(freigegebenSeit)}`
+      break
+    case 'HEUTE_VOR_SIEBEN':
+      // Grau, nicht amber: Nichtstun ist hier richtig, ab 7 Uhr wird es von selbst sichtbar.
+      punkt = 'bg-line-strong'
+      text = 'Ab 7 Uhr für alle sichtbar'
+      break
+    case 'OFFEN_AB_SIEBEN':
+      punkt = 'bg-accent'
+      text = 'Für alle sichtbar · seit 7 Uhr'
+      break
+    case 'OFFEN_VERGANGEN':
+      punkt = 'bg-accent'
+      text = 'Für alle sichtbar · Spieltag vorbei'
+      break
+  }
+
+  const freigebenKnopf =
+    lage === 'GESPERRT' ? 'Freigeben'
+    : lage === 'HEUTE_VOR_SIEBEN' ? 'Früher freigeben'
+    : geaendert ? 'Erneut freigeben'
+    : null
 
   return (
     <div className="w-full flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2 mt-1">
@@ -50,14 +82,14 @@ export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellu
         <span>{text}</span>
       </div>
       <div className="flex items-center gap-2">
-        {(!freigegeben || seitdemGeaendert) && (
+        {freigebenKnopf && (
           <button
             type="button"
             className={knopf}
             disabled={!hatAufstellung || laeuft}
             onClick={() => ausfuehren(true)}
           >
-            {freigegeben ? 'Erneut freigeben' : 'Freigeben'}
+            {freigebenKnopf}
           </button>
         )}
         {freigegeben && (
@@ -69,6 +101,9 @@ export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellu
       {fragt && (
         <ConfirmModal
           title="Freigabe zurücknehmen?"
+          // Kopplung: der Satz stimmt nur, weil "zurücknehmen" ausschliesslich bei FREIGEGEBEN
+          // erscheint. In OFFEN_AB_SIEBEN/OFFEN_VERGANGEN ist die Aufstellung ohnehin offen und
+          // der Knopf fehlt. Kommt er dort je hin, muss dieser Text mit.
           message="Die Aufstellung verschwindet dann wieder aus der Spieler-Ansicht."
           confirmLabel="Zurücknehmen"
           onConfirm={() => { setFragt(false); void ausfuehren(false) }}
