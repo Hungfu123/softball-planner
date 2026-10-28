@@ -6,6 +6,7 @@ import com.softball.domain.model.GameDay;
 import com.softball.domain.model.GameStaff;
 import com.softball.domain.model.LineupEntry;
 import com.softball.application.GameDayService;
+import com.softball.domain.service.BaseCoachRegel;
 import com.softball.application.GameDayVoteSyncService;
 import com.softball.application.GameStaffService;
 import com.softball.application.LineupService;
@@ -97,7 +98,7 @@ public class GameDayController {
     @GetMapping("/gamedays/{id}/lineups")
     public GameDayLineupsResponse getLineups(@PathVariable final Long id) {
         if (!sichtbarkeit.darfSehen(id)) {
-            return new GameDayLineupsResponse(Map.of(), Map.of(), Map.of());
+            return new GameDayLineupsResponse(Map.of(), Map.of(), Map.of(), Map.of());
         }
         final GameDay gameDay = gameDayService.findById(id);
         final List<Long> gameIds = gameDay.getGames().stream().map(g -> g.getId()).toList();
@@ -106,7 +107,15 @@ public class GameDayController {
         final Map<Long, List<GameStaffResponse>> staff = gameStaffService.getStaffForGames(gameIds);
         final Map<Long, List<SubstitutionResponse>> substitutions = substitutionService.getSubstitutionsForGames(gameIds);
 
-        return new GameDayLineupsResponse(lineups, staff, substitutions);
+        final Map<Long, List<LineupEntry>> lineupModels = lineupService.getLineupModelsForGames(gameIds);
+        final Map<Long, List<GameStaff>> staffModels = gameStaffService.getStaffModelsForGames(gameIds);
+        final Map<Long, BaseCoachResponse> baseCoaches = gameIds.stream().collect(Collectors.toMap(
+            gameId -> gameId,
+            gameId -> BaseCoachResponse.from(BaseCoachRegel.fuer(
+                lineupModels.getOrDefault(gameId, List.of()),
+                staffModels.getOrDefault(gameId, List.of())))));
+
+        return new GameDayLineupsResponse(lineups, staff, substitutions, baseCoaches);
     }
 
     /**
