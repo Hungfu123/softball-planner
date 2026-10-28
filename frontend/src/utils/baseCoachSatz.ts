@@ -12,10 +12,12 @@ import type { BaseCoachAuskunft } from '@/types'
 export function baseCoachSatz(a: BaseCoachAuskunft | undefined): string | null {
   if (!a) return null
   const slots = a.startSlots.map(s => `#${s}`).join(' ')
-  const mitSlots = (teile: string[]) => (slots ? [...teile, slots] : teile).join(' · ')
+  // Ohne Aufstellung gibt es niemanden, der „zuletzt aus" sein könnte: dann nur der Name
+  const mitRegel = (name: string, andereBase: string) =>
+    slots ? `${name} · ${andereBase} zuletzt aus · ${slots}` : name
 
   if (a.firstBase && a.thirdBase) return `1B ${a.firstBase} · 3B ${a.thirdBase}`
-  if (a.firstBase) return mitSlots([`1B ${a.firstBase}`, '3B zuletzt aus'])
-  if (a.thirdBase) return mitSlots([`3B ${a.thirdBase}`, '1B zuletzt aus'])
+  if (a.firstBase) return mitRegel(`1B ${a.firstBase}`, '3B')
+  if (a.thirdBase) return mitRegel(`3B ${a.thirdBase}`, '1B')
   return slots ? `Coaches: zuletzt aus · ${slots}` : null
 }
