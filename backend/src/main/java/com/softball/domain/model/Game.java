@@ -14,10 +14,6 @@ public class Game {
     private int lineupEntryCount;
     private Instant endedAt;
     private String battingSide;
-    private CoachRotationPair firstBaseCoachRotation;
-    private CoachRotationPair thirdBaseCoachRotation;
-    private boolean firstBaseCoachRotationReversed;
-    private boolean thirdBaseCoachRotationReversed;
     private Instant timerRunningSince;
     private int timerAccumulatedSeconds;
     private Integer timeLimitMinutes;
@@ -55,14 +51,6 @@ public class Game {
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
     public String getBattingSide() { return battingSide; }
     public void setBattingSide(final String battingSide) { this.battingSide = battingSide; }
-    public CoachRotationPair getFirstBaseCoachRotation() { return firstBaseCoachRotation; }
-    public void setFirstBaseCoachRotation(final CoachRotationPair v) { this.firstBaseCoachRotation = v; }
-    public CoachRotationPair getThirdBaseCoachRotation() { return thirdBaseCoachRotation; }
-    public void setThirdBaseCoachRotation(final CoachRotationPair v) { this.thirdBaseCoachRotation = v; }
-    public boolean isFirstBaseCoachRotationReversed() { return firstBaseCoachRotationReversed; }
-    public void setFirstBaseCoachRotationReversed(final boolean v) { this.firstBaseCoachRotationReversed = v; }
-    public boolean isThirdBaseCoachRotationReversed() { return thirdBaseCoachRotationReversed; }
-    public void setThirdBaseCoachRotationReversed(final boolean v) { this.thirdBaseCoachRotationReversed = v; }
     public Instant getTimerRunningSince() { return timerRunningSince; }
     public void setTimerRunningSince(final Instant timerRunningSince) { this.timerRunningSince = timerRunningSince; }
     public int getTimerAccumulatedSeconds() { return timerAccumulatedSeconds; }

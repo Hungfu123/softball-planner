@@ -61,14 +61,6 @@ public class GameController {
         return toResponseWithLive(gameService.findById(id));
     }
 
-    @PutMapping("/{id}/coach-rotation")
-    public GameResponse setCoachRotation(@PathVariable final Long id,
-                                          @RequestBody final SetCoachRotationRequest request) {
-        return toResponseWithLive(gameService.setCoachRotation(
-            id, request.firstBaseCoachRotation(), request.thirdBaseCoachRotation(),
-            request.firstBaseCoachRotationReversed(), request.thirdBaseCoachRotationReversed()));
-    }
-
     @PutMapping("/{id}/opponent")
     public GameResponse updateOpponent(@PathVariable final Long id, @RequestBody final UpdateGameRequest request) {
         return toResponseWithLive(gameService.updateOpponent(id, request.opponentTeamId()));

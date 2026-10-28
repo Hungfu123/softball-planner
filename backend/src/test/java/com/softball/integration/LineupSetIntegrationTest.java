@@ -165,94 +165,39 @@ class LineupSetIntegrationTest {
     }
 
     @Test
-    void snapshotAndOverwriteCarryCoachRotation() throws Exception {
-        mockMvc.perform(put("/api/games/" + gameId + "/coach-rotation")
+    void altesSetLaesstSichOhneRotationsfeldAnwenden() throws Exception {
+        final PlayerEntity coach = playerRepository.save(new PlayerEntity("Eva"));
+        mockMvc.perform(put("/api/gamedays/" + gameDayId + "/players")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of(
-                    "firstBaseCoachRotation", "POS_3_8",
-                    "firstBaseCoachRotationReversed", true))))
+                .content(objectMapper.writeValueAsString(Map.of("playerIds",
+                    List.of(p1.getId(), p2.getId(), p3.getId(), coach.getId())))))
             .andExpect(status().isOk());
-
-        final MvcResult created = mockMvc.perform(post("/api/gamedays/" + gameDayId + "/lineup-sets")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("name", "Mit Rotation"))))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.rotations.length()").value(1))
-            .andExpect(jsonPath("$.rotations[0].gameNumber").value(1))
-            .andExpect(jsonPath("$.rotations[0].firstBaseCoachRotation").value("POS_3_8"))
-            .andExpect(jsonPath("$.rotations[0].firstBaseCoachRotationReversed").value(true))
-            .andExpect(jsonPath("$.rotations[0].thirdBaseCoachRotation").isEmpty())
-            .andReturn();
-        final Long setId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
-
-        // Rotation am Game aendern -> Overwrite muss die Set-Zeile ersetzen, nicht doppeln
-        mockMvc.perform(put("/api/games/" + gameId + "/coach-rotation")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of(
-                    "thirdBaseCoachRotation", "POS_5_10"))))
-            .andExpect(status().isOk());
-
-        mockMvc.perform(put("/api/lineup-sets/" + setId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.rotations.length()").value(1))
-            .andExpect(jsonPath("$.rotations[0].firstBaseCoachRotation").isEmpty())
-            .andExpect(jsonPath("$.rotations[0].thirdBaseCoachRotation").value("POS_5_10"));
-
-        // Ohne Rotation am Game bleibt die Liste leer (Alt-Set-Verhalten)
-        mockMvc.perform(put("/api/games/" + gameId + "/coach-rotation")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-            .andExpect(status().isOk());
-        mockMvc.perform(put("/api/lineup-sets/" + setId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.rotations.length()").value(0));
-    }
-
-    @Test
-    void overwriteWithUnchangedMultiGameRotationWorks() throws Exception {
-        // Dev-Reproduktion: mehrere Spiele mit Base-Coach-Rotationen, dann OHNE
-        // Zwischenänderung überschreiben. Erwartet: 200 (kein Unique-Constraint-
-        // Verletzt durch ersetzte Rotations-Zeilen).
-        mockMvc.perform(put("/api/gamedays/" + gameDayId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("numberOfGames", 3))))
-            .andExpect(status().isOk());
-        final var games = objectMapper.readTree(mockMvc.perform(get("/api/gamedays/" + gameDayId))
-            .andReturn().getResponse().getContentAsString()).get("games");
-        final Long game2 = games.get(1).get("id").asLong();
-        final Long game3 = games.get(2).get("id").asLong();
-        for (final Long g : new Long[] {game2, game3}) {
-            mockMvc.perform(put("/api/games/" + g + "/lineup")
+        mockMvc.perform(put("/api/games/" + gameId + "/staff")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(List.of(
-                    Map.of("playerId", p1.getId(), "position", "P", "battingOrder", 1),
-                    Map.of("playerId", p2.getId(), "position", "1B", "battingOrder", 2),
-                    Map.of("playerId", p3.getId(), "position", "C", "battingOrder", 3)
-                )))).andExpect(status().isOk());
-        }
-        for (final Long g : new Long[] {gameId, game2, game3}) {
-            mockMvc.perform(put("/api/games/" + g + "/coach-rotation")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(Map.of(
-                        "firstBaseCoachRotation", "POS_2_7",
-                        "thirdBaseCoachRotation", "POS_3_8"))))
-                .andExpect(status().isOk());
-        }
+                    Map.of("playerId", coach.getId(), "role", "BASE_COACH_1ST")))))
+            .andExpect(status().isOk());
 
         final MvcResult created = mockMvc.perform(post("/api/gamedays/" + gameDayId + "/lineup-sets")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("name", "Mit Rotationen"))))
+                .content(objectMapper.writeValueAsString(Map.of("name", "Altes Set"))))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.rotations.length()").value(3))
+            .andExpect(jsonPath("$.entries.length()").value(3))
+            .andExpect(jsonPath("$.staff.length()").value(1))
+            .andExpect(jsonPath("$.staff[0].role").value("BASE_COACH_1ST"))
+            .andExpect(jsonPath("$.availablePlayerIds.length()").value(4))
+            .andExpect(jsonPath("$.rotations").doesNotExist())
             .andReturn();
         final Long setId = objectMapper.readTree(created.getResponse().getContentAsString()).get("id").asLong();
 
-        mockMvc.perform(put("/api/lineup-sets/" + setId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.rotations.length()").value(3));
-        mockMvc.perform(put("/api/lineup-sets/" + setId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.rotations.length()").value(3));
+        // Mehrfaches Ueberschreiben darf nicht an Kinder-Zeilen scheitern
+        for (int i = 0; i < 2; i++) {
+            mockMvc.perform(put("/api/lineup-sets/" + setId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.entries.length()").value(3))
+                .andExpect(jsonPath("$.staff.length()").value(1))
+                .andExpect(jsonPath("$.rotations").doesNotExist());
+        }
     }
 
     @Test

@@ -22,10 +22,6 @@ public class GameMapper {
         game.setLineupEntryCount(entity.getLineupEntryCount());
         game.setEndedAt(entity.getEndedAt());
         game.setBattingSide(entity.getBattingSide());
-        game.setFirstBaseCoachRotation(entity.getFirstBaseCoachRotation());
-        game.setThirdBaseCoachRotation(entity.getThirdBaseCoachRotation());
-        game.setFirstBaseCoachRotationReversed(entity.isFirstBaseCoachRotationReversed());
-        game.setThirdBaseCoachRotationReversed(entity.isThirdBaseCoachRotationReversed());
         game.setTimerRunningSince(entity.getTimerRunningSince());
         game.setTimerAccumulatedSeconds(entity.getTimerAccumulatedSeconds());
         game.setTimeLimitMinutes(entity.getTimeLimitMinutes());
