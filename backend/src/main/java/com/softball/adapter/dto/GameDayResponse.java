@@ -21,16 +21,11 @@ public record GameDayResponse(
     LocalDateTime lineupsReleasedAt,
     boolean lineupsChangedSinceRelease
 ) {
-    public static GameDayResponse from(final GameDay gameDay) {
-        return from(gameDay, Map.of(), Map.of());
-    }
-
-    public static GameDayResponse from(final GameDay gameDay,
-                                        final Map<Long, Long> atBatCountByGameId,
-                                        final Map<Long, Integer> liveScoreUsByGameId) {
-        return from(gameDay, atBatCountByGameId, liveScoreUsByGameId, false);
-    }
-
+    /**
+     * Es gibt bewusst keine Kurzform ohne {@code lineupsChangedSinceRelease}: der Haken
+     * liesse sich ohne Datenbank nicht berechnen, und ein stillschweigendes {@code false}
+     * waere falsch. Antworten bauen {@code GameDayService.findByIdAsDto} und Verwandte.
+     */
     public static GameDayResponse from(final GameDay gameDay,
                                         final Map<Long, Long> atBatCountByGameId,
                                         final Map<Long, Integer> liveScoreUsByGameId,

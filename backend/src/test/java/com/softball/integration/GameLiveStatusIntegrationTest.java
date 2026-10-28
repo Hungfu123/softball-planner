@@ -171,7 +171,7 @@ class GameLiveStatusIntegrationTest {
     void applyPollVotes_returnsLiveAtBatCount_notZero() throws Exception {
         // Regression fuer Task 6, Fix-Runde 1: der Apply-Endpoint muss die gleiche
         // Live-Variante (echte At-Bat-Counts/Scores) liefern wie GET /gamedays/{id},
-        // nicht die 0-Wert-Platzhalter des 1-Parameter-GameDayResponse.from(GameDay)-Overloads.
+        // nicht Platzhalterwerte.
         final Long gameDayId = createGameDay("2026-03-15");
         final Long gameId = firstGameId(gameDayId);
         seedAtBat(gameId, 1, 0);
