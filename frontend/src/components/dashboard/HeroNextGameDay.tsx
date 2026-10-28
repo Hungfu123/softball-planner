@@ -30,7 +30,8 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
   const stripeBg = variant === 'past' ? 'bg-white/10' : 'bg-softball-red-600'
 
   /*
-   * Erinnerung, kein Schalter: nur der Trainer, nur wenn eine Aufstellung dasteht, nur wenn
+   * Erinnerung, kein Schalter: nur am kommenden Spieltag (der Block faellt nach der Saison auf
+   * den letzten vergangenen zurueck — den sieht ohnehin jeder), nur der Trainer, nur wenn eine Aufstellung dasteht, nur wenn
    * die Freigabe fehlt oder veraltet ist. Freigegeben wird im Planer, wo man sie auch sieht.
    */
   const hatAufstellung = gameDay.games.some(g => g.lineupEntryCount > 0)
@@ -38,7 +39,7 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
   const freigabeText = !freigegeben
     ? 'Aufstellung noch nicht freigegeben'
     : gameDay.lineupsChangedSinceRelease ? 'Seit der Freigabe geändert' : null
-  const erinnern = istAdmin && hatAufstellung && freigabeText !== null
+  const erinnern = variant !== 'past' && istAdmin && hatAufstellung && freigabeText !== null
 
   return (
     /*

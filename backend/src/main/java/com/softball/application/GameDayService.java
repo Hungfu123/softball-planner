@@ -105,10 +105,18 @@ public class GameDayService {
     /**
      * Stapelform von {@link #istSeitDerFreigabeGeaendert}: drei Abfragen fuer alle Spieltage
      * zusammen statt drei je Spieltag, und gar keine, wenn keiner freigegeben ist.
+     *
+     * <p>Gerechnet wird nur fuer Spieltage von heute an. Der Haken beantwortet "der Stand, den
+     * ich freigegeben habe, ist nicht mehr der, der dasteht" — das fragt man vor dem Spiel,
+     * nicht danach. Ein vergangener Spieltag meldet daher immer {@code false}, auch wenn seine
+     * Aufstellung nachtraeglich geaendert wird (gewollt). Die Kosten bleiben so konstant, statt
+     * mit jeder Saison zu wachsen; das zaehlt, weil {@code /api/calendar.ics} (offen, im Takt
+     * von Kalender-Clients gepollt) denselben Weg nimmt, den Haken aber nie liest.
      */
     private Set<Long> spieltageMitGeaenderterAufstellung(final List<GameDay> days) {
         final List<GameDay> freigegeben = days.stream()
             .filter(d -> d.getLineupsReleasedAt() != null)
+            .filter(d -> d.getDate() != null && !d.getDate().isBefore(LocalDate.now()))
             .toList();
         final Map<Long, String> abdruecke = aktuelleAbdruecke(freigegeben);
         return freigegeben.stream()

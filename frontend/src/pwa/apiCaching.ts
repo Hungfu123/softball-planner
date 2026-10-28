@@ -16,6 +16,11 @@
  *  - /api/seasons/{id}/stats             gezählte Aufstellung — Spieltage ohne Freigabe fehlen
  *  - /api/years/{year}/stats             dasselbe über ein Jahr
  *  - /api/stats/all-time/games           dasselbe über alles
+ *  - /api/games/{id}/lineup|staff|substitutions
+ *  - /api/gamedays/{id}/lineups|stats|batting-stats
+ *  - /api/games/{id}/batting-stats
+ *  - /api/games/{id}/scoreboard          Aufstellung eines nicht freigegebenen Spieltags nur für
+ *                                        Admins und Scorer, vergangene Spieltage für alle
  * Alles andere liefert allen Angemeldeten dasselbe oder ist admin-only (403 für Spieler).
  * Kommt ein weiterer Endpunkt dazu, der CurrentUser auswertet: hier eintragen.
  *
@@ -24,6 +29,12 @@
  * genau das wieder auf den Schirm, was die Freigabe zumacht — deshalb stehen sie hier und nicht
  * mehr beim Lesestoff. `batting-stats` und `awards` bleiben dort: die hängen an gespielten
  * Spielen, nicht an der Planung.
+ *
+ * Die Freigabe-Endpunkte der Liste oben liegen bewusst unter `NetworkFirst`, nicht unter
+ * `NetworkOnly`: der Cache ist dort nur Rückfall, wenn das Netz fehlt, und `clearApiCache`
+ * (unten) läuft bei jedem An- und Abmelden, ein Vorgänger-Konto kommt also nicht durch.
+ * Insbesondere `/scoreboard` auf `NetworkOnly` zu stellen nähme dem Live-Scoring den
+ * Offline-Rückfall — der Scoring-Pfad wird hier nicht strenger gemacht.
  *
  * Zusätzlich leert der Client den Cache bei jedem An- und Abmelden (clearApiCache).
  */

@@ -27,6 +27,7 @@ import com.softball.domain.service.AufstellungsFingerabdruck;
 
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -94,9 +95,13 @@ class AufstellungFreigabeIntegrationTest {
     }
 
     private long neuerSpieltag() throws Exception {
+        return neuerSpieltag(LocalDate.now().plusDays(7));
+    }
+
+    private long neuerSpieltag(final LocalDate datum) throws Exception {
         final String body = mockMvc.perform(post("/api/seasons/" + season.getId() + "/gamedays")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("date", "2026-05-02", "label", "Spieltag 1"))))
+                .content(objectMapper.writeValueAsString(Map.of("date", datum.toString(), "label", "Spieltag 1"))))
             .andExpect(status().isCreated())
             .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).get("id").asLong();
@@ -195,6 +200,23 @@ class AufstellungFreigabeIntegrationTest {
             .andExpect(jsonPath("$[0].lineupsChangedSinceRelease").value(true));
     }
 
+    /**
+     * Der Haken beantwortet "der Stand, den ich freigegeben habe, ist nicht mehr der, der
+     * dasteht" — das fragt man vor dem Spiel. Ein vergangener Spieltag meldet deshalb immer
+     * false, auch bei nachtraeglicher Aenderung; das spart dem Kalender-Feed die Rechnung.
+     */
+    @Test
+    void einVergangenerSpieltagMeldetNieGeaendert() throws Exception {
+        final long id = neuerSpieltag(LocalDate.now().minusDays(7));
+        freigeben(id, AufstellungsFingerabdruck.von(List.of(), List.of(), List.of()));
+        stelleAufstellung(id);
+
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
+        mockMvc.perform(get("/api/seasons/" + season.getId() + "/gamedays"))
+            .andExpect(jsonPath("$[0].lineupsChangedSinceRelease").value(false));
+    }
+
     @Test
     void dieFreigabeUeberlebtEinSpeichernDesSpieltags() throws Exception {
         final long id = neuerSpieltag();
@@ -202,7 +224,7 @@ class AufstellungFreigabeIntegrationTest {
 
         mockMvc.perform(put("/api/gamedays/" + id)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of("date", "2026-05-02", "label", "Anderes Label"))))
+                .content(objectMapper.writeValueAsString(Map.of("date", LocalDate.now().plusDays(7).toString(), "label", "Anderes Label"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.label").value("Anderes Label"))
             .andExpect(jsonPath("$.lineupsReleasedAt", gleicherZeitpunkt(LocalDateTime.of(2026, 5, 1, 12, 0))));

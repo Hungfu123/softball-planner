@@ -88,6 +88,18 @@ class PlayerUsageCalculatorTest {
     }
 
     @Test
+    void todayCountsAsAvailableButNotAsPlayed() {
+        // Am Spieltagmorgen steht die Aufstellung schon da: wuerde der heutige Tag als
+        // gespielt zaehlen, laese man aus dem Zaehler die Kaderliste des Tages.
+        final PlayerUsage usage = calculator.calculate(
+            List.of(gameDay(1, TODAY.minusDays(7)), gameDay(2, TODAY)),
+            Set.of(1L, 2L), Set.of(1L, 2L), List.of(), List.of(), Set.of(), TODAY);
+
+        assertThat(usage.gameDaysAvailable()).isEqualTo(2);
+        assertThat(usage.gameDaysPlayed()).isEqualTo(1);
+    }
+
+    @Test
     void cancelledTrainingsDontCount() {
         final List<Training> trainings = List.of(
             training(1, TODAY.minusDays(14), false),
