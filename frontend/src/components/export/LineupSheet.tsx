@@ -112,9 +112,11 @@ export function LineupSheet() {
               </table>
             )}
 
-            {lineup.length > 0 && baseCoachSatz(baseCoaches) && (
-              <p className="text-[10px] text-gray-400 mt-1">{baseCoachSatz(baseCoaches)}</p>
-            )}
+            {/* Ob etwas dasteht, entscheidet allein baseCoachSatz — wie im PDF, auch bei leerer Aufstellung */}
+            {(() => {
+              const satz = baseCoachSatz(baseCoaches)
+              return satz && <p className="text-[10px] text-gray-400 mt-1">{satz}</p>
+            })()}
 
             {/* Bench per game */}
             {lineup.length > 0 && (() => {

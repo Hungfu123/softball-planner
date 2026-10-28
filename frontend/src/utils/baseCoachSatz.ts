@@ -6,8 +6,8 @@ import type { BaseCoachAuskunft } from '@/types'
  * eine gemeinsame Funktion, nicht zwei Stellen mit derselben Idee.
  *
  * Je nicht benannter Base kommt ein Schlagplatz: beide benannt → keine Nummern,
- * einer benannt → eine, keiner → zwei. Der Satz steht im PDF unter einem Feld
- * von rund 160 px bei 11 px Schrift und darf nicht umbrechen (Länge im Test).
+ * einer benannt → eine, keiner → zwei. Der Satz muss auf dem Blatt wie auf dem
+ * Schirm in EINE Zeile passen, deshalb die Kürze (Länge im Test).
  */
 export function baseCoachSatz(a: BaseCoachAuskunft | undefined): string | null {
   if (!a) return null
