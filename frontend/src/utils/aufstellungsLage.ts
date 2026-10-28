@@ -1,4 +1,9 @@
-import type { AufstellungsLage, GameDayResponse, GameResponse, LineupEntryResponse } from '@/types'
+import type {
+  AufstellungsLage, GameDayLineupsResponse, GameDayResponse, GameResponse, LineupEntryResponse,
+} from '@/types'
+
+/** Je Spiel: die Eintraege, `null` = nicht erreichbar, `undefined` = laedt noch. */
+export type Aufstellungen = Record<number, LineupEntryResponse[] | null | undefined>
 
 export const NOCH_NICHT_FREIGEGEBEN = 'Die Aufstellung steht noch nicht. Sobald sie steht, findest du sie hier.'
 export const NOCH_KEINE_AUFSTELLUNG = 'Für dieses Spiel gibt es noch keine Aufstellung. Sobald der Trainer sie macht, steht sie hier.'
@@ -39,7 +44,25 @@ export function stehtNochNicht(
  */
 export function alleLeer(
   spiele: Pick<GameResponse, 'id'>[],
-  aufstellungen: Record<number, LineupEntryResponse[] | null | undefined>,
+  aufstellungen: Aufstellungen,
 ): boolean {
   return spiele.every(g => aufstellungen[g.id]?.length === 0)
+}
+
+/**
+ * Die Aufstellungen eines Spieltags je Spiel. `undefined` = laedt, `null` = nicht erreichbar —
+ * dieselben drei Zustaende wie bisher, nur aus EINER Antwort statt aus N Abrufen.
+ *
+ * `lineups` laesst Spiele ohne Eintraege ganz weg: ein fehlender Schluessel heisst „leer",
+ * nicht „fehlt". Ohne das `?? []` saehe ein Spieltag, an dem nur ein Spiel aufgestellt ist,
+ * aus wie einer, der noch laedt — und die Karten schwiegen statt zu antworten.
+ */
+export function aufstellungenJeSpiel(
+  spiele: Pick<GameResponse, 'id'>[],
+  daten: GameDayLineupsResponse | null | undefined,
+): Aufstellungen {
+  return Object.fromEntries(spiele.map(g => [
+    g.id,
+    daten === undefined ? undefined : daten === null ? null : daten.lineups[String(g.id)] ?? [],
+  ]))
 }

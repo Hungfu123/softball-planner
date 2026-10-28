@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import type {
-  GameDayResponse, LineupEntryResponse, MeResponse, Player,
+  GameDayLineupsResponse, GameDayResponse, LineupEntryResponse, MeResponse, Player,
   PlayerBattingStatsResponse, SeasonPlayerStats, TrainingResponse,
 } from '@/types'
 
@@ -20,7 +20,7 @@ vi.mock('@/api/client', () => ({
   getSeasons: vi.fn(),
   getGameDays: vi.fn(),
   getGameDay: vi.fn(),
-  getLineup: vi.fn(),
+  getGameDayLineups: vi.fn(),
   getSeasonBattingStats: vi.fn(),
   getSeasonStats: vi.fn(),
   getPlayerUsage: vi.fn(),
@@ -70,6 +70,14 @@ function eintrag(player: Player, position: string | null, battingOrder: number, 
   return { id: battingOrder, player, position, battingOrder, dhBatterPlayer: dh }
 }
 
+/*
+ * Ein Abruf traegt den ganzen Spieltag. Wie im Backend fehlen Spiele ohne Eintraege in
+ * `lineups` ganz — ein fehlender Schluessel heisst „leer", nicht „fehlt".
+ */
+function antwort(lineups: Record<number, LineupEntryResponse[]> = {}): GameDayLineupsResponse {
+  return { lineups: Object.fromEntries(Object.entries(lineups)), staff: {}, substitutions: {}, baseCoaches: {} }
+}
+
 const ZAHLEN: PlayerBattingStatsResponse = {
   playerId: 7, playerName: 'Mia Meier', plateAppearances: 20, atBats: 18, hits: 9,
   singles: 6, doubles: 2, triples: 1, homeRuns: 0, runs: 4, walks: 2, hitByPitch: 0,
@@ -104,7 +112,7 @@ describe('PlayerDashboard', () => {
     mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT), gameDay(2, ZUKUNFT_2)])
     mockApi.getGameDay.mockImplementation((id: number) =>
       Promise.resolve(gameDay(id, ZUKUNFT, { availablePlayers: [ICH, ANDERE] })))
-    mockApi.getLineup.mockResolvedValue([eintrag(ICH, 'SS', 3), eintrag(ANDERE, 'P', 1)])
+    mockApi.getGameDayLineups.mockResolvedValue(antwort({ 10: [eintrag(ICH, 'SS', 3), eintrag(ANDERE, 'P', 1)] }))
     mockApi.getSeasonBattingStats.mockResolvedValue([ZAHLEN])
     mockApi.getSeasonStats.mockResolvedValue([
       { playerId: 7, playerName: 'Mia Meier', totalGames: 12, positionCounts: {} } as SeasonPlayerStats,
@@ -131,7 +139,7 @@ describe('PlayerDashboard', () => {
   })
 
   it('sagt dass er nicht aufgestellt ist, wenn er fehlt', async () => {
-    mockApi.getLineup.mockResolvedValue([eintrag(ANDERE, 'P', 1), eintrag(DRITTER, 'C', 2)])
+    mockApi.getGameDayLineups.mockResolvedValue(antwort({ 10: [eintrag(ANDERE, 'P', 1), eintrag(DRITTER, 'C', 2)] }))
     rendern()
     const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
     await waitFor(() => expect(within(block).getByText(/Nicht aufgestellt/)).toBeInTheDocument())
@@ -163,7 +171,7 @@ describe('PlayerDashboard', () => {
   })
 
   it('sagt dass das Lineup noch fehlt und was dann passiert', async () => {
-    mockApi.getLineup.mockResolvedValue([])
+    mockApi.getGameDayLineups.mockResolvedValue(antwort())
     rendern()
     const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
     expect(await within(block).findByText(/noch keine Aufstellung/)).toBeInTheDocument()
@@ -179,7 +187,7 @@ describe('PlayerDashboard', () => {
       mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT, NICHT_FREIGEGEBEN)])
       mockApi.getGameDay.mockImplementation((id: number) =>
         Promise.resolve(gameDay(id, ZUKUNFT, { ...NICHT_FREIGEGEBEN, availablePlayers: [ICH, ANDERE] })))
-      mockApi.getLineup.mockResolvedValue([])
+      mockApi.getGameDayLineups.mockResolvedValue(antwort())
     })
 
     function zweiSpiele(extra: Partial<GameDayResponse>) {
@@ -206,7 +214,8 @@ describe('PlayerDashboard', () => {
     })
 
     it('zeigt vorhandene Einträge auch ohne Freigabe (Scorer), ohne den Satz', async () => {
-      mockApi.getLineup.mockResolvedValue([eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)])
+      const beide = [eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)]
+      mockApi.getGameDayLineups.mockResolvedValue(antwort({ 10: beide, 11: beide }))
       mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
       rendern()
       const lineup = await screen.findByRole('region', { name: 'Lineup' })
@@ -240,8 +249,7 @@ describe('PlayerDashboard', () => {
     })
 
     it('sagt bei gesperrtem Spieltag nicht „steht noch nicht", wenn ein Spiel Einträge hat (Admin, Spiel 2 leer)', async () => {
-      mockApi.getLineup.mockImplementation((id: number) =>
-        Promise.resolve(id === 10 ? [eintrag(ANDERE, 'P', 1)] : []))
+      mockApi.getGameDayLineups.mockResolvedValue(antwort({ 10: [eintrag(ANDERE, 'P', 1)] }))
       mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
       rendern()
       const lineup = await screen.findByRole('region', { name: 'Lineup' })
@@ -251,21 +259,21 @@ describe('PlayerDashboard', () => {
       expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
     })
 
-    it('sagt bei einem Spiel leer und einem nicht erreichbar auf beiden Karten nicht „steht noch nicht"', async () => {
-      mockApi.getLineup.mockImplementation((id: number) =>
-        id === 10 ? Promise.resolve([]) : Promise.reject(new Error('500')))
+    it('sagt waehrend des Ladens weder das eine noch das andere', async () => {
+      // Seit dem einen Abruf gibt es kein „ein Spiel da, eins nicht" mehr — die Luecke,
+      // in der keine Karte etwas wissen kann, ist das Laden. Auch dann gilt: wer nichts
+      // weiss, behauptet nicht, es stehe noch nichts.
+      mockApi.getGameDayLineups.mockReturnValue(new Promise(() => {}))
       mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
       rendern()
-      const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
-      const lineup = screen.getByRole('region', { name: 'Lineup' })
-      // Beide Karten antworten je Spiel statt mit dem Sperr-Satz: einer fehlt, also weiss keine etwas Ganzes.
-      expect(await within(block).findByText(/nicht erreichbar/)).toBeInTheDocument()
-      expect(await within(lineup).findByText(NOCH_KEINE_AUFSTELLUNG)).toBeInTheDocument()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      expect(await within(lineup).findByText(/lädt/)).toBeInTheDocument()
       expect(screen.queryByText(NOCH_NICHT_FREIGEGEBEN)).not.toBeInTheDocument()
+      expect(screen.queryByText(NOCH_KEINE_AUFSTELLUNG)).not.toBeInTheDocument()
     })
 
     it('sagt bei Netzfehler weder das eine noch das andere', async () => {
-      mockApi.getLineup.mockRejectedValue(new Error('500'))
+      mockApi.getGameDayLineups.mockRejectedValue(new Error('500'))
       rendern()
       expect(await screen.findAllByText(/nicht erreichbar/)).not.toHaveLength(0)
       expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
@@ -296,7 +304,7 @@ describe('PlayerDashboard', () => {
 
     it('zeigt nach der Freigabe die volle Liste wie bisher', async () => {
       mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT)])
-      mockApi.getLineup.mockResolvedValue([eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)])
+      mockApi.getGameDayLineups.mockResolvedValue(antwort({ 10: [eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)] }))
       rendern()
       const lineup = await screen.findByRole('region', { name: 'Lineup' })
       await waitFor(() => expect(within(lineup).getAllByRole('listitem')).toHaveLength(2))
@@ -305,21 +313,22 @@ describe('PlayerDashboard', () => {
   })
 
   it('erkennt den Spieler als DH-Schlagmann', async () => {
-    mockApi.getLineup.mockResolvedValue([eintrag(ANDERE, 'P', 1, ICH)])
+    mockApi.getGameDayLineups.mockResolvedValue(antwort({ 10: [eintrag(ANDERE, 'P', 1, ICH)] }))
     rendern()
     const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
     expect(await within(block).findByText(/als DH/)).toBeInTheDocument()
   })
 
   it('zeigt das Lineup vollständig', async () => {
-    mockApi.getLineup.mockResolvedValue([
-      eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2), eintrag(DRITTER, 'C', 3),
-    ])
+    mockApi.getGameDayLineups.mockResolvedValue(antwort({
+      10: [eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2), eintrag(DRITTER, 'C', 3)],
+    }))
     rendern()
     const lineup = await screen.findByRole('region', { name: 'Lineup' })
     await waitFor(() => expect(within(lineup).getAllByRole('listitem')).toHaveLength(3))
-    expect(within(lineup).getByText('Tom Test')).toBeInTheDocument()
-    expect(within(lineup).getByText('Uli Unter')).toBeInTheDocument()
+    // Jeder Name steht zweimal: einmal als Punkt auf dem Feld, einmal in der Schlagreihenfolge.
+    expect(within(lineup).getAllByText('Tom Test')).toHaveLength(2)
+    expect(within(lineup).getAllByText('Uli Unter')).toHaveLength(2)
   })
 
   /*
@@ -337,7 +346,7 @@ describe('PlayerDashboard', () => {
 
   async function bedienbar() {
     await screen.findByRole('region', { name: 'Lineup' })
-    await waitFor(() => expect(mockApi.getLineup).toHaveBeenCalled())
+    await waitFor(() => expect(mockApi.getGameDayLineups).toHaveBeenCalled())
     await waitFor(() => expect(screen.getByRole('region', { name: 'Lineup' }).querySelectorAll('li').length).toBeGreaterThan(0))
     const sel = 'button, a, input, select, textarea, [role="button"], [role="link"], [role="menuitem"], [role="checkbox"], [role="switch"], [role="tab"], [draggable="true"], [tabindex]:not([tabindex="-1"]), [contenteditable]'
     return Array.from(document.body.querySelectorAll<HTMLElement>(sel))
@@ -389,13 +398,14 @@ describe('PlayerDashboard', () => {
     const zwei = gameDay(1, ZUKUNFT)
     zwei.games.push({ ...zwei.games[0], id: 11, gameNumber: 2, opponentTeam: { id: 2, name: 'Köln Kings', ownTeam: false } })
     mockApi.getGameDays.mockResolvedValue([zwei])
-    mockApi.getLineup.mockImplementation((id: number) =>
-      Promise.resolve(id === 11 ? [eintrag(DRITTER, 'C', 1)] : [eintrag(ANDERE, 'P', 1)]))
+    mockApi.getGameDayLineups.mockResolvedValue(antwort({
+      10: [eintrag(ANDERE, 'P', 1)], 11: [eintrag(DRITTER, 'C', 1)],
+    }))
     rendern()
     const lineup = await screen.findByRole('region', { name: 'Lineup' })
-    await waitFor(() => expect(within(lineup).getByText('Tom Test')).toBeInTheDocument())
+    await waitFor(() => expect(within(lineup).getAllByText('Tom Test')).toHaveLength(2))
     fireEvent.click(within(lineup).getByRole('button', { name: /Spiel 2/ }))
-    expect(within(lineup).getByText('Uli Unter')).toBeInTheDocument()
+    expect(within(lineup).getAllByText('Uli Unter')).toHaveLength(2)
     expect(within(lineup).queryByText('Tom Test')).not.toBeInTheDocument()
   })
 
@@ -420,7 +430,7 @@ describe('PlayerDashboard', () => {
     rendern()
     expect(await screen.findByText(/Kein Spiel angesetzt/)).toBeInTheDocument()
     expect(screen.getByText(/WhatsApp/)).toBeInTheDocument()
-    expect(mockApi.getLineup).not.toHaveBeenCalled()
+    expect(mockApi.getGameDayLineups).not.toHaveBeenCalled()
   })
 
   it('kommt ganz ohne Saison zurecht', async () => {
