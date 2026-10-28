@@ -108,8 +108,12 @@ export function Aufstellungsansicht({ spieltag, daten, zusagen, playerId }: Prop
           {/* Der Gegner steht ueber dem Feld, nicht am Knopf: „Spiel 2 gegen Koeln Kings" auf
               zwei Knoepfen bricht bei 393 px um, und eine Aufstellung ohne Gegner darueber
               ist unvollstaendig. */}
+          {/* `mb-3` wie ueberall in dieser Karte (Ueberschrift, Umschalter): den Abstand
+              zum Feld traegt DIE KARTE, nicht `FieldView`. Ohne Ueberschrift bringt die
+              Komponente absichtlich nichts mit — wer sie einsetzt, bestimmt den Abstand.
+              Nicht wieder nach `FieldView` zurueckschieben. */}
           {aktiv && (
-            <p className="font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-2">
+            <p className="font-display text-[11px] font-bold tracking-widest uppercase text-white/60 mb-3">
               {`Spiel ${nummer} gegen ${aktiv.opponentTeam?.name ?? 'Gegner offen'}`}
             </p>
           )}
