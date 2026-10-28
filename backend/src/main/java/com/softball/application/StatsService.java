@@ -9,8 +9,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+/**
+ * Einsatz-Zahlen (wie oft, auf welcher Position) ueber eine Saison, ein Jahr, alles.
+ *
+ * <p>Die Zahlen sind gezaehlte Aufstellung und fallen damit unter dieselbe Lesegrenze wie die
+ * Aufstellung selbst: ohne Filter stuende namentlich in {@code /seasons/{id}/stats}, wer fuer
+ * den naechsten Spieltag auf SS gesetzt ist, lange bevor die Aufstellung freigegeben ist. Der
+ * Filter kommt als {@code Predicate} von aussen (gebaut von
+ * {@code AufstellungSichtbarkeit#filter}) — die Regel bleibt an einer Stelle, und dieser
+ * Dienst bleibt frei von Anfrage-gebundener Sicherheit.
+ */
 @Service
 public class StatsService {
 
@@ -22,17 +33,19 @@ public class StatsService {
         this.lineupEntryRepository = lineupEntryRepository;
     }
 
+    /** @param sichtbar welche Spieltage der Anfragende zaehlen darf — siehe Klassenkommentar. */
     @Transactional(readOnly = true)
-    public List<SeasonPlayerStats> getSeasonStats(final Long seasonId) {
+    public List<SeasonPlayerStats> getSeasonStats(final Long seasonId, final Predicate<GameDay> sichtbar) {
         final Season season = seasonRepository.findByIdWithGameDaysAndGames(seasonId)
             .orElseThrow(() -> new ResourceNotFoundException("Season", seasonId));
+        final List<GameDay> spieltage = season.getGameDays().stream().filter(sichtbar).toList();
 
         final Map<Long, String> playerNames = new HashMap<>();
         final Map<Long, Double> playerGames = new HashMap<>();
         final Map<Long, Map<String, Long>> playerPositions = new HashMap<>();
 
         // Batch-load all lineup entries for all games in the season (avoids N+1)
-        final List<Long> allGameIds = season.getGameDays().stream()
+        final List<Long> allGameIds = spieltage.stream()
             .flatMap(gd -> gd.getGames().stream())
             .map(Game::getId)
             .toList();
@@ -42,7 +55,7 @@ public class StatsService {
         final Map<Long, List<LineupEntry>> entriesByGame = allEntries.stream()
             .collect(java.util.stream.Collectors.groupingBy(e -> e.getGame().getId()));
 
-        for (final GameDay gameDay : season.getGameDays()) {
+        for (final GameDay gameDay : spieltage) {
             for (final Game game : gameDay.getGames()) {
                 final List<LineupEntry> entries = entriesByGame.getOrDefault(game.getId(), List.of());
                 for (final LineupEntry entry : entries) {
@@ -82,20 +95,22 @@ public class StatsService {
             .collect(Collectors.toList());
     }
 
+    /** @param sichtbar welche Spieltage der Anfragende zaehlen darf — siehe Klassenkommentar. */
     @Transactional(readOnly = true)
-    public List<SeasonPlayerStats> getYearStats(final int year) {
+    public List<SeasonPlayerStats> getYearStats(final int year, final Predicate<GameDay> sichtbar) {
         final List<Season> seasons = seasonRepository.findByYear(year);
-        return aggregateStats(seasons.stream().map(Season::getId).toList());
+        return aggregateStats(seasons.stream().map(Season::getId).toList(), sichtbar);
     }
 
+    /** @param sichtbar welche Spieltage der Anfragende zaehlen darf — siehe Klassenkommentar. */
     @Transactional(readOnly = true)
-    public List<SeasonPlayerStats> getAllTimeStats() {
+    public List<SeasonPlayerStats> getAllTimeStats(final Predicate<GameDay> sichtbar) {
         final List<Season> seasons = seasonRepository.findAll();
-        return aggregateStats(seasons.stream().map(Season::getId).toList());
+        return aggregateStats(seasons.stream().map(Season::getId).toList(), sichtbar);
     }
 
     /** Aggregiert Einsatz-Stats über mehrere Saisons. Private Helper für year/allTime. */
-    private List<SeasonPlayerStats> aggregateStats(final List<Long> seasonIds) {
+    private List<SeasonPlayerStats> aggregateStats(final List<Long> seasonIds, final Predicate<GameDay> sichtbar) {
         if (seasonIds.isEmpty()) return List.of();
 
         final Map<Long, String> playerNames = new HashMap<>();
@@ -107,6 +122,7 @@ public class StatsService {
             if (season == null) continue;
 
             final List<Long> gameIds = season.getGameDays().stream()
+                .filter(sichtbar)
                 .flatMap(gd -> gd.getGames().stream())
                 .map(Game::getId)
                 .toList();

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.function.Predicate;
 
 /**
  * Die Lesegrenze der Aufstellung an EINER Stelle: darf der Angemeldete sehen, wer an diesem
@@ -38,12 +39,13 @@ import java.time.LocalDate;
  * {@link CurrentUser} und den SecurityContext und funktioniert deshalb nur innerhalb einer
  * HTTP-Anfrage.
  *
- * <p>{@code @Transactional(readOnly = true)}, weil die Endpunkte VOR ihrer eigenen Transaktion
- * fragen: ein Spieltag traegt seine Saison als Lazy-Proxy, und ohne Sitzung faellt schon das
- * Lesen des Datums um. Fuer Trainer und Scorer wird gar nicht erst gelesen.
+ * <p>Die beiden Methoden, die einen Spieltag nachschlagen, tragen
+ * {@code @Transactional(readOnly = true)}: die Endpunkte fragen VOR ihrer eigenen Transaktion,
+ * und ein Spieltag traegt seine Saison als Lazy-Proxy — ohne Sitzung faellt schon das Lesen
+ * des Datums um. Fuer Trainer und Scorer wird gar nicht erst gelesen, und {@link #filter()}
+ * schlaegt nichts nach und braucht deshalb keine.
  */
 @Component
-@Transactional(readOnly = true)
 public class AufstellungSichtbarkeit {
 
     private final ScoringPermission scoring;
@@ -59,6 +61,7 @@ public class AufstellungSichtbarkeit {
     }
 
     /** Darf der Angemeldete die Aufstellungen dieses Spieltags sehen? */
+    @Transactional(readOnly = true)
     public boolean darfSehen(final Long gameDayId) {
         if (sieht()) {
             return true;
@@ -70,6 +73,7 @@ public class AufstellungSichtbarkeit {
     }
 
     /** Dasselbe, nur von einem Spiel aus gefragt — es haengt am Spieltag. */
+    @Transactional(readOnly = true)
     public boolean darfSehenFuerSpiel(final Long gameId) {
         if (sieht()) {
             return true;
@@ -78,6 +82,19 @@ public class AufstellungSichtbarkeit {
             return false;
         }
         return gameRepository.findGameDayIdByGameId(gameId).map(this::darfSehen).orElse(false);
+    }
+
+    /**
+     * Dieselbe Regel als Filter ueber Spieltage, die der Aufrufer ohnehin schon geladen hat.
+     * Die Rolle wird EINMAL gefragt, alles Weitere steht am Spieltag selbst — gedacht fuer
+     * Auswertungen, die eine ganze Saison durchzaehlen, wo eine Abfrage je Spieltag ein
+     * N+1 waere.
+     */
+    public Predicate<GameDay> filter() {
+        if (sieht()) {
+            return gameDay -> true;
+        }
+        return AufstellungSichtbarkeit::istOffen;
     }
 
     /** Die beiden Zweige, die ohne Spieltag auskommen — und die Datenbank gar nicht erst fragen. */

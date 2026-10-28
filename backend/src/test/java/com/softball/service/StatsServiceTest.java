@@ -58,7 +58,7 @@ class StatsServiceTest {
             new LineupEntry(g2, player2, Position.CF, 2)
         ));
 
-        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L);
+        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L, gd -> true);
 
         assertThat(stats.get(0).playerName()).isEqualTo("Max");
         assertThat(stats.get(0).totalGames()).isEqualTo(2.0);
@@ -101,7 +101,7 @@ class StatsServiceTest {
             new LineupEntry(g2, max, Position.SS, 1, lisa)  // DH-Host
         ));
 
-        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L);
+        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L, gd -> true);
 
         final SeasonPlayerStats maxStats = stats.stream()
             .filter(s -> s.playerName().equals("Max")).findFirst().orElseThrow();
@@ -114,13 +114,67 @@ class StatsServiceTest {
         assertThat(lisaStats.positionCounts()).containsEntry("DH", 1L);
     }
 
+    /**
+     * Die Lesegrenze der Aufstellung reicht bis in die Zaehlung: ein Spieltag, den der
+     * Anfragende nicht sehen darf, kommt gar nicht erst in die Abfrage — nicht nur nicht ins
+     * Ergebnis. Sonst stuende in {@code /seasons/{id}/stats} namentlich, wer fuer den naechsten
+     * Spieltag gesetzt ist.
+     */
+    @Test
+    void getSeasonStats_verborgenerSpieltagWirdNichtEinmalAbgefragt() {
+        final Player max = new Player("Max");
+        max.setId(1L);
+
+        final Season season = new Season(1L, "Saison 2026", 2026);
+
+        final GameDay sichtbar = new GameDay(LocalDate.of(2026, 3, 15), null, null, season);
+        final Game g1 = new Game(10L, 1);
+        g1.setGameDay(sichtbar);
+        sichtbar.setGames(List.of(g1));
+
+        final GameDay verborgen = new GameDay(LocalDate.of(2026, 9, 20), null, null, season);
+        final Game g2 = new Game(20L, 1);
+        g2.setGameDay(verborgen);
+        verborgen.setGames(List.of(g2));
+
+        season.setGameDays(Set.of(sichtbar, verborgen));
+        when(seasonRepository.findByIdWithGameDaysAndGames(1L)).thenReturn(Optional.of(season));
+        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L)))
+            .thenReturn(List.of(new LineupEntry(g1, max, Position.SS, 1)));
+
+        final List<SeasonPlayerStats> stats =
+            statsService.getSeasonStats(1L, gd -> gd != verborgen);
+
+        assertThat(stats).singleElement()
+            .satisfies(s -> {
+                assertThat(s.playerName()).isEqualTo("Max");
+                assertThat(s.totalGames()).isEqualTo(1.0);
+            });
+        verify(lineupEntryRepository).findByGameIdInOrderByBattingOrderAsc(List.of(10L));
+    }
+
+    /** Bleibt nichts uebrig, wird gar nicht abgefragt. */
+    @Test
+    void getSeasonStats_alleSpieltageVerborgenLiefertNichts() {
+        final Season season = new Season(1L, "Saison 2026", 2026);
+        final GameDay gd = new GameDay(LocalDate.of(2026, 9, 20), null, null, season);
+        final Game g = new Game(20L, 1);
+        g.setGameDay(gd);
+        gd.setGames(List.of(g));
+        season.setGameDays(Set.of(gd));
+        when(seasonRepository.findByIdWithGameDaysAndGames(1L)).thenReturn(Optional.of(season));
+
+        assertThat(statsService.getSeasonStats(1L, x -> false)).isEmpty();
+        verifyNoInteractions(lineupEntryRepository);
+    }
+
     @Test
     void getSeasonStats_emptySeasonReturnsEmptyList() {
         final Season season = new Season(1L, "Empty", 2026);
         season.setGameDays(Set.of());
         when(seasonRepository.findByIdWithGameDaysAndGames(1L)).thenReturn(Optional.of(season));
 
-        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L);
+        final List<SeasonPlayerStats> stats = statsService.getSeasonStats(1L, gd -> true);
 
         assertThat(stats).isEmpty();
     }

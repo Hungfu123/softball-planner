@@ -1,5 +1,6 @@
 package com.softball.adapter.in.web;
 
+import com.softball.shared.security.AufstellungSichtbarkeit;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.softball.adapter.dto.CopyYearRequest;
 import com.softball.adapter.dto.CreateSeasonRequest;
@@ -22,10 +23,13 @@ public class SeasonController {
 
     private final SeasonService seasonService;
     private final StatsService statsService;
+    private final AufstellungSichtbarkeit sichtbarkeit;
 
-    public SeasonController(final SeasonService seasonService, final StatsService statsService) {
+    public SeasonController(final SeasonService seasonService, final StatsService statsService,
+                            final AufstellungSichtbarkeit sichtbarkeit) {
         this.seasonService = seasonService;
         this.statsService = statsService;
+        this.sichtbarkeit = sichtbarkeit;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -64,10 +68,14 @@ public class SeasonController {
         seasonService.delete(id);
     }
 
+    /**
+     * Gezaehlte Aufstellung — faellt unter dieselbe Grenze wie die Aufstellung selbst. Spieltage,
+     * deren Aufstellung der Anfragende nicht sehen darf, zaehlen nicht mit.
+     */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/stats")
     public List<SeasonPlayerStats> getStats(@PathVariable final Long id) {
-        return statsService.getSeasonStats(id);
+        return statsService.getSeasonStats(id, sichtbarkeit.filter());
     }
 
     @PreAuthorize("isAuthenticated()")

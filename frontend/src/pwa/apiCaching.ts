@@ -13,8 +13,17 @@
  *  - /api/players/{id}/usage             Trainingszahlen — eigene oder Trainer, sonst null
  *  - /api/players/{id}/training-months   dasselbe, je Monat — eigene oder Trainer, sonst 403
  *  - /api/trainings                      Teilnehmerzahl nur für Admins
+ *  - /api/seasons/{id}/stats             gezählte Aufstellung — Spieltage ohne Freigabe fehlen
+ *  - /api/years/{year}/stats             dasselbe über ein Jahr
+ *  - /api/stats/all-time/games           dasselbe über alles
  * Alles andere liefert allen Angemeldeten dasselbe oder ist admin-only (403 für Spieler).
  * Kommt ein weiterer Endpunkt dazu, der CurrentUser auswertet: hier eintragen.
+ *
+ * Die drei Einsatz-Zahlen sind seit der Aufstellungs-Freigabe rollenabhängig: ein Trainer sieht
+ * dort auch die noch nicht freigegebenen Spieltage, ein Spieler nicht. Geteilt gecacht liefe
+ * genau das wieder auf den Schirm, was die Freigabe zumacht — deshalb stehen sie hier und nicht
+ * mehr beim Lesestoff. `batting-stats` und `awards` bleiben dort: die hängen an gespielten
+ * Spielen, nicht an der Planung.
  *
  * Zusätzlich leert der Client den Cache bei jedem An- und Abmelden (clearApiCache).
  */
@@ -33,6 +42,9 @@ export function istRollenabhaengig({ url, request }: Anfrage): boolean {
     /^\/api\/players\/\d+\/usage$/,
     /^\/api\/players\/\d+\/training-months$/,
     /^\/api\/trainings$/,
+    /^\/api\/seasons\/\d+\/stats$/,
+    /^\/api\/years\/\d+\/stats$/,
+    /^\/api\/stats\/all-time\/games$/,
   ]
   return request.method === 'GET' && rollenabhaengig.some(r => r.test(url.pathname))
 }

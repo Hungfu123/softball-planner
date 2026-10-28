@@ -348,8 +348,14 @@ class SpielerLeserechteIntegrationTest {
                                  final RequestPostProcessor wer, final boolean sichtbar) throws Exception {
         final org.springframework.test.web.servlet.ResultMatcher array =
             sichtbar ? jsonPath("$").isNotEmpty() : jsonPath("$").isEmpty();
+        // Alle DREI Felder des Spieltag-Endpunkts: wer spaeter eines davon durchreicht,
+        // soll hier auffallen und nicht gruen bleiben.
         final org.springframework.test.web.servlet.ResultMatcher lineups =
             sichtbar ? jsonPath("$.lineups").isNotEmpty() : jsonPath("$.lineups").isEmpty();
+        final org.springframework.test.web.servlet.ResultMatcher staff =
+            sichtbar ? jsonPath("$.staff").isNotEmpty() : jsonPath("$.staff").isEmpty();
+        final org.springframework.test.web.servlet.ResultMatcher subs =
+            sichtbar ? jsonPath("$.substitutions").isNotEmpty() : jsonPath("$.substitutions").isEmpty();
 
         mockMvc.perform(get("/api/games/" + gameId + "/lineup").with(wer))
             .andExpect(status().isOk()).andExpect(array);
@@ -358,7 +364,7 @@ class SpielerLeserechteIntegrationTest {
         mockMvc.perform(get("/api/games/" + gameId + "/substitutions").with(wer))
             .andExpect(status().isOk()).andExpect(array);
         mockMvc.perform(get("/api/gamedays/" + gameDayId + "/lineups").with(wer))
-            .andExpect(status().isOk()).andExpect(lineups);
+            .andExpect(status().isOk()).andExpect(lineups).andExpect(staff).andExpect(subs);
         // Der Name klingt nach Statistik, der Inhalt sind Positionen je Spiel und Spieler —
         // das IST die Aufstellung in anderer Form.
         mockMvc.perform(get("/api/gamedays/" + gameDayId + "/stats").with(wer))
@@ -433,6 +439,74 @@ class SpielerLeserechteIntegrationTest {
         final long[] ids = spieltagMitAufstellung(LocalDate.now());
 
         pruefeAlleFuenf(ids[0], ids[1], SPIELER, false);
+    }
+
+    /**
+     * Die sechste Tuer: die Einsatz-Statistik ist gezaehlte Aufstellung. Ohne Filter stuende in
+     * {@code /seasons/{id}/stats} namentlich, wer fuer den naechsten Spieltag auf SS gesetzt ist
+     * — die Schlagreihenfolge fehlte, alles andere nicht. Eine Sperre, die fuenf Tueren schliesst
+     * und eine sechste offenlaesst, ist dieselbe Fassade, die der Entwurf ablehnt.
+     *
+     * <p>Geprueft wird auf den NAMEN, nicht auf Leere: die Jahres- und Allzeit-Zahlen laufen
+     * ueber mehrere Saisons, „leer" waere dort die falsche Frage.
+     */
+    private void pruefeEinsatzStatistik(final LocalDate datum, final RequestPostProcessor wer,
+                                        final boolean sichtbar) throws Exception {
+        final String max = "$[?(@.playerName=='Max')]";
+        final org.springframework.test.web.servlet.ResultMatcher treffer =
+            sichtbar ? jsonPath(max).isNotEmpty() : jsonPath(max).isEmpty();
+
+        for (final String pfad : List.of(
+                "/api/seasons/" + season.getId() + "/stats",
+                "/api/years/" + datum.getYear() + "/stats",
+                "/api/stats/all-time/games")) {
+            mockMvc.perform(get(pfad).with(wer))
+                .andExpect(status().isOk())
+                .andExpect(treffer);
+        }
+    }
+
+    @Test
+    void vorDerFreigabeZaehltDerSpieltagInKeinerEinsatzStatistik() throws Exception {
+        final LocalDate datum = LocalDate.now().plusDays(30);
+        spieltagMitAufstellung(datum);
+
+        pruefeEinsatzStatistik(datum, SPIELER, false);
+    }
+
+    @Test
+    void derTrainerZaehltIhnVorherSchon() throws Exception {
+        final LocalDate datum = LocalDate.now().plusDays(30);
+        spieltagMitAufstellung(datum);
+
+        pruefeEinsatzStatistik(datum, ADMIN, true);
+        pruefeEinsatzStatistik(datum, SUPERADMIN, true);
+    }
+
+    @Test
+    void einScorerZaehltIhnVorherSchon() throws Exception {
+        legeScorerAn();
+        final LocalDate datum = LocalDate.now().plusDays(30);
+        spieltagMitAufstellung(datum);
+
+        pruefeEinsatzStatistik(datum, scorer(), true);
+    }
+
+    @Test
+    void nachDerFreigabeZaehltErFuerJeden() throws Exception {
+        final LocalDate datum = LocalDate.now().plusDays(30);
+        final long[] ids = spieltagMitAufstellung(datum);
+        freigeben(ids[0]);
+
+        pruefeEinsatzStatistik(datum, SPIELER, true);
+    }
+
+    @Test
+    void einVergangenerSpieltagZaehltFuerJeden() throws Exception {
+        final LocalDate datum = LocalDate.now().minusDays(1);
+        spieltagMitAufstellung(datum);
+
+        pruefeEinsatzStatistik(datum, SPIELER, true);
     }
 
     private void legeScorerAn() {
