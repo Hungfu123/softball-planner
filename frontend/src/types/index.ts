@@ -166,10 +166,18 @@ export interface GameStaffResponse {
   role: string
 }
 
+export interface BaseCoachAuskunft {
+  firstBase: string | null
+  thirdBase: string | null
+  startSlots: number[]
+}
+
 export interface GameDayLineupsResponse {
   lineups: Record<string, LineupEntryResponse[]>
   staff: Record<string, GameStaffResponse[]>
   substitutions: Record<string, SubstitutionResponse[]>
+  // Anders als lineups/staff trägt das JEDES Spiel des Spieltags, auch ohne Aufstellung
+  baseCoaches: Record<string, BaseCoachAuskunft>
 }
 
 export interface GameDayPlayerStats {
