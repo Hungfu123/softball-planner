@@ -22,6 +22,11 @@ describe('baseCoachSatz', () => {
       .toBe('1B Jan · 3B Mike')
   })
 
+  it('nennt nur den Namen, wenn die Aufstellung leer ist', () => {
+    expect(baseCoachSatz({ firstBase: 'Jan', thirdBase: null, startSlots: [] })).toBe('1B Jan')
+    expect(baseCoachSatz({ firstBase: null, thirdBase: 'Mike', startSlots: [] })).toBe('3B Mike')
+  })
+
   it('schweigt, wenn nichts da ist', () => {
     expect(baseCoachSatz({ firstBase: null, thirdBase: null, startSlots: [] })).toBeNull()
     expect(baseCoachSatz(undefined)).toBeNull()
