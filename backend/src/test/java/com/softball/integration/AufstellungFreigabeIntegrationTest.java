@@ -112,6 +112,22 @@ class AufstellungFreigabeIntegrationTest {
             .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
     }
 
+    /** Die Antwort traegt einen Offset; verglichen wird der Zeitpunkt, nicht die Schreibweise. */
+    private static org.hamcrest.Matcher<String> gleicherZeitpunkt(final LocalDateTime wanduhr) {
+        final var erwartet = wanduhr.atZone(java.time.ZoneId.systemDefault()).toInstant();
+        return new org.hamcrest.TypeSafeMatcher<>() {
+            @Override
+            protected boolean matchesSafely(final String text) {
+                return java.time.OffsetDateTime.parse(text).toInstant().equals(erwartet);
+            }
+
+            @Override
+            public void describeTo(final org.hamcrest.Description d) {
+                d.appendText("Zeitpunkt ").appendValue(erwartet);
+            }
+        };
+    }
+
     private void freigeben(final long id, final String hash) {
         final var entity = gameDayRepository.findById(id).orElseThrow();
         entity.setLineupsReleasedAt(LocalDateTime.of(2026, 5, 1, 12, 0));
@@ -125,7 +141,7 @@ class AufstellungFreigabeIntegrationTest {
         freigeben(id, AufstellungsFingerabdruck.von(List.of(), List.of(), List.of()));
 
         mockMvc.perform(get("/api/gamedays/" + id))
-            .andExpect(jsonPath("$.lineupsReleasedAt").value("2026-05-01T12:00:00"))
+            .andExpect(jsonPath("$.lineupsReleasedAt", gleicherZeitpunkt(LocalDateTime.of(2026, 5, 1, 12, 0))))
             .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
     }
 
@@ -189,7 +205,7 @@ class AufstellungFreigabeIntegrationTest {
                 .content(objectMapper.writeValueAsString(Map.of("date", "2026-05-02", "label", "Anderes Label"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.label").value("Anderes Label"))
-            .andExpect(jsonPath("$.lineupsReleasedAt").value("2026-05-01T12:00:00"));
+            .andExpect(jsonPath("$.lineupsReleasedAt", gleicherZeitpunkt(LocalDateTime.of(2026, 5, 1, 12, 0))));
 
         final var gespeichert = gameDayRepository.findById(id).orElseThrow();
         org.assertj.core.api.Assertions.assertThat(gespeichert.getLineupsReleasedHash()).isEqualTo("a".repeat(64));
@@ -204,7 +220,7 @@ class AufstellungFreigabeIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("playerIds", List.of(spieler.getId())))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.lineupsReleasedAt").value("2026-05-01T12:00:00"));
+            .andExpect(jsonPath("$.lineupsReleasedAt", gleicherZeitpunkt(LocalDateTime.of(2026, 5, 1, 12, 0))));
     }
 
     /**
