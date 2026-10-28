@@ -130,7 +130,6 @@ vi.mock('@/api/client', () => ({
   getYearBattingStats: vi.fn().mockResolvedValue([]),
   setAvailablePlayers: vi.fn(),
   deleteGameDay: vi.fn(),
-  setCoachRotation: vi.fn(),
   suggestLineup: vi.fn(),
   suggestAllLineups: vi.fn(),
   undoAllLineups: vi.fn(),
@@ -167,7 +166,7 @@ describe('GameDayPlanner — Übernahme-Wege bleiben synchron', () => {
       ],
       games: [{
         id: 100, gameNumber: 1, opponentTeam: null, scoreUs: null, scoreThem: null,
-        gameDayId: 1, lineupEntryCount: 0, firstBaseCoachRotation: null, thirdBaseCoachRotation: null,
+        gameDayId: 1, lineupEntryCount: 0,
       }],
     }
   })
