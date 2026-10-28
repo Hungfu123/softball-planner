@@ -197,6 +197,33 @@ describe('PlayerDashboard', () => {
       expect(within(block).queryByText(/Es gibt noch keine Aufstellung/)).not.toBeInTheDocument()
     })
 
+    it('zeigt vorhandene Einträge auch ohne Freigabe (Scorer), ohne den Satz', async () => {
+      mockApi.getLineup.mockResolvedValue([eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)])
+      mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
+      rendern()
+      const lineup = await screen.findByRole('region', { name: 'Lineup' })
+      await waitFor(() => expect(within(lineup).getAllByRole('listitem')).toHaveLength(2))
+      expect(screen.getByRole('button', { name: 'Spiel 2' })).toBeInTheDocument()
+      expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+      const block = screen.getByRole('region', { name: 'Bin ich dabei' })
+      expect(await within(block).findAllByText(/Schlagplatz 2/)).toHaveLength(2)
+    })
+
+    it('sagt den Satz nur einmal in „Bin ich dabei?", auch bei zwei Spielen', async () => {
+      mockApi.getGameDays.mockResolvedValue([zweiSpiele(NICHT_FREIGEGEBEN)])
+      rendern()
+      const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
+      expect(await within(block).findAllByText(/Die Aufstellung steht noch nicht/)).toHaveLength(1)
+    })
+
+    it('sagt bei einem vergangenen, leeren Spieltag nicht „steht noch nicht"', async () => {
+      // Das Dashboard listet nur kommende Spieltage; die Regel gilt trotzdem an beiden Stellen (siehe LineupSheet).
+      const { stehtNochNicht } = await import('@/utils/aufstellungsauskunft')
+      expect(stehtNochNicht({ date: VERGANGEN, lineupsReleasedAt: null })).toBe(false)
+      expect(stehtNochNicht({ date: ZUKUNFT, lineupsReleasedAt: null })).toBe(true)
+      expect(stehtNochNicht({ date: ZUKUNFT, lineupsReleasedAt: '2099-01-01T08:00:00' })).toBe(false)
+    })
+
     it('unterscheidet freigegeben-aber-leer von nicht-freigegeben', async () => {
       mockApi.getGameDays.mockResolvedValue([gameDay(1, ZUKUNFT)])
       rendern()
