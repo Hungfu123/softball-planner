@@ -141,7 +141,6 @@ import type {
   RunnerAdvanceEntry,
   UndoResult,
   InningAdvanceEventResponse,
-  CoachRotationPair,
   AwardResponse,
   WeatherResponse,
   InvitationResponse,
@@ -420,22 +419,6 @@ export const deleteLeagueResult = (resultId: number) =>
 // Games
 export const getGame = (gameId: number) =>
   request<GameResponse>(`/games/${gameId}`)
-export const setCoachRotation = (
-  gameId: number,
-  firstBaseCoachRotation: CoachRotationPair | null,
-  thirdBaseCoachRotation: CoachRotationPair | null,
-  firstBaseCoachRotationReversed = false,
-  thirdBaseCoachRotationReversed = false
-) =>
-  request<GameResponse>(`/games/${gameId}/coach-rotation`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      firstBaseCoachRotation,
-      thirdBaseCoachRotation,
-      firstBaseCoachRotationReversed,
-      thirdBaseCoachRotationReversed,
-    }),
-  })
 export const updateOpponent = (gameId: number, opponentTeamId: number | null) =>
   request<GameResponse>(`/games/${gameId}/opponent`, {
     method: 'PUT',

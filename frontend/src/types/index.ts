@@ -129,8 +129,6 @@ export interface LeagueTeamResponse {
   ownTeam: boolean
 }
 
-export type CoachRotationPair = 'POS_1_6' | 'POS_2_7' | 'POS_3_8' | 'POS_4_9' | 'POS_5_10'
-
 export interface GameResponse {
   id: number
   gameNumber: number
@@ -142,10 +140,6 @@ export interface GameResponse {
   endedAt?: string | null
   battingSide?: 'top' | 'bottom' | null
   atBatCount?: number
-  firstBaseCoachRotation?: CoachRotationPair | null
-  thirdBaseCoachRotation?: CoachRotationPair | null
-  firstBaseCoachRotationReversed?: boolean
-  thirdBaseCoachRotationReversed?: boolean
   timerRunningSince?: string | null
   timerAccumulatedSeconds?: number
   timeLimitMinutes?: number | null
@@ -217,14 +211,6 @@ export interface LineupSetStaffEntryResponse {
   role: string
 }
 
-export interface LineupSetGameRotationResponse {
-  gameNumber: number
-  firstBaseCoachRotation: CoachRotationPair | null
-  firstBaseCoachRotationReversed: boolean
-  thirdBaseCoachRotation: CoachRotationPair | null
-  thirdBaseCoachRotationReversed: boolean
-}
-
 export interface LineupSetResponse {
   id: number
   gameDayId: number
@@ -232,8 +218,6 @@ export interface LineupSetResponse {
   entries: LineupSetEntryResponse[]
   staff: LineupSetStaffEntryResponse[]
   availablePlayerIds: number[]
-  /** Coach-Rotation je Spiel. Alt-Sets (vor V57) haben eine leere Liste → Rotation wird geleert. */
-  rotations: LineupSetGameRotationResponse[]
 }
 
 export interface SubstitutionResponse {

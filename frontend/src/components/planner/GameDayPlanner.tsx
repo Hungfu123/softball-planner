@@ -31,7 +31,7 @@ import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { EmptyState, Button } from '@/components/shared'
 import { ExportDoc, CrossBones, Pencil, TrashBin, DiceIcon, UsersIcon, BallIcon, CheckCircle } from '@/icons'
 import { MapPin } from 'lucide-react'
-import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, CoachRotationPair, LineupSetResponse, GameDayVotePreview } from '@/types'
+import type { Player, GameDayResponse, Season, TrainingStatsResponse, TrainingPeriodResponse, LineupSetResponse, GameDayVotePreview } from '@/types'
 import { generatePdf, generateLineupWithFieldPdf, generateSignatureListPdf } from '@/utils/pdfExport'
 import { GameDayPlannerSkeleton } from './GameDayPlannerSkeleton'
 import * as api from '@/api/client'
@@ -232,13 +232,10 @@ export function GameDayPlanner() {
           ))
       if (roster.length > 0) await setAvailablePlayers(roster)
       // 1-3. pro Spiel: Coaches leeren → Lineup → Set-Coaches (in applySet)
-      const { skipped, skippedCoaches } = await lineup.applySet(set.entries, set.staff, games, set.rotations ?? [])
+      const { skipped, skippedCoaches } = await lineup.applySet(set.entries, set.staff, games)
       setActiveSetId(set.id)
       // Staff des aktiven Spiels neu laden, damit CoachSlots stimmen
       if (activeGame) await staff.load(activeGame.id)
-      // Games frisch ziehen: applySet schreibt die Coach-Rotation des Sets ins
-      // Backend, sonst zeigt das Lineup weiter die 1B/3B-Badges des vorherigen Sets.
-      if (gameDay) setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
       if (skipped.length === 0 && skippedCoaches.length === 0) {
         toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')
@@ -333,31 +330,6 @@ export function GameDayPlanner() {
       await staff.save(activeGame.id, entries)
       await refreshStats()
       toast.show('Coaches gespeichert')
-    } catch (e: unknown) {
-      toast.show((e as Error).message, 'error')
-    }
-  }
-
-  const coachRotationLineup = lineup.entries.map((e, i) => ({
-    battingOrder: i + 1,
-    position: e.position,
-    player: { name: e.player.name },
-  }))
-
-  const handleRotationSave = async (
-    firstBase: CoachRotationPair | null,
-    firstReversed: boolean,
-    thirdBase: CoachRotationPair | null,
-    thirdReversed: boolean
-  ) => {
-    if (!activeGame || !gameDay) return
-    try {
-      const updated = await api.setCoachRotation(activeGame.id, firstBase, thirdBase, firstReversed, thirdReversed)
-      setGameDay(prev => prev ? ({
-        ...prev,
-        games: prev.games.map(g => g.id === updated.id ? updated : g),
-      }) : prev)
-      toast.show('Coach-Rotation gespeichert')
     } catch (e: unknown) {
       toast.show((e as Error).message, 'error')
     }
@@ -1026,8 +998,6 @@ export function GameDayPlanner() {
                 onAutoGenerate={triggerAutoGenerate}
                 autoGenerateLoading={autoSingleLoading}
                 onCopyOtherGame={seasonGameDays.some(gd => gd.games.some(g => g.id !== activeGame?.id)) && availablePlayers.length >= 2 ? () => setShowCopyLineup(true) : undefined}
-                firstBaseCoachRotation={activeGame?.firstBaseCoachRotation}
-                thirdBaseCoachRotation={activeGame?.thirdBaseCoachRotation}
               />
               <SubstitutionEditor
                 substitutions={lineup.substitutions}
@@ -1060,10 +1030,7 @@ export function GameDayPlanner() {
                 staff={staff.staff}
                 availablePlayers={availablePlayers.filter(p => !battingLineupIds.has(p.id) && !dhBatterIds.has(p.id))}
                 onSave={handleStaffSave}
-                lineup={coachRotationLineup}
-                game={activeGame!}
                 loading={!staff.loaded}
-                onSaveRotation={handleRotationSave}
               />
               <BenchDisplay players={benchPlayers} />
             </div>

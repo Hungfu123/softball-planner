@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { CoachRotationPair, LocalLineupEntry, Player } from '@/types'
+import type { LocalLineupEntry, Player } from '@/types'
 import { GripHandle, ChevronUp, ChevronDown, XMark, ArrowsSwap } from '@/icons'
-import { getPairPositions } from '@/utils/coachRotation'
 
 interface Props {
   entry: LocalLineupEntry
@@ -21,23 +20,13 @@ interface Props {
   onMoveDown: (index: number) => void
   onOpenSwap: (entry: LocalLineupEntry) => void
   onFillSlot: (slotId: number, player: Player) => void
-  firstBaseCoachRotation?: CoachRotationPair | null
-  thirdBaseCoachRotation?: CoachRotationPair | null
 }
 
 export function LineupRow({
   entry, index, isFirst, isLast, availablePositions,
   isFieldPosition, canCheckDh, poolPlayers,
   onRemove, onSetPosition, onSetDhBatter, onMoveUp, onMoveDown, onOpenSwap, onFillSlot,
-  firstBaseCoachRotation, thirdBaseCoachRotation,
 }: Props) {
-  const battingOrder = index + 1
-  const is1BCoach = firstBaseCoachRotation
-    ? getPairPositions(firstBaseCoachRotation).includes(battingOrder)
-    : false
-  const is3BCoach = thirdBaseCoachRotation
-    ? getPairPositions(thirdBaseCoachRotation).includes(battingOrder)
-    : false
   const {
     attributes,
     listeners,
@@ -115,8 +104,6 @@ export function LineupRow({
             title="Spieler tauschen"
           >
             <span className="truncate min-w-0">{entry.player.name}</span>
-            {is1BCoach && <CoachBadge label="1B" />}
-            {is3BCoach && <CoachBadge label="3B" />}
             <ArrowsSwap
               size={12}
               className="shrink-0 text-gray-300 sm:opacity-0 sm:group-hover/swap:opacity-100 sm:group-hover/swap:text-navy-600 transition-opacity"
@@ -221,16 +208,5 @@ export function LineupRow({
         <XMark size={14} />
       </button>
     </div>
-  )
-}
-
-function CoachBadge({ label }: { label: string }) {
-  return (
-    <span
-      className="font-mono inline-flex items-center justify-center min-w-[26px] h-[18px] px-1.5 text-[10px] font-extrabold tracking-widest uppercase rounded bg-navy-900 text-white shrink-0 shadow-sm"
-      title={`${label}-Coach Rotation`}
-    >
-      {label}
-    </span>
   )
 }

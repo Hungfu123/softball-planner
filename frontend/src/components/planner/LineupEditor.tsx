@@ -14,7 +14,7 @@ import {
 } from '@dnd-kit/sortable'
 import { LineupRow } from './LineupRow'
 import { LineupRowSwapSheet } from './LineupRowSwapSheet'
-import type { CoachRotationPair, LocalLineupEntry, Player } from '@/types'
+import type { LocalLineupEntry, Player } from '@/types'
 import { POSITIONS, FIELD_POSITIONS } from '@/types'
 import { AlertCircle, CrossBones, TrashBin, DiceIcon } from '@/icons'
 import { EmptyState } from '@/components/shared'
@@ -37,8 +37,6 @@ interface Props {
   autoGenerateLoading?: boolean
   /** Verstoesse gegen die Liga-Regeln (Frauen-Quote) — Hinweise, kein Speicher-Stopp. */
   ruleWarnings?: string[]
-  firstBaseCoachRotation?: CoachRotationPair | null
-  thirdBaseCoachRotation?: CoachRotationPair | null
 }
 
 const FIELD_POS_SET = new Set<string>(FIELD_POSITIONS)
@@ -49,7 +47,6 @@ export function LineupEditor({
   entries, poolPlayers, onRemove, onSetPosition, onSetDhBatter,
   onMoveUp, onMoveDown, onReorder, onSwapWithPool, onSwapWithLineup, onFillSlot,
   onClear, onCopyOtherGame, onAutoGenerate, autoGenerateLoading, ruleWarnings,
-  firstBaseCoachRotation, thirdBaseCoachRotation,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -187,8 +184,6 @@ export function LineupEditor({
                     onMoveDown={onMoveDown}
                     onOpenSwap={setSwapRow}
                     onFillSlot={onFillSlot}
-                    firstBaseCoachRotation={firstBaseCoachRotation}
-                    thirdBaseCoachRotation={thirdBaseCoachRotation}
                   />
                 )
               })}

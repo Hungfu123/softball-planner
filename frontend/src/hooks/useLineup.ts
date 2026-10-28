@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse, LineupSetStaffEntryResponse, LineupSetGameRotationResponse } from '@/types'
+import type { Player, LocalLineupEntry, LocalSubstitution, LineupEntryResponse, SubstitutionResponse, LineupSuggestionEntry, LineupSetEntryResponse, LineupSetStaffEntryResponse } from '@/types'
 import * as api from '@/api/client'
 
 let emptySlotSeq = 0
@@ -408,24 +408,10 @@ export function useLineup() {
     setItems: LineupSetEntryResponse[],
     staffItems: LineupSetStaffEntryResponse[],
     games: { id: number; gameNumber: number }[],
-    rotationItems: LineupSetGameRotationResponse[] = [],
   ): Promise<{
     skipped: number[]
     skippedCoaches: { gameNumber: number; playerName: string }[]
   }> => {
-    // Coach-Rotation aus dem Set. Alt-Sets (vor V57) bringen keine mit — dann wird
-    // die Rotation geleert, statt die des vorher geladenen Sets stehen zu lassen.
-    const rotationByGameNumber = new Map(rotationItems.map(r => [r.gameNumber, r]))
-    const applyRotation = (gameId: number, gameNumber: number) => {
-      const r = rotationByGameNumber.get(gameNumber)
-      return api.setCoachRotation(
-        gameId,
-        r?.firstBaseCoachRotation ?? null,
-        r?.thirdBaseCoachRotation ?? null,
-        r?.firstBaseCoachRotationReversed ?? false,
-        r?.thirdBaseCoachRotationReversed ?? false,
-      )
-    }
     // Spieler-Map direkt aus den Set-Daten (Field-Player + DH-Batter) — jeder
     // Set-Spieler ist damit auflösbar; die verfügbaren Spieler wurden vom Planner
     // vorher passend gesetzt.
@@ -472,7 +458,6 @@ export function useLineup() {
         // stehen ("Set anwenden" überschreibt Coaches immer, auch bei Skip-Spielen).
         skipped.push(g.gameNumber)
         await api.setStaff(g.id, [])
-        await applyRotation(g.id, g.gameNumber)
         const base = await baselineFor(g.id)
         if (g.id === activeId) {
           setEntries(draft)
@@ -483,10 +468,7 @@ export function useLineup() {
       }
 
       // Complete lineup — persist. Reihenfolge: Coaches leeren → Lineup → Set-Coaches.
-      // Rotation gehört zum Set-Snapshot — erst hier setzen, damit ein Set die
-      // 1B/3B-Zuordnung des Vorgängers nie erbt.
       await api.setStaff(g.id, [])
-      await applyRotation(g.id, g.gameNumber)
       const payload = draft.map((e, i) => ({
         playerId: e.player.id,
         position: e.position ?? null,
