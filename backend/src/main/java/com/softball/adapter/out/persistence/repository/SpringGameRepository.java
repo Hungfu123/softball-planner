@@ -4,6 +4,7 @@ import com.softball.adapter.out.persistence.entity.GameEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import java.util.List;
+import java.util.Optional;
 
 public interface SpringGameRepository extends JpaRepository<GameEntity, Long> {
 
@@ -11,6 +12,10 @@ public interface SpringGameRepository extends JpaRepository<GameEntity, Long> {
     List<GameEntity> findByGameDayIdOrderByGameNumberAsc(Long gameDayId);
 
     List<GameEntity> findByOpponentTeam_Id(Long teamId);
+
+    /** Nur die Spieltag-id — ohne das Spiel zu laden und ohne den Spieltag anzufassen. */
+    @Query("SELECT g.gameDay.id FROM GameEntity g WHERE g.id = :gameId")
+    Optional<Long> findGameDayId(Long gameId);
 
     @Query("SELECT g FROM GameEntity g JOIN g.gameDay gd JOIN gd.season s WHERE s.id = :seasonId AND g.scoreUs IS NOT NULL AND g.scoreThem IS NOT NULL")
     List<GameEntity> findBySeasonIdWithScores(Long seasonId);

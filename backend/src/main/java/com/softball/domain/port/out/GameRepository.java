@@ -6,6 +6,11 @@ import java.util.Optional;
 
 public interface GameRepository {
     Optional<Game> findById(Long id);
+    /**
+     * Nur die Spieltag-id zu einem Spiel. Fuer Aufrufer ausserhalb einer Transaktion: das
+     * ganze Spiel zu laden, zieht den Spieltag als Lazy-Proxy nach sich.
+     */
+    Optional<Long> findGameDayIdByGameId(Long gameId);
     Game save(Game game);
     List<Game> saveAll(List<Game> games);
     List<Game> findByGameDayIdOrderByGameNumberAsc(Long gameDayId);
