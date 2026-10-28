@@ -47,12 +47,9 @@ public class GameStaffService {
 
     @Transactional(readOnly = true)
     public Map<Long, List<GameStaffResponse>> getStaffForGames(final List<Long> gameIds) {
-        if (gameIds.isEmpty()) return Map.of();
-        return gameStaffRepository.findByGameIdIn(gameIds).stream()
-            .collect(Collectors.groupingBy(
-                s -> s.getGame().getId(),
-                Collectors.mapping(GameStaffResponse::from, Collectors.toList())
-            ));
+        return getStaffModelsForGames(gameIds).entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey,
+            e -> e.getValue().stream().map(GameStaffResponse::from).toList()));
     }
 
     /** Dasselbe als Domaenenmodelle — die Base-Coach-Regel rechnet mit ihnen, nicht mit DTOs. */
