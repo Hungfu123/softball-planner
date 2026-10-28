@@ -10,6 +10,11 @@ interface Props {
   /** Genau dieser Spieler wird in Amber gefaerbt — dieselbe Farbe, mit der die
    *  Aufstellungsliste die eigene Zeile traegt, damit Zeile und Punkt zusammengehoeren. */
   hervorgehobenerSpielerId?: number
+  /** Ohne Ueberschrift zeichnen. Im Planer ist „Feld" ein Abschnittstitel zwischen
+   *  anderen Abschnitten; steht das Feld allein in einer Karte, ist es ein Schild an
+   *  einem Feld, das offensichtlich ein Feld ist. Vorgabe bleibt die Ueberschrift —
+   *  sie traegt `text-ink` und setzt damit einen HELLEN Grund voraus. */
+  ohneUeberschrift?: boolean
 }
 
 /** Position-Koordinaten im Feld-Koordinatensystem (Home Plate = 50/70).
@@ -41,7 +46,7 @@ const top = (y: number) => ((y - VB.y) / VB.h) * 100
 const FENCE_R = 66
 const FOUL_END = { lx: 1.1, rx: 98.9, y: 25.6 }
 
-export function FieldView({ entries, onPositionClick, hervorgehobenerSpielerId }: Props) {
+export function FieldView({ entries, onPositionClick, hervorgehobenerSpielerId, ohneUeberschrift }: Props) {
   const posMap = new Map<string, { name: string; order: number; playerId: number }>()
   entries.forEach((e, i) => {
     if (e.position) posMap.set(e.position, { name: e.player.name, order: i + 1, playerId: e.player.id })
@@ -51,6 +56,7 @@ export function FieldView({ entries, onPositionClick, hervorgehobenerSpielerId }
 
   return (
     <div>
+      {!ohneUeberschrift && (
       <h2 className="font-display text-[12px] sm:text-[13px] font-extrabold tracking-widest uppercase text-ink mb-2 pb-1.5 border-b border-line flex items-center gap-2">
         <span className="w-1 h-5 bg-softball-red-600 rounded-full shrink-0" />
         Feld
@@ -67,6 +73,7 @@ export function FieldView({ entries, onPositionClick, hervorgehobenerSpielerId }
           </>
         )}
       </h2>
+      )}
 
       {/*
         Reines Linien-Diagramm auf Papier: Base-Pfade in Navy, Foul-Linien und

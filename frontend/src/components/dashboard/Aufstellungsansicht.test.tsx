@@ -83,8 +83,8 @@ describe('Aufstellungsansicht', () => {
     const karte = await screen.findByRole('region', { name: 'Lineup' })
 
     // Feld: die neun Kuerzel stehen da, mit den Namen darauf
-    expect(screen.getByText('Feld')).toBeInTheDocument()
     expect(container.querySelector('svg')).not.toBeNull()
+    expect(screen.getByText('CF')).toBeInTheDocument()
 
     // Schlagreihenfolge: eine Zeile je Eintrag, in Schlagreihenfolge
     const zeilen = within(karte).getAllByRole('listitem')
@@ -145,6 +145,34 @@ describe('Aufstellungsansicht', () => {
     expect(screen.queryByText(/^3B /)).not.toBeInTheDocument()
   })
 
+  it('zeigt den Coach-Satz auch ohne Aufstellung, die Bank aber nicht', async () => {
+    // Das Backend baut `baseCoaches` aus den Staff-Eintraegen, unabhaengig von der
+    // Aufstellung; das Druckblatt zeigt den Satz ueber einem „Kein Lineup". Die Ansicht,
+    // die nie veraltet, darf dahinter nicht zurueckfallen.
+    zeigen(antwort({}, {}, { [SPIEL_1]: { firstBase: 'Jan Jansen', thirdBase: null, startSlots: [] } }))
+    const karte = await screen.findByRole('region', { name: 'Lineup' })
+    expect(within(karte).getByText(NOCH_KEINE_AUFSTELLUNG)).toBeInTheDocument()
+    expect(within(karte).getByText('1B Jan Jansen')).toBeInTheDocument()
+    // Ohne Aufstellung waere die Bank der ganze Kader — das ist keine Auskunft.
+    expect(within(karte).queryByText(/^Bank/)).not.toBeInTheDocument()
+  })
+
+  it('stellt den Coach-Satz hinter die Schlagreihenfolge, auf die seine Nummern zeigen', async () => {
+    const { container } = zeigen(VOLL)
+    await screen.findByRole('region', { name: 'Lineup' })
+    const liste = container.querySelector('ol')!
+    const satz = screen.getByText('1B Uli Unter · 3B zuletzt aus · #3')
+    expect(liste.compareDocumentPosition(satz) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('zeichnet das Feld ohne die Ueberschrift „Feld"', async () => {
+    const { container } = zeigen(VOLL)
+    await screen.findByRole('region', { name: 'Lineup' })
+    // Sie traegt `text-ink` und setzt hellen Grund voraus; die Karte ist dunkel.
+    expect(screen.queryByText('Feld')).not.toBeInTheDocument()
+    expect(container.querySelector('svg')).not.toBeNull()
+  })
+
   it('zeigt keine Bank-Zeile, wenn die Bank leer ist', async () => {
     zeigen(VOLL, { zusagen: [ICH, ANDERE, DRITTER] })
     await screen.findByRole('region', { name: 'Lineup' })
@@ -160,12 +188,17 @@ describe('Aufstellungsansicht', () => {
   })
 
   it('zeigt bei gesperrtem Spieltag nur den erklärenden Satz', async () => {
-    zeigen(antwort({}), { gameDay: spieltag({ aufstellungsLage: 'GESPERRT' }) })
+    const { container } = zeigen(
+      antwort({}, {}, { [SPIEL_1]: { firstBase: 'Jan Jansen', thirdBase: null, startSlots: [] } }),
+      { gameDay: spieltag({ aufstellungsLage: 'GESPERRT' }) },
+    )
     const karte = await screen.findByRole('region', { name: 'Lineup' })
     expect(within(karte).getByText(NOCH_NICHT_FREIGEGEBEN)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Spiel/ })).not.toBeInTheDocument()
-    expect(screen.queryByText('Feld')).not.toBeInTheDocument()
+    expect(container.querySelector('svg')).toBeNull()
     expect(screen.queryByText(/Fireballs/)).not.toBeInTheDocument()
+    // Auch der Coach-Satz nicht: vor der Freigabe sagt die Karte den einen Satz und sonst nichts.
+    expect(screen.queryByText(/Jan Jansen/)).not.toBeInTheDocument()
   })
 
   it('sagt bei einem freigegebenen, aber leeren Spiel den anderen Satz', async () => {

@@ -35,6 +35,13 @@ describe('FieldView', () => {
     expect(screen.getByText('1 offen')).toBeInTheDocument()
   })
 
+  it('zeichnet auf Wunsch ohne Ueberschrift, mit allem anderen', () => {
+    const { container } = render(<FieldView entries={neun()} ohneUeberschrift />)
+    expect(screen.queryByText('Feld')).not.toBeInTheDocument()
+    expect(container.querySelector('svg')).not.toBeNull()
+    expect(screen.getByText('Spieler1')).toBeInTheDocument()
+  })
+
   it('hebt genau einen Spieler hervor', () => {
     const { container } = render(<FieldView entries={neun()} hervorgehobenerSpielerId={3} />)
     const markiert = container.querySelectorAll('[class*="amber-400"]')
