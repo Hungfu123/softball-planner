@@ -15,10 +15,8 @@ function seitText(iso: string): string {
   return `${tag} ${zeit}`
 }
 
-const leiseKnopf =
-  'px-3 py-1.5 text-sm rounded-lg font-semibold cursor-pointer border border-line-strong text-ink-muted hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors'
-const hauptKnopf =
-  'px-3 py-1.5 text-sm rounded-lg font-bold cursor-pointer bg-accent text-white hover:bg-navy-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-accent'
+const knopf =
+  'shrink-0 px-2.5 py-1 text-xs rounded-lg font-semibold cursor-pointer border border-line-strong text-ink-muted hover:bg-navy-800 hover:text-white hover:border-navy-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted disabled:hover:border-line-strong'
 
 // Zustand des Spieltags, kein Werkzeug. Der dritte Zustand ist eine Auskunft fuer den Trainer:
 // Spieler sehen nach der Freigabe immer den Live-Stand, der Haken sperrt nichts.
@@ -47,7 +45,7 @@ export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellu
 
   return (
     <div className="w-full flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2 mt-1">
-      <div className="flex items-center gap-2 text-sm text-ink-muted">
+      <div className="flex items-center gap-2 text-xs text-ink-muted">
         <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full inline-block ${punkt}`} />
         <span>{text}</span>
       </div>
@@ -55,7 +53,7 @@ export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellu
         {(!freigegeben || seitdemGeaendert) && (
           <button
             type="button"
-            className={hauptKnopf}
+            className={knopf}
             disabled={!hatAufstellung || laeuft}
             onClick={() => ausfuehren(true)}
           >
@@ -63,7 +61,7 @@ export function FreigabeLeiste({ freigegebenSeit, seitdemGeaendert, hatAufstellu
           </button>
         )}
         {freigegeben && (
-          <button type="button" className={leiseKnopf} disabled={laeuft} onClick={() => setFragt(true)}>
+          <button type="button" className={knopf} disabled={laeuft} onClick={() => setFragt(true)}>
             zurücknehmen
           </button>
         )}
