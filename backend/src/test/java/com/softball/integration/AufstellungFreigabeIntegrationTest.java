@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.softball.domain.port.out.GameDayRepository;
 import com.softball.domain.service.AufstellungsFingerabdruck;
@@ -30,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -42,6 +44,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestcontainersConfig.class)
 @MitSuperadmin
 class AufstellungFreigabeIntegrationTest {
+
+    private static final RequestPostProcessor ADMIN = user("admin").roles("ADMIN");
+    private static final RequestPostProcessor SPIELER = user("spieler").roles("PLAYER");
 
     @Autowired
     private MockMvc mockMvc;
@@ -222,5 +227,90 @@ class AufstellungFreigabeIntegrationTest {
         org.assertj.core.api.Assertions.assertThat(gespeichert.getLineupsReleasedAt())
             .isEqualTo(LocalDateTime.of(2026, 5, 1, 12, 0));
         org.assertj.core.api.Assertions.assertThat(gespeichert.getLineupsReleasedHash()).isEqualTo("b".repeat(64));
+    }
+
+    private void schalte(final long id, final boolean freigegeben) throws Exception {
+        mockMvc.perform(put("/api/gamedays/" + id + "/lineups/release").with(ADMIN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"released\":" + freigegeben + "}"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminGibtFreiUndNimmtZurueck() throws Exception {
+        final long id = neuerSpieltag();
+
+        mockMvc.perform(put("/api/gamedays/" + id + "/lineups/release").with(ADMIN)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"released\":true}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lineupsReleasedAt").isNotEmpty())
+            .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
+
+        mockMvc.perform(put("/api/gamedays/" + id + "/lineups/release").with(ADMIN)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"released\":false}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.lineupsReleasedAt").doesNotExist());
+
+        final var gespeichert = gameDayRepository.findById(id).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(gespeichert.getLineupsReleasedHash()).isNull();
+    }
+
+    @Test
+    void einSpielerDarfNichtFreigeben() throws Exception {
+        final long id = neuerSpieltag();
+
+        mockMvc.perform(put("/api/gamedays/" + id + "/lineups/release").with(SPIELER)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"released\":true}"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void freigebenOhneWertIstEinFehler() throws Exception {
+        final long id = neuerSpieltag();
+
+        mockMvc.perform(put("/api/gamedays/" + id + "/lineups/release").with(ADMIN)
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void eineAenderungNachDerFreigabeNimmtSieNichtZurueck() throws Exception {
+        final long id = neuerSpieltag();
+        schalte(id, true);
+        final String freigegebenAm = objectMapper.readTree(mockMvc.perform(get("/api/gamedays/" + id))
+            .andReturn().getResponse().getContentAsString()).get("lineupsReleasedAt").asText();
+
+        stelleAufstellung(id);
+
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.lineupsReleasedAt").value(freigegebenAm))
+            .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(true));
+    }
+
+    @Test
+    void erneutFreigebenSetztDenHakenZurueck() throws Exception {
+        final long id = neuerSpieltag();
+        schalte(id, true);
+        stelleAufstellung(id);
+
+        mockMvc.perform(put("/api/gamedays/" + id + "/lineups/release").with(ADMIN)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"released\":true}"))
+            .andExpect(jsonPath("$.lineupsReleasedAt").isNotEmpty())
+            .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
+    }
+
+    @Test
+    void ohneFreigabeGibtEsKeinGeaendert() throws Exception {
+        final long id = neuerSpieltag();
+        schalte(id, true);
+        schalte(id, false);
+
+        stelleAufstellung(id);
+
+        mockMvc.perform(get("/api/gamedays/" + id))
+            .andExpect(jsonPath("$.lineupsReleasedAt").doesNotExist())
+            .andExpect(jsonPath("$.lineupsChangedSinceRelease").value(false));
     }
 }

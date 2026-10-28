@@ -82,6 +82,12 @@ public class GameDayController {
         return gameDayService.setAvailablePlayers(id, request.playerIds());
     }
 
+    @PutMapping("/gamedays/{id}/lineups/release")
+    public GameDayResponse releaseLineups(@PathVariable final Long id,
+                                          @Valid @RequestBody final LineupReleaseRequest request) {
+        return gameDayService.releaseLineupsAsDto(id, request.released());
+    }
+
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/gamedays/{id}/lineups")
     public GameDayLineupsResponse getLineups(@PathVariable final Long id) {
