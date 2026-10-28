@@ -24,6 +24,7 @@ import { SubstitutionEditor } from './SubstitutionEditor'
 import { TrainingAttendancePanel, type TrainingWindow } from './TrainingAttendancePanel'
 import { countUntil, trainingYearStart } from '@/utils/trainingYear'
 import { PollVoteSyncSheet } from './PollVoteSyncSheet'
+import { FreigabeLeiste } from './FreigabeLeiste'
 import { PollSyncToolbarButton } from './PollSyncToolbarButton'
 import { EditGameDayModal } from '@/components/dashboard/EditGameDayModal'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
@@ -671,6 +672,15 @@ export function GameDayPlanner() {
     })
   })()
 
+  const freigabeUmschalten = async (released: boolean) => {
+    try {
+      setGameDay(await api.releaseLineups(gameDayId, released))
+      toast.show(released ? 'Für Spieler freigegeben' : 'Freigabe zurückgenommen', 'success')
+    } catch (e) {
+      toast.show((e as Error).message, 'error')
+    }
+  }
+
   const formatDate = (d: string) =>
     new Date(d + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
 
@@ -707,6 +717,12 @@ export function GameDayPlanner() {
               </button>
             </div>
           </div>
+          <FreigabeLeiste
+            freigegebenSeit={gameDay.lineupsReleasedAt ?? null}
+            seitdemGeaendert={gameDay.lineupsChangedSinceRelease ?? false}
+            hatAufstellung={gameDay.games.some(g => g.lineupEntryCount > 0)}
+            umschalten={freigabeUmschalten}
+          />
           {/* MOBILE Layout: Primary-Row + Toolbar-Strip */}
           <div className="sm:hidden flex flex-col gap-2 w-full">
             {/* Primary — Anwesend + Live scoren (beide filled Navy/Red) */}

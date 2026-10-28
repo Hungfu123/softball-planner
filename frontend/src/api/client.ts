@@ -273,6 +273,11 @@ export const setAvailablePlayers = (gameDayId: number, playerIds: number[]) =>
     method: 'PUT',
     body: JSON.stringify({ playerIds }),
   })
+export const releaseLineups = (id: number, released: boolean) =>
+  request<GameDayResponse>(`/gamedays/${id}/lineups/release`, {
+    method: 'PUT',
+    body: JSON.stringify({ released }),
+  })
 export const getGameDayStats = (id: number) =>
   request<GameDayPlayerStats[]>(`/gamedays/${id}/stats`)
 export const getGameDayAwards = (id: number) =>
