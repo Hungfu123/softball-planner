@@ -76,7 +76,8 @@ export function Aufstellungsansicht({ spieltag, daten, zusagen, playerId }: Prop
   const sortiert = eintraege ? [...eintraege].sort((a, b) => a.battingOrder - b.battingOrder) : []
   const coaches = aktiv ? daten?.staff?.[String(aktiv.id)] ?? [] : []
   const coachSatz = aktiv ? baseCoachSatz(daten?.baseCoaches?.[String(aktiv.id)]) : null
-  const bank = bankVon(zusagen, sortiert, coaches.map(s => s.player))
+  // Ohne Aufstellung gibt es keine Bank — sie waere der ganze Kader.
+  const bank = sortiert.length > 0 ? bankVon(zusagen, sortiert, coaches.map(s => s.player)) : []
 
   return (
     <section aria-label="Lineup" className={KARTE}>
@@ -123,17 +124,14 @@ export function Aufstellungsansicht({ spieltag, daten, zusagen, playerId }: Prop
 
           {sortiert.length > 0 && (
             <>
+              {/* Ohne Ueberschrift: „Lineup" steht schon ueber der Karte, und ein zweites
+                  Schild „Feld" an einem Feld sagt nichts. Die Ueberschrift von FieldView
+                  setzt ausserdem hellen Grund voraus — hier liegt sie auf `bg-spotlight`. */}
               <FieldView
                 entries={alsFeldEintraege(sortiert)}
                 hervorgehobenerSpielerId={playerId ?? undefined}
+                ohneUeberschrift
               />
-
-              {/* Unter dem Feld, beides je eine gedaempfte Zeile: das Feld selbst zeichnet
-                  keine Coaches — neun Punkte sind neun Verteidiger. */}
-              {coachSatz && <p className={NEBENZEILE}>{coachSatz}</p>}
-              {bank.length > 0 && (
-                <p className={NEBENZEILE}>{`Bank: ${bank.map(p => p.name).join(' · ')}`}</p>
-              )}
 
               <ol className="space-y-1 mt-3">
                 {sortiert.map(e => {
@@ -156,6 +154,18 @@ export function Aufstellungsansicht({ spieltag, daten, zusagen, playerId }: Prop
                 })}
               </ol>
             </>
+          )}
+
+          {/* Der Coach-Satz haengt NICHT an der Aufstellung: das Backend baut die
+              Auskunft aus den Staff-Eintraegen, und das Druckblatt zeigt `1B Jan`
+              auch ueber einem „Kein Lineup". Seine Nummern zeigen auf die Liste
+              darueber, deshalb steht er hinter ihr und nicht vor ihr. */}
+          {coachSatz && <p className={NEBENZEILE}>{coachSatz}</p>}
+
+          {/* Die Bank dagegen bleibt am Feld: ohne Aufstellung waere sie der ganze
+              Kader und damit keine Auskunft. */}
+          {bank.length > 0 && (
+            <p className={NEBENZEILE}>{`Bank: ${bank.map(p => p.name).join(' · ')}`}</p>
           )}
         </>
       )}
