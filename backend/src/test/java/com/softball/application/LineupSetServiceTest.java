@@ -62,58 +62,6 @@ class LineupSetServiceTest {
     }
 
     @Test
-    void snapshot_capturesCoachRotationPerGame() {
-        final Game g1 = new Game(10L, 1);
-        g1.setFirstBaseCoachRotation(CoachRotationPair.POS_3_8);
-        g1.setFirstBaseCoachRotationReversed(true);
-        final Game g2 = new Game(20L, 2);   // ohne Rotation -> keine Zeile
-
-        when(gameRepository.findByGameDayIdOrderByGameNumberAsc(99L)).thenReturn(List.of(g1, g2));
-        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L, 20L))).thenReturn(List.of());
-        when(gameStaffRepository.findByGameIdIn(List.of(10L, 20L))).thenReturn(List.of());
-        when(gameDayRepository.findByIdWithPlayers(99L)).thenReturn(Optional.empty());
-        when(lineupSetRepository.maxSortOrder(99L)).thenReturn(0);
-        when(lineupSetRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-
-        service().snapshot(99L, "Set A");
-
-        final ArgumentCaptor<LineupSet> captor = ArgumentCaptor.forClass(LineupSet.class);
-        verify(lineupSetRepository).save(captor.capture());
-        final LineupSet saved = captor.getValue();
-        assertThat(saved.getGameRotations()).hasSize(1);
-        final LineupSetGameRotation rot = saved.getGameRotations().get(0);
-        assertThat(rot.getGameNumber()).isEqualTo(1);
-        assertThat(rot.getFirstBase()).isEqualTo(CoachRotationPair.POS_3_8);
-        assertThat(rot.isFirstBaseReversed()).isTrue();
-        assertThat(rot.getThirdBase()).isNull();
-    }
-
-    @Test
-    void overwrite_replacesCoachRotation() {
-        final LineupSet existing = new LineupSet(99L, "Set A", 1);
-        existing.setId(7L);
-        existing.setGameRotations(List.of(
-            new LineupSetGameRotation(1, CoachRotationPair.POS_1_6, false, null, false)));
-        when(lineupSetRepository.findById(7L)).thenReturn(Optional.of(existing));
-
-        final Game g1 = new Game(10L, 1);
-        g1.setThirdBaseCoachRotation(CoachRotationPair.POS_5_10);
-        when(gameRepository.findByGameDayIdOrderByGameNumberAsc(99L)).thenReturn(List.of(g1));
-        when(lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(List.of(10L))).thenReturn(List.of());
-        when(gameStaffRepository.findByGameIdIn(List.of(10L))).thenReturn(List.of());
-        when(gameDayRepository.findByIdWithPlayers(99L)).thenReturn(Optional.empty());
-        when(lineupSetRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-
-        service().overwrite(7L);
-
-        final ArgumentCaptor<LineupSet> captor = ArgumentCaptor.forClass(LineupSet.class);
-        verify(lineupSetRepository).save(captor.capture());
-        final LineupSetGameRotation rot = captor.getValue().getGameRotations().get(0);
-        assertThat(rot.getFirstBase()).isNull();
-        assertThat(rot.getThirdBase()).isEqualTo(CoachRotationPair.POS_5_10);
-    }
-
-    @Test
     void overwrite_keepsIdentityAndReplacesContent() {
         final Game g1 = new Game(10L, 1);
         final Player hung = new Player(1L, "Hung", false, 1);

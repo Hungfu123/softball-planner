@@ -4,7 +4,6 @@ import com.softball.domain.model.Game;
 import com.softball.domain.model.LineupEntry;
 import com.softball.domain.model.LineupSet;
 import com.softball.domain.model.LineupSetEntry;
-import com.softball.domain.model.LineupSetGameRotation;
 import com.softball.domain.model.LineupSetStaffEntry;
 import com.softball.domain.model.Player;
 import com.softball.domain.port.out.GameDayRepository;
@@ -69,7 +68,7 @@ public class LineupSetService {
 
     /**
      * Ueberschreibt ein bestehendes Set mit dem aktuellen Stand des Spieltags.
-     * Name, Sortierung und ID bleiben — nur Lineups, Coaches, Rotation und Roster werden neu geschnappt.
+     * Name, Sortierung und ID bleiben — nur Lineups, Coaches und Roster werden neu geschnappt.
      */
     @Transactional
     public LineupSet overwrite(final Long setId) {
@@ -83,7 +82,7 @@ public class LineupSetService {
         return saved;
     }
 
-    /** Liest Lineups, Base-Coaches, Coach-Rotation und Roster des Spieltags in das Set (ueberschreibt vorhandene Listen). */
+    /** Liest Lineups, Base-Coaches und Roster des Spieltags in das Set (ueberschreibt vorhandene Listen). */
     private void captureCurrentState(final LineupSet set, final Long gameDayId) {
         final List<Game> games = gameRepository.findByGameDayIdOrderByGameNumberAsc(gameDayId);
         if (games.isEmpty()) {
@@ -108,16 +107,6 @@ public class LineupSetService {
                 gameNumberById.get(s.getGame().getId()),
                 s.getPlayer(),
                 s.getRole()))
-            .toList());
-
-        // Coach-Rotation je Spiel (liegt am Game, nicht am Lineup) — ohne Snapshot
-        // wuerde sie beim Set-Wechsel vom vorher geladenen Set haengenbleiben.
-        set.setGameRotations(games.stream()
-            .map(g -> new LineupSetGameRotation(
-                g.getGameNumber(),
-                g.getFirstBaseCoachRotation(), g.isFirstBaseCoachRotationReversed(),
-                g.getThirdBaseCoachRotation(), g.isThirdBaseCoachRotationReversed()))
-            .filter(r -> !r.isEmpty())
             .toList());
 
         // Verfügbare Spieler des Gamedays (Fallback: Vereinigung der Lineup-/DH-Spieler)

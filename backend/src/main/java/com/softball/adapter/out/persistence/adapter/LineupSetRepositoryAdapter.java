@@ -39,7 +39,7 @@ public class LineupSetRepositoryAdapter implements LineupSetRepository {
     public LineupSet save(final LineupSet lineupSet) {
         if (lineupSet.getId() != null) {
             // Hibernate ersetzt ersetzte Kinder-Zeilen in einem Flush per insert-before-delete —
-            // der Unique-Constraint der Rotationen (lineup_set_id, game_number) knallt dann,
+            // ein Unique-Constraint an den Kinder-Zeilen knallt dann,
             // obwohl das Ergebnis korrekt waere ("Datensatz wird noch referenziert"-400).
             // Deshalb zweiphasig: erst die alten Kinder weglaschen (eigener Flush),
             // dann die neuen speichern.
@@ -47,7 +47,6 @@ public class LineupSetRepositoryAdapter implements LineupSetRepository {
                 existing.getEntries().clear();
                 existing.getStaff().clear();
                 existing.getAvailablePlayers().clear();
-                existing.getGameRotations().clear();
                 repo.save(existing);
                 repo.flush();
             });

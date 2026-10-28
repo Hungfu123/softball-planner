@@ -38,20 +38,6 @@ public class GameEntity {
     @Column(name = "batting_side", length = 10)
     private String battingSide;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "first_base_coach_rotation", length = 20)
-    private com.softball.domain.model.CoachRotationPair firstBaseCoachRotation;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "third_base_coach_rotation", length = 20)
-    private com.softball.domain.model.CoachRotationPair thirdBaseCoachRotation;
-
-    @Column(name = "first_base_coach_rotation_reversed", nullable = false)
-    private boolean firstBaseCoachRotationReversed;
-
-    @Column(name = "third_base_coach_rotation_reversed", nullable = false)
-    private boolean thirdBaseCoachRotationReversed;
-
     // Spielzeit-Uhr. Pausierbar, deshalb zwei Felder statt eines Startzeitpunkts:
     // timerAccumulatedSeconds haelt die Zeit vor der laufenden Phase, timerRunningSince den
     // Beginn der laufenden. NULL = pausiert oder nie gestartet.
@@ -111,14 +97,6 @@ public class GameEntity {
     public void setEndedAt(final Instant endedAt) { this.endedAt = endedAt; }
     public String getBattingSide() { return battingSide; }
     public void setBattingSide(final String battingSide) { this.battingSide = battingSide; }
-    public com.softball.domain.model.CoachRotationPair getFirstBaseCoachRotation() { return firstBaseCoachRotation; }
-    public void setFirstBaseCoachRotation(final com.softball.domain.model.CoachRotationPair v) { this.firstBaseCoachRotation = v; }
-    public com.softball.domain.model.CoachRotationPair getThirdBaseCoachRotation() { return thirdBaseCoachRotation; }
-    public void setThirdBaseCoachRotation(final com.softball.domain.model.CoachRotationPair v) { this.thirdBaseCoachRotation = v; }
-    public boolean isFirstBaseCoachRotationReversed() { return firstBaseCoachRotationReversed; }
-    public void setFirstBaseCoachRotationReversed(final boolean v) { this.firstBaseCoachRotationReversed = v; }
-    public boolean isThirdBaseCoachRotationReversed() { return thirdBaseCoachRotationReversed; }
-    public void setThirdBaseCoachRotationReversed(final boolean v) { this.thirdBaseCoachRotationReversed = v; }
     public Instant getTimerRunningSince() { return timerRunningSince; }
     public void setTimerRunningSince(final Instant timerRunningSince) { this.timerRunningSince = timerRunningSince; }
     public int getTimerAccumulatedSeconds() { return timerAccumulatedSeconds; }

@@ -77,7 +77,6 @@ public final class AuditLabels {
         // Spiele: Aufstellung und Stab
         r("PUT", "/api/games/(\\d+)/lineup", WRITE, "Lineup geändert", "GAME"),
         r("PUT", "/api/games/(\\d+)/staff", WRITE, "Base-Coaches geändert", "GAME"),
-        r("PUT", "/api/games/(\\d+)/coach-rotation", WRITE, "Coach-Rotation geändert", "GAME"),
         r("PUT", "/api/games/(\\d+)/opponent", WRITE, "Gegner geändert", "GAME"),
         r("POST", "/api/games/(\\d+)/swap/\\d+", WRITE, "Spiele getauscht", "GAME"),
         // Spiele: Scoring (Spielstand, Seitenwechsel, Ende, Wechsel, At-Bats, Stealing, Uhr)

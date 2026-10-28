@@ -160,7 +160,6 @@ class ScorerRechtIntegrationTest {
                 new Aufruf(HttpMethod.PUT, BASE + "/staff", "[]"),
                 new Aufruf(HttpMethod.PUT, BASE + "/substitutions", "[]"),
                 new Aufruf(HttpMethod.PUT, BASE + "/opponent", "{}"),
-                new Aufruf(HttpMethod.PUT, BASE + "/coach-rotation", "{}"),
                 new Aufruf(HttpMethod.POST, BASE + "/swap/1", null))) {
             assertThat(status(aufruf, MIT_RECHT)).as(aufruf.toString()).isEqualTo(403);
         }

@@ -6,8 +6,7 @@ import java.util.List;
 public record LineupSetResponse(Long id, Long gameDayId, String name,
                                 List<LineupSetEntryResponse> entries,
                                 List<LineupSetStaffEntryResponse> staff,
-                                List<Long> availablePlayerIds,
-                                List<LineupSetGameRotationResponse> rotations) {
+                                List<Long> availablePlayerIds) {
     public static LineupSetResponse from(final LineupSet set) {
         return new LineupSetResponse(
             set.getId(),
@@ -15,8 +14,7 @@ public record LineupSetResponse(Long id, Long gameDayId, String name,
             set.getName(),
             set.getEntries().stream().map(LineupSetEntryResponse::from).toList(),
             set.getStaffEntries().stream().map(LineupSetStaffEntryResponse::from).toList(),
-            set.getAvailablePlayerIds(),
-            set.getGameRotations().stream().map(LineupSetGameRotationResponse::from).toList()
+            set.getAvailablePlayerIds()
         );
     }
 }

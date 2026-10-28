@@ -3,12 +3,10 @@ package com.softball.adapter.out.persistence.mapper;
 import com.softball.adapter.out.persistence.entity.LineupSetAvailablePlayerEntity;
 import com.softball.adapter.out.persistence.entity.LineupSetEntity;
 import com.softball.adapter.out.persistence.entity.LineupSetEntryEntity;
-import com.softball.adapter.out.persistence.entity.LineupSetGameRotationEntity;
 import com.softball.adapter.out.persistence.entity.LineupSetStaffEntity;
 import com.softball.adapter.out.persistence.repository.SpringPlayerRepository;
 import com.softball.domain.model.LineupSet;
 import com.softball.domain.model.LineupSetEntry;
-import com.softball.domain.model.LineupSetGameRotation;
 import com.softball.domain.model.LineupSetStaffEntry;
 import org.springframework.stereotype.Component;
 
@@ -45,17 +43,6 @@ public class LineupSetMapper {
             .toList());
         set.setAvailablePlayerIds(entity.getAvailablePlayers().stream()
             .map(a -> a.getPlayer().getId())
-            .toList());
-        set.setGameRotations(entity.getGameRotations().stream()
-            .sorted((a, b) -> Integer.compare(a.getGameNumber(), b.getGameNumber()))
-            .map(r -> {
-                final LineupSetGameRotation rot = new LineupSetGameRotation(
-                    r.getGameNumber(),
-                    r.getFirstBasePair(), r.isFirstBaseReversed(),
-                    r.getThirdBasePair(), r.isThirdBaseReversed());
-                rot.setId(r.getId());
-                return rot;
-            })
             .toList());
         return set;
     }
@@ -99,18 +86,6 @@ public class LineupSetMapper {
             e.setRole(d.getRole());
             return e;
         }).toList());
-        entity.setGameRotations(domain.getGameRotations().stream()
-            .filter(r -> !r.isEmpty())
-            .map(r -> {
-                final LineupSetGameRotationEntity e = new LineupSetGameRotationEntity();
-                e.setLineupSet(entity);
-                e.setGameNumber(r.getGameNumber());
-                e.setFirstBasePair(r.getFirstBase());
-                e.setFirstBaseReversed(r.isFirstBaseReversed());
-                e.setThirdBasePair(r.getThirdBase());
-                e.setThirdBaseReversed(r.isThirdBaseReversed());
-                return e;
-            }).toList());
         entity.setAvailablePlayers(domain.getAvailablePlayerIds().stream().map(pid -> {
             final LineupSetAvailablePlayerEntity a = new LineupSetAvailablePlayerEntity();
             a.setLineupSet(entity);

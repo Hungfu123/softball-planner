@@ -274,8 +274,6 @@ class SpielerLeserechteIntegrationTest {
         mockMvc.perform(put("/api/players/" + player.getId() + "/whatsapp-name").with(SPIELER)
                 .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isForbidden());
         mockMvc.perform(delete("/api/seasons/1").with(SPIELER)).andExpect(status().isForbidden());
-        mockMvc.perform(put("/api/games/1/coach-rotation").with(SPIELER)
-                .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isForbidden());
         mockMvc.perform(post("/api/games/1/scoring/undo").with(SPIELER)).andExpect(status().isForbidden());
     }
 
