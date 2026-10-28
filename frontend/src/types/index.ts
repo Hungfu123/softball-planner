@@ -110,6 +110,14 @@ export interface Season {
   year: number
 }
 
+/** Ob die Spieler die Aufstellung gerade sehen — vom Backend berechnet (7-Uhr-Regel, Berliner Zeit). */
+export type AufstellungsLage =
+  | 'GESPERRT'
+  | 'FREIGEGEBEN'
+  | 'HEUTE_VOR_SIEBEN'
+  | 'OFFEN_AB_SIEBEN'
+  | 'OFFEN_VERGANGEN'
+
 export interface GameDayResponse {
   id: number
   date: string
@@ -121,6 +129,7 @@ export interface GameDayResponse {
   /** ISO-Zeitpunkt der Freigabe; null/fehlend = nicht freigegeben (Spieler sehen dann leere Listen). */
   lineupsReleasedAt?: string | null
   lineupsChangedSinceRelease?: boolean
+  aufstellungsLage?: AufstellungsLage
 }
 
 export interface LeagueTeamResponse {
