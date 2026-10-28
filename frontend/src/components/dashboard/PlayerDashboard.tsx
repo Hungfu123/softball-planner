@@ -4,7 +4,7 @@ import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
 import { LoadingSkeleton } from '@/components/shared'
 import type { GameDayResponse, GameResponse, LineupEntryResponse, MeResponse } from '@/types'
-import { istVergangen, NOCH_KEINE_AUFSTELLUNG, NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsLage'
+import { alleLeer, istVergangen, NOCH_KEINE_AUFSTELLUNG, NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsLage'
 import { HeroNextGameDay } from './HeroNextGameDay'
 import { UpcomingList } from './UpcomingList'
 
@@ -131,7 +131,7 @@ function BinIchDabei({ spieltag, zusagen, aufstellungen, playerId }: {
           </p>
         </>
       )}
-      {stehtNochNicht(spieltag, !spieltag.games.every(g => aufstellungen[g.id]?.length === 0)) ? (
+      {stehtNochNicht(spieltag, alleLeer(spieltag.games, aufstellungen)) ? (
         <p className="text-sm text-white/65 mt-3">{NOCH_NICHT_FREIGEGEBEN}</p>
       ) : (
       <ul className="mt-3 space-y-2">
@@ -160,7 +160,7 @@ function LineupLesen({ spieltag, aufstellungen, playerId }: {
   const aktiv = spiele.find(g => g.id === gewaehlt) ?? spiele.find(g => !g.endedAt) ?? spiele[0]
   const eintraege = aktiv ? aufstellungen[aktiv.id] : undefined
   // Die Freigabe erklaert nur die Leere, sie verbirgt nichts: Eintraege werden immer gezeigt.
-  const keineSichtbar = stehtNochNicht(spieltag, spiele.some(g => (aufstellungen[g.id]?.length ?? 0) > 0))
+  const keineSichtbar = stehtNochNicht(spieltag, alleLeer(spiele, aufstellungen))
   const sortiert = eintraege ? [...eintraege].sort((a, b) => a.battingOrder - b.battingOrder) : []
 
   return (

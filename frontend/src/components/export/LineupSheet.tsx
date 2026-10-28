@@ -54,7 +54,7 @@ export function LineupSheet() {
     })
 
   // Der Satz gilt dem ganzen Spieltag: hat der Betrachter fuer irgendein Spiel Eintraege, ist nichts gesperrt.
-  const keineSichtbar = stehtNochNicht(gameDay, games.some(g => g.lineup.length > 0))
+  const keineSichtbar = stehtNochNicht(gameDay, games.every(g => g.lineup.length === 0))
 
   return (
     <div className="max-w-md mx-auto p-4">
