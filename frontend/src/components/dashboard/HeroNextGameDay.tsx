@@ -29,6 +29,17 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
    */
   const stripeBg = variant === 'past' ? 'bg-white/10' : 'bg-softball-red-600'
 
+  /*
+   * Erinnerung, kein Schalter: nur der Trainer, nur wenn eine Aufstellung dasteht, nur wenn
+   * die Freigabe fehlt oder veraltet ist. Freigegeben wird im Planer, wo man sie auch sieht.
+   */
+  const hatAufstellung = gameDay.games.some(g => g.lineupEntryCount > 0)
+  const freigegeben = gameDay.lineupsReleasedAt != null
+  const freigabeText = !freigegeben
+    ? 'Aufstellung noch nicht freigegeben'
+    : gameDay.lineupsChangedSinceRelease ? 'Seit der Freigabe geändert' : null
+  const erinnern = istAdmin && hatAufstellung && freigabeText !== null
+
   return (
     /*
      * Der Block ist Betonung, nicht Rahmen: `spotlight`, nicht `band`. Mit
@@ -162,6 +173,15 @@ export function HeroNextGameDay({ gameDay, variant }: Props) {
               )
             })}
           </div>
+        )}
+        {erinnern && (
+          <Link
+            to={`/gameday/${gameDay.id}`}
+            className="mt-2 sm:mt-3 flex items-center gap-2 text-[12px] sm:text-sm text-white/85 hover:text-white transition-colors"
+          >
+            <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full inline-block bg-amber-400 shrink-0" />
+            {freigabeText}
+          </Link>
         )}
         {istAdmin && (
           <Link

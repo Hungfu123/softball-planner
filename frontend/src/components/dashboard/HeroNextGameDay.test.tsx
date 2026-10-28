@@ -61,3 +61,43 @@ describe('HeroNextGameDay — was sich anfassen lässt', () => {
     expect(zeile().className).toMatch(/hover:/)
   })
 })
+
+describe('HeroNextGameDay — Erinnerung an die Freigabe', () => {
+  beforeEach(() => { rolle.istAdmin = true; rolle.darfScoren = false })
+
+  function mit(teil: Partial<GameDayResponse>, anzahl = 9) {
+    const tag: GameDayResponse = {
+      ...SPIELTAG,
+      ...teil,
+      games: SPIELTAG.games.map(g => ({ ...g, lineupEntryCount: anzahl })),
+    }
+    return render(<MemoryRouter><HeroNextGameDay gameDay={tag} variant="upcoming" /></MemoryRouter>)
+  }
+
+  it('erinnert den Admin an die fehlende Freigabe', () => {
+    mit({ lineupsReleasedAt: null, lineupsChangedSinceRelease: false })
+    const link = screen.getByRole('link', { name: /Aufstellung noch nicht freigegeben/i })
+    expect(link).toHaveAttribute('href', '/gameday/4')
+  })
+
+  it('schweigt ohne Aufstellung', () => {
+    mit({ lineupsReleasedAt: null }, 0)
+    expect(screen.queryByText(/freigegeben/i)).not.toBeInTheDocument()
+  })
+
+  it('schweigt nach der Freigabe', () => {
+    mit({ lineupsReleasedAt: '2099-10-20T10:00:00+02:00', lineupsChangedSinceRelease: false })
+    expect(screen.queryByText(/freigegeben|geändert/i)).not.toBeInTheDocument()
+  })
+
+  it('meldet sich wieder, wenn sich danach etwas geaendert hat', () => {
+    mit({ lineupsReleasedAt: '2099-10-20T10:00:00+02:00', lineupsChangedSinceRelease: true })
+    expect(screen.getByRole('link', { name: /Seit der Freigabe geändert/i })).toHaveAttribute('href', '/gameday/4')
+  })
+
+  it('zeigt einem Spieler nichts davon', () => {
+    rolle.istAdmin = false
+    mit({ lineupsReleasedAt: null })
+    expect(screen.queryByText(/freigegeben/i)).not.toBeInTheDocument()
+  })
+})
