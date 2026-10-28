@@ -84,14 +84,17 @@ describe('FreigabeLeiste', () => {
     expect(punktKlasse(zeige('GESPERRT', false).container)).toContain('bg-line-strong')
   })
 
-  it('bietet ab 7 Uhr und nach dem Spieltag keinen Knopf an', () => {
-    zeige('OFFEN_AB_SIEBEN')
+  // Der Rückfrage-Text ("verschwindet dann wieder aus der Spieler-Ansicht") verspricht sonst etwas,
+  // was nicht eintritt: in offenen Lagen bleibt die Aufstellung sichtbar. Realistischer Fall ist ein
+  // gesetzter Zeitstempel — der Trainer hat am Vortag freigegeben.
+  it.each(['OFFEN_AB_SIEBEN', 'OFFEN_VERGANGEN'] as const)('%s bietet auch mit Freigabe-Zeitstempel keinen Knopf an', (lage) => {
+    render(<FreigabeLeiste lage={lage} freigegebenSeit={seit} seitdemGeaendert={false} hatAufstellung umschalten={vi.fn()} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('bietet nach dem Spieltag keinen Knopf an', () => {
-    zeige('OFFEN_VERGANGEN')
-    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  it('sperrt "Früher freigeben" vor 7 Uhr ohne Aufstellung', () => {
+    zeige('HEUTE_VOR_SIEBEN', false)
+    expect(screen.getByRole('button', { name: 'Früher freigeben' })).toBeDisabled()
   })
 
   it('bietet vor 7 Uhr "Früher freigeben" an, ohne zurücknehmen', () => {
