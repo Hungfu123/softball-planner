@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import * as api from '@/api/client'
 import { generatePdf, type GameData } from '@/utils/pdfExport'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
+import { NOCH_NICHT_FREIGEGEBEN, stehtNochNicht } from '@/utils/aufstellungsauskunft'
 import type { GameDayResponse, Season } from '@/types'
 
 export function LineupSheet() {
@@ -86,9 +87,7 @@ export function LineupSheet() {
 
             {lineup.length === 0 ? (
               <p className="text-xs text-gray-400 py-1">
-                {gameDay.lineupsReleasedAt
-                  ? 'Kein Lineup'
-                  : 'Die Aufstellung steht noch nicht. Sobald sie steht, findest du sie hier.'}
+                {stehtNochNicht(gameDay) ? NOCH_NICHT_FREIGEGEBEN : 'Kein Lineup'}
               </p>
             ) : (
               <table className="w-full text-xs leading-tight">

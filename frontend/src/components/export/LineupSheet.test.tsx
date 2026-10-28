@@ -49,6 +49,13 @@ describe('LineupSheet', () => {
     expect(screen.queryByText('Kein Lineup')).not.toBeInTheDocument()
   })
 
+  it('sagt bei einem vergangenen, leeren, nie freigegebenen Spieltag „Kein Lineup"', async () => {
+    mockApi.getGameDay.mockResolvedValue(spieltag({ date: '2000-06-20', lineupsReleasedAt: null }))
+    rendern()
+    expect(await screen.findByText('Kein Lineup')).toBeInTheDocument()
+    expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
+  })
+
   it('bleibt nach der Freigabe bei „Kein Lineup", wenn nichts eingetragen ist', async () => {
     mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
     rendern()
