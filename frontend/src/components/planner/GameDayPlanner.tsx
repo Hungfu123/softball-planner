@@ -236,6 +236,8 @@ export function GameDayPlanner() {
       setActiveSetId(set.id)
       // Staff des aktiven Spiels neu laden, damit CoachSlots stimmen
       if (activeGame) await staff.load(activeGame.id)
+      // Die Freigabe-Leiste liest Aufstellungsstand und Haken aus dem Spieltag.
+      if (gameDay) setGameDay(await api.getGameDay(gameDay.id))
       await refreshStats()
       if (skipped.length === 0 && skippedCoaches.length === 0) {
         toast.show(`Set „${set.name}" angewendet & gespeichert`, 'success')

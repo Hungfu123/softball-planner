@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import type { GameDayResponse } from '@/types'
@@ -85,9 +85,15 @@ vi.mock('@/components/layout/Layout', () => ({
 // GameDayPlanner selbst ist Gegenstand dieser Suite. AvailablePlayersModal/PollVoteSyncSheet/
 // PollSyncToolbarButton bleiben minimal interaktiv (Buttons), damit die beiden Übernahme-Wege
 // über echte Klicks ausgelöst werden können.
-vi.mock('./GameTabs', () => ({ GameTabs: () => null }))
+vi.mock('./GameTabs', () => ({ GameTabs: ({ rightSlot }: { rightSlot?: unknown }) => <>{rightSlot as never}</> }))
 vi.mock('./LineupEditor', () => ({ LineupEditor: () => null }))
-vi.mock('./LineupSetBar', () => ({ LineupSetBar: () => null }))
+vi.mock('./LineupSetBar', () => ({
+  LineupSetBar: ({ onApply }: { onApply: (set: unknown) => void }) => (
+    <button onClick={() => onApply({
+      id: 5, gameDayId: 1, name: 'Set A', entries: [], staff: [], availablePlayerIds: [1],
+    })}>apply-set</button>
+  ),
+}))
 vi.mock('./SaveSetModal', () => ({ SaveSetModal: () => null }))
 vi.mock('./PlayerPool', () => ({ PlayerPool: () => null }))
 vi.mock('./FieldView', () => ({ FieldView: () => null }))
@@ -199,5 +205,24 @@ describe('GameDayPlanner — Übernahme-Wege bleiben synchron', () => {
     expect(mockLineup.invalidateCache).toHaveBeenCalled()
     expect(mockStaff.load).toHaveBeenCalledWith(100)
     expect(mockRefreshStats).toHaveBeenCalled()
+  })
+
+  it('Set anwenden lädt den Spieltag neu, weil die Freigabe-Leiste ihren Stand daraus liest', async () => {
+    mockLineup.applySet.mockResolvedValue({ skipped: [], skippedCoaches: [] })
+    const reloaded: GameDayResponse = {
+      ...gameDay,
+      games: [{ ...gameDay.games[0], lineupEntryCount: 9 }],
+    }
+    vi.mocked(getGameDay).mockResolvedValue(reloaded)
+
+    renderPlanner()
+    await userEvent.click((await screen.findAllByText('apply-set'))[0])
+    await userEvent.click(await screen.findByText('Ja, anwenden'))
+
+    await waitFor(() => expect(mockSetGameDay).toHaveBeenCalledWith(reloaded))
+    expect(getGameDay).toHaveBeenCalledWith(1)
+    // Nach dem Schreiben der Aufstellungen, nicht davor.
+    expect(vi.mocked(getGameDay).mock.invocationCallOrder[0])
+      .toBeGreaterThan(mockLineup.applySet.mock.invocationCallOrder[0])
   })
 })
