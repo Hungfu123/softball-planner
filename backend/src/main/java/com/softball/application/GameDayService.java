@@ -62,8 +62,9 @@ public class GameDayService {
             .toList();
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
+        final Set<Long> geaendert = spieltageMitGeaenderterAufstellung(days);
         return days.stream()
-            .map(d -> GameDayResponse.from(d, counts, liveScores, istSeitDerFreigabeGeaendert(d)))
+            .map(d -> GameDayResponse.from(d, counts, liveScores, geaendert.contains(d.getId())))
             .toList();
     }
 
@@ -97,18 +98,44 @@ public class GameDayService {
      */
     @Transactional(readOnly = true)
     public boolean istSeitDerFreigabeGeaendert(final GameDay gameDay) {
-        if (gameDay.getLineupsReleasedAt() == null) return false;
-        final List<Long> gameIds = gameDay.getGames().stream()
-            .map(Game::getId)
-            .filter(Objects::nonNull)
+        return spieltageMitGeaenderterAufstellung(List.of(gameDay)).contains(gameDay.getId());
+    }
+
+    /**
+     * Stapelform von {@link #istSeitDerFreigabeGeaendert}: drei Abfragen fuer alle Spieltage
+     * zusammen statt drei je Spieltag, und gar keine, wenn keiner freigegeben ist.
+     */
+    private Set<Long> spieltageMitGeaenderterAufstellung(final List<GameDay> days) {
+        final List<GameDay> freigegeben = days.stream()
+            .filter(d -> d.getLineupsReleasedAt() != null)
             .toList();
-        final String aktuell = gameIds.isEmpty()
-            ? AufstellungsFingerabdruck.von(List.of(), List.of(), List.of())
-            : AufstellungsFingerabdruck.von(
-                lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds),
-                gameStaffRepository.findByGameIdIn(gameIds),
-                substitutionRepository.findByGameIdIn(gameIds));
-        return !aktuell.equals(gameDay.getLineupsReleasedHash());
+        if (freigegeben.isEmpty()) return Set.of();
+
+        final Map<Long, Long> spieltagJeSpiel = new HashMap<>();
+        for (final GameDay day : freigegeben) {
+            for (final Game game : day.getGames()) {
+                if (game.getId() != null) spieltagJeSpiel.put(game.getId(), day.getId());
+            }
+        }
+        final List<Long> gameIds = List.copyOf(spieltagJeSpiel.keySet());
+        final Map<Long, List<LineupEntry>> aufstellung = gameIds.isEmpty() ? Map.of()
+            : lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds).stream()
+                .collect(Collectors.groupingBy(e -> spieltagJeSpiel.get(e.getGame().getId())));
+        final Map<Long, List<GameStaff>> staff = gameIds.isEmpty() ? Map.of()
+            : gameStaffRepository.findByGameIdIn(gameIds).stream()
+                .collect(Collectors.groupingBy(e -> spieltagJeSpiel.get(e.getGame().getId())));
+        final Map<Long, List<Substitution>> wechsel = gameIds.isEmpty() ? Map.of()
+            : substitutionRepository.findByGameIdIn(gameIds).stream()
+                .collect(Collectors.groupingBy(e -> spieltagJeSpiel.get(e.getGame().getId())));
+
+        return freigegeben.stream()
+            .filter(d -> !AufstellungsFingerabdruck.von(
+                    aufstellung.getOrDefault(d.getId(), List.of()),
+                    staff.getOrDefault(d.getId(), List.of()),
+                    wechsel.getOrDefault(d.getId(), List.of()))
+                .equals(d.getLineupsReleasedHash()))
+            .map(GameDay::getId)
+            .collect(Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
