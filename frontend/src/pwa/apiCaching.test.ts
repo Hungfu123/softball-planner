@@ -47,7 +47,6 @@ describe('Service-Worker-Regeln für /api', () => {
     // Haengt an gespielten Spielen, nicht an der Planung — bleibt schnell.
     '/api/seasons/3/awards',
     '/api/gamedays/all',
-    '/api/plays',
     '/api/drills',
   ])('%s kommt sofort aus dem Cache und wird nachgeladen', p => {
     expect(erste(get(p))?.handler).toBe('StaleWhileRevalidate')
@@ -57,12 +56,24 @@ describe('Service-Worker-Regeln für /api', () => {
    * Was man gerade selbst aendert, bleibt NetworkFirst: ein Lineup, ein einzelner Spieltag,
    * ein Spielstand. Dort waere eine Sekunde alter Stand eine falsche Auskunft, keine schnelle.
    */
-  it.each(['/api/players', '/api/gamedays/4', '/api/trainings/stats', '/api/players/7/form', '/api/games/9/lineup'])(
-    '%s bleibt NetworkFirst',
-    p => {
-      expect(erste(get(p))?.handler).toBe('NetworkFirst')
-    },
-  )
+  it.each([
+    '/api/players',
+    '/api/gamedays/4',
+    '/api/trainings/stats',
+    '/api/players/7/form',
+    '/api/games/9/lineup',
+    // Der Playmaker bearbeitet Plays und Kategorien selbst: nach dem Speichern darf nicht die
+    // Fassung von vorher aus dem Cache kommen (im Produktions-Build fiel das in der E2E auf).
+    '/api/plays',
+    '/api/plays/1',
+    '/api/play-categories',
+  ])('%s bleibt NetworkFirst', p => {
+    expect(erste(get(p))?.handler).toBe('NetworkFirst')
+  })
+
+  it('ein Play gilt nicht als langsamer Lesestoff', () => {
+    expect(erste(get('/api/plays/1'))?.handler).not.toBe('StaleWhileRevalidate')
+  })
 
   it('Schreibzugriffe und Fremdpfade fasst keine Regel an', () => {
     expect(erste({ url: new URL('/api/me', 'http://x'), request: { method: 'POST' } })).toBeUndefined()

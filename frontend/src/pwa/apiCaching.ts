@@ -66,14 +66,17 @@ function istApiGet({ url, request }: Anfrage): boolean {
 
 /*
  * Lesestoff, der sich selten ändert und für alle gleich aussieht: Statistik, Saisons, Jahre,
- * Spieltage, Awards, Plays. Diese Antworten dürfen SOFORT aus dem Cache kommen und im
+ * Spieltage, Awards. Diese Antworten dürfen SOFORT aus dem Cache kommen und im
  * Hintergrund erneuert werden — das ist der ganze Unterschied zwischen „die Seite ist da"
  * und „die Seite lädt". NetworkFirst wartet dagegen immer erst aufs Netz; der Cache rettet
  * dort nur den Ausfall, nicht die Wartezeit.
  *
  * Nicht dabei: alles Rollenabhängige (steht weiter oben) und alles, was man gerade selbst
- * ändert — ein Lineup, ein Spielstand, eine Umfrage. Dort wäre eine Sekunde alter Stand
- * eine falsche Auskunft, keine schnelle.
+ * ändert — ein Lineup, ein Spielstand, eine Umfrage, ein Play und seine Kategorien (der
+ * Playmaker bearbeitet beides selbst; wer speichert und danach die Fassung von vorher sieht,
+ * hält die Änderung für verloren). Dort wäre eine Sekunde alter Stand eine falsche Auskunft,
+ * keine schnelle. Plays und Kategorien nicht hier einreihen: sie fallen auf NetworkFirst.
+ * Das Offline-Versprechen des Playmakers hängt am freien Feld, das gar kein /api ruft.
  */
 function istLangsamerLesestoff({ url, request }: Anfrage): boolean {
   const lesestoff = [
@@ -83,8 +86,6 @@ function istLangsamerLesestoff({ url, request }: Anfrage): boolean {
     /^\/api\/seasons\/years$/,
     /^\/api\/seasons\/\d+\/(batting-stats|stats|awards)$/,
     /^\/api\/gamedays\/all$/,
-    /^\/api\/plays(\/|$)/,
-    /^\/api\/play-categories$/,
     /^\/api\/drills$/,
   ]
   return request.method === 'GET' && lesestoff.some(r => r.test(url.pathname))
