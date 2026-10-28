@@ -7,7 +7,10 @@ import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
 import com.softball.domain.port.out.AtBatRepository;
 import com.softball.domain.port.out.GameDayRepository;
+import com.softball.domain.port.out.GameStaffRepository;
 import com.softball.domain.port.out.LineupEntryRepository;
+import com.softball.domain.port.out.SubstitutionRepository;
+import com.softball.domain.service.AufstellungsFingerabdruck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,8 @@ public class GameDayService {
     private final GameDayRepository gameDayRepository;
     private final LineupEntryRepository lineupEntryRepository;
     private final AtBatRepository atBatRepository;
+    private final GameStaffRepository gameStaffRepository;
+    private final SubstitutionRepository substitutionRepository;
     private final SeasonService seasonService;
     private final AvailabilityService availabilityService;
     private final GameScoringService gameScoringService;
@@ -32,12 +37,16 @@ public class GameDayService {
     public GameDayService(final GameDayRepository gameDayRepository,
                           final LineupEntryRepository lineupEntryRepository,
                           final AtBatRepository atBatRepository,
+                          final GameStaffRepository gameStaffRepository,
+                          final SubstitutionRepository substitutionRepository,
                           final SeasonService seasonService,
                           final AvailabilityService availabilityService,
                           final GameScoringService gameScoringService) {
         this.gameDayRepository = gameDayRepository;
         this.lineupEntryRepository = lineupEntryRepository;
         this.atBatRepository = atBatRepository;
+        this.gameStaffRepository = gameStaffRepository;
+        this.substitutionRepository = substitutionRepository;
         this.seasonService = seasonService;
         this.availabilityService = availabilityService;
         this.gameScoringService = gameScoringService;
@@ -54,7 +63,7 @@ public class GameDayService {
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
         return days.stream()
-            .map(d -> GameDayResponse.from(d, counts, liveScores))
+            .map(d -> GameDayResponse.from(d, counts, liveScores, istSeitDerFreigabeGeaendert(d)))
             .toList();
     }
 
@@ -78,7 +87,28 @@ public class GameDayService {
             .toList();
         final Map<Long, Long> counts = atBatRepository.countByGameIds(gameIds);
         final Map<Long, Integer> liveScores = gameScoringService.computeLiveScoreUsByGameIds(gameIds);
-        return GameDayResponse.from(gameDay, counts, liveScores);
+        return GameDayResponse.from(gameDay, counts, liveScores, istSeitDerFreigabeGeaendert(gameDay));
+    }
+
+    /**
+     * Leseseite der Freigabe: hat sich die Aufstellung seit dem Freigeben bewegt? Vergleicht
+     * den Fingerabdruck von jetzt mit dem beim Freigeben gespeicherten. Solange nichts
+     * freigegeben ist, gibt es nichts, was sich "seitdem" geaendert haben koennte.
+     */
+    @Transactional(readOnly = true)
+    public boolean istSeitDerFreigabeGeaendert(final GameDay gameDay) {
+        if (gameDay.getLineupsReleasedAt() == null) return false;
+        final List<Long> gameIds = gameDay.getGames().stream()
+            .map(Game::getId)
+            .filter(Objects::nonNull)
+            .toList();
+        final String aktuell = gameIds.isEmpty()
+            ? AufstellungsFingerabdruck.von(List.of(), List.of(), List.of())
+            : AufstellungsFingerabdruck.von(
+                lineupEntryRepository.findByGameIdInOrderByBattingOrderAsc(gameIds),
+                gameStaffRepository.findByGameIdIn(gameIds),
+                substitutionRepository.findByGameIdIn(gameIds));
+        return !aktuell.equals(gameDay.getLineupsReleasedHash());
     }
 
     @Transactional(readOnly = true)
