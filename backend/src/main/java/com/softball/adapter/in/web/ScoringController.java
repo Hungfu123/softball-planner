@@ -14,6 +14,7 @@ import com.softball.adapter.dto.UndoResultResponse;
 import com.softball.adapter.dto.UpdateBaseStateRequest;
 import com.softball.application.GameClockService;
 import com.softball.application.GameScoringService;
+import com.softball.shared.security.AufstellungSichtbarkeit;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -27,10 +28,13 @@ public class ScoringController {
 
     private final GameScoringService scoringService;
     private final GameClockService clockService;
+    private final AufstellungSichtbarkeit sichtbarkeit;
 
-    public ScoringController(final GameScoringService scoringService, final GameClockService clockService) {
+    public ScoringController(final GameScoringService scoringService, final GameClockService clockService,
+                             final AufstellungSichtbarkeit sichtbarkeit) {
         this.scoringService = scoringService;
         this.clockService = clockService;
+        this.sichtbarkeit = sichtbarkeit;
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -118,10 +122,14 @@ public class ScoringController {
         scoringService.deleteStealingEvent(gameId, eventId);
     }
 
+    /**
+     * Spielstand fuer jeden Angemeldeten — der „aktuelle Batter" aber nur, wer die Aufstellung
+     * sehen darf: ohne At-Bats ist das der Leadoff-Hitter, namentlich und mit Schlagplatz 1.
+     */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{gameId}/scoreboard")
     public ScoreboardResponse getScoreboard(@PathVariable final Long gameId) {
-        return scoringService.getScoreboard(gameId);
+        return scoringService.getScoreboard(gameId, sichtbarkeit.darfSehenFuerSpiel(gameId));
     }
 
     @PreAuthorize("hasRole('ADMIN') or @scoring.darfSchreiben(authentication)")

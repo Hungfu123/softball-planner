@@ -431,8 +431,20 @@ public class GameScoringService {
         stealingRepository.deleteById(eventId);
     }
 
+    /** Fuer Aufrufer ohne Lesegrenze (Tests, interne Nutzung): mit Batter-Anzeige. */
     @Transactional(readOnly = true)
     public ScoreboardResponse getScoreboard(final Long gameId) {
+        return getScoreboard(gameId, true);
+    }
+
+    /**
+     * @param mitAufstellung darf der Anfragende die Aufstellung sehen? Ohne At-Bats ist der
+     *        „aktuelle Batter" schlicht der Leadoff-Hitter aus der Aufstellung — Name und
+     *        Schlagplatz 1, fuer ein Spiel, das noch nicht begonnen hat. Darf er sie nicht
+     *        sehen, bleiben die drei Batter-Felder leer; Spielstand, Inning und Outs nicht.
+     */
+    @Transactional(readOnly = true)
+    public ScoreboardResponse getScoreboard(final Long gameId, final boolean mitAufstellung) {
         final Game game = findGame(gameId);
         final List<AtBat> atBats = atBatRepository.findByGameIdOrderBySequenceAsc(gameId);
         final List<BaseRunningEvent> stealingEvents = stealingRepository.findByGameIdOrderByIdAsc(gameId);
@@ -510,9 +522,9 @@ public class GameScoringService {
             outsInCurrent,
             new AtBatResponse.BaseStateDto(state.first(), state.second(), state.third()),
             runners,
-            currentBatter.map(Player::getId).orElse(null),
-            currentBatter.map(Player::getName).orElse(null),
-            currentBatterEntry.map(LineupEntry::getBattingOrder).orElse(null),
+            mitAufstellung ? currentBatter.map(Player::getId).orElse(null) : null,
+            mitAufstellung ? currentBatter.map(Player::getName).orElse(null) : null,
+            mitAufstellung ? currentBatterEntry.map(LineupEntry::getBattingOrder).orElse(null) : null,
             atBats.size(),
             clock
         );
