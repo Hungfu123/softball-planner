@@ -52,4 +52,17 @@ class AufstellungsLageRegelTest {
         assertThat(AufstellungsLageRegel.istHeute(spieltag(LocalDate.of(2026, 7, 5), true), jetzt)).isFalse();
         assertThat(AufstellungsLageRegel.istHeute(spieltag(LocalDate.of(2026, 7, 3), true), jetzt)).isFalse();
     }
+
+    @Test
+    void standTraegtLageUndIstHeuteAusEinemZeitpunkt() {
+        final GameDay gameDay = spieltag(LocalDate.of(2026, 7, 4), true);
+
+        final var vorSieben = AufstellungsLageRegel.stand(gameDay, um("2026-07-04T04:59:00Z"));
+        assertThat(vorSieben.lage()).isEqualTo(AufstellungsLage.FREIGEGEBEN);
+        assertThat(vorSieben.istHeute()).isTrue();
+
+        final var gestern = AufstellungsLageRegel.stand(gameDay, um("2026-07-05T10:00:00Z"));
+        assertThat(gestern.lage()).isEqualTo(AufstellungsLage.OFFEN_VERGANGEN);
+        assertThat(gestern.istHeute()).isFalse();
+    }
 }

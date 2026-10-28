@@ -56,26 +56,36 @@ public final class AufstellungsLageRegel {
      * des Servers), deshalb steht es in derselben Regel und derselben Uhr wie die Lage.
      */
     public static boolean istHeute(final GameDay gameDay, final Clock clock) {
-        final LocalDate datum = gameDay.getDate();
-        return datum != null && datum.equals(berlinJetzt(clock).toLocalDate());
+        return stand(gameDay, clock).istHeute();
     }
 
     public static AufstellungsLage lage(final GameDay gameDay, final Clock clock) {
+        return stand(gameDay, clock).lage();
+    }
+
+    /**
+     * Beides aus EINEM gelesenen Zeitpunkt: wer {@link #lage} und {@link #istHeute} nacheinander
+     * fragt, liest die Uhr zweimal, und um Mitternacht oder 07:00 behauptete eine Antwort zwei
+     * verschiedene Zeitpunkte. Antworten, die beides tragen, nehmen diese Methode.
+     */
+    public static Stand stand(final GameDay gameDay, final Clock clock) {
         final ZonedDateTime jetzt = berlinJetzt(clock);
         final LocalDate heute = jetzt.toLocalDate();
         final LocalDate datum = gameDay.getDate();
-        if (datum != null && datum.isBefore(heute)) {
-            return AufstellungsLage.OFFEN_VERGANGEN;
-        }
         final boolean heuteSpieltag = datum != null && datum.equals(heute);
+        if (datum != null && datum.isBefore(heute)) {
+            return new Stand(AufstellungsLage.OFFEN_VERGANGEN, false);
+        }
         if (heuteSpieltag && !jetzt.toLocalTime().isBefore(SCHWELLE)) {
-            return AufstellungsLage.OFFEN_AB_SIEBEN;
+            return new Stand(AufstellungsLage.OFFEN_AB_SIEBEN, true);
         }
         if (gameDay.getLineupsReleasedAt() != null) {
-            return AufstellungsLage.FREIGEGEBEN;
+            return new Stand(AufstellungsLage.FREIGEGEBEN, heuteSpieltag);
         }
-        return heuteSpieltag ? AufstellungsLage.HEUTE_VOR_SIEBEN : AufstellungsLage.GESPERRT;
+        return new Stand(heuteSpieltag ? AufstellungsLage.HEUTE_VOR_SIEBEN : AufstellungsLage.GESPERRT, heuteSpieltag);
     }
+
+    public record Stand(AufstellungsLage lage, boolean istHeute) {}
 
     /** Die einzige Stelle, die die Uhr liest — zwei Lesarten derselben Uhr koennten auseinanderlaufen. */
     private static ZonedDateTime berlinJetzt(final Clock clock) {

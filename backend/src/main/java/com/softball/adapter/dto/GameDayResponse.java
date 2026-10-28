@@ -3,6 +3,7 @@ package com.softball.adapter.dto;
 import com.softball.domain.model.AufstellungsLage;
 import com.softball.domain.model.Game;
 import com.softball.domain.model.GameDay;
+import com.softball.domain.service.AufstellungsLageRegel;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -34,8 +35,7 @@ public record GameDayResponse(
                                         final Map<Long, Long> atBatCountByGameId,
                                         final Map<Long, Integer> liveScoreUsByGameId,
                                         final boolean lineupsChangedSinceRelease,
-                                        final AufstellungsLage aufstellungsLage,
-                                        final boolean istHeute) {
+                                        final AufstellungsLageRegel.Stand stand) {
         return new GameDayResponse(
             gameDay.getId(),
             gameDay.getDate(),
@@ -50,8 +50,8 @@ public record GameDayResponse(
                 .collect(Collectors.toList()),
             zonenbehaftet(gameDay.getLineupsReleasedAt()),
             lineupsChangedSinceRelease,
-            aufstellungsLage,
-            istHeute
+            stand.lage(),
+            stand.istHeute()
         );
     }
 
