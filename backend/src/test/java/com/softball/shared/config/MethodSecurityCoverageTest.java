@@ -114,6 +114,10 @@ class MethodSecurityCoverageTest {
         "PlayCategoryController#getAll",
         // TrainingController
         "TrainingController#getAll",
+        // WeatherController. Die Startseite gehoert allen, und die Antwort traegt nur
+        // Temperatur, Regen und WMO-Code — keinen Ort, keinen Namen, keine Aufstellung.
+        "WeatherController#getWeather",
+        "WeatherController#getTrainingWeather",
         // ScoringController
         "ScoringController#getAtBats",
         "ScoringController#getStealingEvents",

@@ -252,7 +252,10 @@ class SpielerLeserechteIntegrationTest {
                 "/api/games/999999", "/api/games/999999/lineup", "/api/games/999999/staff",
                 "/api/games/999999/substitutions", "/api/games/999999/atbats",
                 "/api/games/999999/stealing-events", "/api/games/999999/scoreboard",
-                "/api/games/999999/batting-stats", "/api/plays/999999")) {
+                "/api/games/999999/batting-stats", "/api/plays/999999",
+                // Das Wetter der beiden Startseiten-Kacheln. Lief fuer Spieler ins 403 und
+                // fiel stillschweigend in den catch der Kachel — kein Fehler, nur kein Wetter.
+                "/api/gamedays/999999/weather", "/api/trainings/999999/weather")) {
             final int status = mockMvc.perform(get(pfad).with(SPIELER)).andReturn().getResponse().getStatus();
             assertThat(status).as(pfad).isNotIn(401, 403);
         }
