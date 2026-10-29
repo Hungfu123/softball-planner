@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import type { AuditEntry, LastSeen } from '@/types'
+import type { AuditEntry, AuditVerlauf, LastSeen } from '@/types'
 
 const h = vi.hoisted(() => ({ getAudit: vi.fn(), getLastSeen: vi.fn() }))
 vi.mock('@/api/client', () => ({ getAudit: h.getAudit, getLastSeen: h.getLastSeen }))
@@ -15,6 +15,10 @@ const eintrag = (extra: Partial<AuditEntry>): AuditEntry => ({
 const spanne = (from: string, to: string, count: number): AuditEntry =>
   eintrag({ kind: 'SCORING', label: `Gescort (${count} Aktionen)`, from, to, count })
 
+/** Die uebliche Antwort: vollstaendig. Wer das Abschneiden braucht, reicht es als zweites Argument. */
+const antwortet = (eintraege: AuditEntry[], extra: Partial<AuditVerlauf> = {}) =>
+  h.getAudit.mockResolvedValue({ eintraege, abgeschnitten: false, bisZurueck: null, ...extra })
+
 const GESEHEN: LastSeen[] = [
   { userId: 1, username: 'anna', playerName: 'Anna', role: 'ADMIN', lastLoginAt: '2026-10-22T09:00:00Z', lastSeenAt: '2026-10-22T10:00:00Z' },
   { userId: 2, username: 'bert', playerName: 'Bert', role: 'PLAYER', lastLoginAt: null, lastSeenAt: null },
@@ -25,13 +29,13 @@ function zeige() {
 }
 
 beforeEach(() => {
-  h.getAudit.mockReset().mockResolvedValue([])
+  h.getAudit.mockReset(); antwortet([])
   h.getLastSeen.mockReset().mockResolvedValue(GESEHEN)
 })
 
 describe('HistoriePage', () => {
   it('zeigt eine Scoring-Spanne als eine Zeile, nicht als fünf', async () => {
-    h.getAudit.mockResolvedValue([spanne('2026-10-22T14:00:00Z', '2026-10-22T14:30:00Z', 5)])
+    antwortet([spanne('2026-10-22T14:00:00Z', '2026-10-22T14:30:00Z', 5)])
     zeige()
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
     expect(within(verlauf).getAllByRole('listitem')).toHaveLength(1)
@@ -39,7 +43,7 @@ describe('HistoriePage', () => {
   })
 
   it('hält zwei Spannen mit großer Lücke als zwei Zeilen auseinander', async () => {
-    h.getAudit.mockResolvedValue([
+    antwortet([
       spanne('2026-10-22T16:00:00Z', '2026-10-22T16:20:00Z', 4),
       spanne('2026-10-22T14:00:00Z', '2026-10-22T14:30:00Z', 5),
     ])
@@ -75,7 +79,7 @@ describe('HistoriePage', () => {
 
   it('nennt den Spieler, wenn der Benutzername ein anderer ist', async () => {
     // Der Fall, für den die Spalte da ist: jemand benennt sich in etwas Ausgedachtes um.
-    h.getAudit.mockResolvedValue([eintrag({ username: 'ballermann99', playerName: 'Anna' })])
+    antwortet([eintrag({ username: 'ballermann99', playerName: 'Anna' })])
     zeige()
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
     expect(within(verlauf).getByText('ballermann99')).toBeInTheDocument()
@@ -83,14 +87,14 @@ describe('HistoriePage', () => {
   })
 
   it('wiederholt den Namen nicht, wenn er dasselbe sagt', async () => {
-    h.getAudit.mockResolvedValue([eintrag({ username: 'anna', playerName: 'Anna' })])
+    antwortet([eintrag({ username: 'anna', playerName: 'Anna' })])
     zeige()
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
     expect(within(verlauf).queryByText(/· Anna/)).toBeNull()
   })
 
   it('kommt ohne Spielernamen aus — ein gelöschter Account hat keinen mehr', async () => {
-    h.getAudit.mockResolvedValue([eintrag({ username: 'weg', playerName: null })])
+    antwortet([eintrag({ username: 'weg', playerName: null })])
     zeige()
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
     expect(within(verlauf).getByText('weg')).toBeInTheDocument()
@@ -126,7 +130,7 @@ describe('HistoriePage', () => {
 
   it('zeigt erst 50 Zeilen, dann auf Knopfdruck mehr', async () => {
     const viele = Array.from({ length: 120 }, (_, i) => eintrag({ label: `Eintrag ${i}` }))
-    h.getAudit.mockResolvedValue(viele)
+    antwortet(viele)
     zeige()
 
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
@@ -144,7 +148,7 @@ describe('HistoriePage', () => {
   })
 
   it('fängt nach einem Filterwechsel wieder bei 50 an', async () => {
-    h.getAudit.mockResolvedValue(Array.from({ length: 120 }, (_, i) => eintrag({ label: `Eintrag ${i}` })))
+    antwortet(Array.from({ length: 120 }, (_, i) => eintrag({ label: `Eintrag ${i}` })))
     zeige()
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' })
     fireEvent.click(await screen.findByRole('button', { name: 'Mehr anzeigen' }))
@@ -154,8 +158,26 @@ describe('HistoriePage', () => {
     await waitFor(() => expect(within(screen.getByRole('list', { name: 'Verlauf' })).getAllByRole('listitem')).toHaveLength(50))
   })
 
+  it('sagt es, wenn der Server den Zeitraum abgeschnitten hat', async () => {
+    // Eine abgeschnittene Historie, die so tut als waere sie vollstaendig, ist schlimmer
+    // als gar keine — der Superadmin zoege daraus falsche Schluesse.
+    antwortet([eintrag({})], { abgeschnitten: true, bisZurueck: '2026-02-03T08:00:00Z' })
+    zeige()
+    // Erst die Liste abwarten: das Lade-Skelett traegt selbst role="status".
+    await screen.findByText('Spieler angelegt')
+    const hinweis = await screen.findByText(/Älter als 03\.02\.2026/)
+    expect(hinweis).toHaveTextContent(/Grenze ihn ein/)
+  })
+
+  it('schweigt, wenn nichts abgeschnitten wurde', async () => {
+    antwortet([eintrag({})])
+    zeige()
+    await screen.findByText('Spieler angelegt')
+    expect(screen.queryByText(/nicht geladen/)).not.toBeInTheDocument()
+  })
+
   it('zeigt bei kurzer Liste keinen Knopf, aber die Zahl', async () => {
-    h.getAudit.mockResolvedValue([eintrag({}), eintrag({})])
+    antwortet([eintrag({}), eintrag({})])
     zeige()
     expect(await screen.findByText('2 von 2 Einträgen')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Mehr anzeigen' })).not.toBeInTheDocument()

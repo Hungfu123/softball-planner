@@ -156,7 +156,7 @@ import type {
   Role,
   UserAccount,
   BulkCreateResult,
-  AuditEntry,
+  AuditVerlauf,
   AuditKind,
   LastSeen,
 } from '@/types'
@@ -853,7 +853,8 @@ export const setUserLocked = (id: number, locked: boolean) =>
   request<UserAccount>(`/users/${id}/locked`, { method: 'PUT', body: JSON.stringify({ locked }) })
 export const deleteUser = (id: number) => request<void>(`/users/${id}`, { method: 'DELETE' })
 
-// Historie (nur Superadmin). Der Verlauf hat keine Seitenbildung: immer mit Zeitraum fragen.
+// Historie (nur Superadmin). Der Verlauf hat keine Seitenbildung, aber eine Obergrenze:
+// immer mit Zeitraum fragen, und `abgeschnitten` der Antwort beachten.
 export const getAudit = (filter: { userId?: number; from?: string; to?: string; kind?: AuditKind }) => {
   const q = new URLSearchParams()
   if (filter.userId !== undefined) q.set('userId', String(filter.userId))
@@ -861,6 +862,6 @@ export const getAudit = (filter: { userId?: number; from?: string; to?: string; 
   if (filter.to) q.set('to', filter.to)
   if (filter.kind) q.set('kind', filter.kind)
   const query = q.toString()
-  return request<AuditEntry[]>(`/audit${query ? `?${query}` : ''}`)
+  return request<AuditVerlauf>(`/audit${query ? `?${query}` : ''}`)
 }
 export const getLastSeen = () => request<LastSeen[]>('/audit/last-seen')

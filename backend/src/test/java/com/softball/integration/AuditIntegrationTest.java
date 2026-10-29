@@ -128,11 +128,11 @@ class AuditIntegrationTest {
 
         mockMvc.perform(get("/api/audit"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].label").value("Spieler geändert"))
-                .andExpect(jsonPath("$[0].targetType").value("PLAYER"))
-                .andExpect(jsonPath("$[0].targetId").value(id))
-                .andExpect(jsonPath("$[1].label").value("Spieler angelegt"));
+                .andExpect(jsonPath("$.eintraege.length()").value(2))
+                .andExpect(jsonPath("$.eintraege[0].label").value("Spieler geändert"))
+                .andExpect(jsonPath("$.eintraege[0].targetType").value("PLAYER"))
+                .andExpect(jsonPath("$.eintraege[0].targetId").value(id))
+                .andExpect(jsonPath("$.eintraege[1].label").value("Spieler angelegt"));
     }
 
     @Test
@@ -215,7 +215,7 @@ class AuditIntegrationTest {
         appUserRepository.updateUsername(gespeichert.getId(), "ballermann99");
 
         final List<AuditService.Zeile> zeilen = auditService.verlauf(
-                new com.softball.domain.model.AuditQuery(gespeichert.getId(), null, null, null));
+                new com.softball.domain.model.AuditQuery(gespeichert.getId(), null, null, null)).zeilen();
 
         assertThat(zeilen).hasSize(1);
         assertThat(zeilen.get(0).span().username()).isEqualTo("vorher"); // Schnappschuss bleibt
@@ -237,12 +237,12 @@ class AuditIntegrationTest {
 
         mockMvc.perform(get("/api/audit").param("kind", "SCORING"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3)) // ohne Zusammenfassung waeren es fuenf
-                .andExpect(jsonPath("$[?(@.username=='hung' && @.targetId==7)].count").value(3))
-                .andExpect(jsonPath("$[?(@.username=='hung' && @.targetId==7)].from").value("2026-10-17T19:04:00Z"))
-                .andExpect(jsonPath("$[?(@.username=='hung' && @.targetId==7)].to").value("2026-10-17T19:25:00Z"))
-                .andExpect(jsonPath("$[?(@.username=='anna' && @.targetId==7)].count").value(1))
-                .andExpect(jsonPath("$[?(@.username=='hung' && @.targetId==8)].count").value(1));
+                .andExpect(jsonPath("$.eintraege.length()").value(3)) // ohne Zusammenfassung waeren es fuenf
+                .andExpect(jsonPath("$.eintraege[?(@.username=='hung' && @.targetId==7)].count").value(3))
+                .andExpect(jsonPath("$.eintraege[?(@.username=='hung' && @.targetId==7)].from").value("2026-10-17T19:04:00Z"))
+                .andExpect(jsonPath("$.eintraege[?(@.username=='hung' && @.targetId==7)].to").value("2026-10-17T19:25:00Z"))
+                .andExpect(jsonPath("$.eintraege[?(@.username=='anna' && @.targetId==7)].count").value(1))
+                .andExpect(jsonPath("$.eintraege[?(@.username=='hung' && @.targetId==8)].count").value(1));
     }
 
     @Test
@@ -257,9 +257,9 @@ class AuditIntegrationTest {
 
         mockMvc.perform(get("/api/audit").param("kind", "SCORING"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[?(@.targetId==20)].count").value(org.hamcrest.Matchers.contains(1, 1, 1)))
-                .andExpect(jsonPath("$[?(@.targetId==21)].count").value(2));
+                .andExpect(jsonPath("$.eintraege.length()").value(4))
+                .andExpect(jsonPath("$.eintraege[?(@.targetId==20)].count").value(org.hamcrest.Matchers.contains(1, 1, 1)))
+                .andExpect(jsonPath("$.eintraege[?(@.targetId==21)].count").value(2));
     }
 
     @Test
@@ -270,8 +270,8 @@ class AuditIntegrationTest {
         }
 
         mockMvc.perform(get("/api/audit").param("kind", "WRITE"))
-                .andExpect(jsonPath("$.length()").value(3))
-                .andExpect(jsonPath("$[0].count").value(1));
+                .andExpect(jsonPath("$.eintraege.length()").value(3))
+                .andExpect(jsonPath("$.eintraege[0].count").value(1));
     }
 
     @Test
@@ -280,10 +280,10 @@ class AuditIntegrationTest {
         final Long id = spielerAnlegen("Audit Klartext");
 
         mockMvc.perform(get("/api/audit").param("kind", "LOGIN"))
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].label").value("Angemeldet"));
+                .andExpect(jsonPath("$.eintraege.length()").value(1))
+                .andExpect(jsonPath("$.eintraege[0].label").value("Angemeldet"));
         mockMvc.perform(get("/api/audit").param("kind", "WRITE"))
-                .andExpect(jsonPath("$[0].label").value("Spieler angelegt"));
+                .andExpect(jsonPath("$.eintraege[0].label").value("Spieler angelegt"));
         assertThat(zeilen("label = 'Spieler angelegt' and target_id is null")).isEqualTo(1);
         assertThat(id).isNotNull();
     }
@@ -293,8 +293,8 @@ class AuditIntegrationTest {
         auditService.record("hung", AuditKind.WRITE, "POST", "/api/neu/ding", null, null, null, 200);
 
         mockMvc.perform(get("/api/audit"))
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].label").value("POST /api/neu/ding"));
+                .andExpect(jsonPath("$.eintraege.length()").value(1))
+                .andExpect(jsonPath("$.eintraege[0].label").value("POST /api/neu/ding"));
     }
 
     @Test

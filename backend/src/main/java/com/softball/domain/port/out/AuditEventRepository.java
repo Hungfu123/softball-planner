@@ -10,8 +10,13 @@ public interface AuditEventRepository {
 
     AuditEvent save(AuditEvent event);
 
-    /** Neueste zuerst. */
-    List<AuditEvent> find(AuditQuery query);
+    /**
+     * Neueste zuerst, hoechstens {@code hoechstens} Stueck.
+     *
+     * <p>Die Grenze ist kein Blaettern: wer mehr will, engt den Zeitraum ein. Sie ist da, damit
+     * eine Abfrage ohne Zeitraum nicht zwoelf Monate am Stueck zieht.
+     */
+    List<AuditEvent> find(AuditQuery query, int hoechstens);
 
     /** Loescht alles, was vor dem Zeitpunkt liegt; liefert die Anzahl. */
     long deleteOlderThan(Instant cutoff);

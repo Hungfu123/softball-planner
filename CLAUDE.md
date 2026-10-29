@@ -383,6 +383,20 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 - **Drei Rollen:** `SUPERADMIN > ADMIN > PLAYER` als Spring-`RoleHierarchy`. Jeder Account hängt 1:0..1 an einem Spieler (`app_user.player_id`, `NOT NULL UNIQUE`, `ON DELETE CASCADE`). Ein Spieler kann ohne Account existieren, ein Account nie ohne Spieler.
 - **Zwei Passwörter:** `APP_AUTH_PASSWORD` gehört dem Superadmin, `APP_PLAYER_PASSWORD` ist das an die Spieler verteilte. Sind sie gleich, kann sich jeder, der das verteilte kennt, unter **jedem** Benutzernamen anmelden, auch als Superadmin — der Benutzername ist der Vorname. `VerteiltesPasswort` **warnte** deswegen früher nicht, sondern verweigerte den Start; seit dem 26.10.2026 warnt es nur noch (ausdrückliche Entscheidung des Betreibers: er vertraut dem Team und ändert sein eigenes Passwort nach dem Deploy in der Oberfläche, womit `APP_AUTH_PASSWORD` für die Anmeldung bedeutungslos wird). **Nicht wieder zum harten Fehler machen, ohne ihn zu fragen.** Ein *leeres* `APP_PLAYER_PASSWORD` bleibt ein harter Fehler — das ist keine Entscheidung, sondern unfertige Konfiguration.
 - **Default-Deny:** jede Klasse in `adapter/in/web/` trägt exakt `@PreAuthorize("hasRole('ADMIN')")`, Ausnahmen sind `CalendarController` (`permitAll()`), `MeController`/`AuthController` (`isAuthenticated()`) und `AuditController` (`SUPERADMIN`). **Drei Wächter-Tests erzwingen das** — `SecurityCoverageTest`, `MethodSecurityCoverageTest`, `CurrentUserArchitectureTest`. Ein neuer Controller ohne Regel lässt die Suite scheitern.
+- **Die Historie blättert nicht, sie deckelt** (`AuditService.HOECHSTENS`, 5.000 Rohzeilen):
+  `GET /api/audit` hat bewusst **kein** `page`/`size`. Was der Endpunkt liefert, sind nicht
+  Zeilen, sondern **Spannen**, die `AuditSummarizer` aus aufeinanderfolgenden Ereignissen baut —
+  ein `LIMIT` mitten im Ergebnis schnitte eine Sitzung auf, und Seite 2 begänne mit einer Spanne,
+  die Seite 1 halb erzählt hat. Stattdessen holt der Dienst **eine Zeile mehr**, als er zeigt,
+  und die Antwort sagt selbst, ob etwas fehlt (`abgeschnitten`, `bisZurueck`); die Oberfläche
+  schreibt es hin. Deshalb ist die Antwort ein **Objekt und keine blanke Liste** — eine Liste
+  kann nicht sagen, dass sie unvollständig ist, und eine Historie, die unbemerkt abbricht, ist
+  schlimmer als eine, die fehlt. Nötig ist das nur für den Aufruf **ohne** Zeitraum (`from` ist
+  `required = false`): im Normalbetrieb wächst nichts unbegrenzt, weil nur **schreibende**
+  Zugriffe protokolliert werden (`AuditFilter.shouldNotFilter`), ein nächtlicher Lauf alles
+  über zwölf Monate löscht und `idx_audit_event_occurred_at` (V71) die Kosten ans Ergebnis
+  bindet statt an die Tabellengröße. Wer die Aufbewahrung verlängert, nimmt die erste dieser
+  drei Stützen weg.
 - **`CurrentUser` ist `@RequestScope`** und funktioniert nur innerhalb einer HTTP-Anfrage. Aus `@Scheduled`-Läufen wirft er; der Architekturtest fängt das.
 - Local: HTTP Basic, Passwörter aus `APP_AUTH_PASSWORD` und `APP_PLAYER_PASSWORD`. Der Bootstrap legt auf leerer Datenbank genau einen Superadmin an (Benutzername aus `app.auth.bootstrap-player`, Vorgabe `Hung`, klein geschrieben).
 - Zwei Stellen sind bewusst offen: backendseitig `/api/calendar.ics` (`permitAll()` in `SecurityConfig`), frontendseitig die Route `/counter` (einzige Route ohne `RequireAuth` in `App.tsx`). **Ohne Anmeldung ruft `/counter` kein `/api` auf** und braucht das Backend-Loch nicht; angemeldet läuft dort wie überall der `/api/me`-Abruf des `AuthProvider`. Alles andere unter `/api/**` ist authentifiziert und jede andere Route liegt hinter `RequireAuth`.
