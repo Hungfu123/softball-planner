@@ -293,6 +293,22 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 - **No icon libraries** — custom SVG icons in `src/icons/index.tsx`. CrossBones for empty states, Pencil for edit, etc. `lucide-react` exists in deps but prefer the custom set.
 - **Modals over `confirm()`** — every create/edit/delete uses a dark-backdrop modal. Reusable `ConfirmModal` for destructive actions.
 - **Hover-reveal** for edit/delete affordances (pencil, trash icons appear on row hover).
+- **Neue Fassungen ziehen leise ein** (`pwa/UpdateWaechter.tsx` + `pwa/appUpdate.ts`,
+  `registerType: 'prompt'`): **nicht `autoUpdate`** — das klingt nach demselben, tut aber etwas
+  anderes. Dort übernimmt der neue Service Worker sofort, die **offene Seite** läuft aber mit dem
+  alten JavaScript weiter. Im Browser fällt das kaum auf, weil man die Seite irgendwann neu
+  aufruft; die **installierte App wird nie neu aufgerufen, sondern fortgesetzt** — dort blieb die
+  alte Fassung stehen, bis jemand hart neu lud. Jetzt wartet der neue Worker (`skipWaiting` nur
+  noch auf `SKIP_WAITING`, kein `clientsClaim`) und der Wächter lässt ihn ran, **wenn die App in
+  den Vordergrund kommt** — der einzige Moment, in dem ein Neuladen wie ein normaler Start
+  aussieht. **Nie auf den Scoring-Seiten** (`/gameday/{id}/scoring/…`, `/spielbogen/{id}`,
+  `/spielbogen/new`): dort steckt der Stand der laufenden Begegnung in der Seite, und das wäre
+  der teuerste denkbare Zeitpunkt. Die Entscheidung liegt als **pure Funktion** in
+  `appUpdate.ts` (wie bei `apiCaching.ts`: der Service Worker läuft in Vitest nicht, die Regel
+  schon). Gelesen wird `window.location.pathname`, nicht der Router — so hängt der Wächter an
+  keiner Route und sitzt **über** dem Router, wo auch die Scoring-Seiten darunterliegen (die
+  laufen außerhalb des Layouts). Ein stündliches `registration.update()` muss sein: eine
+  stehende App navigiert nicht und sähe sonst nie nach.
 - **PWA** — service worker via `vite-plugin-pwa`. `/api`, `/drills`, `/actuator` are excluded
   from `navigateFallback`. API GETs cached `NetworkFirst` with 5s timeout. Zwei Ausnahmen in
   `src/pwa/apiCaching.ts`, und der Cache-Schlüssel ist **nur die URL** — das ist der Grund für
