@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useRolle } from '@/hooks/useRolle'
 import { CrossBones } from '@/icons'
 import { Dashboard } from './Dashboard'
 import { PlayerDashboard } from './PlayerDashboard'
@@ -8,9 +9,17 @@ import { PlayerDashboard } from './PlayerDashboard'
  * `/` ist für Spieler ihre eigene Seite. Ist die Rolle unbekannt (`me` null, die Prüfung
  * ist durch — RequireAuth lässt vorher nichts durch), kommt keine der beiden: ein Spieler
  * mit Netzfehler bekäme sonst die Admin-Startseite voller fehlgeschlagener Aufrufe.
+ *
+ * <p>Entschieden wird über `useRolle`, NICHT über `me.role`. `/api/me` meldet die Rolle aus
+ * der Datenbank und weiß vom Spielermodus nichts — der lebt im Browser und hängt je Anfrage
+ * am Kopf `X-Rolle-Ansicht`. Wer hier `me.role` läse, bekäme im Modus die Trainer-Werkbank,
+ * gefüllt mit den beschnittenen Daten eines Spielers: die Seite, die der Modus gerade NICHT
+ * zeigen soll. Die Weiche fragt deshalb nach Trainer und nicht nach Spieler — eine Rolle, die
+ * keins von beidem ist, landet bei der Auskunft, nicht an der Werkbank.
  */
 export function Startseite() {
   const { me, neuLaden } = useAuth()
+  const { istAdmin } = useRolle()
   const [versucht, setVersucht] = useState(false)
   if (me === null) {
     return (
@@ -33,5 +42,5 @@ export function Startseite() {
       </div>
     )
   }
-  return me.role === 'PLAYER' ? <PlayerDashboard /> : <Dashboard />
+  return istAdmin ? <Dashboard /> : <PlayerDashboard />
 }

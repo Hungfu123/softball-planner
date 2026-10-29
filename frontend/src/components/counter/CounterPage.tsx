@@ -3,6 +3,7 @@ import { ConfirmModal } from '@/components/shared'
 import { hasAuth } from '@/api/client'
 import { useOptionalAuth } from '@/components/auth/AuthProvider'
 import { useCounter } from '@/hooks/useCounter'
+import { spielermodusAktiv } from '@/hooks/useSpielermodus'
 import { useZurueck, zurueckSatz } from '@/hooks/useZurueck'
 import { useWakeLock } from '@/hooks/useWakeLock'
 import { CounterBoard } from './CounterBoard'
@@ -45,10 +46,11 @@ export default function CounterPage() {
    * das Zurück zeigt.
    *
    * Die Prüfung der Angabe steckt in `useZurueck`; ohne Angabe bleibt es bei der alten
-   * Regel: Spieler sehen Orga nicht.
+   * Regel: Spieler sehen Orga nicht — und im Spielermodus auch der Superadmin nicht, dessen
+   * `/api/me` weiter SUPERADMIN meldet (der Modus hängt am Kopf der Anfrage, nicht am Konto).
    */
   const rolle = useOptionalAuth()?.me?.role
-  const zurueck = useZurueck(rolle === 'PLAYER' ? '/' : '/orga')
+  const zurueck = useZurueck(rolle === 'PLAYER' || spielermodusAktiv() ? '/' : '/orga')
 
   return (
     <div className="flex h-svh flex-col overflow-y-auto bg-cream-100">
