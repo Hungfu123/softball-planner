@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, within, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 
+// Diese Tests meinen den Blick des Trainers — der Reiter Einsätze gehoert ihm.
+vi.mock('@/hooks/useRolle', () => ({ useRolle: () => ({ istAdmin: true }) }))
+
 const empty = vi.hoisted(() => () => Promise.resolve([]))
 
 vi.mock('@/api/client', () => ({

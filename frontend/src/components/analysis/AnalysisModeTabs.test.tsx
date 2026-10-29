@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+
+const rolle = vi.hoisted(() => ({ istAdmin: true }))
+vi.mock('@/hooks/useRolle', () => ({ useRolle: () => rolle }))
+
 import { AnalysisModeTabs } from './AnalysisModeTabs'
 
 function renderAt(url: string) {
@@ -16,6 +20,8 @@ const activeLabels = (links: HTMLElement[]) =>
   links.filter(l => l.getAttribute('aria-current') === 'page').map(l => l.textContent)
 
 describe('AnalysisModeTabs', () => {
+  beforeEach(() => { rolle.istAdmin = true })
+
   it('zeigt vier Reiter in fester Reihenfolge mit ihren Zielen', () => {
     const links = renderAt('/stats')
 
@@ -56,5 +62,22 @@ describe('AnalysisModeTabs', () => {
 
   it('gibt jedem Reiter mindestens 44 px Höhe', () => {
     for (const l of renderAt('/stats')) expect(l.className).toContain('min-h-11')
+  })
+
+  /*
+   * Einsätze stellt den ganzen Kader nebeneinander. Die eigene Zahl steht im Profil, ohne
+   * Rangliste daneben — siehe `sichtbareStatsView`.
+   */
+  it('lässt einem Spieler den Reiter Einsätze ganz weg', () => {
+    rolle.istAdmin = false
+
+    expect(renderAt('/stats').map(l => l.textContent))
+      .toEqual(['Schlagen', 'Spiel-Verlauf', 'Gegner'])
+  })
+
+  it('markiert einem Spieler auf /stats?view=games Schlagen statt nichts', () => {
+    rolle.istAdmin = false
+
+    expect(activeLabels(renderAt('/stats?view=games'))).toEqual(['Schlagen'])
   })
 })
