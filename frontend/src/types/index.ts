@@ -174,7 +174,7 @@ export interface GameStaffResponse {
 export interface BaseCoachAuskunft {
   firstBase: string | null
   thirdBase: string | null
-  startSlots: number[]
+  startCoaches: string[]
 }
 
 export interface GameDayLineupsResponse {

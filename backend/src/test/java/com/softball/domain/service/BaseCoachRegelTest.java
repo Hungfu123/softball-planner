@@ -17,44 +17,50 @@ class BaseCoachRegelTest {
         var auskunft = BaseCoachRegel.fuer(lineup(10), List.of());
         assertThat(auskunft.ersteBase()).isNull();
         assertThat(auskunft.dritteBase()).isNull();
-        assertThat(auskunft.startSchlagplaetze()).containsExactly(9, 10);
+        assertThat(auskunft.startCoaches()).containsExactly("Spieler 9", "Spieler 10");
     }
 
     @Test void neunerAufstellung_liefertAchtUndNeun() {
-        assertThat(BaseCoachRegel.fuer(lineup(9), List.of()).startSchlagplaetze()).containsExactly(8, 9);
+        assertThat(BaseCoachRegel.fuer(lineup(9), List.of()).startCoaches()).containsExactly("Spieler 8", "Spieler 9");
     }
 
     @Test void eineBaseBenannt_liefertNurDenUntersten() {
         var auskunft = BaseCoachRegel.fuer(lineup(10), List.of(staff(StaffRole.BASE_COACH_1ST, "Jan")));
         assertThat(auskunft.ersteBase()).isEqualTo("Jan");
         assertThat(auskunft.dritteBase()).isNull();
-        assertThat(auskunft.startSchlagplaetze()).containsExactly(10);
+        assertThat(auskunft.startCoaches()).containsExactly("Spieler 10");
     }
 
-    @Test void beideBasesBenannt_keineSchlagplaetze() {
+    @Test void beideBasesBenannt_keineStartCoaches() {
         var auskunft = BaseCoachRegel.fuer(lineup(10), List.of(
             staff(StaffRole.BASE_COACH_1ST, "Jan"), staff(StaffRole.BASE_COACH_3RD, "Mike")));
-        assertThat(auskunft.startSchlagplaetze()).isEmpty();
+        assertThat(auskunft.startCoaches()).isEmpty();
     }
 
     @Test void leereAufstellung_liefertNichts() {
         var auskunft = BaseCoachRegel.fuer(List.of(), List.of());
         assertThat(auskunft.ersteBase()).isNull();
-        assertThat(auskunft.startSchlagplaetze()).isEmpty();
+        assertThat(auskunft.startCoaches()).isEmpty();
     }
 
-    @Test void einEintrag_eineBaseBenannt_liefertGenauEinenPlatz() {
+    @Test void einEintrag_eineBaseBenannt_liefertGenauEinenStartCoach() {
         var auskunft = BaseCoachRegel.fuer(lineup(1), List.of(staff(StaffRole.BASE_COACH_1ST, "Jan")));
-        assertThat(auskunft.startSchlagplaetze()).containsExactly(1);
+        assertThat(auskunft.startCoaches()).containsExactly("Spieler 1");
     }
 
     @Test void einEintrag_beideUnbenannt_liefertNurDiesenEinen() {
-        assertThat(BaseCoachRegel.fuer(lineup(1), List.of()).startSchlagplaetze()).containsExactly(1);
+        assertThat(BaseCoachRegel.fuer(lineup(1), List.of()).startCoaches()).containsExactly("Spieler 1");
     }
 
     @Test void unsortierteEintraege_zaehlenNachBattingOrder() {
-        assertThat(BaseCoachRegel.fuer(lineupGemischt(1, 7, 4, 10, 2), List.of()).startSchlagplaetze())
-            .containsExactly(7, 10);
+        assertThat(BaseCoachRegel.fuer(lineupGemischt(1, 7, 4, 10, 2), List.of()).startCoaches())
+            .containsExactly("Spieler 7", "Spieler 10");
+    }
+
+    @Test void startCoachesStehenInSchlagreihenfolge_nichtInEingabereihenfolge() {
+        // Der Satz nennt sie von oben nach unten; die Eintraege kommen unsortiert aus der DB.
+        assertThat(BaseCoachRegel.fuer(lineupGemischt(10, 2, 9), List.of()).startCoaches())
+            .containsExactly("Spieler 9", "Spieler 10");
     }
 
     private static List<LineupEntry> lineup(final int n) {

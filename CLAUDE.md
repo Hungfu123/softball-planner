@@ -237,10 +237,18 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   (V34/V37) und `PUT /games/{id}/coach-rotation` — ist **ersatzlos weg**. Jetzt gilt: wer
   benannt ist, coacht; je **nicht** benannter Base kommt ein Schlagplatz, **von unten
   gezählt** (zwei unbenannte → die untersten zwei, eine → die unterste, keine → leer).
+  Ausgeliefert werden **Namen, keine Nummern** (`startCoaches`): wer „#9 #10" liest, muss
+  erst abzählen — und las es prompt als „die untersten beiden coachen immer". Aus demselben
+  Grund endet der Satz auf **„dann letzte Outs"**: die Nennung ist das *Startpaar*, danach
+  coacht, wer zuletzt aus war. Ohne diesen Zusatz behauptet der Satz eine Dauerzuweisung,
+  die es nicht gibt — die App rechnet im Spiel ausdrücklich nichts mit.
   Ausgeliefert wird das über `GET /gamedays/{id}/lineups` als vierte Map `baseCoaches`, damit
   es unter derselben Lesegrenze liegt wie die Aufstellung. Formuliert wird der Satz an **einer**
   Stelle, `utils/baseCoachSatz.ts` — nur so lauten PDF und App gleich und sind nicht bloß
-  gleich gemeint. Ein benannter Coach ist eine Auskunft, auch ohne Aufstellung. **Die Prüfung
+  gleich gemeint. Seine Länge ist **gemessen, nicht geraten**: der PDF-Block ist 100 mm bei
+  Helvetica 7 pt, also rund 80 Zeichen; der Test hält 60 als Abstand. Das frühere Budget von
+  30 war eine Vorsichtsannahme aus dem Plan und zu eng für einen verständlichen Satz.
+  Ein benannter Coach ist eine Auskunft, auch ohne Aufstellung. **Die Prüfung
   in `GameStaffService.validate` bleibt unverändert:** Base Coach darf nur sein, wer nicht
   schlägt (Bank oder DH-Host; der DH-Batter nicht).
 - **Spieler-Ansicht** (`components/dashboard/Aufstellungsansicht.tsx`, im Spieler-Dashboard

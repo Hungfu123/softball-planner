@@ -78,17 +78,17 @@ describe('LineupSheet', () => {
     mockApi.getGameDayLineups.mockResolvedValue({
       lineups: { '10': Array.from({ length: 10 }, (_, i) => eintrag(i + 1)) },
       staff: {}, substitutions: {},
-      baseCoaches: { '10': { firstBase: null, thirdBase: null, startSlots: [9, 10] } },
+      baseCoaches: { '10': { firstBase: null, thirdBase: null, startCoaches: ['Ida', 'Jonas'] } },
     })
     rendern()
-    expect(await screen.findByText('Coaches: zuletzt aus · #9 #10')).toBeInTheDocument()
+    expect(await screen.findByText('Coaches: Ida, Jonas, dann letzte Outs')).toBeInTheDocument()
   })
 
   it('nennt einen benannten Coach auch bei leerer Aufstellung', async () => {
     mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
     mockApi.getGameDayLineups.mockResolvedValue({
       lineups: {}, staff: {}, substitutions: {},
-      baseCoaches: { '10': { firstBase: 'Jan', thirdBase: null, startSlots: [] } },
+      baseCoaches: { '10': { firstBase: 'Jan', thirdBase: null, startCoaches: [] } },
     })
     rendern()
     expect(await screen.findByText('1B Jan')).toBeInTheDocument()
@@ -98,11 +98,11 @@ describe('LineupSheet', () => {
     mockApi.getGameDay.mockResolvedValue(spieltag({ lineupsReleasedAt: '2099-01-01T08:00:00' }))
     mockApi.getGameDayLineups.mockResolvedValue({
       lineups: { '10': [eintrag(1)] }, staff: {}, substitutions: {},
-      baseCoaches: { '10': { firstBase: null, thirdBase: null, startSlots: [] } },
+      baseCoaches: { '10': { firstBase: null, thirdBase: null, startCoaches: [] } },
     })
     rendern()
     expect(await screen.findByText('Spieler 1')).toBeInTheDocument()
-    expect(screen.queryByText(/zuletzt aus/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/dann letzte Outs/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Coaches/)).not.toBeInTheDocument()
   })
 
