@@ -16,7 +16,7 @@ public enum AufstellungsLage {
     FREIGEGEBEN,
     /** Heute, aber noch vor 07:00 Berliner Zeit: der Trainer baut eventuell noch um. */
     HEUTE_VOR_SIEBEN,
-    /** Heute ab 07:00 Berliner Zeit, ohne dass freigegeben wurde. */
+    /** Heute ab 07:00 Berliner Zeit, auch wenn freigegeben wurde. */
     OFFEN_AB_SIEBEN,
     /** Der Spieltag liegt hinter uns: Geschichte, keine Planung mehr. */
     OFFEN_VERGANGEN
