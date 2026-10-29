@@ -451,6 +451,14 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   im Modus **auch im Unbekannt-Fall** Spieler, der sonst großzügig ist. `SpielerSichtIntegrationTest`
   hält fest, was der Kopf NICHT kann. **Nicht gebaut und nicht gewollt:** sich als eine ANDERE
   Person ausgeben.
+  **In der Oberfläche nie `me.role` lesen, immer `useRolle`.** `/api/me` meldet die Rolle aus
+  `app_user` und weiß vom Modus nichts — der hängt je Anfrage am Kopf, nicht am Konto, und
+  `MeController` liest `CurrentUser.get()`, also die Datenbank. `Startseite.tsx` entschied so
+  und zeigte im Modus die **Trainer-Werkbank**, gefüllt mit den beschnittenen Daten eines
+  Spielers: kein „Bin ich dabei", keine Aufstellungsansicht, also genau das, was der Modus
+  prüfen soll. Die Weiche fragt seitdem nach `istAdmin` und nicht nach `=== 'PLAYER'` — wer
+  nach Spieler fragt, schickt jede künftige Rolle an die Werkbank. Dieselbe Falle saß im
+  Rückweg des Zählers (`CounterPage`). `Startseite.test.tsx` pinnt den Fall.
 - **Die Historie blättert nicht, sie deckelt** (`AuditService.HOECHSTENS`, 5.000 Rohzeilen):
   `GET /api/audit` hat bewusst **kein** `page`/`size`. Was der Endpunkt liefert, sind nicht
   Zeilen, sondern **Spannen**, die `AuditSummarizer` aus aufeinanderfolgenden Ereignissen baut —
