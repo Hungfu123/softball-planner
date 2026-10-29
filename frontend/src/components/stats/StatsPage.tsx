@@ -8,7 +8,8 @@ import { BattingStatsTable } from './BattingStatsTable'
 import { GamesStatsTable } from './GamesStatsTable'
 import { GamesNeedRangeNotice } from './GamesNeedRangeNotice'
 import { AnalysisModeTabs } from '@/components/analysis/AnalysisModeTabs'
-import { parseStatsView } from '@/components/analysis/statsView'
+import { sichtbareStatsView } from '@/components/analysis/statsView'
+import { useRolle } from '@/hooks/useRolle'
 import { ZeitraumKnopf } from './ZeitraumKnopf'
 import { SCOPE_LABEL_MAP, THIS_GAME_LABEL, type ScopeKind } from './statsScope'
 import { StatsGlossarySheet } from './StatsGlossarySheet'
@@ -27,9 +28,11 @@ function formatGameDayLabel(gd: GameDayResponse): string {
 
 export function StatsPage() {
   const [params, setParams] = useSearchParams()
+  const { istAdmin } = useRolle()
 
   const scopeKind = (params.get('scope') as ScopeKind) || 'year'
-  const view = parseStatsView(params.get('view'))
+  // Einsätze ist für Spieler zu — auch über die blanke URL. Begründung an `sichtbareStatsView`.
+  const view = sichtbareStatsView(params.get('view'), istAdmin)
   const seasonIdParam = params.get('seasonId')
   const yearParam = params.get('year')
   const gameIdParam = params.get('gameId')

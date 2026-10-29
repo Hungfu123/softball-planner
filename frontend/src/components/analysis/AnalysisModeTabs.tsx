@@ -1,4 +1,5 @@
-import { parseStatsView } from './statsView'
+import { sichtbareStatsView } from './statsView'
+import { useRolle } from '@/hooks/useRolle'
 import type { ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 
@@ -7,13 +8,18 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom'
  * Ansichten von `/stats` (URL-Parameter `view`), Spiel-Verlauf und Gegner eigene Seiten.
  * NavLink prüft keine Suchparameter, deshalb wird der aktive Reiter hier selbst bestimmt.
  * Der Zeitraum ist bewusst kein Reiter — er filtert nur.
+ *
+ * <p>**Einsätze fehlt Spielern ganz** — die Begründung steht an `sichtbareStatsView`. Der
+ * Reiter verschwindet UND die Ansicht fällt zurück auf Schlagen: ein weggelassener Reiter
+ * allein wäre eine Attrappe, die URL steht jedem offen.
  */
 export function AnalysisModeTabs({ trailing }: { trailing?: ReactNode } = {}) {
   const { pathname } = useLocation()
   const [params] = useSearchParams()
+  const { istAdmin } = useRolle()
 
   const onStats = pathname === '/stats'
-  const statsView = parseStatsView(params.get('view'))
+  const statsView = sichtbareStatsView(params.get('view'), istAdmin)
 
   // Auf /stats bleibt der gewählte Zeitraum beim Reiterwechsel erhalten.
   const statsHref = (view: 'batting' | 'games') => {
@@ -24,7 +30,9 @@ export function AnalysisModeTabs({ trailing }: { trailing?: ReactNode } = {}) {
 
   const tabs = [
     { label: 'Schlagen', to: statsHref('batting'), active: onStats && statsView === 'batting', replace: onStats },
-    { label: 'Einsätze', to: statsHref('games'), active: onStats && statsView === 'games', replace: onStats },
+    ...(istAdmin
+      ? [{ label: 'Einsätze', to: statsHref('games'), active: onStats && statsView === 'games', replace: onStats }]
+      : []),
     { label: 'Spiel-Verlauf', to: '/teams/spiele', active: pathname === '/teams/spiele', replace: false },
     { label: 'Gegner', to: '/teams', active: pathname === '/teams', replace: false },
   ]

@@ -2,6 +2,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
+// Diese Tests meinen den Blick des Trainers — der Reiter Einsätze gehoert ihm.
+vi.mock('@/hooks/useRolle', () => ({ useRolle: () => ({ istAdmin: true }) }))
+
 // Jede API-Funktion liefert eine leere Liste: reicht, um Hinweis und leere Tabelle zu unterscheiden.
 vi.mock('@/api/client', () => ({
   getAllGameDays: vi.fn(() => Promise.resolve([])),
