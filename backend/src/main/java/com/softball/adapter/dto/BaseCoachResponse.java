@@ -11,14 +11,14 @@ import java.util.List;
  * folgt der Sprache des restlichen Pakets, und das Frontend liest diese Namen.
  *
  * <p>{@code firstBase}/{@code thirdBase} sind {@code null}, wenn kein Coach benannt ist;
- * {@code startSlots} nennt dann die Schlagplaetze, die diese Bases zu Beginn uebernehmen.
+ * {@code startCoaches} nennt dann die Spieler, die diese Bases zu Beginn uebernehmen.
  *
  * <p>Am Sammelendpunkt gibt es einen Eintrag fuer <b>jedes</b> Spiel des Spieltags, auch fuer
- * Spiele ohne Aufstellung (dann leere {@code startSlots}) — ein Vertrag mit dem Frontend.
+ * Spiele ohne Aufstellung (dann leere {@code startCoaches}) — ein Vertrag mit dem Frontend.
  */
-public record BaseCoachResponse(String firstBase, String thirdBase, List<Integer> startSlots) {
+public record BaseCoachResponse(String firstBase, String thirdBase, List<String> startCoaches) {
 
     public static BaseCoachResponse from(final BaseCoachAuskunft auskunft) {
-        return new BaseCoachResponse(auskunft.ersteBase(), auskunft.dritteBase(), auskunft.startSchlagplaetze());
+        return new BaseCoachResponse(auskunft.ersteBase(), auskunft.dritteBase(), auskunft.startCoaches());
     }
 }

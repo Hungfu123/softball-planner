@@ -48,7 +48,7 @@ describe('generatePdf (Listenblatt)', () => {
   beforeEach(() => { texte.length = 0 })
 
   it('zeichnet den Coach-Satz auch ohne Aufstellung', () => {
-    generatePdf(spieltag(), [spiel({ baseCoaches: { firstBase: 'Cora', thirdBase: null, startSlots: [] } })], null)
+    generatePdf(spieltag(), [spiel({ baseCoaches: { firstBase: 'Cora', thirdBase: null, startCoaches: [] } })], null)
     expect(texte).toContain('Kein Lineup')
     expect(texte).toContain('1B Cora')
   })
@@ -60,7 +60,7 @@ describe('generatePdf (Listenblatt)', () => {
     generatePdf(spieltag(), [spiel({
       lineup,
       staff: [{ id: 1, role: 'FIRST_BASE_COACH', player: spieler(3, 'Cora Coach') }],
-      baseCoaches: { firstBase: 'Cora', thirdBase: null, startSlots: [1] },
+      baseCoaches: { firstBase: 'Cora', thirdBase: null, startCoaches: ['Uwe Unten'] },
     })], null)
     expect(texte.find(t => t.startsWith('Bank:'))).toBe('Bank: Bea Bank')
     expect(texte.some(t => t.startsWith('1B Cora'))).toBe(true)

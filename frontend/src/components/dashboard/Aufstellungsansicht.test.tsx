@@ -37,7 +37,7 @@ function eintrag(player: Player, position: string | null, battingOrder: number, 
   return { id: battingOrder, player, position, battingOrder, dhBatterPlayer: dh }
 }
 
-const OHNE_COACHES: BaseCoachAuskunft = { firstBase: null, thirdBase: null, startSlots: [] }
+const OHNE_COACHES: BaseCoachAuskunft = { firstBase: null, thirdBase: null, startCoaches: [] }
 
 /** Wie das Backend antwortet: `lineups`/`staff` lassen leere Spiele ganz weg, `baseCoaches` nie. */
 function antwort(
@@ -59,7 +59,7 @@ function antwort(
 const VOLL = antwort(
   { [SPIEL_1]: [eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)] },
   { [SPIEL_1]: [{ id: 1, player: DRITTER, role: 'BASE_COACH_1ST' }] },
-  { [SPIEL_1]: { firstBase: 'Uli Unter', thirdBase: null, startSlots: [3] } },
+  { [SPIEL_1]: { firstBase: 'Uli Unter', thirdBase: null, startCoaches: ['Dritter Drei'] } },
 )
 
 function zeigen(daten: GameDayLineupsResponse | null | undefined, extra: {
@@ -93,7 +93,7 @@ describe('Aufstellungsansicht', () => {
     expect(zeilen[1]).toHaveTextContent('Mia Meier')
 
     // Coach-Satz, wortgleich mit dem PDF
-    expect(screen.getByText('1B Uli Unter · 3B zuletzt aus · #3')).toBeInTheDocument()
+    expect(screen.getByText('1B Uli Unter · 3B Dritter Drei, dann letzte Outs')).toBeInTheDocument()
 
     // Bank: die Zugesagten minus Aufstellung minus Coaches
     const bank = screen.getByText(/^Bank/)
@@ -140,7 +140,7 @@ describe('Aufstellungsansicht', () => {
   it('zeigt keine Coach-Zeile, wenn es keine Coaches gibt', async () => {
     const { container } = zeigen(antwort({ [SPIEL_1]: [eintrag(ANDERE, 'P', 1), eintrag(ICH, 'SS', 2)] }))
     await screen.findByRole('region', { name: 'Lineup' })
-    expect(container.textContent).not.toMatch(/zuletzt aus/)
+    expect(container.textContent).not.toMatch(/dann letzte Outs/)
     expect(screen.queryByText(/^1B /)).not.toBeInTheDocument()
     expect(screen.queryByText(/^3B /)).not.toBeInTheDocument()
   })
@@ -149,7 +149,7 @@ describe('Aufstellungsansicht', () => {
     // Das Backend baut `baseCoaches` aus den Staff-Eintraegen, unabhaengig von der
     // Aufstellung; das Druckblatt zeigt den Satz ueber einem „Kein Lineup". Die Ansicht,
     // die nie veraltet, darf dahinter nicht zurueckfallen.
-    zeigen(antwort({}, {}, { [SPIEL_1]: { firstBase: 'Jan Jansen', thirdBase: null, startSlots: [] } }))
+    zeigen(antwort({}, {}, { [SPIEL_1]: { firstBase: 'Jan Jansen', thirdBase: null, startCoaches: [] } }))
     const karte = await screen.findByRole('region', { name: 'Lineup' })
     expect(within(karte).getByText(NOCH_KEINE_AUFSTELLUNG)).toBeInTheDocument()
     expect(within(karte).getByText('1B Jan Jansen')).toBeInTheDocument()
@@ -161,7 +161,7 @@ describe('Aufstellungsansicht', () => {
     const { container } = zeigen(VOLL)
     await screen.findByRole('region', { name: 'Lineup' })
     const liste = container.querySelector('ol')!
-    const satz = screen.getByText('1B Uli Unter · 3B zuletzt aus · #3')
+    const satz = screen.getByText('1B Uli Unter · 3B Dritter Drei, dann letzte Outs')
     expect(liste.compareDocumentPosition(satz) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
@@ -189,7 +189,7 @@ describe('Aufstellungsansicht', () => {
 
   it('zeigt bei gesperrtem Spieltag nur den erklärenden Satz', async () => {
     const { container } = zeigen(
-      antwort({}, {}, { [SPIEL_1]: { firstBase: 'Jan Jansen', thirdBase: null, startSlots: [] } }),
+      antwort({}, {}, { [SPIEL_1]: { firstBase: 'Jan Jansen', thirdBase: null, startCoaches: [] } }),
       { gameDay: spieltag({ aufstellungsLage: 'GESPERRT' }) },
     )
     const karte = await screen.findByRole('region', { name: 'Lineup' })

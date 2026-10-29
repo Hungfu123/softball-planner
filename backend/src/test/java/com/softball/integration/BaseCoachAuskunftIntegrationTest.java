@@ -116,15 +116,15 @@ class BaseCoachAuskunftIntegrationTest {
     }
 
     @Test
-    void spielerSiehtNachFreigabeDieStartschlagplaetze() throws Exception {
+    void spielerSiehtNachFreigabeDieStartCoaches() throws Exception {
         final long id = spieltagMitZehnerAufstellung();
         final long spielId = ersteSpielId(id);
         gibFrei(id);
 
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(SPIELER))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[0]").value(9))
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[1]").value(10))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches[0]").value("Ida"))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches[1]").value("Jonas"))
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].firstBase").doesNotExist())
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].thirdBase").doesNotExist());
     }
@@ -142,8 +142,8 @@ class BaseCoachAuskunftIntegrationTest {
 
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(SPIELER))
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].firstBase").value("Jan"))
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots.length()").value(1))
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[0]").value(10));
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches.length()").value(1))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches[0]").value("Jonas"));
     }
 
     @Test
@@ -161,8 +161,8 @@ class BaseCoachAuskunftIntegrationTest {
         final long spielId = ersteSpielId(id);
 
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[0]").value(9))
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots[1]").value(10));
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches[0]").value("Ida"))
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches[1]").value("Jonas"));
     }
 
     @Test
@@ -178,8 +178,8 @@ class BaseCoachAuskunftIntegrationTest {
             .andExpect(jsonPath("$.lineups['" + leeres + "']").doesNotExist())
             .andExpect(jsonPath("$.staff['" + leeres + "']").doesNotExist())
             .andExpect(jsonPath("$.baseCoaches.length()").value(2))
-            .andExpect(jsonPath("$.baseCoaches['" + volles + "'].startSlots.length()").value(2))
-            .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].startSlots.length()").value(0))
+            .andExpect(jsonPath("$.baseCoaches['" + volles + "'].startCoaches.length()").value(2))
+            .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].startCoaches.length()").value(0))
             .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].firstBase").doesNotExist())
             .andExpect(jsonPath("$.baseCoaches['" + leeres + "'].thirdBase").doesNotExist());
     }
@@ -198,6 +198,6 @@ class BaseCoachAuskunftIntegrationTest {
         mockMvc.perform(get("/api/gamedays/" + id + "/lineups").with(ADMIN))
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].firstBase").value("Jan"))
             .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].thirdBase").value("Kim"))
-            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startSlots.length()").value(0));
+            .andExpect(jsonPath("$.baseCoaches['" + spielId + "'].startCoaches.length()").value(0));
     }
 }
