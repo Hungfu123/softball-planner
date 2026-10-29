@@ -277,6 +277,13 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       doc.text('Kein Lineup', contentLeft, y)
       doc.setTextColor(0, 0, 0)
       y += 6
+      // Ein benannter Coach ist eine Auskunft, auch ohne Aufstellung
+      const leerSatz = baseCoachSatz(games[gameIndex].baseCoaches)
+      if (leerSatz) {
+        drawCoachSatz(doc, contentLeft, y - 1.5, contentRight - contentLeft, leerSatz)
+        y += 3
+      }
+      y += 5
       continue
     }
 
@@ -324,8 +331,9 @@ export function generatePdf(gameDay: GameDayResponse, games: GameData[], season:
       gameUsedIds.add(e.player.id)
       if (e.dhBatterPlayer) gameUsedIds.add(e.dhBatterPlayer.id)
     }
-    // Base-Coaches NICHT ausschließen: reine Coaches (nicht im Lineup) erscheinen
-    // als normaler Name in der Bank-Zeile (keine separate Coach-Anzeige im PDF).
+    // Staff gehört nicht auf die Bank: ein benannter Coach steht im Coach-Satz darunter,
+    // zweimal wäre er doppelt gemeldet (wie in generateLineupWithFieldPdf und LineupSheet).
+    for (const s of games[gameIndex].staff) gameUsedIds.add(s.player.id)
     for (const sub of substitutions) gameUsedIds.add(sub.playerIn.id)
     const bench = gameDay.availablePlayers.filter(p => !gameUsedIds.has(p.id))
     if (bench.length > 0) {
