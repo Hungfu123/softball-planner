@@ -10,7 +10,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt', nicht 'autoUpdate': autoUpdate laesst den neuen Service Worker sofort
+      // uebernehmen, laedt die OFFENE Seite aber nicht neu — die installierte App blieb
+      // deshalb auf der alten Fassung stehen, bis jemand hart neu lud. Wann neu geladen
+      // wird, entscheidet jetzt `UpdateWaechter`.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'deadsox.svg', 'deadsox.png'],
       manifest: {
         name: 'Softball Planner',
