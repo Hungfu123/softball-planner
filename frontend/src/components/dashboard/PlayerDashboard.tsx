@@ -102,11 +102,11 @@ function meinePlatzierung(eintraege: LineupEntryResponse[] | null | undefined, p
   if (eigener) {
     const stelle = eigener.dhBatterPlayer
       ? `schlägt nicht (DH: ${eigener.dhBatterPlayer.name})`
-      : `Schlagplatz ${eigener.battingOrder}`
+      : `#${eigener.battingOrder} im Lineup`
     return `${eigener.position ? `Position ${eigener.position}` : 'Nur Schlagen'} · ${stelle}`
   }
   const alsDh = eintraege.find(e => e.dhBatterPlayer?.id === playerId)
-  if (alsDh) return `Du schlägst als DH für ${alsDh.player.name} · Schlagplatz ${alsDh.battingOrder}`
+  if (alsDh) return `Du schlägst als DH für ${alsDh.player.name} · #${alsDh.battingOrder} im Lineup`
   return 'Nicht aufgestellt — in diesem Spiel bist du nicht im Lineup.'
 }
 

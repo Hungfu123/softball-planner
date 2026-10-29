@@ -130,12 +130,12 @@ describe('PlayerDashboard', () => {
     expect(screen.getByText(/Nächster Spieltag/)).toBeInTheDocument()
   })
 
-  it('sagt ob der Spieler aufgestellt ist, mit Position und Schlagplatz', async () => {
+  it('sagt ob der Spieler aufgestellt ist, mit Position und Platz im Lineup', async () => {
     rendern()
     const block = await screen.findByRole('region', { name: 'Bin ich dabei' })
     await waitFor(() => expect(within(block).getByText(/Du bist dabei/)).toBeInTheDocument())
     expect(within(block).getByText(/Shortstop|SS/)).toBeInTheDocument()
-    expect(within(block).getByText(/Schlagplatz 3/)).toBeInTheDocument()
+    expect(within(block).getByText(/#3 im Lineup/)).toBeInTheDocument()
   })
 
   it('sagt dass er nicht aufgestellt ist, wenn er fehlt', async () => {
@@ -223,7 +223,7 @@ describe('PlayerDashboard', () => {
       expect(screen.getByRole('button', { name: 'Spiel 2' })).toBeInTheDocument()
       expect(screen.queryByText(/steht noch nicht/)).not.toBeInTheDocument()
       const block = screen.getByRole('region', { name: 'Bin ich dabei' })
-      expect(await within(block).findAllByText(/Schlagplatz 2/)).toHaveLength(2)
+      expect(await within(block).findAllByText(/#2 im Lineup/)).toHaveLength(2)
     })
 
     it('sagt den Satz nur einmal in „Bin ich dabei?", auch bei zwei Spielen', async () => {

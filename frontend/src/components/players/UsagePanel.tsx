@@ -8,7 +8,7 @@ const LINEUP_SIZE = 10
  *
  * Die Schlagzahlen sagen, wie gut jemand trifft. Hier steht, wie oft man mit ihm
  * überhaupt planen kann: Zusagen, tatsächliche Aufstellungen, Training. Dazu der
- * Schlagplatz, damit man sieht, wo diese Person im Lineup zu Hause ist.
+ * Platz im Lineup, damit man sieht, wo diese Person zu Hause ist.
  */
 export function UsagePanel({ usage, trainingsOutOfScope = false }: {
   usage: PlayerUsage
@@ -71,7 +71,7 @@ export function UsagePanel({ usage, trainingsOutOfScope = false }: {
       {everBatted && (
         <div className="pt-1">
           <div className="flex items-baseline justify-between gap-2 mb-1.5">
-            <span className="text-xs text-navy-900">Schlagplatz</span>
+            <span className="text-xs text-navy-900">Platz im Lineup</span>
             <span className="text-sm font-semibold text-navy-900 tabular-nums">
               Ø {usage.averageBattingOrder?.toFixed(1).replace('.', ',')}
             </span>
