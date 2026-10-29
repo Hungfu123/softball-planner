@@ -345,6 +345,7 @@ export function StatsPage() {
       ) : view === 'batting' ? (
         <BattingStatsTable
           stats={battingStats}
+          onOpenGlossary={() => setShowGlossary(true)}
           applyQualifier={isAggregatedScope(scopeKind) && scopeKind !== 'opponent'}
           gamesByPlayerId={gamesByPlayerId}
           showPerGame={isAggregatedScope(scopeKind) && scopeKind !== 'opponent'}

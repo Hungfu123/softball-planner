@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
-import { Trophy, Zap, Check } from 'lucide-react'
+import { Trophy, Zap, Check, Info } from 'lucide-react'
 import type { PlayerBattingStatsResponse } from '@/types'
 
 const MIN_AB_LABEL = 'min. 5 ABs'
 
 interface Props {
   stats: PlayerBattingStatsResponse[]
+  /** Öffnet das Glossar. Der Weg dahin gehört unter die Tabelle, nicht nur in die Kopfzeile. */
+  onOpenGlossary?: () => void
   /** Rate-Stat-Qualifier (≥5 ABs) anwenden — true für aggregierte Scopes (Saison/Jahr/Alle Zeit), false pro Spiel. */
   applyQualifier?: boolean
   /** playerId → gewichteter Game-Zähler (totalGames). Nenner für RBI/G. */
@@ -46,7 +48,7 @@ type SortDir = 'asc' | 'desc'
 const GRUPPENANFANG = 'border-l border-cream-300'
 const GRUPPENANFANG_KOPF = 'border-l border-white/20'
 
-export function BattingStatsTable({ stats, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
+export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
   const [showUnqualified, setShowUnqualified] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('battingAverage')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -296,6 +298,21 @@ export function BattingStatsTable({ stats, applyQualifier = false, gamesByPlayer
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
+        {/*
+         * Das Glossar gehoert HIERHIN, direkt unter die Koepfe, die es erklaert. Es stand
+         * eine Weile nur als graues „i" oben neben der Ueberschrift — am Handy ohne das Wort
+         * daneben, eine Bildschirmhoehe entfernt. Wer bei `OBP` stockt, sucht nicht oben.
+         * Die Abkuerzungen stehen im Text, damit der Knopf sagt, wovon er handelt.
+         */}
+        {onOpenGlossary && (
+          <button
+            onClick={onOpenGlossary}
+            className="min-h-11 text-[11px] text-gray-500 hover:text-navy-900 underline underline-offset-2 cursor-pointer inline-flex items-center gap-1"
+          >
+            <Info size={12} />
+            Was heißen AB, OBP, OPS?
+          </button>
+        )}
         {applyQualifier && unqualified.length > 0 && (
           <>
             <button

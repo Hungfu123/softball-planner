@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, within, fireEvent } from '@testing-library/react'
 import { BattingStatsTable } from './BattingStatsTable'
 import type { PlayerBattingStatsResponse } from '@/types'
@@ -91,6 +91,28 @@ describe('BattingStatsTable', () => {
     expect(screen.queryByText('Neu')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('checkbox', { name: /Auch <5 ABs/ }))
     expect(screen.getByText('Neu')).toBeInTheDocument()
+  })
+
+  /*
+   * Der Weg zum Glossar liegt UNTER der Tabelle, nicht nur als graues „i" in der Kopfzeile:
+   * wer bei OBP stockt, sucht nicht eine Bildschirmhoehe weiter oben.
+   */
+  it('bietet das Glossar unter der Tabelle an, auch ohne Qualifier', () => {
+    const oeffnen = vi.fn()
+    render(<BattingStatsTable stats={KADER} onOpenGlossary={oeffnen} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /AB, OBP, OPS/ }))
+    expect(oeffnen).toHaveBeenCalledOnce()
+  })
+
+  it('haelt den Namen beim Querscrollen fest', () => {
+    render(<BattingStatsTable stats={KADER} />)
+
+    const zelle = screen.getByText('Khang').closest('td')!
+    expect(zelle.className).toContain('sticky')
+    expect(zelle.className).toContain('left-0')
+    // Deckender Hintergrund: sonst scheinen die Zahlen beim Scrollen durch den Namen.
+    expect(zelle.className).toMatch(/bg-cream-(50|100)/)
   })
 
   it('sagt es, wenn im Zeitraum gar nichts geschlagen wurde', () => {
