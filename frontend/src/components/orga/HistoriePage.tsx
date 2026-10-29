@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Badge, Button, Card, EmptyState, LoadingSkeleton, Abschnittsmarke } from '@/components/shared'
 import { CrossBones } from '@/icons'
 import { getAudit, getLastSeen } from '@/api/client'
-import type { AuditEntry, AuditKind, LastSeen, Role } from '@/types'
+import type { AuditEntry, AuditKind, AuditVerlauf, LastSeen, Role } from '@/types'
 
 const ROLLEN: Record<Role, string> = { PLAYER: 'Spieler', ADMIN: 'Admin', SUPERADMIN: 'Superadmin' }
 const ART: Record<AuditKind, { text: string; color: 'navy' | 'gray' | 'red' | 'amber' }> = {
@@ -144,7 +144,9 @@ export function HistoriePage() {
   // Wie die Antwort traegt auch die Sicht den Schluessel ihrer Anfrage: andere Filter, andere
   // Liste — dann faengt sie wieder bei SEITE an, ohne dass ein Effekt sie zuruecksetzen muss.
   const [sicht, setSicht] = useState({ anfrage, n: SEITE })
-  const [antwort, setAntwort] = useState<{ anfrage: string; liste: AuditEntry[] | null; fehler: string | null } | null>(null)
+  const [antwort, setAntwort] = useState<
+    { anfrage: string; verlauf: AuditVerlauf | null; fehler: string | null } | null
+  >(null)
 
   useEffect(() => {
     getLastSeen().then(setGesehen).catch(e => setGesehenFehler((e as Error).message))
@@ -153,16 +155,20 @@ export function HistoriePage() {
   useEffect(() => {
     let aktiv = true
     getAudit({ userId: nutzer ? Number(nutzer) : undefined, kind: art || undefined, ...zeitfenster(zeitraum, von, bis) })
-      .then(liste => { if (aktiv) setAntwort({ anfrage, liste, fehler: null }) })
-      .catch(e => { if (aktiv) setAntwort({ anfrage, liste: null, fehler: (e as Error).message }) })
+      .then(v => { if (aktiv) setAntwort({ anfrage, verlauf: v, fehler: null }) })
+      .catch(e => { if (aktiv) setAntwort({ anfrage, verlauf: null, fehler: (e as Error).message }) })
     return () => { aktiv = false }
   }, [anfrage, nutzer, zeitraum, von, bis, art])
 
   const sichtbar = sicht.anfrage === anfrage ? sicht.n : SEITE
 
   const aktuell = antwort?.anfrage === anfrage ? antwort : null
-  const verlauf = aktuell?.liste ?? null
+  const verlauf = aktuell?.verlauf?.eintraege ?? null
   const fehler = aktuell?.fehler ?? null
+  // Der Server deckelt die Rohzeilen. Sagt er, dass etwas fehlt, muss die Seite es sagen —
+  // sonst hält ein Superadmin eine abgeschnittene Historie für die ganze.
+  const abgeschnitten = aktuell?.verlauf?.abgeschnitten ?? false
+  const bisZurueck = aktuell?.verlauf?.bisZurueck ?? null
 
   const zeitraumWechseln = (neu: Zeitraum) => {
     if (neu === 'eigen' && !von) {
@@ -249,6 +255,12 @@ export function HistoriePage() {
               </Button>
             )}
           </div>
+          {abgeschnitten && bisZurueck && (
+            <p role="status" className="text-xs text-gray-500">
+              Älter als {datumZeit.format(new Date(bisZurueck))} ist nicht geladen — der Zeitraum
+              enthält zu viel. Grenze ihn ein, um den Rest zu sehen.
+            </p>
+          )}
         </>
       )}
     </div>

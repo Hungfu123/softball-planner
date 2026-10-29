@@ -31,7 +31,7 @@ public class AuditEventRepositoryAdapter implements AuditEventRepository {
     }
 
     @Override
-    public List<AuditEvent> find(final AuditQuery query) {
+    public List<AuditEvent> find(final AuditQuery query, final int hoechstens) {
         Specification<AuditEventEntity> spec = (root, q, cb) -> cb.conjunction();
         if (query.userId() != null) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("userId"), query.userId()));
@@ -45,7 +45,11 @@ public class AuditEventRepositoryAdapter implements AuditEventRepository {
         if (query.kind() != null) {
             spec = spec.and((root, q, cb) -> cb.equal(root.get("kind"), query.kind()));
         }
-        return repo.findAll(spec, Sort.by(Sort.Direction.DESC, "occurredAt", "id")).stream()
+        // findBy(..).limit(..) statt findAll(..): ein Pageable zoege eine count-Abfrage ueber den
+        // ganzen Zeitraum nach sich, und gerade die wollen wir ja vermeiden.
+        final Sort neuesteZuerst = Sort.by(Sort.Direction.DESC, "occurredAt", "id");
+        final Specification<AuditEventEntity> fertig = spec;
+        return repo.findBy(fertig, q -> q.sortBy(neuesteZuerst).limit(hoechstens).all()).stream()
                 .map(mapper::toDomain).toList();
     }
 

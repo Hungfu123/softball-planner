@@ -1,6 +1,6 @@
 package com.softball.adapter.in.web;
 
-import com.softball.adapter.dto.AuditEntryResponse;
+import com.softball.adapter.dto.AuditVerlaufResponse;
 import com.softball.adapter.dto.LastSeenResponse;
 import com.softball.application.AuditService;
 import com.softball.domain.model.AuditKind;
@@ -28,12 +28,12 @@ public class AuditController {
     }
 
     @GetMapping
-    public List<AuditEntryResponse> verlauf(
+    public AuditVerlaufResponse verlauf(
             @RequestParam(required = false) final Long userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final Instant from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final Instant to,
             @RequestParam(required = false) final AuditKind kind) {
-        return service.verlauf(new AuditQuery(userId, from, to, kind)).stream().map(AuditEntryResponse::von).toList();
+        return AuditVerlaufResponse.von(service.verlauf(new AuditQuery(userId, from, to, kind)));
     }
 
     @GetMapping("/last-seen")

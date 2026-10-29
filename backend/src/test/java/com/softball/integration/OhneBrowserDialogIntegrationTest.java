@@ -46,7 +46,7 @@ class OhneBrowserDialogIntegrationTest {
     private AuditEventRepository auditEventRepository;
 
     private List<AuditEvent> fehlversuche() {
-        return auditEventRepository.find(new AuditQuery(null, null, null, AuditKind.LOGIN_FAILED));
+        return auditEventRepository.find(new AuditQuery(null, null, null, AuditKind.LOGIN_FAILED), 100);
     }
 
     @Test

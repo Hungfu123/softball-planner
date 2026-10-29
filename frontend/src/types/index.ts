@@ -1170,6 +1170,18 @@ export interface AuditEntry {
   count: number
 }
 
+/**
+ * Der Verlauf samt Auskunft, ob er vollständig ist. Eine blanke Liste könnte nicht sagen,
+ * dass sie an einer Obergrenze endet — und eine Historie, die unbemerkt abbricht, ist
+ * schlimmer als eine, die fehlt.
+ */
+export interface AuditVerlauf {
+  eintraege: AuditEntry[]
+  abgeschnitten: boolean
+  /** Ältester gelieferter Zeitpunkt; davor fehlt etwas. Null, wenn nichts fehlt. */
+  bisZurueck: string | null
+}
+
 export interface LastSeen {
   userId: number
   username: string

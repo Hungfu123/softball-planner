@@ -35,6 +35,15 @@ public class AuditService {
     private static final Logger log = LoggerFactory.getLogger(AuditService.class);
     static final Period AUFBEWAHRUNG = Period.ofMonths(12);
 
+    /**
+     * Obergrenze der Rohzeilen je Abfrage. Kein Blaettern — die Zeilen werden erst beim Lesen zu
+     * Spannen zusammengefasst, und eine Grenze mitten im Ergebnis schnitte eine Sitzung auf. Genau
+     * das passiert hier zwar auch, aber nur an einer Stelle und die Antwort sagt es: wer mehr
+     * sehen will, engt den Zeitraum ein. Ohne die Grenze haengt eine Abfrage ohne {@code from}
+     * an der ganzen Aufbewahrung.
+     */
+    static final int HOECHSTENS = 5_000;
+
     private final AuditEventRepository repository;
     private final AppUserRepository appUserRepository;
     private final PlayerRepository playerRepository;
@@ -51,6 +60,12 @@ public class AuditService {
 
     /** Eine Zeile der Historie samt Spielername — {@code playerName} ist null, wenn er nicht auffindbar ist. */
     public record Zeile(AuditSpan span, String playerName) {}
+
+    /**
+     * Der Verlauf samt Auskunft darueber, ob er vollstaendig ist. {@code bisZurueck} ist der
+     * aelteste gelieferte Zeitpunkt — davor liegt Ungezeigtes — und null, wenn nichts fehlt.
+     */
+    public record Verlauf(List<Zeile> zeilen, boolean abgeschnitten, Instant bisZurueck) {}
 
     /** Ein Account samt Spielername, fuer die Liste „zuletzt gesehen". */
     public record Gesehen(AppUser account, String playerName) {}
@@ -71,11 +86,20 @@ public class AuditService {
      * verhindern. Geloeschte Accounts haben keine userId mehr und bleiben ohne Spielernamen.
      */
     @Transactional(readOnly = true)
-    public List<Zeile> verlauf(final AuditQuery query) {
+    public Verlauf verlauf(final AuditQuery query) {
+        // Eine Zeile mehr holen, als wir zeigen: nur so laesst sich "da war noch was" von
+        // "genau aufgegangen" unterscheiden, ohne zweite Abfrage.
+        final List<AuditEvent> roh = repository.find(query, HOECHSTENS + 1);
+        final boolean abgeschnitten = roh.size() > HOECHSTENS;
+        final List<AuditEvent> gezeigt = abgeschnitten ? roh.subList(0, HOECHSTENS) : roh;
+        // Neueste zuerst, also ist die letzte die aelteste.
+        final Instant bisZurueck = abgeschnitten ? gezeigt.get(gezeigt.size() - 1).occurredAt() : null;
+
         final Map<Long, String> jeUserId = spielerNamenJeUserId();
-        return summarizer.zusammenfassen(repository.find(query)).stream()
+        final List<Zeile> zeilen = summarizer.zusammenfassen(gezeigt).stream()
                 .map(s -> new Zeile(s, s.userId() == null ? null : jeUserId.get(s.userId())))
                 .toList();
+        return new Verlauf(zeilen, abgeschnitten, bisZurueck);
     }
 
     @Transactional(readOnly = true)
