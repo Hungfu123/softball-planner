@@ -491,6 +491,7 @@ p {
   [data-theme="dark"] .bg-amber-500\/10,
   [data-theme="dark"] .bg-amber-400\/15 { background-color: #4F3D1C; }
   [data-theme="dark"] .border-amber-400\/60,
+  [data-theme="dark"] .border-amber-400\/50,
   [data-theme="dark"] .border-amber-400\/40,
   [data-theme="dark"] .border-amber-500\/40 { border-color: #8A6B30; }
   [data-theme="dark"] .bg-softball-red-500\/10,

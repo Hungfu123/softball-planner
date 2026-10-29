@@ -2,7 +2,6 @@ package com.softball.application;
 
 import com.softball.adapter.dto.LineupEntryRequest;
 import com.softball.adapter.dto.LineupRuleCheckResponse;
-import com.softball.adapter.dto.LineupEntryResponse;
 import com.softball.domain.model.*;
 import com.softball.domain.service.LineupValidator;
 import com.softball.domain.service.LineupGenderRule;
@@ -52,13 +51,6 @@ public class LineupService {
     @Transactional(readOnly = true)
     public List<LineupEntry> getLineup(final Long gameId) {
         return lineupEntryRepository.findByGameIdOrderByBattingOrderAsc(gameId);
-    }
-
-    @Transactional(readOnly = true)
-    public Map<Long, List<LineupEntryResponse>> getLineupsForGames(final List<Long> gameIds) {
-        return getLineupModelsForGames(gameIds).entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey,
-            e -> e.getValue().stream().map(LineupEntryResponse::from).toList()));
     }
 
     /** Dasselbe als Domaenenmodelle, nach Schlagplatz sortiert. */

@@ -1,7 +1,6 @@
 package com.softball.application;
 
 import com.softball.adapter.dto.GameStaffRequest;
-import com.softball.adapter.dto.GameStaffResponse;
 import com.softball.domain.model.*;
 import com.softball.shared.exception.BusinessValidationException;
 import com.softball.shared.exception.ResourceNotFoundException;
@@ -43,13 +42,6 @@ public class GameStaffService {
     @Transactional(readOnly = true)
     public List<GameStaff> getStaff(final Long gameId) {
         return gameStaffRepository.findByGameId(gameId);
-    }
-
-    @Transactional(readOnly = true)
-    public Map<Long, List<GameStaffResponse>> getStaffForGames(final List<Long> gameIds) {
-        return getStaffModelsForGames(gameIds).entrySet().stream().collect(Collectors.toMap(
-            Map.Entry::getKey,
-            e -> e.getValue().stream().map(GameStaffResponse::from).toList()));
     }
 
     /** Dasselbe als Domaenenmodelle — die Base-Coach-Regel rechnet mit ihnen, nicht mit DTOs. */
