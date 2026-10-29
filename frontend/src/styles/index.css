@@ -941,6 +941,34 @@ button:active:not(:disabled), [role="button"]:active {
  * flackert jeder Hover. Das ist der Unterschied zwischen "weniger Bewegung" und
  * "keine Uebergaenge", den die blanke Holzhammer-Regel (alles auf 0,01ms) verwischt.
  */
+/*
+ * Die Tafel vor dem Versionswechsel (`pwa/UpdateWaechter.tsx`).
+ *
+ * Kein Puls: die Dauer ist BEKANNT — sie endet, wenn die Seite wechselt. Unbestimmte
+ * Bewegung behauptet „ich weiss nicht, wie lange", und ein Puls, der in 700 ms nicht
+ * einmal durchlaeuft, sieht nach Defekt aus. Der Balken ist stattdessen bestimmt und
+ * genau dann voll, wenn gewechselt wird; seine Dauer kommt als `--update-dauer` aus
+ * derselben Konstante, die den Wechsel ausloest (eine Quelle, nicht zwei).
+ *
+ * `scaleX` statt Breite: nur Transform, also kein Layout je Bild. Linear, weil ein
+ * Fortschritt gleichmaessig laeuft — Easing wuerde hier Tempo vortaeuschen.
+ */
+.update-tafel {
+  animation: updateTafel 200ms var(--ease-out-strong) both;
+}
+@keyframes updateTafel {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.update-balken {
+  animation: updateBalken var(--update-dauer, 700ms) linear both;
+}
+@keyframes updateBalken {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 1ms !important;
@@ -948,6 +976,8 @@ button:active:not(:disabled), [role="button"]:active {
     transition-duration: 80ms !important;
   }
   .skeleton-shimmer::after { display: none; }
+  /* Sonst springt er auf voll und steht dann — eine falsche Auskunft statt gar keiner. */
+  .update-spur { display: none; }
   .planner-pane { animation: none; }
   .count-pop { animation: none; }
   .chart-bar:active, .chart-bar:hover { transform: none; }

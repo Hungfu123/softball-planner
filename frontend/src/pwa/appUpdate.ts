@@ -45,3 +45,14 @@ export function darfNeuLaden(pathname: string, sichtbar: boolean): boolean {
  * Navigation, und die gibt es dort kaum.
  */
 export const NACHSEHEN_ALLE_MS = 60 * 60 * 1000
+
+/**
+ * Wie lange der Hinweis steht, bevor die Seite wechselt.
+ *
+ * <p>Leise heisst nicht unerklaert: kommt die App in den Vordergrund, waehrend jemand hinsieht,
+ * springt die Seite sonst grundlos. Die kurze Tafel macht daraus einen angekuendigten Vorgang.
+ * Lang genug, um gelesen zu werden, zu kurz, um zu warten — und bei
+ * `prefers-reduced-motion` steht sie still da, statt zu pulsieren (das regelt der globale
+ * Block in `styles/index.css`, hier ist nichts zu tun).
+ */
+export const HINWEIS_MS = 700

@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import { darfNeuLaden, NACHSEHEN_ALLE_MS } from './appUpdate'
+import { darfNeuLaden, HINWEIS_MS, NACHSEHEN_ALLE_MS } from './appUpdate'
 
 /**
  * Holt neue Fassungen der App von selbst herein.
@@ -21,6 +21,7 @@ import { darfNeuLaden, NACHSEHEN_ALLE_MS } from './appUpdate'
  * darunterliegen (die laufen außerhalb des Layouts).
  */
 export function UpdateWaechter() {
+  const [wechselt, setWechselt] = useState(false)
   const { needRefresh: [neueFassungDa], updateServiceWorker } = useRegisterSW({
     onRegisteredSW(_url, registrierung) {
       if (!registrierung) return
@@ -31,14 +32,38 @@ export function UpdateWaechter() {
 
   useEffect(() => {
     if (!neueFassungDa) return
+    let gestartet = false
     const pruefen = () => {
+      if (gestartet) return
       if (!darfNeuLaden(window.location.pathname, document.visibilityState === 'visible')) return
+      gestartet = true
+      // Erst die Tafel zeigen, dann wechseln: sonst springt die Seite unerklärt.
+      setWechselt(true)
       // true: Service Worker übernimmt und die Seite lädt neu.
-      void updateServiceWorker(true)
+      setTimeout(() => { void updateServiceWorker(true) }, HINWEIS_MS)
     }
     document.addEventListener('visibilitychange', pruefen)
     return () => document.removeEventListener('visibilitychange', pruefen)
   }, [neueFassungDa, updateServiceWorker])
 
-  return null
+  if (!wechselt) return null
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      // Die Balkendauer kommt aus derselben Konstante wie der Wechsel: so ist er genau
+      // dann voll, wenn die Seite springt — und bleibt es, wenn jemand die Zahl aendert.
+      style={{ '--update-dauer': `${HINWEIS_MS}ms` } as CSSProperties}
+      className="update-tafel fixed inset-0 z-[1000] flex flex-col items-center justify-center gap-5 bg-surface"
+    >
+      <img src="/deadsox.svg" alt="" width={56} height={56} className="rounded-xl" />
+      <div className="flex flex-col items-center gap-3">
+        <p className="text-sm text-ink-muted">Neue Version wird geladen</p>
+        <div className="update-spur h-px w-32 overflow-hidden rounded-full bg-line">
+          <div className="update-balken h-full w-full origin-left bg-ink-faint" />
+        </div>
+      </div>
+    </div>
+  )
 }
