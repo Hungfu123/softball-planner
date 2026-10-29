@@ -13,6 +13,11 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', 'e2e/**'],
   },
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      // vite-plugin-pwa erzeugt dieses Modul erst beim Bauen. Ohne Alias bricht in Vitest
+      // schon der Import ab — noch bevor ein `vi.mock` greifen koennte.
+      'virtual:pwa-register/react': path.resolve(__dirname, './src/pwa/registerStub.ts'),
+    },
   },
 })
