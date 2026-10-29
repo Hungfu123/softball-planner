@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useRolle } from '@/hooks/useRolle'
+import { spielermodusSetzen } from '@/hooks/useSpielermodus'
 import { useTheme } from '@/hooks/useTheme'
 import { portalOverlayAttrs, portalOverlayClickable } from '@/components/shared/portalOverlay'
 
@@ -56,6 +58,7 @@ function AnsichtWahl() {
  */
 export function KontoMenu() {
   const { me, logout } = useAuth()
+  const { istAdmin, istSuperadmin, spielermodus, darfSichtWechseln } = useRolle()
   const [offen, setOffen] = useState(false)
   const knopf = useRef<HTMLButtonElement>(null)
   const [rechts, setRechts] = useState(12)
@@ -113,15 +116,25 @@ export function KontoMenu() {
                   Konto &amp; Passwort
                 </Link>
               )}
-              {me && (me.role === 'ADMIN' || me.role === 'SUPERADMIN') && (
+              {me && istAdmin && (
                 <Link role="menuitem" to="/orga/accounts" onClick={schliessen} className={EINTRAG}>
                   Accounts
                 </Link>
               )}
-              {me?.role === 'SUPERADMIN' && (
+              {me && istSuperadmin && (
                 <Link role="menuitem" to="/orga/historie" onClick={schliessen} className={EINTRAG}>
                   Historie
                 </Link>
+              )}
+              {darfSichtWechseln && (
+                <button
+                  role="menuitem"
+                  type="button"
+                  className={EINTRAG}
+                  onClick={() => { schliessen(); void spielermodusSetzen(!spielermodus) }}
+                >
+                  {spielermodus ? 'Zurück zu Superadmin' : 'Als Spieler ansehen'}
+                </button>
               )}
               <div className="border-t border-cream-300 mt-1 pt-1">
                 <AnsichtWahl />

@@ -8,10 +8,12 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import com.softball.shared.security.SpielerSichtFilter;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -24,9 +26,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final OhneBrowserDialog ohneBrowserDialog;
+    private final SpielerSichtFilter spielerSicht;
 
-    public SecurityConfig(final OhneBrowserDialog ohneBrowserDialog) {
+    public SecurityConfig(final OhneBrowserDialog ohneBrowserDialog, final SpielerSichtFilter spielerSicht) {
         this.ohneBrowserDialog = ohneBrowserDialog;
+        this.spielerSicht = spielerSicht;
     }
 
     @Bean
@@ -40,7 +44,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
-            .httpBasic(basic -> basic.authenticationEntryPoint(ohneBrowserDialog));
+            .httpBasic(basic -> basic.authenticationEntryPoint(ohneBrowserDialog))
+            // NACH der Anmeldung (sonst gaebe es nichts herabzustufen) und VOR jeder
+            // Rechtepruefung — sonst entschiede die Kette noch mit den grossen Rechten.
+            .addFilterAfter(spielerSicht, BasicAuthenticationFilter.class);
         return http.build();
     }
 

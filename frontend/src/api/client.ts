@@ -1,11 +1,17 @@
 import { clearApiCache } from '@/pwa/apiCaching'
+import { ROLLE_KOPF, spielermodusAktiv } from '@/hooks/useSpielermodus'
 
 const API = '/api'
 
 function getAuthHeaders(): Record<string, string> {
   const creds = localStorage.getItem('auth')
   if (!creds) return {}
-  return { Authorization: `Basic ${creds}` }
+  // Der Spielermodus haengt an JEDER Anfrage, nicht an einer Sitzung: er wird nirgends
+  // gespeichert, auch nicht serverseitig. Deshalb hier und nicht in `senden` — diese
+  // Funktion traegt alle drei Aufrufstellen (request, Kalender, Trainingsplan).
+  const kopf: Record<string, string> = { Authorization: `Basic ${creds}` }
+  if (spielermodusAktiv()) kopf[ROLLE_KOPF] = 'PLAYER'
+  return kopf
 }
 
 export function setAuth(username: string, password: string) {

@@ -399,6 +399,31 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
 - **Drei Rollen:** `SUPERADMIN > ADMIN > PLAYER` als Spring-`RoleHierarchy`. Jeder Account hängt 1:0..1 an einem Spieler (`app_user.player_id`, `NOT NULL UNIQUE`, `ON DELETE CASCADE`). Ein Spieler kann ohne Account existieren, ein Account nie ohne Spieler.
 - **Zwei Passwörter:** `APP_AUTH_PASSWORD` gehört dem Superadmin, `APP_PLAYER_PASSWORD` ist das an die Spieler verteilte. Sind sie gleich, kann sich jeder, der das verteilte kennt, unter **jedem** Benutzernamen anmelden, auch als Superadmin — der Benutzername ist der Vorname. `VerteiltesPasswort` **warnte** deswegen früher nicht, sondern verweigerte den Start; seit dem 26.10.2026 warnt es nur noch (ausdrückliche Entscheidung des Betreibers: er vertraut dem Team und ändert sein eigenes Passwort nach dem Deploy in der Oberfläche, womit `APP_AUTH_PASSWORD` für die Anmeldung bedeutungslos wird). **Nicht wieder zum harten Fehler machen, ohne ihn zu fragen.** Ein *leeres* `APP_PLAYER_PASSWORD` bleibt ein harter Fehler — das ist keine Entscheidung, sondern unfertige Konfiguration.
 - **Default-Deny:** jede Klasse in `adapter/in/web/` trägt exakt `@PreAuthorize("hasRole('ADMIN')")`, Ausnahmen sind `CalendarController` (`permitAll()`), `MeController`/`AuthController` (`isAuthenticated()`) und `AuditController` (`SUPERADMIN`). **Drei Wächter-Tests erzwingen das** — `SecurityCoverageTest`, `MethodSecurityCoverageTest`, `CurrentUserArchitectureTest`. Ein neuer Controller ohne Regel lässt die Suite scheitern.
+- **Die Spieleransicht des Superadmins** (`shared/security/SpielerSichtFilter`,
+  `hooks/useSpielermodus.ts`): ein Schalter im Konto-Menü lässt den Superadmin die App sehen,
+  wie ein Spieler sie sieht — zum Testen, ohne zweites Konto und ohne Ab- und Anmelden.
+  **Im Backend, nicht nur in der Oberfläche:** die Lesegrenze sitzt hier
+  (`AufstellungSichtbarkeit`), ein Schalter, der bloß die Oberfläche umstellt, zeigte die
+  Spielerkarten mit **Trainerdaten** — ein gesperrter Spieltag wäre voll statt leer, und der
+  Test löge genau dort, wo man hinsieht. Der Filter ersetzt die `Authentication` durch
+  dieselbe mit kleineren Rechten; das greift, **weil alles Entscheidende den SecurityContext
+  liest** (`@PreAuthorize`, `AufstellungSichtbarkeit.darfSehen`, `ScoringPermission`,
+  `CurrentUser.darfTrainingszahlenSehen`) — `CurrentUser.istGenauRolle` liest die Datenbank und
+  hat **keinen Aufrufer**; wer eine neue Entscheidung baut, nimmt den SecurityContext.
+  **Die Regel ist `effektiv = min(echt, gewünscht)`** — der Kopf `X-Rolle-Ansicht` kann Rechte
+  nur wegnehmen, nie geben, und wird nur von einem Konto mit der echten Rolle `SUPERADMIN`
+  angenommen. **An `app_user.role` wird nichts geschrieben:** der Modus lebt im `localStorage`
+  und hängt je Anfrage am Kopf, den `getAuthHeaders()` setzt (die eine Stelle, durch die alle
+  drei Aufrufwege gehen). Abmelden, anderes Gerät, Neustart — überall wieder Superadmin;
+  aussperren kann man sich nicht, weil es serverseitig nichts zu entsperren gibt.
+  **Beim Umschalten wird der API-Cache geleert und neu geladen**: der Cache-Schlüssel ist nur
+  die URL (siehe `apiCaching.ts`), und ein Moduswechsel ist kein An-/Abmelden — ohne das
+  Leeren käme bei schlechtem Netz die gespeicherte Antwort des Trainers. Neu geladen wird,
+  weil der Zustand sonst in einem Dutzend eigener Hooks aus dem anderen Blick stehen bliebe.
+  `useRolle` überlagert die Rolle für die ganze Oberfläche (19 Dateien hängen daran) und ist
+  im Modus **auch im Unbekannt-Fall** Spieler, der sonst großzügig ist. `SpielerSichtIntegrationTest`
+  hält fest, was der Kopf NICHT kann. **Nicht gebaut und nicht gewollt:** sich als eine ANDERE
+  Person ausgeben.
 - **Die Historie blättert nicht, sie deckelt** (`AuditService.HOECHSTENS`, 5.000 Rohzeilen):
   `GET /api/audit` hat bewusst **kein** `page`/`size`. Was der Endpunkt liefert, sind nicht
   Zeilen, sondern **Spannen**, die `AuditSummarizer` aus aufeinanderfolgenden Ereignissen baut —
