@@ -83,11 +83,6 @@ export function LineupSheet() {
             <h2 className="text-xs font-bold text-gray-800 border-b-2 border-navy-800 pb-0.5">
               Spiel {game.gameNumber}
               {game.opponentTeam && <span className="font-normal text-gray-600"> vs {game.opponentTeam.name}</span>}
-              {staff.length > 0 && (
-                <span className="font-normal text-gray-400 ml-2">
-                  {staff.map(s => `${s.role === 'BASE_COACH_1ST' ? '1B' : '3B'}: ${s.player.name}`).join(' · ')}
-                </span>
-              )}
             </h2>
 
             {lineup.length === 0 ? (
@@ -115,7 +110,8 @@ export function LineupSheet() {
               </table>
             )}
 
-            {/* Ob etwas dasteht, entscheidet allein baseCoachSatz — wie im PDF, auch bei leerer Aufstellung */}
+            {/* Die einzige Stelle, an der Coaches stehen. Frueher nannte die Ueberschrift sie
+                zusaetzlich — derselbe Name zweimal, in zwei Schreibweisen. */}
             {(() => {
               const satz = baseCoachSatz(baseCoaches)
               return satz && <p className="text-[10px] text-gray-400 mt-1">{satz}</p>
