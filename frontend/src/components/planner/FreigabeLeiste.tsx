@@ -24,7 +24,9 @@ const knopf =
 // aus dem Backend (dort sitzt die 7-Uhr-Regel samt Zeitzone) — hier wird nichts umgerechnet.
 // Die Freigabe ist nur einer der Gruende fuer ein Ja. "Seit der Freigabe geaendert" bleibt als
 // Zusatz, weil der Trainer sonst nicht erfaehrt, dass die Spieler etwas Altes sehen.
-// Punktfarben: accent = sichtbar, amber = du koenntest etwas tun, grau = nichts zu tun.
+// Punktfarben: accent = sichtbar, amber = du koenntest etwas tun, ink-faint = nichts zu tun.
+// Grau kommt aus der SCHRIFT-Reihe, nicht aus der Linien-Reihe: line-strong ist auf der
+// Karte nicht zu sehen, und ein Punkt, den man nicht sieht, sagt nichts.
 export function FreigabeLeiste({ lage, freigegebenSeit, seitdemGeaendert, hatAufstellung, umschalten }: Props) {
   const [fragt, setFragt] = useState(false)
   const [laeuft, setLaeuft] = useState(false)
@@ -45,7 +47,7 @@ export function FreigabeLeiste({ lage, freigegebenSeit, seitdemGeaendert, hatAuf
   let text: string
   switch (lage) {
     case 'GESPERRT':
-      punkt = hatAufstellung ? 'bg-amber-400' : 'bg-line-strong'
+      punkt = hatAufstellung ? 'bg-amber-400' : 'bg-ink-faint'
       text = hatAufstellung ? 'Noch nicht für Spieler freigegeben' : 'Noch nichts aufgestellt'
       break
     case 'FREIGEGEBEN':
@@ -56,7 +58,7 @@ export function FreigabeLeiste({ lage, freigegebenSeit, seitdemGeaendert, hatAuf
       break
     case 'HEUTE_VOR_SIEBEN':
       // Grau, nicht amber: Nichtstun ist hier richtig, ab 7 Uhr wird es von selbst sichtbar.
-      punkt = 'bg-line-strong'
+      punkt = 'bg-ink-faint'
       text = 'Ab 7 Uhr für alle sichtbar'
       break
     case 'OFFEN_AB_SIEBEN':
@@ -76,7 +78,7 @@ export function FreigabeLeiste({ lage, freigegebenSeit, seitdemGeaendert, hatAuf
     : null
 
   return (
-    <div className="w-full flex flex-wrap items-center justify-between gap-2 border-t border-line pt-2 mt-1">
+    <div className="w-full flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-2 mt-1">
       <div className="flex items-center gap-2 text-xs text-ink-muted">
         <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full inline-block ${punkt}`} />
         <span>{text}</span>

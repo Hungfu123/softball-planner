@@ -73,7 +73,7 @@ describe('FreigabeLeiste', () => {
 
   it('zeigt vor 7 Uhr einen grauen Punkt, keinen amberfarbenen', () => {
     const { container } = zeige('HEUTE_VOR_SIEBEN')
-    expect(punktKlasse(container)).toContain('bg-line-strong')
+    expect(punktKlasse(container)).toContain('bg-ink-faint')
     expect(punktKlasse(container)).not.toContain('amber')
   })
 
@@ -81,7 +81,7 @@ describe('FreigabeLeiste', () => {
     expect(punktKlasse(zeige('OFFEN_AB_SIEBEN').container)).toContain('bg-accent')
     expect(punktKlasse(zeige('OFFEN_VERGANGEN').container)).toContain('bg-accent')
     expect(punktKlasse(zeige('GESPERRT', true).container)).toContain('amber')
-    expect(punktKlasse(zeige('GESPERRT', false).container)).toContain('bg-line-strong')
+    expect(punktKlasse(zeige('GESPERRT', false).container)).toContain('bg-ink-faint')
   })
 
   // Der Rückfrage-Text ("verschwindet dann wieder aus der Spieler-Ansicht") verspricht sonst etwas,
