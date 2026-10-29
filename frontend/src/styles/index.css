@@ -1053,11 +1053,16 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Kein Ziehen-zum-Neuladen und kein Gummiband der ganzen Seite: die App hat eigene
-   Scrollbereiche, und auf der Scoring-Seite (h-dvh, kein Scrollen) ruckelte der ganze
-   Schirm, wenn man über das Ende hinaus wischte. */
-html,
-body {
+/* Ziehen-zum-Neuladen ist die einzige Notbremse, die der installierten App bleibt: sie hat
+   keine Adressleiste und keinen Neu-laden-Knopf. Deshalb steht es überall offen — nur auf
+   den Scoring-Seiten nicht. Dort steckt der Stand der laufenden Begegnung in der Seite, und
+   weil sie ohne eigenes Scrollen gebaut sind (h-dvh), ruckelte beim Wischen über das Ende
+   der ganze Schirm.
+
+   Gesetzt wird das Attribut von `useZiehenSperre` — nach derselben Liste von Seiten, die
+   auch das selbsttätige Update zurückhält (`pwa/appUpdate.ts`). */
+html[data-kein-ziehen],
+html[data-kein-ziehen] body {
   overscroll-behavior: none;
 }
 
