@@ -166,24 +166,42 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   Zusicherung — die Seite funktioniert, **wenn `/api/me` scheitert**. Details: `docs/PLAYMAKER.md`.
 - **Swap** (`POST /api/games/{id1}/swap/{id2}`): atomic swap of lineup + staff + opponent + scores between two games on the SAME gameday.
 - **Freigabe der Aufstellung** (`game_days.lineups_released_at` + `lineups_released_hash`,
-  V73, seit dem 28.10.2026): **Spieler sehen die Aufstellung eines Spieltags erst, wenn der
-  Trainer sie freigibt** — vorher nichts, auch nicht den eigenen Platz. Wer seinen Platz
-  kennt, kennt die halbe Aufstellung. Vier Zweige geben frei, und zwar an **einer** Stelle
-  (`shared/security/AufstellungSichtbarkeit`): Admin, **Scorer** (`@scoring.darfSchreiben`),
-  freigegeben, **oder der Spieltag liegt in der Vergangenheit** (`date < heute`). Der
-  Scorer-Zweig ist nicht Bequemlichkeit, sondern Pflicht — ohne ihn wäre der Spielbogen leer,
-  wenn ein Spieler mit Scorer-Recht ein nicht freigegebenes Spiel scoren soll. Der
-  Vergangenheits-Zweig ebenso: `/teams/spiele` lädt für jedes gespielte Spiel die
-  Schlagreihenfolge, und niemand gibt hundert alte Spieltage nachträglich frei. **Geantwortet
-  wird leer, nicht mit 403** — die Oberfläche trägt den leeren Fall ohnehin, einen Fehler
-  trüge sie nicht.
-  **Die Grenze sitzt an mehr Stellen, als man denkt.** Beim Bauen kamen nacheinander sechs
-  weitere Wege ans Licht, über die dieselben Daten herauskamen: `/gamedays/{id}/stats`
-  (Positionen je Spiel, der Name klingt nach Statistik), `StatsService` hinter
-  `/seasons/{id}/stats`, `/years/{y}/stats` und `/stats/all-time/games` (zählt `LineupEntry`,
-  also Namen und Positionen), `/games/{id}/batting-stats` und `/gamedays/{id}/batting-stats`
-  (der Lineup-Keim in `collectPlayers` — bei einem Spiel ohne At-Bats ist die Antwort **exakt
-  die Aufstellung**), `/games/{id}/scoreboard` (`resolveCurrentBatter` liefert vor dem ersten
+  V73, seit dem 28.10.2026): **Spieler sehen die Aufstellung eines Spieltags erst, wenn sie
+  steht** — vorher nichts, auch nicht den eigenen Platz. Wer seinen Platz kennt, kennt die
+  halbe Aufstellung. Zwei Dinge entscheiden, getrennt: die **Lage** des Spieltags und wer sie
+  **sehen darf**.
+  **Die Lage** rechnet `domain/service/AufstellungsLageRegel` in **Berliner Zeit**, in dieser
+  Reihenfolge: vergangen (`OFFEN_VERGANGEN`) → heute ab 07:00 (`OFFEN_AB_SIEBEN`) →
+  freigegeben (`FREIGEGEBEN`) → heute vor 07:00 (`HEUTE_VOR_SIEBEN`) → sonst `GESPERRT`.
+  **Die Reihenfolge ist Teil der Bedeutung.** Stünde `FREIGEGEBEN` über den Heute-Zweigen,
+  böte die Oberfläche am Spieltag nach 7 Uhr einen „zurücknehmen"-Knopf an, dessen Rückfrage
+  verspricht, die Aufstellung verschwinde wieder — sie verschwindet nicht, denn ab 7 Uhr sieht
+  sie ohnehin jeder. Und ein vergangener, freigegebener Spieltag bliebe für Spieler für immer
+  „der nächste". **Nicht umsortieren.**
+  **Wer sie sieht** (`shared/security/AufstellungSichtbarkeit`, die einzige Stelle): Trainer
+  immer; `FREIGEGEBEN`, `OFFEN_VERGANGEN` und `OFFEN_AB_SIEBEN` **jeder**; `HEUTE_VOR_SIEBEN`
+  **nur Scorer** (`@scoring.darfSchreiben`); `GESPERRT` **niemand**. Ein Scorer ist kein
+  eigener Rang — `may_score` hängt an einem Konto mit der Rolle `PLAYER`. Er sah früher
+  **jede** Aufstellung, auch Tage vorher: genau das Leck, gegen das dies gebaut ist. Jetzt
+  sieht er sie ab Mitternacht am Spieltag (der Morgen, an dem der Trainer das Freigeben
+  vergessen hat, und der Spielbogen nicht leer sein darf), an allen anderen Tagen trägt ihn
+  die Freigabe wie alle. Vergangene Spieltage sind offen, weil `/teams/spiele` für jedes
+  gespielte Spiel die Schlagreihenfolge lädt und niemand hundert alte Spieltage nachträglich
+  freigibt. **Geantwortet wird leer, nicht mit 403** — die Oberfläche trägt den leeren Fall
+  ohnehin, einen Fehler trüge sie nicht.
+  **Die Zeitzone:** die 7 Uhr werden an **genau einer** Stelle ausdrücklich in `Europe/Berlin`
+  gerechnet (`clock.instant().atZone(BERLIN)`). Die Zone des Containers wird **nicht**
+  gestellt — 18 Migrationen halten `TIMESTAMP` ohne Zone, eine Umstellung verschöbe jede
+  historische Zeit im Display, auch das Feld `Zeit:` auf dem RFL-Bogen, der an den Verband
+  geht. Es ist **keine automatische Freigabe**: kein geplanter Lauf, kein Schreibvorgang,
+  `lineups_released_at` bleibt leer, wenn der Trainer den Schalter nicht legt.
+  **Die Grenze sitzt an mehr Stellen, als man denkt** — elf Lesewege wurden geschlossen, über die
+  dieselben Daten herauskamen, darunter `/gamedays/{id}/lineups`, `/gamedays/{id}/stats` (Positionen je Spiel, der
+  Name klingt nach Statistik), `StatsService` hinter `/seasons/{id}/stats`,
+  `/years/{y}/stats` und `/stats/all-time/games` (zählt `LineupEntry`, also Namen und
+  Positionen), `/games/{id}/batting-stats` und `/gamedays/{id}/batting-stats` (der
+  Lineup-Keim in `collectPlayers` — bei einem Spiel ohne At-Bats ist die Antwort **exakt die
+  Aufstellung**), `/games/{id}/scoreboard` (`resolveCurrentBatter` liefert vor dem ersten
   At-Bat den Leadoff-Hitter samt Schlagplatz 1) und `/players/{id}/usage` (Schlagplätze ohne
   Datumsfilter). **Wer hier etwas anfasst, geht von den DATEN aus, nicht von den Endpunkten:**
   wer liest `LineupEntry`, `GameStaff`, `Substitution` oder abgeleitete Positionsangaben, und
@@ -203,14 +221,32 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   nichts vergessen und fängt auch das Löschen. Der Haken wird **nur für Spieltage ab heute**
   gerechnet — `/api/calendar.ics` ist `permitAll()` und wird gepollt; ein vergangener Spieltag
   meldet deshalb immer `false`.
-  **Die Oberfläche verbirgt nichts, sie erklärt nur Leere** (`utils/aufstellungsauskunft.ts`,
-  `stehtNochNicht`): sind Einträge da, werden sie gezeigt — sonst entscheidet der Grund den
-  Satz („Die Aufstellung steht noch nicht." gegen „Für dieses Spiel gibt es noch keine
-  Aufstellung."). Eine Oberfläche, die nach der Freigabe statt nach den Daten entscheidet,
-  wirft einem Scorer seine Daten weg. **Bestehende Spieltage sind nach der Migration nicht
-  freigegeben** — die Alternative wäre gewesen, alle Altdaten stillschweigend zu
-  veröffentlichen. `SpielerLeserechteIntegrationTest` und `AufstellungFreigabeIntegrationTest`
-  halten das Ganze fest.
+  **Die Oberfläche verbirgt nichts, sie erklärt nur Leere** (`utils/aufstellungsLage.ts`,
+  `stehtNochNicht(gameDay, alleLeer)` und `alleLeer(spiele, aufstellungen)`): sind Einträge
+  da, werden sie gezeigt. „Die Aufstellung steht noch nicht." gilt nur, wenn die Lage
+  `GESPERRT` ist **und** der Betrachter für **kein** Spiel Einträge bekam — sonst „Für dieses
+  Spiel gibt es noch keine Aufstellung." Grund: Gesperrte bekommen leere Listen, leer heißt
+  also zweierlei. Das Frontend rechnet **kein Datum selbst**: `aufstellungsLage` und
+  `istHeute` kommen fertig aus `GameDayResponse`. Eine Oberfläche, die nach der Freigabe statt
+  nach den Daten entscheidet, wirft einem Scorer seine Daten weg. **Bestehende Spieltage sind
+  nach der Migration nicht freigegeben** — die Alternative wäre gewesen, alle Altdaten
+  stillschweigend zu veröffentlichen. `SpielerLeserechteIntegrationTest` und
+  `AufstellungFreigabeIntegrationTest` halten das Ganze fest.
+- **Base Coach** (`domain/service/BaseCoachRegel`, V74): die alte Coach-Rotation —
+  `CoachRotationPair`, `lineup_set_game_rotation` (V57), die vier Spalten an `games`
+  (V34/V37) und `PUT /games/{id}/coach-rotation` — ist **ersatzlos weg**. Jetzt gilt: wer
+  benannt ist, coacht; je **nicht** benannter Base kommt ein Schlagplatz, **von unten
+  gezählt** (zwei unbenannte → die untersten zwei, eine → die unterste, keine → leer).
+  Ausgeliefert wird das über `GET /gamedays/{id}/lineups` als vierte Map `baseCoaches`, damit
+  es unter derselben Lesegrenze liegt wie die Aufstellung. Formuliert wird der Satz an **einer**
+  Stelle, `utils/baseCoachSatz.ts` — nur so lauten PDF und App gleich und sind nicht bloß
+  gleich gemeint. Ein benannter Coach ist eine Auskunft, auch ohne Aufstellung. **Die Prüfung
+  in `GameStaffService.validate` bleibt unverändert:** Base Coach darf nur sein, wer nicht
+  schlägt (Bank oder DH-Host; der DH-Batter nicht).
+- **Spieler-Ansicht** (`components/dashboard/Aufstellungsansicht.tsx`, im Spieler-Dashboard
+  `/spielbetrieb`, an der Stelle der früheren reinen Liste): Feld, Schlagreihenfolge, Base
+  Coaches, Bank. Ein Abruf je Spieltag statt einer je Spiel. Sie zeigt **nur den nächsten
+  Spieltag** — ein Rückblick ist ausdrücklich nicht gebaut.
 - **Standings** are computed from two sources: own games (`Game` rows) for the ownTeam, and `LeagueResult` rows for non-ownTeam vs non-ownTeam matchups. ownTeam can never be deleted and never appears in `LeagueResult`.
 - **Game clock** (`GameClockService`, shared by `Game` and `Spielbogen`): the clock reads game state, it never writes into it. `GameClockCalculator.compute()` derives elapsed/frozen time from `endedAt ?? now` — none of the four call sites that set `endedAt` had to change. The one exception is `pauseClockBeforeReopen`, called at three reopen sites *before* `endedAt` is cleared, because after that the cap can't be reconstructed. `timerStartedAt` (the first start, V56) is separate from `timerRunningSince` (the most recent start/resume) — needed verbatim on the RFL sheet's `Zeit:` field, which goes to the league. See `docs/SPIELBOGEN.md` for the full writeup.
 
