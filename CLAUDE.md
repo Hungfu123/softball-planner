@@ -309,6 +309,19 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   keiner Route und sitzt **über** dem Router, wo auch die Scoring-Seiten darunterliegen (die
   laufen außerhalb des Layouts). Ein stündliches `registration.update()` muss sein: eine
   stehende App navigiert nicht und sähe sonst nie nach.
+- **Das Ziehen-zum-Neuladen bleibt offen** (`hooks/useZiehenSperre.ts`): die installierte App
+  hat keine Adressleiste und keinen Neu-laden-Knopf — das Ziehen ist der einzige Handgriff,
+  der ihr bleibt, wenn etwas klemmt. `overscroll-behavior: none` stand deshalb kurz pauschal
+  an `html, body` und hängt jetzt am Attribut `data-kein-ziehen`, das nur auf den
+  Scoring-Seiten gesetzt wird. **Die Liste der Seiten ist dieselbe wie beim Update**
+  (`schreibtGeradeMit` in `pwa/appUpdate.ts`), und zwar aus demselben Grund: niemandem das
+  laufende Spiel unter den Händen wegziehen. **Nicht wieder pauschal setzen.** Gelauscht wird
+  am Router (`router.subscribe`), nicht an `useLocation` — die Sperre muss über dem
+  `RouterProvider` sitzen, weil die Scoring-Seiten außerhalb des Layouts laufen.
+  **Ein Neuladen holt aber keine neue Fassung**: der wartende Service Worker kommt erst dran,
+  wenn der letzte Tab weg ist (`registerType: 'prompt'`, kein `clientsClaim`). Das Ziehen hilft
+  gegen eine klemmende Oberfläche, nicht gegen eine alte Fassung — dafür ist der Wächter da,
+  und von Hand hilft nur, die App ganz zu schließen.
 - **PWA** — service worker via `vite-plugin-pwa`. `/api`, `/drills`, `/actuator` are excluded
   from `navigateFallback`. API GETs cached `NetworkFirst` with 5s timeout. Zwei Ausnahmen in
   `src/pwa/apiCaching.ts`, und der Cache-Schlüssel ist **nur die URL** — das ist der Grund für
