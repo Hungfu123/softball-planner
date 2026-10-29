@@ -18,9 +18,11 @@ baileys-poc/node_modules/
 baileys-poc/package-lock.json
 baileys-poc/auth/
 
-# Vite build cache (top-level + backend dir from accidental cwd)
+# Vite-/Vitest-Cache aus versehentlichem cwd (Repo-Wurzel statt frontend/).
+# `/node_modules/` an der Wurzel ist NIE echt — installiert wird in frontend/.
 .vite/
 backend/.vite/
+/node_modules/
 
 # IDE
 .idea/
