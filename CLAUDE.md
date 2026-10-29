@@ -309,6 +309,19 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   keiner Route und sitzt **über** dem Router, wo auch die Scoring-Seiten darunterliegen (die
   laufen außerhalb des Layouts). Ein stündliches `registration.update()` muss sein: eine
   stehende App navigiert nicht und sähe sonst nie nach.
+  **Zwei Momente lassen den neuen Worker ran, nicht einer:** der Wechsel in den Vordergrund
+  **und der Aufbau der Seite**. Der zweite ist der Ersatz für das, was `autoUpdate` von selbst
+  tat — wer von Hand neu lädt (in der installierten App: zieht), bekäme sonst für immer
+  dieselbe Seite aus dem Vorrat. Er gilt nur **innerhalb einer Minute nach dem Aufbau**
+  (`AUFBAU_FENSTER_MS`, gemessen mit `performance.now()`): ohne diese Grenze risse die
+  stündliche Nachfrage die Seite auch jemandem weg, der gerade ein Formular ausfüllt — genau
+  davor schützt sonst „nur im Vordergrund". Eine **Bremse im `sessionStorage`** lässt den
+  Aufbau-Zweig je Tab-Sitzung einmal zu und **löst sich wieder, sobald nichts mehr ansteht** —
+  hielte sie durch, käme der zweite Deploy des Tages nicht mehr an. Die Tafel **nimmt sich
+  nach `TAFEL_GEDULD_MS` selbst zurück**: `updateServiceWorker(true)` lädt erst, wenn der
+  Worker wirklich übernimmt, und täte er das nie, stünde sonst ein bildschirmfüllender
+  Vorhang ohne Ausweg. Belegt wurde die Kette gegen den **gebauten** Build (`vite preview`,
+  vier Fassungen hintereinander): ein Zug reicht, auch beim zweiten Deploy im selben Tab.
 - **Das Ziehen-zum-Neuladen bleibt offen** (`hooks/useZiehenSperre.ts`): die installierte App
   hat keine Adressleiste und keinen Neu-laden-Knopf — das Ziehen ist der einzige Handgriff,
   der ihr bleibt, wenn etwas klemmt. `overscroll-behavior: none` stand deshalb kurz pauschal
@@ -318,10 +331,11 @@ The app currently supports only one team. The own team name "Dead Sox" is **hard
   laufende Spiel unter den Händen wegziehen. **Nicht wieder pauschal setzen.** Gelauscht wird
   am Router (`router.subscribe`), nicht an `useLocation` — die Sperre muss über dem
   `RouterProvider` sitzen, weil die Scoring-Seiten außerhalb des Layouts laufen.
-  **Ein Neuladen holt aber keine neue Fassung**: der wartende Service Worker kommt erst dran,
-  wenn der letzte Tab weg ist (`registerType: 'prompt'`, kein `clientsClaim`). Das Ziehen hilft
-  gegen eine klemmende Oberfläche, nicht gegen eine alte Fassung — dafür ist der Wächter da,
-  und von Hand hilft nur, die App ganz zu schließen.
+  **Und es holt wieder eine neue Fassung** — das tat es unter `autoUpdate` von selbst
+  (`skipWaiting` + `clientsClaim`, das zweite Neuladen zeigte die neue Fassung), und mit
+  `prompt` wartet der neue Service Worker, bis ihn jemand ruft. Ohne Zutun bekäme ein
+  Neuladen von Hand für immer dieselbe Seite aus dem Vorrat. Deshalb der **Aufbau-Zweig** im
+  Wächter (siehe nächster Punkt); ohne ihn wäre das Ziehen eine Attrappe.
 - **PWA** — service worker via `vite-plugin-pwa`. `/api`, `/drills`, `/actuator` are excluded
   from `navigateFallback`. API GETs cached `NetworkFirst` with 5s timeout. Zwei Ausnahmen in
   `src/pwa/apiCaching.ts`, und der Cache-Schlüssel ist **nur die URL** — das ist der Grund für
