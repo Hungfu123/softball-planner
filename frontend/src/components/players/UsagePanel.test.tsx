@@ -56,9 +56,9 @@ describe('UsagePanel', () => {
     expect(screen.getByTitle('5× auf Platz 4')).toBeInTheDocument()
   })
 
-  it('lässt den Schlagplatz weg, wenn nie aufgestellt', () => {
+  it('lässt den Platz im Lineup weg, wenn nie aufgestellt', () => {
     render(<UsagePanel usage={usage({ averageBattingOrder: null, battingOrderCounts: {} })} />)
-    expect(screen.queryByText(/Schlagplatz/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Platz im Lineup/)).not.toBeInTheDocument()
   })
 
   it('sagt im Saison-Zuschnitt, warum das Training fehlt', () => {
