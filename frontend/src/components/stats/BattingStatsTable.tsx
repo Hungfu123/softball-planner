@@ -1,17 +1,16 @@
 import { useMemo, useRef, useState } from 'react'
-import { Trophy, ChevronDown, ChevronUp, Info, Zap, Check } from 'lucide-react'
+import { Trophy, Zap, Check } from 'lucide-react'
 import type { PlayerBattingStatsResponse } from '@/types'
 
 const MIN_AB_LABEL = 'min. 5 ABs'
 
 interface Props {
   stats: PlayerBattingStatsResponse[]
-  onOpenGlossary?: () => void
   /** Rate-Stat-Qualifier (≥5 ABs) anwenden — true für aggregierte Scopes (Saison/Jahr/Alle Zeit), false pro Spiel. */
   applyQualifier?: boolean
   /** playerId → gewichteter Game-Zähler (totalGames). Nenner für RBI/G. */
   gamesByPlayerId?: Map<number, number>
-  /** RBI/G-Spalte zeigen — nur in aggregierten Scopes wo totalGames vorliegt. */
+  /** RBI/G- und R/G-Spalte zeigen — nur in aggregierten Scopes wo totalGames vorliegt. */
   showPerGame?: boolean
 }
 
@@ -21,15 +20,47 @@ type SortKey =
   | 'onBasePct' | 'sluggingPct' | 'ops' | 'runsBattedIn' | 'rbiPerGame' | 'runsPerGame'
 type SortDir = 'asc' | 'desc'
 
-export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
-  const [showDetails, setShowDetails] = useState(false)
+/*
+ * Die Spaltenreihenfolge ist eine Aussage darüber, was zuerst interessiert — auf dem Handy
+ * sieht man nur die ersten fünf, der Rest will gewischt werden. Sie geht deshalb von der
+ * Frage aus, nicht von der Datenherkunft:
+ *
+ *   wer      AB  H       — wie oft stand er oben, wie oft hat er getroffen (die Stichprobe
+ *                          steht VOR den Quoten, sonst liest man .750 aus vier Versuchen als Wert)
+ *   Quoten   AVG OBP SLG OPS   — der Scouting-Block, vier Zahlen, die nur zusammen etwas sagen
+ *   Ertrag   RBI R HR SB       — was dabei herauskam, jeweils mit seiner Pro-Spiel-Zahl daneben
+ *   Auge     BB K             — Disziplin am Schlag
+ *   Laufen   CS PO            — und die Treffer-Aufschlüsselung ganz hinten
+ *
+ * Vorher standen AVG vorn und OBP/SLG/OPS hinter einem Aufklapper: der Reiter versteckte
+ * genau die drei Zahlen, nach denen ein Trainer eine Schlagreihenfolge baut. Es wird nichts
+ * mehr zugeklappt.
+ *
+ * Und es gibt keine Spalte „Quote" mehr. Sie zeigte `.824` als `82 %` ein zweites Mal und
+ * nahm dafür die breiteste Stelle der Tabelle ein. Der Balken ist geblieben, er liegt jetzt
+ * HINTER der Zahl — und hinter der Zahl, nach der gerade sortiert wird, nicht fest hinter AVG.
+ * So zeigt er immer die Rangfolge, die man sehen wollte.
+ */
+
+/** Spalten, hinter denen eine Gruppe endet — dort sitzt eine feine Trennlinie. */
+const GRUPPENANFANG = 'border-l border-cream-300'
+const GRUPPENANFANG_KOPF = 'border-l border-white/20'
+
+export function BattingStatsTable({ stats, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
   const [showUnqualified, setShowUnqualified] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('battingAverage')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [scrolled, setScrolled] = useState(false)
+  const [amEnde, setAmEnde] = useState(false)
 
-  const handleScroll = () => setScrolled((scrollRef.current?.scrollLeft ?? 0) > 0)
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    setScrolled(el.scrollLeft > 0)
+    // 2 px Luft: Browser runden `scrollWidth` bei Zoom und DPR nicht immer glatt.
+    setAmEnde(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2)
+  }
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) {
@@ -52,19 +83,20 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     return games > 0 ? s.runs / games : null
   }
 
+  /** Der Zahlenwert einer Spalte — eine Stelle für Sortierung UND Balkenlänge. */
+  const wert = (s: PlayerBattingStatsResponse, key: SortKey): number | null => {
+    if (key === 'playerName') return null
+    if (key === 'rbiPerGame') return rbiPerGame(s)
+    if (key === 'runsPerGame') return runsPerGame(s)
+    return Number(s[key] ?? 0)
+  }
+
   const sorted = useMemo(() => {
     const dir = sortDir === 'asc' ? 1 : -1
     return [...stats].sort((a, b) => {
-      let cmp: number
-      if (sortKey === 'playerName') {
-        cmp = a.playerName.localeCompare(b.playerName)
-      } else if (sortKey === 'rbiPerGame') {
-        cmp = (rbiPerGame(a) ?? -1) - (rbiPerGame(b) ?? -1)
-      } else if (sortKey === 'runsPerGame') {
-        cmp = (runsPerGame(a) ?? -1) - (runsPerGame(b) ?? -1)
-      } else {
-        cmp = Number(a[sortKey] ?? 0) - Number(b[sortKey] ?? 0)
-      }
+      const cmp = sortKey === 'playerName'
+        ? a.playerName.localeCompare(b.playerName)
+        : (wert(a, sortKey) ?? -1) - (wert(b, sortKey) ?? -1)
       if (cmp !== 0) return cmp * dir
       // Tiebreaker immer stabil: Treffer absteigend, dann Name
       return b.hits - a.hits || a.playerName.localeCompare(b.playerName)
@@ -82,29 +114,31 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
 
   const visible = showUnqualified ? [...qualified, ...unqualified] : qualified
 
-  // Balken-Skala nur aus qualifizierten — sonst sprengt ein 1.000-Mini-Sample die Skala
-  const maxBA = useMemo(
-    () => Math.max(...(qualified.length ? qualified : sorted).map(s => Number(s.battingAverage)), 0.001),
-    [qualified, sorted],
-  )
+  // Skala des Balkens nur aus qualifizierten — sonst sprengt ein 1.000-Mini-Sample sie.
+  const maxWert = useMemo(() => {
+    if (sortKey === 'playerName') return 0
+    const basis = qualified.length ? qualified : sorted
+    return Math.max(...basis.map(s => wert(s, sortKey) ?? 0), 0.001)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qualified, sorted, sortKey, gamesByPlayerId])
+
+  const NUM_TH = 'font-display text-right px-2.5 py-2.5 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap'
 
   const sortTh = (key: SortKey, label: string, opts?: { title?: string; align?: 'left' | 'right'; className?: string }) => {
     const align = opts?.align ?? 'right'
-    const alignCls = align === 'right' ? 'text-right' : 'text-left'
     const active = sortKey === key
     return (
       <th
         onClick={() => handleSort(key)}
         title={opts?.title}
         aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-        className={`font-display ${alignCls} px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest cursor-pointer select-none transition-colors ${active ? 'text-white' : 'text-white/70 hover:text-white'} ${opts?.className ?? ''}`}
+        className={`${align === 'right' ? NUM_TH : 'font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest'} cursor-pointer select-none transition-colors ${
+          active ? 'text-white' : 'text-white/60 hover:text-white'
+        } ${opts?.className ?? ''}`}
       >
-        <span className={`inline-flex items-center gap-0.5 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
-          {label}
-          {active
-            ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />)
-            : <ChevronDown size={11} className="opacity-0" />}
-        </span>
+        {/* Die aktive Spalte trägt einen Unterstrich statt eines Pfeils: der Pfeil kostete in
+            jeder Spalte Breite, auch in den 15 unsortierten. */}
+        <span className={active ? 'border-b-2 border-softball-red-500 pb-0.5' : ''}>{label}</span>
       </th>
     )
   }
@@ -118,204 +152,181 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     )
   }
 
-  return (
-    <div className="space-y-3">
-      {/* Toolbar */}
-      <div className="flex items-center flex-wrap gap-2">
-        <button
-          onClick={() => setShowDetails(x => !x)}
-          className="font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
-        >
-          {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          {showDetails ? 'Weniger' : 'Mehr Details (OBP, SLG, OPS)'}
-        </button>
-        {onOpenGlossary && (
-          <button
-            onClick={onOpenGlossary}
-            className="font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border border-cream-300 text-navy-700 hover:bg-cream-100 hover:border-navy-400 cursor-pointer inline-flex items-center gap-1.5"
-          >
-            <Info size={12} />
-            Abkürzungen
-          </button>
-        )}
-        {applyQualifier && unqualified.length > 0 && (
-          <button
-            onClick={() => setShowUnqualified(x => !x)}
-            role="checkbox"
-            aria-checked={showUnqualified}
-            className={`font-display min-h-11 px-3 py-1.5 text-[11px] font-bold tracking-widest uppercase rounded-full border cursor-pointer inline-flex items-center gap-1.5 transition-colors ${
-              showUnqualified
-                ? 'bg-navy-900 border-navy-900 text-white'
-                : 'border-cream-300 text-gray-700 hover:bg-cream-100 hover:border-navy-400'
-            }`}
-            title={`Spieler unter ${MIN_AB_LABEL} ${showUnqualified ? 'ausblenden' : 'einblenden'}`}
-          >
-            <span
-              className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded-[4px] border transition-colors ${
-                showUnqualified ? 'bg-white border-white text-navy-900' : 'border-gray-400 text-transparent'
-              }`}
-            >
-              <Check size={10} strokeWidth={3.5} />
-            </span>
-            Auch &lt;5 ABs ({unqualified.length})
-          </button>
-        )}
-      </div>
+  const zahl = (v: number, extra = '') =>
+    `px-2.5 py-2 text-right font-display tabular-nums whitespace-nowrap ${v === 0 ? 'text-gray-300' : 'text-navy-900'} ${extra}`
 
-      {/* Table — 60/30/10: White 60% / Navy 30% / Softball-Red 10% */}
+  return (
+    <div className="space-y-2">
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
-        <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-navy-900 text-white">
-                <th className={`font-display text-left px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest sticky left-0 z-20 bg-navy-900 w-12 min-w-12`}>#</th>
-                {sortTh('playerName', 'Spieler', {
-                  align: 'left',
-                  className: `sticky left-12 z-20 bg-navy-900 ${scrolled ? 'shadow-[4px_0_8px_-4px_rgba(15,23,42,0.4)]' : ''}`,
-                })}
-                {sortTh('atBats', 'ABs')}
-                {sortTh('hits', 'Treffer')}
-                {sortTh('battingAverage', 'AVG', { title: 'Batting Average (AVG)' })}
-                <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Quote</th>
-                {sortTh('walks', 'Walks')}
-                {sortTh('strikeouts', 'K')}
-                {sortTh('homeRuns', 'HR')}
-                {sortTh('runs', 'R', { title: 'Runs Scored — selbst Home gekreuzt' })}
-                {sortTh('stolenBases', 'SB')}
-                {sortTh('runsBattedIn', 'RBI', { title: 'Runs Batted In — Läufe durch eigenen Schlag ermöglicht' })}
-                {showPerGame && sortTh('rbiPerGame', 'RBI/G', { title: 'RBI pro Spiel (gewichteter Game-Zähler)' })}
-                {showPerGame && sortTh('runsPerGame', 'R/G', { title: 'Runs Scored pro Spiel (gewichteter Game-Zähler)' })}
-                {showDetails && (
-                  <>
-                    {sortTh('caughtStealing', 'CS', { title: 'Caught Stealing — beim Steal-Versuch erwischt' })}
-                    {sortTh('pickoffs', 'PO', { title: 'Pickoff — ohne Steal-Versuch getagt (≠ CS)' })}
-                    <th className="font-display text-right px-3 py-2.5 font-extrabold text-[10px] uppercase tracking-widest">Hits 1/2/3/HR</th>
-                    {sortTh('onBasePct', 'OBP', { title: 'Auf-Base-Quote (OBP)' })}
-                    {sortTh('sluggingPct', 'SLG', { title: 'Schlagstärke (SLG)' })}
-                    {sortTh('ops', 'OPS', { title: 'OBP + SLG = Gesamtstärke' })}
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((s, idx) => {
-                const baPct = Math.round(Number(s.battingAverage) * 100)
-                const barWidth = Math.round((Number(s.battingAverage) / maxBA) * 100)
-                const isUnq = applyQualifier && !s.qualified
-                const isTop = idx === 0 && s.atBats > 0 && !isUnq
-                const dimZero = (v: number) => v === 0 ? 'text-gray-300' : 'text-navy-900'
-                // Sticky-Spalten brauchen eigene, deckende Hintergrundfarbe (sonst scheint beim horizontalen Scrollen der Inhalt durch)
-                const stickyBg = idx % 2 === 1 ? 'bg-cream-100' : 'bg-cream-50'
-                const stickyShadow = scrolled ? 'shadow-[4px_0_8px_-4px_rgba(15,23,42,0.25)]' : ''
-                return (
-                  <tr
-                    key={s.playerId}
-                    className={`group border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
-                      idx % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'
-                    } ${isUnq ? 'opacity-50' : ''}`}
-                  >
-                    {/* Rang — Top-1 in Softball-Red (10% Accent); unqualifizierte ohne Rang */}
-                    <td className={`font-display px-3 py-2 text-left tabular-nums font-extrabold sticky left-0 z-10 w-12 min-w-12 group-hover:bg-softball-red-50 ${stickyBg} ${isTop ? 'text-softball-red-600' : 'text-gray-400'}`}>
-                      {isUnq ? '–' : isTop ? <Trophy size={16} className="text-softball-red-600" /> : idx + 1}
+        {/* `relative`, weil die Verlaufskante am rechten Rand darüber liegt. */}
+        <div className="relative">
+          <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-navy-900 text-white">
+                  {sortTh('playerName', 'Spieler', {
+                    align: 'left',
+                    className: `sticky left-0 z-20 bg-navy-900 ${scrolled ? 'shadow-[6px_0_10px_-6px_rgba(15,23,42,0.5)]' : ''}`,
+                  })}
+                  {sortTh('atBats', 'AB', { title: 'At-Bats — gewertete Schlagversuche' })}
+                  {sortTh('hits', 'H', { title: 'Hits — Treffer' })}
+                  {sortTh('battingAverage', 'AVG', { title: 'Batting Average — Hits ÷ At-Bats', className: GRUPPENANFANG_KOPF })}
+                  {sortTh('onBasePct', 'OBP', { title: 'On-Base — wie oft er überhaupt auf Base kommt' })}
+                  {sortTh('sluggingPct', 'SLG', { title: 'Slugging — wie hart er trifft (Bases je At-Bat)' })}
+                  {sortTh('ops', 'OPS', { title: 'OBP + SLG — die eine Zahl, die Schlagleute rangiert' })}
+                  {sortTh('runsBattedIn', 'RBI', { title: 'Runs Batted In — Läufe durch eigenen Schlag ermöglicht', className: GRUPPENANFANG_KOPF })}
+                  {showPerGame && sortTh('rbiPerGame', 'RBI/G', { title: 'RBI pro Spiel (gewichteter Game-Zähler)' })}
+                  {sortTh('runs', 'R', { title: 'Runs Scored — selbst Home gekreuzt' })}
+                  {showPerGame && sortTh('runsPerGame', 'R/G', { title: 'Runs Scored pro Spiel (gewichteter Game-Zähler)' })}
+                  {sortTh('homeRuns', 'HR', { title: 'Home Runs' })}
+                  {sortTh('stolenBases', 'SB', { title: 'Stolen Bases — geklaute Bases' })}
+                  {sortTh('walks', 'BB', { title: 'Walks — 4 Balls, gratis auf 1B', className: GRUPPENANFANG_KOPF })}
+                  {sortTh('strikeouts', 'K', { title: 'Strikeouts' })}
+                  {sortTh('caughtStealing', 'CS', { title: 'Caught Stealing — beim Steal-Versuch erwischt', className: GRUPPENANFANG_KOPF })}
+                  {sortTh('pickoffs', 'PO', { title: 'Pickoff — ohne Steal-Versuch getagt (≠ CS)' })}
+                  <th className={`${NUM_TH} text-white/60`} title="Single / Double / Triple / Home Run">1/2/3/HR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((s, idx) => {
+                  const isUnq = applyQualifier && !s.qualified
+                  const isTop = idx === 0 && s.atBats > 0 && !isUnq
+                  const stickyBg = idx % 2 === 1 ? 'bg-cream-100' : 'bg-cream-50'
+                  const stickyShadow = scrolled ? 'shadow-[6px_0_10px_-6px_rgba(15,23,42,0.3)]' : ''
+                  // Der Balken liegt hinter der Zahl, nach der sortiert wird. Navy statt Rot:
+                  // Rot gehört den negativen Signalen, und nach K sortiert wäre ein roter
+                  // Balken eine Auszeichnung fürs Danebenschlagen.
+                  const eigen = wert(s, sortKey)
+                  const balken = eigen != null && maxWert > 0 ? Math.max(0, Math.round((eigen / maxWert) * 100)) : 0
+                  const mitBalken = (key: SortKey, inhalt: React.ReactNode, cls: string) => (
+                    <td className={`relative ${cls}`}>
+                      {sortKey === key && balken > 0 && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-1.5 left-0 rounded-r-sm bg-navy-900/15"
+                          style={{ width: `${balken}%` }}
+                        />
+                      )}
+                      <span className="relative">{inhalt}</span>
                     </td>
-                    {/* Spieler — Navy für Hierarchie; sticky, damit der Name beim horizontalen Scrollen sichtbar bleibt */}
-                    <td className={`px-3 py-2 font-display font-bold text-navy-900 whitespace-nowrap tracking-wide sticky left-12 z-10 group-hover:bg-softball-red-50 ${stickyBg} ${stickyShadow}`}>
-                      {s.playerName}
-                      {isUnq && (
-                        <span className="ml-2 font-sans text-[9px] font-bold tracking-wide uppercase text-gray-500 bg-cream-200 rounded-full px-1.5 py-0.5 align-middle">
-                          &lt;5 ABs
+                  )
+                  return (
+                    <tr
+                      key={s.playerId}
+                      className={`group border-b border-cream-200 last:border-0 transition-colors hover:bg-softball-red-50/40 ${
+                        idx % 2 === 1 ? 'bg-cream-100/70' : 'bg-cream-50'
+                      } ${isUnq ? 'opacity-50' : ''}`}
+                    >
+                      {/* Rang und Name in EINER Zelle: eine eigene #-Spalte kostete 48 px der
+                          knappsten Stelle, um eine Zahl zu zeigen, die in der Zeilenfolge
+                          ohnehin steht. */}
+                      <td className={`px-3 py-2 sticky left-0 z-10 group-hover:bg-softball-red-50 ${stickyBg} ${stickyShadow}`}>
+                        <span className="flex items-center gap-2">
+                          <span className="font-display w-4 shrink-0 text-right tabular-nums text-[11px] font-extrabold text-gray-400">
+                            {isUnq ? '–' : isTop ? <Trophy size={14} className="text-softball-red-600" /> : idx + 1}
+                          </span>
+                          <span className="font-display font-bold text-navy-900 whitespace-nowrap tracking-wide">
+                            {s.playerName}
+                          </span>
+                          {isUnq && (
+                            <span className="font-sans text-[9px] font-bold tracking-wide uppercase text-gray-500 bg-cream-200 rounded-full px-1.5 py-0.5">
+                              &lt;5 ABs
+                            </span>
+                          )}
                         </span>
+                      </td>
+                      {mitBalken('atBats', s.atBats, 'px-2.5 py-2 text-right font-display tabular-nums text-gray-700 whitespace-nowrap')}
+                      {mitBalken('hits', s.hits, 'px-2.5 py-2 text-right font-display tabular-nums text-gray-700 whitespace-nowrap')}
+                      {mitBalken('battingAverage', formatDec(Number(s.battingAverage)),
+                        `px-2.5 py-2 text-right font-display tabular-nums font-extrabold text-navy-900 text-base whitespace-nowrap ${GRUPPENANFANG}`)}
+                      {mitBalken('onBasePct', formatDec(Number(s.onBasePct)), 'px-2.5 py-2 text-right font-display tabular-nums text-navy-900 whitespace-nowrap')}
+                      {mitBalken('sluggingPct', formatDec(Number(s.sluggingPct)), 'px-2.5 py-2 text-right font-display tabular-nums text-navy-900 whitespace-nowrap')}
+                      {mitBalken('ops', formatDec(Number(s.ops)), 'px-2.5 py-2 text-right font-display tabular-nums font-bold text-navy-900 whitespace-nowrap')}
+                      {mitBalken('runsBattedIn', s.runsBattedIn, zahl(s.runsBattedIn, `font-bold ${GRUPPENANFANG}`))}
+                      {showPerGame && mitBalken('rbiPerGame', proSpiel(rbiPerGame(s)), 'px-2.5 py-2 text-right font-display tabular-nums text-gray-600 whitespace-nowrap')}
+                      {mitBalken('runs', s.runs, zahl(s.runs, 'font-bold'))}
+                      {showPerGame && mitBalken('runsPerGame', proSpiel(runsPerGame(s)), 'px-2.5 py-2 text-right font-display tabular-nums text-gray-600 whitespace-nowrap')}
+                      {/* HR ist das eine, was ein Zuschauer erzählt — bekommt den roten Akzent. */}
+                      <td className={`px-2.5 py-2 text-right font-display tabular-nums font-bold whitespace-nowrap ${
+                        s.homeRuns > 0 ? 'text-softball-red-600' : 'text-gray-300'
+                      }`}>
+                        {s.homeRuns > 0 ? (
+                          <span className="inline-flex items-center gap-0.5">{s.homeRuns} <Zap size={11} /></span>
+                        ) : '0'}
+                      </td>
+                      {mitBalken('stolenBases', s.stolenBases, zahl(s.stolenBases))}
+                      {mitBalken('walks', s.walks, zahl(s.walks, GRUPPENANFANG))}
+                      {mitBalken('strikeouts', s.strikeouts, zahl(s.strikeouts))}
+                      {mitBalken('caughtStealing', s.caughtStealing, zahl(s.caughtStealing, GRUPPENANFANG))}
+                      {mitBalken('pickoffs', s.pickoffs ?? 0, zahl(s.pickoffs ?? 0))}
+                      <td className="px-2.5 py-2 text-right tabular-nums text-gray-600 text-xs whitespace-nowrap">
+                        {s.singles}/{s.doubles}/{s.triples}/{s.homeRuns}
+                      </td>
+                    </tr>
+                  )
+                })}
+                {visible.length === 0 && (
+                  <tr>
+                    <td colSpan={16 + (showPerGame ? 2 : 0)} className="px-3 py-8 text-center text-sm text-gray-500">
+                      Kein Spieler mit {MIN_AB_LABEL} in diesem Zeitraum.
+                      {unqualified.length > 0 && (
+                        <button onClick={() => setShowUnqualified(true)} className="ml-1 min-h-11 px-2 inline-flex items-center text-navy-700 underline hover:text-softball-red-600 cursor-pointer">
+                          Alle anzeigen
+                        </button>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right font-display tabular-nums text-gray-700">{s.atBats}</td>
-                    <td className="px-3 py-2 text-right font-display tabular-nums text-gray-700">{s.hits}</td>
-                    {/* AVG — Headline-Metrik prominent in Navy */}
-                    <td className="px-3 py-2 text-right font-display tabular-nums font-extrabold text-navy-900 text-base">
-                      {formatDec(Number(s.battingAverage))}
-                    </td>
-                    {/* Quote mit Balken — Softball-Red (10% Accent) */}
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-12 sm:w-16 h-1.5 bg-cream-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-softball-red-600 rounded-full" style={{ width: `${barWidth}%` }} />
-                        </div>
-                        <span className="font-semibold text-navy-900 w-10 text-right tabular-nums text-xs">
-                          {baPct}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.walks)}`}>{s.walks}</td>
-                    <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.strikeouts)}`}>{s.strikeouts}</td>
-                    {/* HR — wenn > 0, Softball-Red Akzent */}
-                    <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${
-                      s.homeRuns > 0 ? 'text-softball-red-600' : 'text-gray-300'
-                    }`}>
-                      {s.homeRuns > 0 ? (
-                        <span className="inline-flex items-center gap-0.5">{s.homeRuns} <Zap size={11} /></span>
-                      ) : '0'}
-                    </td>
-                    <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${s.runs > 0 ? 'text-navy-900' : 'text-gray-300'}`}>{s.runs}</td>
-                    <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.stolenBases)}`}>{s.stolenBases}</td>
-                    {/* RBI — Counting-Stat, immer sichtbar */}
-                    <td className={`px-3 py-2 text-right font-display tabular-nums font-bold ${dimZero(s.runsBattedIn)}`}>{s.runsBattedIn}</td>
-                    {showPerGame && (() => {
-                      const pg = rbiPerGame(s)
-                      return (
-                        <td className="px-3 py-2 text-right font-display tabular-nums text-navy-900">
-                          {pg != null ? pg.toFixed(2) : '—'}
-                        </td>
-                      )
-                    })()}
-                    {showPerGame && (() => {
-                      const pg = runsPerGame(s)
-                      return (
-                        <td className="px-3 py-2 text-right font-display tabular-nums text-navy-900">
-                          {pg != null ? pg.toFixed(2) : '—'}
-                        </td>
-                      )
-                    })()}
-                    {showDetails && (
-                      <>
-                        <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.caughtStealing)}`}>{s.caughtStealing}</td>
-                        <td className={`px-3 py-2 text-right font-display tabular-nums ${dimZero(s.pickoffs ?? 0)}`}>{s.pickoffs ?? 0}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-gray-600 text-xs" title="Single / Double / Triple / HR">
-                          {s.singles}/{s.doubles}/{s.triples}/{s.homeRuns}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums text-navy-900">{formatDec(Number(s.onBasePct))}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-navy-900">{formatDec(Number(s.sluggingPct))}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-navy-900 font-bold">{formatDec(Number(s.ops))}</td>
-                      </>
-                    )}
                   </tr>
-                )
-              })}
-              {visible.length === 0 && (
-                <tr>
-                  <td colSpan={(showDetails ? 16 : 10) + 1 + (showPerGame ? 1 : 0)} className="px-3 py-8 text-center text-sm text-gray-500">
-                    Kein Spieler mit {MIN_AB_LABEL} in diesem Zeitraum.
-                    {unqualified.length > 0 && (
-                      <button onClick={() => setShowUnqualified(true)} className="ml-1 min-h-11 px-2 inline-flex items-center text-navy-700 underline hover:text-softball-red-600 cursor-pointer">
-                        Alle anzeigen
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Die Kante sagt, dass rechts noch etwas steht. Ohne sie endet die Tabelle für das
+              Auge am Bildschirmrand, und OPS findet nur, wer auf Verdacht wischt. */}
+          {!amEnde && (
+            <div
+              aria-hidden="true"
+              // Token statt `from-cream-50`: die Kante muss im Dunkeln mitgehen, sonst liegt
+              // ein heller Schleier auf der dunklen Tabelle. Der Shim deutet nur `bg-`-Klassen
+              // um, keine Verlaeufe.
+              style={{ backgroundImage: 'linear-gradient(to left, var(--color-surface-raised), transparent)' }}
+              className="pointer-events-none absolute inset-y-0 right-0 w-8"
+            />
+          )}
         </div>
       </div>
 
-      {applyQualifier && unqualified.length > 0 && (
-        <p className="text-[11px] text-gray-500 px-1">
-          Quoten (AVG/OBP/SLG/OPS) brauchen {MIN_AB_LABEL}, sonst verzerren Mini-Stichproben das Bild
-          (z.B. 3-für-3 = 1.000).
-        </p>
-      )}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-1">
+        {applyQualifier && unqualified.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowUnqualified(x => !x)}
+              role="checkbox"
+              aria-checked={showUnqualified}
+              className="font-display min-h-11 text-[11px] font-bold tracking-widest uppercase text-gray-700 hover:text-navy-900 cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <span
+                className={`inline-flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${
+                  showUnqualified ? 'bg-navy-900 border-navy-900 text-white' : 'border-gray-400 text-transparent'
+                }`}
+              >
+                <Check size={11} strokeWidth={3.5} />
+              </span>
+              Auch &lt;5 ABs ({unqualified.length})
+            </button>
+            <p className="text-[11px] text-gray-500">
+              Quoten brauchen {MIN_AB_LABEL} — sonst liest sich 3-für-3 als 1.000.
+            </p>
+          </>
+        )}
+      </div>
     </div>
   )
 }
 
 function formatDec(val: number): string {
   return val.toFixed(3).replace(/^0\./, '.')
+}
+
+function proSpiel(val: number | null): string {
+  return val != null ? val.toFixed(2) : '—'
 }

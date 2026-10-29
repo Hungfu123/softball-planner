@@ -128,10 +128,17 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     const chipCls = isDark ? meta.darkChip : meta.lightChip
     const iconCls = isDark ? meta.darkIcon : meta.lightIcon
     const nameCls = isDark
-      ? isMvp ? 'text-white font-extrabold' : 'text-white/90 font-bold'
-      : isMvp ? 'text-navy-900 font-extrabold' : 'text-navy-800 font-bold'
-    const valueCls = isDark ? 'text-white/50' : 'text-gray-500'
+      ? isMvp ? 'text-white font-extrabold' : 'text-white font-bold'
+      : isMvp ? 'text-navy-900 font-extrabold' : 'text-navy-900 font-bold'
+    const labelCls = isDark ? 'text-white/55' : 'text-gray-500'
+    const valueCls = isDark ? 'text-white/70' : 'text-gray-600'
 
+    /*
+     * Die Reihenfolge im Blick ist NAME, dann Zahl, dann Etikett — vorher war sie umgekehrt:
+     * „TOP HITTER" stand fett, der Mensch dahinter grau und abgeschnitten („Hung, Miriam, …").
+     * Eine Auszeichnung beantwortet aber „wer", nicht „wie heisst die Kategorie". Derselbe
+     * Aufbau wie beim MVP-Block darueber, damit die neun Karten eine Familie sind.
+     */
     return (
       <button
         key={award.type}
@@ -142,16 +149,20 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
       >
         <div className="flex items-stretch w-full">
           <div className={`w-[3px] shrink-0 ${meta.accentBar}`} />
-          <div className="flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 min-w-0">
-            <span className={`shrink-0 ${iconCls}`}>{meta.icon}</span>
-            <div className="min-w-0">
-              <div className={`font-display text-[10px] sm:text-[11px] tracking-wide uppercase leading-none truncate ${nameCls}`}>
-                {meta.label}
-                <span className={`font-normal ${isDark ? 'text-white/55' : 'text-gray-500'}`}> · {award.playerName}</span>
-              </div>
-              <div className={`font-display text-[9px] sm:text-[10px] tracking-widest uppercase leading-tight mt-0.5 ${valueCls}`}>
+          <div className="min-w-0 flex-1 px-2 py-1.5 sm:px-2.5">
+            <div className={`font-display flex items-center gap-1 text-[9px] sm:text-[10px] tracking-widest uppercase leading-none ${labelCls}`}>
+              <span className={`shrink-0 ${iconCls}`}>{meta.icon}</span>
+              <span className="truncate">{meta.label}</span>
+            </div>
+            <div className="mt-1 flex items-baseline gap-1.5">
+              {/* Mehrere Namen bei Gleichstand duerfen umbrechen statt abzuschneiden: ein
+                  halber Name ist keine Auskunft. */}
+              <span className={`font-display text-[13px] leading-tight tracking-wide min-w-0 break-words ${nameCls}`}>
+                {award.playerName}
+              </span>
+              <span className={`font-display ml-auto shrink-0 text-[10px] font-bold tracking-widest uppercase tabular-nums ${valueCls}`}>
                 {award.displayValue}
-              </div>
+              </span>
             </div>
           </div>
         </div>
@@ -208,8 +219,10 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     return (
       <div className="flex flex-col gap-2">
         {mvp && mvpHero(mvp)}
+        {/* `items-stretch`: Namen duerfen umbrechen, und zwei Karten nebeneinander mit
+            unterschiedlicher Hoehe sehen aus wie ein Fehler statt wie ein Paar. */}
         {rest.length > 0 && (
-          <div className="grid grid-cols-2 gap-1.5 items-start">
+          <div className="grid grid-cols-2 gap-1.5 items-stretch">
             {rest.map(badge)}
           </div>
         )}
