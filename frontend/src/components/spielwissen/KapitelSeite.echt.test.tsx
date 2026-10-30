@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { KAPITEL } from './kapitel'
@@ -6,12 +6,12 @@ import KapitelSeite from './KapitelSeite'
 
 /*
  * Eigene Datei, weil `KapitelSeite.test.tsx` `./kapitel` stellt, um das Blaettern zu
- * pruefen. Hier laufen die ECHTEN sechzehn Buehnen. Ohne das waere die Kette
- * KAPITEL -> KapitelSeite -> Buehne nirgends zusammen geprueft, und hinter der Zusage
- * „Offense geht ohne Netz" staenden nur Attrappen.
+ * pruefen. Hier laufen die ECHTEN sechzehn Buehnen, eine nach der anderen durchgeblaettert.
+ * Ohne das waere die Kette KAPITEL -> KapitelSeite -> Buehne nirgends zusammen geprueft,
+ * und hinter der Zusage „Offense geht ohne Netz" staenden nur Attrappen.
  */
 describe('Kapitelseite mit den echten Daten', () => {
-  it('rendert jedes Kapitel ohne einen Abruf unter /api', () => {
+  it('blättert durch jede Karte, ohne einen Abruf unter /api', async () => {
     const rufe: string[] = []
     const alt = globalThis.fetch
     globalThis.fetch = ((eingabe: RequestInfo | URL) => {
@@ -26,8 +26,13 @@ describe('Kapitelseite mit den echten Daten', () => {
           { initialEntries: ['/spielwissen/' + kapitel.id] },
         )
         const { unmount } = render(<RouterProvider router={router} />)
-        for (const karte of kapitel.karten) {
-          expect(screen.getByRole('heading', { level: 3, name: karte.pointe })).toBeInTheDocument()
+
+        for (const [i, karte] of kapitel.karten.entries()) {
+          await waitFor(() =>
+            expect(screen.getByRole('heading', { level: 3, name: karte.pointe })).toBeInTheDocument())
+          if (i < kapitel.karten.length - 1) {
+            fireEvent.click(screen.getByRole('button', { name: /^Weiter/ }))
+          }
         }
         unmount()
       }

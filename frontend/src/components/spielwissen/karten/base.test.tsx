@@ -36,7 +36,7 @@ describe('Kapitel Auf der Base', () => {
     const x = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cx') ?? '')
     // Der Pitch läuft senkrecht: Pitcherin, Platte und Catcher liegen auf derselben x.
     const y = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cy') ?? '')
-    const weiter = () => fireEvent.click(screen.getByRole('button', { name: /Weiter|Von vorn/ }))
+    const weiter = () => fireEvent.click(screen.getByRole('button', { name: /Nächster Schritt|Von vorn/ }))
 
     // Stand 1: Ball in der Hand, Läuferin auf der Base.
     expect(y('ball')).toBeCloseTo(PITCHING_PLATE.y, 1)
@@ -80,7 +80,7 @@ describe('Kapitel Auf der Base', () => {
     const { Buehne } = BASE_KARTEN[4]
     render(<Buehne lauf={0} ruhig={false} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Weiter/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Nächster Schritt/ }))
 
     await waitFor(() => expect(screen.getByTestId('tagup-schritt')).toHaveTextContent('2'))
   })

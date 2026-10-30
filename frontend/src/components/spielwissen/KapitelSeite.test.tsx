@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import type { BuehnenProps } from './kapitel'
@@ -38,30 +38,63 @@ function zeige(pfad: string) {
   return render(<RouterProvider router={router} />)
 }
 
+const weiter = () => fireEvent.click(screen.getByRole('button', { name: /^Weiter/ }))
+
 describe('Kapitelseite', () => {
-  it('zeigt Titel, Frage und jede Karte des Kapitels', () => {
+  it('zeigt Titel, Frage und die erste Karte', () => {
     zeige('/spielwissen/box')
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('In der Box')
     expect(screen.getByText('Was zählt als Strike?')).toBeInTheDocument()
     expect(screen.getByText('Die Zone bist du')).toBeInTheDocument()
-    expect(screen.getByText('Drin ist Strike')).toBeInTheDocument()
-    expect(screen.getAllByTestId('buehne')).toHaveLength(2)
+  })
+
+  /*
+   * Eine Karte auf einmal: eine Animation, die etwas erklaert, braucht die ganze Flaeche
+   * und einen Anfang, den man nicht verpasst. Lagen alle untereinander, liefen bei
+   * 393x760 bis zu drei gleichzeitig.
+   */
+  it('zeigt immer nur eine Karte', () => {
+    zeige('/spielwissen/box')
+
+    expect(screen.getAllByTestId('buehne')).toHaveLength(1)
+    expect(screen.queryByText('Drin ist Strike')).not.toBeInTheDocument()
+  })
+
+  it('blättert vor und zurück und sagt, wo man ist', async () => {
+    zeige('/spielwissen/box')
+    expect(screen.getByText('1 von 2')).toBeInTheDocument()
+
+    weiter()
+
+    // AnimatePresence laesst die alte Karte erst abtreten (mode="wait").
+    await waitFor(() => expect(screen.getByText('Drin ist Strike')).toBeInTheDocument())
+    expect(screen.getByText('2 von 2')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Vorherige Karte' }))
+
+    await waitFor(() => expect(screen.getByText('Die Zone bist du')).toBeInTheDocument())
+  })
+
+  it('kommt auf der ersten Karte nicht weiter zurück', () => {
+    zeige('/spielwissen/box')
+
+    expect(screen.getByRole('button', { name: 'Vorherige Karte' })).toBeDisabled()
   })
 
   /* Die Kapitel folgen dem zeitlichen Ablauf eines At-Bats. Wer durch ist, geht weiter. */
-  it('führt am Ende ins nächste Kapitel', () => {
+  it('führt nach der letzten Karte ins nächste Kapitel', async () => {
     zeige('/spielwissen/box')
+    weiter()
 
-    expect(screen.getByRole('link', { name: /Du hast getroffen/ }))
-      .toHaveAttribute('href', '/spielwissen/getroffen')
+    await waitFor(() => expect(screen.getByRole('link', { name: /Du hast getroffen/ }))
+      .toHaveAttribute('href', '/spielwissen/getroffen'))
   })
 
-  it('bietet im letzten Kapitel keinen Weiter-Link, sondern zurück zur Übersicht', () => {
+  it('bietet im letzten Kapitel den Weg zurück zur Übersicht', () => {
     zeige('/spielwissen/base')
 
-    expect(screen.queryByRole('link', { name: /In der Box|Du hast getroffen/ })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Übersicht/ })).toHaveAttribute('href', '/spielwissen')
+    expect(screen.getByRole('link', { name: 'Fertig' })).toHaveAttribute('href', '/spielwissen')
   })
 
   /*

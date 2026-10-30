@@ -135,7 +135,7 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
         onClick={() => setSchritt(s => (s + 1) % RELEASE.length)}
         className="font-display mb-1 min-h-11 w-full rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
       >
-        {schritt === RELEASE.length - 1 ? 'Von vorn' : 'Weiter'}
+        {schritt === RELEASE.length - 1 ? 'Von vorn' : 'Nächster Schritt'}
       </button>
     </div>
   )
@@ -277,7 +277,7 @@ export function TagUp({ ruhig }: BuehnenProps) {
         onClick={() => setSchritt(s => (s + 1) % TAGUP.length)}
         className="font-display mb-1 min-h-11 w-full rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
       >
-        {schritt === TAGUP.length - 1 ? 'Von vorn' : 'Weiter'}
+        {schritt === TAGUP.length - 1 ? 'Von vorn' : 'Nächster Schritt'}
       </button>
     </div>
   )
