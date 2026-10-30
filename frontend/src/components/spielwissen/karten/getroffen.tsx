@@ -149,20 +149,66 @@ export function FoulSiehstDuNicht({ lauf, ruhig }: BuehnenProps) {
 
 /* --------------------------------------------------------------- 3 Gefangen */
 
-/** Der Ball berührt den Boden nicht. Mehr braucht es nicht. */
+/**
+ * Der Ball beruehrt den Boden nicht. Mehr ist die Regel nicht.
+ *
+ * Erst stand hier nur ein blasser Fleck als Handschuh, und niemand erkannte ihn: ein
+ * grauer Kreis hinter einem Ball ist kein Fanghandschuh, sondern ein grauer Kreis.
+ * Jetzt steht eine ganze Person da, mit erhobenem Arm, und der Ball landet sichtbar
+ * IN der Hand. Die Flugbahn bleibt die eigentliche Auskunft: hoch, und nie unten.
+ */
 export function RausGefangen({ lauf, ruhig }: BuehnenProps) {
+  const boden = 112
+  /* Wo der Handschuh steht. Der Ball endet genau hier. */
+  const fang = { x: 166, y: 42 }
+
   return (
     <div className="relative px-4 pt-4">
-      <svg viewBox="0 0 200 122" className="max-h-44 w-full" aria-hidden focusable="false">
-        <line x1="4" y1="112" x2="196" y2="112" stroke={FARBE.matt} strokeWidth="1.5" />
-        {/* Der Handschuh wartet. */}
-        <ellipse cx="108" cy="62" rx="13" ry="15" fill={FARBE.hell} opacity="0.3" />
+      <svg viewBox="0 0 200 128" className="max-h-44 w-full" aria-hidden focusable="false">
+        <line x1="4" y1={boden} x2="196" y2={boden} stroke={FARBE.matt} strokeWidth="1.5" />
+
+        {/* Der Fielder: Kopf, Rumpf, Beine. */}
+        <circle cx="148" cy="64" r="7" fill={FARBE.hell} />
+        <rect x="142" y="73" width="12" height="22" rx="6" fill={FARBE.hell} />
+        <rect x="143" y="95" width="4" height="17" rx="2" fill={FARBE.hell} />
+        <rect x="149" y="95" width="4" height="17" rx="2" fill={FARBE.hell} />
+        {/* Der Arm: kurz und kraeftig. Ein langer duenner Stiel mit einem Kreis obendrauf
+            sah aus wie ein Badmintonschlaeger. */}
+        <rect
+          x="152" y="52" width="6" height="26" rx="3" fill={FARBE.hell}
+          transform="rotate(18 155 78)"
+        />
+
+        {/*
+          Der Fanghandschuh: ein gefuellter Koerper mit Daumen, keine Scheibe mit Loch.
+          Im Moment des Fangs geht er kurz auf und wieder zu.
+        */}
+        <motion.g
+          key={`hand-${lauf}`}
+          initial={ruhig ? false : { scale: 1 }}
+          animate={ruhig ? { scale: 0.94 } : { scale: [1, 1, 1.12, 0.94] }}
+          style={{ originX: `${fang.x}px`, originY: `${fang.y}px` }}
+          transition={takt(ruhig, { duration: 1.3, times: [0, 0.78, 0.86, 1], ease: 'easeOut' })}
+        >
+          {/* Die Tasche. */}
+          <ellipse cx={fang.x} cy={fang.y} rx="11" ry="12" fill={FARBE.leder} />
+          {/* Der Daumen, zur Koerperseite. */}
+          <ellipse
+            cx={fang.x - 9} cy={fang.y + 3} rx="4.5" ry="8" fill={FARBE.leder}
+            transform={`rotate(-22 ${fang.x - 9} ${fang.y + 3})`}
+          />
+          {/* Zwei Kerben zwischen den Fingern. Nur angedeutet, nicht durchgezeichnet. */}
+          <path
+            d={`M ${fang.x - 1} ${fang.y - 11} l 2 7 M ${fang.x + 6} ${fang.y - 9} l 0 7`}
+            stroke={FARBE.grund} strokeWidth="1.2" strokeLinecap="round" opacity="0.4" fill="none"
+          />
+        </motion.g>
 
         <motion.g
           key={`ball-${lauf}`}
-          initial={ruhig ? false : { x: 22, y: 96 }}
-          animate={ruhig ? { x: 108, y: 62 } : { x: [22, 66, 108], y: [96, 16, 62] }}
-          transition={takt(ruhig, { duration: 1.1, times: [0, 0.55, 1], ease: 'linear' })}
+          initial={ruhig ? false : { x: 22, y: 100 }}
+          animate={ruhig ? { x: fang.x, y: fang.y } : { x: [22, 92, fang.x], y: [100, 14, fang.y] }}
+          transition={takt(ruhig, { duration: 1.05, times: [0, 0.55, 1], ease: 'linear' })}
         >
           <Ball r={6} />
         </motion.g>

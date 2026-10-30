@@ -28,6 +28,10 @@ export const FARBE = {
   raus: '#CC2936',   // softball-red-600, Strike und Out
   matt: '#6b7b96',   // Boden, Hilfslinien
   grund: '#142B49',  // die Buehne selbst — Schrift darauf ist hell
+  /* Leder. Eine Materialfarbe wie das Silber der Medaillen-Plakette, kein Theme-Wert:
+     ein cremefarbener Handschuh waere am cremefarbenen Ball nicht zu unterscheiden,
+     und genau dieser Unterschied ist die Auskunft der Fang-Karte. */
+  leder: '#B5793F',
 } as const
 
 /**
