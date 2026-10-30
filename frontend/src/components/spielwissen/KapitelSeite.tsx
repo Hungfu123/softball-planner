@@ -1,67 +1,72 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
+import { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
-import { KAPITEL, findeKapitel } from './kapitel'
+import { KAPITEL, findeKapitel, type Kapitel } from './kapitel'
 import { Karte } from './Karte'
 
 /**
- * Ein Kapitel: Frage oben, Karten darunter, am Ende der Weg ins naechste.
+ * Ein Kapitel, **eine Karte auf einmal**.
+ *
+ * Vorher lagen alle untereinander. Gemessen war ein Kapitel damit rund drei Bildschirme
+ * hoch, und bis zu drei Karten standen gleichzeitig weit genug im Bild, um loszulaufen —
+ * drei Sequenzen nebeneinander, keine mit einem Blick darauf. Dagegen half, immer nur die
+ * mittlere spielen zu lassen; der Grund dafuer blieb aber bestehen: eine Animation, die
+ * etwas erklaert, braucht die ganze Flaeche und einen Anfang, den man nicht verpasst.
+ *
+ * Beim Blaettern bekommt sie beides. Der Preis ist das Ueberfliegen, und den traegt die
+ * Uebersicht: sie nennt je Kapitel die Stichworte, man landet also nicht im falschen.
  *
  * **Ein unbekanntes Kapitel geht zurueck auf die Uebersicht.** Die Adresse steht jedem
- * offen, und ein Tippfehler darf keine leere Seite ergeben, auf der man nicht merkt,
- * dass man falsch ist.
- *
- * Der Weiter-Link am Ende ist keine Verzierung: die Kapitel folgen dem zeitlichen Ablauf
- * eines At-Bats, und wer in der Box durch ist, steht als naechstes vor der Frage, wohin
- * er laeuft.
+ * offen, und ein Tippfehler darf keine leere Seite ergeben.
  */
 export default function KapitelSeite() {
   const { kapitel: id } = useParams()
   const kapitel = findeKapitel(id)
-  const behaelter = useRef<HTMLDivElement>(null)
-  const [aktiv, setAktiv] = useState(0)
-
-  /*
-   * Welche Karte gerade dran ist: die, deren Mitte der Bildschirmmitte am naechsten liegt.
-   *
-   * Genau eine. Eine Karte fuer sich kann das nicht entscheiden, weil bei 393x760 bis zu
-   * drei gleichzeitig weit genug im Bild stehen — dann liefen drei Sequenzen nebeneinander
-   * und keine bekam einen Blick. Gerechnet wird in einem Frame, gelauscht passiv.
-   */
-  useEffect(() => {
-    const el = behaelter.current
-    if (!el) return
-    let frame = 0
-    const messen = () => {
-      frame = 0
-      const karten = Array.from(el.querySelectorAll('article'))
-      const mitte = window.innerHeight / 2
-      let beste = 0
-      let abstand = Infinity
-      karten.forEach((a, i) => {
-        const r = a.getBoundingClientRect()
-        const d = Math.abs((r.top + r.bottom) / 2 - mitte)
-        if (d < abstand) { abstand = d; beste = i }
-      })
-      setAktiv(beste)
-    }
-    const anstossen = () => { if (!frame) frame = requestAnimationFrame(messen) }
-    messen()
-    window.addEventListener('scroll', anstossen, { passive: true })
-    window.addEventListener('resize', anstossen)
-    return () => {
-      window.removeEventListener('scroll', anstossen)
-      window.removeEventListener('resize', anstossen)
-      if (frame) cancelAnimationFrame(frame)
-    }
-  }, [id])
 
   if (!kapitel) return <Navigate to="/spielwissen" replace />
 
-  const naechstes = KAPITEL[KAPITEL.findIndex(k => k.id === kapitel.id) + 1]
+  /*
+   * Der `key` setzt den Blaetterer beim Kapitelwechsel zurueck. Als Effekt waere das
+   * abgeleiteter Zustand: ein zweiter Rendergang, in dem die Seite kurz die falsche
+   * Karte zeigt.
+   */
+  return <Blaetterer key={kapitel.id} kapitel={kapitel} />
+}
 
+function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
+  const [nr, setNr] = useState(0)
+  const [richtung, setRichtung] = useState(1)
+  const ruhig = Boolean(useReducedMotionConfig())
+
+  const anzahl = kapitel.karten.length
+
+  const blaettern = useCallback((schritt: number) => {
+    setRichtung(schritt)
+    setNr(n => Math.min(Math.max(n + schritt, 0), anzahl - 1))
+  }, [anzahl])
+
+  /* Am Rechner blaettert man mit den Pfeiltasten, nicht mit der Maus zum Knopf. */
+  useEffect(() => {
+    const taste = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') blaettern(1)
+      if (e.key === 'ArrowLeft') blaettern(-1)
+    }
+    window.addEventListener('keydown', taste)
+    return () => window.removeEventListener('keydown', taste)
+  }, [blaettern])
+
+  const karte = kapitel.karten[nr]
+  const letzte = nr === kapitel.karten.length - 1
+  const naechstesKapitel = KAPITEL[KAPITEL.findIndex(k => k.id === kapitel.id) + 1]
+
+  /*
+   * 8rem sind Kopfleiste, Seitenpolster und die eigene Fussleiste. Gemessen bei 393x760
+   * MIT dem Admin-Band: ohne den Abzug lief die Seite um 15 px ueber — und dann hat man
+   * eine Blaetter-Ansicht, die trotzdem scrollt.
+   */
   return (
-    <div className="mx-auto max-w-2xl space-y-3 pb-8">
+    <div className="mx-auto flex min-h-[calc(100dvh-8rem)] max-w-2xl flex-col gap-3 pb-4">
       <div>
         <Link
           to="/spielwissen"
@@ -76,35 +81,80 @@ export default function KapitelSeite() {
         <p className="mt-0.5 text-sm text-ink-muted">{kapitel.frage}</p>
       </div>
 
-      <div ref={behaelter} className="space-y-3">
-        {kapitel.karten.map((karte, i) => (
-          <Karte key={karte.id} karte={karte} aktiv={i === aktiv} />
-        ))}
+      {/*
+        `touch-pan-y`: das Wischen nach links und rechts gehoert der Karte, das Scrollen
+        nach unten bleibt beim Browser. Ohne das streiten sich beide und es ruckelt.
+      */}
+      <div className="flex-1 touch-pan-y">
+        <AnimatePresence mode="wait" initial={false} custom={richtung}>
+          <motion.div
+            key={karte.id}
+            custom={richtung}
+            initial={ruhig ? false : { opacity: 0, x: richtung * 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={ruhig ? { opacity: 0 } : { opacity: 0, x: richtung * -40 }}
+            transition={{ duration: ruhig ? 0 : 0.22, ease: [0.23, 1, 0.32, 1] }}
+            drag={ruhig ? false : 'x'}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.18}
+            onDragEnd={(_, info) => {
+              /* Ein kurzer Schnipser reicht, man muss nicht die halbe Breite ziehen. */
+              const weit = Math.abs(info.offset.x) > 70
+              const schnell = Math.abs(info.velocity.x) > 320
+              if (!weit && !schnell) return
+              if (info.offset.x < 0 && !letzte) blaettern(1)
+              if (info.offset.x > 0 && nr > 0) blaettern(-1)
+            }}
+          >
+            <Karte karte={karte} aktiv />
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {naechstes ? (
-        <Link
-          to={`/spielwissen/${naechstes.id}`}
-          className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-3 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
+      {/* Die Leiste: zurueck, wo man ist, weiter. */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => blaettern(-1)}
+          disabled={nr === 0}
+          aria-label="Vorherige Karte"
+          className="flex min-h-11 w-11 items-center justify-center rounded-xl border border-line bg-surface-raised text-ink-strong transition-colors disabled:opacity-35 hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
         >
-          <div className="min-w-0 flex-1">
-            <div className="font-display text-[11px] font-bold uppercase tracking-widest text-ink-muted group-hover:text-accent-ink">
-              Weiter
-            </div>
-            <div className="font-display text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base">
-              {naechstes.titel}
-            </div>
-          </div>
-          <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />
-        </Link>
-      ) : (
-        <Link
-          to="/spielwissen"
-          className="flex min-h-11 items-center justify-center rounded-xl border border-line bg-surface-raised px-4 py-3 font-display text-sm font-extrabold uppercase tracking-wide text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
-        >
-          Zurück zur Übersicht
-        </Link>
-      )}
+          <ChevronLeft size={20} aria-hidden="true" />
+        </button>
+
+        <span className="font-display flex-1 text-center text-[11px] font-bold uppercase tracking-widest text-ink-muted">
+          {`${nr + 1} von ${kapitel.karten.length}`}
+        </span>
+
+        {letzte ? (
+          naechstesKapitel ? (
+            <Link
+              to={`/spielwissen/${naechstesKapitel.id}`}
+              className="font-display flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
+            >
+              {naechstesKapitel.titel}
+              <ChevronRight size={18} aria-hidden="true" />
+            </Link>
+          ) : (
+            <Link
+              to="/spielwissen"
+              className="font-display flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
+            >
+              Fertig
+            </Link>
+          )
+        ) : (
+          <button
+            type="button"
+            onClick={() => blaettern(1)}
+            className="font-display flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
+          >
+            Weiter
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        )}
+      </div>
     </div>
   )
 }
