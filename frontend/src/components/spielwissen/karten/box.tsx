@@ -439,6 +439,41 @@ const FUSS = [
   { text: 'Beide raus und du verzögerst: Strike. Ganz ohne Pitch.', hinten: 1, vorne: 1, strike: true },
 ]
 
+/**
+ * Ein Schuhabdruck von oben, Zehen nach rechts zur Platte.
+ *
+ * Gespiegelt wird an der Laengsachse, und zwar **durch negierte y-Werte** statt durch
+ * `transform` am Gruppenelement: ein `<use>`, das auf eine Gruppe mit eigenem `transform`
+ * zeigt, liess den Spiegel fallen — beide Fuesse sahen gleich aus.
+ */
+function Sohle({ spiegel = false }: { spiegel?: boolean }) {
+  const y = (v: number) => (spiegel ? -v : v)
+  /*
+   * Ballen und Ferse als zwei Flecken mit Luecke dazwischen, genau wie ein Abdruck im
+   * Sand: eine einzige durchgezogene Sohle mit eingezogenem Gewoelbe sah bei dieser
+   * Groesse aus wie ein Knochen. Der Ballen steht leicht schraeg, die Ferse ein Stueck
+   * zur Innenseite — daran unterscheidet man links von rechts.
+   */
+  const ballen = { cx: 3.4, rx: 6.6, ry: 4.5 }
+  const ferse = { cx: -8.2, cy: y(0.8), rx: 3.4, ry: 3 }
+
+  return (
+    <>
+      <ellipse
+        cx={ballen.cx} cy="0" rx={ballen.rx} ry={ballen.ry}
+        transform={'rotate(' + y(-10) + ' ' + ballen.cx + ' 0)'}
+        fill={FARBE.hell} opacity="0.9"
+      />
+      <ellipse cx={ferse.cx} cy={ferse.cy} rx={ferse.rx} ry={ferse.ry} fill={FARBE.hell} opacity="0.9" />
+      {/* Stollen. Der Softballschuh hat sie, und sie machen aus dem Fleck eine Sohle. */}
+      {[[6.4, -1.8], [6.4, 1.8], [1.8, -2.2], [1.8, 2.4]].map(([sx, sy]) => (
+        <circle key={`${sx}-${sy}`} cx={sx} cy={y(sy)} r="0.85" fill={FARBE.grund} opacity="0.5" />
+      ))}
+      <circle cx={ferse.cx} cy={ferse.cy} r="0.85" fill={FARBE.grund} opacity="0.5" />
+    </>
+  )
+}
+
 export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
   const [schritt, setSchritt] = useState(0)
   const jetzt = FUSS[schritt]
@@ -446,16 +481,27 @@ export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
      tritt, stuende auf der Platte, und das ist eine andere Regel. */
   const box = { x: 84, y: 20, w: 52, h: 80 }
   const drin = 110
-  const raus = 74
+  /* So weit links, dass die Zehen die Linie nicht mehr beruehren: auf 74 endete der
+     Ballen genau auf der Boxkante, und „drin oder raus" war Auslegungssache. */
+  const raus = 71
 
-  const abdruck = (id: string, cy: number, weg: number) => (
-    <motion.ellipse
+  /*
+   * Zwei Ellipsen waren zwei Eier: man sah weisse Kleckse und keine Fuesse. Jetzt liegt
+   * ein Schuhabdruck in den `defs`, einmal normal und einmal an der Laengsachse
+   * gespiegelt — die Innenseiten mit dem Gewoelbe zeigen zueinander, wie bei einem
+   * Menschen, der zur Platte schaut.
+   *
+   * Gesetzt wird er ueber `attrX`/`attrY`: `motion` liest blankes `x`/`y` als Transform,
+   * und beim `<use>` ist genau das Attribut gemeint.
+   */
+  const abdruck = (id: string, y: number, weg: number, gespiegelt: boolean) => (
+    <motion.use
       data-testid={id}
       key={id}
-      initial={{ cx: weg ? raus : drin, cy }}
-      animate={{ cx: weg ? raus : drin, cy }}
+      href={gespiegelt ? '#schuh-gespiegelt' : '#schuh'}
+      initial={{ attrX: weg ? raus : drin, attrY: y }}
+      animate={{ attrX: weg ? raus : drin, attrY: y }}
       transition={takt(ruhig, { duration: 0.35, ease: AUS })}
-      rx="6" ry="9" fill={FARBE.hell} opacity="0.9"
     />
   )
 
@@ -463,6 +509,11 @@ export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
     <div className="px-4 pt-4">
       <div className="relative">
         <svg viewBox="56 6 118 108" className="max-h-48 w-full" aria-hidden focusable="false">
+          <defs>
+            <g id="schuh"><Sohle /></g>
+            <g id="schuh-gespiegelt"><Sohle spiegel /></g>
+          </defs>
+
           {/* Die Home-Plate, von oben. */}
           <path d="M142 46 h22 v18 l-11 10 l-11 -10 z" fill={FARBE.hell} opacity="0.4" />
 
@@ -475,8 +526,8 @@ export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
             BOX
           </text>
 
-          {abdruck('fuss-vorne', 40, jetzt.vorne)}
-          {abdruck('fuss-hinten', 80, jetzt.hinten)}
+          {abdruck('fuss-vorne', 44, jetzt.vorne, true)}
+          {abdruck('fuss-hinten', 76, jetzt.hinten, false)}
         </svg>
 
         {jetzt.strike && (
