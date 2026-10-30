@@ -64,7 +64,7 @@ export function Ball({ r = 6 }: { r?: number }) {
  */
 const AUSSCHNITTE = {
   /** Der Diamant mit beiden Foul-Linien. Fuer alles, was auf dem Feld passiert. */
-  infield: { x: HOME.x - 104, y: HOME.y - 112, w: 208, h: 122 },
+  infield: { x: HOME.x - 104, y: HOME.y - 112, w: 208, h: 132 },
   /** Nur die Gegend um die Platte. Fuer alles, was am Schlag passiert. */
   home: { x: HOME.x - 70, y: HOME.y - 78, w: 140, h: 92 },
 } as const

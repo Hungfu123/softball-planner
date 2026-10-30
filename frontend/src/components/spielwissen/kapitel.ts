@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import { BOX_KARTEN } from './karten/box'
 import { GETROFFEN_KARTEN } from './karten/getroffen'
+import { BASE_KARTEN } from './karten/base'
 
 /**
  * Die Daten hinter dem Spielwissen.
@@ -50,6 +51,7 @@ export interface Kapitel {
 export const KAPITEL: Kapitel[] = [
   { id: 'box', titel: 'In der Box', frage: 'Was zählt als Strike?', karten: BOX_KARTEN },
   { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich raus?', karten: GETROFFEN_KARTEN },
+  { id: 'base', titel: 'Auf der Base', frage: 'Wann darf ich weiter?', karten: BASE_KARTEN },
 ]
 
 export function findeKapitel(id: string | undefined): Kapitel | undefined {
