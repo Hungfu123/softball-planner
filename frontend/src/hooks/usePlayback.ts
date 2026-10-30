@@ -175,5 +175,16 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autost
     next,
     prev,
     seek,
+    /**
+     * Von vorn, wie das „nochmal" unter einer Karte im Spielwissen.
+     *
+     * Erst auf den ersten Stand, dann anspielen: `play` allein liefe vom Ende aus
+     * nirgendwohin, und ein Zuschauer, der etwas verpasst hat, will genau das noch
+     * einmal sehen und nicht die Zeitleiste zurueckziehen muessen.
+     */
+    nochmal: () => {
+      seek(0);
+      play();
+    },
   };
 }

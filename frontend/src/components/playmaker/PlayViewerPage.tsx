@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ladePlayMitRueckfall } from './ladePlay'
-import { usePlayback, type PlaybackSpeed } from '@/hooks/usePlayback'
+import { usePlayback } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
 import { beteiligte } from './board/beteiligte'
+import { nachbarn } from './nachbarn'
+import { usePlays } from '@/hooks/usePlays'
 import { PlaybackBar } from './PlaybackBar'
 import { LegendSheet } from './LegendSheet'
 import { StepList } from './StepList'
 import type { Play } from './board/types'
 import { useRolle } from '@/hooks/useRolle'
 
-const TEMPI: PlaybackSpeed[] = [1, 0.5, 2]
 
 export default function PlayViewerPage() {
   const { id } = useParams<{ id: string }>()
@@ -79,20 +80,25 @@ function Viewer({
   onEdit: () => void
 }) {
   const { istAdmin } = useRolle()
-  const [loop, setLoop] = useState(false)
-  const [tempoIndex, setTempoIndex] = useState(0)
   const [legende, setLegende] = useState(false)
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
   const flaeche = useRef<HTMLDivElement>(null)
 
   // Beim Oeffnen laeuft es los, wie eine Karte im Spielwissen: man kommt an, es bewegt sich.
-  const wiedergabe = usePlayback(play.steps, { loop, speed: TEMPI[tempoIndex], autostart: true })
+  const wiedergabe = usePlayback(play.steps, { autostart: true })
   /*
    * Auf wen es ankommt — abgeleitet aus den Staenden, nicht gepflegt. Neun Scheiben
    * stehen im Bild, drei davon tun etwas; wer zuschaut, um es zu lernen, soll die drei
    * finden, ohne das Play dreimal laufen zu lassen.
    */
   const achtung = useMemo(() => beteiligte(play.steps), [play.steps])
+  /*
+   * Blaettern wie in einem Kapitel des Spielwissens, und das Kapitel ist die Kategorie.
+   * Die Liste kommt aus demselben Abruf wie die Uebersicht — sie liegt im Cache, und
+   * ohne sie blaettert hier eben nichts.
+   */
+  const { plays } = usePlays()
+  const blaettern = useMemo(() => nachbarn(plays, play), [plays, play])
 
   useEffect(() => {
     const messen = () => {
@@ -226,20 +232,51 @@ function Viewer({
             </div>
           </Link>
         )}
+        {blaettern.anzahl > 1 && (
+          <div className="flex items-center gap-2 border-t border-cream-50/12 px-4 py-2">
+            {blaettern.vorheriges ? (
+              <Link
+                to={`/orga/playmaker/${blaettern.vorheriges.id}`}
+                aria-label="Vorheriges Play"
+                className="font-display flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-sm font-bold text-cream-50"
+              >
+                ‹
+              </Link>
+            ) : (
+              <span className="h-11 w-11 shrink-0" />
+            )}
+            <span className="font-display flex-1 truncate text-center text-[11px] font-bold uppercase tracking-widest text-cream-50/55">
+              Play {blaettern.nummer} von {blaettern.anzahl}
+            </span>
+            {blaettern.naechstes ? (
+              <Link
+                to={`/orga/playmaker/${blaettern.naechstes.id}`}
+                className="font-display flex h-11 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-4 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
+              >
+                Nächstes Play ›
+              </Link>
+            ) : (
+              <Link
+                to="/orga/playmaker"
+                className="font-display flex h-11 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-4 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
+              >
+                Fertig
+              </Link>
+            )}
+          </div>
+        )}
+
         <PlaybackBar
           count={play.steps.length}
           index={wiedergabe.index}
           fortschritt={wiedergabe.fortschritt}
           playing={wiedergabe.playing}
           canPlay={wiedergabe.canPlay}
-          loop={loop}
-          speed={TEMPI[tempoIndex]}
           onSeek={wiedergabe.seek}
           onPrev={wiedergabe.prev}
           onNext={wiedergabe.next}
           onToggle={wiedergabe.toggle}
-          onLoop={() => setLoop(v => !v)}
-          onSpeed={() => setTempoIndex(i => (i + 1) % TEMPI.length)}
+          onNochmal={wiedergabe.nochmal}
         />
       </div>
 

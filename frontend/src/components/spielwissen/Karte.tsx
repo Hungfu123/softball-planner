@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useReducedMotionConfig } from 'motion/react'
 import type { KartenDaten } from './kapitel'
+import { RefreshIcon } from '@/icons'
 
 /**
  * Die Huelle um eine Karte: Buehne oben, Aussage unten, „nochmal" darunter.
@@ -77,8 +78,11 @@ export function Karte({ karte, aktiv }: { karte: KartenDaten; aktiv: boolean }) 
           <button
             type="button"
             onClick={() => setLauf(x => x + 1)}
-            className="font-display min-h-11 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-cream-50/70 hover:bg-navy-800 hover:text-cream-50 active:bg-navy-700 active:text-cream-50"
+            className="font-display flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-cream-50/70 hover:bg-navy-800 hover:text-cream-50 active:bg-navy-700 active:text-cream-50"
           >
+            {/* Dasselbe Zeichen wie in der Wiedergabeleiste des Playmakers: ein Knopf,
+                der in beiden Haelften gleich aussieht, ist einer und nicht zwei. */}
+            <RefreshIcon size={14} />
             nochmal
           </button>
         </div>

@@ -1,13 +1,16 @@
 import { StepTimeline } from './StepTimeline'
-import type { PlaybackSpeed } from '@/hooks/usePlayback'
+import { RefreshIcon } from '@/icons'
 
 /**
  * Die Wiedergabeleiste der Spieleransicht.
  *
  * Die Schritt-Knoepfe sind nicht Zierrat: beim Erklaeren blaettert man, man spielt nicht
- * ab. Vorher war das nur per Wischen erreichbar und damit unsichtbar. Die Schleife laesst
- * das Play weiterlaufen, waehrend der Trainer redet — am Zaun vermutlich der meistgenutzte
- * Knopf.
+ * ab. Vorher war das nur per Wischen erreichbar und damit unsichtbar.
+ *
+ * **Tempo und Schleife sind raus.** Beides waren Einstellungen, keine Handlungen: wer
+ * zuschaut, will nicht halbe Geschwindigkeit waehlen, sondern die Stelle noch einmal
+ * sehen. Dafuer steht jetzt „nochmal" da — derselbe Knopf wie unter einer Karte im
+ * Spielwissen, mit demselben Wort.
  */
 export function PlaybackBar({
   count,
@@ -15,14 +18,11 @@ export function PlaybackBar({
   fortschritt,
   playing,
   canPlay,
-  loop,
-  speed,
   onSeek,
   onPrev,
   onNext,
   onToggle,
-  onLoop,
-  onSpeed,
+  onNochmal,
 }: {
   count: number
   index: number
@@ -30,14 +30,11 @@ export function PlaybackBar({
   fortschritt: number
   playing: boolean
   canPlay: boolean
-  loop: boolean
-  speed: PlaybackSpeed
   onSeek: (i: number) => void
   onPrev: () => void
   onNext: () => void
   onToggle: () => void
-  onLoop: () => void
-  onSpeed: () => void
+  onNochmal: () => void
 }) {
   return (
     <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom">
@@ -60,11 +57,11 @@ export function PlaybackBar({
             {index + 1}/{count}
           </span>
         </span>
-        <Knopf onClick={onLoop} active={loop} aria-label="Schleife">
-          ↻
-        </Knopf>
-        <Knopf onClick={onSpeed} wide aria-label="Tempo">
-          {speed === 0.5 ? '0,5×' : speed === 2 ? '2×' : '1×'}
+        <Knopf onClick={onNochmal} disabled={!canPlay} wide aria-label="Nochmal">
+          <span className="flex items-center gap-1.5">
+            <RefreshIcon size={14} />
+            nochmal
+          </span>
         </Knopf>
       </div>
     </div>
