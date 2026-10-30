@@ -77,7 +77,7 @@ describe('Kapitel In der Box', () => {
     render(<Buehne lauf={0} ruhig />)
 
     const links = () => parseFloat(screen.getByTestId('box').getAttribute('x') ?? '')
-    const fuss = (id: string) => parseFloat(screen.getByTestId(id).getAttribute('cx') ?? '')
+    const fuss = (id: string) => parseFloat(screen.getByTestId(id).getAttribute('x') ?? '')
     const draussen = () => [fuss('fuss-vorne'), fuss('fuss-hinten')].filter(x => x < links()).length
     const weiter = () => fireEvent.click(screen.getByRole('button', { name: /Nächster Schritt|Von vorn/ }))
 
