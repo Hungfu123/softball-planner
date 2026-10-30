@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import type { BuehnenProps } from '../kapitel'
-import { Ball, FARBE, Figur, MiniFeld } from '../buehne'
+import { takt, Ball, FARBE, Figur, MiniFeld } from '../buehne'
 import { HOME, FIRST_BASE, SECOND_BASE } from '@/components/playmaker/board/geometry'
 
 /**
@@ -11,9 +11,6 @@ import { HOME, FIRST_BASE, SECOND_BASE } from '@/components/playmaker/board/geom
  * Balls ist ein anderer. Wer sie nacheinander sieht, zaehlt drei Faelle und nicht drei
  * Bilder.
  */
-
-const takt = (ruhig: boolean, t: { duration?: number; delay?: number } & Record<string, unknown>) =>
-  ruhig ? { duration: 0, delay: 0 } : t
 
 /** Wo ein Ball landet, wenn er unter `winkel` Grad `laenge` Fuss weit fliegt. */
 function flug(winkel: number, laenge: number) {
@@ -40,31 +37,60 @@ function OutStempel({ lauf, ruhig, delay }: { lauf: number; ruhig: boolean; dela
 /* ------------------------------------------------------------- 1 Lauf sofort */
 
 /**
- * Der haeufigste Fehler im Team: hinsehen, wo der Ball hinfliegt. Die Karte zeigt
- * deshalb gar nicht, wo er landet, sondern nur, dass die Figur schon weg ist.
+ * Der haeufigste Fehler im Team: nach dem Schlag hinsehen, wo der Ball hinfliegt.
+ *
+ * Die Karte zeigt deshalb den ganzen Ablauf bis zum Treffer, aber **nicht, wo der Ball
+ * landet**: er verblasst auf halber Strecke. Was man sieht, ist der Schlaeger, der
+ * Kontakt und eine Figur, die schon weg ist, waehrend der Ball noch fliegt.
  */
 export function LaufSofort({ lauf, ruhig }: BuehnenProps) {
+  const boden = 152
+  /* Die Haende: darum dreht der Schlaeger, und dort ist der Kontakt. */
+  const hand = { x: 54, y: boden - 112 }
+  const treffer = 0.3
+
   return (
     <div className="px-4 pt-4">
       <svg viewBox="0 0 220 165" className="max-h-52 w-full" aria-hidden focusable="false">
-        <line x1="4" y1="152" x2="216" y2="152" stroke={FARBE.matt} strokeWidth="1.5" />
+        <line x1="4" y1={boden} x2="216" y2={boden} stroke={FARBE.matt} strokeWidth="1.5" />
 
-        {/* Die Schlagfrau verlaesst die Box, bevor der Ball oben ankommt. */}
+        {/* Erst der Schlag, dann ist sie weg. Der Schlaeger faellt dabei aus dem Bild. */}
         <motion.g
           key={`figur-${lauf}`}
-          initial={ruhig ? false : { x: 0, opacity: 1 }}
-          animate={{ x: 128, opacity: 1 }}
-          transition={takt(ruhig, { delay: 0.25, duration: 0.9, ease: 'easeOut' })}
+          initial={ruhig ? false : { x: 0 }}
+          animate={{ x: 130 }}
+          transition={takt(ruhig, { delay: treffer + 0.08, duration: 0.85, ease: 'easeOut' })}
         >
-          <Figur boden={152} k={0.8} ohneSchlaeger />
+          <Figur boden={boden} ohneSchlaeger />
+          <motion.g
+            key={`schlaeger-${lauf}`}
+            initial={ruhig ? false : { rotate: -48, opacity: 1 }}
+            animate={ruhig ? { rotate: 100, opacity: 0 } : { rotate: [-48, 62, 100], opacity: [1, 1, 0] }}
+            style={{ originX: `${hand.x}px`, originY: `${hand.y}px` }}
+            transition={takt(ruhig, { duration: 0.62, times: [0, treffer / 0.62, 1], ease: 'easeOut' })}
+          >
+            <rect x="52" y={boden - 138} width="5" height="46" rx="2.5" fill={FARBE.naht} />
+          </motion.g>
         </motion.g>
 
-        {/* Der Ball fliegt irgendwohin. Wohin, steht hier absichtlich nicht. */}
+        {/* Der Kontakt: ein Blitz, der sofort wieder weg ist. */}
+        <motion.circle
+          key={`kontakt-${lauf}`}
+          cx={hand.x + 12} cy={hand.y}
+          fill="none" stroke={FARBE.gut} strokeWidth="2.5"
+          initial={ruhig ? false : { r: 2, opacity: 0 }}
+          animate={ruhig ? { r: 2, opacity: 0 } : { r: [2, 14], opacity: [0.95, 0] }}
+          transition={takt(ruhig, { delay: treffer, duration: 0.35, ease: 'easeOut' })}
+        />
+
+        {/* Der Ball fliegt los und verblasst. Wohin, steht hier absichtlich nicht. */}
         <motion.g
           key={`ball-${lauf}`}
-          initial={ruhig ? false : { x: 60, y: 110, opacity: 1 }}
-          animate={{ x: 205, y: 24, opacity: ruhig ? 1 : [1, 1, 0.25] }}
-          transition={takt(ruhig, { duration: 1.1, ease: 'easeOut' })}
+          initial={ruhig ? false : { x: hand.x + 12, y: hand.y, opacity: 0 }}
+          animate={ruhig
+            ? { x: 196, y: 22, opacity: 0.2 }
+            : { x: [hand.x + 12, 140, 196], y: [hand.y, 18, 22], opacity: [0, 1, 0.2] }}
+          transition={takt(ruhig, { delay: treffer, duration: 1, ease: 'easeOut' })}
         >
           <Ball r={6} />
         </motion.g>

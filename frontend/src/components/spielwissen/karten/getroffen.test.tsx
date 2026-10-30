@@ -11,9 +11,9 @@ describe('Kapitel Du hast getroffen', () => {
     expect(GETROFFEN_KARTEN.map(k => k.pointe)).toEqual([
       'Lauf. Sofort.',
       'Foul siehst du nicht',
-      'Raus: gefangen',
-      'Raus: Wurf zur 1',
-      'Raus: getickt',
+      'Out: gefangen',
+      'Out: Wurf zur 1',
+      'Out: getickt',
     ])
   })
 

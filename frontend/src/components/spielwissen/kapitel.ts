@@ -37,6 +37,12 @@ export interface KartenDaten {
   pointe: string
   /** Hoechstens ein Satz. Beschriftet, was die Buehne zeigt, und wiederholt sie nicht. */
   satz?: string
+  /**
+   * Die Buehne bringt ihre eigenen Knoepfe mit (Klein/Gross, Weiter/Von vorn) und laeuft
+   * nicht von selbst ab. Dann faellt „nochmal" weg: es gaebe nichts zurueckzuholen, und
+   * zwei Knoepfe fuer dieselbe Sache sind eine Frage mehr als noetig.
+   */
+  selbstgesteuert?: boolean
   Buehne: ComponentType<BuehnenProps>
 }
 
@@ -68,6 +74,7 @@ export const KAPITEL: Kapitel[] = [
         id: 'zone',
         pointe: 'Die Zone bist du',
         satz: 'Brust bis Knie, über der Platte. Zwei Leute, zwei Zonen.',
+        selbstgesteuert: true,
         Buehne: ZoneAmKoerper,
       },
       {
@@ -85,7 +92,7 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'count',
         pointe: 'Der Count ist ein Wettlauf',
-        satz: 'Vier Balls bringen dich auf die 1. Drei Strikes, und du bist raus.',
+        satz: 'Vier Balls bringen dich auf die 1. Drei Strikes, und du bist out.',
         Buehne: CountWettlauf,
       },
       {
@@ -97,7 +104,7 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'bunt-falle',
         pointe: 'Die Bunt-Falle',
-        satz: 'Bei zwei Strikes gebuntet und foul: du bist raus.',
+        satz: 'Bei zwei Strikes gebuntet und foul: du bist out.',
         Buehne: BuntFalle,
       },
     ],
@@ -105,7 +112,7 @@ export const KAPITEL: Kapitel[] = [
   {
     id: 'getroffen',
     titel: 'Du hast getroffen',
-    frage: 'Wohin laufe ich, wann bin ich raus?',
+    frage: 'Wohin laufe ich, wann bin ich out?',
     karten: [
       {
         id: 'lauf',
@@ -121,19 +128,19 @@ export const KAPITEL: Kapitel[] = [
       },
       {
         id: 'gefangen',
-        pointe: 'Raus: gefangen',
+        pointe: 'Out: gefangen',
         satz: 'Ball aus der Luft gefangen, bevor er den Boden berührt.',
         Buehne: RausGefangen,
       },
       {
         id: 'wurf-zur-eins',
-        pointe: 'Raus: Wurf zur 1',
+        pointe: 'Out: Wurf zur 1',
         satz: 'Der Ball ist vor dir da.',
         Buehne: RausWurfZurEins,
       },
       {
         id: 'getickt',
-        pointe: 'Raus: getickt',
+        pointe: 'Out: getickt',
         satz: 'Jemand berührt dich mit dem Ball, während du auf keiner Base stehst.',
         Buehne: RausGetickt,
       },
@@ -147,31 +154,33 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'sicher',
         pointe: 'Die Base ist sicher',
-        satz: 'Steh drauf, und dir passiert nichts.',
+        satz: 'Steh drauf, und dir passiert nichts. Außer wenn hinter dir jemand nachrückt: dann musst du weiter.',
         Buehne: BaseIstSicher,
       },
       {
         id: 'release',
         pointe: 'Los erst beim Release',
-        satz: 'Erst wenn der Ball die Hand der Pitcherin verlässt. Kein Leadoff.',
+        satz: 'Erst wenn der Ball die Hand der Pitcherin verlässt. Kein Leadoff, und zu früh ist out.',
+        selbstgesteuert: true,
         Buehne: LosBeimRelease,
       },
       {
         id: 'wild-pitch',
         pointe: 'Wild Pitch',
-        satz: 'Der Ball rutscht am Catcher vorbei. Das ist dein Moment.',
+        satz: 'Der Ball rutscht am Catcher vorbei. Das ist dein Moment. Auf der nächsten Base bleibst du dann stehen.',
         Buehne: WildPitch,
       },
       {
         id: 'steal',
         pointe: 'Steal',
-        satz: 'Dasselbe, nur geplant.',
+        satz: 'Dasselbe, nur geplant. Angekommen heißt auch hier: stehenbleiben.',
         Buehne: Steal,
       },
       {
         id: 'tag-up',
         pointe: 'Fly gefangen: erst zurück',
         satz: 'Zurück auf die Base berühren, dann erst los.',
+        selbstgesteuert: true,
         Buehne: TagUp,
       },
     ],

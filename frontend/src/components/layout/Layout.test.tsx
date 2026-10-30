@@ -60,14 +60,14 @@ describe('WhatsApp-Band', () => {
   it('lässt die Reiter davon unberührt: unbekannt zeigt weiter die Admin-Leiste', () => {
     auth.me = null
     renderAt('/')
-    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(7)
+    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(6)
   })
 })
 
 describe('Layout Reiterleiste', () => {
-  it('zeigt einem Admin sieben Reiter', () => {
+  it('zeigt einem Admin sechs Reiter', () => {
     renderAt('/')
-    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(7)
+    expect(screen.getAllByRole('link').filter(isTab)).toHaveLength(6)
   })
 
   /*
@@ -75,11 +75,11 @@ describe('Layout Reiterleiste', () => {
    * Startseite, die Werkbank liegt auf `/spielbetrieb`. Am Handy gibt es kein Logo,
    * das zurueck nach `/` fuehrt — deshalb braucht Start einen eigenen Reiter.
    */
-  it('zeigt die richtigen sieben Reiter in dieser Reihenfolge mit diesen Zielen', () => {
+  it('zeigt die richtigen sechs Reiter in dieser Reihenfolge mit diesen Zielen', () => {
     renderAt('/')
     const tabs = screen.getAllByRole('link').filter(isTab)
     expect(tabs.map(t => t.getAttribute('href'))).toEqual(
-      ['/', '/spielbetrieb', '/training', '/players', '/stats', '/spielwissen', '/orga'])
+      ['/', '/spielbetrieb', '/training', '/players', '/stats', '/orga'])
     // Jeder Reiter trägt Kurz- und Langlabel im DOM (CSS blendet eines aus), Kurzlabel zuerst.
     expect(tabs.map(t => t.textContent)).toEqual([
       'StartStart',
@@ -87,7 +87,6 @@ describe('Layout Reiterleiste', () => {
       'TrainingTraining',
       'SpielerSpieler',
       'AnalyseAnalyse',
-      'WissenSpielwissen',
       'OrgaOrga',
     ])
   })
@@ -120,11 +119,22 @@ describe('Layout Reiterleiste nach Rolle', () => {
   })
 
   /*
-   * Spielwissen ist das einzige Stueck der App, das niemanden bewertet. Es gibt dort
-   * nichts zu verbergen, also sieht es jede Rolle.
+   * Beim Trainer liegt Spielwissen unter Orga, nicht in der Leiste: der siebte Reiter
+   * lief am Handy ueber, und ein Trainer schlaegt die Regeln selten nach.
    */
-  it.each([ADMIN, SUPER, SPIELER])('zeigt $role den Wissen-Reiter auf /spielwissen', me => {
-    auth.me = me
+  it('zeigt einem Admin keinen Wissen-Reiter, sondern markiert Orga auf /spielwissen', () => {
+    renderAt('/spielwissen')
+    const tabs = screen.getAllByRole('link').filter(isTab)
+    expect(tabs.map(t => t.getAttribute('href'))).not.toContain('/spielwissen')
+    expect(screen.getByRole('link', { name: /Orga/ })).toHaveClass('bg-band-ink')
+  })
+
+  /*
+   * In der Spieleransicht faellt istAdmin weg, damit greift die Spielerliste. Genau das
+   * soll der Modus zeigen: wo ein Spieler den Weg findet.
+   */
+  it('zeigt einem Spieler den Wissen-Reiter auf /spielwissen', () => {
+    auth.me = SPIELER
     renderAt('/')
     expect(screen.getByRole('link', { name: /Wissen/ })).toHaveAttribute('href', '/spielwissen')
   })
@@ -135,12 +145,12 @@ describe('Layout Reiterleiste nach Rolle', () => {
     expect(screen.getByRole('link', { name: /Kalender/ })).toHaveClass('bg-band-ink')
   })
 
-  it.each([ADMIN, SUPER])('zeigt $role sieben Reiter mit Orga', me => {
+  it.each([ADMIN, SUPER])('zeigt $role sechs Reiter mit Orga', me => {
     auth.me = me
     renderAt('/')
     const tabs = screen.getAllByRole('link').filter(isTab)
     expect(tabs.map(t => t.getAttribute('href'))).toEqual(
-      ['/', '/spielbetrieb', '/training', '/players', '/stats', '/spielwissen', '/orga'])
+      ['/', '/spielbetrieb', '/training', '/players', '/stats', '/orga'])
   })
 })
 

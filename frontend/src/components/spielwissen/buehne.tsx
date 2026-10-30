@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { motion } from 'motion/react'
 import { HOME, SKIN_PATH, FOUL_LINES_PATH, BASES } from '@/components/playmaker/board/geometry'
 
 /**
@@ -9,14 +10,24 @@ import { HOME, SKIN_PATH, FOUL_LINES_PATH, BASES } from '@/components/playmaker/
  * Schlagfrau ist.
  */
 
+/**
+ * Dauer und Verzoegerung, bei reduzierter Bewegung auf null.
+ *
+ * Steht hier und nicht dreimal in den Kartendateien: alle sechzehn Buehnen muessen
+ * denselben Schalter umlegen, sonst laeuft eine von ihnen weiter.
+ */
+export const takt = (ruhig: boolean, t: { duration?: number; delay?: number } & Record<string, unknown>) =>
+  ruhig ? { duration: 0, delay: 0 } : t
+
 /** Die Farben der Buehne an einer Stelle, damit sechzehn Karten dieselben benutzen. */
 export const FARBE = {
-  hell: '#f8f5ec',   // cream-50, Figuren und Linien
-  ball: '#f8f5ec',
-  naht: '#c0392b',   // softball-red, der Nahtring
+  hell: '#FBF6EC',   // cream-50, Figuren und Linien
+  ball: '#FBF6EC',
+  naht: '#CC2936',   // softball-red-600, der Nahtring
   gut: '#fbbf24',    // amber-400, Entscheidung und Zone
-  raus: '#c0392b',   // softball-red, Strike und Out
+  raus: '#CC2936',   // softball-red-600, Strike und Out
   matt: '#6b7b96',   // Boden, Hilfslinien
+  grund: '#142B49',  // die Buehne selbst — Schrift darauf ist hell
 } as const
 
 /**
@@ -40,7 +51,7 @@ export function Figur({ k = 1, boden = 152, ohneSchlaeger = false }: {
       {!ohneSchlaeger && (
         <rect
           x="52" y={boden - 138} width="5" height="46" rx="2.5"
-          fill={FARBE.naht}
+          fill={FARBE.matt}
           transform={`rotate(22 54 ${boden - 112})`}
         />
       )}
@@ -55,6 +66,29 @@ export function Ball({ r = 6 }: { r?: number }) {
       <circle r={r} fill={FARBE.ball} />
       <circle r={r * 0.66} fill="none" stroke={FARBE.naht} strokeWidth={r * 0.18} opacity="0.7" />
     </g>
+  )
+}
+
+/**
+ * Der Ring um eine Base: „hier passiert dir nichts".
+ *
+ * Dieselbe Form auf jeder Karte, die sie benutzt, und sie meint ueberall dasselbe. Die
+ * Lauf-Karten enden damit, weil der Lauf nur die halbe Auskunft ist: wer danach von der
+ * Base geht, wird getickt und ist out.
+ */
+export function SicherRing({ ort, ruhig, delay = 0 }: {
+  ort: { x: number; y: number }
+  ruhig: boolean
+  delay?: number
+}) {
+  return (
+    <motion.circle
+      cx={ort.x} cy={ort.y}
+      fill="none" stroke={FARBE.gut} strokeWidth="1.6"
+      initial={ruhig ? false : { r: 4, opacity: 0 }}
+      animate={{ r: 10, opacity: 0.8 }}
+      transition={takt(ruhig, { delay, duration: 0.4, ease: 'easeOut' })}
+    />
   )
 }
 

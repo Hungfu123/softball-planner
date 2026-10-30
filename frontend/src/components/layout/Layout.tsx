@@ -39,20 +39,23 @@ const ADMIN_TABS: Tab[] = [
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
-  { path: '/spielwissen', label: 'Spielwissen', shortLabel: 'Wissen', Icon: BookOpen },
-  { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender', '/spielbogen'] },
+  { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender', '/spielbogen', '/spielwissen'] },
 ]
 
 /*
- * Spielwissen steht in BEIDEN Listen: es ist das einzige Stueck der App, das niemanden
- * bewertet, also gibt es dort nichts zu verbergen. Beim Admin sitzt es vor Orga, weil Orga
- * die Schublade am Ende ist; beim Spieler am Ende, weil davor nichts verrutschen soll.
+ * Spielwissen steht NUR in der Spielerliste, beim Admin liegt es als Kachel unter Orga.
  *
- * Mit dem siebten Reiter LAEUFT die Admin-Leiste am Handy ueber, und zwar bewusst:
- * gemessen bei 390 px sind es 336 px Inhalt auf 314 px Breite, also 22 px zu viel.
- * `data-scroll-hint` steht dann auf true, der Fade erscheint, und der letzte Reiter ist
- * durch Wischen erreichbar (geprueft: scrollLeft 22 holt /orga vollstaendig ins Bild).
- * Ein Reiter weniger waere die Alternative gewesen, und keiner der sieben ist entbehrlich.
+ * Zwei Gruende. Erstens die Breite: mit einem siebten Reiter lief die Admin-Leiste bei
+ * 390 px ueber (gemessen 336 px Inhalt auf 314 px Scrollbreite der nav selbst; der
+ * Kommentar weiter unten nennt 366 px, das ist die Innenbreite der ganzen Kopfzeile,
+ * nicht dieselbe Zahl). Zweitens der Gebrauch: ein Trainer
+ * schlaegt die Regeln selten nach, ein Neuer dauernd. Orga ist genau die Schublade fuer
+ * das Seltene. Erreichbar bleibt es fuer jeden, und `extraPaths` markiert deshalb Orga,
+ * solange man darin liest.
+ *
+ * In der Spieleransicht des Superadmins faellt `istAdmin` weg, damit greift die
+ * Spielerliste — der Reiter steht dann da, wo ein Spieler ihn sieht. Das ist der Zweck
+ * des Modus und braucht hier keinen Sonderweg.
  */
 
 /**

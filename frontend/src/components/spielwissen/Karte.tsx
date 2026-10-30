@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useReducedMotionConfig } from 'motion/react'
 import type { KartenDaten } from './kapitel'
 
@@ -12,13 +12,21 @@ import type { KartenDaten } from './kapitel'
  * Gegenstand zu sein. Im Hellen faellt er nicht auf.
  *
  * **Nichts laeuft in Schleife.** Eine Dauerbewegung neben einem Satz, den man liest, ist
- * Laerm. Wer sie noch einmal sehen will, tippt „nochmal"; der Zaehler `lauf` geht an die
- * Buehne, die ihn an ihre `key`s haengt und dadurch neu beginnt.
+ * Laerm. Wer sie noch einmal sehen will, tippt „nochmal".
+ *
+ * Der Zaehler `lauf` sitzt als `key` an der **Buehne selbst**, nicht an einem Element
+ * darin. Das ist der Unterschied zwischen „laeuft neu ab" und „faengt neu an": ein key
+ * weiter innen haengt nur das DOM neu, die Komponente bleibt stehen und mit ihr ihr
+ * `useState`. Die Count-Karte blieb so nach drei Strikes fuer immer auf OUT, mit einem
+ * Knopf daneben, der nichts tat.
  *
  * **Reduzierte Bewegung traegt die Karte selbst.** Die Regel in `styles/index.css` ist
  * reines CSS und fasst `motion/react` nicht an, weil das aus JavaScript animiert. Ohne
  * `ruhig` liefen die Sequenzen bei abgeschalteter Bewegung weiter, und zwar in voller
  * Laenge. Dann faellt auch „nochmal" weg: es gibt nichts abzuspielen.
+ *
+ * Dasselbe gilt fuer `selbstgesteuert`: eine Karte mit eigenen Knoepfen laeuft nicht ab,
+ * sie wird bedient. „nochmal" waere dort ein zweiter Weg zum selben Ziel.
  *
  * Gelesen wird `useReducedMotionConfig`, nicht `useReducedMotion`: nur das erste achtet
  * auf das `<MotionConfig reducedMotion>` der App (main.tsx setzt dort „user", faellt also
@@ -27,13 +35,40 @@ import type { KartenDaten } from './kapitel'
  */
 export function Karte({ karte }: { karte: KartenDaten }) {
   const [lauf, setLauf] = useState(0)
+  const [imBlick, setImBlick] = useState(false)
+  const kasten = useRef<HTMLElement>(null)
   const ruhig = Boolean(useReducedMotionConfig())
   const { Buehne } = karte
 
+  /*
+   * Die Sequenz beginnt, wenn die Karte ins Bild kommt, nicht beim Aufbau der Seite.
+   *
+   * Gemessen: ein Kapitel ist rund drei Bildschirme hoch, und beim Laden ist genau EINE
+   * Karte zur Haelfte zu sehen. Starteten alle beim Aufbau, waeren fuenf von sechs
+   * Animationen vorbei, bevor jemand hinsieht — und „nochmal" waere kein Angebot mehr,
+   * sondern die einzige Art, die Karte ueberhaupt zu sehen.
+   *
+   * Bis dahin steht die Buehne in ihrem Endzustand da. Der traegt die Auskunft ohnehin,
+   * und die Hoehe bleibt gleich, also springt beim Start nichts.
+   */
+  useEffect(() => {
+    const el = kasten.current
+    if (!el || ruhig || imBlick) return
+    if (typeof IntersectionObserver === 'undefined') { setImBlick(true); return }
+    const beobachter = new IntersectionObserver(
+      ([eintrag]) => { if (eintrag.isIntersecting) setImBlick(true) },
+      { threshold: 0.35 },
+    )
+    beobachter.observe(el)
+    return () => beobachter.disconnect()
+  }, [ruhig, imBlick])
+
+  const steht = ruhig || !imBlick
+
   return (
-    <article className="overflow-hidden rounded-2xl border border-cream-50/12 bg-navy-900 text-cream-50">
+    <article ref={kasten} className="overflow-hidden rounded-2xl border border-cream-50/12 bg-navy-900 text-cream-50">
       <div className="relative">
-        <Buehne lauf={lauf} ruhig={ruhig} />
+        <Buehne key={`${imBlick}-${lauf}`} lauf={lauf} ruhig={steht} />
       </div>
 
       <div className="px-4 pb-3 pt-1">
@@ -45,7 +80,7 @@ export function Karte({ karte }: { karte: KartenDaten }) {
         )}
       </div>
 
-      {!ruhig && (
+      {!ruhig && !karte.selbstgesteuert && (
         <div className="px-4 pb-3">
           <button
             type="button"

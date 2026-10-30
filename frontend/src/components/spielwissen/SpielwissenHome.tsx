@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
+import { KAPITEL } from './kapitel'
 
 /**
  * Der Einstieg ins Spielwissen.
@@ -15,12 +16,6 @@ import { FeldMiniatur } from '@/components/start/FeldMiniatur'
  * Defense fuehrt **ohne Zwischenseite** in die bestehende Play-Uebersicht. Eine Seite,
  * auf der nur „hier geht es weiter" steht, ist ein Tipp, der nichts bringt.
  */
-
-const KAPITEL = [
-  { id: 'box', titel: 'In der Box', frage: 'Was zählt als Strike?' },
-  { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich raus?' },
-  { id: 'base', titel: 'Auf der Base', frage: 'Wann darf ich weiter?' },
-] as const
 
 function Ueberschrift({ children }: { children: React.ReactNode }) {
   return (
