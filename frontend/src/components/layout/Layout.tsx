@@ -67,7 +67,9 @@ const PLAYER_TABS: Tab[] = [
   { path: '/spielbetrieb', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: CalendarCheck },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
   { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
-  { path: '/spielwissen', label: 'Spielwissen', shortLabel: 'Wissen', Icon: BookOpen },
+  /* Defense liegt im Playmaker, und der wohnt unter /orga — einem Pfad, den ein Spieler
+     in der Leiste nicht hat. Ohne diesen Eintrag stuende er dort ohne markierten Reiter. */
+  { path: '/spielwissen', label: 'Spielwissen', shortLabel: 'Wissen', Icon: BookOpen, extraPaths: ['/orga/playmaker'] },
 ]
 
 export function Layout() {

@@ -7,7 +7,7 @@ import type { Play } from './board/types'
 import { beschreibung } from './beschreibung'
 import { trefferIn, type Treffer } from './suche'
 import { standardfeld } from '@/hooks/useFreiesFeld'
-import { ChevronDown, CopyIcon, CrossBones, TrashBin } from '@/icons'
+import { ChevronDown, ChevronLeft, CopyIcon, CrossBones, TrashBin } from '@/icons'
 import { Button } from '@/components/shared/Button'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { useToastContext } from '@/components/layout/Layout'
@@ -185,9 +185,24 @@ export default function PlaymakerOverview() {
       */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <div className="min-w-0 flex-1">
-          <div className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-500">
-            Playmaker
-          </div>
+          {/*
+            Beim Spieler ist die Zeile der Rueckweg, beim Trainer der Name der Seite.
+            Grund: die Seite liegt unter /orga, und genau diesen Reiter hat ein Spieler
+            nicht. Er kam aus Spielwissen und stand nach einem Tipp sonst ohne Weg zurueck.
+          */}
+          {istAdmin ? (
+            <div className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-500">
+              Playmaker
+            </div>
+          ) : (
+            <Link
+              to="/spielwissen"
+              className="font-display inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-navy-900"
+            >
+              <ChevronLeft size={12} aria-hidden="true" />
+              Spielwissen
+            </Link>
+          )}
           <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-navy-900">
             Defense
           </h1>
@@ -207,7 +222,9 @@ export default function PlaymakerOverview() {
         </div>
         <div className="min-w-0">
           <div className="font-display text-sm font-extrabold">Freies Feld</div>
-          <div className="truncate text-xs opacity-70">Schnell was zeigen — wird nicht gespeichert</div>
+          {/* Kurz genug, dass bei 393 px nichts abgeschnitten wird: der Satz endete
+              vorher auf „wird nicht gespei…". */}
+          <div className="truncate text-xs opacity-70">Zum Zeigen. Wird nicht gespeichert.</div>
         </div>
       </Link>
 
@@ -473,7 +490,7 @@ function HeroPlay({
           <div className="truncate font-display text-xs font-bold text-cream-200">
             {treffer && treffer.feld !== 'titel'
               ? treffer.text
-              : `${beschreibung(play)}${treffer ? '' : ' · zuletzt bearbeitet'}`}
+              : `${beschreibung(play)}${treffer || !istAdmin ? '' : ' · zuletzt bearbeitet'}`}
           </div>
         </div>
       </Link>

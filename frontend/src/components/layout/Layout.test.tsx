@@ -139,6 +139,17 @@ describe('Layout Reiterleiste nach Rolle', () => {
     expect(screen.getByRole('link', { name: /Wissen/ })).toHaveAttribute('href', '/spielwissen')
   })
 
+  /*
+   * Defense liegt im Playmaker, und der wohnt unter /orga — ein Pfad, den ein Spieler in
+   * der Leiste gar nicht hat. Ohne `extraPaths` stand er dort ohne markierten Reiter: er
+   * kam aus Wissen und war nach einem Tipp nirgends mehr.
+   */
+  it('markiert beim Spieler den Wissen-Reiter auch auf der Defense-Seite', () => {
+    auth.me = SPIELER
+    renderAt('/orga/playmaker')
+    expect(screen.getByRole('link', { name: /Wissen/ })).toHaveClass('bg-band-ink')
+  })
+
   it('markiert beim Spieler den Kalender-Reiter auf /kalender', () => {
     auth.me = SPIELER
     renderAt('/kalender')
