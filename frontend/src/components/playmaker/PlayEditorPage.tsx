@@ -217,7 +217,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         value={editor.step.note ?? ''}
         onChange={e => editor.setNote(e.target.value)}
         placeholder="Notiz zu diesem Stand"
-        className="h-10 border-0 bg-transparent px-4 text-sm text-cream-50 placeholder:text-cream-50/40 landscape:col-start-2 lg:col-start-2"
+        className="h-10 border-0 bg-transparent px-4 text-sm text-cream-50 placeholder:text-cream-50/55 landscape:col-start-2 lg:col-start-2"
         aria-label="Notiz"
       />
 

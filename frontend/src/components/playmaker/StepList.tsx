@@ -38,7 +38,7 @@ export function StepList({
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-xs leading-snug text-cream-50/85">
-                  {step.note || <span className="text-cream-50/40">ohne Notiz</span>}
+                  {step.note || <span className="text-cream-50/55">ohne Notiz</span>}
                 </span>
                 <span className="mt-0.5 block font-display text-[10px] font-bold tabular-nums text-cream-50/45">
                   {(step.durationMs / 1000).toFixed(1).replace('.', ',')} s · {step.outs}{' '}

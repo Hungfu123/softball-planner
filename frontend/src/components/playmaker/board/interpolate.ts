@@ -11,8 +11,52 @@ const easeInOut = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow
  * Ein geworfener Ball rollt nicht an. Er startet schnell und wird zum Fangen weicher,
  * deshalb ease-out. Dadurch liegt er zur Halbzeit sichtbar weiter als ein Spieler mit
  * derselben Strecke — genau das macht die Gleichzeitigkeit lesbar.
+ *
+ * Die Kurve ist **dieselbe wie im Spielwissen**: `cubic-bezier(0.23, 1, 0.32, 1)`. Sie
+ * startet haerter und laeuft laenger aus als das frueher benutzte quadratische Ease-out
+ * (zur Halbzeit 86 % statt 75 % der Strecke). Daran erkennt man die Bewegung der Karten
+ * wieder, und der Wurf wirkt wie ein Wurf und nicht wie ein Schieben.
  */
-const easeOut = (t: number): number => 1 - Math.pow(1 - t, 2);
+const easeOut = (t: number): number => bezier(t, 0.23, 1, 0.32, 1);
+
+/**
+ * Ein CSS-Bezier als Funktion, mit Newton und Bisektion aufgeloest.
+ *
+ * Die Kurve ist ueber x parametrisiert, gesucht ist aber y zu einer Zeit — also erst das
+ * passende Kurven-t finden, dann dort y lesen. Newton geht schnell und kann bei flachen
+ * Stellen danebengreifen; die Bisektion fAEngt genau diesen Fall.
+ */
+function bezier(t: number, x1: number, y1: number, x2: number, y2: number): number {
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  const kurve = (p1: number, p2: number, s: number) =>
+    ((1 - s) * (1 - s) * 3 * p1 + 3 * (1 - s) * s * s * 0 + s * s * s) + 3 * (1 - s) * s * s * p2 - 3 * (1 - s) * s * s * 0;
+  const an = (p1: number, p2: number, s: number) =>
+    3 * p1 * (1 - s) * (1 - s) * s + 3 * p2 * (1 - s) * s * s + s * s * s;
+  const ableitung = (p1: number, p2: number, s: number) =>
+    3 * p1 * (1 - 4 * s + 3 * s * s) + 3 * p2 * (2 * s - 3 * s * s) + 3 * s * s;
+  void kurve;
+
+  let s = t;
+  for (let i = 0; i < 6; i++) {
+    const abweichung = an(x1, x2, s) - t;
+    if (Math.abs(abweichung) < 1e-6) return an(y1, y2, s);
+    const d = ableitung(x1, x2, s);
+    if (Math.abs(d) < 1e-6) break;
+    s -= abweichung / d;
+  }
+
+  let unten = 0;
+  let oben = 1;
+  s = t;
+  while (oben - unten > 1e-6) {
+    const x = an(x1, x2, s);
+    if (x > t) oben = s;
+    else unten = s;
+    s = (oben + unten) / 2;
+  }
+  return an(y1, y2, s);
+}
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 

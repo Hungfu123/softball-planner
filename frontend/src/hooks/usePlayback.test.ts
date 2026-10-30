@@ -29,6 +29,32 @@ function stand(ordinal: number, durationMs: number, x: number): PlayStep {
 
 let rafCallbacks: FrameRequestCallback[] = [];
 
+/*
+ * Die Wiedergabe laeuft von selbst an, sobald man ein Play oeffnet — so zeigt auch das
+ * Spielwissen seine Karten: man kommt an und es bewegt sich, statt dass man erst einen
+ * Knopf suchen muss. Wer weniger Bewegung bestellt hat, bekommt sie nicht.
+ */
+describe('Selbstanlauf', () => {
+  test('laeuft bei autostart von allein los', () => {
+    const { result } = renderHook(() => usePlayback([stand(1, 600, 10), stand(2, 600, 90)], { autostart: true }));
+
+    expect(result.current.playing).toBe(true);
+  });
+
+  test('bleibt ohne autostart stehen', () => {
+    const { result } = renderHook(() => usePlayback([stand(1, 600, 10), stand(2, 600, 90)]));
+
+    expect(result.current.playing).toBe(false);
+  });
+
+  test('laeuft bei einem einzigen Stand nicht los, da gibt es nichts zu zeigen', () => {
+    const { result } = renderHook(() => usePlayback([stand(1, 600, 10)], { autostart: true }));
+
+    expect(result.current.playing).toBe(false);
+  });
+});
+
+
 /** Ein Bild erzeugen: die Uhr vorstellen und die angemeldeten Rueckrufe ausloesen. */
 function frame(ms: number) {
   vi.advanceTimersByTime(ms);

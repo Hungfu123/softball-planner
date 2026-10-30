@@ -56,8 +56,43 @@ describe('PlayBoard', () => {
     const aus = render(
       <PlayBoard markers={markers({ runners: [{ id: 'r1', x: 196, y: 174, status: 'OUT' }] })} />,
     );
-    expect(aus.container.querySelector('[data-marker="runner"] circle')!.getAttribute('fill'))
-      .toBe(FARBE.raus);
+    const scheibe = aus.container.querySelector('[data-marker="runner"] circle')!;
+    expect(scheibe.getAttribute('fill')).toBe(FARBE.raus);
+    /*
+     * Rot misst auf der navy Buehne nur 2,68:1 und liegt damit unter den 3:1, die eine
+     * bedeutungstragende Flaeche braucht. Ein heller Ring traegt den Unterschied, und das
+     * Rot darf bleiben — als Flaeche mit cremefarbenem Kreuz ist es dasselbe Rot wie auf
+     * dem Out-Stempel im Spielwissen.
+     */
+    expect(scheibe.getAttribute('stroke')).toBe(FARBE.hell);
+  });
+
+  /*
+   * Amber auf Cream misst 1,55:1. Solange ein Runner allein auf der Buehne steht, ist das
+   * egal; steht er AUF einem Verteidiger — beim Tag also genau im entscheidenden Moment —
+   * verschwimmen beide Scheiben. Der dunkle Ring trennt sie und ist auf der Buehne selbst
+   * unsichtbar, weil er ihre Farbe hat.
+   */
+  test('gibt dem laufenden Runner einen dunklen Ring, damit er nicht mit einem Verteidiger verschmilzt', () => {
+    const { container } = render(<PlayBoard markers={step.markers} />);
+
+    expect(container.querySelector('[data-marker="runner"] circle')!.getAttribute('stroke'))
+      .toBe(FARBE.grund);
+  });
+
+  /*
+   * Wer zuschaut, um zu lernen, soll sehen, auf wen er achten muss. Amber ist auf der
+   * Buehne die Farbe dafuer — hier als Ring, denn die Scheibe selbst bleibt hell und
+   * ihr Kuerzel lesbar.
+   */
+  test('ringelt die beteiligten Positionen amber ein', () => {
+    const { container } = render(<PlayBoard markers={step.markers} beteiligt={['SS']} />);
+
+    const ring = (id: string) =>
+      container.querySelector(`[data-marker="defender"][data-id="${id}"] [data-achtung]`);
+    expect(ring('SS')).not.toBeNull();
+    expect(ring('SS')!.getAttribute('stroke')).toBe(FARBE.gut);
+    expect(ring('CF')).toBeNull();
   });
 
   test('legt den Ball zuletzt in den Baum, damit er obenauf liegt', () => {
