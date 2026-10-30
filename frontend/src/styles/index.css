@@ -617,7 +617,10 @@ p {
   [data-theme="dark"] .hover\:bg-cream-300:hover,
   [data-theme="dark"] .active\:bg-cream-100:active,
   [data-theme="dark"] .active\:bg-cream-200:active,
-  [data-theme="dark"] .active\:bg-cream-300:active { background-color: #425978; }
+  [data-theme="dark"] .active\:bg-cream-300:active,
+  /* Druck liegt eine Stufe ueber dem Hover — am Handy ist er die EINZIGE Rueckmeldung,
+     weil `hover:` dort zu `@media (hover: hover)` kompiliert und nie greift. */
+  [data-theme="dark"] .active\:bg-navy-100:active { background-color: #425978; }
 
   /* Der betonte Knopf-Hover (CLAUDE.md: navy-800 + weisse Schrift, ausdruecklich so
      gewollt). Im Dunkeln bleibt die Geste und dreht die Richtung: heller statt

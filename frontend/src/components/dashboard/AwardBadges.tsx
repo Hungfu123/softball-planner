@@ -197,9 +197,15 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
         type="button"
         onClick={() => toggle(award.type)}
         aria-expanded={open}
-        className={`group text-left w-full flex flex-col cursor-pointer transition-colors ${
-          isDark ? 'hover:bg-white/5' : 'hover:bg-navy-50'
-        }`}
+        aria-controls={`auszeichnung-${award.type}`}
+        /*
+         * `active:` ist hier keine Kosmetik, sondern die EINZIGE Rueckmeldung am Handy:
+         * `hover:` kompiliert zu `@media (hover: hover)` und greift auf einem Finger nie.
+         * Ohne das passiert beim Tippen sichtbar nichts, bis der Erklaertext erscheint.
+         * Eine Zeile ueber die volle Breite bekommt dafuer eine Flaeche, kein `scale` —
+         * eine schrumpfende Listenzeile sieht aus wie ein Fehler, nicht wie ein Druck.
+         */
+        className="group text-left w-full flex flex-col cursor-pointer transition-colors duration-150 ease-out hover:bg-navy-50 active:bg-navy-100"
       >
         {/* Kein `min-h-11` wie sonst bei Schaltflaechen: die Tippflaeche ist die GANZE Zeile
             ueber die volle Breite. Die 44-px-Regel sichert kleine Ziele ab; hier machte sie
@@ -223,11 +229,27 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
             {award.displayValue}
           </span>
         </span>
-        {open && (
-          <span className={`block pl-[21px] pr-2.5 pb-2 text-[10px] leading-snug ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
-            {meta.desc}
+        {/*
+         * Der Erklaertext klappt auf, statt aus dem Nichts zu erscheinen: ein Element, das
+         * ohne Uebergang da ist, liest sich als Fehler. Animiert wird `grid-template-rows`
+         * von 0fr auf 1fr — die einzige Art, eine UNBEKANNTE Hoehe sauber zu animieren,
+         * ohne sie vorher zu messen.
+         *
+         * Der Text bleibt dabei im Dokument (sonst gaebe es nichts zu animieren) und traegt
+         * zugeklappt `aria-hidden`, damit ein Screenreader nicht neun Erklaerungen vorliest,
+         * die niemand aufgeklappt hat. 200 ms ease-out: kurz genug, dass es nicht bremst.
+         */}
+        <span
+          id={`auszeichnung-${award.type}`}
+          aria-hidden={!open}
+          className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+        >
+          <span className="overflow-hidden">
+            <span className={`block pl-[21px] pr-2.5 pb-2 text-[10px] leading-snug ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+              {meta.desc}
+            </span>
           </span>
-        )}
+        </span>
       </button>
     )
   }
@@ -240,7 +262,10 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
         type="button"
         onClick={() => toggle('MVP')}
         aria-expanded={open}
-        className="text-left w-full relative overflow-hidden rounded-xl bg-navy-900 px-3.5 py-3 shadow-md shadow-navy-900/20 cursor-pointer"
+        aria-controls="auszeichnung-MVP"
+        // Eine Karte darf beim Druecken schrumpfen — anders als eine Listenzeile sieht das
+        // nach Druck aus und nicht nach Fehler. 150 ms, damit es der Tipp-Bewegung folgt.
+        className="text-left w-full relative overflow-hidden rounded-xl bg-navy-900 px-3.5 py-3 shadow-md shadow-navy-900/20 cursor-pointer transition-transform duration-150 ease-out active:scale-[0.985]"
       >
         <div className="absolute -right-5 -top-5 w-24 h-24 rounded-full bg-softball-red-600/30 blur-2xl" aria-hidden="true" />
         <div className="relative flex items-center gap-3">
@@ -249,17 +274,25 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-display text-[9px] tracking-[0.25em] uppercase font-bold text-softball-red-400">MVP</div>
-            <div className="font-display text-lg font-extrabold leading-tight truncate text-white">{award.playerName}</div>
+            {/* `break-words` statt `truncate`: ausgerechnet hier, wo der Name am groessten
+                steht, wurde er abgeschnitten — waehrend die Zeilen darunter laengst umbrechen.
+                Bei Gleichstand stehen hier mehrere Namen, und „Christopher, Maximilian, …"
+                nennt niemanden. Lieber zwei Zeilen als ein halber Name. */}
+            <div className="font-display text-lg font-extrabold leading-tight break-words text-white">{award.playerName}</div>
           </div>
           <div className="font-display text-[11px] font-extrabold tracking-widest uppercase text-white/70 shrink-0">
             {award.displayValue}
           </div>
         </div>
-        {open && (
-          <div className="relative mt-2 text-[10px] leading-snug text-white/70">
-            {AWARD_META.MVP.desc}
+        <div
+          id="auszeichnung-MVP"
+          aria-hidden={!open}
+          className={`relative grid transition-[grid-template-rows] duration-200 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+        >
+          <div className="overflow-hidden">
+            <div className="pt-2 text-[10px] leading-snug text-white/70">{AWARD_META.MVP.desc}</div>
           </div>
-        )}
+        </div>
       </button>
     )
   }
