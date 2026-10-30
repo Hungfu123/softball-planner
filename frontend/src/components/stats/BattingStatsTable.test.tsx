@@ -105,6 +105,31 @@ describe('BattingStatsTable', () => {
     expect(oeffnen).toHaveBeenCalledOnce()
   })
 
+  /*
+   * Ohne klebende Koepfe steht man ab der sechsten Zeile vor „.667 .667 .833 1.500" und
+   * weiss nicht mehr, welche Spalte OBP ist. Die Koepfe kleben nur, wenn der Kasten selbst
+   * scrollt — deshalb gehoert der Hoehendeckel mit zur Zusage.
+   */
+  it('haelt die Spaltenkoepfe beim Durchscrollen fest', () => {
+    const { container } = render(<BattingStatsTable stats={KADER} />)
+
+    for (const th of screen.getAllByRole('columnheader')) {
+      expect(th.className).toContain('sticky')
+      expect(th.className).toContain('top-0')
+    }
+    const kasten = container.querySelector('.overflow-auto')!
+    expect(kasten.className).toMatch(/max-h-\[70dvh\]/)
+  })
+
+  it('laesst die Ecke in beide Richtungen kleben und ueber allem liegen', () => {
+    render(<BattingStatsTable stats={KADER} />)
+
+    const ecke = screen.getByRole('columnheader', { name: 'Spieler' })
+    expect(ecke.className).toContain('left-0')
+    expect(ecke.className).toContain('top-0')
+    expect(ecke.className).toContain('z-30')
+  })
+
   it('haelt den Namen beim Querscrollen fest', () => {
     render(<BattingStatsTable stats={KADER} />)
 

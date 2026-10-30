@@ -124,7 +124,9 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qualified, sorted, sortKey, gamesByPlayerId])
 
-  const NUM_TH = 'font-display text-right px-2.5 py-2.5 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap'
+  // `sticky top-0`: die Koepfe bleiben stehen, waehrend man die Zeilen durchscrollt. Ohne das
+  // steht man ab Zeile 6 vor „.667 .667 .833 1.500" und weiss nicht mehr, welche Spalte OBP ist.
+  const NUM_TH = 'font-display sticky top-0 z-20 bg-navy-900 text-right px-2.5 py-2.5 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap'
 
   const sortTh = (key: SortKey, label: string, opts?: { title?: string; align?: 'left' | 'right'; className?: string }) => {
     const align = opts?.align ?? 'right'
@@ -162,13 +164,26 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
         {/* `relative`, weil die Verlaufskante am rechten Rand darüber liegt. */}
         <div className="relative">
-          <div ref={scrollRef} onScroll={handleScroll} className="overflow-x-auto">
+          {/*
+           * Die Hoehe ist gedeckelt, damit die Spaltenkoepfe kleben koennen: `position: sticky`
+           * richtet sich nach dem naechsten scrollenden Vorfahren, und das ist dieser Kasten.
+           * Ohne Deckel scrollt hier vertikal nichts, und die Koepfe wandern mit der SEITE weg.
+           *
+           * Gemessen bei 11 Spielern faellt der Deckel nicht ins Gewicht (die Tabelle ist
+           * kuerzer) — er greift erst ab ~13 Zeilen, also genau dann, wenn man ihn braucht.
+           * `dvh` statt `vh`, weil die Adressleiste am Handy mitwandert.
+           *
+           * Kein `overscroll-behavior: contain`: laeuft der Finger unten aus der Tabelle
+           * heraus, soll die SEITE weiterscrollen und nicht anschlagen.
+           */}
+          <div ref={scrollRef} onScroll={handleScroll} className="overflow-auto max-h-[70dvh]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-navy-900 text-white">
                   {sortTh('playerName', 'Spieler', {
                     align: 'left',
-                    className: `sticky left-0 z-20 bg-navy-900 ${scrolled ? 'shadow-[6px_0_10px_-6px_rgba(15,23,42,0.5)]' : ''}`,
+                    // Die Ecke klebt in BEIDEN Richtungen und muss ueber allem liegen.
+                    className: `sticky left-0 top-0 z-30 bg-navy-900 ${scrolled ? 'shadow-[6px_0_10px_-6px_rgba(15,23,42,0.5)]' : ''}`,
                   })}
                   {sortTh('atBats', 'AB', { title: 'At-Bats — gewertete Schlagversuche' })}
                   {sortTh('hits', 'H', { title: 'Hits — Treffer' })}
@@ -239,8 +254,14 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                       </td>
                       {mitBalken('atBats', s.atBats, 'px-2.5 py-2 text-right font-display tabular-nums text-gray-700 whitespace-nowrap')}
                       {mitBalken('hits', s.hits, 'px-2.5 py-2 text-right font-display tabular-nums text-gray-700 whitespace-nowrap')}
+                      {/* AVG stand hier in 16 px, waehrend OBP/SLG/OPS 14 px trugen — aus der
+                          Zeit, als AVG allein vorn stand und die drei hinter einem Aufklapper
+                          lagen. Jetzt stehen die vier nebeneinander, und eine groessere AVG
+                          behauptet einen Vorrang, den sie fachlich nicht hat (OPS rangiert
+                          besser). Hervorgehoben wird die Spalte, nach der SORTIERT wird — das
+                          macht der Balken. */}
                       {mitBalken('battingAverage', formatDec(Number(s.battingAverage)),
-                        `px-2.5 py-2 text-right font-display tabular-nums font-extrabold text-navy-900 text-base whitespace-nowrap ${GRUPPENANFANG}`)}
+                        `px-2.5 py-2 text-right font-display tabular-nums font-extrabold text-navy-900 whitespace-nowrap ${GRUPPENANFANG}`)}
                       {mitBalken('onBasePct', formatDec(Number(s.onBasePct)), 'px-2.5 py-2 text-right font-display tabular-nums text-navy-900 whitespace-nowrap')}
                       {mitBalken('sluggingPct', formatDec(Number(s.sluggingPct)), 'px-2.5 py-2 text-right font-display tabular-nums text-navy-900 whitespace-nowrap')}
                       {mitBalken('ops', formatDec(Number(s.ops)), 'px-2.5 py-2 text-right font-display tabular-nums font-bold text-navy-900 whitespace-nowrap')}
