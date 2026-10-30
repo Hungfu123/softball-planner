@@ -6,7 +6,7 @@ import KapitelSeite from './KapitelSeite'
 
 /*
  * Eigene Datei, weil `KapitelSeite.test.tsx` `./kapitel` stellt, um das Blaettern zu
- * pruefen. Hier laufen die ECHTEN sechzehn Buehnen, eine nach der anderen durchgeblaettert.
+ * pruefen. Hier laufen die ECHTEN neunzehn Buehnen, eine nach der anderen durchgeblaettert.
  * Ohne das waere die Kette KAPITEL -> KapitelSeite -> Buehne nirgends zusammen geprueft,
  * und hinter der Zusage „Offense geht ohne Netz" staenden nur Attrappen.
  */
@@ -43,9 +43,8 @@ describe('Kapitelseite mit den echten Daten', () => {
     expect(rufe.filter(u => u.includes('/api'))).toEqual([])
   })
 
-  /* Zwei Karten fehlen mit Absicht, bis die Regel nachgeschlagen ist. */
-  it('traegt sechzehn Karten in drei Kapiteln', () => {
+  it('traegt neunzehn Karten in drei Kapiteln', () => {
     expect(KAPITEL.map(k => k.id)).toEqual(['box', 'getroffen', 'base'])
-    expect(KAPITEL.flatMap(k => k.karten)).toHaveLength(16)
+    expect(KAPITEL.flatMap(k => k.karten)).toHaveLength(19)
   })
 })

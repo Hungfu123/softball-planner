@@ -120,6 +120,7 @@ verbindlich, der genaue Wortlaut darum herum nicht.
 | Drin ist Strike | Auch wenn du nicht schwingst. |
 | Auch Strike | Geschwungen und nicht getroffen. Und jedes Foul, solange du unter zwei Strikes bist. |
 | Der Count ist ein Wettlauf | Vier Balls bringen dich auf die 1. Drei Strikes, und du bist raus. |
+| Dritter Strike am Boden | Faengt der Catcher ihn nicht, laeufst du. Nur wenn die 1 frei ist. |
 | Ein Fuss bleibt drin | Willst du ganz raus: Hand hoch, Time abwarten. Pause gibt der Ump. |
 | Wofuer ein Bunt gut ist | Kurz ablegen, waehrend die Verteidigung tief steht, und du bist schon unterwegs. |
 | Die Bunt-Falle | Bei zwei Strikes gebuntet und foul: du bist raus. |
@@ -133,14 +134,14 @@ verbindlich, der genaue Wortlaut darum herum nicht.
 | Raus: gefangen | Ball aus der Luft gefangen, bevor er den Boden beruehrt. |
 | Raus: Wurf zur 1 | Ball ist vor dir da. |
 | Raus: getickt | Jemand beruehrt dich mit dem Ball, waehrend du auf keiner Base stehst. |
-| An der 1 darfst du durchlaufen | Ueber die Safety Base und zurueck. Du musst nicht bremsen. |
+| An der 1 laeufst du durch | Nicht bremsen, danach direkt zurueck auf die Base. |
 
 ### Kapitel 3: Auf der Base — Wann darf ich weiter?
 
 | Karte | Pointe |
 |---|---|
 | Die Base ist sicher | Steh drauf, und dir passiert nichts. |
-| Los erst beim Release | Erst wenn der Ball die Hand der Pitcherin verlaesst. Kein Leadoff. |
+| Los, wenn der Fuss landet | Erst wenn der Schrittfuss der Pitcherin aufsetzt. Kein Leadoff. |
 | Wild Pitch | Ball rutscht am Catcher vorbei. Das ist dein Moment. |
 | Steal | Dasselbe, nur geplant. |
 | Fly gefangen: erst zurueck | Zurueck auf die Base beruehren, dann erst los. |
@@ -206,26 +207,48 @@ nachgemessen, ob der siebte Reiter die Leiste ueberlaufen laesst, und falls ja, 
 Hinweis wirklich erscheint. Der Kommentar in `Layout.tsx` haelt fest, dass der sechste
 Reiter dort schon einmal um 2 px zu viel war.
 
-## Vor dem Bauen zu klaeren
+## Nachgeschlagen am 30.10.2026
 
-**Keiner dieser Punkte blockiert den Bau.** Die betroffenen Karten fallen aus der ersten
-Fassung und kommen dazu, sobald jemand nachgeschlagen hat. Ein Kapitel mit sechs richtigen
-Karten ist besser als eines mit sieben, von denen eine falsch ist. (Entscheidung des
-Autors.)
+Die vier offenen Punkte sind beantwortet. **Quelle:** „Offizielle Softballregeln 2026 bis
+2029, Fastpitch", Deutscher Baseball und Softball Verband, Uebersetzung der WBSC-Regeln,
+gueltig ab 1. April 2026 (softball-regeln.de). Das ist das Regelwerk, unter dem die
+Ruhr-Fun-Liga als anerkannte Mixed-Qualifikationsliga spielt; eine eigene Spielordnung der
+RFL war oeffentlich nicht auffindbar. **Fuer Hausregeln gilt weiter, was oben steht:** wer
+auf eine stoesst, die einer Karte widerspricht, haelt an und fragt nach.
 
-1. **Die Ausnahmen der Batter's-Box-Regel.** Die freien Quellen sagen uebereinstimmend
-   „ein Fuss bleibt drin, mit Ausnahmen", nennen die acht Ausnahmen aber nicht
-   vollstaendig. Vor dem Veroeffentlichen der Karte im Regelwerk des eigenen Verbands
-   nachschlagen. Eine halb richtige Karte faellt unter die Anti-Ziele.
-2. **Safety Base.** Bestaetigen, dass an der 1 die orange Doppelbase benutzt wird. Sonst
-   stimmt die Karte „durchlaufen" im Bild nicht.
-3. **Dropped Third Strike ist nicht dabei.** Die Regel gilt je nach Liga unterschiedlich
-   (oft nur bei unbesetzter 1 oder zwei Outs). Eine Karte, die fuer euch nicht gilt, ist
-   schlimmer als keine. **Entscheidung des Autors**, nachtragbar, sobald die Lage klar ist.
-4. **Die Strike Zone ist entschieden:** Brust bis Knie. Der WBSC-Fastpitch-Bulletin von
-   2017 formuliert unteres Brustbein bis Unterkante Kniescheibe, aeltere ASA-Regeln sagen
-   Achsel bis Knie. Der Betreiber hat Brust bis Knie gesetzt. Nicht ohne Ruecksprache
+1. **Die Batter's-Box-Regel ist gebaut.** Regel 5.4.2 d): vor dem Pitch stehen beide Fuesse
+   vollstaendig in der Box. Regel 5.4.2 e): zwischen den Pitches bleibt **mindestens einer**
+   drin. Wer mit beiden raustritt und das Spiel verzoegert, bekommt einen Strike, **ohne
+   dass gepitcht wird** (5.4.3 c.vii).
+   Die acht Ausnahmen von 5.4.2 e) stehen bewusst **nicht** auf der Karte: geschlagener
+   Ball, Schwung oder Slap, der sie heraustraegt, ein Wurf der sie wegdraengt, Wild-Pitch
+   oder Passed-Ball, ein versuchter Spielzug, „Time", Pitcher oder Catcher verlassen ihren
+   Kreis, und der Strike-Call bei Three-Ball-Count. Keine davon ist eine Entscheidung, die
+   ein Schlagmann trifft — es sind Lagen, in denen er ohnehin schon draussen ist. Auf der
+   Karte steht stattdessen der einzige Fall, den er selbst herbeifuehrt: ganz raus geht nur
+   mit „Time", und geben muss es der Ump (Ausnahme vi).
+2. **Der Doppel-Base ist Teil des Regelwerks** (Feldmass 1.F.2, Handhabung 5.6): eine
+   Haelfte im Fair-Territory, die andere in Kontrastfarbe im Foul-Territory. Wird an der 1
+   gespielt und beruehrt der Schlag-Laeufer nur die weisse Haelfte, ist er nach einem Appeal
+   aus (5.6 a.iii); nach dem Ueberlaufen gehoert er zurueck auf die weisse (5.6 a.iv).
+   **Die Karte macht ihn trotzdem zur Bedingung und nicht zur Tatsache** („Liegt dort eine
+   zweite, farbige Haelfte?"): ob auf dem Platz einer liegt, entscheidet der Platz, nicht
+   das Regelbuch. Die Hauptaussage der Karte, das Durchlaufen und das direkte Zurueck,
+   stimmt mit und ohne ihn (5.10.4 j, 5.10.3 a.h).
+3. **Dropped Third Strike gilt** (5.1.46) und ist jetzt eine eigene Karte: bei weniger als
+   zwei Aus nur, wenn die erste Base **frei** ist, bei zwei Aus immer. Ist sie besetzt, ist
+   der Schlagmann aus (5.4.4 a.ii). Die Karte ist deshalb ein Schalter und kein Ablauf.
+4. **Die Strike Zone bestaetigt das Regelwerk** (5.4.3 c.i): oberer Ballrand am oder
+   unterhalb des **Sternums**, unterer Rand am oder oberhalb des **unteren Endes der
+   Kniescheibe**. Brust bis Knie, wie vom Betreiber gesetzt. Nicht ohne Ruecksprache
    aendern.
+
+**Eine Karte war falsch und ist korrigiert.** „Los erst beim Release" nannte den falschen
+Moment. Regel 5.10.3 b.ii) verlangt Kontakt zum Base, „bis der Schrittfuss des Pitchers
+waehrend seiner Pitch-Bewegung den Boden beruehrt" — das liegt vor dem Release. Die Strafe
+ist das Out **und** „NO PITCH", der Pitch zaehlt also nicht einmal. Die Karte heisst jetzt
+„Los, wenn der Fuss landet" und behaelt das Wort Release als Nebensatz, weil das halbe Team
+es so nennt.
 
 ## Dem Builder ueberlassen
 
