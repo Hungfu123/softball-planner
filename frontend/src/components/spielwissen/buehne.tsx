@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { HOME, SKIN_PATH, FOUL_LINES_PATH, BASES } from '@/components/playmaker/board/geometry'
+import { HOME, FIRST_BASE, SKIN_PATH, FOUL_LINES_PATH, BASES } from '@/components/playmaker/board/geometry'
 
 /**
  * Die Zeichenteile, die sich alle Karten teilen.
@@ -109,6 +109,11 @@ const AUSSCHNITTE = {
   infield: { x: HOME.x - 104, y: HOME.y - 112, w: 208, h: 132 },
   /** Nur die Gegend um die Platte. Fuer alles, was am Schlag passiert. */
   home: { x: HOME.x - 70, y: HOME.y - 78, w: 140, h: 92 },
+  /**
+   * Nah an die erste Base. Die Foul-Linie laeuft mitten durch, und nur in dieser
+   * Vergroesserung sind die beiden Haelften des Doppel-Base ueberhaupt zwei Dinge.
+   */
+  erste: { x: FIRST_BASE.x - 34, y: FIRST_BASE.y - 22, w: 62, h: 54 },
 } as const
 
 export function MiniFeld({ ausschnitt, className = '', children }: {

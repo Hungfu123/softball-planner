@@ -4,16 +4,17 @@ import { KAPITEL } from '../kapitel'
 
 /* Die Saetze stehen in kapitel.ts, die Zeichnungen daneben. Geprueft wird das Kapitel. */
 const GETROFFEN_KARTEN = KAPITEL[1].karten
-import { HOME } from '@/components/playmaker/board/geometry'
+import { HOME, FIRST_BASE } from '@/components/playmaker/board/geometry'
 
 describe('Kapitel Du hast getroffen', () => {
-  it('liefert fünf Karten mit genau diesen Pointen', () => {
+  it('liefert sechs Karten mit genau diesen Pointen', () => {
     expect(GETROFFEN_KARTEN.map(k => k.pointe)).toEqual([
       'Lauf. Sofort.',
       'Foul siehst du nicht',
       'Out: gefangen',
       'Out: Wurf zur 1',
       'Out: getickt',
+      'An der 1 läufst du durch',
     ])
   })
 
@@ -45,6 +46,32 @@ describe('Kapitel Du hast getroffen', () => {
       // Innerhalb der Linie heißt: höher als weit, von HOME aus gerechnet.
       expect(HOME.y - fair.y).toBeGreaterThan(fair.x - HOME.x)
       expect(HOME.y - foul.y).toBeLessThan(foul.x - HOME.x)
+    })
+  })
+
+  /*
+   * Die Durchlauf-Karte sagt ZWEI Dinge, und das zweite kostet sonst ein Out: lauf über
+   * die Base hinaus (Regel 5.10.4 j), aber steh danach wieder drauf. Ein Endzustand, in
+   * dem sie hinter der Base steht, erzählte nur die Hälfte.
+   */
+  it('läuft über die 1 hinaus und endet trotzdem auf ihr', async () => {
+    const { Buehne } = GETROFFEN_KARTEN[5]
+    render(<Buehne lauf={0} ruhig />)
+
+    const ort = (testid: string) => {
+      const el = screen.getByTestId(testid)
+      return { x: parseFloat(el.getAttribute('cx') ?? ''), y: parseFloat(el.getAttribute('cy') ?? '') }
+    }
+
+    // Der Umkehrpunkt liegt weiter weg von Home als die Base selbst.
+    const weit = ort('ueberlauf')
+    expect(weit.x - HOME.x).toBeGreaterThan(FIRST_BASE.x - HOME.x)
+
+    // Und am Ende steht sie wieder auf der Base.
+    await waitFor(() => {
+      const sie = ort('durchlauf-laeufer')
+      expect(sie.x).toBeCloseTo(FIRST_BASE.x, 1)
+      expect(sie.y).toBeCloseTo(FIRST_BASE.y, 1)
     })
   })
 

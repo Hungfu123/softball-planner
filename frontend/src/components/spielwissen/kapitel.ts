@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
-import { ZoneAmKoerper, DrinIstStrike, AuchStrike, CountWettlauf, BuntWofuer, BuntFalle } from './karten/box'
-import { LaufSofort, FoulSiehstDuNicht, RausGefangen, RausWurfZurEins, RausGetickt } from './karten/getroffen'
+import { ZoneAmKoerper, DrinIstStrike, AuchStrike, CountWettlauf, DritterStrikeAmBoden, EinFussBleibtDrin, BuntWofuer, BuntFalle } from './karten/box'
+import { LaufSofort, FoulSiehstDuNicht, RausGefangen, RausWurfZurEins, RausGetickt, DurchlaufenAnDerEins } from './karten/getroffen'
 import { BaseIstSicher, LosBeimRelease, WildPitch, Steal, TagUp } from './karten/base'
 
 /**
@@ -68,10 +68,12 @@ export interface Kapitel {
  * Regelkapiteln: in der Box, dann getroffen, dann auf der Base. Ein Neuer erlebt es
  * genau so, und deshalb findet er die Stelle wieder, an der er haengengeblieben ist.
  *
- * Zwei Karten fehlen mit Absicht: „Ein Fuss bleibt drin" und „An der 1 darfst du
- * durchlaufen". Beide haengen an Regeln, die erst im Regelwerk des eigenen Verbands
- * nachgeschlagen werden muessen. Eine falsche Karte ist schlimmer als keine, weil ein
- * Anfaenger sie glaubt und ins Spiel traegt.
+ * **Quelle der Regeln** ist das Regelwerk „Offizielle Softballregeln 2026 bis 2029,
+ * Fastpitch" des Deutschen Baseball und Softball Verbands (Uebersetzung der
+ * WBSC-Regeln, gueltig ab 1. April 2026, softball-regeln.de). Drei Karten standen
+ * vorher aus, weil niemand nachgeschlagen hatte, und eine vierte sagte es falsch: der
+ * Start von der Base haengt seit dieser Fassung am **Schrittfuss** und nicht am Release
+ * (5.10.3 b.ii). Die Regelnummer steht jeweils im Kommentar der Buehne.
  */
 export const KAPITEL: Kapitel[] = [
   {
@@ -107,6 +109,22 @@ export const KAPITEL: Kapitel[] = [
         pointe: 'Der Count ist ein Wettlauf',
         satz: 'Vier Balls bringen dich auf die 1. Drei Strikes, und du bist out.',
         Buehne: CountWettlauf,
+      },
+      {
+        id: 'dritter-strike',
+        stichwort: 'Dritter Strike',
+        pointe: 'Dritter Strike am Boden',
+        satz: 'Fängt der Catcher ihn nicht, darfst du zur 1 laufen. Aber nur, wenn die 1 frei ist.',
+        selbstgesteuert: true,
+        Buehne: DritterStrikeAmBoden,
+      },
+      {
+        id: 'ein-fuss',
+        stichwort: 'Box',
+        pointe: 'Ein Fuß bleibt drin',
+        satz: 'Willst du ganz raus: Hand hoch und Time abwarten. Geben muss es der Ump.',
+        selbstgesteuert: true,
+        Buehne: EinFussBleibtDrin,
       },
       {
         id: 'bunt-wofuer',
@@ -164,6 +182,13 @@ export const KAPITEL: Kapitel[] = [
         satz: 'Jemand berührt dich mit dem Ball, während du auf keiner Base stehst.',
         Buehne: RausGetickt,
       },
+      {
+        id: 'durchlaufen',
+        stichwort: 'Die 1',
+        pointe: 'An der 1 läufst du durch',
+        satz: 'Nicht bremsen. Danach direkt zurück auf die Base. Biegst du Richtung 2 ab, darf man dich ticken.',
+        Buehne: DurchlaufenAnDerEins,
+      },
     ],
   },
   {
@@ -181,8 +206,8 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'release',
         stichwort: 'Release',
-        pointe: 'Los erst beim Release',
-        satz: 'Erst wenn der Ball die Hand der Pitcherin verlässt. Kein Leadoff, und zu früh ist out.',
+        pointe: 'Los, wenn der Fuß landet',
+        satz: 'Kein Leadoff. Du bleibst auf der Base, bis der Schrittfuß der Pitcherin den Boden berührt. Früher ist out.',
         selbstgesteuert: true,
         Buehne: LosBeimRelease,
       },

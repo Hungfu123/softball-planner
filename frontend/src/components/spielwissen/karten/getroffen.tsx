@@ -297,3 +297,79 @@ export function RausGetickt({ lauf, ruhig }: BuehnenProps) {
     </div>
   )
 }
+
+/* ------------------------------------------------- 6 Durchlaufen an der 1 */
+
+/**
+ * Die einzige Base, an der man nicht bremsen muss, und die zwei Dinge, die danach kommen.
+ *
+ * Regel 5.10.4 j): wer das erste Base ueberlaeuft und **direkt zurueckkehrt**, ist sicher.
+ * Regel 5.10.3 a.h): wer stattdessen Richtung 2 abbiegt, darf getickt werden. Das Bild
+ * zeigt deshalb beides, und zwar in dieser Reihenfolge: sonst merkt sich jemand nur die
+ * erste Haelfte und steht nach dem Ueberlaufen neben der Base.
+ *
+ * Dazu der **Doppel-Base** (Regel 5.6): liegt eine zweite, farbige Haelfte im
+ * Foul-Territory, gehoert sie dem Laeufer, sobald an der 1 gespielt wird. Wer dann nur
+ * die weisse beruehrt, ist nach einem Appeal aus (5.6 a.iii), und zurueck geht es auf die
+ * weisse (5.6 a.iv). Genau das laeuft die Figur hier ab. Ob auf eurem Platz ueberhaupt
+ * ein Doppel-Base liegt, sagt die Bildunterschrift als Bedingung und nicht als Tatsache.
+ */
+export function DurchlaufenAnDerEins({ lauf, ruhig }: BuehnenProps) {
+  /* Der Weg von Home zur 1 laeuft unter 45 Grad nach oben rechts. */
+  const u = { x: Math.SQRT1_2, y: -Math.SQRT1_2 }
+  const entlang = (ab: { x: number; y: number }, d: number) => ({ x: ab.x + u.x * d, y: ab.y + u.y * d })
+
+  /* Die halbe Diagonale eines um 45 Grad gedrehten 5,2er-Quadrats: so liegen die beiden
+     Haelften Kante an Kante statt uebereinander. */
+  const versatz = 3.68
+  const farbig = { x: FIRST_BASE.x + versatz, y: FIRST_BASE.y + versatz }
+
+  const start = entlang(FIRST_BASE, -26)
+  const ueber = entlang(farbig, 14)
+
+  return (
+    <div className="px-4 pt-4">
+      <MiniFeld ausschnitt="erste" className="max-h-52">
+        {/* Die farbige Haelfte im Foul-Territory. Die weisse zeichnet MiniFeld selbst. */}
+        <rect
+          x={farbig.x - 2.6} y={farbig.y - 2.6} width="5.2" height="5.2"
+          fill={FARBE.gut} opacity="0.85"
+          transform={'rotate(45 ' + farbig.x + ' ' + farbig.y + ')'}
+        />
+
+        {/* Der Weg: durch die Base hindurch und erst dahinter zu Ende. */}
+        <line
+          x1={start.x} y1={start.y} x2={ueber.x} y2={ueber.y}
+          stroke={FARBE.hell} strokeWidth="1.2" strokeDasharray="4 3" opacity="0.4"
+        />
+        {/* Der Umkehrpunkt. Cream und nicht Amber: Amber gehoert auf dieser Karte der
+            farbigen Base-Haelfte, und zwei amberfarbene Punkte waeren eine Frage. */}
+        <circle data-testid="ueberlauf" cx={ueber.x} cy={ueber.y} r="1.8" fill={FARBE.hell} opacity="0.45" />
+
+        {/* Welche Base das ist, sieht man in dieser Vergroesserung sonst nicht. */}
+        <text
+          x={FIRST_BASE.x + 9} y={FIRST_BASE.y - 6}
+          fontSize="7" fontWeight="800" fill={FARBE.hell} opacity="0.55" className="font-display"
+        >
+          1
+        </text>
+
+        <motion.circle
+          key={`laeufer-${lauf}`}
+          data-testid="durchlauf-laeufer"
+          /* Dunkel umrandet: sie endet auf der weissen Haelfte, und ohne Rand werden die
+             beiden in dieser Vergroesserung ein einziger heller Fleck. */
+          r="3" fill={FARBE.hell} stroke={FARBE.grund} strokeWidth="0.9"
+          initial={ruhig ? false : { cx: start.x, cy: start.y }}
+          animate={ruhig
+            ? { cx: FIRST_BASE.x, cy: FIRST_BASE.y }
+            : { cx: [start.x, farbig.x, ueber.x, FIRST_BASE.x], cy: [start.y, farbig.y, ueber.y, FIRST_BASE.y] }}
+          transition={takt(ruhig, { duration: 1.9, times: [0, 0.45, 0.72, 1], ease: 'easeOut' })}
+        />
+      </MiniFeld>
+      <p className="px-1 pb-1 text-center text-[12px] leading-snug text-cream-50/70">
+        Liegt dort eine zweite, farbige Hälfte? Bei einem Wurf ist die deine.
+      </p>
+    </div>
+  )
+}

@@ -324,7 +324,184 @@ export function CountWettlauf({ ruhig }: BuehnenProps) {
   )
 }
 
-/* ------------------------------------------------------------- 5 Bunt wofuer */
+/* ------------------------------------------- 5 Dritter Strike am Boden */
+
+/** Der Catcher sitzt ein Stueck hinter der Platte. Wie in Kapitel 3. */
+const CATCHER = { x: HOME.x, y: HOME.y + 7 }
+
+/**
+ * Der nicht gefangene dritte Strike, und die Bedingung, die ihn fast immer aufhebt.
+ *
+ * Regel 5.1.46: der Schlagmann darf laufen, wenn bei weniger als zwei Aus die erste Base
+ * **frei** ist, oder wenn zwei Aus vorliegen. Steht dort jemand, ist er aus (5.4.4 a.ii).
+ * Die Karte ist deshalb kein Ablauf, sondern ein **Schalter**: der Ball liegt in beiden
+ * Faellen am Boden, und trotzdem ist das Ergebnis ein anderes. Ein Zeitablauf koennte nur
+ * einen der beiden zeigen.
+ *
+ * Die zwei Aus stehen in der Bildunterschrift und nicht als dritter Knopf: sie sind die
+ * Ausnahme der Ausnahme, und drei Knoepfe fuer zwei Faelle liest niemand.
+ */
+export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
+  const [frei, setFrei] = useState(true)
+  /* Sie steht ein Stueck VOR der Platte, nicht darauf: auf HOME selbst verschmolz sie
+     mit dem Catcher zu einem Fleck, und dann sieht man nicht, dass da zwei stehen. */
+  const box = { x: HOME.x, y: HOME.y - 6 }
+  const ziel = frei ? FIRST_BASE : box
+
+  return (
+    <div className="px-4 pt-4">
+      <div className="relative">
+        <MiniFeld ausschnitt="infield" className="max-h-52">
+          <circle cx={CATCHER.x} cy={CATCHER.y} r="4" fill={FARBE.hell} opacity="0.45" />
+          {/* Der Ball ist ihm durchgerutscht und liegt hinter ihm. Die gestrichelte Spur
+              sagt, dass er dort nicht hingelegt wurde, sondern hingerollt ist. */}
+          {/* Seitlich nach hinten und nicht geradeaus: der Ausschnitt endet 20 Einheiten
+              hinter der Platte, und ein Ball, der genau dorthin rollt, wird abgeschnitten. */}
+          <line
+            x1={CATCHER.x - 3} y1={CATCHER.y + 2} x2={CATCHER.x - 15} y2={CATCHER.y + 6}
+            stroke={FARBE.hell} strokeWidth="1" strokeDasharray="2 2" opacity="0.35"
+          />
+          <circle cx={CATCHER.x - 18} cy={CATCHER.y + 5} r="3.4" fill={FARBE.gut} />
+
+          {/* Wer schon auf der 1 steht, nimmt dir das Recht zu laufen. Umrandet, damit er
+              sich von der Schlagfrau unterscheidet, ohne eine zweite Farbe zu brauchen. */}
+          {!frei && (
+            <circle
+              cx={FIRST_BASE.x} cy={FIRST_BASE.y} r="4.2"
+              fill={FARBE.hell} opacity="0.45" stroke={FARBE.hell} strokeWidth="1.2"
+            />
+          )}
+          {frei && <SicherRing ort={FIRST_BASE} ruhig={ruhig} delay={0.7} />}
+
+          <motion.circle
+            data-testid="dts-laeufer"
+            initial={{ cx: ziel.x, cy: ziel.y }}
+            animate={{ cx: ziel.x, cy: ziel.y }}
+            transition={takt(ruhig, { duration: 0.7, ease: 'easeOut' })}
+            r="4.5" fill={FARBE.hell}
+          />
+        </MiniFeld>
+        <div className="absolute right-2 top-1">
+          <Stempel
+            text={frei ? 'Lauf' : 'Out'}
+            art={frei ? 'gut' : 'raus'}
+            lauf={frei ? 1 : 0}
+            ruhig={ruhig}
+            delay={frei ? 0.8 : 0.2}
+          />
+        </div>
+      </div>
+
+      <p className="px-1 pt-1 text-center text-[12px] leading-snug text-cream-50/70">
+        Bei zwei Outs darfst du immer los.
+      </p>
+
+      <div className="mt-1 flex gap-2">
+        {([['Die 1 ist frei', true], ['Die 1 ist besetzt', false]] as const).map(([label, wert]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => setFrei(wert)}
+            aria-pressed={frei === wert}
+            style={frei === wert
+              ? { backgroundColor: FARBE.hell, color: FARBE.grund }
+              : { backgroundColor: 'rgb(255 255 255 / 0.12)', color: 'rgb(251 246 236 / 0.75)' }}
+            className="font-display min-h-11 flex-1 rounded-lg px-2 py-2 text-[11px] font-extrabold uppercase tracking-widest transition-colors active:brightness-125"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------- 6 Ein Fuss bleibt drin */
+
+/**
+ * Die Box von oben, zwei Abdruecke, und ein Knopf durch drei Staende.
+ *
+ * Von oben und nicht von der Seite, weil es um **Fuesse und eine Linie** geht: in der
+ * Seitenansicht liegen beide Fuesse uebereinander, und genau ihr Unterschied ist die
+ * Regel. Die Zone-Karte bleibt aus demselben Grund in der Seitenansicht; dort geht es um
+ * Brust und Knie.
+ *
+ * Die Regeln dahinter: vor dem Pitch beide Fuesse vollstaendig drin (5.4.2 d), zwischen
+ * den Pitches mindestens einer (5.4.2 e), und wer mit beiden raustritt und verzoegert,
+ * bekommt einen Strike **ohne dass gepitcht wird** (5.4.3 c.vii). Die acht Ausnahmen der
+ * Regel 5.4.2 e stehen absichtlich nicht auf der Karte: sie beschreiben Faelle, in denen
+ * man ohnehin schon draussen ist (Schwung, Wild-Pitch, Time), und keiner davon ist eine
+ * Entscheidung, die ein Schlagmann trifft.
+ */
+const FUSS = [
+  { text: 'Vor dem Pitch stehst du drin. Mit beiden Füßen.', hinten: 0, vorne: 0, strike: false },
+  { text: 'Zwischen zwei Pitches darf einer raus. Einer bleibt drin.', hinten: 1, vorne: 0, strike: false },
+  { text: 'Beide raus und du verzögerst: Strike. Ganz ohne Pitch.', hinten: 1, vorne: 1, strike: true },
+]
+
+export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
+  const [schritt, setSchritt] = useState(0)
+  const jetzt = FUSS[schritt]
+  /* Die Box von oben. Raus geht nach links, also WEG von der Platte: wer nach rechts
+     tritt, stuende auf der Platte, und das ist eine andere Regel. */
+  const box = { x: 84, y: 20, w: 52, h: 80 }
+  const drin = 110
+  const raus = 74
+
+  const abdruck = (id: string, cy: number, weg: number) => (
+    <motion.ellipse
+      data-testid={id}
+      key={id}
+      initial={{ cx: weg ? raus : drin, cy }}
+      animate={{ cx: weg ? raus : drin, cy }}
+      transition={takt(ruhig, { duration: 0.35, ease: AUS })}
+      rx="6" ry="9" fill={FARBE.hell} opacity="0.9"
+    />
+  )
+
+  return (
+    <div className="px-4 pt-4">
+      <div className="relative">
+        <svg viewBox="56 6 118 108" className="max-h-48 w-full" aria-hidden focusable="false">
+          {/* Die Home-Plate, von oben. */}
+          <path d="M142 46 h22 v18 l-11 10 l-11 -10 z" fill={FARBE.hell} opacity="0.4" />
+
+          <rect
+            data-testid="box"
+            x={box.x} y={box.y} width={box.w} height={box.h}
+            fill="none" stroke={FARBE.hell} strokeWidth="1.6" strokeDasharray="5 4" opacity="0.55"
+          />
+          <text x={box.x + box.w / 2} y={box.y - 5} textAnchor="middle" fontSize="8" fontWeight="800" fill={FARBE.hell} opacity="0.5" className="font-display">
+            BOX
+          </text>
+
+          {abdruck('fuss-vorne', 40, jetzt.vorne)}
+          {abdruck('fuss-hinten', 80, jetzt.hinten)}
+        </svg>
+
+        {jetzt.strike && (
+          <div className="absolute right-2 top-1">
+            <Stempel text="Strike" art="raus" lauf={schritt} ruhig={ruhig} delay={0.2} />
+          </div>
+        )}
+      </div>
+
+      <p className="min-h-10 px-1 text-center text-[12px] leading-snug text-cream-50/80">
+        {jetzt.text}
+      </p>
+
+      <button
+        type="button"
+        onClick={() => setSchritt(s => (s + 1) % FUSS.length)}
+        className="font-display mb-1 min-h-11 w-full rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+      >
+        {schritt === FUSS.length - 1 ? 'Von vorn' : 'Nächster Schritt'}
+      </button>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------- 7 Bunt wofuer */
 
 /**
  * Wozu man ueberhaupt buntet, und das sind **zwei** Gruende.
@@ -386,7 +563,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
   )
 }
 
-/* -------------------------------------------------------------- 6 Bunt-Falle */
+/* -------------------------------------------------------------- 8 Bunt-Falle */
 
 /** Dieselbe Bewegung, zwei Strikes auf dem Zaehler, und sie kostet den At-Bat. */
 export function BuntFalle({ lauf, ruhig }: BuehnenProps) {

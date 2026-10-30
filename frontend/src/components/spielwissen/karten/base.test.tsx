@@ -10,7 +10,7 @@ describe('Kapitel Auf der Base', () => {
   it('liefert fünf Karten mit genau diesen Pointen', () => {
     expect(BASE_KARTEN.map(k => k.pointe)).toEqual([
       'Die Base ist sicher',
-      'Los erst beim Release',
+      'Los, wenn der Fuß landet',
       'Wild Pitch',
       'Steal',
       'Fly gefangen: erst dann los',
@@ -25,11 +25,13 @@ describe('Kapitel Auf der Base', () => {
   })
 
   /*
-   * Kein Leadoff: solange der Ball in der Hand der Pitcherin ist, steht die Läuferin auf
-   * der Base. Die Karte führt in drei Ständen durch, und der dritte ist der einzige, in
-   * dem sie weg ist.
+   * Kein Leadoff. Der Auslöser ist seit dem Regelwerk 2026 bis 2029 NICHT das Release,
+   * sondern der Schrittfuß: Regel 5.10.3 b.ii) verlangt Kontakt zum Base, "bis der
+   * Schrittfuß des Pitchers während seiner Pitch-Bewegung den Boden berührt". Deshalb
+   * ist der Abdruck der Marker, an dem die Karte hängt, und nicht die Ballposition.
+   * Dass sie erst danach losläuft, ist die Pointe.
    */
-  it('lässt die Läuferin erst los, wenn der Ball die Hand verlässt', async () => {
+  it('lässt die Läuferin erst los, wenn der Schrittfuß aufsetzt', async () => {
     const { Buehne } = BASE_KARTEN[1]
     render(<Buehne lauf={0} ruhig />)
 
@@ -38,13 +40,14 @@ describe('Kapitel Auf der Base', () => {
     const y = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cy') ?? '')
     const weiter = () => fireEvent.click(screen.getByRole('button', { name: /Nächster Schritt|Von vorn/ }))
 
-    // Stand 1: Ball in der Hand, Läuferin auf der Base.
+    // Stand 1: Ball in der Hand, kein Abdruck, Läuferin auf der Base.
     expect(y('ball')).toBeCloseTo(PITCHING_PLATE.y, 1)
+    expect(screen.queryByTestId('schrittfuss')).not.toBeInTheDocument()
     expect(x('laeufer')).toBeCloseTo(FIRST_BASE.x, 1)
 
-    // Stand 2: der Ball ist unterwegs, sie steht immer noch.
+    // Stand 2: der Fuß ist unten, sie darf, steht aber noch.
     weiter()
-    await waitFor(() => expect(y('ball')).not.toBeCloseTo(PITCHING_PLATE.y, 1))
+    await waitFor(() => expect(screen.getByTestId('schrittfuss')).toBeInTheDocument())
     expect(x('laeufer')).toBeCloseTo(FIRST_BASE.x, 1)
 
     // Stand 3: jetzt erst ist sie weg.

@@ -59,26 +59,34 @@ export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
   )
 }
 
-/* -------------------------------------------------------------- 2 Release */
+/* ----------------------------------------------------------- 2 Schrittfuss */
 
 const RELEASE = [
-  { text: 'Der Ball liegt in der Hand der Pitcherin. Du stehst auf der Base.', ball: 0, laeufer: 0 },
-  { text: 'Jetzt ist er raus. Ab hier darfst du.', ball: 0.5, laeufer: 0 },
-  { text: 'Und erst ab hier. Vorher gibt es keinen Vorsprung.', ball: 1, laeufer: 1 },
+  { text: 'Der Ball liegt in der Hand der Pitcherin. Du stehst auf der Base.', ball: 0, fuss: false, laeufer: 0 },
+  { text: 'Ihr Schrittfuß landet. Ab hier darfst du.', ball: 0.16, fuss: true, laeufer: 0 },
+  { text: 'Und erst ab hier. Vorher gibt es keinen Vorsprung.', ball: 1, fuss: true, laeufer: 1 },
 ]
 
 /**
- * Kein Leadoff.
+ * Kein Leadoff, und zwar ab **dem Schrittfuss**.
+ *
+ * Die Karte sagte erst „erst wenn der Ball die Hand verlaesst". Das Regelwerk 2026 bis
+ * 2029 nennt einen anderen Moment: Regel 5.10.3 b.ii) verlangt Kontakt zum Base, „bis der
+ * Schrittfuss des Pitchers waehrend seiner Pitch-Bewegung den Boden beruehrt". Der liegt
+ * einen Wimpernschlag **vor** dem Release, und die Strafe ist nicht nur das Out, sondern
+ * zusaetzlich „NO PITCH" — der Pitch zaehlt also nicht einmal. Das Wort Release bleibt
+ * trotzdem unter dem Bild stehen: so sagt es das halbe Team, und wer danach sucht, soll
+ * die Karte wiederfinden.
  *
  * Erst stand hier eine zweite, rote Laeuferin, die zu frueh losging und zurueckmusste.
- * Das las niemand: **Rot heisst in dieser App ueberall „raus"**, und die Aufloesung stand
+ * Das las niemand: **Rot heisst in dieser App ueberall „out"**, und die Aufloesung stand
  * als Legende unter dem Bild statt am Punkt. Wer die Bewegung verpasste, sah zwei Punkte
  * und Kleingedrucktes.
  *
  * Jetzt fuehrt ein Knopf durch drei Staende, wie bei `TagUp`. Es gibt nur **eine**
- * Laeuferin, und die Erlaubnis ist sichtbar an den Ball geknuepft: solange er in der Hand
- * liegt, haelt der Ring sie auf der Base. Derselbe Ring wie auf der Karte „Die Base ist
- * sicher", und er meint dort dasselbe.
+ * Laeuferin, und die Erlaubnis haengt sichtbar am Abdruck: solange keiner da ist, haelt
+ * der Ring sie auf der Base. Derselbe Ring wie auf der Karte „Die Base ist sicher", und
+ * er meint dort dasselbe.
  */
 export function LosBeimRelease({ ruhig }: BuehnenProps) {
   const [schritt, setSchritt] = useState(0)
@@ -96,8 +104,33 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
         <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r="5" fill={FARBE.hell} opacity="0.35" />
         <circle cx={CATCHER.x} cy={CATCHER.y} r="4" fill={FARBE.hell} opacity="0.35" />
 
-        {/* Solange der Ball nicht weg ist, haelt der Ring sie fest. */}
-        {jetzt.laeufer === 0 && (
+        {/*
+          Der Abdruck des Schrittfusses: der Moment, auf den es ankommt. Er steht schraeg
+          vor der Platte, weil der Schritt Richtung Home geht.
+
+          **Cream und nicht Amber**, obwohl er die Erlaubnis ausloest: der Ball ist auf
+          dieser Karte amber und faellt unmittelbar daneben. Zwei amberfarbene Flecken
+          nebeneinander waren im Browser nicht auseinanderzuhalten. Ein Fuss ist ohnehin
+          ein Koerperteil, und Koerperteile sind hier cream. Das Signal „jetzt darfst du"
+          traegt der Ring, der im selben Stand verschwindet.
+        */}
+        {jetzt.fuss && (
+          <motion.ellipse
+            data-testid="schrittfuss"
+            cx={PITCHING_PLATE.x + 8} cy={PITCHING_PLATE.y + 8}
+            rx="2.2" ry="3.4"
+            fill={FARBE.hell}
+            transform={`rotate(-28 ${PITCHING_PLATE.x + 8} ${PITCHING_PLATE.y + 8})`}
+            initial={ruhig ? false : { opacity: 0, scale: 2 }}
+            animate={{ opacity: 0.95, scale: 1 }}
+            style={{ originX: `${PITCHING_PLATE.x + 8}px`, originY: `${PITCHING_PLATE.y + 8}px` }}
+            transition={takt(ruhig, { duration: 0.3, ease: 'easeOut' })}
+          />
+        )}
+
+        {/* Solange der Fuss nicht unten ist, haelt der Ring sie fest. Ab Stand 2 ist er
+            weg, obwohl sie noch steht: die Erlaubnis kommt vor der Bewegung. */}
+        {!jetzt.fuss && (
           <motion.circle
             cx={start.x} cy={start.y} r="10"
             fill="none" stroke={FARBE.gut} strokeWidth="1.6"
@@ -128,6 +161,9 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
 
       <p className="min-h-10 px-1 text-center text-[12px] leading-snug text-cream-50/80">
         {jetzt.text}
+      </p>
+      <p className="px-1 pb-1 text-center text-[11px] text-cream-50/55">
+        Viele sagen Release dazu. Der Fuß ist einen Hauch früher.
       </p>
 
       <button
