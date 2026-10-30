@@ -25,6 +25,7 @@ const PlaySetupPage = lazy(() => import('@/components/playmaker/PlaySetupPage'))
 const PlayEditorPage = lazy(() => import('@/components/playmaker/PlayEditorPage'))
 const FreiesFeldPage = lazy(() => import('@/components/playmaker/FreiesFeldPage'))
 const PlayViewerPage = lazy(() => import('@/components/playmaker/PlayViewerPage'))
+const SpielwissenHome = lazy(() => import('@/components/spielwissen/SpielwissenHome'))
 /*
  * Schwere Seiten, auf denen niemand LANDET: der Planer, die Umfragen, der Kader, das
  * Spielerprofil, der Aufstellungsbogen. Sie lagen im Eintrittsbuendel und mussten geladen
@@ -98,6 +99,10 @@ export function LazyFreiesFeld() {
 
 export function LazyPlayViewer() {
   return <Suspense fallback={<LoadingSkeleton />}><PlayViewerPage /></Suspense>
+}
+
+export function LazySpielwissen() {
+  return <Suspense fallback={<LoadingSkeleton />}><SpielwissenHome /></Suspense>
 }
 
 export function LazyTrainerabrechnung() {

@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { ChevronLeft } from '@/icons'
-import { Home, Dumbbell, Users, BarChart3, Mail, CalendarDays, CalendarCheck, type LucideIcon } from 'lucide-react'
+import { Home, Dumbbell, Users, BarChart3, Mail, CalendarDays, CalendarCheck, BookOpen, type LucideIcon } from 'lucide-react'
 import { Toast } from './Toast'
 import { WhatsappStatusBanner } from './WhatsappStatusBanner'
 import { KontoMenu } from './KontoMenu'
@@ -39,8 +39,21 @@ const ADMIN_TABS: Tab[] = [
   { path: '/training', label: 'Training', shortLabel: 'Training', Icon: Dumbbell },
   { path: '/players', label: 'Spieler', shortLabel: 'Spieler', Icon: Users },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
+  { path: '/spielwissen', label: 'Spielwissen', shortLabel: 'Wissen', Icon: BookOpen },
   { path: '/orga', label: 'Orga', shortLabel: 'Orga', Icon: Mail, extraPaths: ['/kalender', '/spielbogen'] },
 ]
+
+/*
+ * Spielwissen steht in BEIDEN Listen: es ist das einzige Stueck der App, das niemanden
+ * bewertet, also gibt es dort nichts zu verbergen. Beim Admin sitzt es vor Orga, weil Orga
+ * die Schublade am Ende ist; beim Spieler am Ende, weil davor nichts verrutschen soll.
+ *
+ * Mit dem siebten Reiter LAEUFT die Admin-Leiste am Handy ueber, und zwar bewusst:
+ * gemessen bei 390 px sind es 336 px Inhalt auf 314 px Breite, also 22 px zu viel.
+ * `data-scroll-hint` steht dann auf true, der Fade erscheint, und der letzte Reiter ist
+ * durch Wischen erreichbar (geprueft: scrollLeft 22 holt /orga vollstaendig ins Bild).
+ * Ein Reiter weniger waere die Alternative gewesen, und keiner der sieben ist entbehrlich.
+ */
 
 /**
  * Spieler sehen Orga nicht — `/kalender` braucht deshalb einen eigenen Reiter statt
@@ -51,6 +64,7 @@ const PLAYER_TABS: Tab[] = [
   { path: '/spielbetrieb', label: 'Spielbetrieb', shortLabel: 'Spiele', Icon: CalendarCheck },
   { path: '/stats', label: 'Analyse', shortLabel: 'Analyse', Icon: BarChart3, extraPaths: ['/teams'] },
   { path: '/kalender', label: 'Kalender', shortLabel: 'Kalender', Icon: CalendarDays },
+  { path: '/spielwissen', label: 'Spielwissen', shortLabel: 'Wissen', Icon: BookOpen },
 ]
 
 export function Layout() {
