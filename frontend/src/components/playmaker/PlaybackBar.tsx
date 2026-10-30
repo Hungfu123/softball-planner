@@ -1,4 +1,3 @@
-import { StepTimeline } from './StepTimeline'
 import { RefreshIcon } from '@/icons'
 
 /**
@@ -7,18 +6,17 @@ import { RefreshIcon } from '@/icons'
  * Die Schritt-Knoepfe sind nicht Zierrat: beim Erklaeren blaettert man, man spielt nicht
  * ab. Vorher war das nur per Wischen erreichbar und damit unsichtbar.
  *
- * **Tempo und Schleife sind raus.** Beides waren Einstellungen, keine Handlungen: wer
- * zuschaut, will nicht halbe Geschwindigkeit waehlen, sondern die Stelle noch einmal
- * sehen. Dafuer steht jetzt „nochmal" da — derselbe Knopf wie unter einer Karte im
- * Spielwissen, mit demselben Wort.
+ * **Weg sind Tempo, Schleife, Zeitleiste und die Zeile „Stand 2 von 4".** Das waren
+ * Einstellungen und Anzeigen eines Videospielers; ein Play ist kein Video, das man
+ * durchsucht, sondern eine Bewegung, die man sich ansieht. Geblieben sind vier
+ * Handlungen: einen Stand zurueck, anhalten, einen vor, und „nochmal" — dasselbe Wort
+ * und dasselbe Zeichen wie unter einer Karte im Spielwissen.
  */
 export function PlaybackBar({
   count,
   index,
-  fortschritt,
   playing,
   canPlay,
-  onSeek,
   onPrev,
   onNext,
   onToggle,
@@ -26,11 +24,8 @@ export function PlaybackBar({
 }: {
   count: number
   index: number
-  /** Fortschritt im laufenden Uebergang, 0..1 — fuer den Knopf der Zeitleiste. */
-  fortschritt: number
   playing: boolean
   canPlay: boolean
-  onSeek: (i: number) => void
   onPrev: () => void
   onNext: () => void
   onToggle: () => void
@@ -38,21 +33,20 @@ export function PlaybackBar({
 }) {
   return (
     <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom">
-      <StepTimeline count={count} current={index} fortschritt={fortschritt} onSeek={onSeek} />
-      <div className="mt-2 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <Knopf onClick={onPrev} disabled={index === 0} aria-label="Vorheriger Stand">
           ◀
         </Knopf>
-        <Knopf onClick={onToggle} disabled={!canPlay} primary aria-label={playing ? 'Pause' : 'Abspielen'}>
+        {/* Anhalten bleibt als Knopf: ein Tipp aufs Feld tut dasselbe, aber das sieht
+            man der Flaeche nicht an. */}
+        <Knopf onClick={onToggle} disabled={!canPlay} aria-label={playing ? 'Pause' : 'Abspielen'}>
           {playing ? '❚❚' : '▶'}
         </Knopf>
         <Knopf onClick={onNext} disabled={index >= count - 1} aria-label="Nächster Stand">
           ▶
         </Knopf>
-        {/* Kein „Stand 2 von 4": die Zeitleiste darueber zeigt dasselbe als Bild, und
-            wer zuschaut, zaehlt keine Staende — er sieht ein Play. */}
         <span className="flex-1" />
-        <Knopf onClick={onNochmal} disabled={!canPlay} wide aria-label="Nochmal">
+        <Knopf onClick={onNochmal} disabled={!canPlay} primary wide aria-label="Nochmal">
           <span className="flex items-center gap-1.5">
             <RefreshIcon size={14} />
             nochmal

@@ -269,10 +269,8 @@ function Viewer({
         <PlaybackBar
           count={play.steps.length}
           index={wiedergabe.index}
-          fortschritt={wiedergabe.fortschritt}
           playing={wiedergabe.playing}
           canPlay={wiedergabe.canPlay}
-          onSeek={wiedergabe.seek}
           onPrev={wiedergabe.prev}
           onNext={wiedergabe.next}
           onToggle={wiedergabe.toggle}
