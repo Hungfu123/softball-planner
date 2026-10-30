@@ -53,7 +53,7 @@ export function Ball({ r = 6 }: { r?: number }) {
   return (
     <g>
       <circle r={r} fill={FARBE.ball} />
-      <circle r={r * 0.62} fill="none" stroke={FARBE.naht} strokeWidth={r * 0.28} opacity="0.75" />
+      <circle r={r * 0.66} fill="none" stroke={FARBE.naht} strokeWidth={r * 0.18} opacity="0.7" />
     </g>
   )
 }
