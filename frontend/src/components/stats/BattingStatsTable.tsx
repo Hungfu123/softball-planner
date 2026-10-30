@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { Trophy, Zap, Check, Info } from 'lucide-react'
+import { Trophy, Zap, Info } from 'lucide-react'
 import type { PlayerBattingStatsResponse } from '@/types'
 
 const MIN_AB_LABEL = 'min. 5 ABs'
@@ -162,6 +162,42 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
 
   return (
     <div className="space-y-2">
+      {/*
+       * Dass Spieler FEHLEN, steht ueber der Tabelle, nicht darunter.
+       *
+       * Der Qualifier blendet aus — wer unter 5 ABs liegt, taucht gar nicht auf. Bei einem
+       * Kader von zwanzig trifft das regelmaessig jemanden: Neue, Zugezogene, wer zwei
+       * Spieltage gefehlt hat. Der sucht sich in der Liste, findet sich nicht, und die
+       * einzige Erklaerung stand frueher als Kaestchen UNTER einem Scrollkasten, den er
+       * vielleicht nie zu Ende scrollt.
+       *
+       * Das ist keine Bedienung, das ist eine Auskunft ueber den Inhalt der Tabelle — und
+       * die gehoert davor. Das WARUM (die 5-AB-Schwelle) bleibt als Fussnote unten; wer die
+       * Zahl erklaert haben will, hat die Tabelle schon gelesen.
+       */}
+      {applyQualifier && unqualified.length > 0 && (
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-1 text-[11px]">
+          <span className="text-gray-600">
+            {`${visible.length} Spieler in der Tabelle`}
+            {!showUnqualified && (
+              <>
+                {', '}
+                <strong className="font-semibold text-navy-900">
+                  {`${unqualified.length} unter 5 ABs ausgeblendet`}
+                </strong>
+              </>
+            )}
+          </span>
+          <button
+            onClick={() => setShowUnqualified(x => !x)}
+            aria-pressed={showUnqualified}
+            className="font-display text-[11px] font-bold tracking-wide uppercase text-navy-700 underline underline-offset-2 hover:text-softball-red-600 cursor-pointer"
+          >
+            {showUnqualified ? 'wieder ausblenden' : 'einblenden'}
+          </button>
+        </div>
+      )}
+
       <div className="bg-cream-50 border border-cream-300 rounded-2xl overflow-hidden">
         {/* `relative`, weil die Verlaufskante am rechten Rand darüber liegt. */}
         <div className="relative">
@@ -316,27 +352,12 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
             Was heißen AB, OBP, OPS?
           </button>
         )}
+        {/* Nur noch das WARUM. Der Schalter steht ueber der Tabelle, bei der Auskunft,
+            wie viele fehlen — dort wird die Frage gestellt, nicht hier unten. */}
         {applyQualifier && unqualified.length > 0 && (
-          <>
-            <button
-              onClick={() => setShowUnqualified(x => !x)}
-              role="checkbox"
-              aria-checked={showUnqualified}
-              className="font-display min-h-11 text-[11px] font-bold tracking-widest uppercase text-gray-700 hover:text-navy-900 cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <span
-                className={`inline-flex items-center justify-center w-4 h-4 rounded-[4px] border transition-colors ${
-                  showUnqualified ? 'bg-navy-900 border-navy-900 text-white' : 'border-gray-400 text-transparent'
-                }`}
-              >
-                <Check size={11} strokeWidth={3.5} />
-              </span>
-              Auch &lt;5 ABs ({unqualified.length})
-            </button>
-            <p className="text-[11px] text-gray-500">
-              Quoten brauchen {MIN_AB_LABEL} — sonst liest sich 3-für-3 als 1.000.
-            </p>
-          </>
+          <p className="text-[11px] text-gray-500">
+            Quoten brauchen {MIN_AB_LABEL} — sonst liest sich 3-für-3 als 1.000.
+          </p>
         )}
       </div>
     </div>
