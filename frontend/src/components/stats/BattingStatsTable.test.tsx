@@ -84,13 +84,30 @@ describe('BattingStatsTable', () => {
     expect(namen()[0]).toContain('Yuki')
   })
 
+  /*
+   * Bei zwanzig im Kader faellt regelmaessig jemand unter die Schwelle. Wer sich in der
+   * Liste sucht und nicht findet, muss die Erklaerung sehen, BEVOR er die Tabelle
+   * durchgescrollt hat — die Auskunft steht deshalb darueber, nicht als Kaestchen darunter.
+   */
+  it('sagt ueber der Tabelle, wie viele Spieler ausgeblendet sind', () => {
+    const mitWenig = [...KADER, spieler({ playerId: 3, playerName: 'Neu', atBats: 2, qualified: false })]
+    const { container } = render(<BattingStatsTable stats={mitWenig} applyQualifier />)
+
+    const hinweis = screen.getByText(/1 unter 5 ABs ausgeblendet/)
+    expect(hinweis).toBeInTheDocument()
+    // Wirklich oberhalb: die Tabelle folgt dem Hinweis im Dokument.
+    const tabelle = container.querySelector('table')!
+    expect(hinweis.compareDocumentPosition(tabelle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('haelt Spieler unter 5 ABs zurueck, bis jemand sie sehen will', () => {
     const mitWenig = [...KADER, spieler({ playerId: 3, playerName: 'Neu', atBats: 2, qualified: false })]
     render(<BattingStatsTable stats={mitWenig} applyQualifier />)
 
     expect(screen.queryByText('Neu')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('checkbox', { name: /Auch <5 ABs/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'einblenden' }))
     expect(screen.getByText('Neu')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'wieder ausblenden' })).toBeInTheDocument()
   })
 
   /*
