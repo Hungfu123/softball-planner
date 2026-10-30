@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { BOX_KARTEN } from './box'
+import { KAPITEL } from '../kapitel'
+
+/* Die Saetze stehen in kapitel.ts, die Zeichnungen daneben. Geprueft wird das Kapitel. */
+const BOX_KARTEN = KAPITEL[0].karten
 
 describe('Kapitel In der Box', () => {
   it('liefert sechs Karten mit genau diesen Pointen', () => {

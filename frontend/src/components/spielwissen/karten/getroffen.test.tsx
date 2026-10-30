@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { GETROFFEN_KARTEN } from './getroffen'
+import { KAPITEL } from '../kapitel'
+
+/* Die Saetze stehen in kapitel.ts, die Zeichnungen daneben. Geprueft wird das Kapitel. */
+const GETROFFEN_KARTEN = KAPITEL[1].karten
 import { HOME } from '@/components/playmaker/board/geometry'
 
 describe('Kapitel Du hast getroffen', () => {

@@ -7,7 +7,9 @@ import type { KartenDaten } from './kapitel'
  *
  * **Navy in beiden Themes.** Wie die Analyse-Seiten ist das Gestaltung der Seite und
  * nicht das Theme: auf dunklem Grund stehen die Zeichnungen, und die Pointe in Amber
- * liegt darauf, wo sie im Hellen verschwaende.
+ * liegt darauf, wo sie im Hellen verschwaende. Der helle Rand ist dafuer der Preis: im
+ * Dunkeln liegt die Karte sonst auf einer fast gleich dunklen Seite und hoert auf, ein
+ * Gegenstand zu sein. Im Hellen faellt er nicht auf.
  *
  * **Nichts laeuft in Schleife.** Eine Dauerbewegung neben einem Satz, den man liest, ist
  * Laerm. Wer sie noch einmal sehen will, tippt „nochmal"; der Zaehler `lauf` geht an die
@@ -29,7 +31,7 @@ export function Karte({ karte }: { karte: KartenDaten }) {
   const { Buehne } = karte
 
   return (
-    <article className="overflow-hidden rounded-2xl bg-navy-900 text-cream-50">
+    <article className="overflow-hidden rounded-2xl border border-cream-50/12 bg-navy-900 text-cream-50">
       <div className="relative">
         <Buehne lauf={lauf} ruhig={ruhig} />
       </div>

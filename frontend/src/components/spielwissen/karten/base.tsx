@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import type { BuehnenProps, KartenDaten } from '../kapitel'
-import { Ball, FARBE, MiniFeld } from '../buehne'
+import type { BuehnenProps } from '../kapitel'
+import { FARBE, MiniFeld } from '../buehne'
 import { HOME, FIRST_BASE, SECOND_BASE, PITCHING_PLATE } from '@/components/playmaker/board/geometry'
 
 /**
@@ -21,7 +21,7 @@ const CATCHER = { x: HOME.x, y: HOME.y + 7 }
 /* --------------------------------------------------------------- 1 Sicher */
 
 /** Solange du draufstehst, kann dir niemand etwas. Die ruhigste Karte des Kapitels. */
-function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
+export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
@@ -59,7 +59,7 @@ function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
  * Kein Leadoff. Zwei Laeuferinnen nebeneinander: die eine geht zu frueh und muss
  * zurueck, die andere geht mit dem Abwurf und ist weg.
  */
-function LosBeimRelease({ lauf, ruhig }: BuehnenProps) {
+export function LosBeimRelease({ lauf, ruhig }: BuehnenProps) {
   const ziel = { x: (FIRST_BASE.x + SECOND_BASE.x) / 2, y: (FIRST_BASE.y + SECOND_BASE.y) / 2 }
 
   return (
@@ -108,7 +108,7 @@ function LosBeimRelease({ lauf, ruhig }: BuehnenProps) {
 /* ------------------------------------------------------------ 3 Wild Pitch */
 
 /** Der Ball rutscht am Catcher vorbei. Das ist geschenkt, und es ist schnell vorbei. */
-function WildPitch({ lauf, ruhig }: BuehnenProps) {
+export function WildPitch({ lauf, ruhig }: BuehnenProps) {
   const vorbei = { x: HOME.x - 30, y: HOME.y + 16 }
 
   return (
@@ -143,7 +143,7 @@ function WildPitch({ lauf, ruhig }: BuehnenProps) {
 /* ------------------------------------------------------------------ 4 Steal */
 
 /** Derselbe Weg wie beim Wild Pitch, nur ohne Fehler der Gegenseite. */
-function Steal({ lauf, ruhig }: BuehnenProps) {
+export function Steal({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
@@ -196,7 +196,7 @@ const TAGUP = [
  * Hier fuehrt kein Zeitablauf, sondern ein Knopf: die Reihenfolge ist die Auskunft, und
  * wer sie selbst weiterschaltet, merkt sich, dass es drei Schritte sind.
  */
-function TagUp({ lauf, ruhig }: BuehnenProps) {
+export function TagUp({ lauf, ruhig }: BuehnenProps) {
   const [schritt, setSchritt] = useState(0)
   const jetzt = TAGUP[schritt]
   const ziel = { x: SECOND_BASE.x, y: SECOND_BASE.y }
@@ -242,38 +242,3 @@ function TagUp({ lauf, ruhig }: BuehnenProps) {
     </div>
   )
 }
-
-/* ------------------------------------------------------------------ Bestand */
-
-export const BASE_KARTEN: KartenDaten[] = [
-  {
-    id: 'sicher',
-    pointe: 'Die Base ist sicher',
-    satz: 'Steh drauf, und dir passiert nichts.',
-    Buehne: BaseIstSicher,
-  },
-  {
-    id: 'release',
-    pointe: 'Los erst beim Release',
-    satz: 'Erst wenn der Ball die Hand der Pitcherin verlässt. Kein Leadoff.',
-    Buehne: LosBeimRelease,
-  },
-  {
-    id: 'wild-pitch',
-    pointe: 'Wild Pitch',
-    satz: 'Der Ball rutscht am Catcher vorbei. Das ist dein Moment.',
-    Buehne: WildPitch,
-  },
-  {
-    id: 'steal',
-    pointe: 'Steal',
-    satz: 'Dasselbe, nur geplant.',
-    Buehne: Steal,
-  },
-  {
-    id: 'tag-up',
-    pointe: 'Fly gefangen: erst zurück',
-    satz: 'Zurück auf die Base berühren, dann erst los.',
-    Buehne: TagUp,
-  },
-]

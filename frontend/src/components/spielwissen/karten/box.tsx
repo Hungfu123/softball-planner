@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
-import type { BuehnenProps, KartenDaten } from '../kapitel'
+import type { BuehnenProps } from '../kapitel'
 import { Ball, FARBE, Figur, MiniFeld } from '../buehne'
 import { HOME } from '@/components/playmaker/board/geometry'
 
@@ -53,7 +53,7 @@ function Stempel({ text, art, lauf, ruhig, delay = 0 }: {
  * `attrY`: `motion` liest ein blankes `y` als Transform und wuerde die Verschiebung auf
  * das Attribut draufrechnen.
  */
-function ZoneAmKoerper({ ruhig }: BuehnenProps) {
+export function ZoneAmKoerper({ ruhig }: BuehnenProps) {
   const [gross, setGross] = useState(false)
   const k = gross ? 1.16 : 0.88
   const boden = 152
@@ -125,7 +125,7 @@ function ZoneAmKoerper({ ruhig }: BuehnenProps) {
 /* ------------------------------------------------------------- 2 Drin/Ball */
 
 /** Zwei Pitches, einer in der Zone, einer daneben. Das Urteil haengt am Ort, nicht am Schwung. */
-function DrinIstStrike({ lauf, ruhig }: BuehnenProps) {
+export function DrinIstStrike({ lauf, ruhig }: BuehnenProps) {
   const pitch = (x: number, y: number, verzug: number) => (
     <motion.g
       key={`${x}-${lauf}`}
@@ -162,7 +162,7 @@ const GRUENDE = [
 ]
 
 /** Drei Wege zum selben Ergebnis. Sie leuchten nacheinander auf, damit man sie zaehlt. */
-function AuchStrike({ lauf, ruhig }: BuehnenProps) {
+export function AuchStrike({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="space-y-2 px-4 py-5">
       {GRUENDE.map((grund, i) => (
@@ -186,7 +186,7 @@ function AuchStrike({ lauf, ruhig }: BuehnenProps) {
 /* ------------------------------------------------------------ 4 Count-Rennen */
 
 /** Vier gegen drei. Wer zuerst voll ist, gewinnt, und das Ergebnis heisst anders. */
-function CountWettlauf({ lauf, ruhig }: BuehnenProps) {
+export function CountWettlauf({ lauf, ruhig }: BuehnenProps) {
   const [b, setB] = useState(0)
   const [s, setS] = useState(0)
   const ende = b >= 4 ? 'Walk' : s >= 3 ? 'Out' : null
@@ -202,9 +202,9 @@ function CountWettlauf({ lauf, ruhig }: BuehnenProps) {
           <motion.span
             key={i}
             initial={false}
-            animate={{ scale: i < wert ? 1 : 0.62, opacity: i < wert ? 1 : 0.3 }}
+            animate={{ scale: i < wert ? 1 : 0.62, opacity: i < wert ? 1 : 0.9 }}
             transition={takt(ruhig, { type: 'spring', stiffness: 420, damping: 18 })}
-            className={`h-6 flex-1 rounded-full ${i < wert ? farbe : 'bg-cream-50/25'}`}
+            className={`h-6 flex-1 rounded-full ${i < wert ? farbe : 'bg-white/20'}`}
           />
         ))}
       </div>
@@ -251,7 +251,7 @@ function CountWettlauf({ lauf, ruhig }: BuehnenProps) {
  * Wozu man ueberhaupt buntet: die Verteidigung steht tief, der Ball faellt kurz, und du
  * bist schon unterwegs. Das erwarten die wenigsten, deshalb kommt der Zweck vor der Regel.
  */
-function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
+export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
   const tief = [
     { x: HOME.x - 46, y: HOME.y - 66 },
     { x: HOME.x, y: HOME.y - 78 },
@@ -294,7 +294,7 @@ function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
 /* -------------------------------------------------------------- 6 Bunt-Falle */
 
 /** Dieselbe Bewegung, zwei Strikes auf dem Zaehler, und sie kostet den At-Bat. */
-function BuntFalle({ lauf, ruhig }: BuehnenProps) {
+export function BuntFalle({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <div className="mb-2 flex justify-center gap-1.5">
@@ -346,44 +346,3 @@ function BuntFalle({ lauf, ruhig }: BuehnenProps) {
     </div>
   )
 }
-
-/* ------------------------------------------------------------------ Bestand */
-
-export const BOX_KARTEN: KartenDaten[] = [
-  {
-    id: 'zone',
-    pointe: 'Die Zone bist du',
-    satz: 'Brust bis Knie, über der Platte. Zwei Leute, zwei Zonen.',
-    Buehne: ZoneAmKoerper,
-  },
-  {
-    id: 'drin',
-    pointe: 'Drin ist Strike',
-    satz: 'Auch wenn du nicht schwingst.',
-    Buehne: DrinIstStrike,
-  },
-  {
-    id: 'auch-strike',
-    pointe: 'Auch Strike',
-    satz: 'Drei Wege, und alle zählen gleich.',
-    Buehne: AuchStrike,
-  },
-  {
-    id: 'count',
-    pointe: 'Der Count ist ein Wettlauf',
-    satz: 'Vier Balls bringen dich auf die 1. Drei Strikes, und du bist raus.',
-    Buehne: CountWettlauf,
-  },
-  {
-    id: 'bunt-wofuer',
-    pointe: 'Wofür ein Bunt gut ist',
-    satz: 'Kurz ablegen, während die Verteidigung tief steht, und du bist schon unterwegs.',
-    Buehne: BuntWofuer,
-  },
-  {
-    id: 'bunt-falle',
-    pointe: 'Die Bunt-Falle',
-    satz: 'Bei zwei Strikes gebuntet und foul: du bist raus.',
-    Buehne: BuntFalle,
-  },
-]

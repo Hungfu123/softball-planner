@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import type { BuehnenProps, KartenDaten } from '../kapitel'
+import type { BuehnenProps } from '../kapitel'
 import { Ball, FARBE, Figur, MiniFeld } from '../buehne'
 import { HOME, FIRST_BASE, SECOND_BASE } from '@/components/playmaker/board/geometry'
 
@@ -43,7 +43,7 @@ function OutStempel({ lauf, ruhig, delay }: { lauf: number; ruhig: boolean; dela
  * Der haeufigste Fehler im Team: hinsehen, wo der Ball hinfliegt. Die Karte zeigt
  * deshalb gar nicht, wo er landet, sondern nur, dass die Figur schon weg ist.
  */
-function LaufSofort({ lauf, ruhig }: BuehnenProps) {
+export function LaufSofort({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <svg viewBox="0 0 220 165" className="max-h-52 w-full" aria-hidden focusable="false">
@@ -82,7 +82,7 @@ function LaufSofort({ lauf, ruhig }: BuehnenProps) {
  * Zwei Baelle, acht Grad Unterschied, identischer Abflug. Der Punkt ist nicht, welcher
  * fair ist, sondern dass man es von der Platte aus nicht sehen kann.
  */
-function FoulSiehstDuNicht({ lauf, ruhig }: BuehnenProps) {
+export function FoulSiehstDuNicht({ lauf, ruhig }: BuehnenProps) {
   // Die rechte Foul-Linie laeuft unter 45 Grad. Steiler als 45 liegt INNERHALB.
   const fair = flug(53, 86)
   const foul = flug(37, 86)
@@ -124,7 +124,7 @@ function FoulSiehstDuNicht({ lauf, ruhig }: BuehnenProps) {
 /* --------------------------------------------------------------- 3 Gefangen */
 
 /** Der Ball berührt den Boden nicht. Mehr braucht es nicht. */
-function RausGefangen({ lauf, ruhig }: BuehnenProps) {
+export function RausGefangen({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="relative px-4 pt-4">
       <svg viewBox="0 0 200 122" className="max-h-44 w-full" aria-hidden focusable="false">
@@ -152,7 +152,7 @@ function RausGefangen({ lauf, ruhig }: BuehnenProps) {
 /* ------------------------------------------------------------ 4 Wurf zur 1 */
 
 /** Ein Wettlauf, den der Ball gewinnt. Er fliegt, du läufst. */
-function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
+export function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="relative px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
@@ -184,7 +184,7 @@ function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
 /* ---------------------------------------------------------------- 5 Getickt */
 
 /** Zwischen zwei Bases gehört dir nichts. Wer dich dort berührt, hat dich. */
-function RausGetickt({ lauf, ruhig }: BuehnenProps) {
+export function RausGetickt({ lauf, ruhig }: BuehnenProps) {
   const mitte = { x: (FIRST_BASE.x + SECOND_BASE.x) / 2, y: (FIRST_BASE.y + SECOND_BASE.y) / 2 }
 
   return (
@@ -212,38 +212,3 @@ function RausGetickt({ lauf, ruhig }: BuehnenProps) {
     </div>
   )
 }
-
-/* ------------------------------------------------------------------ Bestand */
-
-export const GETROFFEN_KARTEN: KartenDaten[] = [
-  {
-    id: 'lauf',
-    pointe: 'Lauf. Sofort.',
-    satz: 'Nicht hinsehen, nicht abwarten.',
-    Buehne: LaufSofort,
-  },
-  {
-    id: 'foul',
-    pointe: 'Foul siehst du nicht',
-    satz: 'Zwei Bälle, gleicher Abflug. Einer ist fair, einer ist foul. Nicht dein Call.',
-    Buehne: FoulSiehstDuNicht,
-  },
-  {
-    id: 'gefangen',
-    pointe: 'Raus: gefangen',
-    satz: 'Ball aus der Luft gefangen, bevor er den Boden berührt.',
-    Buehne: RausGefangen,
-  },
-  {
-    id: 'wurf-zur-eins',
-    pointe: 'Raus: Wurf zur 1',
-    satz: 'Der Ball ist vor dir da.',
-    Buehne: RausWurfZurEins,
-  },
-  {
-    id: 'getickt',
-    pointe: 'Raus: getickt',
-    satz: 'Jemand berührt dich mit dem Ball, während du auf keiner Base stehst.',
-    Buehne: RausGetickt,
-  },
-]
