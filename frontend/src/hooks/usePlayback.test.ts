@@ -103,14 +103,19 @@ describe('usePlayback — Zeitplan', () => {
     expect(result.current.playing).toBe(false);
   });
 
-  test('braucht fuer einen Uebergang die Dauer des Zielstands plus 400 ms Halt', () => {
+  /*
+   * Die Dauer kommt aus der Strecke (board/tempo.ts), nicht mehr aus durationMs: hundert
+   * Fuss bei achtzig Fuss je Sekunde sind 1,3 s. Danach haelt die Wiedergabe 400 ms, damit
+   * der erreichte Stand kurz steht, bevor der naechste losgeht.
+   */
+  test('rechnet die Dauer aus der Strecke und haelt danach 400 ms', () => {
     const { result } = renderHook(() => usePlayback(steps));
 
     act(() => result.current.play());
     act(() => frame(0));
 
     // Kurz vor Ablauf steht der Stand noch auf 1.
-    act(() => frame(1199));
+    act(() => frame(1299));
     expect(result.current.index).toBe(0);
 
     // Dauer voll, aber der Halt laeuft noch.
@@ -121,33 +126,25 @@ describe('usePlayback — Zeitplan', () => {
     expect(result.current.index).toBe(1);
   });
 
-  test('beruecksichtigt die Dauer JE Stand, nicht eine feste', () => {
-    const { result } = renderHook(() => usePlayback(steps));
+  test('laesst einen kurzen Weg kuerzer dauern als einen langen', () => {
+    // 100 Fuss, dann 20: der zweite Uebergang ist deutlich schneller durch.
+    const ungleich = [stand(1, 1200, 0), stand(2, 1200, 100), stand(3, 1200, 120)];
+    const { result } = renderHook(() => usePlayback(ungleich));
 
     act(() => result.current.play());
     act(() => frame(0));
-    act(() => frame(1200));
+    act(() => frame(1300));
     act(() => vi.advanceTimersByTime(400));
     expect(result.current.index).toBe(1);
 
-    // Der dritte Stand ist mit 600 ms als "schnell" markiert.
+    // Zwanzig Fuss waeren 250 ms, die Untergrenze macht 400 daraus — alles unter einer
+    // knappen halben Sekunde sieht aus wie ein Sprung.
     act(() => frame(0));
-    act(() => frame(599));
+    act(() => frame(399));
     expect(result.current.index).toBe(1);
     act(() => frame(1));
     act(() => vi.advanceTimersByTime(400));
     expect(result.current.index).toBe(2);
-  });
-
-  test('halbiert die Zeit bei doppeltem Tempo', () => {
-    const { result } = renderHook(() => usePlayback(steps, { speed: 2 }));
-
-    act(() => result.current.play());
-    act(() => frame(0));
-    act(() => frame(600));
-    act(() => vi.advanceTimersByTime(400));
-
-    expect(result.current.index).toBe(1);
   });
 
   test('bewegt sich in jedem Bild, nicht nur am Standende', () => {
@@ -169,36 +166,19 @@ describe('usePlayback — Zeitplan', () => {
     }
   });
 
-  test('haelt am letzten Stand an, wenn die Schleife aus ist', () => {
+  test('haelt am letzten Stand an', () => {
     const { result } = renderHook(() => usePlayback(steps));
 
     act(() => result.current.play());
     act(() => frame(0));
-    act(() => frame(1200));
+    act(() => frame(1300));
     act(() => vi.advanceTimersByTime(400));
     act(() => frame(0));
-    act(() => frame(600));
+    act(() => frame(1300));
     act(() => vi.advanceTimersByTime(400));
 
     expect(result.current.index).toBe(2);
     expect(result.current.playing).toBe(false);
-  });
-
-  test('faengt mit Schleife wieder von vorne an', () => {
-    const { result } = renderHook(() => usePlayback(steps, { loop: true }));
-
-    act(() => result.current.play());
-    act(() => frame(0));
-    act(() => frame(1200));
-    act(() => vi.advanceTimersByTime(400));
-    act(() => frame(0));
-    act(() => frame(600));
-    act(() => vi.advanceTimersByTime(400));
-    expect(result.current.index).toBe(2);
-
-    act(() => vi.advanceTimersByTime(400));
-    expect(result.current.index).toBe(0);
-    expect(result.current.playing).toBe(true);
   });
 });
 

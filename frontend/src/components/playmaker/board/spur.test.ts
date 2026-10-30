@@ -76,7 +76,9 @@ describe('frameAt — der Ball fliegt auf seiner Bahn', () => {
     const naechster = Array.from({ length: 1001 }, (_, i) => punktAuf(k, i / 1000))
       .map(pt => Math.hypot(frame.ball.x - pt.x, frame.ball.y - pt.y))
       .reduce((a, b) => Math.min(a, b));
-    expect(naechster).toBeLessThan(0.01);
+    // Toleranz ist die Abtastung der Vergleichskurve, nicht die Bahn: tausend Punkte
+    // auf einem Bogen liegen nicht exakt dort, wo der Ball gerade steht.
+    expect(naechster).toBeLessThan(0.05);
 
     // Und weiter als die Haelfte, aber nicht auf der geraden Verbindung.
     const laenge = Math.hypot(B.x - A.x, B.y - A.y);
