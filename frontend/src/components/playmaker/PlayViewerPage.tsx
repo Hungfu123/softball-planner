@@ -53,9 +53,9 @@ export default function PlayViewerPage() {
     }
   }, [id])
 
-  if (fehler?.id === Number(id)) return <p className="p-6 text-sm text-gray-500">{fehler.text}</p>
+  if (fehler?.id === Number(id)) return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">{fehler.text}</p>
   if (!play || play.id !== Number(id)) {
-    return <p className="p-6 text-sm text-gray-500">Play wird geladen …</p>
+    return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">Play wird geladen …</p>
   }
 
   return (
@@ -106,11 +106,11 @@ function Viewer({
   // halben Bildschirm; ein Streiftipp hielt die Wiedergabe lautlos an, und der naechste
   // Druck auf den Knopf startete sie wieder — er stand ja inzwischen auf ▶.
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] grid-cols-1 overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] grid-cols-1 overflow-hidden bg-navy-900 text-cream-50 landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-50/12 px-4 landscape:col-start-2 lg:col-start-2">
         <Link
           to="/orga/playmaker"
-          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
+          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-cream-50/70 active:text-cream-50"
         >
           Zurück
         </Link>
@@ -118,17 +118,17 @@ function Viewer({
             h1 { text-wrap: balance }, und ungeschichtetes CSS schlaegt Tailwinds
             @layer utilities — truncate waere am h1 wirkungslos und der Titel braeche um. */}
         <h1 className="min-w-0 flex-1">
-          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
+          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-amber-400">
             {play.title}
           </span>
         </h1>
         <button
           type="button"
           onClick={() => setLegende(true)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center text-gray-500"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-cream-50/70"
           aria-label="Legende"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-cream-300 font-display text-xs font-bold">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-cream-50/30 font-display text-xs font-bold">
             ?
           </span>
         </button>
@@ -136,7 +136,7 @@ function Viewer({
           <button
             type="button"
             onClick={onEdit}
-            className="flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
+            className="flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-cream-50/70 active:text-cream-50"
           >
             Ändern
           </button>
@@ -145,7 +145,7 @@ function Viewer({
           {[0, 1, 2].map(i => (
             <span
               key={i}
-              className={`h-2.5 w-2.5 rounded-full ${i < (wiedergabe.step?.outs ?? 0) ? 'bg-navy-800' : 'bg-cream-300'}`}
+              className={`h-2.5 w-2.5 rounded-full ${i < (wiedergabe.step?.outs ?? 0) ? 'bg-amber-400' : 'bg-cream-50/20'}`}
             />
           ))}
         </div>
@@ -153,7 +153,7 @@ function Viewer({
 
       <div
         ref={flaeche}
-        className="min-h-0 bg-[#93B268] landscape:col-start-1 landscape:row-span-3 landscape:row-start-1 lg:col-start-1 lg:row-span-3 lg:row-start-1"
+        className="min-h-0 bg-navy-900 landscape:col-start-1 landscape:row-span-3 landscape:row-start-1 lg:col-start-1 lg:row-span-3 lg:row-start-1"
         // Umschalten, nicht nur pausieren: siehe Kommentar vor dem return.
         onClick={wiedergabe.toggle}
       >
@@ -173,7 +173,8 @@ function Viewer({
       </div>
 
       <div className="min-h-0 landscape:col-start-2 landscape:flex landscape:flex-col lg:col-start-2 lg:flex lg:flex-col">
-        <p className="px-4 py-2.5 text-sm leading-snug text-navy-900">{wiedergabe.step?.note ?? ''}</p>
+        {/* Der Satz zum Stand, wie die Zeile unter einer Karte im Spielwissen. */}
+        <p className="px-4 py-2.5 text-sm leading-snug text-cream-50/80">{wiedergabe.step?.note ?? ''}</p>
         {/* Nur wo Platz ist: am Handy traegt die Zeitleiste allein. */}
         <div className="hidden min-h-0 overflow-y-auto landscape:block lg:block">
           <StepList steps={play.steps} current={wiedergabe.index} onSelect={wiedergabe.seek} />
@@ -184,20 +185,20 @@ function Viewer({
         {gegenstueck && (
           <Link
             to={`/orga/playmaker/${gegenstueck.id}`}
-            className="mx-4 mb-2 flex items-center gap-3 rounded-xl border border-dashed border-cream-400 bg-white p-2.5"
+            className="mx-4 mb-2 flex items-center gap-3 rounded-xl border border-dashed border-cream-50/25 bg-cream-50/5 p-2.5 active:bg-cream-50/10"
           >
             <div className="h-10 w-12 shrink-0 overflow-hidden rounded-lg">
               {gegenstueck.steps[0] ? (
                 <PlayBoard markers={gegenstueck.steps[0].markers} steps={gegenstueck.steps} width={48} height={40} interactive={false} />
               ) : (
-                <div className="h-full w-full bg-cream-200" />
+                <div className="h-full w-full bg-cream-50/10" />
               )}
             </div>
             <div className="min-w-0">
-              <div className="truncate font-display text-xs font-extrabold text-navy-900">
+              <div className="truncate font-display text-xs font-extrabold text-cream-50">
                 Gegenstück: {gegenstueck.title}
               </div>
-              <div className="truncate text-[11px] text-gray-500">{gegenstueck.gameStateNote ?? 'Andere Lage'}</div>
+              <div className="truncate text-[11px] text-cream-50/60">{gegenstueck.gameStateNote ?? 'Andere Lage'}</div>
             </div>
           </Link>
         )}

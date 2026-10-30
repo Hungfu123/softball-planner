@@ -17,7 +17,7 @@ export function StepList({
   onSelect: (index: number) => void
 }) {
   return (
-    <ol className="min-h-0 overflow-y-auto border-t border-cream-200">
+    <ol className="min-h-0 overflow-y-auto border-t border-cream-50/12">
       {steps.map((step, index) => {
         const aktiv = index === current
         return (
@@ -25,22 +25,22 @@ export function StepList({
             <button
               type="button"
               onClick={() => onSelect(index)}
-              className={`flex w-full items-start gap-3 border-b border-cream-200 px-4 py-2.5 text-left ${
-                aktiv ? 'bg-cream-200' : 'hover:bg-cream-100'
+              className={`flex w-full items-start gap-3 border-b border-cream-50/12 px-4 py-2.5 text-left ${
+                aktiv ? 'bg-cream-50/10' : 'hover:bg-cream-50/5'
               }`}
             >
               <span
                 className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg font-display text-xs font-bold tabular-nums ${
-                  aktiv ? 'bg-navy-800 text-cream-50' : 'bg-cream-200 text-gray-500'
+                  aktiv ? 'bg-amber-400 text-navy-900' : 'bg-cream-50/15 text-cream-50/70'
                 }`}
               >
                 {index + 1}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-xs leading-snug text-navy-900">
-                  {step.note || <span className="text-gray-400">ohne Notiz</span>}
+                <span className="block text-xs leading-snug text-cream-50/85">
+                  {step.note || <span className="text-cream-50/40">ohne Notiz</span>}
                 </span>
-                <span className="mt-0.5 block font-display text-[10px] font-bold tabular-nums text-gray-400">
+                <span className="mt-0.5 block font-display text-[10px] font-bold tabular-nums text-cream-50/45">
                   {(step.durationMs / 1000).toFixed(1).replace('.', ',')} s · {step.outs}{' '}
                   {step.outs === 1 ? 'Out' : 'Outs'}
                 </span>

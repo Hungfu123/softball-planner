@@ -40,7 +40,7 @@ export function PlaybackBar({
   onSpeed: () => void
 }) {
   return (
-    <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom">
+    <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom">
       <StepTimeline count={count} current={index} fortschritt={fortschritt} onSeek={onSeek} />
       <div className="mt-2 flex items-center gap-2">
         <Knopf onClick={onPrev} disabled={index === 0} aria-label="Vorheriger Stand">
@@ -52,7 +52,7 @@ export function PlaybackBar({
         <Knopf onClick={onNext} disabled={index >= count - 1} aria-label="Nächster Stand">
           ▶
         </Knopf>
-        <span className="flex-1 whitespace-nowrap text-center font-display text-xs font-bold tabular-nums text-gray-500">
+        <span className="flex-1 whitespace-nowrap text-center font-display text-xs font-bold tabular-nums text-cream-50/60">
           <span className="hidden min-[340px]:inline">
             Stand {index + 1} von {count}
           </span>
@@ -88,11 +88,15 @@ function Knopf({
   wide?: boolean
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const basis = wide ? 'px-3.5' : 'w-11'
+  /*
+   * Die Sprache der Buehne: Amber ist der Knopf, den man drueckt, Cream die Umrisse
+   * drumherum. Vorher waren es weisse Knoepfe mit Cream-Kanten — auf Navy unsichtbar.
+   */
   const farbe = primary
-    ? 'bg-navy-800 text-cream-50'
+    ? 'bg-amber-400 text-navy-900 active:brightness-110'
     : active
-      ? 'bg-cream-200 text-navy-900 border border-cream-300'
-      : 'border border-cream-300 bg-white text-navy-900'
+      ? 'bg-cream-50 text-navy-900'
+      : 'border border-cream-50/25 text-cream-50 active:bg-cream-50/10'
   return (
     <button
       type="button"

@@ -1,4 +1,5 @@
 import { createPortal } from 'react-dom'
+import { FARBE } from './board/farben'
 
 /**
  * Was die Formen bedeuten.
@@ -16,30 +17,35 @@ export function LegendSheet({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-t-2xl bg-cream-50 p-5 sm:rounded-2xl"
+        className="w-full max-w-md rounded-t-2xl border border-cream-50/12 bg-navy-900 p-5 text-cream-50 sm:rounded-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="font-headline text-xl font-extrabold uppercase tracking-wide text-navy-900">Legende</h2>
-        <ul className="mt-4 space-y-3 text-sm text-navy-900">
+        <h2 className="font-headline text-xl font-extrabold uppercase tracking-wide text-amber-400">Legende</h2>
+        <ul className="mt-4 space-y-3 text-sm text-cream-50/85">
           <Zeile beschreibung="Verteidiger, mit Positionskürzel">
-            <circle cx="14" cy="14" r="11" fill="#193253" />
-            <text x="14" y="17.5" textAnchor="middle" fill="#FBF6EC" fontSize="8" fontWeight="700">
+            <circle cx="14" cy="14" r="11" fill={FARBE.hell} />
+            <text x="14" y="17.5" textAnchor="middle" fill={FARBE.grund} fontSize="8" fontWeight="700">
               SS
             </text>
           </Zeile>
           <Zeile beschreibung="Runner — kleiner als ein Verteidiger und ohne Kürzel">
-            <circle cx="14" cy="14" r="9" fill="#B91C2A" />
+            <circle cx="14" cy="14" r="9" fill={FARBE.gut} />
+          </Zeile>
+          <Zeile beschreibung="Out: derselbe Runner, durchgestrichen">
+            <circle cx="14" cy="14" r="9" fill={FARBE.raus} />
+            <path d="M8,8 L20,20 M20,8 L8,20" stroke={FARBE.hell} strokeWidth="2.4" strokeLinecap="round" />
           </Zeile>
           <Zeile beschreibung="Ball">
-            <circle cx="14" cy="14" r="6" fill="#E6F03C" />
+            <circle cx="14" cy="14" r="6" fill={FARBE.hell} />
+            <circle cx="14" cy="14" r="3.7" fill="none" stroke={FARBE.naht} strokeWidth="2" />
           </Zeile>
           <Zeile beschreibung="Flugbahn des Balls">
-            <path d="M2,14 L26,14" stroke="#E6F03C" strokeWidth="3" strokeDasharray="5 4" strokeLinecap="round" />
+            <path d="M2,14 L26,14" stroke={FARBE.hell} strokeWidth="3" strokeDasharray="5 4" strokeLinecap="round" />
           </Zeile>
           <Zeile beschreibung="Blass: der Wurf davor — bei Cut-off-Ketten ist die Kette der Inhalt">
             <path
               d="M2,14 L26,14"
-              stroke="#E6F03C"
+              stroke={FARBE.hell}
               strokeWidth="3"
               strokeDasharray="5 4"
               strokeLinecap="round"
@@ -50,7 +56,7 @@ export function LegendSheet({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-5 h-11 w-full rounded-xl bg-navy-800 font-display text-sm font-bold text-cream-50"
+          className="mt-5 h-11 w-full rounded-xl bg-amber-400 font-display text-sm font-bold text-navy-900 active:brightness-110"
         >
           Schließen
         </button>
