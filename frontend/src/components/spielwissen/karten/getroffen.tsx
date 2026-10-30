@@ -26,7 +26,8 @@ function OutStempel({ lauf, ruhig, delay }: { lauf: number; ruhig: boolean; dela
         initial={ruhig ? false : { scale: 1.6, opacity: 0, rotate: -10 }}
         animate={{ scale: 1, opacity: 1, rotate: -7 }}
         transition={takt(ruhig, { delay, type: 'spring', stiffness: 300, damping: 13 })}
-        className="font-display rounded border-[3px] border-softball-red-600 px-4 py-1 text-2xl font-extrabold uppercase tracking-widest text-softball-red-600"
+        style={{ borderColor: FARBE.rausHell, color: FARBE.rausHell }}
+        className="font-display rounded border-[3px] px-4 py-1 text-2xl font-extrabold uppercase tracking-widest"
       >
         Out
       </motion.span>
@@ -54,11 +55,23 @@ export function LaufSofort({ lauf, ruhig }: BuehnenProps) {
       <svg viewBox="0 0 220 165" className="max-h-52 w-full" aria-hidden focusable="false">
         <line x1="4" y1={boden} x2="216" y2={boden} stroke={FARBE.matt} strokeWidth="1.5" />
 
+        {/* Die Spur: sie zeichnet sich hinter ihr ein, damit der Endzustand den Weg zeigt
+            und nicht nur eine Person, die irgendwo steht. */}
+        <motion.line
+          key={`spur-${lauf}`}
+          x1="44" y1={boden - 4} y2={boden - 4}
+          stroke={FARBE.hell} strokeWidth="1.4" strokeDasharray="5 5" opacity="0.4"
+          initial={ruhig ? false : { x2: 44 }}
+          animate={{ x2: 148 }}
+          transition={takt(ruhig, { delay: treffer + 0.08, duration: 0.85, ease: 'easeOut' })}
+        />
+
         {/* Erst der Schlag, dann ist sie weg. Der Schlaeger faellt dabei aus dem Bild. */}
         <motion.g
           key={`figur-${lauf}`}
-          initial={ruhig ? false : { x: 0 }}
-          animate={{ x: 130 }}
+          initial={ruhig ? false : { x: 0, rotate: 0 }}
+          animate={{ x: 116, rotate: 9 }}
+          style={{ originX: '44px', originY: `${boden}px` }}
           transition={takt(ruhig, { delay: treffer + 0.08, duration: 0.85, ease: 'easeOut' })}
         >
           <Figur boden={boden} ohneSchlaeger />
@@ -88,8 +101,8 @@ export function LaufSofort({ lauf, ruhig }: BuehnenProps) {
           key={`ball-${lauf}`}
           initial={ruhig ? false : { x: hand.x + 12, y: hand.y, opacity: 0 }}
           animate={ruhig
-            ? { x: 196, y: 22, opacity: 0.2 }
-            : { x: [hand.x + 12, 140, 196], y: [hand.y, 18, 22], opacity: [0, 1, 0.2] }}
+            ? { x: 206, y: 10, opacity: 0.45 }
+            : { x: [hand.x + 12, 142, 206], y: [hand.y, 14, 10], opacity: [0, 1, 0.45] }}
           transition={takt(ruhig, { delay: treffer, duration: 1, ease: 'easeOut' })}
         >
           <Ball r={6} />

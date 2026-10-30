@@ -13,7 +13,7 @@ describe('Kapitel Auf der Base', () => {
       'Los erst beim Release',
       'Wild Pitch',
       'Steal',
-      'Fly gefangen: erst zurück',
+      'Fly gefangen: erst dann los',
     ])
   })
 

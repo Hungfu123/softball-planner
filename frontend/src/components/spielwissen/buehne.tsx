@@ -32,6 +32,10 @@ export const FARBE = {
      ein cremefarbener Handschuh waere am cremefarbenen Ball nicht zu unterscheiden,
      und genau dieser Unterschied ist die Auskunft der Fang-Karte. */
   leder: '#B5793F',
+  /* Rot als SCHRIFT auf der navy Buehne. softball-red-600 misst dort 2,68:1, noetig sind
+     3,0 fuer grossen Text — als Flaeche mit cremefarbener Schrift ist dasselbe Rot in
+     Ordnung, nur eben nicht andersherum. */
+  rausHell: '#EE5A68',
 } as const
 
 /**

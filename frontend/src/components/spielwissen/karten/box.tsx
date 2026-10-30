@@ -335,17 +335,20 @@ export function CountWettlauf({ ruhig }: BuehnenProps) {
  * Deshalb laufen hier zwei, nicht einer.
  */
 export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
+  /* Zurueckgezogen, aber NEBEN den Bases: der mittlere stand vorher genau auf der 2,
+     wo der Laeufer ankommt, und beide Punkte wurden zu einem. */
   const tief = [
-    { x: HOME.x - 46, y: HOME.y - 66 },
-    { x: HOME.x, y: HOME.y - 78 },
-    { x: HOME.x + 46, y: HOME.y - 66 },
+    { x: HOME.x - 48, y: HOME.y - 62 },
+    { x: HOME.x - 2, y: HOME.y - 72 },
+    { x: HOME.x + 48, y: HOME.y - 62 },
   ]
 
   return (
     <div className="px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
+        {/* Die Verteidigung: hohle Ringe. Gefuellt ist, wer laeuft. */}
         {tief.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="4" fill={FARBE.hell} opacity="0.5" />
+          <circle key={i} cx={p.x} cy={p.y} r="4" fill="none" stroke={FARBE.hell} strokeWidth="1.4" opacity="0.6" />
         ))}
 
         {/* Der Ball tropft kurz vor die Platte. */}
@@ -370,7 +373,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
         {/* Und die Schlagfrau selbst. */}
         <motion.circle
           key={`schlag-${lauf}`}
-          r="4.5" fill={FARBE.hell} opacity="0.6"
+          r="4.5" fill={FARBE.hell}
           initial={ruhig ? false : { cx: HOME.x, cy: HOME.y }}
           animate={{ cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
           transition={takt(ruhig, { delay: 0.2, duration: 0.95, ease: 'easeOut' })}
@@ -431,7 +434,8 @@ export function BuntFalle({ lauf, ruhig }: BuehnenProps) {
             initial={ruhig ? false : { scale: 1.7, opacity: 0, rotate: -10 }}
             animate={{ scale: 1, opacity: 1, rotate: -7 }}
             transition={takt(ruhig, { delay: 1.3, type: 'spring', stiffness: 300, damping: 13 })}
-            className="font-display rounded border-[3px] border-softball-red-600 px-4 py-1 text-2xl font-extrabold uppercase tracking-widest text-softball-red-600"
+            style={{ borderColor: FARBE.rausHell, color: FARBE.rausHell }}
+            className="font-display rounded border-[3px] px-4 py-1 text-2xl font-extrabold uppercase tracking-widest"
           >
             Out
           </motion.span>
