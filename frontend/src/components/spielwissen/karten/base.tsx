@@ -53,7 +53,7 @@ export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
         />
       </MiniFeld>
       <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Steh drauf, und der Ball geht dich nichts an.
+        Solange niemand hinter dir nachrückt, kann dir nichts passieren.
       </p>
     </div>
   )
@@ -256,6 +256,7 @@ export function TagUp({ ruhig }: BuehnenProps) {
           transition={takt(ruhig, { duration: 0.45, ease: 'easeOut' })}
           r="3.2" fill={FARBE.gut}
         />
+        {jetzt.laeufer === 0 && <SicherRing ort={start} ruhig={ruhig} />}
         <motion.circle
           initial={{ cx: start.x, cy: start.y }}
           animate={{

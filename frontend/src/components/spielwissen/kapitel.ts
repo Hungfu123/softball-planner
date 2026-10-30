@@ -203,8 +203,8 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'tag-up',
         stichwort: 'Tag up',
-        pointe: 'Fly gefangen: erst zurück',
-        satz: 'Zurück auf die Base berühren, dann erst los.',
+        pointe: 'Fly gefangen: erst dann los',
+        satz: 'Bis der Ball gefangen ist, bleibst du auf der Base. Dann erst darfst du.',
         selbstgesteuert: true,
         Buehne: TagUp,
       },

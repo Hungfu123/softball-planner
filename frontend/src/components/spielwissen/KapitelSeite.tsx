@@ -39,6 +39,7 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
   const [richtung, setRichtung] = useState(1)
   const ruhig = Boolean(useReducedMotionConfig())
 
+
   const anzahl = kapitel.karten.length
 
   const blaettern = useCallback((schritt: number) => {
@@ -85,26 +86,32 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
         `touch-pan-y`: das Wischen nach links und rechts gehoert der Karte, das Scrollen
         nach unten bleibt beim Browser. Ohne das streiten sich beide und es ruckelt.
       */}
-      <div className="flex-1 touch-pan-y">
-        <AnimatePresence mode="wait" initial={false} custom={richtung}>
+      {/*
+        `overflow-x-hidden`: die abtretende Karte faehrt um 40 px nach links aus dem Bild.
+        Ohne den Riegel verbreitert das kurz das Dokument (gemessen 27 bis 28 px), die
+        Seite laesst sich waehrenddessen quer schieben und wackelt beim Blaettern.
+
+        **Hier war einmal ein Wisch, und er ist absichtlich wieder weg.** Drei Anlaeufe,
+        alle gemessen gescheitert: mit motions `drag` blieb die Karte nach einem halben
+        Wisch bei translateX(-95px) schief stehen; mit einer eigenen Feder blieb bei jedem
+        zweiten Wisch ein Rest von 59 px haengen; und mit reiner Zeiger-Erkennung blaetterte
+        nur rund jeder zweite Wisch, bis die Seite ganz aufhoerte zu reagieren. Eine Geste,
+        die zwei von drei Mal geht, ist schlimmer als keine — der Mensch haelt dann die App
+        fuer kaputt und nicht seinen Finger.
+
+        Geblieben sind Weiter, Zurueck und die Pfeiltasten. Die sind durchgemessen: alle
+        sechzehn Karten, drei Bildschirmgroessen, beide Richtungen.
+      */}
+      <div
+        className="flex-1 overflow-x-hidden"
+      >
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={karte.id}
-            custom={richtung}
             initial={ruhig ? false : { opacity: 0, x: richtung * 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={ruhig ? { opacity: 0 } : { opacity: 0, x: richtung * -40 }}
             transition={{ duration: ruhig ? 0 : 0.22, ease: [0.23, 1, 0.32, 1] }}
-            drag={ruhig ? false : 'x'}
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.18}
-            onDragEnd={(_, info) => {
-              /* Ein kurzer Schnipser reicht, man muss nicht die halbe Breite ziehen. */
-              const weit = Math.abs(info.offset.x) > 70
-              const schnell = Math.abs(info.velocity.x) > 320
-              if (!weit && !schnell) return
-              if (info.offset.x < 0 && !letzte) blaettern(1)
-              if (info.offset.x > 0 && nr > 0) blaettern(-1)
-            }}
           >
             <Karte karte={karte} aktiv />
           </motion.div>
