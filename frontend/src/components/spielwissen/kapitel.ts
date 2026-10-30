@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react'
+import { BOX_KARTEN } from './karten/box'
 
 /**
  * Die Daten hinter dem Spielwissen.
@@ -45,7 +46,9 @@ export interface Kapitel {
  * Regelkapiteln: in der Box, dann getroffen, dann auf der Base. Ein Neuer erlebt es
  * genau so, und deshalb findet er die Stelle wieder, an der er haengengeblieben ist.
  */
-export const KAPITEL: Kapitel[] = []
+export const KAPITEL: Kapitel[] = [
+  { id: 'box', titel: 'In der Box', frage: 'Was zählt als Strike?', karten: BOX_KARTEN },
+]
 
 export function findeKapitel(id: string | undefined): Kapitel | undefined {
   return KAPITEL.find(k => k.id === id)
