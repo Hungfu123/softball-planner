@@ -27,6 +27,7 @@ import {
   LazyFreiesFeld,
   LazyPlayViewer,
   LazySpielwissen,
+  LazySpielwissenKapitel,
   LazyScoring,
   LazySpielbogenList,
   LazySpielbogenPage,
@@ -73,6 +74,7 @@ export const routes: RouteObject[] = [
       { path: '/konto', element: <KontoPage />, errorElement: <ChunkErrorBoundary /> },
       // Spielwissen gehoert jeder Rolle: es bewertet niemanden.
       { path: '/spielwissen', element: <LazySpielwissen />, errorElement: <ChunkErrorBoundary /> },
+      { path: '/spielwissen/:kapitel', element: <LazySpielwissenKapitel />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams/spiele', element: <GameLogPage />, errorElement: <ChunkErrorBoundary /> },
     ],
