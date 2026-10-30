@@ -5,8 +5,8 @@ import type { AwardResponse, AwardType } from '@/types'
 interface Props {
   awards: AwardResponse[]
   tone?: 'dark' | 'light'
-  /** 'wrap' = frei umbrechende Reihe (kompakt). 'grid' = MVP oben voll + Rest im 2×2-Raster. */
-  layout?: 'wrap' | 'grid'
+  /** 'wrap' = frei umbrechende Reihe (kompakt). 'liste' = MVP als Held + Rest als Bestenliste. */
+  layout?: 'wrap' | 'liste'
 }
 
 interface AwardMeta {
@@ -136,8 +136,7 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     /*
      * Die Reihenfolge im Blick ist NAME, dann Zahl, dann Etikett — vorher war sie umgekehrt:
      * „TOP HITTER" stand fett, der Mensch dahinter grau und abgeschnitten („Hung, Miriam, …").
-     * Eine Auszeichnung beantwortet aber „wer", nicht „wie heisst die Kategorie". Derselbe
-     * Aufbau wie beim MVP-Block darueber, damit die neun Karten eine Familie sind.
+     * Eine Auszeichnung beantwortet aber „wer", nicht „wie heisst die Kategorie".
      */
     return (
       <button
@@ -170,6 +169,64 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
           <div className={`px-2.5 pb-2 pt-1 text-[9px] leading-snug ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
             {meta.desc}
           </div>
+        )}
+      </button>
+    )
+  }
+
+  /*
+   * Eine Zeile der Bestenliste: Farbstreifen, Symbol, Titel, Name, Wert — alles in EINER
+   * Zeile, Zeilen untereinander durch eine Haarlinie getrennt.
+   *
+   * Vorher waren es neun gleich grosse Kistchen im 2er-Raster. Neun gleich laute Dinge
+   * ergeben eine Wand ohne Einstieg, und der Witz der Sache („Abrissbirne", „Windmuehle")
+   * stand in 9 px Grau, waehrend Rahmen und Polster den Platz nahmen. Untereinander liest
+   * man dagegen die NAMEN als Spalte — und sieht auf einen Blick, wenn eine Person vier
+   * Titel hintereinander holt. Genau das war vorher im Raster verstreut.
+   *
+   * Der Name darf umbrechen statt abzuschneiden; bei Gleichstand stehen dort mehrere. Die
+   * Zeile wird dann zweizeilig — der Rhythmus bricht nur da, wo er muss.
+   */
+  const zeile = (award: AwardResponse) => {
+    const meta = AWARD_META[award.type]
+    const open = openType === award.type
+    const iconCls = isDark ? meta.darkIcon : meta.lightIcon
+    return (
+      <button
+        key={award.type}
+        type="button"
+        onClick={() => toggle(award.type)}
+        aria-expanded={open}
+        className={`group text-left w-full flex flex-col cursor-pointer transition-colors ${
+          isDark ? 'hover:bg-white/5' : 'hover:bg-navy-50'
+        }`}
+      >
+        {/* Kein `min-h-11` wie sonst bei Schaltflaechen: die Tippflaeche ist die GANZE Zeile
+            ueber die volle Breite. Die 44-px-Regel sichert kleine Ziele ab; hier machte sie
+            den Block hoeher als das Raster, das er ersetzt. */}
+        <span className="flex items-start gap-2 w-full pr-2.5 py-[7px]">
+          <span className={`w-[3px] self-stretch shrink-0 rounded-r ${meta.accentBar}`} />
+          <span className={`shrink-0 mt-[3px] ${iconCls}`}>{meta.icon}</span>
+          <span className={`font-display shrink-0 w-[84px] sm:w-[96px] text-[9px] sm:text-[10px] tracking-widest uppercase leading-[1.5] ${
+            isDark ? 'text-white/55' : 'text-gray-500'
+          }`}>
+            {meta.label}
+          </span>
+          <span className={`font-display flex-1 min-w-0 break-words text-[13px] font-bold leading-[1.15] tracking-wide ${
+            isDark ? 'text-white' : 'text-navy-900'
+          }`}>
+            {award.playerName}
+          </span>
+          <span className={`font-display shrink-0 text-[10px] font-bold tracking-widest uppercase tabular-nums leading-[1.5] ${
+            isDark ? 'text-white/70' : 'text-gray-600'
+          }`}>
+            {award.displayValue}
+          </span>
+        </span>
+        {open && (
+          <span className={`block pl-[21px] pr-2.5 pb-2 text-[10px] leading-snug ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+            {meta.desc}
+          </span>
         )}
       </button>
     )
@@ -213,20 +270,17 @@ export function AwardBadges({ awards, tone = 'dark', layout = 'wrap' }: Props) {
     </p>
   )
 
-  if (layout === 'grid') {
+  if (layout === 'liste') {
     const mvp = awards.find(a => a.type === 'MVP')
     const rest = awards.filter(a => a.type !== 'MVP')
     return (
       <div className="flex flex-col gap-2">
         {mvp && mvpHero(mvp)}
-        {/* `items-stretch`: Namen duerfen umbrechen, und zwei Karten nebeneinander mit
-            unterschiedlicher Hoehe sehen aus wie ein Fehler statt wie ein Paar. */}
         {rest.length > 0 && (
-          <div className="grid grid-cols-2 gap-1.5 items-stretch">
-            {rest.map(badge)}
+          <div className={`divide-y ${isDark ? 'divide-white/10' : 'divide-cream-200'}`}>
+            {rest.map(zeile)}
           </div>
         )}
-        {hint}
       </div>
     )
   }
