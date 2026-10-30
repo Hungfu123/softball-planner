@@ -48,6 +48,14 @@ type SortDir = 'asc' | 'desc'
 const GRUPPENANFANG = 'border-l border-cream-300'
 const GRUPPENANFANG_KOPF = 'border-l border-white/20'
 
+const ZELLE = 'px-2.5 py-2 text-right font-display tabular-nums whitespace-nowrap'
+/** AB und H — die Stichprobe, zurueckhaltender als die Quoten daneben. */
+const ZAEHLUNG = `${ZELLE} text-gray-700`
+/** AVG, OBP, SLG, OPS. */
+const QUOTE = `${ZELLE} text-navy-900`
+/** RBI/G und R/G — abgeleitet, also leiser als die Zaehlung, aus der sie kommen. */
+const PRO_SPIEL = `${ZELLE} text-gray-600`
+
 export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = false, gamesByPlayerId, showPerGame = false }: Props) {
   const [showUnqualified, setShowUnqualified] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('battingAverage')
@@ -116,14 +124,6 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
 
   const visible = showUnqualified ? [...qualified, ...unqualified] : qualified
 
-  // Skala des Balkens nur aus qualifizierten — sonst sprengt ein 1.000-Mini-Sample sie.
-  const maxWert = useMemo(() => {
-    if (sortKey === 'playerName') return 0
-    const basis = qualified.length ? qualified : sorted
-    return Math.max(...basis.map(s => wert(s, sortKey) ?? 0), 0.001)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qualified, sorted, sortKey, gamesByPlayerId])
-
   // `sticky top-0`: die Koepfe bleiben stehen, waehrend man die Zeilen durchscrollt. Ohne das
   // steht man ab Zeile 6 vor „.667 .667 .833 1.500" und weiss nicht mehr, welche Spalte OBP ist.
   const NUM_TH = 'font-display sticky top-0 z-20 bg-navy-900 text-right px-2.5 py-2.5 font-extrabold text-[10px] uppercase tracking-widest whitespace-nowrap'
@@ -156,8 +156,9 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
     )
   }
 
+  /** Zaehlungen, deren Null blass bleibt: eine Spalte voller kraeftiger Nullen liest sich als Inhalt. */
   const zahl = (v: number, extra = '') =>
-    `px-2.5 py-2 text-right font-display tabular-nums whitespace-nowrap ${v === 0 ? 'text-gray-300' : 'text-navy-900'} ${extra}`
+    `${ZELLE} ${v === 0 ? 'text-gray-300' : 'text-navy-900'} ${extra}`
 
   return (
     <div className="space-y-2">
@@ -210,23 +211,6 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                   const isTop = idx === 0 && s.atBats > 0 && !isUnq
                   const stickyBg = idx % 2 === 1 ? 'bg-cream-100' : 'bg-cream-50'
                   const stickyShadow = scrolled ? 'shadow-[6px_0_10px_-6px_rgba(15,23,42,0.3)]' : ''
-                  // Der Balken liegt hinter der Zahl, nach der sortiert wird. Navy statt Rot:
-                  // Rot gehört den negativen Signalen, und nach K sortiert wäre ein roter
-                  // Balken eine Auszeichnung fürs Danebenschlagen.
-                  const eigen = wert(s, sortKey)
-                  const balken = eigen != null && maxWert > 0 ? Math.max(0, Math.round((eigen / maxWert) * 100)) : 0
-                  const mitBalken = (key: SortKey, inhalt: React.ReactNode, cls: string) => (
-                    <td className={`relative ${cls}`}>
-                      {sortKey === key && balken > 0 && (
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-y-1.5 left-0 rounded-r-sm bg-navy-900/15"
-                          style={{ width: `${balken}%` }}
-                        />
-                      )}
-                      <span className="relative">{inhalt}</span>
-                    </td>
-                  )
                   return (
                     <tr
                       key={s.playerId}
@@ -252,23 +236,21 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                           )}
                         </span>
                       </td>
-                      {mitBalken('atBats', s.atBats, 'px-2.5 py-2 text-right font-display tabular-nums text-gray-700 whitespace-nowrap')}
-                      {mitBalken('hits', s.hits, 'px-2.5 py-2 text-right font-display tabular-nums text-gray-700 whitespace-nowrap')}
+                      <td className={ZAEHLUNG}>{s.atBats}</td>
+                      <td className={ZAEHLUNG}>{s.hits}</td>
                       {/* AVG stand hier in 16 px, waehrend OBP/SLG/OPS 14 px trugen — aus der
                           Zeit, als AVG allein vorn stand und die drei hinter einem Aufklapper
                           lagen. Jetzt stehen die vier nebeneinander, und eine groessere AVG
-                          behauptet einen Vorrang, den sie fachlich nicht hat (OPS rangiert
-                          besser). Hervorgehoben wird die Spalte, nach der SORTIERT wird — das
-                          macht der Balken. */}
-                      {mitBalken('battingAverage', formatDec(Number(s.battingAverage)),
-                        `px-2.5 py-2 text-right font-display tabular-nums font-extrabold text-navy-900 whitespace-nowrap ${GRUPPENANFANG}`)}
-                      {mitBalken('onBasePct', formatDec(Number(s.onBasePct)), 'px-2.5 py-2 text-right font-display tabular-nums text-navy-900 whitespace-nowrap')}
-                      {mitBalken('sluggingPct', formatDec(Number(s.sluggingPct)), 'px-2.5 py-2 text-right font-display tabular-nums text-navy-900 whitespace-nowrap')}
-                      {mitBalken('ops', formatDec(Number(s.ops)), 'px-2.5 py-2 text-right font-display tabular-nums font-bold text-navy-900 whitespace-nowrap')}
-                      {mitBalken('runsBattedIn', s.runsBattedIn, zahl(s.runsBattedIn, `font-bold ${GRUPPENANFANG}`))}
-                      {showPerGame && mitBalken('rbiPerGame', proSpiel(rbiPerGame(s)), 'px-2.5 py-2 text-right font-display tabular-nums text-gray-600 whitespace-nowrap')}
-                      {mitBalken('runs', s.runs, zahl(s.runs, 'font-bold'))}
-                      {showPerGame && mitBalken('runsPerGame', proSpiel(runsPerGame(s)), 'px-2.5 py-2 text-right font-display tabular-nums text-gray-600 whitespace-nowrap')}
+                          behauptet einen Vorrang, den sie fachlich nicht hat: OPS rangiert
+                          Schlagleute besser. */}
+                      <td className={`${QUOTE} font-extrabold ${GRUPPENANFANG}`}>{formatDec(Number(s.battingAverage))}</td>
+                      <td className={QUOTE}>{formatDec(Number(s.onBasePct))}</td>
+                      <td className={QUOTE}>{formatDec(Number(s.sluggingPct))}</td>
+                      <td className={`${QUOTE} font-bold`}>{formatDec(Number(s.ops))}</td>
+                      <td className={zahl(s.runsBattedIn, `font-bold ${GRUPPENANFANG}`)}>{s.runsBattedIn}</td>
+                      {showPerGame && <td className={PRO_SPIEL}>{proSpiel(rbiPerGame(s))}</td>}
+                      <td className={zahl(s.runs, 'font-bold')}>{s.runs}</td>
+                      {showPerGame && <td className={PRO_SPIEL}>{proSpiel(runsPerGame(s))}</td>}
                       {/* HR ist das eine, was ein Zuschauer erzählt — bekommt den roten Akzent. */}
                       <td className={`px-2.5 py-2 text-right font-display tabular-nums font-bold whitespace-nowrap ${
                         s.homeRuns > 0 ? 'text-softball-red-600' : 'text-gray-300'
@@ -277,11 +259,11 @@ export function BattingStatsTable({ stats, onOpenGlossary, applyQualifier = fals
                           <span className="inline-flex items-center gap-0.5">{s.homeRuns} <Zap size={11} /></span>
                         ) : '0'}
                       </td>
-                      {mitBalken('stolenBases', s.stolenBases, zahl(s.stolenBases))}
-                      {mitBalken('walks', s.walks, zahl(s.walks, GRUPPENANFANG))}
-                      {mitBalken('strikeouts', s.strikeouts, zahl(s.strikeouts))}
-                      {mitBalken('caughtStealing', s.caughtStealing, zahl(s.caughtStealing, GRUPPENANFANG))}
-                      {mitBalken('pickoffs', s.pickoffs ?? 0, zahl(s.pickoffs ?? 0))}
+                      <td className={zahl(s.stolenBases)}>{s.stolenBases}</td>
+                      <td className={zahl(s.walks, GRUPPENANFANG)}>{s.walks}</td>
+                      <td className={zahl(s.strikeouts)}>{s.strikeouts}</td>
+                      <td className={zahl(s.caughtStealing, GRUPPENANFANG)}>{s.caughtStealing}</td>
+                      <td className={zahl(s.pickoffs ?? 0)}>{s.pickoffs ?? 0}</td>
                       <td className="px-2.5 py-2 text-right tabular-nums text-gray-600 text-xs whitespace-nowrap">
                         {s.singles}/{s.doubles}/{s.triples}/{s.homeRuns}
                       </td>
