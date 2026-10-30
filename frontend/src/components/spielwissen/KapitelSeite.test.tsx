@@ -18,7 +18,7 @@ vi.mock('./kapitel', async (echt) => {
   const modul = await echt<typeof import('./kapitel')>()
   const KAPITEL = [
     { id: 'box', titel: 'In der Box', frage: 'Was zählt als Strike?', karten: [karte('zone', 'Die Zone bist du'), karte('drin', 'Drin ist Strike')] },
-    { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich raus?', karten: [karte('lauf', 'Lauf. Sofort.')] },
+    { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich out?', karten: [karte('lauf', 'Lauf. Sofort.')] },
     { id: 'base', titel: 'Auf der Base', frage: 'Wann darf ich weiter?', karten: [karte('sicher', 'Die Base ist sicher')] },
   ]
   return { ...modul, KAPITEL, findeKapitel: (id: string | undefined) => KAPITEL.find(k => k.id === id) }

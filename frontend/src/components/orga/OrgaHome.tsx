@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, Abschnittsmarke } from '@/components/shared'
 import { SendIcon, CounterIcon, CalendarIcon, CrossBones, ClipboardListIcon } from '@/icons'
-import { Mail, Receipt, ChevronRight, Users, History } from 'lucide-react'
+import { BookOpen, Mail, Receipt, ChevronRight, Users, History } from 'lucide-react'
 import { useRolle } from '@/hooks/useRolle'
 
 /**
@@ -107,6 +107,9 @@ export function OrgaHome() {
         <Kachel to="/kalender" icon={<CalendarIcon size={20} />} titel="Kalender" untertitel="Termine, ICS-Export" />
         <Kachel to="/orga/einladungen" icon={<Mail size={20} />} titel="Einladungen" untertitel="Für Heimspieltage" />
         <Kachel to="/orga/playmaker" icon={<CrossBones size={20} />} titel="Playmaker" untertitel="Spielzüge zeigen" />
+        {/* Spielwissen hat in der Spielerleiste einen eigenen Reiter. Beim Trainer liegt
+            es hier: er schlaegt die Regeln selten nach, ein Neuer dauernd. */}
+        <Kachel to="/spielwissen" icon={<BookOpen size={20} />} titel="Spielwissen" untertitel="Regeln und Plays" />
       </div>
 
       <Ueberschrift>Selten</Ueberschrift>

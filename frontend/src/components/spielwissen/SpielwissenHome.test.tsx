@@ -22,7 +22,7 @@ describe('Spielwissen-Uebersicht', () => {
     expect(screen.getByRole('link', { name: /In der Box/ })).toHaveAttribute('href', '/spielwissen/box')
     expect(screen.getByText('Was zählt als Strike?')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Du hast getroffen/ })).toHaveAttribute('href', '/spielwissen/getroffen')
-    expect(screen.getByText('Wohin laufe ich, wann bin ich raus?')).toBeInTheDocument()
+    expect(screen.getByText('Wohin laufe ich, wann bin ich out?')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Auf der Base/ })).toHaveAttribute('href', '/spielwissen/base')
     expect(screen.getByText('Wann darf ich weiter?')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Defense/ })).toHaveAttribute('href', '/orga/playmaker')

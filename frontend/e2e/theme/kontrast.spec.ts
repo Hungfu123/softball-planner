@@ -54,6 +54,12 @@ const SEITEN = [
   '/spielbogen',
   '/orga/playmaker',
   '/orga/playmaker/frei',
+  // Die Spielwissen-Buehnen sind in BEIDEN Themes navy. Genau deshalb gehoeren sie hier
+  // hinein: was auf ihnen eine Paletten-Klasse traegt, deutet der Shim im Dunkeln um und
+  // dreht Aussagen herum, die fest sein sollen. Der Paletten-Waechter sieht das nicht,
+  // er prueft Abdeckung, nicht Lesbarkeit.
+  '/spielwissen',
+  '/spielwissen/box',
   '/counter',
 ]
 

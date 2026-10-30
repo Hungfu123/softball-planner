@@ -4,7 +4,7 @@ import { KAPITEL } from '../kapitel'
 
 /* Die Saetze stehen in kapitel.ts, die Zeichnungen daneben. Geprueft wird das Kapitel. */
 const BASE_KARTEN = KAPITEL[2].karten
-import { FIRST_BASE } from '@/components/playmaker/board/geometry'
+import { FIRST_BASE, SECOND_BASE, PITCHING_PLATE } from '@/components/playmaker/board/geometry'
 
 describe('Kapitel Auf der Base', () => {
   it('liefert fünf Karten mit genau diesen Pointen', () => {
@@ -25,19 +25,31 @@ describe('Kapitel Auf der Base', () => {
   })
 
   /*
-   * Kein Leadoff: solange der Ball in der Hand der Pitcherin ist, steht die Läuferin
-   * auf der Base. Erst nach dem Abwurf darf sie weg. Die Karte zeigt beides, und der
-   * Test hält fest, dass der frühe Start wirklich zurückgeholt wird.
+   * Kein Leadoff: solange der Ball in der Hand der Pitcherin ist, steht die Läuferin auf
+   * der Base. Die Karte führt in drei Ständen durch, und der dritte ist der einzige, in
+   * dem sie weg ist.
    */
   it('lässt die Läuferin erst los, wenn der Ball die Hand verlässt', async () => {
     const { Buehne } = BASE_KARTEN[1]
     render(<Buehne lauf={0} ruhig />)
 
-    const x = () => parseFloat(screen.getByTestId('laeufer-frueh').getAttribute('cx') ?? '')
+    const x = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cx') ?? '')
+    // Der Pitch läuft senkrecht: Pitcherin, Platte und Catcher liegen auf derselben x.
+    const y = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cy') ?? '')
+    const weiter = () => fireEvent.click(screen.getByRole('button', { name: /Weiter|Von vorn/ }))
 
-    // Ruhig-Modus zeigt den Endzustand: die zu früh gestartete Läuferin steht wieder
-    // auf ihrer Base.
-    await waitFor(() => expect(x()).toBeCloseTo(FIRST_BASE.x, 1))
+    // Stand 1: Ball in der Hand, Läuferin auf der Base.
+    expect(y('ball')).toBeCloseTo(PITCHING_PLATE.y, 1)
+    expect(x('laeufer')).toBeCloseTo(FIRST_BASE.x, 1)
+
+    // Stand 2: der Ball ist unterwegs, sie steht immer noch.
+    weiter()
+    await waitFor(() => expect(y('ball')).not.toBeCloseTo(PITCHING_PLATE.y, 1))
+    expect(x('laeufer')).toBeCloseTo(FIRST_BASE.x, 1)
+
+    // Stand 3: jetzt erst ist sie weg.
+    weiter()
+    await waitFor(() => expect(x('laeufer')).toBeCloseTo(SECOND_BASE.x, 1))
   })
 
   it('zeigt bei Wild Pitch, dass der Ball am Catcher vorbeigeht', () => {
