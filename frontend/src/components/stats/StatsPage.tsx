@@ -327,7 +327,10 @@ export function StatsPage() {
       {/* Auszeichnungen (Scope-weit) — Highlights des Zeitraums, über den Detail-Tabs */}
       {!loading && awards.length > 0 && (
         <div className="mb-3">
-          <AwardsCard awards={awards} subtitle={contextInfo} />
+          {/* Untertitel nur, wenn er mehr sagt als der Zeitraum-Knopf direkt darueber. Bei
+              einer Saison stand dort zweimal dasselbe; bei Jahr und Alle Zeit zaehlt er die
+              enthaltenen Saisons auf und verdient seine Zeile. */}
+          <AwardsCard awards={awards} subtitle={zeitraumLabel.includes(contextInfo) ? null : contextInfo} />
         </div>
       )}
 

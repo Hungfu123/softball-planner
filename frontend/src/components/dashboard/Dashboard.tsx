@@ -637,7 +637,7 @@ export function Dashboard() {
               })()}
 
               {scopeAwards.length > 0 ? (
-                <AwardBadges awards={scopeAwards} tone="light" layout="grid" />
+                <AwardBadges awards={scopeAwards} tone="light" layout="liste" />
               ) : (
                 <div className="text-center py-8">
                   <p className="font-display text-base font-bold text-navy-900 uppercase tracking-wide mb-1">Noch keine Auszeichnungen</p>
