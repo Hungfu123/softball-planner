@@ -26,6 +26,7 @@ const PROTECTED_PATHS = [
   '/orga/accounts',
   '/orga/historie',
   '/konto',
+  '/spielwissen',
   '/gameday/1',
   '/gameday/1/export',
   '/gameday/1/scoring/0',

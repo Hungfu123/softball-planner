@@ -26,6 +26,7 @@ import {
   LazyPlayEditor,
   LazyFreiesFeld,
   LazyPlayViewer,
+  LazySpielwissen,
   LazyScoring,
   LazySpielbogenList,
   LazySpielbogenPage,
@@ -70,6 +71,8 @@ export const routes: RouteObject[] = [
       { path: '/orga/historie', element: <RequireRole mind="SUPERADMIN"><LazyHistorie /></RequireRole>, errorElement: <ChunkErrorBoundary /> },
       // Das eigene Konto: jede Rolle, daher ohne RequireRole.
       { path: '/konto', element: <KontoPage />, errorElement: <ChunkErrorBoundary /> },
+      // Spielwissen gehoert jeder Rolle: es bewertet niemanden.
+      { path: '/spielwissen', element: <LazySpielwissen />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams/spiele', element: <GameLogPage />, errorElement: <ChunkErrorBoundary /> },
     ],
