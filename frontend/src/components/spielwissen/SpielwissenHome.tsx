@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
-import { KAPITEL } from './kapitel'
+import { KAPITEL, stichworte } from './kapitel'
 
 /**
  * Der Einstieg ins Spielwissen.
@@ -47,6 +47,12 @@ export default function SpielwissenHome() {
               </div>
               <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
                 {k.frage}
+              </div>
+              {/* Was drinsteht, in Stichworten. Ein Kapitel ist rund drei Bildschirme;
+                  wer eine Sache sucht, soll nicht drei davon durchwischen muessen, um zu
+                  merken, dass sie im naechsten Kapitel liegt. */}
+              <div className="font-display mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint group-hover:text-accent-ink/70">
+                {stichworte(k).join(' · ')}
               </div>
             </div>
             <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />

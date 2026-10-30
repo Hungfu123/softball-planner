@@ -12,7 +12,7 @@ function Attrappe({ lauf }: BuehnenProps) {
   return <div data-testid="buehne" data-lauf={String(lauf)} />
 }
 
-const karte = (id: string, pointe: string) => ({ id, pointe, Buehne: Attrappe })
+const karte = (id: string, pointe: string) => ({ id, stichwort: pointe.split(' ')[0], pointe, Buehne: Attrappe })
 
 vi.mock('./kapitel', async (echt) => {
   const modul = await echt<typeof import('./kapitel')>()
