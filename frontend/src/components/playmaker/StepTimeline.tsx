@@ -54,21 +54,22 @@ export function StepTimeline({
         springe(Math.round(t * (count - 1)))
       }}
     >
-      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-bar-track">
+      {/* Auf der Buehne: die Bahn ist angedeuteter Cream, der gelaufene Teil Amber. */}
+      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-cream-50/15">
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-bar"
+          className="absolute inset-y-0 left-0 rounded-full bg-amber-400"
           style={{ width: `${anteil}%` }}
         />
         {Array.from({ length: count - 2 }, (_, i) => (
           <span
             key={i}
-            className="absolute top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cream-50 opacity-75"
+            className="absolute top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cream-50 opacity-60"
             style={{ left: `${((i + 1) / (count - 1)) * 100}%` }}
           />
         ))}
       </div>
       <span
-        className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-navy-800 shadow"
+        className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cream-50 shadow"
         style={{ left: `${anteil}%` }}
       />
     </div>

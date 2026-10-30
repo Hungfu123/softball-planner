@@ -67,6 +67,10 @@ const UNVERAENDERT: { muster: RegExp; grund: string }[] = [
     grund: 'Heller Schleier auf dunklem Grund — das Gegenteil des Problems',
   },
   {
+    muster: /^(?:[\w-]+:)*(?:bg|border|divide|ring|from|to|via)-cream-50\/\d+$/,
+    grund: 'Cream mit Deckkraft ist ein heller Schleier auf der Buehne — und die ist in beiden Themes navy',
+  },
+  {
     muster: /^(?:[\w-]+:)*(?:bg|border|divide|ring)-black(?:\/\d+)?$/,
     grund: 'Schwarz als Verdunklung wirkt in beiden Themes gleich',
   },

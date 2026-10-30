@@ -2,6 +2,7 @@ import { render } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { PlayBoard } from './PlayBoard';
 import { DEFAULT_DEFENSE, POSITIONS } from './board/geometry';
+import { FARBE } from './board/farben';
 import type { PlayMarkers, PlayStep } from './board/types';
 
 function markers(overrides: Partial<PlayMarkers> = {}): PlayMarkers {
@@ -23,6 +24,40 @@ describe('PlayBoard', () => {
     expect(labels).toHaveLength(9);
     expect(labels).toContain('SS');
     expect(labels).toContain('CF');
+  });
+
+  /*
+   * Dieselbe Buehne wie im Spielwissen: Navy als Platz, Cream fuer Menschen und Linien,
+   * Amber fuer die Laeufer, auf die man achtet, Rot fuer Out. Gras und Sand gab es
+   * vorher in echten Farben — nebeneinander sahen die beiden Haelften der App aus wie
+   * zwei Programme.
+   */
+  test('spielt auf der Buehne des Spielwissens statt auf gruenem Gras', () => {
+    const { container } = render(<PlayBoard markers={step.markers} />);
+
+    const grund = container.querySelector('svg rect')!;
+    expect(grund.getAttribute('fill')).toBe(FARBE.grund);
+  });
+
+  test('zeichnet die Verteidiger hell mit dunklem Kuerzel', () => {
+    const { container } = render(<PlayBoard markers={step.markers} />);
+
+    const scheibe = container.querySelector('[data-marker="defender"] circle')!;
+    const schrift = container.querySelector('[data-marker="defender"] text')!;
+    expect(scheibe.getAttribute('fill')).toBe(FARBE.hell);
+    expect(schrift.getAttribute('fill')).toBe(FARBE.grund);
+  });
+
+  test('faerbt einen laufenden Runner amber und einen ausgemachten rot', () => {
+    const laeuft = render(<PlayBoard markers={step.markers} />);
+    expect(laeuft.container.querySelector('[data-marker="runner"] circle')!.getAttribute('fill'))
+      .toBe(FARBE.gut);
+
+    const aus = render(
+      <PlayBoard markers={markers({ runners: [{ id: 'r1', x: 196, y: 174, status: 'OUT' }] })} />,
+    );
+    expect(aus.container.querySelector('[data-marker="runner"] circle')!.getAttribute('fill'))
+      .toBe(FARBE.raus);
   });
 
   test('legt den Ball zuletzt in den Baum, damit er obenauf liegt', () => {
@@ -80,7 +115,7 @@ describe('PlayBoard', () => {
     // Geprueft wird die Form, nicht der Buchstabe: beide Bahnen sind quadratische
     // Bezier-Kurven, aber beim Grounder liegt der Steuerpunkt AUF der Sehne.
     const steuerpunkt = (c: HTMLElement) => {
-      const d = c.querySelector('path[stroke="#E6F03C"]')!.getAttribute('d')!;
+      const d = c.querySelector('[data-spur="ball"]')!.getAttribute('d')!;
       const [, x, y] = d.match(/Q([-\d.]+),([-\d.]+)/)!;
       return { x: Number(x), y: Number(y) };
     };
@@ -124,19 +159,19 @@ describe('PlayBoard — die Spur waehrend der Wiedergabe', () => {
       <PlayBoard markers={von} previous={null} spur={{ von, nach, t: 0.5 }} />,
     );
 
-    expect(container.querySelector('path[stroke="#E6F03C"]')).not.toBeNull();
+    expect(container.querySelector('[data-spur="ball"]')).not.toBeNull();
   });
 
   test('der Runner bekommt keine Linie — er bewegt sich sichtbar genug', () => {
     const { container } = render(<PlayBoard markers={nach} spur={{ von, nach, t: 0.5 }} />);
 
-    expect(container.querySelector('path[stroke="#B91C2A"]')).toBeNull();
+    expect(container.querySelector('[data-spur="runner"]')).toBeNull();
   });
 
   test('die Ballspur waechst mit t', () => {
     const laenge = (t: number) => {
       const { container } = render(<PlayBoard markers={von} spur={{ von, nach, t }} />);
-      const d = container.querySelector('path[stroke="#E6F03C"]')!.getAttribute('d')!;
+      const d = container.querySelector('[data-spur="ball"]')!.getAttribute('d')!;
       const [, x, y] = d.match(/Q[-\d.]+,[-\d.]+ ([-\d.]+),([-\d.]+)/)!;
       return Math.hypot(Number(x) - von.ball.x, Number(y) - von.ball.y);
     };

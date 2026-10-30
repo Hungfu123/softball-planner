@@ -41,12 +41,12 @@ export default function PlayEditorPage() {
   }, [id])
 
   if (ladefehler?.id === Number(id)) {
-    return <p className="p-6 text-sm text-gray-500">{ladefehler.text}</p>
+    return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">{ladefehler.text}</p>
   }
   // Nicht nur "schon geladen", sondern "das RICHTIGE geladen": nach einem Wechsel der id
   // liegt noch das alte Play im Zustand.
   if (!play || play.id !== Number(id)) {
-    return <p className="p-6 text-sm text-gray-500">Play wird geladen …</p>
+    return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">Play wird geladen …</p>
   }
 
   // key: usePlayEditor liest die Staende EINMAL beim Anlegen. Ohne eigenen Baum je Play
@@ -159,8 +159,8 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
   // die ganze Hoehe. Ohne das blieben am quer gehaltenen Handy 127 px fuers Feld —
   // ein Band, in dem die Raute verschwindet.
   return (
-    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] grid-cols-1 overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
+    <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto_auto] grid-cols-1 overflow-hidden bg-navy-900 text-cream-50 landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_auto_minmax(0,1fr)_auto_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-50/12 px-4 landscape:col-start-2 lg:col-start-2">
         <button
           type="button"
           onClick={async () => {
@@ -171,7 +171,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
               onBack()
             }
           }}
-          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
+          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-cream-50/70 active:text-cream-50"
         >
           Zurück
         </button>
@@ -188,7 +188,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
             // heisst die Ueberschrift der Seite fuer einen Screenreader "Play ändern"
             // und das Play selbst kommt gar nicht mehr vor.
             aria-label={`${stamm.title} ändern`}
-            className="flex h-11 w-full items-center truncate text-left font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900 cursor-pencil"
+            className="flex h-11 w-full items-center truncate text-left font-headline text-lg font-extrabold uppercase tracking-wide text-amber-400 cursor-pencil"
           >
             {stamm.title}
           </button>
@@ -199,7 +199,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
 
       <div
         ref={flaeche}
-        className="min-h-0 bg-[#93B268] landscape:col-start-1 landscape:row-span-5 landscape:row-start-1 lg:col-start-1 lg:row-span-5 lg:row-start-1"
+        className="min-h-0 bg-navy-900 landscape:col-start-1 landscape:row-span-5 landscape:row-start-1 lg:col-start-1 lg:row-span-5 lg:row-start-1"
       >
         <PlayBoard
           markers={editor.step.markers}
@@ -217,7 +217,7 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         value={editor.step.note ?? ''}
         onChange={e => editor.setNote(e.target.value)}
         placeholder="Notiz zu diesem Stand"
-        className="h-10 border-0 bg-transparent px-4 text-sm text-navy-900 landscape:col-start-2 lg:col-start-2"
+        className="h-10 border-0 bg-transparent px-4 text-sm text-cream-50 placeholder:text-cream-50/40 landscape:col-start-2 lg:col-start-2"
         aria-label="Notiz"
       />
 
@@ -239,11 +239,11 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
         </ToolButton>
       </div>
 
-      <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom landscape:col-start-2 lg:col-start-2">
+      <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom landscape:col-start-2 lg:col-start-2">
         <StepTimeline count={editor.steps.length} current={editor.cur} onSeek={editor.setCur} />
         <div className="mt-2 flex items-center gap-2">
           <ToolButton onClick={editor.addStep}>+ Stand</ToolButton>
-          <span className="flex-1 whitespace-nowrap text-center font-display text-xs font-bold tabular-nums text-gray-500">
+          <span className="flex-1 whitespace-nowrap text-center font-display text-xs font-bold tabular-nums text-cream-50/60">
             <span className="hidden min-[340px]:inline">
               Stand {editor.cur + 1} von {editor.steps.length}
             </span>
@@ -355,7 +355,7 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       className={`h-11 shrink-0 rounded-xl px-3.5 font-display text-sm font-bold disabled:opacity-40 ${
-        active ? 'bg-navy-800 text-cream-50' : 'border border-cream-300 bg-white text-navy-900'
+        active ? 'bg-cream-50 text-navy-900' : 'border border-cream-50/25 text-cream-50 active:bg-cream-50/10'
       }`}
       {...rest}
     >
@@ -376,14 +376,14 @@ function SaveIndicator({ state, onRetry }: { state: string; onRetry: () => void 
       <button
         type="button"
         onClick={onRetry}
-        className="whitespace-nowrap font-display text-xs font-bold text-softball-red-600"
+        className="whitespace-nowrap font-display text-xs font-bold text-[#EE5A68]"
       >
         Nicht gesichert · Erneut
       </button>
     )
   }
   return (
-    <span className="whitespace-nowrap font-display text-xs font-bold text-gray-500">
+    <span className="whitespace-nowrap font-display text-xs font-bold text-cream-50/55">
       {state === 'speichert' ? 'Sichert …' : 'Gesichert'}
     </span>
   )
@@ -402,7 +402,7 @@ function Outs({ value, onChange }: { value: number; onChange: (n: number) => voi
           className="flex h-11 w-6 items-center justify-center"
           aria-label={`${i + 1} Outs`}
         >
-          <span className={`h-2.5 w-2.5 rounded-full ${i < value ? 'bg-navy-800' : 'bg-cream-300'}`} />
+          <span className={`h-2.5 w-2.5 rounded-full ${i < value ? 'bg-amber-400' : 'bg-cream-50/20'}`} />
         </button>
       ))}
     </div>

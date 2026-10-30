@@ -19,24 +19,13 @@ import { HOME, FIRST_BASE, SKIN_PATH, FOUL_LINES_PATH, BASES } from '@/component
 export const takt = (ruhig: boolean, t: { duration?: number; delay?: number } & Record<string, unknown>) =>
   ruhig ? { duration: 0, delay: 0 } : t
 
-/** Die Farben der Buehne an einer Stelle, damit sechzehn Karten dieselben benutzen. */
-export const FARBE = {
-  hell: '#FBF6EC',   // cream-50, Figuren und Linien
-  ball: '#FBF6EC',
-  naht: '#CC2936',   // softball-red-600, der Nahtring
-  gut: '#fbbf24',    // amber-400, Entscheidung und Zone
-  raus: '#CC2936',   // softball-red-600, Strike und Out
-  matt: '#6b7b96',   // Boden, Hilfslinien
-  grund: '#142B49',  // die Buehne selbst — Schrift darauf ist hell
-  /* Leder. Eine Materialfarbe wie das Silber der Medaillen-Plakette, kein Theme-Wert:
-     ein cremefarbener Handschuh waere am cremefarbenen Ball nicht zu unterscheiden,
-     und genau dieser Unterschied ist die Auskunft der Fang-Karte. */
-  leder: '#B5793F',
-  /* Rot als SCHRIFT auf der navy Buehne. softball-red-600 misst dort 2,68:1, noetig sind
-     3,0 fuer grossen Text — als Flaeche mit cremefarbener Schrift ist dasselbe Rot in
-     Ordnung, nur eben nicht andersherum. */
-  rausHell: '#EE5A68',
-} as const
+/*
+ * Die Farben liegen beim Board (`board/farben.ts`), seit der Playmaker dieselbe Buehne
+ * benutzt. Hier nur noch durchgereicht, damit die sechzehn Karten ihren Import behalten.
+ */
+import { FARBE } from '@/components/playmaker/board/farben'
+
+export { FARBE }
 
 /**
  * Die Schlagfrau als Strichfigur, von der Seite, Blickrichtung rechts.

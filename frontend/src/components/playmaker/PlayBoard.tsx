@@ -2,7 +2,6 @@ import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BASES,
   CIRCLE_RADIUS,
-  FAIR_TERRITORY_PATH,
   FENCE_PATH,
   FOUL_LINES_PATH,
   FULL_FIELD,
@@ -14,15 +13,28 @@ import {
 import { ballAnchor, computeContentBox, fitViewBox, markerRadius } from './board/layout';
 import { flugkurve, teilPfad } from './board/spur';
 import type { MarkerRef, PlayMarkers, PlayStep } from './board/types';
+import { FARBE } from './board/farben';
 
-/** Die Farben des Boards. Gras, Sand und Optic Yellow sind die drei neuen im Theme. */
-const GRASS = '#93B268';
-const SKIN = '#E3C9A4';
-const CHALK = '#FFFFFF';
-const INVENTORY = '#FBF6EC';
-const INK = '#193253';
-const RUNNER = '#B91C2A';
-const BALL = '#E6F03C';
+/*
+ * Das Board spielt auf derselben Buehne wie das Spielwissen: Navy als Platz, Cream fuer
+ * Menschen, Linien und Ball, Amber fuer die Laeufer, auf die man achtet, Rot fuer Out.
+ *
+ * Vorher war der Platz gruen mit Sand und weissen Linien, also ein zweites Programm
+ * neben den Karten. Die Farben sind BEWUSST nicht fotografisch: ein Bild aus zwei
+ * Farben sagt schneller, wer gemeint ist, als eines aus sechs.
+ *
+ * `FELD` ist der Platz, nicht die Buehne um ihn herum — innerhalb des Ausschnitts ist
+ * beides dasselbe Navy, damit das Feld nicht als Kasten im Kasten liegt.
+ */
+const FELD = FARBE.grund;
+const SKIN_DECK = FARBE.hell;   // mit kleiner Deckkraft: der Sand ist nur eine Ahnung
+const LINIE = FARBE.hell;
+const INVENTORY = FARBE.hell;   // Bases, Platte, Pitcher-Circle
+const INK = FARBE.grund;        // Schrift AUF hellen Flaechen
+const RUNNER = FARBE.gut;
+const RUNNER_AUS = FARBE.raus;
+const BALL = FARBE.hell;
+const NAHT = FARBE.naht;
 
 interface Props {
   markers: PlayMarkers;
@@ -184,6 +196,7 @@ export function PlayBoard({
         if (!blass) return null;
         return (
           <path
+            data-spur="ball-blass"
             d={teilPfad(flugkurve(blass.von, blass.nach, blass.nach.trajectory), 1)}
             fill="none"
             stroke={BALL}
@@ -201,6 +214,7 @@ export function PlayBoard({
       */}
       {spur ? (
         <path
+          data-spur="ball"
           d={teilPfad(flugkurve(spur.von.ball, spur.nach.ball, spur.nach.ball.trajectory), spur.t)}
           fill="none"
           stroke={BALL}
@@ -211,6 +225,7 @@ export function PlayBoard({
       ) : (
         previous && (
           <path
+            data-spur="ball"
             d={teilPfad(flugkurve(previous.ball, markers.ball, markers.ball.trajectory), 1)}
             fill="none"
             stroke={BALL}
@@ -223,12 +238,12 @@ export function PlayBoard({
 
       {markers.defenders.map((defender) => (
         <g key={defender.position} data-marker="defender" data-id={defender.position}>
-          <circle cx={defender.x} cy={defender.y} r={radius} fill={INK} />
+          <circle cx={defender.x} cy={defender.y} r={radius} fill={FARBE.hell} />
           <text
             x={defender.x}
             y={defender.y + radius * 0.22}
             textAnchor="middle"
-            fill={INVENTORY}
+            fill={INK}
             fontWeight={700}
             fontSize={radius * 0.62}
             style={{ pointerEvents: 'none' }}
@@ -248,7 +263,10 @@ export function PlayBoard({
             data-status={runner.status}
             opacity={runner.status === 'OUT' ? 0.75 : 1}
           >
-            <circle cx={runner.x} cy={runner.y} r={runnerRadius} fill={RUNNER} />
+            <circle
+              cx={runner.x} cy={runner.y} r={runnerRadius}
+              fill={runner.status === 'OUT' ? RUNNER_AUS : RUNNER}
+            />
             {/* Out: durchgestrichen. Er bleibt in DIESEM Stand sichtbar, damit man den
                 Tag noch sieht, und fehlt erst im naechsten. */}
             {runner.status === 'OUT' && (
@@ -286,6 +304,12 @@ export function PlayBoard({
 
       <g data-marker="ball">
         <circle cx={ballPosition.x} cy={ballPosition.y} r={ballRadius} fill={BALL} />
+        {/* Der Nahtring. Derselbe Ball wie auf den Karten — und er unterscheidet die
+            kleine helle Scheibe von den grossen hellen Scheiben der Verteidiger. */}
+        <circle
+          cx={ballPosition.x} cy={ballPosition.y} r={ballRadius * 0.62}
+          fill="none" stroke={NAHT} strokeWidth={ballRadius * 0.34}
+        />
       </g>
       {dragging && <g data-dragging={dragging.kind} />}
     </svg>
@@ -316,13 +340,12 @@ function innerOffset(index: number): { dx: number; dy: number } {
 const Feld = memo(function Feld({ viewBox }: { viewBox: Box }) {
   return (
     <>
-        <rect x={viewBox.x} y={viewBox.y} width={viewBox.w} height={viewBox.h} fill={GRASS} />
-        <path d={FAIR_TERRITORY_PATH} fill={GRASS} />
-        <path d={SKIN_PATH} fill={SKIN} />
-        <path d={FOUL_LINES_PATH} fill="none" stroke={CHALK} strokeWidth={1.8} strokeLinecap="round" />
-        <path d={FENCE_PATH} fill="none" stroke={CHALK} strokeWidth={1.8} strokeLinecap="round" />
+        <rect x={viewBox.x} y={viewBox.y} width={viewBox.w} height={viewBox.h} fill={FELD} />
+        <path d={SKIN_PATH} fill={SKIN_DECK} opacity={0.08} />
+        <path d={FOUL_LINES_PATH} fill="none" stroke={LINIE} strokeWidth={1.4} strokeLinecap="round" opacity={0.5} />
+        <path d={FENCE_PATH} fill="none" stroke={LINIE} strokeWidth={1.4} strokeLinecap="round" opacity={0.3} />
 
-        <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r={CIRCLE_RADIUS} fill={INVENTORY} opacity={0.22} />
+        <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r={CIRCLE_RADIUS} fill={INVENTORY} opacity={0.12} />
         <rect
           x={PITCHING_PLATE.x - 2}
           y={PITCHING_PLATE.y - 0.75}
@@ -330,8 +353,7 @@ const Feld = memo(function Feld({ viewBox }: { viewBox: Box }) {
           height={1.5}
           rx={0.3}
           fill={INVENTORY}
-          stroke={INK}
-          strokeWidth={0.4}
+          opacity={0.8}
         />
         {BASES.slice(1).map((base, index) => (
           <rect
@@ -342,16 +364,14 @@ const Feld = memo(function Feld({ viewBox }: { viewBox: Box }) {
             height={4}
             transform={`rotate(45 ${base.x + innerOffset(index).dx} ${base.y + innerOffset(index).dy})`}
             fill={INVENTORY}
-            stroke={INK}
-            strokeWidth={0.4}
+            opacity={0.8}
           />
         ))}
         <path
           d={`M${HOME.x - 2.4},${HOME.y - 4.4} L${HOME.x + 2.4},${HOME.y - 4.4} L${HOME.x + 2.4},${HOME.y - 2} ` +
             `L${HOME.x},${HOME.y + 0.8} L${HOME.x - 2.4},${HOME.y - 2} Z`}
           fill={INVENTORY}
-          stroke={INK}
-          strokeWidth={0.4}
+          opacity={0.8}
         />
     </>
   );

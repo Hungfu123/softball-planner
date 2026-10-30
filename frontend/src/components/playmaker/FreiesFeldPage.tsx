@@ -82,26 +82,26 @@ export default function FreiesFeldPage() {
     // Querformat und Desktop wie im Editor: Feld links ueber die ganze Hoehe, Leiste
     // rechts. grid-cols-1 begrenzt im Hochformat die Spalte — ohne das waechst sie auf
     // die breiteste Inhaltsbreite und schiebt die Kopfzeile aus dem Bild.
-    <div className="grid h-dvh grid-cols-1 grid-rows-[52px_1fr_auto] overflow-hidden landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
-      <header className="flex items-center gap-3 border-b border-cream-200 px-4 landscape:col-start-2 lg:col-start-2">
+    <div className="grid h-dvh grid-cols-1 grid-rows-[52px_1fr_auto] overflow-hidden bg-navy-900 text-cream-50 landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
+      <header className="flex items-center gap-3 border-b border-cream-50/12 px-4 landscape:col-start-2 lg:col-start-2">
         <Link
           to="/orga/playmaker"
-          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-gray-500"
+          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-cream-50/70 active:text-cream-50"
         >
           Zurück
         </Link>
         <h1 className="min-w-0 flex-1">
-          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-navy-900">
+          <span className="block truncate font-headline text-lg font-extrabold uppercase tracking-wide text-amber-400">
             Freies Feld
           </span>
         </h1>
         <button
           type="button"
           onClick={() => setLegende(true)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center text-gray-500"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-cream-50/70"
           aria-label="Legende"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-cream-300 font-display text-xs font-bold">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-cream-50/30 font-display text-xs font-bold">
             ?
           </span>
         </button>
@@ -109,7 +109,7 @@ export default function FreiesFeldPage() {
 
       <div
         ref={flaeche}
-        className="min-h-0 bg-[#93B268] landscape:col-start-1 landscape:row-span-3 landscape:row-start-1 lg:col-start-1 lg:row-span-3 lg:row-start-1"
+        className="min-h-0 bg-navy-900 landscape:col-start-1 landscape:row-span-3 landscape:row-start-1 lg:col-start-1 lg:row-span-3 lg:row-start-1"
       >
         <PlayBoard
           markers={feld.markers}
@@ -123,9 +123,9 @@ export default function FreiesFeldPage() {
         />
       </div>
 
-      <div className="border-t border-cream-200 px-4 pb-3 pt-2 safe-bottom landscape:col-start-2 lg:col-start-2">
+      <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom landscape:col-start-2 lg:col-start-2">
         <div className="flex items-center gap-2">
-          <span className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-400">
+          <span className="font-display text-[11px] font-bold uppercase tracking-widest text-cream-50/50">
             Runner
           </span>
           {RUNNER_BASES.map(b => {
@@ -140,7 +140,7 @@ export default function FreiesFeldPage() {
                 aria-pressed={besetzt}
                 aria-label={`Runner auf ${b.label}`}
                 className={`h-11 w-11 rounded-xl font-display text-sm font-bold ${
-                  besetzt ? 'bg-softball-red-700 text-cream-50' : 'border border-cream-300 bg-white text-navy-900'
+                  besetzt ? 'bg-amber-400 text-navy-900' : 'border border-cream-50/25 text-cream-50 active:bg-cream-50/10'
                 }`}
               >
                 {b.label}
@@ -197,7 +197,7 @@ function Knopf({
       onClick={onClick}
       disabled={disabled}
       className={`h-11 shrink-0 rounded-xl px-3.5 font-display text-sm font-bold disabled:opacity-40 ${
-        active ? 'bg-navy-800 text-cream-50' : 'border border-cream-300 bg-white text-navy-900'
+        active ? 'bg-cream-50 text-navy-900' : 'border border-cream-50/25 text-cream-50 active:bg-cream-50/10'
       }`}
       {...rest}
     >
