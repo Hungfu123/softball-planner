@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { frameAt } from '@/components/playmaker/board/interpolate';
+import { ballAnteil, dauerMs } from '@/components/playmaker/board/tempo';
 import type { PlayMarkers, PlayStep } from '@/components/playmaker/board/types';
 
 /** Halt am Ende jedes Stands, damit das Auge ankommt, bevor es weitergeht. */
 const HOLD_MS = 400;
 
-export type PlaybackSpeed = 0.5 | 1 | 2;
 
 interface Options {
-  loop?: boolean;
-  speed?: PlaybackSpeed;
   /** Beim Oeffnen von selbst losspielen — so zeigt das Spielwissen seine Karten. */
   autostart?: boolean;
 }
@@ -24,7 +22,7 @@ interface Options {
  * Bei prefers-reduced-motion wird nicht interpoliert, sondern von Stand zu Stand
  * gesprungen — der Halt bleibt, der Inhalt ist vollstaendig, nur die Bewegung faellt weg.
  */
-export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autostart = false }: Options = {}) {
+export function usePlayback(steps: PlayStep[], { autostart = false }: Options = {}) {
   const [index, setIndex] = useState(0);
   /*
    * Der Selbstanlauf steht im Anfangswert und nicht in einem Effekt: so ist schon das
@@ -92,10 +90,7 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autost
   useEffect(() => {
     if (!playing) return;
     if (index >= steps.length - 1) {
-      if (loop) {
-        timer.current = setTimeout(() => setIndex(0), HOLD_MS);
-        return () => abbrechen();
-      }
+      /* Kein Dauerlauf: wer es noch einmal sehen will, drueckt „nochmal". */
       setPlaying(false);
       setFrame(null);
       setSpur(null);
@@ -104,7 +99,13 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autost
 
     const von = index;
     const nach = index + 1;
-    const dauer = steps[nach].durationMs / speed;
+    /*
+     * Die Dauer kommt aus der Bewegung, nicht aus `durationMs`: bei der Haelfte aller
+     * Staende stand dort der Vorgabewert, und ein Flip zur 1 dauerte so lang wie ein
+     * Relay ueber das halbe Feld. Siehe board/tempo.ts — das Feld bleibt in den Daten,
+     * es steuert nur die Wiedergabe nicht mehr.
+     */
+    const dauer = dauerMs(steps[von].markers, steps[nach].markers);
 
     if (reduziert) {
       timer.current = setTimeout(() => setIndex(nach), dauer);
@@ -129,7 +130,7 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autost
     raf.current = requestAnimationFrame(tick);
 
     return () => abbrechen();
-  }, [playing, index, steps, speed, loop, reduziert, abbrechen]);
+  }, [playing, index, steps, reduziert, abbrechen]);
 
   useEffect(() => abbrechen, [abbrechen]);
 
@@ -152,7 +153,16 @@ export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autost
      */
     spur:
       spur && playing && spur.von + 1 < steps.length
-        ? { von: steps[spur.von].markers, nach: steps[spur.von + 1].markers, t: spur.t }
+        ? {
+            von: steps[spur.von].markers,
+            nach: steps[spur.von + 1].markers,
+            /*
+             * Die Uhr des BALLS, nicht die des Standes: die Spur waechst mit dem Ball.
+             * Mit dem rohen t bliebe die Linie hinter ihm zurueck, sobald er frueher
+             * ankommt als der Stand zu Ende ist — und das tut er meistens.
+             */
+            t: ballAnteil(steps[spur.von].markers, steps[spur.von + 1].markers, spur.t),
+          }
         : null,
     /** Der vorige Stand — daraus entstehen Flugbahn und Laufweg. */
     previous: index > 0 ? steps[index - 1].markers : null,

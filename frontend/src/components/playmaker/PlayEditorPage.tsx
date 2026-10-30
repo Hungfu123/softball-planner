@@ -251,9 +251,9 @@ function Editor({ play, onBack }: { play: Play; onBack: () => void }) {
               {editor.cur + 1}/{editor.steps.length}
             </span>
           </span>
-          <ToolButton onClick={editor.cycleDuration}>
-            {(editor.step.durationMs / 1000).toFixed(1).replace('.', ',')} s
-          </ToolButton>
+          {/* Die Dauer-Taste ist weg: die Wiedergabe rechnet die Zeit aus der Strecke
+              (board/tempo.ts), ein eingestellter Wert tut dort nichts mehr. Das Feld
+              bleibt in den Daten, damit die Staende gueltig bleiben. */}
           <ToolButton onClick={() => setLoeschen(true)} disabled={editor.steps.length < 2} aria-label="Stand löschen">
             ✕
           </ToolButton>

@@ -49,14 +49,9 @@ export function PlaybackBar({
         <Knopf onClick={onNext} disabled={index >= count - 1} aria-label="Nächster Stand">
           ▶
         </Knopf>
-        <span className="flex-1 whitespace-nowrap text-center font-display text-xs font-bold tabular-nums text-cream-50/60">
-          <span className="hidden min-[340px]:inline">
-            Stand {index + 1} von {count}
-          </span>
-          <span className="min-[340px]:hidden">
-            {index + 1}/{count}
-          </span>
-        </span>
+        {/* Kein „Stand 2 von 4": die Zeitleiste darueber zeigt dasselbe als Bild, und
+            wer zuschaut, zaehlt keine Staende — er sieht ein Play. */}
+        <span className="flex-1" />
         <Knopf onClick={onNochmal} disabled={!canPlay} wide aria-label="Nochmal">
           <span className="flex items-center gap-1.5">
             <RefreshIcon size={14} />

@@ -1,5 +1,6 @@
 import { BASES, BASE_PATH, type Point } from './geometry';
 import { flugkurve, punktAuf } from './spur';
+import { ballAnteil } from './tempo';
 import type { PlayMarkers, PlayStep } from './types';
 
 /**
@@ -73,7 +74,12 @@ export function frameAt(steps: PlayStep[], from: number, to: number, t: number):
   const a = steps[from].markers;
   const b = steps[to].markers;
   const tSpieler = easeInOut(t);
-  const tBall = easeOut(t);
+  /*
+   * Der Ball hat seine eigene Uhr: braucht er weniger als der Stand dauert, ist er
+   * frueher da und liegt den Rest im Handschuh (siehe tempo.ts). Gestreckt sah ein
+   * kurzer Wurf neben einem langen Lauf aus wie Schweben.
+   */
+  const tBall = easeOut(ballAnteil(a, b, t));
 
   const defenders = b.defenders.map((ziel) => {
     const start = a.defenders.find((d) => d.position === ziel.position) ?? ziel;
