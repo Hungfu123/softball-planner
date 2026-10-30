@@ -10,6 +10,8 @@ export type PlaybackSpeed = 0.5 | 1 | 2;
 interface Options {
   loop?: boolean;
   speed?: PlaybackSpeed;
+  /** Beim Oeffnen von selbst losspielen — so zeigt das Spielwissen seine Karten. */
+  autostart?: boolean;
 }
 
 /**
@@ -22,9 +24,21 @@ interface Options {
  * Bei prefers-reduced-motion wird nicht interpoliert, sondern von Stand zu Stand
  * gesprungen — der Halt bleibt, der Inhalt ist vollstaendig, nur die Bewegung faellt weg.
  */
-export function usePlayback(steps: PlayStep[], { loop = false, speed = 1 }: Options = {}) {
+export function usePlayback(steps: PlayStep[], { loop = false, speed = 1, autostart = false }: Options = {}) {
   const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  /*
+   * Der Selbstanlauf steht im Anfangswert und nicht in einem Effekt: so ist schon das
+   * erste Bild in Bewegung, statt dass die Seite kurz steht und dann anspringt.
+   *
+   * Wer weniger Bewegung bestellt hat, bekommt sie nicht — und bei einem einzigen Stand
+   * gibt es nichts abzuspielen.
+   */
+  const [playing, setPlaying] = useState(
+    () =>
+      autostart &&
+      steps.length >= 2 &&
+      !(typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches),
+  );
   const [frame, setFrame] = useState<PlayMarkers | null>(null);
   /**
    * Fortschritt des laufenden Uebergangs, 0..1 — und von welchem Stand aus.

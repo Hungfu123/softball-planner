@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ladePlayMitRueckfall } from './ladePlay'
 import { usePlayback, type PlaybackSpeed } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
+import { beteiligte } from './board/beteiligte'
 import { PlaybackBar } from './PlaybackBar'
 import { LegendSheet } from './LegendSheet'
 import { StepList } from './StepList'
@@ -84,7 +85,14 @@ function Viewer({
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
   const flaeche = useRef<HTMLDivElement>(null)
 
-  const wiedergabe = usePlayback(play.steps, { loop, speed: TEMPI[tempoIndex] })
+  // Beim Oeffnen laeuft es los, wie eine Karte im Spielwissen: man kommt an, es bewegt sich.
+  const wiedergabe = usePlayback(play.steps, { loop, speed: TEMPI[tempoIndex], autostart: true })
+  /*
+   * Auf wen es ankommt — abgeleitet aus den Staenden, nicht gepflegt. Neun Scheiben
+   * stehen im Bild, drei davon tun etwas; wer zuschaut, um es zu lernen, soll die drei
+   * finden, ohne das Play dreimal laufen zu lassen.
+   */
+  const achtung = useMemo(() => beteiligte(play.steps), [play.steps])
 
   useEffect(() => {
     const messen = () => {
@@ -163,6 +171,7 @@ function Viewer({
             steps={play.steps}
             previous={wiedergabe.previous}
             spur={wiedergabe.spur}
+            beteiligt={achtung}
             ghost={wiedergabe.ghost}
             mode={breit ? 'full' : 'content'}
             width={groesse.w}
@@ -174,7 +183,22 @@ function Viewer({
 
       <div className="min-h-0 landscape:col-start-2 landscape:flex landscape:flex-col lg:col-start-2 lg:flex lg:flex-col">
         {/* Der Satz zum Stand, wie die Zeile unter einer Karte im Spielwissen. */}
-        <p className="px-4 py-2.5 text-sm leading-snug text-cream-50/80">{wiedergabe.step?.note ?? ''}</p>
+        <p className="px-4 pt-2.5 text-sm leading-snug text-cream-50/80">{wiedergabe.step?.note ?? ''}</p>
+        {achtung.length > 0 && (
+          <p className="flex flex-wrap items-center gap-1.5 px-4 pb-2 pt-1.5">
+            <span className="font-display text-[10px] font-bold uppercase tracking-widest text-cream-50/50">
+              Achte auf
+            </span>
+            {achtung.map(position => (
+              <span
+                key={position}
+                className="font-display rounded-full border border-amber-400/70 px-2 py-0.5 text-[11px] font-extrabold text-amber-400"
+              >
+                {position}
+              </span>
+            ))}
+          </p>
+        )}
         {/* Nur wo Platz ist: am Handy traegt die Zeitleiste allein. */}
         <div className="hidden min-h-0 overflow-y-auto landscape:block lg:block">
           <StepList steps={play.steps} current={wiedergabe.index} onSelect={wiedergabe.seek} />

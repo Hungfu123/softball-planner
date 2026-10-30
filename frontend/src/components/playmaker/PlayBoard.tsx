@@ -12,7 +12,7 @@ import {
 } from './board/geometry';
 import { ballAnchor, computeContentBox, fitViewBox, markerRadius } from './board/layout';
 import { flugkurve, teilPfad } from './board/spur';
-import type { MarkerRef, PlayMarkers, PlayStep } from './board/types';
+import type { MarkerRef, PlayMarkers, PlayStep, PositionCode } from './board/types';
 import { FARBE } from './board/farben';
 
 /*
@@ -64,6 +64,11 @@ interface Props {
    * exakt aus derselben Kurve geschnitten wird, auf der der Ball fliegt.
    */
   spur?: { von: PlayMarkers; nach: PlayMarkers; t: number } | null;
+  /**
+   * Die Positionen, auf die es in diesem Play ankommt — sie bekommen einen amberfarbenen
+   * Ring. Ohne Angabe ringelt nichts: im Editor baut man das Play, da ist alles wichtig.
+   */
+  beteiligt?: PositionCode[] | null;
   /** false fuer Vorschauen: dann gilt keine Mindest-Trefferflaeche. */
   interactive?: boolean;
   className?: string;
@@ -92,6 +97,7 @@ export function PlayBoard({
   width,
   height,
   pointerFine = false,
+  beteiligt = null,
   interactive = true,
   viewBoxOverride = null,
   spur = null,
@@ -238,6 +244,13 @@ export function PlayBoard({
 
       {markers.defenders.map((defender) => (
         <g key={defender.position} data-marker="defender" data-id={defender.position}>
+          {beteiligt?.includes(defender.position) && (
+            <circle
+              data-achtung=""
+              cx={defender.x} cy={defender.y} r={radius * 1.35}
+              fill="none" stroke={FARBE.gut} strokeWidth={radius * 0.16} opacity={0.9}
+            />
+          )}
           <circle cx={defender.x} cy={defender.y} r={radius} fill={FARBE.hell} />
           <text
             x={defender.x}
@@ -263,9 +276,18 @@ export function PlayBoard({
             data-status={runner.status}
             opacity={runner.status === 'OUT' ? 0.75 : 1}
           >
+            {/*
+              Der Ring ist gemessen, nicht geschmueckt. Amber auf Cream misst 1,55:1 —
+              steht der Runner auf einem Verteidiger, verschwimmen beide Scheiben; der
+              dunkle Ring trennt sie und ist auf der Buehne selbst unsichtbar. Rot misst
+              auf der Buehne nur 2,68:1 und braucht umgekehrt einen hellen Ring, damit
+              ein ausgemachter Runner nicht im Hintergrund versinkt.
+            */}
             <circle
               cx={runner.x} cy={runner.y} r={runnerRadius}
               fill={runner.status === 'OUT' ? RUNNER_AUS : RUNNER}
+              stroke={runner.status === 'OUT' ? FARBE.hell : FARBE.grund}
+              strokeWidth={runnerRadius * 0.18}
             />
             {/* Out: durchgestrichen. Er bleibt in DIESEM Stand sichtbar, damit man den
                 Tag noch sieht, und fehlt erst im naechsten. */}
@@ -343,7 +365,7 @@ const Feld = memo(function Feld({ viewBox }: { viewBox: Box }) {
         <rect x={viewBox.x} y={viewBox.y} width={viewBox.w} height={viewBox.h} fill={FELD} />
         <path d={SKIN_PATH} fill={SKIN_DECK} opacity={0.08} />
         <path d={FOUL_LINES_PATH} fill="none" stroke={LINIE} strokeWidth={1.4} strokeLinecap="round" opacity={0.5} />
-        <path d={FENCE_PATH} fill="none" stroke={LINIE} strokeWidth={1.4} strokeLinecap="round" opacity={0.3} />
+        <path d={FENCE_PATH} fill="none" stroke={LINIE} strokeWidth={1.4} strokeLinecap="round" opacity={0.4} />
 
         <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r={CIRCLE_RADIUS} fill={INVENTORY} opacity={0.12} />
         <rect

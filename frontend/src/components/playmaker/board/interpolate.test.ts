@@ -55,6 +55,18 @@ describe('frameAt', () => {
     expect(frame.ball.x).toBeGreaterThan(frame.defenders[0].x);
   });
 
+  /*
+   * Dieselbe Kurve wie im Spielwissen: cubic-bezier(0.23, 1, 0.32, 1). Sie startet hart
+   * und laeuft lange aus — daran erkennt man die Bewegung der Karten wieder. Zur Halbzeit
+   * liegt der Ball damit rund vier Fuenftel der Strecke weit, nicht erst drei Viertel.
+   */
+  test('der Ball folgt der Auslaufkurve der Karten', () => {
+    const frame = frameAt([a, b], 0, 1, 0.5);
+
+    // a.ball.x = 0, b.ball.x = 100 (siehe Staende oben); die alte Kurve lag bei 75
+    expect(frame.ball.x).toBeGreaterThan(82);
+  });
+
   test('gibt den Ball erst ganz am Ende in die Hand', () => {
     expect(frameAt([a, b], 0, 1, 0.9).ball.holder).toBeNull();
     expect(frameAt([a, b], 0, 1, 1).ball.holder).toBe('SS');

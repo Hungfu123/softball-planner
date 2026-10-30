@@ -32,7 +32,7 @@ export function LegendSheet({ onClose }: { onClose: () => void }) {
             <circle cx="14" cy="14" r="9" fill={FARBE.gut} />
           </Zeile>
           <Zeile beschreibung="Out: derselbe Runner, durchgestrichen">
-            <circle cx="14" cy="14" r="9" fill={FARBE.raus} />
+            <circle cx="14" cy="14" r="9" fill={FARBE.raus} stroke={FARBE.hell} strokeWidth="1.6" />
             <path d="M8,8 L20,20 M20,8 L8,20" stroke={FARBE.hell} strokeWidth="2.4" strokeLinecap="round" />
           </Zeile>
           <Zeile beschreibung="Ball">
