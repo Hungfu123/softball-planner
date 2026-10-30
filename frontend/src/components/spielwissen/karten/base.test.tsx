@@ -1,6 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { BASE_KARTEN } from './base'
+import { KAPITEL } from '../kapitel'
+
+/* Die Saetze stehen in kapitel.ts, die Zeichnungen daneben. Geprueft wird das Kapitel. */
+const BASE_KARTEN = KAPITEL[2].karten
 import { FIRST_BASE } from '@/components/playmaker/board/geometry'
 
 describe('Kapitel Auf der Base', () => {

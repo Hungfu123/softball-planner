@@ -176,10 +176,22 @@ export default function PlaymakerOverview() {
 
   return (
     <div className={allesZu ? 'pb-2' : 'pb-8'}>
+      {/*
+        Zwei Namen, eine Seite. Spieler kommen ueber den Reiter Spielwissen her, und dort
+        heisst die Haelfte Defense; sie sollen unter dem Begriff ankommen, unter dem sie
+        gesucht haben. Der Name Playmaker bleibt darueber stehen, weil die Trainer die
+        Seite so kennen und die Kacheln unter Orga und auf der Startseite so heissen.
+        Kein Query-Parameter, keine zweite Fassung: beide Woerter stehen einfach da.
+      */}
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-        <h1 className="flex-1 font-headline text-2xl font-extrabold uppercase tracking-wide text-navy-900">
-          Playmaker
-        </h1>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-500">
+            Playmaker
+          </div>
+          <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-navy-900">
+            Defense
+          </h1>
+        </div>
         {istAdmin && <Button onClick={() => navigate('/orga/playmaker/neu')}>Neues Play</Button>}
       </div>
 

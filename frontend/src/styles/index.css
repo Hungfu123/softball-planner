@@ -637,6 +637,11 @@ p {
   }
   /* Gedrueckt geht es wieder nach unten — das ist der Unterschied zum Hover. */
   [data-theme="dark"] .active\:bg-navy-950:active { background-color: #375987; }
+  /* Die Knoepfe auf der Spielwissen-Buehne ruhen auf bg-navy-800 und werden oben zur
+     Akzentfuellung. Ihr Druck geht nach OBEN, weil er im Hellen auch nach oben geht
+     (navy-700 ist heller als navy-800) — und weil er am Handy die einzige Rueckmeldung
+     ist: `hover:` kompiliert dort zu `@media (hover: hover)` und greift nie. */
+  [data-theme="dark"] .active\:bg-navy-700:active { background-color: var(--color-accent-hover); }
 
   /* Status-Toenungen beim Ueberfahren: dieselben Flaechen wie oben, denn hier ruht
      das Element auf durchsichtigem Grund, nicht auf der Toenung. */
