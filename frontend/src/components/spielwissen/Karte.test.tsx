@@ -10,6 +10,7 @@ function Attrappe({ lauf, ruhig }: BuehnenProps) {
 
 const KARTE: KartenDaten = {
   id: 'probe',
+  stichwort: 'Probe',
   pointe: 'Lauf. Sofort.',
   satz: 'Nicht hinsehen, nicht abwarten.',
   Buehne: Attrappe,
@@ -20,10 +21,10 @@ const KARTE: KartenDaten = {
  * Systemeinstellung aufloest. Im Test wird sie gestellt: motion liest `matchMedia` einmal
  * beim ersten Gebrauch, ein spaeter gesetzter Stub kaeme zu spaet.
  */
-function zeige(karte: KartenDaten, bewegung: 'always' | 'never') {
+function zeige(karte: KartenDaten, bewegung: 'always' | 'never', aktiv = true) {
   return render(
     <MotionConfig reducedMotion={bewegung}>
-      <Karte karte={karte} />
+      <Karte karte={karte} aktiv={aktiv} />
     </MotionConfig>,
   )
 }
@@ -64,6 +65,16 @@ describe('Karte', () => {
     zeige(KARTE, 'always')
 
     expect(screen.queryByRole('button', { name: 'nochmal' })).not.toBeInTheDocument()
+  })
+
+  /*
+   * Welche Karte laeuft, entscheidet die Kapitelseite: bei 393x760 stehen bis zu drei
+   * gleichzeitig weit genug im Bild. Eine nicht aktive Karte zeigt ihren Endzustand.
+   */
+  it('laeuft nicht, solange sie nicht an der Reihe ist', () => {
+    zeige(KARTE, 'never', false)
+
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
   })
 
   it('kommt ohne Satz aus', () => {

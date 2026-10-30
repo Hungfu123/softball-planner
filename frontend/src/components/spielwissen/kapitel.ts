@@ -38,6 +38,15 @@ export interface KartenDaten {
   /** Hoechstens ein Satz. Beschriftet, was die Buehne zeigt, und wiederholt sie nicht. */
   satz?: string
   /**
+   * Ein oder zwei Woerter fuer die Uebersicht.
+   *
+   * Nicht die Pointe: die ist ein Satz und steht auf der Karte. Hier geht es nur darum,
+   * dass man VOR dem Eintauchen sieht, welches Kapitel die gesuchte Sache traegt — ein
+   * Kapitel ist rund drei Bildschirme, und bei drei Kapiteln raet man sonst. Mehrfach
+   * vergebene Stichwoerter werden in der Uebersicht zusammengefasst.
+   */
+  stichwort: string
+  /**
    * Die Buehne bringt ihre eigenen Knoepfe mit (Klein/Gross, Weiter/Von vorn) und laeuft
    * nicht von selbst ab. Dann faellt „nochmal" weg: es gaebe nichts zurueckzuholen, und
    * zwei Knoepfe fuer dieselbe Sache sind eine Frage mehr als noetig.
@@ -72,6 +81,7 @@ export const KAPITEL: Kapitel[] = [
     karten: [
       {
         id: 'zone',
+        stichwort: 'Zone',
         pointe: 'Die Zone bist du',
         satz: 'Brust bis Knie, über der Platte. Zwei Leute, zwei Zonen.',
         selbstgesteuert: true,
@@ -79,30 +89,35 @@ export const KAPITEL: Kapitel[] = [
       },
       {
         id: 'drin',
+        stichwort: 'Strike',
         pointe: 'Drin ist Strike',
         satz: 'Auch wenn du nicht schwingst.',
         Buehne: DrinIstStrike,
       },
       {
         id: 'auch-strike',
+        stichwort: 'Strike',
         pointe: 'Auch Strike',
         satz: 'Drei Wege, und alle zählen gleich.',
         Buehne: AuchStrike,
       },
       {
         id: 'count',
+        stichwort: 'Count',
         pointe: 'Der Count ist ein Wettlauf',
         satz: 'Vier Balls bringen dich auf die 1. Drei Strikes, und du bist out.',
         Buehne: CountWettlauf,
       },
       {
         id: 'bunt-wofuer',
+        stichwort: 'Bunt',
         pointe: 'Wofür ein Bunt gut ist',
         satz: 'Kurz ablegen, während die Verteidigung tief steht, und du bist schon unterwegs.',
         Buehne: BuntWofuer,
       },
       {
         id: 'bunt-falle',
+        stichwort: 'Bunt',
         pointe: 'Die Bunt-Falle',
         satz: 'Bei zwei Strikes gebuntet und foul: du bist out.',
         Buehne: BuntFalle,
@@ -116,30 +131,35 @@ export const KAPITEL: Kapitel[] = [
     karten: [
       {
         id: 'lauf',
+        stichwort: 'Laufen',
         pointe: 'Lauf. Sofort.',
         satz: 'Nicht hinsehen, nicht abwarten.',
         Buehne: LaufSofort,
       },
       {
         id: 'foul',
+        stichwort: 'Foul',
         pointe: 'Foul siehst du nicht',
         satz: 'Zwei Bälle, gleicher Abflug. Einer ist fair, einer ist foul. Nicht dein Call.',
         Buehne: FoulSiehstDuNicht,
       },
       {
         id: 'gefangen',
+        stichwort: 'Out',
         pointe: 'Out: gefangen',
         satz: 'Ball aus der Luft gefangen, bevor er den Boden berührt.',
         Buehne: RausGefangen,
       },
       {
         id: 'wurf-zur-eins',
+        stichwort: 'Out',
         pointe: 'Out: Wurf zur 1',
         satz: 'Der Ball ist vor dir da.',
         Buehne: RausWurfZurEins,
       },
       {
         id: 'getickt',
+        stichwort: 'Out',
         pointe: 'Out: getickt',
         satz: 'Jemand berührt dich mit dem Ball, während du auf keiner Base stehst.',
         Buehne: RausGetickt,
@@ -153,12 +173,14 @@ export const KAPITEL: Kapitel[] = [
     karten: [
       {
         id: 'sicher',
+        stichwort: 'Base',
         pointe: 'Die Base ist sicher',
         satz: 'Steh drauf, und dir passiert nichts. Außer wenn hinter dir jemand nachrückt: dann musst du weiter.',
         Buehne: BaseIstSicher,
       },
       {
         id: 'release',
+        stichwort: 'Release',
         pointe: 'Los erst beim Release',
         satz: 'Erst wenn der Ball die Hand der Pitcherin verlässt. Kein Leadoff, und zu früh ist out.',
         selbstgesteuert: true,
@@ -166,18 +188,21 @@ export const KAPITEL: Kapitel[] = [
       },
       {
         id: 'wild-pitch',
+        stichwort: 'Wild Pitch',
         pointe: 'Wild Pitch',
         satz: 'Der Ball rutscht am Catcher vorbei. Das ist dein Moment. Auf der nächsten Base bleibst du dann stehen.',
         Buehne: WildPitch,
       },
       {
         id: 'steal',
+        stichwort: 'Steal',
         pointe: 'Steal',
         satz: 'Dasselbe, nur geplant. Angekommen heißt auch hier: stehenbleiben.',
         Buehne: Steal,
       },
       {
         id: 'tag-up',
+        stichwort: 'Tag up',
         pointe: 'Fly gefangen: erst zurück',
         satz: 'Zurück auf die Base berühren, dann erst los.',
         selbstgesteuert: true,
@@ -189,4 +214,9 @@ export const KAPITEL: Kapitel[] = [
 
 export function findeKapitel(id: string | undefined): Kapitel | undefined {
   return KAPITEL.find(k => k.id === id)
+}
+
+/** Die Stichwoerter eines Kapitels, jedes nur einmal und in der Reihenfolge der Karten. */
+export function stichworte(kapitel: Kapitel): string[] {
+  return [...new Set(kapitel.karten.map(k => k.stichwort))]
 }

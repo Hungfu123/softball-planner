@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { KAPITEL, findeKapitel } from './kapitel'
@@ -17,6 +18,43 @@ import { Karte } from './Karte'
 export default function KapitelSeite() {
   const { kapitel: id } = useParams()
   const kapitel = findeKapitel(id)
+  const behaelter = useRef<HTMLDivElement>(null)
+  const [aktiv, setAktiv] = useState(0)
+
+  /*
+   * Welche Karte gerade dran ist: die, deren Mitte der Bildschirmmitte am naechsten liegt.
+   *
+   * Genau eine. Eine Karte fuer sich kann das nicht entscheiden, weil bei 393x760 bis zu
+   * drei gleichzeitig weit genug im Bild stehen — dann liefen drei Sequenzen nebeneinander
+   * und keine bekam einen Blick. Gerechnet wird in einem Frame, gelauscht passiv.
+   */
+  useEffect(() => {
+    const el = behaelter.current
+    if (!el) return
+    let frame = 0
+    const messen = () => {
+      frame = 0
+      const karten = Array.from(el.querySelectorAll('article'))
+      const mitte = window.innerHeight / 2
+      let beste = 0
+      let abstand = Infinity
+      karten.forEach((a, i) => {
+        const r = a.getBoundingClientRect()
+        const d = Math.abs((r.top + r.bottom) / 2 - mitte)
+        if (d < abstand) { abstand = d; beste = i }
+      })
+      setAktiv(beste)
+    }
+    const anstossen = () => { if (!frame) frame = requestAnimationFrame(messen) }
+    messen()
+    window.addEventListener('scroll', anstossen, { passive: true })
+    window.addEventListener('resize', anstossen)
+    return () => {
+      window.removeEventListener('scroll', anstossen)
+      window.removeEventListener('resize', anstossen)
+      if (frame) cancelAnimationFrame(frame)
+    }
+  }, [id])
 
   if (!kapitel) return <Navigate to="/spielwissen" replace />
 
@@ -38,9 +76,9 @@ export default function KapitelSeite() {
         <p className="mt-0.5 text-sm text-ink-muted">{kapitel.frage}</p>
       </div>
 
-      <div className="space-y-3">
-        {kapitel.karten.map(karte => (
-          <Karte key={karte.id} karte={karte} />
+      <div ref={behaelter} className="space-y-3">
+        {kapitel.karten.map((karte, i) => (
+          <Karte key={karte.id} karte={karte} aktiv={i === aktiv} />
         ))}
       </div>
 

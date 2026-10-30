@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useReducedMotionConfig } from 'motion/react'
 import type { KartenDaten } from './kapitel'
 
@@ -33,42 +33,34 @@ import type { KartenDaten } from './kapitel'
  * auf die Systemeinstellung durch). Das zweite liest `matchMedia` einmal in einen
  * Modulzustand und ist danach fuer den ganzen Prozess festgenagelt.
  */
-export function Karte({ karte }: { karte: KartenDaten }) {
+export function Karte({ karte, aktiv }: { karte: KartenDaten; aktiv: boolean }) {
   const [lauf, setLauf] = useState(0)
-  const [imBlick, setImBlick] = useState(false)
-  const kasten = useRef<HTMLElement>(null)
+  const [gespielt, setGespielt] = useState(false)
   const ruhig = Boolean(useReducedMotionConfig())
   const { Buehne } = karte
 
   /*
-   * Die Sequenz beginnt, wenn die Karte ins Bild kommt, nicht beim Aufbau der Seite.
+   * Die Sequenz beginnt, wenn die Karte die aktive ist, nicht beim Aufbau der Seite.
    *
-   * Gemessen: ein Kapitel ist rund drei Bildschirme hoch, und beim Laden ist genau EINE
-   * Karte zur Haelfte zu sehen. Starteten alle beim Aufbau, waeren fuenf von sechs
-   * Animationen vorbei, bevor jemand hinsieht — und „nochmal" waere kein Angebot mehr,
-   * sondern die einzige Art, die Karte ueberhaupt zu sehen.
+   * Gemessen: ein Kapitel ist rund drei Bildschirme hoch, beim Laden ist genau EINE Karte
+   * zur Haelfte zu sehen, und bis zu DREI stehen gleichzeitig weit genug im Bild, um eine
+   * Schwelle zu reissen. Starteten alle beim Aufbau, waeren fuenf von sechs vorbei, bevor
+   * jemand hinsieht; startete jede fuer sich, liefen drei nebeneinander. Welche dran ist,
+   * entscheidet deshalb die Kapitelseite — sie sieht alle.
    *
-   * Bis dahin steht die Buehne in ihrem Endzustand da. Der traegt die Auskunft ohnehin,
-   * und die Hoehe bleibt gleich, also springt beim Start nichts.
+   * Einmal gespielt bleibt gespielt: beim Zurueckscrollen faengt nichts von selbst wieder
+   * an. Dafuer gibt es „nochmal".
    */
   useEffect(() => {
-    const el = kasten.current
-    if (!el || ruhig || imBlick) return
-    if (typeof IntersectionObserver === 'undefined') { setImBlick(true); return }
-    const beobachter = new IntersectionObserver(
-      ([eintrag]) => { if (eintrag.isIntersecting) setImBlick(true) },
-      { threshold: 0.35 },
-    )
-    beobachter.observe(el)
-    return () => beobachter.disconnect()
-  }, [ruhig, imBlick])
+    if (aktiv && !ruhig) setGespielt(true)
+  }, [aktiv, ruhig])
 
-  const steht = ruhig || !imBlick
+  const steht = ruhig || !gespielt
 
   return (
-    <article ref={kasten} className="overflow-hidden rounded-2xl border border-cream-50/12 bg-navy-900 text-cream-50">
+    <article id={`karte-${karte.id}`} className="overflow-hidden rounded-2xl border border-cream-50/12 bg-navy-900 text-cream-50">
       <div className="relative">
-        <Buehne key={`${imBlick}-${lauf}`} lauf={lauf} ruhig={steht} />
+        <Buehne key={`${gespielt}-${lauf}`} lauf={lauf} ruhig={steht} />
       </div>
 
       <div className="px-4 pb-3 pt-1">
