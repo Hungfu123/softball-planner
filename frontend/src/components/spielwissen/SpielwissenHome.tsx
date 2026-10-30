@@ -17,6 +17,17 @@ import { KAPITEL, stichworte } from './kapitel'
  * auf der nur „hier geht es weiter" steht, ist ein Tipp, der nichts bringt.
  */
 
+/**
+ * Was hinter Defense liegt, in Stichworten.
+ *
+ * **Geschriebene Worte, keine geladenen Kategorien.** Die Kategorien stehen in der
+ * Datenbank, und ein Abruf dafuer wuerde das Versprechen dieser Seite brechen: Offense
+ * laeuft ohne Netz, und ein Test haelt fest, dass hier nichts unter `/api` gerufen wird.
+ * Der Preis ist, dass die Zeile von den Kategorien abweichen kann; sie nennt deshalb die
+ * Lagen, nicht die Liste — stimmen muss sie im Sinn, nicht im Wortlaut.
+ */
+const DEFENSE_STICHWORTE = ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff', 'Wer deckt was']
+
 function Ueberschrift({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3">
@@ -73,6 +84,9 @@ export default function SpielwissenHome() {
           </div>
           <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
             Wer steht wo, und wohin geht der Ball?
+          </div>
+          <div className="font-display mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint group-hover:text-accent-ink/70">
+            {DEFENSE_STICHWORTE.join(' · ')}
           </div>
         </div>
         <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />

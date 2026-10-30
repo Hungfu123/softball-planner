@@ -29,6 +29,21 @@ describe('Spielwissen-Uebersicht', () => {
   })
 
   /*
+   * Offense sagt in Stichworten, was drinsteht; Defense sagte bisher nichts. Eine Zeile
+   * ohne Inhaltsangabe neben drei Zeilen mit einer ist eine blinde Tuer: man sieht nicht,
+   * dass dahinter Bunt-Defense, Rundown und der Cut-off liegen.
+   */
+  it('sagt auch bei Defense in Stichworten, was dahinter liegt', () => {
+    zeige()
+
+    // Grossgeschrieben wird in CSS, im Text steht die normale Schreibweise.
+    const defense = screen.getByRole('link', { name: /Defense/ })
+    for (const wort of ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff']) {
+      expect(defense.textContent).toContain(wort)
+    }
+  })
+
+  /*
    * Wer vor dem Spiel etwas sucht, sucht eine Frage, keine Ordnungszahl. Die Nummern
    * stehen deshalb nirgends.
    */
