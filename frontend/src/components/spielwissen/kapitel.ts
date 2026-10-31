@@ -60,6 +60,14 @@ export interface Kapitel {
   titel: string
   /** Die Frage, die das Kapitel beantwortet. Steht statt einer Kapitelnummer. */
   frage: string
+  /**
+   * Wie schwer, in drei Stufen — in der Uebersicht als Punkte.
+   *
+   * Nicht „wie kompliziert sind die Regeln", sondern **wie viel muss man vorher wissen**:
+   * die Box versteht jeder am ersten Tag, der Lauf danach braucht die Box, und auf der
+   * Base stehen Dinge, die ein Anfaenger erst im Spiel braucht (Steal, Tag Up).
+   */
+  stufe: 1 | 2 | 3
   karten: KartenDaten[]
 }
 
@@ -80,6 +88,7 @@ export const KAPITEL: Kapitel[] = [
     id: 'box',
     titel: 'In der Box',
     frage: 'Was zählt als Strike?',
+    stufe: 1,
     karten: [
       {
         id: 'zone',
@@ -144,6 +153,7 @@ export const KAPITEL: Kapitel[] = [
   },
   {
     id: 'getroffen',
+    stufe: 2,
     titel: 'Du hast getroffen',
     frage: 'Wohin laufe ich, wann bin ich out?',
     karten: [
@@ -193,6 +203,7 @@ export const KAPITEL: Kapitel[] = [
   },
   {
     id: 'base',
+    stufe: 3,
     titel: 'Auf der Base',
     frage: 'Wann darf ich weiter?',
     karten: [
