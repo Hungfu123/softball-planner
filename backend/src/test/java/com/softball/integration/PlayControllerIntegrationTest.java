@@ -201,4 +201,30 @@ class PlayControllerIntegrationTest {
     void unbekanntesPlayLiefert404() throws Exception {
         mvc.perform(get("/api/plays/999999")).andExpect(status().isNotFound());
     }
+
+    /**
+     * Loeschen darf nur der Superadmin.
+     *
+     * Ein Play ist Lernstoff, kein Arbeitsstand: die Start-Plays kommen aus einer
+     * Migration, und ein versehentlich geloeschtes ist nur ueber eine neue Migration
+     * wieder da. In der Oberflaeche verschwindet der Papierkorb beim Trainer — hier steht,
+     * dass das kein blosses Verstecken ist.
+     */
+    @Test
+    @org.springframework.security.test.context.support.WithMockUser(username = "anna", roles = "ADMIN")
+    void einTrainerDarfNichtLoeschen() throws Exception {
+        final Long id = jdbc.queryForObject("SELECT id FROM play ORDER BY id LIMIT 1", Long.class);
+
+        mvc.perform(delete("/api/plays/" + id)).andExpect(status().isForbidden());
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM play WHERE id = ?", Integer.class, id)).isEqualTo(1);
+    }
+
+    @Test
+    void einTrainerDarfTrotzdemAendern() throws Exception {
+        // Die Grenze gilt NUR fuers Loeschen: bauen und aendern bleibt Trainersache.
+        final Long id = jdbc.queryForObject("SELECT id FROM play ORDER BY id LIMIT 1", Long.class);
+
+        mvc.perform(get("/api/plays/" + id)).andExpect(status().isOk());
+    }
 }

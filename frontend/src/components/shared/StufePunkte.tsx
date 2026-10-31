@@ -18,11 +18,10 @@
 export function StufeLegende({ className = '' }: { className?: string }) {
   return (
     <p className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-faint ${className}`}>
-      <span className="font-display font-bold uppercase tracking-widest">Punkte</span>
       {([1, 2, 3] as const).map((stufe, i) => (
         <span key={stufe} className="flex items-center gap-1.5">
           <StufePunkte stufe={stufe} />
-          {['für den Anfang', 'wenn das sitzt', 'für Fortgeschrittene'][i]}
+          {['Anfang', 'danach', 'schwer'][i]}
         </span>
       ))}
     </p>

@@ -132,15 +132,14 @@ export default function SpielwissenHome() {
         <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong sm:text-3xl">
           Spielwissen
         </h1>
-        <p className="mt-0.5 text-sm text-ink-muted">
-          Von oben nach unten: erst das, was am ersten Tag reicht.
-        </p>
-        <StufeLegende className="mt-2" />
+        {/* Die Legende sagt die Reihenfolge schon mit: oben leicht, unten schwer. Ein
+            Satz darueber waere dasselbe ein zweites Mal. */}
+        <StufeLegende className="mt-1.5" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         <section className="space-y-2">
-          <Haelfte titel="Offense" satz="Du bist am Schlag oder auf der Base. Was darfst du, was kostet dich den Out?" />
+          <Haelfte titel="Offense" satz="Du bist am Schlag oder auf der Base." />
           {[...KAPITEL]
             .sort((a, b) => a.stufe - b.stufe)
             .map(k => (
@@ -156,7 +155,7 @@ export default function SpielwissenHome() {
         </section>
 
         <section className="space-y-2">
-          <Haelfte titel="Defense" satz="Der Ball ist im Spiel, du stehst im Feld. Wohin gehörst du, wohin der Ball?" />
+          <Haelfte titel="Defense" satz="Du stehst im Feld, der Ball ist im Spiel." />
           {kategorien && kategorien.length > 0 ? (
             <>
               {/*
@@ -180,24 +179,35 @@ export default function SpielwissenHome() {
               ))}
 
               {mehr ? (
-                kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).map(k => (
-                  <Eintrag
-                    key={k.id}
-                    to={`/orga/playmaker?kategorie=${k.id}`}
-                    titel={k.name}
-                    frage={kategorieSatz(k.name)}
-                    worte={[]}
-                    stufe={kategorieStufe(k.sortOrder)}
-                  />
-                ))
+                <>
+                  {kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).map(k => (
+                    <Eintrag
+                      key={k.id}
+                      to={`/orga/playmaker?kategorie=${k.id}`}
+                      titel={k.name}
+                      frage={kategorieSatz(k.name)}
+                      worte={[]}
+                      stufe={kategorieStufe(k.sortOrder)}
+                    />
+                  ))}
+                  {/* Auch wieder zu. Ein Knopf, der nur aufmacht, ist eine Einbahnstraße —
+                      und wer sich verguckt hat, scrollt sonst für immer an acht Zeilen
+                      vorbei, von denen er sechs nicht wollte. */}
+                  <button
+                    type="button"
+                    onClick={() => setMehr(false)}
+                    className="font-display min-h-11 w-full rounded-xl px-4 text-[11px] font-bold uppercase tracking-widest text-ink-faint hover:bg-surface-raised active:bg-surface-raised"
+                  >
+                    Weniger zeigen
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
                   onClick={() => setMehr(true)}
                   className="font-display min-h-11 w-full rounded-xl border border-dashed border-line px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-ink-muted hover:bg-surface-raised active:bg-surface-raised"
                 >
-                  Für den Anfang reichen die zwei. Mehr zeigen (
-                  {kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).length})
+                  Mehr zeigen ({kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).length})
                 </button>
               )}
             </>

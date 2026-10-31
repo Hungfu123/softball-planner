@@ -10,8 +10,8 @@ import { ChevronDown, ChevronLeft, CrossBones } from '@/icons'
 import { Button } from '@/components/shared/Button'
 import { useToastContext } from '@/components/layout/Layout'
 import { useRolle } from '@/hooks/useRolle'
-import { StufeLegende, StufePunkte } from '@/components/shared/StufePunkte'
-import { kategorieSatz, kategorieStufe, playStufe } from './kategorieTexte'
+import { StufePunkte } from '@/components/shared/StufePunkte'
+import { kategorieSatz, kategorieStufe } from './kategorieTexte'
 import { mitwirkende } from './board/beteiligte'
 import { POSITIONS } from './board/geometry'
 import type { PositionCode } from './board/types'
@@ -232,31 +232,50 @@ export default function PlaymakerOverview() {
             <StufePunkte stufe={kategorieStufe(kapitel.sortOrder)} />
           </div>
           <p className="mt-0.5 text-sm text-ink-muted">{kategorieSatz(kapitel.name)}</p>
-          {/* Auch hier, denn man kann direkt in einem Kapitel landen. */}
-          <StufeLegende className="mt-2" />
+          {/*
+            Keine Legende hier.
 
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="font-display mr-1 text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+            Sie stand zwei Zeilen lang unter dem Kopf, als jedes Play noch eigene Punkte
+            hatte. Jetzt gibt es im Kapitel genau EINE Punktgruppe — die neben dem Namen —
+            und zwei Zeilen Erklaerung fuer drei Punkte sind mehr Text als Auskunft. Wer
+            sie braucht, hat sie im Spielwissen eine Seite vorher gesehen.
+          */}
+
+          {/*
+            Ein festes Raster, keine fliessende Zeile.
+
+            Der gewaehlte Knopf ist gefuellt und dadurch minimal breiter; in einer
+            fliessenden Zeile rutschte deshalb bei jeder Wahl die ganze Reihe um — mal
+            stand SS unten, mal oben. Neun Positionen und „Alle" passen in zwei Reihen zu
+            fuenf, und die stehen still.
+
+            Noch einmal auf dieselbe Position tippt sie wieder weg: ein Filter, den man
+            nur ueber einen zweiten Knopf loswird, fuehlt sich an wie eine Falle.
+          */}
+          <div className="mt-3">
+            <span className="font-display text-[11px] font-bold uppercase tracking-widest text-ink-faint">
               Deine Position
             </span>
-            {([null, ...POSITIONS] as (PositionCode | null)[]).map(pos => {
-              const aktiv = position === pos
-              return (
-                <button
-                  key={pos ?? 'alle'}
-                  type="button"
-                  onClick={() => merkePosition(pos)}
-                  aria-pressed={aktiv}
-                  className={`font-display min-h-11 rounded-lg px-3 text-[11px] font-bold uppercase tracking-widest ${
-                    aktiv
-                      ? 'bg-accent text-accent-ink'
-                      : 'border border-line text-ink-muted active:bg-surface-raised'
-                  }`}
-                >
-                  {pos ?? 'Alle'}
-                </button>
-              )
-            })}
+            <div className="mt-1.5 grid grid-cols-5 gap-1.5">
+              {([null, ...POSITIONS] as (PositionCode | null)[]).map(pos => {
+                const aktiv = position === pos
+                return (
+                  <button
+                    key={pos ?? 'alle'}
+                    type="button"
+                    onClick={() => merkePosition(aktiv ? null : pos)}
+                    aria-pressed={aktiv}
+                    className={`font-display flex min-h-11 items-center justify-center rounded-lg text-[11px] font-bold uppercase tracking-widest ${
+                      aktiv
+                        ? 'bg-accent text-accent-ink'
+                        : 'border border-line text-ink-muted active:bg-surface-raised'
+                    }`}
+                  >
+                    {pos ?? 'Alle'}
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
 
@@ -265,7 +284,7 @@ export default function PlaymakerOverview() {
             <PlayRow
               key={play.id}
               play={play}
-              stufe={playStufe(play)}
+              werkzeuge={false}
               onDuplicate={() => kopieren(play)}
               onDelete={() => loeschen(play)}
             />
@@ -286,14 +305,32 @@ export default function PlaymakerOverview() {
           )}
         </div>
 
-        <div className="px-4 pt-4">
-          <button
-            type="button"
-            onClick={() => setCategoryId('alle')}
-            className="font-display min-h-11 w-full rounded-xl border border-dashed border-line px-4 text-[11px] font-bold uppercase tracking-widest text-ink-muted active:bg-surface-raised"
+        {/*
+          Zurueck zu den KATEGORIEN, nicht zu allen Plays.
+
+          „Alle Kategorien" zeigte die ungefilterte Liste aus einundfuenfzig Plays — genau
+          die Ueberfuellung, gegen die das Kapitel gebaut ist. Wer hier unten ankommt, will
+          das naechste Kapitel, und das steht im Spielwissen mit Stufen daneben.
+
+          Der Trainer bekommt zusaetzlich den Weg in seine Werkbank: dort liegen Suche,
+          freies Feld und „Neues Play".
+        */}
+        <div className="flex flex-col gap-2 px-4 pt-4">
+          <Link
+            to="/spielwissen"
+            className="font-display flex min-h-11 items-center justify-center rounded-xl border border-dashed border-line px-4 text-[11px] font-bold uppercase tracking-widest text-ink-muted active:bg-surface-raised"
           >
-            Alle Kategorien
-          </button>
+            Andere Kategorie
+          </Link>
+          {istAdmin && (
+            <button
+              type="button"
+              onClick={() => setCategoryId('alle')}
+              className="font-display min-h-11 text-[11px] font-bold uppercase tracking-widest text-ink-faint active:text-ink-strong"
+            >
+              Alle Plays
+            </button>
+          )}
         </div>
       </div>
     )
