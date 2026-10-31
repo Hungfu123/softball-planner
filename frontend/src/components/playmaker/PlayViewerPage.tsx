@@ -138,7 +138,7 @@ function Viewer({
       <header className="flex items-center gap-3 border-b border-cream-50/12 px-4 landscape:col-start-2 lg:col-start-2">
         <Link
           to="/orga/playmaker"
-          className="-ml-1 flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-cream-50/70 active:text-cream-50"
+          className="-ml-2 flex h-11 shrink-0 items-center rounded-lg px-2.5 font-display text-xs font-bold text-cream-50/70 active:bg-cream-50/10 active:text-cream-50"
         >
           Zurück
         </Link>
@@ -164,7 +164,7 @@ function Viewer({
           <button
             type="button"
             onClick={onEdit}
-            className="flex h-11 shrink-0 items-center px-1 font-display text-xs font-bold text-cream-50/70 active:text-cream-50"
+            className="flex h-11 shrink-0 items-center rounded-lg px-2.5 font-display text-xs font-bold text-cream-50/70 active:bg-cream-50/10 active:text-cream-50"
           >
             Ändern
           </button>
@@ -258,12 +258,12 @@ function Viewer({
               <Link
                 to={`/orga/playmaker/${blaettern.vorheriges.id}`}
                 aria-label="Vorheriges Play"
-                className="font-display flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-sm font-bold text-cream-50"
+                className="font-display flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-base font-bold text-cream-50 active:bg-cream-50/10"
               >
                 ‹
               </Link>
             ) : (
-              <span className="h-11 w-11 shrink-0" />
+              <span className="h-12 w-14 shrink-0" />
             )}
             <span className="font-display flex-1 truncate text-center text-[11px] font-bold uppercase tracking-widest text-cream-50/55">
               Play {blaettern.nummer} von {blaettern.anzahl}
@@ -271,14 +271,14 @@ function Viewer({
             {blaettern.naechstes ? (
               <Link
                 to={`/orga/playmaker/${blaettern.naechstes.id}`}
-                className="font-display flex h-11 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-4 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
+                className="font-display flex h-12 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
               >
                 Nächstes Play ›
               </Link>
             ) : (
               <Link
                 to="/orga/playmaker"
-                className="font-display flex h-11 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-4 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
+                className="font-display flex h-12 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
               >
                 Fertig
               </Link>

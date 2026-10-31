@@ -41,9 +41,9 @@ export function PlaybackBar({
           am Ende einer Karte im Spielwissen. Zwei gleich laute Knoepfe uebereinander
           sahen aus wie zwei Wege, von denen einer rueckwaerts fuehrt.
         */}
-        <Knopf onClick={onNochmal} disabled={!canPlay} wide aria-label="Nochmal">
-          <span className="flex items-center gap-1.5">
-            <RefreshIcon size={14} />
+        <Knopf onClick={onNochmal} disabled={!canPlay} breit aria-label="Nochmal">
+          <span className="flex items-center justify-center gap-2">
+            <RefreshIcon size={16} />
             nochmal
           </span>
         </Knopf>
@@ -58,7 +58,7 @@ function Knopf({
   disabled,
   primary,
   active,
-  wide,
+  breit,
   ...rest
 }: {
   children: React.ReactNode
@@ -66,9 +66,10 @@ function Knopf({
   disabled?: boolean
   primary?: boolean
   active?: boolean
-  wide?: boolean
+  /** Nimmt den Rest der Zeile. Rechts davon stand sonst ein Drittel der Breite leer. */
+  breit?: boolean
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const basis = wide ? 'px-3.5' : 'w-11'
+  const basis = breit ? 'flex-1' : 'w-14'
   /*
    * Die Sprache der Buehne: Amber ist der Knopf, den man drueckt, Cream die Umrisse
    * drumherum. Vorher waren es weisse Knoepfe mit Cream-Kanten — auf Navy unsichtbar.
@@ -83,7 +84,7 @@ function Knopf({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`h-11 shrink-0 rounded-xl font-display text-sm font-bold disabled:opacity-40 ${basis} ${farbe}`}
+      className={`h-12 shrink-0 rounded-xl font-display text-sm font-bold disabled:opacity-40 ${basis} ${farbe}`}
       {...rest}
     >
       {children}
