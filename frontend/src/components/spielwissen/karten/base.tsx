@@ -47,7 +47,70 @@ export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
   )
 }
 
-/* ----------------------------------------------------------- 2 Schrittfuss */
+/* --------------------------------------------------------------- 2 Force */
+
+/**
+ * Der Force: hinter dir rueckt einer nach, also musst du.
+ *
+ * „Die Base ist sicher" nennt die Ausnahme in ihrem Satz, zeigt sie aber nicht — und sie
+ * ist der haeufigste Grund, aus dem ein Anfaenger out geht: er bleibt auf der Base
+ * stehen, obwohl der Schlagmann auf dieselbe Base zulaeuft. Niemand muss ihn ticken, der
+ * Ball an der Base genuegt.
+ *
+ * Gezeigt wird zuerst, was NICHT geht: ein durchgestrichener Weg zurueck. Erst danach
+ * laufen beide los. Andersherum saehe es aus wie ein gewoehnlicher Lauf mit einem roten
+ * Zeichen daneben.
+ */
+export function ForceAufDerBase({ lauf, ruhig }: BuehnenProps) {
+  const zurueck = { x: (FIRST_BASE.x + HOME.x) / 2, y: (FIRST_BASE.y + HOME.y) / 2 }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
+        {/* Der Weg zurueck, durchgestrichen. Rot heisst in dieser App „out", und genau
+            das waere er hier auch. */}
+        <motion.g
+          key={`zurueck-${lauf}`}
+          data-testid="kein-zurueck"
+          initial={ruhig ? false : { opacity: 0 }}
+          animate={ruhig ? { opacity: 1 } : { opacity: [0, 1, 1, 0.25] }}
+          transition={takt(ruhig, { duration: 1.6, times: [0, 0.2, 0.6, 1] })}
+        >
+          <line
+            x1={FIRST_BASE.x - 3} y1={FIRST_BASE.y + 3} x2={HOME.x + 14} y2={HOME.y - 14}
+            stroke={FARBE.rausHell} strokeWidth="1.4" strokeDasharray="4 3"
+          />
+          <g stroke={FARBE.rausHell} strokeWidth="1.8" strokeLinecap="round">
+            <line x1={zurueck.x - 4} y1={zurueck.y - 4} x2={zurueck.x + 4} y2={zurueck.y + 4} />
+            <line x1={zurueck.x + 4} y1={zurueck.y - 4} x2={zurueck.x - 4} y2={zurueck.y + 4} />
+          </g>
+        </motion.g>
+
+        {/* Der Schlagmann kommt nach: er ist der Grund. */}
+        <motion.circle
+          key={`batter-${lauf}`}
+          data-testid="force-batter"
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
+          initial={ruhig ? false : { cx: HOME.x, cy: HOME.y }}
+          animate={{ cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
+          transition={takt(ruhig, { delay: 0.6, duration: 1, ease: 'easeOut' })}
+        />
+
+        {/* Und du raeumst die Base. */}
+        <motion.circle
+          key={`laeufer-${lauf}`}
+          data-testid="force-laeufer"
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
+          initial={ruhig ? false : { cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
+          animate={{ cx: SECOND_BASE.x, cy: SECOND_BASE.y }}
+          transition={takt(ruhig, { delay: 0.7, duration: 1, ease: 'easeOut' })}
+        />
+      </MiniFeld>
+    </div>
+  )
+}
+
+/* ----------------------------------------------------------- 3 Schrittfuss */
 
 const RELEASE = [
   { text: 'Der Ball liegt in der Hand der Pitcherin. Du stehst auf der Base.', ball: 0, fuss: false, laeufer: 0 },
@@ -81,40 +144,44 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
   const jetzt = RELEASE[schritt]
   const start = FIRST_BASE
   const ziel = SECOND_BASE
+  /*
+   * Der Ball liegt seitlich in ihrer Hand und wandert von dort zum Catcher.
+   *
+   * Genau auf der Mittellinie lag er der Scheibe mit dem „P" direkt auf dem Buchstaben,
+   * seit die Pitcherin mit dem Schritt nach vorne kommt — zwei cremefarbene Kreise
+   * uebereinander, und man sah weder den Ball noch, wer da steht. Die Auslenkung laeuft
+   * mit dem Wurf aus.
+   */
   const ballOrt = {
-    x: PITCHING_PLATE.x + (CATCHER.x - PITCHING_PLATE.x) * jetzt.ball,
+    x: PITCHING_PLATE.x + 5 * (1 - jetzt.ball) + (CATCHER.x - PITCHING_PLATE.x) * jetzt.ball,
     y: PITCHING_PLATE.y + (CATCHER.y - PITCHING_PLATE.y) * jetzt.ball,
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
       <MiniFeld ausschnitt="diamant" className="min-h-0">
-        <Verteidiger x={PITCHING_PLATE.x} y={PITCHING_PLATE.y} kuerzel="P" r={5} />
-        <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
-
         {/*
-          Der Abdruck des Schrittfusses: der Moment, auf den es ankommt. Er steht schraeg
-          vor der Platte, weil der Schritt Richtung Home geht.
+          **Kein Fussabdruck, sondern der Pitcher selbst.**
 
-          **Cream und nicht Amber**, obwohl er die Erlaubnis ausloest: der Ball ist auf
-          dieser Karte amber und faellt unmittelbar daneben. Zwei amberfarbene Flecken
-          nebeneinander waren im Browser nicht auseinanderzuhalten. Ein Fuss ist ohnehin
-          ein Koerperteil, und Koerperteile sind hier cream. Das Signal „jetzt darfst du"
-          traegt der Ring, der im selben Stand verschwindet.
+          Von oben sieht man keinen Fuss. Erst stand hier ein Oval, das aus doppelter
+          Groesse auf seinen Platz schrumpfte — das sah aus, als falle etwas ins Bild, wie
+          ein Ball. Dann ein Schuhabdruck, der bei acht Einheiten Laenge wie ein Knochen
+          aussah. Was man von oben WIRKLICH sieht, ist die Pitcherin, die mit dem Schritt
+          ein Stueck nach vorne kommt. Genau das zeigt die Karte jetzt, und der Ring am
+          Runner verschwindet im selben Moment: das ist die Erlaubnis.
         */}
-        {jetzt.fuss && (
-          <motion.ellipse
-            data-testid="schrittfuss"
-            cx={PITCHING_PLATE.x + 8} cy={PITCHING_PLATE.y + 8}
-            rx="2.2" ry="3.4"
-            fill={FARBE.hell}
-            transform={`rotate(-28 ${PITCHING_PLATE.x + 8} ${PITCHING_PLATE.y + 8})`}
-            initial={ruhig ? false : { opacity: 0, scale: 2 }}
-            animate={{ opacity: 0.95, scale: 1 }}
-            style={{ originX: `${PITCHING_PLATE.x + 8}px`, originY: `${PITCHING_PLATE.y + 8}px` }}
-            transition={takt(ruhig, { duration: 0.3, ease: 'easeOut' })}
-          />
-        )}
+        <motion.g
+          data-testid="pitcher"
+          /* Der Stand steht als Wort dran: ob die Pitcherin den Schritt gemacht hat,
+             laesst sich an einer Bewegung aus JavaScript nicht ablesen. */
+          data-schritt={jetzt.fuss ? 'vorne' : 'hinten'}
+          initial={false}
+          animate={{ y: jetzt.fuss ? 6 : 0 }}
+          transition={takt(ruhig, { duration: 0.35, ease: [0.23, 1, 0.32, 1] })}
+        >
+          <Verteidiger x={PITCHING_PLATE.x} y={PITCHING_PLATE.y} kuerzel="P" r={5} />
+        </motion.g>
+        <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         {/* Solange der Fuss nicht unten ist, haelt der Ring sie fest. Ab Stand 2 ist er
             weg, obwohl sie noch steht: die Erlaubnis kommt vor der Bewegung. */}

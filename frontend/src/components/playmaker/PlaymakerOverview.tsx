@@ -550,8 +550,16 @@ export default function PlaymakerOverview() {
                 const offen = !zugeklappt.has(kategorie.id)
                 return (
                   <section key={kategorie.id}>
-                    {/* top-28: unter der Navigation UND unter der klebenden Suchzeile. */}
-                    <h2 className="sticky top-28 z-10 bg-cream-100/95 backdrop-blur">
+                    {/*
+                      Die Ueberschrift klebt unter dem, was ueber ihr klebt — und das ist
+                      nicht bei allen dasselbe. Beim Trainer sind das Navigation (59 px)
+                      und Suchzeile (62 px), also `top-28`. Ohne Suchzeile (Spieler,
+                      Spieleransicht) klebte sie trotzdem bei 112 px, und durch den
+                      53 Pixel hohen Streifen darueber lief die Liste sichtbar hindurch:
+                      eine halbe Play-Zeile stand ueber der Ueberschrift. Gemessen, nicht
+                      geraten.
+                    */}
+                    <h2 className={`sticky z-10 bg-cream-100/95 backdrop-blur ${istAdmin ? 'top-28' : 'top-15'}`}>
                       <button
                         type="button"
                         onClick={() => klappe(kategorie.id)}

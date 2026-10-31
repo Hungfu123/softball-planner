@@ -7,14 +7,33 @@ const BASE_KARTEN = KAPITEL[2].karten
 import { FIRST_BASE, SECOND_BASE, PITCHING_PLATE } from '@/components/playmaker/board/geometry'
 
 describe('Kapitel Auf der Base', () => {
-  it('liefert fünf Karten mit genau diesen Pointen', () => {
+  it('liefert sechs Karten mit genau diesen Pointen', () => {
     expect(BASE_KARTEN.map(k => k.pointe)).toEqual([
-      'Die Base ist sicher',
+      'Auf der Base bist du safe',
+      'Hinter dir rückt einer nach',
       'Los, wenn der Fuß landet',
       'Wild Pitch',
       'Steal',
       'Fly gefangen: erst dann los',
     ])
+  })
+
+  /*
+   * Der Force. „Die Base ist sicher" nannte die Ausnahme in ihrem Satz, zeigte sie aber
+   * nicht — und sie ist der haeufigste Grund, aus dem ein Anfaenger out geht: er bleibt
+   * stehen, obwohl der Schlagmann hinter ihm auf dieselbe Base laeuft.
+   */
+  it('zeigt beim Force, dass zurück nicht geht und die Läuferin vorrückt', async () => {
+    const { Buehne } = BASE_KARTEN[1]
+    render(<Buehne lauf={0} ruhig />)
+
+    expect(screen.getByTestId('kein-zurueck')).toBeInTheDocument()
+    await waitFor(() => {
+      const laeufer = screen.getByTestId('force-laeufer')
+      expect(parseFloat(laeufer.getAttribute('cy') ?? '')).toBeCloseTo(SECOND_BASE.y, 0)
+    })
+    expect(parseFloat(screen.getByTestId('force-batter').getAttribute('cx') ?? ''))
+      .toBeCloseTo(FIRST_BASE.x, 0)
   })
 
   it('schreibt in keiner Karte einen Gedankenstrich', () => {
@@ -32,7 +51,7 @@ describe('Kapitel Auf der Base', () => {
    * Dass sie erst danach losläuft, ist die Pointe.
    */
   it('lässt die Läuferin erst los, wenn der Schrittfuß aufsetzt', async () => {
-    const { Buehne } = BASE_KARTEN[1]
+    const { Buehne } = BASE_KARTEN[2]
     render(<Buehne lauf={0} ruhig />)
 
     const x = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cx') ?? '')
@@ -40,14 +59,14 @@ describe('Kapitel Auf der Base', () => {
     const y = (testid: string) => parseFloat(screen.getByTestId(testid).getAttribute('cy') ?? '')
     const weiter = () => fireEvent.click(screen.getByRole('button', { name: /Nächster Schritt|Von vorn/ }))
 
-    // Stand 1: Ball in der Hand, kein Abdruck, Läuferin auf der Base.
+    // Stand 1: Ball in der Hand, Pitcherin noch hinten, Läuferin auf der Base.
     expect(y('ball')).toBeCloseTo(PITCHING_PLATE.y, 1)
-    expect(screen.queryByTestId('schrittfuss')).not.toBeInTheDocument()
+    expect(screen.getByTestId('pitcher')).toHaveAttribute('data-schritt', 'hinten')
     expect(x('laeufer')).toBeCloseTo(FIRST_BASE.x, 1)
 
-    // Stand 2: der Fuß ist unten, sie darf, steht aber noch.
+    // Stand 2: der Schritt ist gemacht, sie darf, steht aber noch.
     weiter()
-    await waitFor(() => expect(screen.getByTestId('schrittfuss')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByTestId('pitcher')).toHaveAttribute('data-schritt', 'vorne'))
     expect(x('laeufer')).toBeCloseTo(FIRST_BASE.x, 1)
 
     // Stand 3: jetzt erst ist sie weg.
@@ -56,7 +75,7 @@ describe('Kapitel Auf der Base', () => {
   })
 
   it('zeigt bei Wild Pitch, dass der Ball am Catcher vorbeigeht', () => {
-    const { Buehne } = BASE_KARTEN[2]
+    const { Buehne } = BASE_KARTEN[3]
     render(<Buehne lauf={0} ruhig />)
 
     expect(screen.getByTestId('ball-wild')).toBeInTheDocument()
@@ -80,7 +99,7 @@ describe('Kapitel Auf der Base', () => {
 
   /* Die Tag-up-Karte ist der Zwilling von "Raus: gefangen" und erklärt sich am Ablauf. */
   it('lässt sich die Tag-up-Karte Schritt für Schritt durchtippen', async () => {
-    const { Buehne } = BASE_KARTEN[4]
+    const { Buehne } = BASE_KARTEN[5]
     render(<Buehne lauf={0} ruhig={false} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Nächster Schritt/ }))

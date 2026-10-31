@@ -48,7 +48,7 @@ function anteil(svg: SVGSVGElement) {
  * NICHT dabei ist „Foul siehst du nicht": der Foul-Ball fliegt bis x=230 und braucht
  * die Weite, fuer die der Infield-Ausschnitt ueberhaupt da ist.
  */
-const DIAMANT = ['base/sicher', 'base/release', 'base/wild-pitch', 'base/steal', 'base/tag-up',
+const DIAMANT = ['base/sicher', 'base/force', 'base/release', 'base/wild-pitch', 'base/steal', 'base/tag-up',
   'box/dritter-strike', 'box/bunt-wofuer', 'getroffen/wurf-zur-eins']
 /* „Der Count ist ein Wettlauf" nimmt denselben Ausschnitt, zeigt ihn aber erst am Ende
    des Laufs (Walk oder Out). Im Anfangsbild gibt es ihn nicht, also nichts zu messen. */

@@ -3,9 +3,8 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react'
 import { KAPITEL, findeKapitel, type Kapitel } from './kapitel'
 import { Karte } from './Karte'
-import { BlaetterLeiste } from '@/components/shared/BlaetterLeiste'
+import { WiedergabeLeiste } from '@/components/shared/WiedergabeLeiste'
 import { spielermodusAktiv } from '@/hooks/useSpielermodus'
-import { RefreshIcon } from '@/icons'
 
 /**
  * Ein Kapitel, **eine Karte auf einmal, und sie fuellt den Bildschirm**.
@@ -194,49 +193,35 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
 
       <div className="landscape:col-start-2 lg:col-start-2">
         {/*
-          Dieselbe Zeile wie unter einem Play, und zwar buchstaeblich dasselbe Bauteil:
-          zweimal gebaut lief sie auseinander. Die Karte blaettert im Zustand, das Play per
-          Adresse — darum einmal `onClick`, einmal `to`, sonst nichts Eigenes.
-        */}
-        <BlaetterLeiste
-          zurueck={nr === 0 ? null : { onClick: () => blaettern(-1) }}
-          zurueckLabel="Vorherige Karte"
-          stand={`Karte ${nr + 1} von ${anzahl}`}
-          weiter={
-            !letzte
-              ? { onClick: () => blaettern(1) }
-              : naechstesKapitel
-                ? { to: `/spielwissen/${naechstesKapitel.id}` }
-                : null
-          }
-          fertig={{ to: '/spielwissen' }}
-        />
-
-        {/*
-          „nochmal" unten am Rand, wo drueben die Wiedergabeleiste sitzt — gleiche Hoehe,
-          gleiches Zeichen, gleiches Wort, ruhige Kante statt Farbe. Amber gibt es auf der
-          Seite genau einmal, und das ist der Weg vorwaerts in der Zeile darueber.
+          EINE Leiste, dasselbe Bauteil wie unter einem Play. Die Karte blaettert im
+          Zustand, das Play per Adresse — darum einmal `onClick`, einmal `to`, sonst
+          nichts Eigenes. Abspielen gibt es hier nicht: die Karte laeuft von selbst los,
+          also traegt „Weiter" das Amber, und „nochmal" steht daneben, wo drueben der
+          Startknopf sitzt.
 
           Im Spielermodus liegt darunter der Hinweisstreifen (fest, z-50) und deckte
           genau diese Knoepfe zu. Die Seite ist `h-dvh`, sie kann ihm nicht ausweichen,
           also macht sie ihm Platz.
         */}
         <div className={spielermodus ? 'pb-9' : undefined}>
-          {mitNochmal ? (
-            <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom">
-              <button
-                type="button"
-                onClick={() => setLauf(x => x + 1)}
-                className="font-display flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-cream-50/25 text-sm font-bold text-cream-50 active:bg-cream-50/10"
-              >
-                <RefreshIcon size={16} />
-                nochmal
-              </button>
-            </div>
-          ) : (
-            /* Ohne Knopf bleibt die Sicherheitszone unten trotzdem frei. */
-            <div className="pb-2 safe-bottom" />
-          )}
+          <WiedergabeLeiste
+            zurueck={nr === 0 ? null : { onClick: () => blaettern(-1) }}
+            zurueckLabel="Vorherige Karte"
+            /* Ohne Hauptwort: „Karte" ist eine Metapher aus der Oberflaeche und kein
+               Softballwort, „Play" waere hier fachlich falsch (eine Offense-Karte ist kein
+               Spielzug). Was gezaehlt wird, sagt die Seite darueber. */
+            stand={`${nr + 1} von ${anzahl}`}
+            weiter={
+              !letzte
+                ? { onClick: () => blaettern(1) }
+                : naechstesKapitel
+                  ? { to: `/spielwissen/${naechstesKapitel.id}` }
+                  : null
+            }
+            weiterLabel={letzte && naechstesKapitel ? naechstesKapitel.titel : 'Nächste Karte'}
+            fertig={{ to: '/spielwissen' }}
+            nochmal={mitNochmal ? { onNochmal: () => setLauf(x => x + 1) } : undefined}
+          />
         </div>
       </div>
     </div>

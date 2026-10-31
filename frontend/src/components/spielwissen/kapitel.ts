@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import { ZoneAmKoerper, DrinIstStrike, AuchStrike, CountWettlauf, DritterStrikeAmBoden, EinFussBleibtDrin, BuntWofuer, BuntFalle } from './karten/box'
 import { LaufSofort, FoulSiehstDuNicht, RausGefangen, RausWurfZurEins, RausGetickt, DurchlaufenAnDerEins } from './karten/getroffen'
-import { BaseIstSicher, LosBeimRelease, WildPitch, Steal, TagUp } from './karten/base'
+import { BaseIstSicher, ForceAufDerBase, LosBeimRelease, WildPitch, Steal, TagUp } from './karten/base'
 
 /**
  * Die Daten hinter dem Spielwissen: **alle Saetze an einer Stelle**, alle Zeichnungen
@@ -188,7 +188,7 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'getickt',
         stichwort: 'Out',
-        pointe: 'Out: getickt',
+        pointe: 'Out: getaggt',
         satz: 'Jemand berührt dich mit dem Ball, während du auf keiner Base stehst.',
         Buehne: RausGetickt,
       },
@@ -196,7 +196,7 @@ export const KAPITEL: Kapitel[] = [
         id: 'durchlaufen',
         stichwort: 'Die 1',
         pointe: 'An der 1 läufst du durch',
-        satz: 'Nicht bremsen. Danach direkt zurück auf die Base. Biegst du Richtung 2 ab, darf man dich ticken.',
+        satz: 'Nicht bremsen. Danach direkt zurück auf die Base. Biegst du Richtung 2 ab, darf man dich taggen.',
         Buehne: DurchlaufenAnDerEins,
       },
     ],
@@ -210,9 +210,16 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'sicher',
         stichwort: 'Base',
-        pointe: 'Die Base ist sicher',
-        satz: 'Steh drauf, und dir passiert nichts. Außer wenn hinter dir jemand nachrückt: dann musst du weiter.',
+        pointe: 'Auf der Base bist du safe',
+        satz: 'Steh drauf, und dir passiert nichts.',
         Buehne: BaseIstSicher,
+      },
+      {
+        id: 'force',
+        stichwort: 'Force',
+        pointe: 'Hinter dir rückt einer nach',
+        satz: 'Dann musst du weiter. Der Ball an der Base reicht, taggen muss dich keiner.',
+        Buehne: ForceAufDerBase,
       },
       {
         id: 'release',

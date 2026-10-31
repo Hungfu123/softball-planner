@@ -389,7 +389,7 @@ test('blaettert am Rechner mit den Pfeiltasten', async ({ page }) => {
   await page.waitForURL(/\/orga\/playmaker\/\d+$/)
   // Erst wenn die Leiste steht, kennt die Seite ihre Nachbarn — die Liste kommt aus einem
   // zweiten Abruf. Vorher gedrueckt, passiert zu Recht nichts.
-  const leiste = page.getByText(/Play \d+ von \d+/)
+  const leiste = page.getByText(/^\d+ von \d+$/)
   await expect(leiste).toBeVisible({ timeout: 15_000 })
   const erstes = page.url()
   const stand = await leiste.textContent()

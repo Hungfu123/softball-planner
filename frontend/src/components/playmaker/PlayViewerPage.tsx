@@ -6,10 +6,9 @@ import { PlayBoard } from './PlayBoard'
 import { beteiligte } from './board/beteiligte'
 import { nachbarn } from './nachbarn'
 import { usePlays } from '@/hooks/usePlays'
-import { PlaybackBar } from './PlaybackBar'
 import { LegendSheet } from './LegendSheet'
 import { StepList } from './StepList'
-import { BlaetterLeiste } from '@/components/shared/BlaetterLeiste'
+import { WiedergabeLeiste } from '@/components/shared/WiedergabeLeiste'
 import type { Play } from './board/types'
 import { useRolle } from '@/hooks/useRolle'
 
@@ -139,6 +138,16 @@ function Viewer({
   const blaettern = useMemo(() => nachbarn(plays, play), [plays, play])
 
   /*
+   * Zurueck heisst zurueck ins KAPITEL, nicht in die volle Liste.
+   *
+   * Der Weg hierher geht ueber das Spielwissen und eine Kategorie; der Zurueck-Knopf
+   * fuehrte trotzdem auf `/orga/playmaker` ohne Filter — also auf die Werkbank mit allen
+   * vierundfuenfzig Plays, die man gerade NICHT gesucht hat. Die Kategorie steht am Play
+   * selbst, also braucht es dafuer kein Gedaechtnis und keine Adresse mit Rueckweg darin.
+   */
+  const zurueck = play.categoryId ? `/orga/playmaker?kategorie=${play.categoryId}` : '/orga/playmaker'
+
+  /*
    * Am Rechner blaettert man mit den Pfeiltasten, nicht mit der Maus zum Knopf — genau
    * wie in den Karten des Spielwissens. Dort stand es schon, hier fehlte es.
    *
@@ -180,7 +189,7 @@ function Viewer({
     <div className="grid h-dvh grid-rows-[52px_1fr_auto_auto] grid-cols-1 overflow-hidden bg-navy-900 text-cream-50 landscape:grid-cols-[1fr_340px] landscape:grid-rows-[52px_minmax(0,1fr)_auto] lg:grid-cols-[1fr_340px] lg:grid-rows-[52px_minmax(0,1fr)_auto]">
       <header className="flex items-center gap-3 border-b border-cream-50/12 px-4 landscape:col-start-2 lg:col-start-2">
         <Link
-          to="/orga/playmaker"
+          to={zurueck}
           className="-ml-2 flex h-11 shrink-0 items-center rounded-lg px-2.5 font-display text-xs font-bold text-cream-50/70 active:bg-cream-50/10 active:text-cream-50"
         >
           Zurück
@@ -318,35 +327,26 @@ function Viewer({
           </Link>
         )}
         {/*
-          Dieselbe Zeile wie unter einer Karte im Spielwissen, und zwar buchstaeblich
-          dasselbe Bauteil. Zweimal gebaut lief sie auseinander: hier hiess der Weg
-          vorwaerts „Naechstes Play", drueben „Weiter" und am Kapitelende gleich der Name
-          des naechsten Kapitels. Der abgeschaltete Zurueck-Knopf kam aus der Offense — er
-          zeigt die Richtung UND dass sie hier zu Ende ist; der leere Platzhalter davor
-          zeigte nur eine Luecke.
-        */}
-        {blaettern.anzahl > 1 && (
-          <BlaetterLeiste
-            zurueck={blaettern.vorheriges ? { to: `/orga/playmaker/${blaettern.vorheriges.id}` } : null}
-            zurueckLabel="Vorheriges Play"
-            stand={`Play ${blaettern.nummer} von ${blaettern.anzahl}`}
-            weiter={blaettern.naechstes ? { to: `/orga/playmaker/${blaettern.naechstes.id}` } : null}
-            fertig={{ to: '/orga/playmaker' }}
-          />
-        )}
+          EINE Leiste, dieselbe wie unter einer Karte im Spielwissen, und zwar
+          buchstaeblich dasselbe Bauteil. Vorher lagen hier zwei Zeilen uebereinander:
+          blaettern oben, abspielen unten. Zusammen rund 120 Pixel Hoehe und zwei
+          Rangfolgen, die sich widersprachen — oben war Amber „Weiter", unten lag der
+          Knopf, den man tatsaechlich zuerst drueckt.
 
-        {/*
-          Im Spielermodus liegt unten der Hinweisstreifen (fest, z-50) und deckte genau
-          diese beiden Knoepfe zu. Die Seite ist `h-dvh`, sie kann ihm nicht ausweichen,
-          also macht sie ihm Platz. Der Streifen selbst bleibt unangetastet — er haengt
-          ueber dem Router und liegt auch ueber den Scoring-Seiten.
+          Im Spielermodus liegt darunter der Hinweisstreifen (fest, z-50) und deckte die
+          Knoepfe zu. Die Seite ist `h-dvh`, sie kann ihm nicht ausweichen, also macht sie
+          ihm Platz.
         */}
         <div className={spielermodus ? 'pb-9' : undefined}>
-          <PlaybackBar
-            playing={wiedergabe.playing}
-            canPlay={wiedergabe.canPlay}
-            onToggle={wiedergabe.toggle}
-            onNochmal={wiedergabe.nochmal}
+          <WiedergabeLeiste
+            zurueck={blaettern.vorheriges ? { to: `/orga/playmaker/${blaettern.vorheriges.id}` } : null}
+            zurueckLabel="Vorheriges Play"
+            stand={`${blaettern.nummer} von ${blaettern.anzahl}`}
+            weiter={blaettern.naechstes ? { to: `/orga/playmaker/${blaettern.naechstes.id}` } : null}
+            weiterLabel="Nächstes Play"
+            fertig={{ to: zurueck }}
+            abspielen={{ laeuft: wiedergabe.playing, kann: wiedergabe.canPlay, onToggle: wiedergabe.toggle }}
+            nochmal={{ onNochmal: wiedergabe.nochmal, kann: wiedergabe.canPlay }}
           />
         </div>
       </div>
