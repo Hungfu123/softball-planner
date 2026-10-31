@@ -173,7 +173,13 @@ function Viewer({
           {[0, 1, 2].map(i => (
             <span
               key={i}
-              className={`h-2.5 w-2.5 rounded-full ${i < (wiedergabe.step?.outs ?? 0) ? 'bg-amber-400' : 'bg-cream-50/20'}`}
+              /*
+               * Rot, nicht amber. Auf dieser Buehne heisst rot Out — der ausgemachte
+               * Runner ist rot, und die Punkte zaehlen genau diese Outs. Amber gehoert
+               * dem, worauf man achtet: der Ballkette und dem Weg zum naechsten Play.
+               * Der hellere Ton (statt softball-red) misst auf Navy 4,3:1 statt 2,7:1.
+               */
+              className={`h-2.5 w-2.5 rounded-full ${i < (wiedergabe.step?.outs ?? 0) ? 'bg-[#EE5A68]' : 'bg-cream-50/20'}`}
             />
           ))}
         </div>
