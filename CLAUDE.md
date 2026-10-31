@@ -158,7 +158,15 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   immer ein Mittelinfielder (links/Mitte → SS, rechts → 2B), der andere deckt die 2, der Mann
   an der Zielbase stellt ihn (Home → Catcher, 3 → 3B), die Corner bleiben an ihren Bases. Die
   Baseball-Variante (1B/3B als Cut für Home) gilt hier NICHT, und der Cut geht **auch beim
-  kurzen Single** raus — er ist Absicherung, nicht Distanzhilfe. Das **freie Feld**
+  kurzen Single** raus — er ist Absicherung, nicht Distanzhilfe.
+  **Die Absicherung hinter der Base ist eine Regel im Generator** (`absichern()`, V75, seit
+  dem 31.10.2026), kein Eintrag je Play: **RF hinter die 1, CF hinter die 2, LF hinter die
+  3, der Pitcher hinter die Platte — und beim Relay aus dem Outfield geht der Pitcher hinter
+  die Zielbase.** Gezählt vorher: von 48 Würfen auf eine Base stand bei **8** jemand
+  dahinter, nachher bei **46**. Zwei Grenzen stecken darin, beide aus dem Bild gelernt: ein
+  Outfielder sichert nur ab, was VOR ihm liegt (sonst lief der CF beim Relay quer durchs
+  Infield), und wo schon jemand steht, kommt keiner dazu. Der Katalog behält das letzte
+  Wort. Das **freie Feld**
   (`/orga/playmaker/frei`) ist bewusst kein Play: nichts im Katalog, Stand im `localStorage`,
   **kein eigener `/api`-Aufruf** (Offline-Versprechen, per E2E geprüft). Seit den Accounts
   läuft dort wie überall der `/api/me`-Abruf des `AuthProvider`; der E2E-Test lässt genau

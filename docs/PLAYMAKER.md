@@ -31,11 +31,23 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   und in `scripts/build-seed-plays.mjs` — wer eine ändert, ändert beide.
 - **Fastpitch-Maße:** Base-Weg 60 ft, Pitching 43 ft, Circle 8 ft Radius, Sandbogen 60 ft
   um die Platte, Zaun 215 ft, Backstop 25 ft.
-- **Grammatik:** Verteidiger und Runner sind beide Scheiben; drei Dinge unterscheiden sie
-  gleichzeitig — Farbe (navy / rot), Größe (der Runner misst 0,82) und das Kürzel, das nur
-  der Verteidiger trägt. Der Ball ist ein deutlich kleinerer Punkt (Optic Yellow, flach,
-  ohne Kontur und ohne Schatten). Der Runner war bis Oktober 2026 eine Raute — sie wirkte
-  neben neun Kreisen wie ein Fremdkörper und saß auf den Bases sichtbar schief.
+- **Grammatik:** seit dem 31.10.2026 spielt das Board auf derselben Bühne wie das
+  Spielwissen (`board/farben.ts`): der Platz ist **navy**, Menschen, Linien und Ball sind
+  **cream**, **amber** ist, worauf man achtet, **rot** heißt Out. Verteidiger sind helle
+  Scheiben mit dunklem Kürzel, Runner amber und kleiner (0,82) — ein ausgemachter Runner
+  wird rot mit hellem Ring. Der Ball ist ein kleiner cremefarbener Punkt mit rotem
+  Nahtring, wie auf den Karten. Vorher war der Platz grün mit Sand und weißen Linien, die
+  Runner rot, der Ball Optic Yellow; nebeneinander sahen die beiden Hälften der App aus
+  wie zwei Programme. **Die Ringe sind gemessen, nicht geschmückt:** rot misst auf navy
+  2,68:1 und braucht den hellen Ring, amber auf cream 1,55:1 — deshalb trägt jeder Runner
+  einen dunklen Ring, damit er beim Tag nicht mit dem Verteidiger verschmilzt.
+- **Absicherung ist eine Regel, kein Katalogeintrag** (`absichern()` in
+  `scripts/build-seed-plays.mjs`): **RF hinter die 1, CF hinter die 2, LF hinter die 3,
+  der Pitcher hinter die Platte — und beim Relay aus dem Outfield geht der Pitcher hinter
+  die Zielbase**, weil die Outfielder dann selbst am Ball sind. Gezählt vor der Regel:
+  von 48 Würfen auf eine Base standen bei **8** jemand dahinter, nachher bei **47**. Der
+  Katalog behält das letzte Wort — bewegt er den Mann im selben Stand selbst, oder steht
+  dort schon jemand, bleibt es dabei. Angewandt wird sie in `V75__plays_absicherung.sql`.
 - **`status`** am Runner: `ACTIVE`, `OUT` (durchgestrichen, im Folgestand weg), `SCORED`
   (gar nicht mehr gezeichnet). Ein Out und ein Run dürfen nicht gleich aussehen.
 - **`trajectory`** gilt für den Weg, der IN diesen Stand führt: `AIR` zeichnet einen Bogen,

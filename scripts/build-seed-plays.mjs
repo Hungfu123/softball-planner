@@ -111,6 +111,100 @@ function dauerAusWegen(weiteste, weitesterWurf) {
   return Math.max(1200, Math.min(3000, ms));
 }
 
+/**
+ * Wer sichert hinter welcher Base ab.
+ *
+ * Jeder hat in einem Play seine Rolle; wer nicht faengt und nicht wirft, steht trotzdem
+ * nicht herum. Lehrbuch und Teamsprache fallen hier zusammen: **RF hinter die 1, CF
+ * hinter die 2, LF hinter die 3, der Pitcher hinter die Platte** — und **beim Relay aus
+ * dem Outfield geht der Pitcher hinter die Base, auf die geworfen wird**, weil die
+ * Outfielder dann selbst am Ball sind.
+ *
+ * Gezaehlt vor dieser Regel: von 101 Wuerfen in den 51 Plays hatte nur bei 44 ueberhaupt
+ * jemand dahintergestanden — dort, wo der Katalog es ausdruecklich hingeschrieben hat.
+ * Jetzt steht die Regel an EINER Stelle statt einundfuenfzig Mal, und der Katalog behaelt
+ * das letzte Wort: bewegt er den Mann in diesem Stand selbst, bleibt es dabei.
+ */
+const ABSICHERUNG = [
+  { base: B1, mann: 'RF', ersatz: '2B' },
+  { base: B2, mann: 'CF', ersatz: 'P' },
+  { base: B3, mann: 'LF', ersatz: 'P' },
+  { base: HOME, mann: 'P', ersatz: null },
+];
+
+/** Weiter als das weg von Home liegt das Outfield — von dort wirft kein Infielder. */
+const OUTFIELD_AB = 140;
+/** Hinter der Base, auf der Verlaengerung des Wurfs: dort, wo ein Fehlwurf hinginge. */
+const HINTER_DER_BASE = 20;
+/**
+ * Weiter als das laeuft auch ein Outfielder nicht hinter eine Base.
+ *
+ * 160 ft sind viel, und ein Right Fielder braucht dafuer laenger als der Wurf dauert —
+ * er laeuft aber auch nicht erst beim Wurf los, sondern beim Schlag. Das Bild zeigt
+ * deshalb seinen Platz, nicht seine Laufzeit.
+ */
+const HOECHSTER_WEG = 160;
+
+function absichern(defense, vorherDefense, step, ball, vorherBall) {
+  const strecke = Math.hypot(ball.x - vorherBall.x, ball.y - vorherBall.y);
+  if (strecke < 25) return;
+
+  const ziel = ABSICHERUNG.find((a) => Math.hypot(ball.x - a.base.x, ball.y - a.base.y) <= 14);
+  if (!ziel) return;
+
+  // Wer wirft und wer faengt, kann nicht gleichzeitig dahinterstehen.
+  const werfer = Object.entries(vorherDefense).find(
+    ([, q]) => Math.hypot(q.x - vorherBall.x, q.y - vorherBall.y) < 6,
+  )?.[0];
+  const empfaenger =
+    ball.holder ??
+    Object.entries(defense).find(([, q]) => Math.hypot(q.x - ball.x, q.y - ball.y) < 8)?.[0];
+
+  // Kommt der Wurf aus dem Outfield — Relay —, geht der Pitcher hinter die Zielbase.
+  const ausDemOutfield = Math.hypot(vorherBall.x - HOME.x, vorherBall.y - HOME.y) > OUTFIELD_AB;
+  const reihenfolge = ausDemOutfield && ziel.ersatz === 'P' ? ['P', ziel.mann] : [ziel.mann, ziel.ersatz];
+
+  for (const kandidat of reihenfolge) {
+    if (!kandidat) continue;
+    if (kandidat === werfer || kandidat === empfaenger) continue;
+    if (step.d && kandidat in step.d) continue;
+
+    const richtung = Math.hypot(ziel.base.x - vorherBall.x, ziel.base.y - vorherBall.y) || 1;
+    const platz = {
+      x: r2(ziel.base.x + ((ziel.base.x - vorherBall.x) / richtung) * HINTER_DER_BASE),
+      y: r2(ziel.base.y + ((ziel.base.y - vorherBall.y) / richtung) * HINTER_DER_BASE),
+    };
+    /*
+     * Ein Outfielder sichert nur ab, was VOR ihm liegt.
+     *
+     * Liegt der Platz hinter der Base naeher an Home als die Base selbst, kommt der Wurf
+     * von draussen — beim Relay etwa — und der Mann muesste quer durchs Infield laufen,
+     * um sich dahinterzustellen. Das tut kein Outfielder; dafuer ist der Pitcher da.
+     * Ohne diese Zeile lief der CF beim Relay aus dem rechten Feld bis zwischen SS und
+     * Mound, was im Bild aussah, als haette er die Position verlassen.
+     */
+    const istOutfielder = kandidat === 'LF' || kandidat === 'CF' || kandidat === 'RF';
+    const vonHome = (q) => Math.hypot(q.x - HOME.x, q.y - HOME.y);
+    if (istOutfielder && vonHome(platz) < vonHome(ziel.base)) continue;
+
+    // Steht dort schon jemand — meist weil der Katalog ihn hingestellt hat —, ist die
+    // Base abgesichert. Zwei Scheiben auf demselben Fleck sind eine Scheibe.
+    const besetzt = Object.entries(defense).some(
+      ([pos, q]) => pos !== kandidat && Math.hypot(q.x - platz.x, q.y - platz.y) < 12,
+    );
+    if (besetzt) return;
+
+    const von = defense[kandidat];
+    const weg = Math.hypot(platz.x - von.x, platz.y - von.y);
+    if (weg > HOECHSTER_WEG) continue;
+    // Steht er ohnehin schon dort, bleibt er stehen — sonst zittert er auf der Stelle.
+    if (weg < 8) return;
+
+    defense[kandidat] = platz;
+    return;
+  }
+}
+
 function buildSteps(spec, startRunners) {
   const defense = { ...DEFAULT_DEFENSE };
   const runners = {};
@@ -219,6 +313,14 @@ function buildSteps(spec, startRunners) {
       }
     }
     if (step.outs !== undefined) outs = step.outs;
+
+    /*
+     * Absicherung, nach jedem Wurf — auch bei Pickoffs und kurzen Wuerfen zwischen den
+     * Bases. Ein Wurf, der vorbeigeht, kostet eine Base, wenn niemand dahintersteht, und
+     * keine, wenn doch; deshalb gehoert das Hinterherlaufen ins Bild und nicht in eine
+     * Fussnote.
+     */
+    absichern(defense, vorher.defense, step, ball, vorherBall);
 
     // Lange Wege brauchen laenger. Alles im selben Takt zu bewegen ist Absicht — aber
     // 80 ft in 1,2 s sehen nicht nach Laufen aus, sondern nach einem Sprung: ein Runner
