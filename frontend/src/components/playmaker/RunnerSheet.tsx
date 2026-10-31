@@ -41,9 +41,9 @@ export function RunnerSheet({
               : 'Dieser Runner hat in diesem Stand gepunktet. Ab dem nächsten fehlt er.'}
         </p>
         <div className="mt-4 space-y-2">
-          {status !== 'ACTIVE' && <Knopf onClick={onActive}>Läuft weiter — zurücknehmen</Knopf>}
-          {status !== 'OUT' && <Knopf onClick={onOut}>Out — durchgestrichen, dann weg</Knopf>}
-          {status !== 'SCORED' && <Knopf onClick={onScored}>Run — läuft über Home hinaus</Knopf>}
+          {status !== 'ACTIVE' && <Knopf onClick={onActive}>Läuft weiter: zurücknehmen</Knopf>}
+          {status !== 'OUT' && <Knopf onClick={onOut}>Out: durchgestrichen, dann weg</Knopf>}
+          {status !== 'SCORED' && <Knopf onClick={onScored}>Run: läuft über Home hinaus</Knopf>}
           <Knopf onClick={onRemove} warnend>
             Entfernen — war ein Versehen
           </Knopf>
