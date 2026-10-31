@@ -95,7 +95,7 @@ function Viewer({
   gegenstueck: Play | null
   onEdit: () => void
 }) {
-  const { istAdmin } = useRolle()
+  const { istAdmin, spielermodus } = useRolle()
   const [legende, setLegende] = useState(false)
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
   const flaeche = useRef<HTMLDivElement>(null)
@@ -322,12 +322,20 @@ function Viewer({
           </div>
         )}
 
-        <PlaybackBar
-          playing={wiedergabe.playing}
-          canPlay={wiedergabe.canPlay}
-          onToggle={wiedergabe.toggle}
-          onNochmal={wiedergabe.nochmal}
-        />
+        {/*
+          Im Spielermodus liegt unten der Hinweisstreifen (fest, z-50) und deckte genau
+          diese beiden Knoepfe zu. Die Seite ist `h-dvh`, sie kann ihm nicht ausweichen,
+          also macht sie ihm Platz. Der Streifen selbst bleibt unangetastet — er haengt
+          ueber dem Router und liegt auch ueber den Scoring-Seiten.
+        */}
+        <div className={spielermodus ? 'pb-9' : undefined}>
+          <PlaybackBar
+            playing={wiedergabe.playing}
+            canPlay={wiedergabe.canPlay}
+            onToggle={wiedergabe.toggle}
+            onNochmal={wiedergabe.nochmal}
+          />
+        </div>
       </div>
 
       {legende && <LegendSheet onClose={() => setLegende(false)} />}
