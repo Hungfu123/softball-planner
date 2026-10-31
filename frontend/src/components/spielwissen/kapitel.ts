@@ -117,6 +117,10 @@ export const KAPITEL: Kapitel[] = [
         stichwort: 'Count',
         pointe: 'Der Count ist ein Wettlauf',
         satz: 'Vier Balls bringen dich auf die 1. Drei Strikes, und du bist out.',
+        /* Sie bringt ihre eigenen Knoepfe mit (Ball +, Strike +, Von vorn) und ignoriert
+           den Zaehler der Seite. Ohne diese Marke stand das „nochmal" der Leiste daneben
+           und tat nichts. */
+        selbstgesteuert: true,
         Buehne: CountWettlauf,
       },
       {

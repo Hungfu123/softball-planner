@@ -36,4 +36,20 @@ describe('Text in den Bühnen', () => {
   it.each(karten)('Satz von $kapitel/$karte.id bleibt kurz', ({ karte }) => {
     expect((karte.satz ?? '').length).toBeLessThanOrEqual(120)
   })
+
+  /*
+   * Wer eigene Knoepfe mitbringt, ist selbstgesteuert — und bekommt das „nochmal" der
+   * Seite NICHT. Sonst stehen zwei Wege zum selben Ziel nebeneinander, und einer davon
+   * tut nichts: die Count-Karte ignoriert den Zaehler der Seite, sie hat ihren eigenen.
+   *
+   * Die Regel prueft sich selbst, statt in einer Liste gepflegt zu werden: gerendert wird
+   * jede Buehne, gesucht wird nach Knoepfen.
+   */
+  it.each(karten)('Karte $kapitel/$karte.id: eigene Knöpfe heißen selbstgesteuert', ({ karte }) => {
+    const { container, unmount } = render(<karte.Buehne lauf={0} ruhig />)
+    const eigene = container.querySelectorAll('button').length
+    unmount()
+
+    expect(eigene > 0).toBe(Boolean(karte.selbstgesteuert))
+  })
 })
