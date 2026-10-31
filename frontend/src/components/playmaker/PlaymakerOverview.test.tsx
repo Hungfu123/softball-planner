@@ -13,11 +13,15 @@ const PLAY: Play = {
   steps: [],
 }
 
-const stand = vi.hoisted(() => ({ istAdmin: false, plays: [] as unknown[] }))
+const stand = vi.hoisted(() => ({
+  istAdmin: false,
+  plays: [] as unknown[],
+  categories: [] as unknown[],
+}))
 
 vi.mock('@/hooks/usePlays', () => ({
   usePlays: () => ({
-    plays: stand.plays, categories: [], loading: false, error: null,
+    plays: stand.plays, categories: stand.categories, loading: false, error: null,
     duplicate: vi.fn(), remove: vi.fn(),
   }),
 }))
@@ -28,13 +32,18 @@ vi.mock('@/components/layout/Layout', () => ({ useToastContext: () => ({ show: v
 
 const { default: PlaymakerOverview } = await import('./PlaymakerOverview')
 
-function zeige() {
-  return render(<MemoryRouter><PlaymakerOverview /></MemoryRouter>)
+function zeige(adresse = '/orga/playmaker') {
+  return render(
+    <MemoryRouter initialEntries={[adresse]}>
+      <PlaymakerOverview />
+    </MemoryRouter>,
+  )
 }
 
 beforeEach(() => {
   stand.istAdmin = false
   stand.plays = []
+  stand.categories = []
 })
 
 describe('Play-Übersicht', () => {
@@ -91,5 +100,20 @@ describe('Play-Übersicht', () => {
     stand.plays = [PLAY]
     zeige()
     expect(screen.queryByLabelText('Plays durchsuchen')).toBeNull()
+  })
+
+  /*
+   * Die Adresse steht jedem offen — ein Tippfehler, ein alter Link, eine gelöschte
+   * Kategorie. `?kategorie=999` zeigte eine leere Fläche unter einem Auswahlkasten, auf
+   * dem „Alle Kategorien · 54" stand: eine Sackgasse, die sich selbst widersprach.
+   */
+  it('zeigt bei einer unbekannten Kategorie die volle Liste', () => {
+    stand.istAdmin = true
+    stand.plays = [PLAY]
+    stand.categories = [{ id: 1, name: 'Base-Coverage', sortOrder: 10 }]
+
+    zeige('/orga/playmaker?kategorie=999')
+
+    expect(screen.getByText('Grounder zum 3B')).toBeInTheDocument()
   })
 })
