@@ -123,7 +123,7 @@ export const KAPITEL: Kapitel[] = [
         id: 'dritter-strike',
         stichwort: 'Dritter Strike',
         pointe: 'Dritter Strike am Boden',
-        satz: 'Fängt der Catcher ihn nicht, darfst du zur 1 laufen. Aber nur, wenn die 1 frei ist.',
+        satz: 'Fängt der Catcher ihn nicht, darfst du zur 1 laufen. Aber nur, wenn die 1 frei ist. Bei zwei Outs immer.',
         selbstgesteuert: true,
         Buehne: DritterStrikeAmBoden,
       },
@@ -139,7 +139,7 @@ export const KAPITEL: Kapitel[] = [
         id: 'bunt-wofuer',
         stichwort: 'Bunt',
         pointe: 'Wofür ein Bunt gut ist',
-        satz: 'Kurz ablegen, während die Verteidigung tief steht, und du bist schon unterwegs.',
+        satz: 'Kurz ablegen, während die Verteidigung tief steht. Der vor dir kommt weiter, dafür gehst du selbst out.',
         Buehne: BuntWofuer,
       },
       {
@@ -182,7 +182,7 @@ export const KAPITEL: Kapitel[] = [
         id: 'wurf-zur-eins',
         stichwort: 'Out',
         pointe: 'Out: Wurf zur 1',
-        satz: 'Der Ball ist vor dir da.',
+        satz: 'Der Ball ist vor dir da. Fangen muss ihn einer, mit dem Fuß auf der Base.',
         Buehne: RausWurfZurEins,
       },
       {

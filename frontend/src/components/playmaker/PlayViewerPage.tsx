@@ -116,8 +116,15 @@ function Viewer({
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
   const flaeche = useRef<HTMLDivElement>(null)
 
-  // Beim Oeffnen laeuft es los, wie eine Karte im Spielwissen: man kommt an, es bewegt sich.
-  const wiedergabe = usePlayback(play.steps, { autostart: true })
+  /*
+   * **Es wartet.** Vorher lief es beim Oeffnen von selbst los, wie eine Karte im
+   * Spielwissen. Dort stimmt das: eine Karte erklaert EINE Sache und ist in zwei
+   * Sekunden vorbei. Ein Play ist zuerst eine Aufstellung, die man liest — wer steht wo,
+   * wer ist Runner, wo liegt der Ball —, und waehrend man das tut, war die Bewegung
+   * schon durch. Jetzt steht der erste Stand als Ausgangslage da, und losgeschickt wird
+   * er mit dem Knopf unten.
+   */
+  const wiedergabe = usePlayback(play.steps)
   /*
    * Auf wen es ankommt — abgeleitet aus den Staenden, nicht gepflegt. Neun Scheiben
    * stehen im Bild, drei davon tun etwas; wer zuschaut, um es zu lernen, soll die drei

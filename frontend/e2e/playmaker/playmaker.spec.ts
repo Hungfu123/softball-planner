@@ -667,3 +667,31 @@ test('ändert Titel und Kategorie eines bestehenden Plays', async ({ page }) => 
 
   await aufraeumen(page, titel)
 })
+
+/*
+ * Der Rest der Suite laeuft mit `reducedMotion: 'reduce'` — dort startet ueberhaupt
+ * nichts von selbst, und ein Test gegen den Selbstanlauf waere eine Attrappe. Hier
+ * ausdruecklich nicht.
+ */
+test.describe('Ein Play wartet', () => {
+  test.use({ reducedMotion: 'no-preference' })
+
+  test('zeigt beim Oeffnen den ersten Stand und wartet auf den Startknopf', async ({ page }) => {
+    // Ein Play lief beim Oeffnen von selbst los, wie eine Karte im Spielwissen. Dort ist
+    // das richtig: eine Karte erklaert EINE Sache und ist in zwei Sekunden vorbei. Ein
+    // Play ist eine Aufstellung, die man erst liest (wer steht wo, wer laeuft), und
+    // waehrend man das tut, war es schon vorbei.
+    await page.goto('/orga/playmaker')
+    await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+    // Ein Play mit mehreren Staenden: eines mit nur einem kann gar nicht loslaufen.
+    await page.locator('a[href^="/orga/playmaker/"]').filter({ hasText: /[2-9] Stände/ }).first().click()
+    await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+
+    // Lang genug, dass ein selbstlaufendes Play laengst beim zweiten Stand waere.
+    await page.waitForTimeout(1500)
+
+    await expect(page.getByRole('button', { name: 'Abspielen' })).toBeVisible()
+    await expect(page.locator('li:nth-child(1) [aria-current="step"]')).toBeVisible()
+  })
+})

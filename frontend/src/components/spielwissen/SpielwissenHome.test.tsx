@@ -29,10 +29,19 @@ describe('Spielwissen-Uebersicht', () => {
   })
 
   /*
-   * Offense sagt in Stichworten, was drinsteht; Defense sagte bisher nichts. Eine Zeile
-   * ohne Inhaltsangabe neben drei Zeilen mit einer ist eine blinde Tuer: man sieht nicht,
-   * dass dahinter Bunt-Defense, Rundown und der Cut-off liegen.
+   * Drei Zeilen je Eintrag waren zu viel: Titel, Frage und darunter die Stichworte in
+   * Versalien. Die Frage sagt, worum es geht, und eine Zeile tiefer stehen die Karten
+   * ohnehin einzeln da. Die Stichworte bleiben nur dort, wo sie die EINZIGE Auskunft
+   * sind: auf der Ersatzzeile fuer Defense, die ohne Netz anstelle der Kategorien steht.
    */
+  it('nennt je Kapitel nur Titel und Frage', () => {
+    zeige()
+
+    for (const titel of [/In der Box/, /Du hast getroffen/, /Auf der Base/]) {
+      expect(screen.getByRole('link', { name: titel }).textContent).not.toContain('·')
+    }
+  })
+
   it('sagt auch bei Defense in Stichworten, was dahinter liegt', () => {
     zeige()
 

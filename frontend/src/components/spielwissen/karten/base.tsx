@@ -15,22 +15,13 @@ import { HOME, FIRST_BASE, SECOND_BASE, PITCHING_PLATE } from '@/components/play
 /** Der Catcher sitzt ein Stueck hinter der Platte. */
 const CATCHER = { x: HOME.x, y: HOME.y + 7 }
 
-/** Der Nachsatz unter den beiden Lauf-Karten. Eine Zeile, und sie ist die Regel. */
-function DraufBleiben() {
-  return (
-    <p className="pb-1 text-center font-display text-[12px] font-bold uppercase tracking-wide text-amber-400">
-      Angekommen? Drauf bleiben.
-    </p>
-  )
-}
-
 /* --------------------------------------------------------------- 1 Sicher */
 
 /** Solange du draufstehst, kann dir niemand etwas. Die ruhigste Karte des Kapitels. */
 export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         <motion.circle
           key={`ring-${lauf}`}
           cx={FIRST_BASE.x} cy={FIRST_BASE.y}
@@ -52,9 +43,6 @@ export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
           transition={takt(ruhig, { delay: 0.4, duration: 1, ease: 'linear' })}
         />
       </MiniFeld>
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Solange niemand hinter dir nachrückt, kann dir nichts passieren.
-      </p>
     </div>
   )
 }
@@ -100,7 +88,7 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         <Verteidiger x={PITCHING_PLATE.x} y={PITCHING_PLATE.y} kuerzel="P" r={5} />
         <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
@@ -145,7 +133,7 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
           initial={{ cx: ballOrt.x, cy: ballOrt.y }}
           animate={{ cx: ballOrt.x, cy: ballOrt.y }}
           transition={takt(ruhig, { duration: 0.4, ease: 'easeOut' })}
-          r="3.2" fill={FARBE.gut}
+          r="3.2" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.1"
         />
         <motion.circle
           data-testid="laeufer"
@@ -185,13 +173,13 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         <motion.circle
           key={`ball-${lauf}`}
           data-testid="ball-wild"
-          r="3.2" fill={FARBE.gut}
+          r="3.2" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.1"
           initial={ruhig ? false : { cx: PITCHING_PLATE.x, cy: PITCHING_PLATE.y }}
           animate={ruhig ? { cx: vorbei.x, cy: vorbei.y } : { cx: [PITCHING_PLATE.x, CATCHER.x - 6, vorbei.x], cy: [PITCHING_PLATE.y, CATCHER.y, vorbei.y] }}
           transition={takt(ruhig, { duration: 0.75, ease: 'linear' })}
@@ -206,10 +194,6 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
         />
         <SicherRing ort={SECOND_BASE} ruhig={ruhig} delay={1.3} />
       </MiniFeld>
-      <p className="text-center text-[12px] text-cream-50/70">
-        Der Catcher sucht. Du läufst.
-      </p>
-      <DraufBleiben />
     </div>
   )
 }
@@ -220,12 +204,12 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
 export function Steal({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         <motion.circle
           key={`ball-${lauf}`}
-          r="3.2" fill={FARBE.gut}
+          r="3.2" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.1"
           initial={ruhig ? false : { cx: PITCHING_PLATE.x, cy: PITCHING_PLATE.y }}
           animate={{ cx: CATCHER.x, cy: CATCHER.y }}
           transition={takt(ruhig, { duration: 0.45, ease: 'linear' })}
@@ -249,10 +233,6 @@ export function Steal({ lauf, ruhig }: BuehnenProps) {
         />
         <SicherRing ort={SECOND_BASE} ruhig={ruhig} delay={1.1} />
       </MiniFeld>
-      <p className="text-center text-[12px] text-cream-50/70">
-        Du entscheidest vorher, nicht unterwegs.
-      </p>
-      <DraufBleiben />
     </div>
   )
 }
@@ -285,12 +265,12 @@ export function TagUp({ ruhig }: BuehnenProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         <motion.circle
           initial={{ cx: ballOrt.x, cy: ballOrt.y }}
           animate={{ cx: ballOrt.x, cy: ballOrt.y }}
           transition={takt(ruhig, { duration: 0.45, ease: 'easeOut' })}
-          r="3.2" fill={FARBE.gut}
+          r="3.2" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.1"
         />
         {jetzt.laeufer === 0 && <SicherRing ort={start} ruhig={ruhig} />}
         <motion.circle

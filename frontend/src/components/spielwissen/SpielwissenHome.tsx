@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
-import { KAPITEL, stichworte } from './kapitel'
+import { KAPITEL } from './kapitel'
 import { getPlayCategories } from '@/api/plays'
 import { StufeLegende } from '@/components/shared/StufePunkte'
 import { LernZeile } from '@/components/shared/LernZeile'
@@ -33,14 +33,16 @@ function Eintrag({
   to,
   titel,
   frage,
-  worte,
+  worte = [],
   stufe,
   bild,
 }: {
   to: string
   titel: string
   frage: string
-  worte: string[]
+  /** Nur die Ersatzzeile fuer Defense traegt noch welche: dort sind sie die einzige
+      Auskunft. Bei den Kapiteln sagen Titel und Frage genug. */
+  worte?: string[]
   stufe: 1 | 2 | 3
   bild?: boolean
 }) {
@@ -69,16 +71,13 @@ function Eintrag({
  * Am breiten Schirm liegen die Haelften nebeneinander — dort ist die senkrechte Teilung
  * genau das, was sie sein soll, und kostet nichts.
  */
-function Haelfte({ titel, satz }: { titel: string; satz: string }) {
+function Haelfte({ titel }: { titel: string }) {
   return (
-    <div className="flex items-start gap-3 pt-1">
-      <span className="mt-1 h-8 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-      <div className="min-w-0">
-        <h2 className="font-headline text-lg font-extrabold uppercase leading-none tracking-wide text-ink-strong">
-          {titel}
-        </h2>
-        <p className="mt-1 text-[13px] leading-snug text-ink-muted">{satz}</p>
-      </div>
+    <div className="flex items-center gap-3 pt-1">
+      <span className="h-6 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+      <h2 className="font-headline text-lg font-extrabold uppercase leading-none tracking-wide text-ink-strong">
+        {titel}
+      </h2>
     </div>
   )
 }
@@ -125,7 +124,7 @@ export default function SpielwissenHome() {
 
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         <section className="space-y-2">
-          <Haelfte titel="Offense" satz="Du bist am Schlag oder auf der Base." />
+          <Haelfte titel="Offense" />
           {[...KAPITEL]
             .sort((a, b) => a.stufe - b.stufe)
             .map(k => (
@@ -134,14 +133,13 @@ export default function SpielwissenHome() {
                 to={`/spielwissen/${k.id}`}
                 titel={k.titel}
                 frage={k.frage}
-                worte={stichworte(k)}
                 stufe={k.stufe}
               />
             ))}
         </section>
 
         <section className="space-y-2">
-          <Haelfte titel="Defense" satz="Du stehst im Feld, der Ball ist im Spiel." />
+          <Haelfte titel="Defense" />
           {kategorien && kategorien.length > 0 ? (
             <>
               {/*
@@ -159,7 +157,6 @@ export default function SpielwissenHome() {
                   to={`/orga/playmaker?kategorie=${k.id}`}
                   titel={k.name}
                   frage={kategorieSatz(k.name)}
-                  worte={[]}
                   stufe={kategorieStufe(k.sortOrder)}
                 />
               ))}
@@ -172,7 +169,6 @@ export default function SpielwissenHome() {
                       to={`/orga/playmaker?kategorie=${k.id}`}
                       titel={k.name}
                       frage={kategorieSatz(k.name)}
-                      worte={[]}
                       stufe={kategorieStufe(k.sortOrder)}
                     />
                   ))}
