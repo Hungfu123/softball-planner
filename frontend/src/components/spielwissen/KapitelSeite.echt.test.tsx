@@ -31,7 +31,7 @@ describe('Kapitelseite mit den echten Daten', () => {
           await waitFor(() =>
             expect(screen.getByRole('heading', { level: 2, name: karte.pointe })).toBeInTheDocument())
           if (i < kapitel.karten.length - 1) {
-            fireEvent.click(screen.getByRole('button', { name: /^Weiter/ }))
+            fireEvent.click(screen.getByRole('button', { name: 'Nächste Karte' }))
           }
         }
         unmount()
@@ -43,8 +43,8 @@ describe('Kapitelseite mit den echten Daten', () => {
     expect(rufe.filter(u => u.includes('/api'))).toEqual([])
   })
 
-  it('traegt neunzehn Karten in drei Kapiteln', () => {
+  it('traegt zwanzig Karten in drei Kapiteln', () => {
     expect(KAPITEL.map(k => k.id)).toEqual(['box', 'getroffen', 'base'])
-    expect(KAPITEL.flatMap(k => k.karten)).toHaveLength(19)
+    expect(KAPITEL.flatMap(k => k.karten)).toHaveLength(20)
   })
 })

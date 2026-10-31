@@ -38,7 +38,7 @@ function zeige(pfad: string) {
   return render(<RouterProvider router={router} />)
 }
 
-const weiter = () => fireEvent.click(screen.getByRole('button', { name: /^Weiter/ }))
+const weiter = () => fireEvent.click(screen.getByRole('button', { name: 'Nächste Karte' }))
 
 describe('Kapitelseite', () => {
   it('zeigt Titel, Frage und die erste Karte', () => {
@@ -63,13 +63,13 @@ describe('Kapitelseite', () => {
 
   it('blättert vor und zurück und sagt, wo man ist', async () => {
     zeige('/spielwissen/box')
-    expect(screen.getByText('Karte 1 von 2')).toBeInTheDocument()
+    expect(screen.getByText('1 von 2')).toBeInTheDocument()
 
     weiter()
 
     // AnimatePresence laesst die alte Karte erst abtreten (mode="wait").
     await waitFor(() => expect(screen.getByText('Drin ist Strike')).toBeInTheDocument())
-    expect(screen.getByText('Karte 2 von 2')).toBeInTheDocument()
+    expect(screen.getByText('2 von 2')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Vorherige Karte' }))
 
@@ -87,7 +87,7 @@ describe('Kapitelseite', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Die Zone bist du')
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '0')
 
-    fireEvent.click(screen.getByRole('button', { name: 'nochmal' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nochmal' }))
 
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
   })
@@ -95,7 +95,7 @@ describe('Kapitelseite', () => {
   /* Beim Blaettern faengt der Zaehler bei null an: die neue Karte laeuft ohnehin los. */
   it('setzt den Zähler beim Blättern zurück', async () => {
     zeige('/spielwissen/box')
-    fireEvent.click(screen.getByRole('button', { name: 'nochmal' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Nochmal' }))
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
 
     weiter()
@@ -122,7 +122,7 @@ describe('Kapitelseite', () => {
     zeige('/spielwissen/box')
     weiter()
 
-    await waitFor(() => expect(screen.getByRole('link', { name: /^Weiter/ }))
+    await waitFor(() => expect(screen.getByRole('link', { name: /Du hast getroffen/ }))
       .toHaveAttribute('href', '/spielwissen/getroffen'))
   })
 

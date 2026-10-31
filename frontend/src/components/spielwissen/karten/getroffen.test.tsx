@@ -13,7 +13,7 @@ describe('Kapitel Du hast getroffen', () => {
       'Foul siehst du nicht',
       'Out: gefangen',
       'Out: Wurf zur 1',
-      'Out: getickt',
+      'Out: getaggt',
       'An der 1 läufst du durch',
     ])
   })

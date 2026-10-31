@@ -492,7 +492,7 @@ const KATALOG = [
         outs: 1,
         ms: 600,
       }),
-      s('2B dreht und wirft weiter auf die 1 — Doppelspiel, wenn der Batter langsam ist.', {
+      s('2B dreht und wirft weiter auf die 1 — Double Play, wenn der Batter langsam ist.', {
         d: { '1B': B1 },
         ball: { hold: '1B' },
         r: { rb: { p: B1, status: 'OUT' } },
@@ -584,11 +584,11 @@ const KATALOG = [
     ],
   }),
 
-  play('Doppelspiel 6-4-3', 'Base-Coverage', {
+  play('Double Play 6-4-3', 'Base-Coverage', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
-      s('Runner auf 1, ein Grounder ins Loch — das Standard-Doppelspiel.'),
+      s('Runner auf 1, ein Grounder ins Loch — das Standard-Double-Play.'),
       s('SS fängt seitlich, 2B ist schon unterwegs zur Base.', {
         d: { SS: { x: HOME.x - 34, y: HOME.y - 70 }, '2B': toward(DEFAULT_DEFENSE['2B'], B2, 14) },
         ball: { at: { x: HOME.x - 34, y: HOME.y - 70 }, ground: true },
@@ -617,7 +617,7 @@ const KATALOG = [
    * sich auf dem Platz jedes Mal neu stellt: **wer deckt, wenn ICH den Ball habe?** Wer
    * nur 6-4-3 kennt, steht beim Grounder zum 2B einen Moment zu lange still.
    */
-  play('Doppelspiel 4-6-3', 'Base-Coverage', {
+  play('Double Play 4-6-3', 'Base-Coverage', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
@@ -647,7 +647,7 @@ const KATALOG = [
    * Der lange Weg: von der 3 ueber die 2 zur 1. Er klappt nur bei einem hart
    * geschlagenen Ball — deshalb steht das im ersten Satz und nicht im Kleingedruckten.
    */
-  play('Doppelspiel 5-4-3', 'Base-Coverage', {
+  play('Double Play 5-4-3', 'Base-Coverage', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
@@ -757,7 +757,7 @@ const KATALOG = [
         },
         outs: 2,
       }),
-      s('Und weiter auf die 1 — Doppelspiel, wenn der Wurf sitzt.', {
+      s('Und weiter auf die 1 — Double Play, wenn der Wurf sitzt.', {
         d: { '1B': B1 },
         ball: { hold: '1B' },
         r: { rb: { p: B1, status: 'OUT' }, r2: B3, r1: B2 },
