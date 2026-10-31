@@ -50,7 +50,9 @@ export interface Play {
   categoryId: number;
   gameState: GameState;
   gameStateNote: string | null;
-  counterpartPlayId: number | null;
+  counterpartPlayId: number | null
+  /** Platz im Kapitel. Wer keinen hat, steht dahinter, nach id. Siehe `kapitelFolge`. */
+  sortOrder?: number | null;
   steps: PlayStep[];
   createdAt?: string;
   updatedAt?: string;

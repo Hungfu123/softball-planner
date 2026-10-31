@@ -46,3 +46,26 @@ describe('nachbarn', () => {
     })
   })
 })
+
+/*
+ * Ein Kapitel ist eine Lektion, und eine Lektion hat eine Reihenfolge.
+ *
+ * Nach id allein stand die Regel „Wohin der Wurf geht" als dreizehnte von vierzehn, weil
+ * neue Plays die hoechste id bekommen — und das Detail („Backup hinter der 2") als
+ * erste. Fuer eine Hobbymannschaft, die Situationen ueberhaupt erst lernt, ist das genau
+ * verkehrt herum. `sortOrder` setzt einzelne Plays nach vorne; wer keins hat, behaelt
+ * seinen Platz nach id dahinter.
+ */
+describe('Reihenfolge im Kapitel', () => {
+  const p = (id: number, sortOrder?: number) =>
+    ({ id, title: `P${id}`, categoryId: 1, gameState: 'ANY', gameStateNote: null,
+       counterpartPlayId: null, steps: [], sortOrder } as unknown as Play)
+
+  test('stellt Plays mit Reihenfolge vor die ohne', () => {
+    const liste = [p(7), p(8), p(784, 10), p(785, 20)]
+
+    expect(nachbarn(liste, p(784, 10)).nummer).toBe(1)
+    expect(nachbarn(liste, p(785, 20)).nummer).toBe(2)
+    expect(nachbarn(liste, p(7)).nummer).toBe(3)
+  })
+})

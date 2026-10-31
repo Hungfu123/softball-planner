@@ -29,6 +29,10 @@ public class PlayEntity {
     @Column(name = "counterpart_play_id")
     private Long counterpartPlayId;
 
+    /** Platz im Kapitel. NULL heisst: hinten, nach id. */
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
     @OneToMany(mappedBy = "play", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("ordinal ASC")
     private List<PlayStepEntity> steps = new ArrayList<>();
@@ -68,6 +72,9 @@ public class PlayEntity {
 
     public Long getCounterpartPlayId() { return counterpartPlayId; }
     public void setCounterpartPlayId(final Long counterpartPlayId) { this.counterpartPlayId = counterpartPlayId; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(final Integer sortOrder) { this.sortOrder = sortOrder; }
 
     public List<PlayStepEntity> getSteps() { return steps; }
     public void setSteps(final List<PlayStepEntity> steps) { this.steps = steps; }

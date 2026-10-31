@@ -18,10 +18,24 @@ export interface Nachbarn {
  * Kennt die Liste das Play nicht — kein Netz, Link direkt aufgerufen —, blaettert
  * nichts. Das ist kein Fehler, nur ein Play ohne Nachbarn.
  */
+/**
+ * Die Reihenfolge innerhalb eines Kapitels: erst, was eine hat, dann der Rest nach id.
+ *
+ * Ein Kapitel ist eine Lektion. Nach id allein stand die Regel „Wohin der Wurf geht" als
+ * dreizehnte von vierzehn, weil neue Plays die hoechste id bekommen, und das Detail
+ * („Backup hinter der 2") als erste. Fuer eine Mannschaft, die Situationen ueberhaupt
+ * erst lernt, ist das genau verkehrt herum.
+ *
+ * Nach id und nicht nach „zuletzt geaendert": ein Kapitel, dessen Reihenfolge sich nach
+ * jeder Korrektur dreht, ist keins.
+ */
+export const kapitelFolge = (a: Play, b: Play) =>
+  (a.sortOrder ?? 100000) - (b.sortOrder ?? 100000) || a.id - b.id
+
 export function nachbarn(plays: Play[], aktuelles: Play): Nachbarn {
   // Nach id sortiert, nicht nach „zuletzt geändert": ein Kapitel, dessen Reihenfolge sich
   // nach jeder Korrektur dreht, ist keins. Dieselbe Sortierung wie in der Übersicht.
-  const kapitel = plays.filter(p => p.categoryId === aktuelles.categoryId).sort((a, b) => a.id - b.id)
+  const kapitel = plays.filter(p => p.categoryId === aktuelles.categoryId).sort(kapitelFolge)
   const i = kapitel.findIndex(p => p.id === aktuelles.id)
   if (i < 0) return { vorheriges: null, naechstes: null, nummer: 0, anzahl: 0 }
 

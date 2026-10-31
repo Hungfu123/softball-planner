@@ -19,9 +19,14 @@ public class Play {
     private String gameStateNote;
     /** Dasselbe Spielbild in anderer Lage. Einseitig: wer verknuepft, verknuepft von hier aus. */
     private Long counterpartPlayId;
+    /** Platz im Kapitel. NULL heisst: hinten, nach id. */
+    private Integer sortOrder;
     private List<PlayStep> steps = new ArrayList<>();
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(final Integer sortOrder) { this.sortOrder = sortOrder; }
 
     public Long getId() { return id; }
     public void setId(final Long id) { this.id = id; }

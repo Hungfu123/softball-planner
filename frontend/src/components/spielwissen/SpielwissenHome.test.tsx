@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import SpielwissenHome from './SpielwissenHome'
@@ -12,6 +12,36 @@ function zeige() {
 }
 
 describe('Spielwissen-Uebersicht', () => {
+  /*
+   * Die Position waehlt man HIER, nicht erst im Kapitel.
+   *
+   * Vorher stand der Filter eine Seite tiefer, und man sah erst drinnen, ob fuer die
+   * eigene Position ueberhaupt etwas dabei ist. Jetzt steht neben jeder Defense-Zeile,
+   * wie viele Plays einen betreffen — und die Wahl gilt im Kapitel weiter, sie liegt im
+   * selben Speicher.
+   */
+  it('laesst die Position schon hier waehlen und zaehlt je Kategorie', async () => {
+    const alt = globalThis.fetch
+    globalThis.fetch = ((eingabe: RequestInfo | URL) => {
+      const antwort = String(eingabe).includes('play-categories')
+        ? [{ id: 1, name: 'Outfield', sortOrder: 15 }]
+        : []
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(antwort) } as Response)
+    }) as typeof fetch
+    try {
+      zeige()
+    } finally {
+      globalThis.fetch = alt
+    }
+
+    const cf = await screen.findByRole('button', { name: 'CF' })
+    fireEvent.click(cf)
+
+    expect(cf).toHaveAttribute('aria-pressed', 'true')
+    expect(localStorage.getItem('playmaker-position')).toBe('CF')
+    localStorage.removeItem('playmaker-position')
+  })
+
   /*
    * Die oberste Ebene ist der Schnitt, in dem ein Softballer denkt: Offense gegen
    * Defense. Defense fuehrt ohne Zwischenseite in die bestehende Play-Uebersicht.
@@ -73,7 +103,12 @@ describe('Spielwissen-Uebersicht', () => {
    * Die Seite holt genau EINEN Abruf: die Kategorien, damit Defense dieselben Zeilen
    * zeigen kann wie Offense. Mehr nicht — und vor allem darf Offense nicht daran haengen.
    */
-  it('ruft nur die Kategorien ab, sonst nichts unter /api', () => {
+  /*
+   * Zwei Abrufe, nicht mehr: die Kategorien fuer die Tueren, die Plays fuer die Zahl je
+   * Position. Beide duerfen scheitern — Offense haengt an keinem von beiden, und das
+   * haelt der Test darunter fest.
+   */
+  it('ruft nur Kategorien und Plays ab, sonst nichts unter /api', () => {
     const rufe: string[] = []
     const alt = globalThis.fetch
     globalThis.fetch = ((eingabe: RequestInfo | URL) => {
@@ -87,7 +122,7 @@ describe('Spielwissen-Uebersicht', () => {
       globalThis.fetch = alt
     }
 
-    expect(rufe.filter(u => u.includes('/api'))).toEqual(['/api/play-categories'])
+    expect(rufe.filter(u => u.includes('/api')).sort()).toEqual(['/api/play-categories', '/api/plays'])
   })
 
   /* Und wenn der Abruf scheitert, steht Offense trotzdem da — das ist das Versprechen. */
