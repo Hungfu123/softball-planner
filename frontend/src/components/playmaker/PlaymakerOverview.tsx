@@ -146,10 +146,17 @@ export default function PlaymakerOverview() {
     // Hier zaehlt die GANZE Kategorie, nicht die Liste ohne das Hero-Play: sonst sagt die
     // Auswahl oben "Base-Coverage · 11" und die Ueberschrift darunter 10. Das Hero ist
     // eine Hervorhebung, kein Ersatz fuer seine Zeile — es steht zusaetzlich gross oben.
+    /*
+     * Innerhalb einer Kategorie steht die Reihenfolge FEST, nach id.
+     *
+     * Die Liste kommt nach „zuletzt geändert" herein — für das große Feld oben ist das
+     * richtig, für ein Kapitel nicht: nach jeder Korrektur sprang „Play 3 von 9" auf eine
+     * andere Stelle, und wer jemandem sagt „schau dir Play 2 an", meint morgen ein anderes.
+     */
     return categories
       .map(kategorie => ({
         kategorie,
-        plays: nachKategorie.filter(p => p.categoryId === kategorie.id),
+        plays: nachKategorie.filter(p => p.categoryId === kategorie.id).sort((a, b) => a.id - b.id),
       }))
       .filter(g => g.plays.length > 0)
   }, [categories, nachKategorie, sucht, categoryId])
