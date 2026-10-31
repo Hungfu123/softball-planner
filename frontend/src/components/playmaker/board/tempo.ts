@@ -27,7 +27,18 @@ export const LAENGSTE_MS = 2400
 
 const weg = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
 
-export function dauerMs(von: PlayMarkers, nach: PlayMarkers): number {
+/**
+ * Lesezeit fuer einen Stand, der nichts bewegt.
+ *
+ * Es gibt Staende, die nichts zeigen, sondern etwas sagen — „Alternative: faellt der
+ * Ball, trotzdem Out". Mit der Untergrenze von 0,4 s blitzten sie auf und der Satz war
+ * weg, bevor man ihn gelesen hatte. Rund 25 ms je Zeichen plus eine halbe Sekunde
+ * Anlauf; die Obergrenze des Standes gilt weiter.
+ */
+const LESEN_MS_JE_ZEICHEN = 25
+const LESEN_GRUND_MS = 500
+
+export function dauerMs(von: PlayMarkers, nach: PlayMarkers, notiz?: string | null): number {
   const ballSekunden = weg(von.ball, nach.ball) / BALL_FT_PRO_S
 
   let menschWeg = 0
@@ -42,7 +53,12 @@ export function dauerMs(von: PlayMarkers, nach: PlayMarkers): number {
 
   const sekunden = Math.max(ballSekunden, menschWeg / MENSCH_FT_PRO_S)
   const ms = Math.round((sekunden * 1000) / 100) * 100
-  return Math.min(LAENGSTE_MS, Math.max(KUERZESTE_MS, ms))
+
+  // Bewegt sich nichts, traegt der Satz den Stand — dann zaehlt die Lesezeit.
+  const steht = ballSekunden === 0 && menschWeg === 0
+  const lesen = steht && notiz ? LESEN_GRUND_MS + notiz.length * LESEN_MS_JE_ZEICHEN : 0
+
+  return Math.min(LAENGSTE_MS, Math.max(KUERZESTE_MS, ms, lesen))
 }
 
 /**

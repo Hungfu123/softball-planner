@@ -41,6 +41,12 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   wie zwei Programme. **Die Ringe sind gemessen, nicht geschmückt:** rot misst auf navy
   2,68:1 und braucht den hellen Ring, amber auf cream 1,55:1 — deshalb trägt jeder Runner
   einen dunklen Ring, damit er beim Tag nicht mit dem Verteidiger verschmilzt.
+- **Der Katalog hat einen Pruefer** (`node scripts/pruefe-plays.mjs`): neun Verteidiger je
+  Stand, ein Wurf auf eine Base hat einen Empfaenger, Outs steigen und zaehlen, niemand
+  springt, kein Stand ohne Bewegung und ohne Satz, Home steht nicht offen, wenn ein Runner
+  darauf zulaeuft, und der Pitcher steht nicht herum, waehrend der Ball im Outfield ist.
+  **Wer den Katalog aendert, laesst ihn laufen.** Er ist misstrauisch getestet: schickt man
+  alle 1B vom Platz, meldet er elf fehlende Empfaenger.
 - **Absicherung ist eine Regel, kein Katalogeintrag** (`absichern()` in
   `scripts/build-seed-plays.mjs`): **RF hinter die 1, CF hinter die 2, LF hinter die 3,
   der Pitcher hinter die Platte — und beim Relay aus dem Outfield geht der Pitcher hinter

@@ -437,9 +437,9 @@ WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Runner auf 1
 
 -- Runner auf 1 und 2 — Wheel Play – Stand 4
 UPDATE play_step SET
-    duration_ms = 2000,
-    note = 'Alternative zum Stand davor: Ist der Führungs-Runner zu schnell, geht der Wurf an die 1 — ein sicherer Out statt gar keiner.',
-    outs = 1,
+    duration_ms = 3000,
+    note = 'Und weiter zur 1: wenn der Batter nicht schnell genug ist, sind es zwei.',
+    outs = 2,
     markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":135,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":217.37,"y":177.11}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Runner auf 1 und 2 — Wheel Play');
 

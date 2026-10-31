@@ -32,8 +32,27 @@ describe('dauerMs', () => {
     expect(lang).toBeGreaterThan(kurz)
   })
 
-  test('braucht fuer einen stehenden Stand die kuerzeste Zeit', () => {
+  test('braucht fuer einen stehenden Stand ohne Satz die kuerzeste Zeit', () => {
     expect(dauerMs(stand(), stand())).toBe(KUERZESTE_MS)
+  })
+
+  /*
+   * Manche Staende bewegen nichts, sie sagen etwas — „Alternative: faellt der Ball,
+   * trotzdem Out". Mit der Untergrenze blitzten sie 0,4 s auf, und der Satz war weg,
+   * bevor man ihn gelesen hatte. Wer nichts zeigt, braucht Lesezeit.
+   */
+  test('gibt einem stehenden Stand mit Satz Zeit zum Lesen', () => {
+    const satz = 'Alternative: Fällt der Ball — trotzdem Out, und die Runner müssen nicht laufen.'
+
+    const mitSatz = dauerMs(stand(), stand(), satz)
+    expect(mitSatz).toBeGreaterThan(KUERZESTE_MS)
+    expect(mitSatz).toBeLessThanOrEqual(LAENGSTE_MS)
+  })
+
+  test('verlaengert einen Stand nicht, der ohnehin lange genug laeuft', () => {
+    const weit = ballBei(DEFAULT_DEFENSE.P.x + 150, DEFAULT_DEFENSE.P.y)
+
+    expect(dauerMs(stand(), weit, 'kurz')).toBe(dauerMs(stand(), weit))
   })
 
   test('deckelt auch den Wurf ueber das ganze Feld', () => {
