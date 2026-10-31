@@ -411,22 +411,6 @@ export default function PlaymakerOverview() {
             „zuletzt bearbeitet" ist ohnehin eine Auskunft ueber die Arbeit des Trainers,
             nicht ueber Softball. Wer sucht, sieht die Treffer jetzt direkt als Zeilen.
           */}
-          {sucht && gefunden.length === 0 && (
-            <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-              <CrossBones size={40} className="text-gray-300" />
-              <p className="text-sm text-gray-500">
-                Nichts zu „{gesucht.trim()}" — auch nicht in den Notizen.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSuche('')}
-                className="font-display text-xs font-bold text-navy-900 underline"
-              >
-                Suche zurücksetzen
-              </button>
-            </div>
-          )}
-
           <div className="flex items-stretch gap-2 px-4 pt-4">
             <label className="block min-w-0 flex-1">
               <span className="sr-only">Kategorie</span>
@@ -505,7 +489,30 @@ export default function PlaymakerOverview() {
           </div>}
 
           <div className="mt-2">
-            {sucht ? (
+            {/*
+              Der Leerzustand steht UNTER dem Suchfeld, nicht darueber.
+
+              Darueber schob er das Feld beim Tippen um 180 px nach unten — man tippte
+              weiter, die Zeile war weg, und am Handy steht die Tastatur schon dort. Ein
+              Feld, das sich unter dem Finger bewegt, ist schlimmer als ein leeres
+              Ergebnis. Dass die Antwort unter der Frage steht, ist ohnehin die
+              natuerlichere Richtung.
+            */}
+            {sucht && gefunden.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                <CrossBones size={40} className="text-gray-300" />
+                <p className="text-sm text-gray-500">
+                  Nichts zu „{gesucht.trim()}" — auch nicht in den Notizen.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSuche('')}
+                  className="font-display text-xs font-bold text-navy-900 underline"
+                >
+                  Suche zurücksetzen
+                </button>
+              </div>
+            ) : sucht ? (
               restTreffer.map(({ play, treffer }) => (
                 <PlayRow
                   key={play.id}

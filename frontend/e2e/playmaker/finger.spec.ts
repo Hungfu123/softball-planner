@@ -48,7 +48,7 @@ async function fingerZug(page: Page, sel: string, dx: number, dy: number) {
 
 const ballStelle = (page: Page) =>
   page.evaluate(() => {
-    const c = document.querySelector('[data-marker="ball"] circle')!
+    const c = document.querySelector('[data-marker="ball"] circle:first-of-type')!
     return { x: Math.round(Number(c.getAttribute('cx'))), y: Math.round(Number(c.getAttribute('cy'))) }
   })
 
@@ -77,7 +77,7 @@ for (const lage of [
 
     // Ball ziehen.
     const vorher = await ballStelle(page)
-    await fingerZug(page, '[data-marker="ball"] circle', -60, -120)
+    await fingerZug(page, '[data-marker="ball"] circle:first-of-type', -60, -120)
     await expect.poll(async () => (await ballStelle(page)).y, { timeout: 8000 }).toBeLessThan(vorher.y - 5)
   })
 

@@ -139,7 +139,9 @@ test('spielt ab und laesst die Staende danach unveraendert', async ({ page }) =>
   await page.waitForURL(/\/orga\/playmaker\/\d+$/)
 
   await page.getByRole('button', { name: 'Abspielen' }).click()
-  await expect(page.getByText('Stand 2 von 2')).toBeVisible({ timeout: 10_000 })
+  // Die Zeile „Stand 2 von 2" gibt es nicht mehr — gezaehlt wird am Haken der Liste:
+  // der laufende Stand traegt aria-current, und am Ende ist das der zweite.
+  await expect(page.locator('li:nth-child(2) [aria-current="step"]')).toBeVisible({ timeout: 10_000 })
   await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
 
   await aufraeumen(page, titel)
@@ -245,7 +247,7 @@ test('nimmt den Ball aus der Hand des Pitchers und gibt ihn einem anderen', asyn
   // Der Ball startet beim Pitcher — in den Daten auf dessen Koordinate.
   expect((await ballZustand(page)).holder).toBe('P')
 
-  const ball = (await page.locator('[data-marker="ball"] circle').boundingBox())!
+  const ball = (await page.locator('[data-marker="ball"] circle:first-of-type').boundingBox())!
   const ziel = (await page.locator('[data-marker="defender"][data-id="1B"] circle').boundingBox())!
 
   await page.mouse.move(ball.x + ball.width / 2, ball.y + ball.height / 2)
@@ -263,7 +265,7 @@ test('legt den Ball frei hin, wenn kein Fielder in der Naehe ist', async ({ page
   const titel = `${TITEL_PREFIX} ball frei`
   await neuesPlay(page, titel)
 
-  const ball = (await page.locator('[data-marker="ball"] circle').boundingBox())!
+  const ball = (await page.locator('[data-marker="ball"] circle:first-of-type').boundingBox())!
   await page.mouse.move(ball.x + ball.width / 2, ball.y + ball.height / 2)
   await page.mouse.down()
   await page.mouse.move(ball.x + 110, ball.y - 130, { steps: 10 })
@@ -304,7 +306,7 @@ test('stellt die Flugbahn des Balls auf flach', async ({ page }) => {
   // Das Board misst sich beim ersten Rendern selbst, und unter Last lag der Ball beim
   // Lesen der Box noch woanders als beim Klick.
   await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
-  await page.locator('[data-marker="ball"] circle').click()
+  await page.locator('[data-marker="ball"] circle:first-of-type').click()
 
   await expect(page.getByText('Flach — Grounder oder Liner')).toBeVisible()
   await page.getByText('Flach — Grounder oder Liner').click()
@@ -412,11 +414,13 @@ test('findet ein Play ueber eine Notiz und sagt, warum es dasteht', async ({ pag
   // "Foul-Gebiet" steht in keinem Titel, nur in Notizen.
   await page.getByLabel('Plays durchsuchen').fill('foul-gebiet')
 
-  // Beide Treffer stehen auf der Seite: der beste als Hero, der zweite als Zeile. Die
-  // Zeile sagt dazu, WARUM sie dasteht — der Titel enthaelt das Wort naemlich nicht.
+  // Beide Treffer stehen als Zeile auf der Seite, und jede sagt dazu, WARUM sie dasteht —
+  // der Titel enthaelt das Wort naemlich nicht. Frueher war der beste Treffer ein grosses
+  // Feld oben und trug den Grund nicht mit; seit das Feld weg ist, sind es zwei Zeilen
+  // und zwei Begruendungen.
   await expect(page.getByText('Überwurf an der 1 — wer sichert ab')).toBeVisible()
   await expect(page.getByText('Single ins RF — Backup hinter der 1')).toBeVisible()
-  await expect(page.locator('.group').filter({ hasText: 'Notiz:' })).toHaveCount(1)
+  await expect(page.locator('.group').filter({ hasText: 'Notiz:' })).toHaveCount(2)
 })
 
 test('sagt, wenn nichts zu finden ist, ohne dass die Seite springt', async ({ page }) => {
@@ -452,14 +456,15 @@ test('gliedert die ungefilterte Liste nach Kategorie', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Bunt-Defense/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: /Rundown/ })).toBeVisible()
 
-  // Mit Filter ist die Liste selbst schon die Antwort — dann gliedert nichts.
+  // Mit Filter ist die Seite ein KAPITEL: eine Ueberschrift, naemlich die des Kapitels,
+  // und darunter nur dessen Plays. Keine Gliederung — die hat nichts mehr zu gliedern.
   const wert = await page
     .getByLabel('Kategorie')
     .locator('option', { hasText: 'Rundown' })
     .getAttribute('value')
   await page.getByLabel('Kategorie').selectOption(wert!)
   await expect(page.getByRole('heading', { name: /Bunt-Defense/ })).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: /Rundown/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /Rundown/ })).toHaveCount(1)
 })
 
 test('sagt beim Kopieren, dass es geklappt hat, und fragt vorm Löschen', async ({ page }) => {
@@ -546,7 +551,13 @@ test('gibt dem Feld auch quer gehalten die ganze Höhe', async ({ page }) => {
 
 test('zeigt die Start-Plays aus der Migration', async ({ page }) => {
   await page.goto('/orga/playmaker')
-  await expect(page.getByRole('heading', { name: 'Playmaker' })).toBeVisible()
+  // Die Ueberschrift heisst „Defense" — unter dem Wort kommen die Spieler aus dem
+  // Spielwissen her. „Playmaker" steht nur noch klein darueber als Name der Werkbank.
+  // Erst wenn die Plays da sind, steht die Seite — vorher zeigt sie „Plays werden
+  // geladen …" und hat ueberhaupt keine Ueberschrift. Dieselbe Geduld wie unten.
+  // `exact`, sonst faengt der Name auch „Bunt-Defense" und „Steal-Defense & Pickoff" —
+  // die Kategorie-Ueberschriften derselben Seite.
+  await expect(page.getByRole('heading', { name: 'Defense', exact: true })).toBeVisible({ timeout: 15_000 })
   // Die Kategorie steht in einer <option> — sichtbar ist sie erst beim Aufklappen,
   // deshalb wird der Wert geprueft, nicht die Sichtbarkeit.
   await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
