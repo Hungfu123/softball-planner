@@ -44,6 +44,40 @@ test.describe('Kapitel im Spielwissen', () => {
     expect(anteil).toBeGreaterThan(45)
   })
 
+  /**
+   * **Die erste Karte wartet auch wirklich.**
+   *
+   * Die Seite blaettert in einer `AnimatePresence initial={false}`, und dieser Wert
+   * reicht ueber den PresenceContext in den ganzen Teilbaum: die Buehne der ERSTEN Karte
+   * rendert dann beim Aufbau sofort ihren Zielzustand. Sie stand damit auf ihrem
+   * Ergebnis, und ▶ tat sichtbar nichts — ab der zweiten Karte war alles richtig, weil
+   * die spaeter ankommt. Genau deshalb steht diese Pruefung im Browser und nicht nur in
+   * jsdom: gemessen wird die Zeichnung, nicht die Absicht.
+   *
+   * Eigene Beschreibung mit `reducedMotion: 'no-preference'` — die Suite laeuft sonst mit
+   * abgeschalteter Bewegung, und dort gibt es nichts zu warten.
+   */
+  test.describe('mit Bewegung', () => {
+    test.use({ reducedMotion: 'no-preference' })
+
+    test('steht auf dem Anfang, bis man abspielt', async ({ page }) => {
+      await page.setViewportSize({ width: 393, height: 852 })
+      await page.goto('/spielwissen/base')
+
+      const buehne = page.locator('[data-buehne]')
+      await expect(buehne).toHaveAttribute('data-wartet', 'true')
+      const anfang = await buehne.locator('svg').innerHTML()
+
+      await page.getByRole('button', { name: 'Abspielen' }).click()
+      await expect(buehne).toHaveAttribute('data-wartet', 'false')
+      await expect(page.getByRole('button', { name: 'Nochmal' })).toBeVisible()
+
+      // Die Zeichnung muss sich bewegt haben: gleicher Inhalt hiesse, die Buehne stand
+      // schon vorher auf ihrem Ende.
+      await expect.poll(() => buehne.locator('svg').innerHTML()).not.toBe(anfang)
+    })
+  })
+
   test('zeigt oben die Kopfleiste eines Plays: zurueck, Titel, nichts darueber', async ({ page }) => {
     await page.setViewportSize({ width: 393, height: 852 })
     await page.goto('/spielwissen/box')

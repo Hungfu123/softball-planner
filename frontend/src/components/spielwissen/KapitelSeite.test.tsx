@@ -100,19 +100,20 @@ describe('Kapitelseite', () => {
    * „nochmal", das scheinbar nichts tat — es holte eine Bewegung zurueck, die man nie
    * hatte anfangen sehen.
    *
-   * Jetzt steht erst das Standbild (derselbe Endzustand, den auch reduzierte Bewegung
-   * zeigt — die Auskunft steckt darin), daneben Amber auf ▶. Erst nach dem Abspielen
-   * gibt es etwas zu wiederholen, und erst dann steht dort „nochmal".
+   * Jetzt steht erst die Ausgangssituation, daneben Amber auf ▶. Erst nach dem
+   * Abspielen gibt es etwas zu wiederholen, und erst dann steht dort „nochmal".
+   *
+   * **Dass die wartende Buehne auf ihrem ANFANG steht**, haelt `Karte.test.tsx` fest —
+   * hier geht es um die Leiste, und die Attrappe hat keinen Anfang.
    */
   it('wartet mit der Bewegung, bis man abspielt', () => {
     zeige('/spielwissen/box')
 
-    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
+    expect(screen.getByRole('button', { name: 'Abspielen' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nochmal' })).not.toBeInTheDocument()
 
     abspielen()
 
-    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'false')
     expect(screen.queryByRole('button', { name: 'Abspielen' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Nochmal' })).toBeInTheDocument()
   })
@@ -124,8 +125,8 @@ describe('Kapitelseite', () => {
     weiter()
 
     await waitFor(() => expect(screen.getByText('Drin ist Strike')).toBeInTheDocument())
-    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
     expect(screen.getByRole('button', { name: 'Abspielen' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nochmal' })).not.toBeInTheDocument()
   })
 
   /* Wer eigene Knoepfe mitbringt, bedient sich selbst: kein ▶ und kein ↻ daneben. */
