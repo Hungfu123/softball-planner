@@ -48,6 +48,16 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   denn wer hinter die Base geht, lernt genau dort seinen Weg) und liegt im `localStorage`,
   nicht in der Adresse: ein Shortstop bleibt einer, aber ein geteilter Link zeigt allen
   dasselbe. Die volle Liste mit Suche, freiem Feld und „Neues Play" bleibt dem Trainer.
+- **Drei Punkte heissen im Spielwissen Stufe — im Play heissen sie Outs.** Dieselbe Form
+  zwei Tipps voneinander entfernt, zwei Bedeutungen. Deshalb stehen die Outs oben rechts
+  **nur da, wenn es welche gibt**, und dann mit dem Wort daneben (`Out` / `Outs`); bei
+  null sagten sie ohnehin nichts, was die Notiz des Stands nicht schon sagt, und der
+  Titel bekommt die Breite zurueck. Wer eine dritte Bedeutung fuer Punkte braucht, nimmt
+  etwas anderes.
+- **Die Blaetterleisten von Offense und Defense sind dieselbe Leiste**: links der Weg
+  zurueck (am ersten Eintrag abgeschaltet, nicht weggelassen — eine Luecke sagt nichts),
+  in der Mitte „Play 1 von 14" bzw. „Karte 1 von 8", rechts der gefuellte Weg vorwaerts.
+  Dieselben Pfeile (lucide), dieselbe Hoehe (48 px). Wer eine davon aendert, aendert beide.
 - **Loeschen darf nur der Superadmin** (`PlayController.delete`, `@PreAuthorize`), nicht
   nur in der Oberflaeche: die Start-Plays kommen aus einer Migration, ein versehentlich
   geloeschtes ist nur ueber eine neue Migration wieder da.
