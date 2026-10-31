@@ -117,7 +117,7 @@ export function usePlayback(steps: PlayStep[], { autostart = false }: Options = 
      * Relay ueber das halbe Feld. Siehe board/tempo.ts — das Feld bleibt in den Daten,
      * es steuert nur die Wiedergabe nicht mehr.
      */
-    const dauer = dauerMs(steps[von].markers, steps[nach].markers);
+    const dauer = dauerMs(steps[von].markers, steps[nach].markers, steps[nach].note);
 
     if (reduziert) {
       timer.current = setTimeout(() => setIndex(nach), dauer);

@@ -1020,13 +1020,19 @@ const KATALOG = [
         r: { r2: { p: B3, status: 'OUT' }, r1: between(B1, B2, 0.7) },
         outs: 1,
       }),
-      // Eine Alternative zum Stand davor, keine Fortsetzung: derselbe eine Out, nur an
-      // einer anderen Base. Deshalb bleibt die Zaehlung bei 1.
-      s('Alternative zum Stand davor: Ist der Führungs-Runner zu schnell, geht der Wurf an die 1 — ein sicherer Out statt gar keiner.', {
+      /*
+       * Fortsetzung, keine Alternative mehr.
+       *
+       * Hier stand ein Stand, der ausdruecklich „Alternative zum Stand davor" hiess: der
+       * Out wanderte von der 3 zur 1 und die Zaehlung blieb bei 1. Die Wiedergabe kennt
+       * keine Abzweigung, sie spielt Staende der Reihe nach — man sah also, wie ein Out
+       * verschwindet und ein anderer dafuer auftaucht. Jetzt laeuft der Wurf weiter zur
+       * 1, und zwei Outs sind zwei Outs.
+       */
+      s('Und weiter zur 1: wenn der Batter nicht schnell genug ist, sind es zwei.', {
         ball: { hold: '2B' },
         r: { r1: B2, rb: { p: B1, status: 'OUT' } },
-        outs: 1,
-        ms: 2000,
+        outs: 2,
       }),
     ],
   }),
