@@ -41,6 +41,19 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   wie zwei Programme. **Die Ringe sind gemessen, nicht geschmückt:** rot misst auf navy
   2,68:1 und braucht den hellen Ring, amber auf cream 1,55:1 — deshalb trägt jeder Runner
   einen dunklen Ring, damit er beim Tag nicht mit dem Verteidiger verschmilzt.
+- **Eine Kategorie ist ein Kapitel** (`?kategorie=` an der Uebersicht): Kopf mit Name,
+  Stufe und Satz, darunter die Plays — ohne grosses Feld, ohne Suche, ohne freies Feld,
+  ohne Werkzeuge an den Zeilen. Dazu ein Filter **„Deine Position"**: er laesst die Plays
+  stehen, in denen dieser Platz etwas tut (`mitwirkende()` — Ball anfassen ODER laufen,
+  denn wer hinter die Base geht, lernt genau dort seinen Weg) und liegt im `localStorage`,
+  nicht in der Adresse: ein Shortstop bleibt einer, aber ein geteilter Link zeigt allen
+  dasselbe. Die volle Liste mit Suche, freiem Feld und „Neues Play" bleibt dem Trainer.
+- **Loeschen darf nur der Superadmin** (`PlayController.delete`, `@PreAuthorize`), nicht
+  nur in der Oberflaeche: die Start-Plays kommen aus einer Migration, ein versehentlich
+  geloeschtes ist nur ueber eine neue Migration wieder da.
+- **Der Diff-Modus des Generators kann einfuegen und loeschen**, nicht nur aendern: ein
+  neues Play bringt seine `play`-Zeile mit, ein neuer Stand seinen INSERT, ein gestrichener
+  seinen DELETE. Vorher waeren neue Staende still verschluckt worden.
 - **Der Katalog hat einen Pruefer** (`node scripts/pruefe-plays.mjs`): neun Verteidiger je
   Stand, ein Wurf auf eine Base hat einen Empfaenger, Outs steigen und zaehlen, niemand
   springt, kein Stand ohne Bewegung und ohne Satz, Home steht nicht offen, wenn ein Runner
