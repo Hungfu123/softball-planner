@@ -98,7 +98,14 @@ export function OrgaHome() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         <Kachel to="/counter" icon={<CounterIcon size={20} />} titel="Counter" untertitel="Beim Umpen zählen" />
         <Kachel to="/orga/whatsapp-umfrage" icon={<SendIcon size={20} />} titel="WhatsApp-Umfragen" untertitel="Training und Spieltage" />
-        <Kachel to="/orga/trainerabrechnung" icon={<Receipt size={20} />} titel="Trainerabrechnung" untertitel="Für den Hochschulsport" />
+        {/*
+          Nur fuer den Superadmin: der Bogen gehoert EINER Person, und die Stammdaten
+          darin (Name, Anschrift, Kontoverbindung) sind ihre. Im Werkzeugkasten aller
+          Trainer stand ein Formular, das keiner von ihnen ausfuellt.
+        */}
+        {istSuperadmin && (
+          <Kachel to="/orga/trainerabrechnung" icon={<Receipt size={20} />} titel="Trainerabrechnung" untertitel="Für den Hochschulsport" />
+        )}
         <Kachel to="/orga/accounts" icon={<Users size={20} />} titel="Accounts" untertitel="Rollen und Rechte" />
       </div>
 
@@ -116,13 +123,23 @@ export function OrgaHome() {
         <Kachel to="/spielwissen" icon={<BookOpen size={20} />} titel="Spielwissen" untertitel="Offense und Defense" />
       </div>
 
-      <Ueberschrift>Selten</Ueberschrift>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-w-2xl">
-        <Zeile to="/spielbogen" icon={<ClipboardListIcon size={20} />} titel="Spielbogen" untertitel="Live-Scoring, RFL-Bogen" />
-        {istSuperadmin && (
-          <Zeile to="/orga/historie" icon={<History size={20} />} titel="Historie" untertitel="Wer was geändert hat" />
-        )}
-      </div>
+      {/*
+        Der ganze Block gehoert dem Superadmin, also faellt er mit seiner Ueberschrift
+        weg: „Selten" ueber einer leeren Flaeche sieht aus wie ein Ladefehler.
+
+        Der Spielbogen ist dabei ein VERSTECKEN, kein Verbot — die Adresse bleibt offen,
+        und wer scort, kommt ueber den Spieltag hin. Die Zeile im Werkzeugkasten lud
+        jeden Trainer ein, am Bogen zu arbeiten, den am Spieltag genau einer fuehrt.
+      */}
+      {istSuperadmin && (
+        <>
+          <Ueberschrift>Selten</Ueberschrift>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-w-2xl">
+            <Zeile to="/spielbogen" icon={<ClipboardListIcon size={20} />} titel="Spielbogen" untertitel="Live-Scoring, RFL-Bogen" />
+            <Zeile to="/orga/historie" icon={<History size={20} />} titel="Historie" untertitel="Wer was geändert hat" />
+          </div>
+        </>
+      )}
     </div>
   )
 }
