@@ -415,3 +415,109 @@ macht es besser, keiner ist Voraussetzung für den Nutzen davor.
 - Ob die Zuschauer-Animation einen eigenen Playwright-Eintrag ohne `reducedMotion`
   bekommt.
 - Genaue Form der `anzeige`-Nutzlast je Ereignisart.
+
+---
+
+## Nachtrag vom 31.10.2026
+
+Durchgesprochen, bevor gebaut wird. Was hier steht, geht dem Obigen vor.
+
+### Das Wort „Stift" fällt weg
+
+In der Oberfläche **und** im Code. Am Feld sagt das niemand, und eine Metapher kostet bei
+jedem Lesen eine Übersetzung. Der Zustand heißt `aktiverScorer` (Konto, seit wann,
+letzter Eintrag).
+
+| Lage | Zeile | Knopf |
+|---|---|---|
+| jemand anders scort | „Lena scort gerade." | **Ich übernehme** |
+| niemand scort | „Gerade scort niemand." | keiner, einfach tippen |
+| du scorst, jemand schaut zu | „Du scorst. 3 schauen zu." | keiner |
+| du scorst, sonst ist niemand da | nichts | keiner |
+| Rückfrage beim Übernehmen | „Lena trägt gerade ein. Übernehmen?" | **Ich übernehme** / Abbrechen |
+| du hast abgegeben | „Mara scort jetzt." | **Ich übernehme** |
+| dabei war ein Eintrag offen | „Mara scort jetzt. Dein angefangener Eintrag ist nicht gespeichert." | |
+
+**Keinen „Abgeben"-Knopf.** Wer aufhört, hört auf; nach zwei stillen Minuten steht bei
+den anderen „Gerade scort niemand". Ein Knopf, den man vor dem Gang an die Platte drücken
+müsste, würde genau dann vergessen, wenn es darauf ankommt.
+
+### Übernehmen ist der Sonderfall, nicht die Regel
+
+Ist niemand aktiv, sind die Knöpfe eines Scorers **scharf** und der erste Eintrag macht
+ihn zum aktiven Scorer. Kein Knopf davor, keine Rückfrage. Das ist der häufigste Fall:
+nach einem Halbinning-Wechsel liegt das Telefon auf der Bank, zwei Minuten später ist
+niemand mehr aktiv, und wer als Nächstes tippt, scort.
+
+### Der Schreibpfad bleibt unverändert streng
+
+Frühere Fassung sagte, ein Eintrag ohne aktiven Status werde abgelehnt. **Das wird nicht
+gebaut.** Der Endpunkt sperrt nicht und prüft nichts Neues. Der aktive Scorer lebt nur in
+der Oberfläche: wer es nicht ist, hat graue Knöpfe und tippt deshalb nicht. Drückt doch
+jemand im selben Augenblick, in dem die Zeile noch nicht umgesprungen ist, geht der
+Eintrag durch wie heute. Das ist seltener und harmloser als ein Spiel, in dem Eintragen
+plötzlich scheitern kann.
+
+### Er gehört dem Konto, nicht dem Gerät
+
+Sonst streitet ein Mensch mit sich selbst, sobald Telefon und Tablet nebeneinanderliegen.
+Folge und zugleich Grenze: wird **ein** Telefon unter einem Konto herumgereicht, steht bei
+allen derselbe Name, auch wenn jemand anders tippt. Die App kennt Konten, keine Hände. Für
+diesen Fall ändert sich nichts gegenüber heute, und das ist Absicht.
+
+### Allein heißt still
+
+Ist niemand sonst im Spiel, sagt die Leiste nichts: keine Präsenzzeile, kein „Du scorst",
+kein Zähler. Die Oberfläche wird erst gesprächig, wenn ein Zweiter da ist. Anti-Ziel aus
+dem Hauptteil, hier als sichtbare Regel.
+
+### Zuschauer sehen alles, nur abgeschaltet
+
+Knöpfe werden **ausgegraut, nicht versteckt**: wer zuschaut, soll sehen, was der aktive
+Scorer tun kann — das ist die halbe Lehre, und eine versteckte Oberfläche lernt niemand.
+Uhr und Spielstand nur lesend. Wer zuschauen darf: **jeder Angemeldete**. Die Aufstellung
+ist am Spieltag ab 07:00 ohnehin für alle offen (`AufstellungSichtbarkeit`), also deckt
+die Zuschauer-Ansicht nichts auf, was nicht schon offen wäre. Eine zweite Grenze für
+dieselben Daten wäre Pflegeaufwand ohne Schutzwirkung.
+
+### Wann nachgeladen wird
+
+- beim Aufmachen,
+- beim Zurückkommen in den Vordergrund,
+- von selbst alle 15 bis 20 Sekunden, **nur im Vordergrund**,
+- und auf **einen Tipp auf die Statuszeile** sofort. (Ziehen geht hier nicht: auf den
+  Scoring-Seiten ist das Ziehen-zum-Neuladen bewusst gesperrt, `useZiehenSperre`.)
+
+### Wann NICHT nachgeladen wird
+
+Der gefährlichste Punkt im ganzen Vorhaben. Beim Hit mit Läufern lebt der halbe At-Bat
+**nur im Telefon**, bis der Korrekturbogen bestätigt wird. Ein Nachladen in diesem Moment
+wischt ihn weg. Also nicht nachladen, solange
+
+- ein Korrekturbogen offen ist,
+- irgendein anderes Blatt offen ist (Wechsel, Stealing, Uhr),
+- ein eigener Schreibvorgang unterwegs ist.
+
+Stattdessen **vormerken und nachholen**, sobald das Blatt zu ist. Nicht verwerfen, nicht
+ankündigen, nicht blinken. Wer eintippt, merkt davon nichts.
+
+### Die Animation gibt es schon
+
+`DiamondView` bewegt die Runner heute bereits von Base zu Base, mit eigenem Weg beim
+Erscheinen und einer Runde beim Homerun. Der Zuschauer bekommt das geschenkt: die Scheiben
+wandern bei ihm aus demselben Grund wie beim Scorer, weil der Zustand sich geändert hat.
+Neu zu bauen sind nur der hochzählende Spielstand und der einfahrende Verlaufseintrag.
+**Beim ersten Laden nichts davon** — sonst tanzt beim Öffnen der ganze Bildschirm.
+
+### Der Verlauf in Worten
+
+„Was ist gerade passiert" gibt es für das Legacy-Scoring noch nicht. Der Spielbogen hat so
+etwas (`utils/bogenFeed.ts`, nach Halbinnings gruppiert, getestet), aber für seine eigenen
+Typen. Die deutschen Ergebnis-Namen und die Form eines Ereignisses werden **einmal**
+herausgezogen und von beiden Hälften benutzt. Nicht ein zweites Mal schreiben.
+
+### Scorer-Haken nur bei Spielern
+
+Erledigt am 31.10.2026. Ein Trainer scort ohnehin (`hasRole('ADMIN') or
+@scoring.darfSchreiben`); am Trainerkonto steht jetzt „Scort immer" statt eines Kästchens,
+das nichts tat.
