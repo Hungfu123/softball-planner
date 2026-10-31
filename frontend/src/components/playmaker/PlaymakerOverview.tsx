@@ -489,7 +489,7 @@ export default function PlaymakerOverview() {
                 onChange={e => setSuche(e.target.value)}
                 type="text"
                 inputMode="search"
-                placeholder="Suchen — Titel, Notiz, Kategorie"
+                placeholder="Suchen: Titel, Notiz, Kategorie"
                 aria-label="Plays durchsuchen"
                 className="w-full rounded-xl border border-cream-300 bg-white py-3 pl-4 pr-24 text-sm text-navy-900"
               />

@@ -27,7 +27,7 @@ export function SpielermodusLeiste() {
       className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-center gap-3 bg-spotlight px-4 py-2 text-xs text-spotlight-ink"
     >
       <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-amber-400" />
-      <span>Spieleransicht — du bist weiterhin Superadmin</span>
+      <span>Spieleransicht. Du bist weiterhin Superadmin</span>
       <button
         type="button"
         onClick={() => { void spielermodusSetzen(false) }}

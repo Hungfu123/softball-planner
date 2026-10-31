@@ -220,8 +220,8 @@ test('setzt einen Runner per Antippen auf Out', async ({ page }) => {
   const box = (await runner.boundingBox())!
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
 
-  await expect(page.getByText('Out — durchgestrichen, dann weg')).toBeVisible()
-  await page.getByText('Out — durchgestrichen, dann weg').click()
+  await expect(page.getByText('Out: durchgestrichen, dann weg')).toBeVisible()
+  await page.getByText('Out: durchgestrichen, dann weg').click()
 
   await expect(page.locator('[data-marker="runner"][data-status="OUT"]')).toHaveCount(1)
 
@@ -289,13 +289,13 @@ test('nimmt einen Out per Antippen zurueck', async ({ page }) => {
   const runner = page.locator('[data-marker="runner"]').first()
   await expect(runner).toBeVisible()
   await runner.click()
-  await page.getByText('Out — durchgestrichen, dann weg').click()
+  await page.getByText('Out: durchgestrichen, dann weg').click()
   await expect(page.locator('[data-marker="runner"][data-status="OUT"]')).toHaveCount(1)
 
   // Ein versehentlich ausgemachter Runner muss wieder erreichbar sein — sonst hilft nur
   // Rueckgaengig, und nach fuenf Zuegen gar nichts mehr.
   await page.locator('[data-marker="runner"]').first().click()
-  await page.getByText('Läuft weiter — zurücknehmen').click()
+  await page.getByText('Läuft weiter: zurücknehmen').click()
 
   await expect(page.locator('[data-marker="runner"][data-status="ACTIVE"]')).toHaveCount(1)
 

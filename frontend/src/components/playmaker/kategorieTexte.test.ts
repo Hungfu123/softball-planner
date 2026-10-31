@@ -12,6 +12,6 @@ describe('kategorieStufe', () => {
 describe('kategorieSatz', () => {
   it('hat für jede bekannte Kategorie einen Satz und sonst einen allgemeinen', () => {
     expect(kategorieSatz('Rundown')).toMatch(/Bases/)
-    expect(kategorieSatz('Was Neues')).toMatch(/Wer steht wo/)
+    expect(kategorieSatz('Was Neues')).toMatch(/Wer wo steht/)
   })
 })
