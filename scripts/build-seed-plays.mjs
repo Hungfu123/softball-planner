@@ -126,10 +126,15 @@ function dauerAusWegen(weiteste, weitesterWurf) {
  * das letzte Wort: bewegt er den Mann in diesem Stand selbst, bleibt es dabei.
  */
 const ABSICHERUNG = [
-  { base: B1, mann: 'RF', ersatz: '2B' },
-  { base: B2, mann: 'CF', ersatz: 'P' },
-  { base: B3, mann: 'LF', ersatz: 'P' },
-  { base: HOME, mann: 'P', ersatz: null },
+  /*
+   * An der 1 stehen ZWEI dahinter: der RF tief, der 2B kurz. So ist es im Team
+   * abgesprochen — zur 1 wird am oeftesten geworfen, und ein Ball, der am 1B vorbeigeht,
+   * rollt sonst bis in die Ecke. Der 1B selbst bleibt dabei auf seiner Base: er faengt.
+   */
+  { base: B1, maenner: ['RF', '2B'], wieViele: 2 },
+  { base: B2, maenner: ['CF', 'P'], wieViele: 1 },
+  { base: B3, maenner: ['LF', 'P'], wieViele: 1 },
+  { base: HOME, maenner: ['P'], wieViele: 1 },
 ];
 
 /** Weiter als das weg von Home liegt das Outfield — von dort wirft kein Infielder. */
@@ -149,7 +154,8 @@ function absichern(defense, vorherDefense, step, ball, vorherBall) {
   const strecke = Math.hypot(ball.x - vorherBall.x, ball.y - vorherBall.y);
   if (strecke < 25) return;
 
-  const ziel = ABSICHERUNG.find((a) => Math.hypot(ball.x - a.base.x, ball.y - a.base.y) <= 14);
+  const ziel = ABSICHERUNG.find((a) => Math.hypot(ball.x - a.base.x, a.base.y - ball.y) <= 14
+    || Math.hypot(ball.x - a.base.x, ball.y - a.base.y) <= 14);
   if (!ziel) return;
 
   // Wer wirft und wer faengt, kann nicht gleichzeitig dahinterstehen.
@@ -160,48 +166,70 @@ function absichern(defense, vorherDefense, step, ball, vorherBall) {
     ball.holder ??
     Object.entries(defense).find(([, q]) => Math.hypot(q.x - ball.x, q.y - ball.y) < 8)?.[0];
 
-  // Kommt der Wurf aus dem Outfield — Relay —, geht der Pitcher hinter die Zielbase.
+  // Kommt der Wurf aus dem Outfield — Relay —, geht der Pitcher zuerst hinter die Base.
   const ausDemOutfield = Math.hypot(vorherBall.x - HOME.x, vorherBall.y - HOME.y) > OUTFIELD_AB;
-  const reihenfolge = ausDemOutfield && ziel.ersatz === 'P' ? ['P', ziel.mann] : [ziel.mann, ziel.ersatz];
+  const reihenfolge = ausDemOutfield && ziel.maenner.includes('P')
+    ? ['P', ...ziel.maenner.filter((m) => m !== 'P')]
+    : ziel.maenner;
 
+  const vonHome = (q) => Math.hypot(q.x - HOME.x, q.y - HOME.y);
+  const aufEinerBase = (q) =>
+    [B1, B2, B3, HOME].some((b) => Math.hypot(q.x - b.x, q.y - b.y) < 12);
+
+  const richtung = Math.hypot(ziel.base.x - vorherBall.x, ziel.base.y - vorherBall.y) || 1;
+  const stelle = (tiefe) => ({
+    x: r2(ziel.base.x + ((ziel.base.x - vorherBall.x) / richtung) * tiefe),
+    y: r2(ziel.base.y + ((ziel.base.y - vorherBall.y) / richtung) * tiefe),
+  });
+
+  let gesetzt = 0;
   for (const kandidat of reihenfolge) {
-    if (!kandidat) continue;
+    if (gesetzt >= ziel.wieViele) return;
     if (kandidat === werfer || kandidat === empfaenger) continue;
+    // Der Katalog hat das letzte Wort, und wer eine Base deckt, bleibt dort.
     if (step.d && kandidat in step.d) continue;
+    if (aufEinerBase(defense[kandidat])) continue;
 
-    const richtung = Math.hypot(ziel.base.x - vorherBall.x, ziel.base.y - vorherBall.y) || 1;
-    const platz = {
-      x: r2(ziel.base.x + ((ziel.base.x - vorherBall.x) / richtung) * HINTER_DER_BASE),
-      y: r2(ziel.base.y + ((ziel.base.y - vorherBall.y) / richtung) * HINTER_DER_BASE),
-    };
+    // Der zweite steht kuerzer dahinter als der erste, sonst stehen beide am selben Fleck.
+    const platz = stelle(gesetzt === 0 ? HINTER_DER_BASE : HINTER_DER_BASE / 2);
+
     /*
      * Ein Outfielder sichert nur ab, was VOR ihm liegt.
      *
      * Liegt der Platz hinter der Base naeher an Home als die Base selbst, kommt der Wurf
      * von draussen — beim Relay etwa — und der Mann muesste quer durchs Infield laufen,
      * um sich dahinterzustellen. Das tut kein Outfielder; dafuer ist der Pitcher da.
-     * Ohne diese Zeile lief der CF beim Relay aus dem rechten Feld bis zwischen SS und
-     * Mound, was im Bild aussah, als haette er die Position verlassen.
      */
     const istOutfielder = kandidat === 'LF' || kandidat === 'CF' || kandidat === 'RF';
-    const vonHome = (q) => Math.hypot(q.x - HOME.x, q.y - HOME.y);
     if (istOutfielder && vonHome(platz) < vonHome(ziel.base)) continue;
 
-    // Steht dort schon jemand — meist weil der Katalog ihn hingestellt hat —, ist die
-    // Base abgesichert. Zwei Scheiben auf demselben Fleck sind eine Scheibe.
+    /*
+     * Steht dort schon jemand, ist die Stelle abgesichert — zwei Scheiben auf demselben
+     * Fleck sind eine Scheibe.
+     *
+     * **Wer an der Base steht, zaehlt dabei nicht.** Er faengt ja; hinter ihm ist
+     * niemand. Ohne diese Bedingung blockierte der Empfaenger seinen eigenen Hintermann:
+     * beim Pickoff an der 1 stand der 1B zehn Fuss neben dem Platz des RF, und der RF
+     * blieb im Outfield stehen — genau der Fall, gegen den die ganze Regel gebaut ist.
+     */
     const besetzt = Object.entries(defense).some(
-      ([pos, q]) => pos !== kandidat && Math.hypot(q.x - platz.x, q.y - platz.y) < 12,
+      ([pos, q]) =>
+        pos !== kandidat &&
+        Math.hypot(q.x - platz.x, q.y - platz.y) < 12 &&
+        Math.hypot(q.x - ziel.base.x, q.y - ziel.base.y) > 12,
     );
-    if (besetzt) return;
+    if (besetzt) continue;
 
     const von = defense[kandidat];
     const weg = Math.hypot(platz.x - von.x, platz.y - von.y);
     if (weg > HOECHSTER_WEG) continue;
-    // Steht er ohnehin schon dort, bleibt er stehen — sonst zittert er auf der Stelle.
-    if (weg < 8) return;
+    if (weg < 8) {
+      gesetzt += 1; // steht ohnehin schon richtig
+      continue;
+    }
 
     defense[kandidat] = platz;
-    return;
+    gesetzt += 1;
   }
 }
 
@@ -944,26 +972,35 @@ const KATALOG = [
     gameState: 'CLOSE_LATE',
     gameStateNote: 'Den Führungs-Runner nehmen, wenn der Bunt hart genug ist.',
     steps: [
-      s('Derselbe Bunt, andere Entscheidung: wir wollen den vorderen Runner.'),
-      s('Bunt rollt hart genug zum 3B.', {
+      /*
+       * Derselbe Bunt, aber die Entscheidung faellt nicht blind.
+       *
+       * Hier endete das Play mit dem Force an der 2 — gegen einen Runner, der beim Bunt
+       * schon unterwegs ist, kommt der aber fast nie. Jetzt schaut der 3B hin und wirft
+       * dann an die 1: ein sicherer Out statt eines wahrscheinlichen Fehlers.
+       *
+       * **Der 1B bleibt dabei auf seiner Base.** Er faengt; vorlaufen muessen der 3B und
+       * der Pitcher. Hinter ihm stehen der RF tief und der 2B kurz — das setzt die Regel
+       * in `absichern` von selbst, sobald der 2B nicht mehr die 1 deckt.
+       */
+      s('Derselbe Bunt, andere Frage: kriegen wir den vorderen Runner überhaupt?'),
+      s('Bunt rollt hart genug zum 3B — der 1B bleibt an seiner Base.', {
         d: {
           '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 34),
           P: toward(MOUND, HOME, 20),
           SS: B2,
-          '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28),
-          '2B': B1,
         },
         ball: { loose: { x: HOME.x - 16, y: HOME.y - 18 } },
         r: { r1: between(B1, B2, 0.3) },
       }),
-      s('3B nimmt auf und schaut sofort zur 2.', {
+      s('3B nimmt auf und schaut zur 2 — der Runner ist zu weit.', {
         d: { '3B': { x: HOME.x - 16, y: HOME.y - 18 } },
         ball: { hold: '3B' },
-        r: { r1: between(B1, B2, 0.6) },
+        r: { r1: between(B1, B2, 0.75) },
       }),
-      s('Wurf auf die 2 — SS deckt ab. Nur machen, wenn der Ball schnell in der Hand ist.', {
-        ball: { hold: 'SS' },
-        r: { r1: 'OUT' },
+      s('Also an die 1. Der Runner bekommt die 2, wir bekommen den sicheren Out.', {
+        ball: { hold: '1B' },
+        r: { r1: B2, rb: { p: B1, status: 'OUT' } },
         outs: 1,
       }),
     ],
@@ -974,12 +1011,11 @@ const KATALOG = [
     startRunners: { r2: B2 },
     steps: [
       s('Runner auf 2. Der Bunt soll ihn auf die 3 bringen.'),
-      s('3B muss vor — damit ist die 3 offen.', {
+      s('3B muss vor — damit ist die 3 offen. Der 1B bleibt an seiner Base.', {
         d: {
           '3B': toward(DEFAULT_DEFENSE['3B'], HOME, 36),
           SS: B3,
           P: toward(MOUND, HOME, 18),
-          '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28),
         },
         ball: { loose: { x: HOME.x - 18, y: HOME.y - 16 } },
         r: { r2: between(B2, B3, 0.35) },
@@ -989,9 +1025,14 @@ const KATALOG = [
         ball: { hold: '3B' },
         r: { r2: between(B2, B3, 0.7) },
       }),
-      s('Wurf auf die 1 — der 2B deckt, weil der 1B vorne ist. Der Runner bekommt die 3.', {
-        d: { '2B': B1 },
-        ball: { hold: '2B' },
+      /*
+       * Der 1B faengt und bleibt dann in Bereitschaft: der Runner, der die 3 bekommt,
+       * biegt manchmal zu weit ab. Das Hinschauen ist der Inhalt des letzten Standes —
+       * deshalb steht er einen Schritt in Richtung 3 und nicht still auf der Base.
+       */
+      s('Wurf an die 1 — der 1B fängt, schaut zur 3 und ist bereit zu werfen.', {
+        d: { '1B': { x: B1.x - 6, y: B1.y + 2 } },
+        ball: { hold: '1B' },
         r: { r2: B3, rb: { p: B1, status: 'OUT' } },
         outs: 1,
       }),
@@ -1014,25 +1055,28 @@ const KATALOG = [
         ball: { loose: { x: HOME.x - 20, y: HOME.y - 18 } },
         r: { r1: between(B1, B2, 0.3), r2: between(B2, B3, 0.3) },
       }),
-      s('3B nimmt auf und wirft zur 3 — der Führungs-Runner ist das Ziel.', {
-        d: { '3B': { x: HOME.x - 20, y: HOME.y - 18 } },
-        ball: { hold: 'SS' },
-        r: { r2: { p: B3, status: 'OUT' }, r1: between(B1, B2, 0.7) },
-        outs: 1,
-      }),
       /*
-       * Fortsetzung, keine Alternative mehr.
+       * Der Fuehrungs-Runner ist in aller Regel nicht zu kriegen.
        *
-       * Hier stand ein Stand, der ausdruecklich „Alternative zum Stand davor" hiess: der
-       * Out wanderte von der 3 zur 1 und die Zaehlung blieb bei 1. Die Wiedergabe kennt
-       * keine Abzweigung, sie spielt Staende der Reihe nach — man sah also, wie ein Out
-       * verschwindet und ein anderer dafuer auftaucht. Jetzt laeuft der Wurf weiter zur
-       * 1, und zwei Outs sind zwei Outs.
+       * Hier stand erst ein Out an der 3 und danach ein Stand, der „Alternative zum Stand
+       * davor" hiess — der Out wanderte zur 1 und die Zaehlung blieb bei 1. Die Wiedergabe
+       * kennt keine Abzweigung, sie spielt Staende der Reihe nach; man sah also einen Out
+       * verschwinden und einen anderen auftauchen.
+       *
+       * Jetzt zeigt das Play, was tatsaechlich passiert: der Runner von der 2 ist beim
+       * Bunt schon unterwegs und erreicht die 3, der Wurf geht an die 1. **Das Drehen des
+       * Infields bleibt trotzdem der Inhalt** — ohne SS an der 3 liefe der Runner dort
+       * einfach durch, und aus einem sicheren Out wuerden zwei Runner in Position.
        */
-      s('Und weiter zur 1: wenn der Batter nicht schnell genug ist, sind es zwei.', {
+      s('3B nimmt auf — der Führungs-Runner ist längst unterwegs, die 3 ist kein Ziel.', {
+        d: { '3B': { x: HOME.x - 20, y: HOME.y - 18 } },
+        ball: { hold: '3B' },
+        r: { r2: B3, r1: between(B1, B2, 0.7) },
+      }),
+      s('Also der sichere Out an der 1 — der 2B deckt, weil der 1B vorne ist.', {
         ball: { hold: '2B' },
         r: { r1: B2, rb: { p: B1, status: 'OUT' } },
-        outs: 2,
+        outs: 1,
       }),
     ],
   }),
@@ -1058,6 +1102,18 @@ const KATALOG = [
         outs: 2,
         ms: 600,
       }),
+      /*
+       * Nach dem Tag ist das Play nicht zu Ende: der Batter laeuft noch.
+       *
+       * Der Catcher steht mit dem Ball an der Platte und sieht die 1 vor sich — wenn es
+       * passt, ist das ein Doppelspiel. Der 1B steht die ganze Zeit an seiner Base, der
+       * RF tief und der 2B kurz dahinter; das setzt die Regel in `absichern`.
+       */
+      s('Und wenn es passt, weiter an die 1 — der Batter läuft ja noch.', {
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 3,
+      }),
     ],
   }),
 
@@ -1065,21 +1121,21 @@ const KATALOG = [
     outs: 1,
     startRunners: {},
     steps: [
-      s('Der Bunt bleibt direkt vor der Platte liegen.'),
+      s('Wer den Bunt nimmt, entscheidet die Richtung: links der 3B, Mitte der P — und direkt vor der Platte der C.'),
+      /* Der 1B bleibt an seiner Base und faengt; der 2B wird dadurch frei und sichert
+         zusammen mit dem RF hinter der 1 ab (Regel in `absichern`). */
       s('P stürmt, bleibt aber stehen: der Ball gehört dem Catcher.', {
         d: {
           P: { x: HOME.x - 14, y: HOME.y - 20 },
           C: { x: HOME.x, y: HOME.y - 6 },
-          '1B': toward(DEFAULT_DEFENSE['1B'], HOME, 28),
-          '2B': B1,
         },
         ball: { loose: { x: HOME.x, y: HOME.y - 8 } },
       }),
       s('C hat freie Sicht auf die 1 — der P ist aus der Wurflinie gegangen.', {
         ball: { hold: 'C' },
       }),
-      s('Wurf auf die 1.', {
-        ball: { hold: '2B' },
+      s('Wurf an die 1, der 1B fängt.', {
+        ball: { hold: '1B' },
         r: { rb: { p: B1, status: 'OUT' } },
         outs: 2,
       }),
@@ -1725,16 +1781,42 @@ if (seit > 0 && process.argv[seit + 1]) {
   const stuecke = [];
   for (const [schluessel, n] of neu) {
     const a = alt.get(schluessel);
-    if (!a) continue;
-    if (a.dauer === n.dauer && a.note === n.note && a.outs === n.outs && a.markers === n.markers) continue;
+    if (a) {
+      if (a.dauer === n.dauer && a.note === n.note && a.outs === n.outs && a.markers === n.markers) continue;
+      stuecke.push(
+        `-- ${n.titel} – Stand ${n.ordinal}`,
+        'UPDATE play_step SET',
+        `    duration_ms = ${n.dauer},`,
+        `    note = ${n.note},`,
+        `    outs = ${n.outs},`,
+        `    markers = '${n.markers}'::jsonb`,
+        `WHERE ordinal = ${n.ordinal} AND play_id = (SELECT id FROM play WHERE title = '${n.titel}');`,
+        '',
+      );
+      continue;
+    }
+    /*
+     * Ein Stand, den es vorher nicht gab.
+     *
+     * Der Diff kannte nur UPDATE und uebersprang neue Staende still — ein Play, das einen
+     * Stand dazubekam (der Catcher wirft nach dem Tag noch an die 1), waere in der
+     * Datenbank einfach kuerzer geblieben als im Katalog. Jetzt kommt er als INSERT.
+     */
     stuecke.push(
-      `-- ${n.titel} – Stand ${n.ordinal}`,
-      'UPDATE play_step SET',
-      `    duration_ms = ${n.dauer},`,
-      `    note = ${n.note},`,
-      `    outs = ${n.outs},`,
-      `    markers = '${n.markers}'::jsonb`,
-      `WHERE ordinal = ${n.ordinal} AND play_id = (SELECT id FROM play WHERE title = '${n.titel}');`,
+      `-- ${n.titel} – Stand ${n.ordinal} (neu)`,
+      'INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)',
+      `SELECT id, ${n.ordinal}, ${n.dauer}, ${n.note}, ${n.outs}, '${n.markers}'::jsonb`,
+      `FROM play WHERE title = '${n.titel}'`,
+      `  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = ${n.ordinal});`,
+      '',
+    );
+  }
+  /* Und einer, den es nicht mehr gibt: sonst bliebe er fuer immer stehen. */
+  for (const [schluessel, a] of alt) {
+    if (neu.has(schluessel)) continue;
+    stuecke.push(
+      `-- ${a.titel} – Stand ${a.ordinal} (entfaellt)`,
+      `DELETE FROM play_step WHERE ordinal = ${a.ordinal} AND play_id = (SELECT id FROM play WHERE title = '${a.titel}');`,
       '',
     );
   }

@@ -19,7 +19,9 @@ export interface Nachbarn {
  * nichts. Das ist kein Fehler, nur ein Play ohne Nachbarn.
  */
 export function nachbarn(plays: Play[], aktuelles: Play): Nachbarn {
-  const kapitel = plays.filter(p => p.categoryId === aktuelles.categoryId)
+  // Nach id sortiert, nicht nach „zuletzt geändert": ein Kapitel, dessen Reihenfolge sich
+  // nach jeder Korrektur dreht, ist keins. Dieselbe Sortierung wie in der Übersicht.
+  const kapitel = plays.filter(p => p.categoryId === aktuelles.categoryId).sort((a, b) => a.id - b.id)
   const i = kapitel.findIndex(p => p.id === aktuelles.id)
   if (i < 0) return { vorheriges: null, naechstes: null, nummer: 0, anzahl: 0 }
 

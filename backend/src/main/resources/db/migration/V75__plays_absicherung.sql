@@ -104,7 +104,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Wurf auf die 2.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":174.09,"y":152.24,"status":"OUT"},{"id":"rb","x":180.2,"y":192.8,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"2B","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":113.15},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":174.09,"y":152.24,"status":"OUT"},{"id":"rb","x":180.2,"y":192.8,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"2B","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Comebacker zum Pitcher');
 
 -- Comebacker zum Pitcher – Stand 5
@@ -112,7 +112,7 @@ UPDATE play_step SET
     duration_ms = 3000,
     note = 'Und weiter auf die 1.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":210.01,"y":191.12}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":113.15},{"position":"RF","x":210.01,"y":191.12}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 5 AND play_id = (SELECT id FROM play WHERE title = 'Comebacker zum Pitcher');
 
 -- Doppelspiel 6-4-3 – Stand 3
@@ -165,10 +165,10 @@ WHERE ordinal = 2 AND play_id = (SELECT id FROM play WHERE title = 'Bases Loaded
 
 -- Bases Loaded — Force an Home – Stand 3
 UPDATE play_step SET
-    duration_ms = 1800,
+    duration_ms = 2600,
     note = 'Wurf nach Home — der kürzeste Weg und der teuerste Runner.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"r2","x":125.3,"y":162.85,"status":"ACTIVE"},{"id":"r3","x":155,"y":218,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":161.27,"y":236.99},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"r2","x":125.3,"y":162.85,"status":"ACTIVE"},{"id":"r3","x":155,"y":218,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Bases Loaded — Force an Home');
 
 -- Bases Loaded — Force an Home – Stand 4
@@ -176,7 +176,7 @@ UPDATE play_step SET
     duration_ms = 3000,
     note = 'Und weiter auf die 1 — Doppelspiel, wenn der Wurf sitzt.',
     outs = 3,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":210.01,"y":160.03}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":161.27,"y":236.99},{"position":"C","x":155,"y":228},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":177,"y":140},{"position":"SS","x":129,"y":146},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":210.01,"y":160.03}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Bases Loaded — Force an Home');
 
 -- Bases Loaded — der 3B tritt selbst auf die 3 – Stand 3
@@ -365,42 +365,50 @@ WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Sac-Bunt, Ru
 
 -- Sac-Bunt, Runner auf 1 — sicherer Out an der 1 – Stand 4
 UPDATE play_step SET
-    duration_ms = 1600,
+    duration_ms = 3000,
     note = 'Sicherer Wurf auf die 1 — der 2B deckt dort ab, weil der 1B vorne ist.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":147,"y":204},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":136.08,"y":190.67},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":147,"y":204},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":136.08,"y":190.67},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":214.85,"y":165.75}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — sicherer Out an der 1');
+
+-- Sac-Bunt, Runner auf 1 — Wurf auf die 2 – Stand 1
+UPDATE play_step SET
+    duration_ms = 1200,
+    note = 'Derselbe Bunt, andere Frage: kriegen wir den vorderen Runner überhaupt?',
+    outs = 0,
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+WHERE ordinal = 1 AND play_id = (SELECT id FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — Wurf auf die 2');
 
 -- Sac-Bunt, Runner auf 1 — Wurf auf die 2 – Stand 2
 UPDATE play_step SET
-    duration_ms = 2000,
-    note = 'Bunt rollt hart genug zum 3B.',
+    duration_ms = 1600,
+    note = 'Bunt rollt hart genug zum 3B — der 1B bleibt an seiner Base.',
     outs = 0,
-    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":138.35,"y":193.95},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":184.7,"y":162.85,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"LOOSE","holder":null,"x":139,"y":200,"trajectory":"GROUND"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":138.35,"y":193.95},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":184.7,"y":162.85,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"LOOSE","holder":null,"x":139,"y":200,"trajectory":"GROUND"}}'::jsonb
 WHERE ordinal = 2 AND play_id = (SELECT id FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — Wurf auf die 2');
 
 -- Sac-Bunt, Runner auf 1 — Wurf auf die 2 – Stand 3
 UPDATE play_step SET
     duration_ms = 1200,
-    note = '3B nimmt auf und schaut sofort zur 2.',
+    note = '3B nimmt auf und schaut zur 2 — der Runner ist zu weit.',
     outs = 0,
-    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":139,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":171.97,"y":150.12,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":139,"y":200,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":139,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":165.61,"y":143.75,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":139,"y":200,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — Wurf auf die 2');
 
 -- Sac-Bunt, Runner auf 1 — Wurf auf die 2 – Stand 4
 UPDATE play_step SET
-    duration_ms = 1200,
-    note = 'Wurf auf die 2 — SS deckt ab. Nur machen, wenn der Ball schnell in der Hand ist.',
+    duration_ms = 3000,
+    note = 'Also an die 1. Der Runner bekommt die 2, wir bekommen den sicheren Out.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":139,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":171.97,"y":150.12,"status":"OUT"},{"id":"rb","x":188.6,"y":184.4,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":139,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":215.88,"y":167.86}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":191,"y":166,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Sac-Bunt, Runner auf 1 — Wurf auf die 2');
 
 -- Bunt Richtung 3B, Runner auf 2 — SS deckt die 3 – Stand 2
 UPDATE play_step SET
     duration_ms = 2000,
-    note = '3B muss vor — damit ist die 3 offen.',
+    note = '3B muss vor — damit ist die 3 offen. Der 1B bleibt an seiner Base.',
     outs = 0,
-    markers = '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":177,"y":140},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":139.49,"y":195.6},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":140.15,"y":148,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"LOOSE","holder":null,"x":137,"y":202,"trajectory":"GROUND"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":139.49,"y":195.6},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":140.15,"y":148,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"LOOSE","holder":null,"x":137,"y":202,"trajectory":"GROUND"}}'::jsonb
 WHERE ordinal = 2 AND play_id = (SELECT id FROM play WHERE title = 'Bunt Richtung 3B, Runner auf 2 — SS deckt die 3');
 
 -- Bunt Richtung 3B, Runner auf 2 — SS deckt die 3 – Stand 3
@@ -408,15 +416,15 @@ UPDATE play_step SET
     duration_ms = 1200,
     note = 'SS füllt die Lücke an der 3. Ohne ihn läuft der Runner einfach durch.',
     outs = 0,
-    markers = '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":177,"y":140},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":137,"y":202},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":125.3,"y":162.85,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":137,"y":202,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":137,"y":202},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r2","x":125.3,"y":162.85,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":137,"y":202,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Bunt Richtung 3B, Runner auf 2 — SS deckt die 3');
 
 -- Bunt Richtung 3B, Runner auf 2 — SS deckt die 3 – Stand 4
 UPDATE play_step SET
     duration_ms = 3000,
-    note = 'Wurf auf die 1 — der 2B deckt, weil der 1B vorne ist. Der Runner bekommt die 3.',
+    note = 'Wurf an die 1 — der 1B fängt, schaut zur 3 und ist bereit zu werfen.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":137,"y":202},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":215.75,"y":167.56}],"runners":[{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":193},{"position":"C","x":155,"y":226},{"position":"1B","x":191.43,"y":177.57},{"position":"2B","x":177,"y":140},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":137,"y":202},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":215.75,"y":167.56}],"runners":[{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":191.42640687119285,"y":177.57359312880715,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Bunt Richtung 3B, Runner auf 2 — SS deckt die 3');
 
 -- Runner auf 1 und 2 — Wheel Play – Stand 2
@@ -430,17 +438,17 @@ WHERE ordinal = 2 AND play_id = (SELECT id FROM play WHERE title = 'Runner auf 1
 -- Runner auf 1 und 2 — Wheel Play – Stand 3
 UPDATE play_step SET
     duration_ms = 1800,
-    note = '3B nimmt auf und wirft zur 3 — der Führungs-Runner ist das Ziel.',
-    outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":135,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    note = '3B nimmt auf — der Führungs-Runner ist längst unterwegs, die 3 ist kein Ziel.',
+    outs = 0,
+    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":135,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":135,"y":200,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Runner auf 1 und 2 — Wheel Play');
 
 -- Runner auf 1 und 2 — Wheel Play – Stand 4
 UPDATE play_step SET
     duration_ms = 3000,
-    note = 'Und weiter zur 1: wenn der Batter nicht schnell genug ist, sind es zwei.',
-    outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":135,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":217.37,"y":177.11}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    note = 'Also der sichere Out an der 1 — der 2B deckt, weil der 1B vorne ist.',
+    outs = 1,
+    markers = '{"defenders":[{"position":"P","x":155,"y":195},{"position":"C","x":155,"y":226},{"position":"1B","x":173.92,"y":190.67},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":105.5,"y":168.5},{"position":"3B","x":135,"y":200},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":216.05,"y":168.29}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":112.57,"y":175.57,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Runner auf 1 und 2 — Wheel Play');
 
 -- Squeeze, Runner auf 3 – Stand 2
@@ -467,12 +475,26 @@ UPDATE play_step SET
     markers = '{"defenders":[{"position":"P","x":161,"y":208},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":146.51,"y":209.51,"status":"OUT"},{"id":"rb","x":180.2,"y":192.8,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Squeeze, Runner auf 3');
 
+-- Squeeze, Runner auf 3 – Stand 5 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 5, 3000, 'Und wenn es passt, weiter an die 1 — der Batter läuft ja noch.', 3, '{"defenders":[{"position":"P","x":161,"y":208},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":210.01,"y":160.03}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":191,"y":166,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Squeeze, Runner auf 3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 5);
+
+-- Bunt direkt vor Home — Catcher übernimmt – Stand 1
+UPDATE play_step SET
+    duration_ms = 1200,
+    note = 'Wer den Bunt nimmt, entscheidet die Richtung: links der 3B, Mitte der P — und direkt vor der Platte der C.',
+    outs = 1,
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+WHERE ordinal = 1 AND play_id = (SELECT id FROM play WHERE title = 'Bunt direkt vor Home — Catcher übernimmt');
+
 -- Bunt direkt vor Home — Catcher übernimmt – Stand 2
 UPDATE play_step SET
-    duration_ms = 2000,
+    duration_ms = 1200,
     note = 'P stürmt, bleibt aber stehen: der Ball gehört dem Catcher.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"LOOSE","holder":null,"x":155,"y":210,"trajectory":"GROUND"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"LOOSE","holder":null,"x":155,"y":210,"trajectory":"GROUND"}}'::jsonb
 WHERE ordinal = 2 AND play_id = (SELECT id FROM play WHERE title = 'Bunt direkt vor Home — Catcher übernimmt');
 
 -- Bunt direkt vor Home — Catcher übernimmt – Stand 3
@@ -480,15 +502,15 @@ UPDATE play_step SET
     duration_ms = 1200,
     note = 'C hat freie Sicht auf die 1 — der P ist aus der Wurflinie gegangen.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":212,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":212,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Bunt direkt vor Home — Catcher übernimmt');
 
 -- Bunt direkt vor Home — Catcher übernimmt – Stand 4
 UPDATE play_step SET
-    duration_ms = 1600,
-    note = 'Wurf auf die 1.',
+    duration_ms = 3000,
+    note = 'Wurf an die 1, der 1B fängt.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":175.06,"y":189.02},{"position":"2B","x":204.5,"y":168.5},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"2B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":141,"y":198},{"position":"C","x":155,"y":212},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":212.6,"y":162.55}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":191,"y":166,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Bunt direkt vor Home — Catcher übernimmt');
 
 -- Wurf auf die 2, Runner auf 3 startet – Stand 1
@@ -509,18 +531,18 @@ WHERE ordinal = 2 AND play_id = (SELECT id FROM play WHERE title = 'Wurf auf die
 
 -- Wurf auf die 2, Runner auf 3 startet – Stand 3
 UPDATE play_step SET
-    duration_ms = 1200,
+    duration_ms = 3000,
     note = 'SS fängt und wirft sofort zurück nach Home.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":161.36,"y":139.51,"status":"ACTIVE"},{"id":"r3","x":138.03,"y":201.03,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":113.15},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":161.36,"y":139.51,"status":"ACTIVE"},{"id":"r3","x":138.03,"y":201.03,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Wurf auf die 2, Runner auf 3 startet');
 
 -- Wurf auf die 2, Runner auf 3 startet – Stand 4
 UPDATE play_step SET
-    duration_ms = 1200,
+    duration_ms = 2600,
     note = 'Zurück zur Platte — der Run ist wichtiger als der Out an der 2.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":138.03,"y":201.03,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":238},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":113.15},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r3","x":138.03,"y":201.03,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Wurf auf die 2, Runner auf 3 startet');
 
 -- Catcher wirft an den Pitcher — Abfangen in der Mitte – Stand 1
@@ -573,10 +595,10 @@ WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Angetäuscht
 
 -- Angetäuschter Wurf auf die 2 – Stand 4
 UPDATE play_step SET
-    duration_ms = 1200,
+    duration_ms = 3000,
     note = 'Wurf auf die 3 — Tag-Out, wenn er nicht zurückkommt.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":178.33,"y":156.48,"status":"ACTIVE"},{"id":"r3","x":127.42,"y":190.42,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":178.33,"y":156.48,"status":"ACTIVE"},{"id":"r3","x":127.42,"y":190.42,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Angetäuschter Wurf auf die 2');
 
 -- Direkter Wurf auf die 3 – Stand 2
@@ -592,7 +614,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Schneller Wurf auf die 3 — vom Catcher, nicht vom Pitcher.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r3","x":118.94,"y":181.94,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r3","x":118.94,"y":181.94,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Direkter Wurf auf die 3');
 
 -- Direkter Wurf auf die 3 – Stand 4
@@ -600,7 +622,7 @@ UPDATE play_step SET
     duration_ms = 1200,
     note = 'Tag — Inning vorbei.',
     outs = 3,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r3","x":118.94,"y":181.94,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"},{"id":"r3","x":118.94,"y":181.94,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Direkter Wurf auf die 3');
 
 -- Rundown zwischen Home und 1 – Stand 2
@@ -688,7 +710,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Wurf zum 3B.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":228},{"position":"C","x":142.27,"y":205.27},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":117.66,"y":180.66,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":228},{"position":"C","x":142.27,"y":205.27},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":117.66,"y":180.66,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Rundown zwischen 3 und Home');
 
 -- Rundown zwischen 3 und Home – Stand 4
@@ -696,7 +718,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Tag an der 3. P ist nachgerückt, falls der Wurf danebengeht.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":228},{"position":"C","x":142.27,"y":205.27},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":117.66,"y":180.66,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":228},{"position":"C","x":142.27,"y":205.27},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":117.66,"y":180.66,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Rundown zwischen 3 und Home');
 
 -- Infield Fly — Lage und Verhalten – Stand 2
@@ -744,7 +766,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'SS fängt und tagt.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":165.61,"y":143.75,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":113.15},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":165.61,"y":143.75,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":123.15,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Steal auf die 2 — Wurf und Abdeckung');
 
 -- Steal auf die 3 — Wurf und Abdeckung – Stand 2
@@ -789,10 +811,10 @@ WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Doppel-Steal
 
 -- Doppel-Steal, Runner auf 1 und 2 – Stand 4
 UPDATE play_step SET
-    duration_ms = 1200,
+    duration_ms = 3000,
     note = 'Out an der 3, die 2 schenken wir her.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":121.06,"y":167.09,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"r2","x":121.06,"y":167.09,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Doppel-Steal, Runner auf 1 und 2');
 
 -- Pickoff an der 1 – Stand 2
@@ -808,7 +830,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = '1B fängt an der Base.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":189.65,"y":167.8,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"1B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":211.57,"y":161.43}],"runners":[{"id":"r1","x":189.65,"y":167.8,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"1B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Pickoff an der 1');
 
 -- Pickoff an der 1 – Stand 4
@@ -816,7 +838,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Tag, bevor der Runner zurück ist.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":189.65,"y":167.8,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":211.57,"y":161.43}],"runners":[{"id":"r1","x":189.65,"y":167.8,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":204.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Pickoff an der 1');
 
 -- Pickoff an der 2 – Stand 2
@@ -856,7 +878,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Schneller Wurf.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":120.35,"y":183.35,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":120.35,"y":183.35,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Pickoff an der 3');
 
 -- Pickoff an der 3 – Stand 4
@@ -864,7 +886,7 @@ UPDATE play_step SET
     duration_ms = 600,
     note = 'Tag. Geht der Wurf daneben, fällt der Run — nur bei sicherem Vorsprung.',
     outs = 2,
-    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":120.35,"y":183.35,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":105.5,"y":168.5},{"position":"LF","x":98.43,"y":161.43},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":120.35,"y":183.35,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"3B","x":105.5,"y":168.5,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Pickoff an der 3');
 
 -- Delayed Steal – Stand 1
@@ -928,7 +950,7 @@ UPDATE play_step SET
     duration_ms = 1200,
     note = 'Von dort nach Home. Der Run fällt — wichtig ist, dass der Batter auf der 2 bleibt.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":161,"y":244},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"SCORED"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":238},{"position":"C","x":155,"y":228},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"SCORED"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":228,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 5 AND play_id = (SELECT id FROM play WHERE title = 'Ball am Zaun — Relay-Kette');
 
 -- Runner auf 2 und 3 — anschauen, dann werfen – Stand 3
