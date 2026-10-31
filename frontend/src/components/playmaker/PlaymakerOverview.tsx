@@ -3,10 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { usePlays } from '@/hooks/usePlays'
 import { PlayBoard } from './PlayBoard'
 import { PlayRow } from './PlayRow'
+import { LAGE_TEXT as LAGE_MARKE } from './lage'
+import { beschreibung } from './beschreibung'
+import { LernZeile } from '@/components/shared/LernZeile'
 import type { Play } from './board/types'
 import { trefferIn, type Treffer } from './suche'
 import { standardfeld } from '@/hooks/useFreiesFeld'
-import { ChevronDown, ChevronLeft, CrossBones } from '@/icons'
+import { ChevronDown, CrossBones } from '@/icons'
+import { Zurueckzeile } from '@/components/shared/Zurueckzeile'
 import { Button } from '@/components/shared/Button'
 import { useToastContext } from '@/components/layout/Layout'
 import { useRolle } from '@/hooks/useRolle'
@@ -191,14 +195,14 @@ export default function PlaymakerOverview() {
   const kapitel = categoryId === 'alle' ? null : (categories.find(c => c.id === categoryId) ?? null)
 
   if (loading) {
-    return <div className="p-4 text-sm text-gray-500">Plays werden geladen …</div>
+    return <div className="p-4 text-sm text-ink-muted">Plays werden geladen …</div>
   }
 
   if (error) {
     return (
       <div className="p-6 text-center">
-        <p className="text-sm text-gray-500">{error}</p>
-        <p className="mt-2 text-xs text-gray-400">
+        <p className="text-sm text-ink-muted">{error}</p>
+        <p className="mt-2 text-xs text-ink-faint">
           Ohne Netz zeigt der Playmaker nur Plays, die schon einmal geladen wurden.
         </p>
       </div>
@@ -232,12 +236,7 @@ export default function PlaymakerOverview() {
     return (
       <div className="pb-8">
         <div className="px-4 pb-3 pt-4">
-          <Link
-            to="/spielwissen"
-            className="font-display inline-flex min-h-11 items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-ink-muted active:text-ink-strong"
-          >
-            ‹ Spielwissen
-          </Link>
+          <Zurueckzeile to="/spielwissen">Spielwissen</Zurueckzeile>
           <div className="flex items-center gap-3">
             <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong">
               {kapitel.name}
@@ -292,20 +291,37 @@ export default function PlaymakerOverview() {
           </div>
         </div>
 
-        <div className="border-t border-line">
+        {/*
+          Dieselbe Zeile wie im Spielwissen, und zwar dasselbe Bauteil. Hier standen
+          randlose Zeilen mit Trennstrich und zwei Links je Play (Bild und Text getrennt)
+          — eine zweite Zeilensprache fuer dieselbe Handlung, eine Seite nach der ersten.
+          Die Werkzeuge fehlten hier ohnehin: im Kapitel liest man.
+        */}
+        <div className="space-y-2 px-4">
           {imKapitel.map(play => (
-            <PlayRow
+            <LernZeile
               key={play.id}
-              play={play}
-              werkzeuge={false}
-              onDuplicate={() => kopieren(play)}
-              onDelete={() => loeschen(play)}
+              to={`/orga/playmaker/${play.id}`}
+              titel={play.title}
+              satz={beschreibung(play)}
+              marke={LAGE_MARKE[play.gameState] ?? undefined}
+              bild={
+                play.steps[0] ? (
+                  <PlayBoard
+                    markers={play.steps[0].markers}
+                    steps={play.steps}
+                    width={56}
+                    height={48}
+                    interactive={false}
+                  />
+                ) : undefined
+              }
             />
           ))}
           {/* Ein leeres Kapitel ist keine Sackgasse: es sagt, warum, und bietet den Weg
               zurück zu allen an. */}
           {imKapitel.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-ink-muted">
+            <p className="py-8 text-center text-sm text-ink-muted">
               In diesem Kapitel tut der {position} nichts.{' '}
               <button
                 type="button"
@@ -366,19 +382,13 @@ export default function PlaymakerOverview() {
             nicht. Er kam aus Spielwissen und stand nach einem Tipp sonst ohne Weg zurueck.
           */}
           {istAdmin ? (
-            <div className="font-display text-[11px] font-bold uppercase tracking-widest text-gray-500">
+            <div className="font-display text-[11px] font-bold uppercase tracking-widest text-ink-muted">
               Playmaker
             </div>
           ) : (
-            <Link
-              to="/spielwissen"
-              className="font-display inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-gray-500 hover:text-navy-900"
-            >
-              <ChevronLeft size={12} aria-hidden="true" />
-              Spielwissen
-            </Link>
+            <Zurueckzeile to="/spielwissen">Spielwissen</Zurueckzeile>
           )}
-          <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-navy-900">
+          <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong">
             Defense
           </h1>
         </div>

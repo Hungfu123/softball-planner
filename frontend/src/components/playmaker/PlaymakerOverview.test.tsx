@@ -107,6 +107,23 @@ describe('Play-Übersicht', () => {
    * Kategorie. `?kategorie=999` zeigte eine leere Fläche unter einem Auswahlkasten, auf
    * dem „Alle Kategorien · 54" stand: eine Sackgasse, die sich selbst widersprach.
    */
+  /*
+   * Im Kapitel steht dieselbe Zeile wie im Spielwissen — eine Karte mit Vorschau, Titel,
+   * Lage und Winkel, und zwar EINE je Play. Vorher waren es zwei Links nebeneinander
+   * (Bild und Text) in einer randlosen Zeile mit Trennstrich: eine zweite Zeilensprache
+   * fuer dieselbe Handlung und zwei Tipp-Flaechen fuer dasselbe Ziel.
+   */
+  it('zeigt im Kapitel dieselbe Zeile wie das Spielwissen: eine je Play', () => {
+    stand.plays = [PLAY]
+    stand.categories = [{ id: 1, name: 'Base-Coverage', sortOrder: 10 }]
+
+    zeige('/orga/playmaker?kategorie=1')
+
+    const zumPlay = screen.getAllByRole('link').filter(a => a.getAttribute('href') === '/orga/playmaker/7')
+    expect(zumPlay).toHaveLength(1)
+    expect(zumPlay[0]).toHaveTextContent('Grounder zum 3B')
+  })
+
   it('zeigt bei einer unbekannten Kategorie die volle Liste', () => {
     stand.istAdmin = true
     stand.plays = [PLAY]
