@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotionConfig } from 'motion/react'
-import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { KAPITEL, findeKapitel, type Kapitel } from './kapitel'
 import { Karte } from './Karte'
+import { BlaetterLeiste } from '@/components/shared/BlaetterLeiste'
 import { spielermodusAktiv } from '@/hooks/useSpielermodus'
 import { RefreshIcon } from '@/icons'
 
@@ -193,51 +193,24 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
       </div>
 
       <div className="landscape:col-start-2 lg:col-start-2">
-        {/* Die Leiste: zurueck, wo man ist, weiter — dieselbe Zeile wie unter einem Play. */}
-        <div className="flex items-center gap-2 border-t border-cream-50/12 px-4 py-2">
-          <button
-            type="button"
-            onClick={() => blaettern(-1)}
-            disabled={nr === 0}
-            aria-label="Vorherige Karte"
-            className="font-display flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-cream-50 disabled:opacity-35 active:bg-cream-50/10"
-          >
-            <ChevronLeft size={20} aria-hidden="true" />
-          </button>
-
-          <span className="font-display flex-1 truncate text-center text-[11px] font-bold uppercase tracking-widest text-cream-50/55">
-            {/* „Karte 4 von 6" wie drueben „Play 6 von 9": dieselbe Zeile, dasselbe Muster. */}
-            {`Karte ${nr + 1} von ${anzahl}`}
-          </span>
-
-          {letzte ? (
-            naechstesKapitel ? (
-              <Link
-                to={`/spielwissen/${naechstesKapitel.id}`}
-                className="font-display flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
-              >
-                {naechstesKapitel.titel}
-                <ChevronRight size={18} aria-hidden="true" />
-              </Link>
-            ) : (
-              <Link
-                to="/spielwissen"
-                className="font-display flex h-12 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
-              >
-                Fertig
-              </Link>
-            )
-          ) : (
-            <button
-              type="button"
-              onClick={() => blaettern(1)}
-              className="font-display flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
-            >
-              Weiter
-              <ChevronRight size={18} aria-hidden="true" />
-            </button>
-          )}
-        </div>
+        {/*
+          Dieselbe Zeile wie unter einem Play, und zwar buchstaeblich dasselbe Bauteil:
+          zweimal gebaut lief sie auseinander. Die Karte blaettert im Zustand, das Play per
+          Adresse — darum einmal `onClick`, einmal `to`, sonst nichts Eigenes.
+        */}
+        <BlaetterLeiste
+          zurueck={nr === 0 ? null : { onClick: () => blaettern(-1) }}
+          zurueckLabel="Vorherige Karte"
+          stand={`Karte ${nr + 1} von ${anzahl}`}
+          weiter={
+            !letzte
+              ? { onClick: () => blaettern(1) }
+              : naechstesKapitel
+                ? { to: `/spielwissen/${naechstesKapitel.id}` }
+                : null
+          }
+          fertig={{ to: '/spielwissen' }}
+        />
 
         {/*
           „nochmal" unten am Rand, wo drueben die Wiedergabeleiste sitzt — gleiche Hoehe,
