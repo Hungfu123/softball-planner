@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { useReducedMotionConfig } from 'motion/react'
+import { MotionConfig, PresenceContext, useReducedMotionConfig } from 'motion/react'
 import type { KartenDaten } from './kapitel'
 
 /**
@@ -21,6 +20,16 @@ import type { KartenDaten } from './kapitel'
  * **Nichts laeuft in Schleife.** Eine Dauerbewegung neben einem Satz, den man liest, ist
  * Laerm. Wer sie noch einmal sehen will, tippt „nochmal".
  *
+ * **Eine wartende Karte steht auf ihrer Ausgangssituation**, nicht auf ihrem Ergebnis.
+ * Das ist der Unterschied zwischen einem Anfang und einem Standbild: zeigt man das Ende,
+ * ist die Pointe schon weg, und wer dann abspielt, sieht zweimal dasselbe Bild.
+ *
+ * Gemacht wird das mit `MotionConfig isStatic`: die Buehnen setzen ihr `initial` wie
+ * immer, motion rendert es und laesst es stehen, statt zu animieren. Der Preis ist ein
+ * `key` auf der Config — motion friert `isStatic` je Instanz ein (`useConstant`), weil
+ * daran haengt, wie viele Hooks ein motion-Bauteil feuert. Der Vorteil: **keine der
+ * sechzehn Buehnen muss einen dritten Zustand kennen.**
+ *
  * Der Zaehler `lauf` sitzt als `key` an der **Buehne selbst**, nicht an einem Element
  * darin. Das ist der Unterschied zwischen „laeuft neu ab" und „faengt neu an": ein key
  * weiter innen haengt nur das DOM neu, die Komponente bleibt stehen und mit ihr ihr
@@ -39,22 +48,17 @@ import type { KartenDaten } from './kapitel'
  * Modulzustand und ist danach fuer den ganzen Prozess festgenagelt.
  */
 export function Karte({ karte, aktiv, lauf = 0 }: { karte: KartenDaten; aktiv: boolean; lauf?: number }) {
-  const [gespielt, setGespielt] = useState(false)
   const ruhig = Boolean(useReducedMotionConfig())
   const { Buehne } = karte
 
   /*
    * Die Sequenz beginnt, wenn die Karte die aktive ist, nicht beim Aufbau der Seite.
-   * Welche dran ist, entscheidet die Kapitelseite — sie sieht alle.
+   * Wer dran ist und ab wann, entscheidet die Kapitelseite — dort steht der ▶.
    *
-   * Einmal gespielt bleibt gespielt: beim Zurueckblaettern faengt nichts von selbst
-   * wieder an. Dafuer gibt es „nochmal".
+   * Bei reduzierter Bewegung gibt es nichts zu warten: dort traegt der Endzustand die
+   * ganze Auskunft, und ein eingefrorener Anfang waere die halbe.
    */
-  useEffect(() => {
-    if (aktiv && !ruhig) setGespielt(true)
-  }, [aktiv, ruhig])
-
-  const steht = ruhig || !gespielt
+  const wartet = !aktiv && !ruhig
 
   return (
     /*
@@ -66,9 +70,27 @@ export function Karte({ karte, aktiv, lauf = 0 }: { karte: KartenDaten; aktiv: b
     <div
       id={`karte-${karte.id}`}
       data-buehne
+      data-wartet={String(wartet)}
       className="flex h-full min-h-0 flex-col justify-center overflow-hidden"
     >
-      <Buehne key={`${gespielt}-${lauf}`} lauf={lauf} ruhig={steht} />
+      {/*
+        **Der abgeschnittene PresenceContext.** Die Kapitelseite blaettert in einer
+        `AnimatePresence initial={false}` — beim Ankommen soll nichts einfliegen. Das
+        gilt aber nicht nur fuer das blaetternde Element: der Wert reicht ueber den
+        Context in den ganzen Teilbaum, und jedes motion-Bauteil darin rendert beim
+        Aufbau sofort seinen Zielzustand statt sein `initial`.
+
+        Getroffen hat das genau eine Karte je Kapitel, die erste — die zweite kommt beim
+        Blaettern an und ist frei. Ausgerechnet die Karte, die man zuerst sieht, stand
+        also auf ihrem Ergebnis, und ▶ tat nichts. `null` heisst „hier ist keine
+        Presence": die Buehne bekommt ihr `initial` zurueck, das Blaettern der Seite
+        bleibt unberuehrt.
+      */}
+      <PresenceContext.Provider value={null}>
+        <MotionConfig key={String(wartet)} isStatic={wartet}>
+          <Buehne key={`${wartet}-${lauf}`} lauf={lauf} ruhig={ruhig} />
+        </MotionConfig>
+      </PresenceContext.Provider>
     </div>
   )
 }
