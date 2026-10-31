@@ -123,8 +123,19 @@
      Helligkeit UMDREHT. Im Dunkeln kann es das nicht; dort faellt auf, was heller
      ist als alles ringsum. Gleiche Absicht, umgekehrtes Mittel. Nicht zu
      verwechseln mit --color-band: das ist Rahmen (Kopfleiste, Scoreboard) und
-     darf ruhig zuruecktreten. */
-  --color-spotlight: #142B49;
+     darf ruhig zuruecktreten.
+
+     IM HELLEN derselbe Wert wie --color-kopf, seit dem 31.10.2026. Vorher waren es
+     #142B49 hier und #0F2037 dort: fuenf Einheiten je Kanal, unsichtbar fuer sich und
+     auffaellig, sobald beide Bloecke uebereinander liegen — auf der Startseite stehen
+     Profilkopf und Counter-Kachel genau so. Genommen hat den Zuschlag der tiefere Wert,
+     weil er gemessen ist: Amber steht darauf bei 6,9:1 statt 4,4:1.
+
+     IM DUNKELN bleiben sie verschieden, und das muss so sein. Dort faellt auf, was
+     HELLER ist als die Umgebung, also wird spotlight angehoben (#2F4A6E), waehrend der
+     Profilkopf tief bleibt (#061A35), damit seine Kennzahlen leuchten. Zwei Rollen,
+     deren Mittel sich je nach Theme kreuzen. */
+  --color-spotlight: #0F2037;
   --color-spotlight-ink: #FFFFFF;
   /* Die helle Schaltflaeche auf einem dunklen Block — die Umkehrung, und damit das
      auffaelligste Element darin. Eigene Rolle, weil sie NICHT dasselbe ist wie die
