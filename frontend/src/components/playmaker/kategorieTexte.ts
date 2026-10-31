@@ -10,6 +10,7 @@
  */
 export const KATEGORIE_SATZ: Record<string, string> = {
   Spielsituationen: 'Der Ball geht irgendwohin. Was tust du?',
+  Outfield: 'Zwei Bases weiter werfen. Außer es steht einer auf der 3.',
   'Base-Coverage': 'Wer covert welche Base, wenn es losgeht?',
   'Pop-up-Priorities': 'Hoher Ball zwischen zweien. Wer ruft?',
   'Bunt-Defense': 'Der Bunt liegt da. Wer holt ihn, wohin geht der Wurf?',

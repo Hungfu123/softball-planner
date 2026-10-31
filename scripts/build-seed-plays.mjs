@@ -63,9 +63,16 @@ const RIGHT_GAP = fromHome(22, 170);
 const LEFT_GAP = fromHome(-22, 170);
 const DEEP_RIGHT = fromHome(38, 185);
 const DEEP_LEFT = fromHome(-38, 185);
-const SHORT_RIGHT = fromHome(30, 120);
-const SHORT_LEFT = fromHome(-30, 120);
-const UP_MIDDLE = fromHome(0, 120);
+/*
+ * Wo ein Single aufgenommen wird.
+ *
+ * Erst standen diese drei bei 120 Fuss — das ist 35 Fuss hinter der zweiten Base und
+ * damit praktisch der Infield-Rand; auf dem Bild stand der CF mitten im Infield. Die
+ * Outfielder starten bei 185 Fuss, ein durchgegangener Ball wird bei rund 155 aufgenommen.
+ */
+const SHORT_RIGHT = fromHome(30, 155);
+const SHORT_LEFT = fromHome(-30, 155);
+const UP_MIDDLE = fromHome(0, 155);
 
 // ---------------------------------------------------------------- Bausteine
 
@@ -698,7 +705,58 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF — Backup hinter der 2', 'Base-Coverage', {
+  /*
+   * Der Wurf auf die 2 aus dem OUTFIELD. Im Katalog gab es ihn nicht: alle Wuerfe auf die
+   * 2 kamen aus dem Infield (Force Outs, Double Plays). Dabei ist er der haeufigste Wurf
+   * eines Outfielders ueberhaupt — der Batter rundet die 1 zu weit oder will die zwei.
+   *
+   * Zwei Plays, weil sich dabei das Paar dreht: Ball in die Mitte und nach links heisst
+   * SS als Cut und 2B an der Base, Ball nach rechts genau andersherum. Und es ist ein
+   * TAG, kein Force: niemand laeuft hinter ihm her, er muss beruehrt werden.
+   */
+  play('Single ins CF — Batter will die 2', 'Outfield', {
+    outs: 0,
+    steps: [
+      s('Keine Runner. Ball fällt in die Mitte, der Batter rundet die 1 weit.'),
+      s('CF läuft an. Ball in der Mitte, also SS als Cut und der 2B an die Base.', {
+        d: { CF: UP_MIDDLE, SS: between(UP_MIDDLE, B2, 0.45), '2B': B2 },
+        ball: { at: UP_MIDDLE, ground: true },
+        r: { rb: between(B1, B2, 0.2) },
+      }),
+      s('Wurf auf die 2, der Cut lässt durch.', {
+        ball: { at: between(UP_MIDDLE, B2, 0.6) },
+        r: { rb: between(B1, B2, 0.55) },
+      }),
+      s('Der 2B taggt. Kein Force, er muss berührt werden.', {
+        ball: { hold: '2B' },
+        r: { rb: 'OUT' },
+        outs: 1,
+      }),
+    ],
+  }),
+
+  play('Single ins RF — Batter will die 2', 'Outfield', {
+    outs: 0,
+    steps: [
+      s('Dasselbe von rechts, und damit dreht sich das Paar.'),
+      s('RF nimmt auf. Ball rechts, also 2B als Cut und der SS an die Base.', {
+        d: { RF: SHORT_RIGHT, '2B': between(SHORT_RIGHT, B2, 0.45), SS: B2 },
+        ball: { at: SHORT_RIGHT, ground: true },
+        r: { rb: between(B1, B2, 0.25) },
+      }),
+      s('Wurf auf die 2, der Cut lässt durch.', {
+        ball: { at: between(SHORT_RIGHT, B2, 0.6) },
+        r: { rb: between(B1, B2, 0.6) },
+      }),
+      s('Der SS taggt. Wer an der Base steht, hängt daran, wohin der Ball ging.', {
+        ball: { hold: 'SS' },
+        r: { rb: 'OUT' },
+        outs: 1,
+      }),
+    ],
+  }),
+
+  play('Single ins LF — Backup hinter der 2', 'Outfield', {
     outs: 1,
     startRunners: {},
     steps: [
@@ -716,7 +774,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF — Backup hinter der 1', 'Base-Coverage', {
+  play('Single ins RF — Backup hinter der 1', 'Outfield', {
     outs: 0,
     startRunners: {},
     steps: [
@@ -822,7 +880,41 @@ const KATALOG = [
   }),
 
   // ============================================================ Cut-off & Relay
-  play('Single ins LF, Runner auf 1 — Wurf auf die 3', 'Cut-off & Relay', {
+  /*
+   * Die Regel selbst als Play, und zwar als erstes im Kapitel.
+   *
+   * Vorgabe des Trainers: **zwei Bases weiter werfen, ausser es steht einer auf der 3.**
+   * Das ist der ganze Anfang fuer einen Outfielder; Cut-off und Relay kommen eine Stufe
+   * spaeter. Drei Staende, drei Faelle, dann die Ausnahme — kein Ablauf, sondern eine
+   * Tabelle, die man durchblaettert.
+   */
+  play('Wohin der Wurf geht', 'Outfield', {
+    outs: 0,
+    steps: [
+      s('Keiner drauf: zwei Bases weiter heisst die 2. Dorthin, wo der Batter hinwill.', {
+        d: { CF: UP_MIDDLE, '2B': B2, SS: between(UP_MIDDLE, B2, 0.45) },
+        ball: { at: UP_MIDDLE, ground: true },
+        r: { rb: between(B1, B2, 0.2) },
+      }),
+      s('Runner auf 1: zwei Bases weiter heisst die 3.', {
+        d: { CF: UP_MIDDLE, '3B': B3, SS: between(UP_MIDDLE, B3, 0.45), '2B': B2 },
+        ball: { at: UP_MIDDLE, ground: true },
+        r: { r1: between(B2, B3, 0.4), rb: between(HOME, B1, 0.4) },
+      }),
+      s('Runner auf 2: zwei Bases weiter heisst Home.', {
+        d: { CF: UP_MIDDLE, C: HOME, SS: between(UP_MIDDLE, HOME, 0.42), '2B': B2 },
+        ball: { at: UP_MIDDLE, ground: true },
+        r: { r2: between(B3, HOME, 0.5), rb: between(HOME, B1, 0.4) },
+      }),
+      s('Steht einer auf der 3, gilt es nicht: dann zaehlt der Run, und der Wurf geht nach Home. Und immer kommt dir ein Infielder entgegen, wirf auf ihn.', {
+        d: { CF: UP_MIDDLE, C: HOME, SS: between(UP_MIDDLE, HOME, 0.42), '2B': B2, '3B': B3 },
+        ball: { at: between(UP_MIDDLE, HOME, 0.42) },
+        r: { r3: between(B3, HOME, 0.6), rb: between(HOME, B1, 0.5) },
+      }),
+    ],
+  }),
+
+  play('Single ins LF, Runner auf 1 — Wurf auf die 3', 'Outfield', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
@@ -844,7 +936,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins CF, Runner auf 1 — Wurf auf die 3', 'Cut-off & Relay', {
+  play('Single ins CF, Runner auf 1 — Wurf auf die 3', 'Outfield', {
     outs: 1,
     startRunners: { r1: B1 },
     steps: [
@@ -863,7 +955,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF, Runner auf 1 — Wurf auf die 3', 'Cut-off & Relay', {
+  play('Single ins RF, Runner auf 1 — Wurf auf die 3', 'Outfield', {
     outs: 1,
     startRunners: { r1: B1 },
     steps: [
@@ -886,7 +978,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF, Runner auf 2 — Wurf nach Home', 'Cut-off & Relay', {
+  play('Single ins LF, Runner auf 2 — Wurf nach Home', 'Outfield', {
     outs: 1,
     startRunners: { r2: B2 },
     gameState: 'CLOSE_LATE',
@@ -913,7 +1005,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF, Runner auf 2 — Wurf nach Home', 'Cut-off & Relay', {
+  play('Single ins RF, Runner auf 2 — Wurf nach Home', 'Outfield', {
     outs: 1,
     startRunners: { r2: B2 },
     steps: [
@@ -948,7 +1040,7 @@ const KATALOG = [
    * SS, rechts der 2B), der andere covert die 2, der Mann an der Zielbase stellt ihn,
    * die Corner bleiben an ihren Bases.
    */
-  play('Single ins CF, Runner auf 2 — Wurf nach Home', 'Cut-off & Relay', {
+  play('Single ins CF, Runner auf 2 — Wurf nach Home', 'Outfield', {
     outs: 1,
     startRunners: { r2: B2 },
     steps: [
@@ -973,7 +1065,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF, Runner auf 1 und 3 — Wurf auf die 3', 'Cut-off & Relay', {
+  play('Single ins RF, Runner auf 1 und 3 — Wurf auf die 3', 'Outfield', {
     outs: 1,
     startRunners: { r1: B1, r3: B3 },
     gameStateNote: 'Der Run von der 3 faellt. Zu holen ist der Runner, der von der 1 kommt.',
@@ -1003,7 +1095,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF, Runner auf 1 und 2 — Wurf auf die 3', 'Cut-off & Relay', {
+  play('Single ins LF, Runner auf 1 und 2 — Wurf auf die 3', 'Outfield', {
     outs: 0,
     startRunners: { r1: B1, r2: B2 },
     gameStateNote: 'Der von der 2 kommt nach Home durch. Der von der 1 ist der, den man kriegt.',
@@ -1518,6 +1610,45 @@ const KATALOG = [
         r: { rb: between(HOME, B1, 0.7) },
       }),
       s('RF ruft, die anderen weichen. Out.', { outs: 1, ms: 600, r: { rb: 'OUT' } }),
+    ],
+  }),
+
+  /*
+   * Der Fly zwischen zwei OUTFIELDERN. Die Kategorie hatte nur Baelle am Infield-Rand;
+   * der haeufigste Zusammenstoss passiert aber in der Gasse, wo zwei auf denselben Ball
+   * zulaufen und beide den anderen hoeren wollen.
+   *
+   * Zwei Dinge stehen in den Notizen, weil sie die ganze Lehre sind: der CF hat Vorfahrt
+   * vor LF und RF, und **gerufen wird dreimal**. Beim ersten Mal hoert es keiner, beim
+   * zweiten dreht der andere den Kopf, beim dritten laeuft er ab.
+   */
+  play('Fly in die linke Gasse — wer ruft', 'Outfield', {
+    outs: 0,
+    startRunners: {},
+    steps: [
+      s('Hoher Ball in die Gasse zwischen LF und CF. Beide laufen an.'),
+      s('Beide sind unterwegs und sehen nur den Ball, nicht einander.', {
+        d: { CF: { x: LEFT_GAP.x + 16, y: LEFT_GAP.y - 14 }, LF: { x: LEFT_GAP.x - 16, y: LEFT_GAP.y - 10 } },
+        ball: { at: { x: LEFT_GAP.x, y: LEFT_GAP.y - 34 } },
+        r: { rb: between(HOME, B1, 0.4) },
+      }),
+      s('Der CF hat Vorfahrt und ruft: „Meiner, meiner, meiner." Dreimal, weil das erste Mal keiner hoert.', {
+        d: {
+          CF: { x: LEFT_GAP.x + 4, y: LEFT_GAP.y - 4 },
+          LF: { x: LEFT_GAP.x - 26, y: LEFT_GAP.y - 2 },
+          /* Der P geht mit Richtung 2: faellt der Ball doch, geht der Wurf dorthin. */
+          P: { x: B2.x - 12, y: B2.y + 10 },
+        },
+        ball: { at: { x: LEFT_GAP.x + 4, y: LEFT_GAP.y - 12 } },
+        r: { rb: between(HOME, B1, 0.75) },
+      }),
+      s('LF dreht ab und sichert dahinter. CF faengt, Out.', {
+        d: { LF: { x: LEFT_GAP.x - 34, y: LEFT_GAP.y + 8 } },
+        ball: { hold: 'CF' },
+        r: { rb: 'OUT' },
+        outs: 1,
+        ms: 800,
+      }),
     ],
   }),
 

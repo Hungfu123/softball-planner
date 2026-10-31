@@ -297,6 +297,27 @@ export default function PlaymakerOverview() {
           — eine zweite Zeilensprache fuer dieselbe Handlung, eine Seite nach der ersten.
           Die Werkzeuge fehlten hier ohnehin: im Kapitel liest man.
         */}
+        {/*
+          Der Filter sagt, dass er etwas wegnimmt.
+
+          Er liegt im localStorage und ueberlebt den Besuch: wer ihn vor Wochen auf CF
+          gestellt hat, sieht Wochen spaeter ein Kapitel, in dem Plays fehlen, und nichts
+          sagt ihm warum. Neue Plays bleiben so unsichtbar. Gemessen am eigenen Geraet:
+          „Cut-off & Relay" zeigte fuenf von zwoelf, und die drei frisch dazugekommenen
+          waren nicht dabei.
+        */}
+        {position && imKapitel.length > 0 && (
+          <p className="px-4 pb-2 text-[12px] text-ink-muted">
+            {`${imKapitel.length} von ${alleImKapitel.length} Plays, gefiltert nach ${position}.`}{' '}
+            <button
+              type="button"
+              onClick={() => merkePosition(null)}
+              className="font-display font-bold text-ink-strong underline"
+            >
+              Alle zeigen
+            </button>
+          </p>
+        )}
         <div className="space-y-2 px-4">
           {imKapitel.map(play => (
             <LernZeile
