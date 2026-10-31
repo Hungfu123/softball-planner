@@ -610,6 +610,94 @@ const KATALOG = [
     ],
   }),
 
+  /*
+   * Dieselbe Sache von der anderen Seite: der 2B faengt, der SS deckt die 2.
+   *
+   * Es ist nicht „das Doppelspiel noch einmal", sondern die Antwort auf die Frage, die
+   * sich auf dem Platz jedes Mal neu stellt: **wer deckt, wenn ICH den Ball habe?** Wer
+   * nur 6-4-3 kennt, steht beim Grounder zum 2B einen Moment zu lange still.
+   */
+  play('Doppelspiel 4-6-3', 'Base-Coverage', {
+    outs: 0,
+    startRunners: { r1: B1 },
+    steps: [
+      s('Runner auf 1, Grounder zum 2B. Jetzt deckt der SS die 2.'),
+      s('2B fängt, der SS ist schon auf dem Weg zur Base.', {
+        d: { '2B': { x: HOME.x + 30, y: HOME.y - 72 }, SS: toward(DEFAULT_DEFENSE.SS, B2, 16) },
+        ball: { at: { x: HOME.x + 30, y: HOME.y - 72 }, ground: true },
+        r: { r1: between(B1, B2, 0.4) },
+      }),
+      s('Kurzer Wurf zur 2, der SS nimmt im Lauf an.', {
+        d: { SS: B2 },
+        ball: { hold: 'SS' },
+        r: { r1: 'OUT' },
+        outs: 1,
+        ms: 600,
+      }),
+      s('Und weiter auf die 1 — der 1B steht an seiner Base.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 2,
+      }),
+    ],
+  }),
+
+  /*
+   * Der lange Weg: von der 3 ueber die 2 zur 1. Er klappt nur bei einem hart
+   * geschlagenen Ball — deshalb steht das im ersten Satz und nicht im Kleingedruckten.
+   */
+  play('Doppelspiel 5-4-3', 'Base-Coverage', {
+    outs: 0,
+    startRunners: { r1: B1 },
+    steps: [
+      s('Runner auf 1, harter Grounder zum 3B. Der weite Weg lohnt nur, wenn der Ball schnell ist.'),
+      s('3B fängt vor der Base, der 2B geht zur 2.', {
+        d: { '3B': { x: HOME.x - 40, y: HOME.y - 54 }, '2B': toward(DEFAULT_DEFENSE['2B'], B2, 14) },
+        ball: { at: { x: HOME.x - 40, y: HOME.y - 54 }, ground: true },
+        r: { r1: between(B1, B2, 0.35) },
+      }),
+      s('Wurf quer zur 2.', {
+        d: { '2B': B2 },
+        ball: { hold: '2B' },
+        r: { r1: 'OUT' },
+        outs: 1,
+      }),
+      s('Und von dort auf die 1.', {
+        d: { '1B': B1 },
+        ball: { hold: '1B' },
+        r: { rb: { p: B1, status: 'OUT' } },
+        outs: 2,
+      }),
+    ],
+  }),
+
+  /*
+   * Der CF fehlte als einziger Fielder in dieser Kategorie — und er ist der, der am
+   * meisten laeuft: bei einem Ball in die Mitte deckt der 2B die 2, der SS geht als
+   * Cut heraus, der P sichert hinter der 2 ab.
+   */
+  play('Single ins CF — wer deckt die 2', 'Base-Coverage', {
+    outs: 1,
+    startRunners: { r1: B1 },
+    steps: [
+      s('Ball fällt in die Mitte. Der Runner von der 1 will die 3 sehen.'),
+      s('CF läuft an, SS geht als Cut heraus, der 2B deckt die 2.', {
+        d: { CF: UP_MIDDLE, SS: between(UP_MIDDLE, B2, 0.45), '2B': B2 },
+        ball: { at: UP_MIDDLE, ground: true },
+        r: { r1: between(B1, B2, 0.7), rb: between(HOME, B1, 0.5) },
+      }),
+      s('Wurf zum Cut — von dort geht es überall hin.', {
+        ball: { hold: 'SS' },
+        r: { r1: B2, rb: between(HOME, B1, 0.9) },
+      }),
+      s('Der Runner bleibt stehen, also zurück in den Infield.', {
+        ball: { hold: 'P' },
+        r: { r1: B2, rb: B1 },
+      }),
+    ],
+  }),
+
   play('Single ins LF — Backup hinter der 2', 'Base-Coverage', {
     outs: 1,
     startRunners: {},
@@ -1778,8 +1866,36 @@ if (seit > 0 && process.argv[seit + 1]) {
   const alt = staende(readFileSync(process.argv[seit + 1], 'utf8'));
   const neu = staende(ausgabe);
 
+  /*
+   * Ein Play, das es vorher gar nicht gab.
+   *
+   * Der Diff kannte nur Staende und haette die Staende eines neuen Plays gegen eine
+   * `play`-Zeile eingefuegt, die es nicht gibt — das SQL waere durchgelaufen und haette
+   * nichts getan. Deshalb kommt die Zeile hier zuerst, und zwar bevor der erste Stand
+   * des Plays drankommt.
+   */
+  const alteTitel = new Set([...alt.values()].map((x) => x.titel));
+  const schonAngelegt = new Set();
+  const playZeile = (titel) => {
+    const eintrag = KATALOG.find((p) => esc(p.title) === titel);
+    if (!eintrag) return [];
+    const notiz = eintrag.gameStateNote ? `'${esc(eintrag.gameStateNote)}'` : 'NULL';
+    return [
+      `-- ${eintrag.title} (neues Play)`,
+      `INSERT INTO play (title, category_id, game_state, game_state_note)`,
+      `SELECT '${esc(eintrag.title)}', id, '${eintrag.gameState ?? 'ANY'}', ${notiz}`,
+      `FROM play_category WHERE name = '${esc(eintrag.category)}'`,
+      `  AND NOT EXISTS (SELECT 1 FROM play WHERE title = '${esc(eintrag.title)}');`,
+      '',
+    ];
+  };
+
   const stuecke = [];
   for (const [schluessel, n] of neu) {
+    if (!alteTitel.has(n.titel) && !schonAngelegt.has(n.titel)) {
+      schonAngelegt.add(n.titel);
+      stuecke.push(...playZeile(n.titel));
+    }
     const a = alt.get(schluessel);
     if (a) {
       if (a.dauer === n.dauer && a.note === n.note && a.outs === n.outs && a.markers === n.markers) continue;

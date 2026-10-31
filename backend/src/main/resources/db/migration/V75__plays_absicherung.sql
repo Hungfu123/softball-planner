@@ -131,6 +131,96 @@ UPDATE play_step SET
     markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":121,"y":148},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":171.53,"y":121.88},{"position":"RF","x":211.57,"y":189.72}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Doppelspiel 6-4-3');
 
+-- Doppelspiel 4-6-3 (neues Play)
+INSERT INTO play (title, category_id, game_state, game_state_note)
+SELECT 'Doppelspiel 4-6-3', id, 'ANY', NULL
+FROM play_category WHERE name = 'Base-Coverage'
+  AND NOT EXISTS (SELECT 1 FROM play WHERE title = 'Doppelspiel 4-6-3');
+
+-- Doppelspiel 4-6-3 – Stand 1 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 1, 1200, 'Runner auf 1, Grounder zum 2B. Jetzt deckt der SS die 2.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 4-6-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 1);
+
+-- Doppelspiel 4-6-3 – Stand 2 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 2, 1200, '2B fängt, der SS ist schon auf dem Weg zur Base.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":185,"y":146},{"position":"SS","x":148.28,"y":135.24},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":180.46,"y":158.6,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":180.52,"y":151.38,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 4-6-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 2);
+
+-- Doppelspiel 4-6-3 – Stand 3 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 3, 600, 'Kurzer Wurf zur 2, der SS nimmt im Lauf an.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":185,"y":146},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":138.73,"y":121.52},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":180.46,"y":158.6,"status":"OUT"},{"id":"rb","x":163.4,"y":209.6,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 4-6-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 3);
+
+-- Doppelspiel 4-6-3 – Stand 4 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 4, 3000, 'Und weiter auf die 1 — der 1B steht an seiner Base.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":185,"y":146},{"position":"SS","x":155,"y":123.15},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":138.73,"y":121.52},{"position":"RF","x":211.57,"y":189.72}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 4-6-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 4);
+
+-- Doppelspiel 5-4-3 (neues Play)
+INSERT INTO play (title, category_id, game_state, game_state_note)
+SELECT 'Doppelspiel 5-4-3', id, 'ANY', NULL
+FROM play_category WHERE name = 'Base-Coverage'
+  AND NOT EXISTS (SELECT 1 FROM play WHERE title = 'Doppelspiel 5-4-3');
+
+-- Doppelspiel 5-4-3 – Stand 1 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 1, 1200, 'Runner auf 1, harter Grounder zum 3B. Der weite Weg lohnt nur, wenn der Ball schnell ist.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 5-4-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 1);
+
+-- Doppelspiel 5-4-3 – Stand 2 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 2, 3000, '3B fängt vor der Base, der 2B geht zur 2.', 0, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":163.63,"y":135.84},{"position":"SS","x":133,"y":140},{"position":"3B","x":115,"y":164},{"position":"LF","x":92.8,"y":172.58},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":182.58,"y":160.72,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":121.38,"y":166.87,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 5-4-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 2);
+
+-- Doppelspiel 5-4-3 – Stand 3 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 3, 3000, 'Wurf quer zur 2.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":115,"y":164},{"position":"LF","x":92.8,"y":172.58},{"position":"CF","x":169.12,"y":118.98},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":182.58,"y":160.72,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"2B","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 5-4-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 3);
+
+-- Doppelspiel 5-4-3 – Stand 4 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 4, 3000, 'Und von dort auf die 1.', 2, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":204.5,"y":168.5},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":133,"y":140},{"position":"3B","x":115,"y":164},{"position":"LF","x":92.8,"y":172.58},{"position":"CF","x":169.12,"y":118.98},{"position":"RF","x":211.57,"y":189.72}],"runners":[{"id":"rb","x":197.43,"y":175.57,"status":"OUT"}],"ball":{"state":"IN_HAND","holder":"1B","x":197.42640687119285,"y":175.57359312880715,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Doppelspiel 5-4-3'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 4);
+
+-- Single ins CF — wer deckt die 2 (neues Play)
+INSERT INTO play (title, category_id, game_state, game_state_note)
+SELECT 'Single ins CF — wer deckt die 2', id, 'ANY', NULL
+FROM play_category WHERE name = 'Base-Coverage'
+  AND NOT EXISTS (SELECT 1 FROM play WHERE title = 'Single ins CF — wer deckt die 2');
+
+-- Single ins CF — wer deckt die 2 – Stand 1 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 1, 1200, 'Ball fällt in die Mitte. Der Runner von der 1 will die 3 sehen.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":177,"y":140},{"position":"SS","x":133,"y":140},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"AT_BAT","holder":null,"x":155,"y":216,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Single ins CF — wer deckt die 2'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 1);
+
+-- Single ins CF — wer deckt die 2 – Stand 2 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 2, 3000, 'CF läuft an, SS geht als Cut heraus, der 2B deckt die 2.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":155,"y":113.82},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":98},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":167.73,"y":145.88,"status":"ACTIVE"},{"id":"rb","x":155,"y":218,"status":"ACTIVE"}],"ball":{"state":"IN_FLIGHT","holder":null,"x":155,"y":105,"trajectory":"GROUND"}}'::jsonb
+FROM play WHERE title = 'Single ins CF — wer deckt die 2'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 2);
+
+-- Single ins CF — wer deckt die 2 – Stand 3 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 3, 2400, 'Wurf zum Cut — von dort geht es überall hin.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":155,"y":113.82},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":98},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":193.18,"y":179.82,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":155,"y":113.82,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Single ins CF — wer deckt die 2'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 3);
+
+-- Single ins CF — wer deckt die 2 – Stand 4 (neu)
+INSERT INTO play_step (play_id, ordinal, duration_ms, note, outs, markers)
+SELECT id, 4, 1200, 'Der Runner bleibt stehen, also zurück in den Infield.', 1, '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":123.15},{"position":"SS","x":155,"y":113.82},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":98},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":155,"y":133.15,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"P","x":155,"y":182,"trajectory":"AIR"}}'::jsonb
+FROM play WHERE title = 'Single ins CF — wer deckt die 2'
+  AND NOT EXISTS (SELECT 1 FROM play_step s WHERE s.play_id = play.id AND s.ordinal = 4);
+
 -- Single ins LF — Backup hinter der 2 – Stand 3
 UPDATE play_step SET
     duration_ms = 2800,

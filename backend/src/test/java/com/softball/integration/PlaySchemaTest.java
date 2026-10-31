@@ -36,9 +36,16 @@ class PlaySchemaTest {
         Integer anzahl = jdbc.queryForObject("SELECT count(*) FROM play_category", Integer.class);
         assertThat(anzahl).isEqualTo(8);
 
+        // Seit V76 stehen die Kategorien vom Einfachen zum Schweren: wer die Seite zum
+        // Lernen aufmacht, faengt oben an. Vorher stand Cut-off & Relay zuerst — die
+        // schwierigste Sache im ganzen Katalog.
         String erste = jdbc.queryForObject(
                 "SELECT name FROM play_category ORDER BY sort_order LIMIT 1", String.class);
-        assertThat(erste).isEqualTo("Cut-off & Relay");
+        assertThat(erste).isEqualTo("Spielsituationen");
+
+        String letzte = jdbc.queryForObject(
+                "SELECT name FROM play_category ORDER BY sort_order DESC LIMIT 1", String.class);
+        assertThat(letzte).isEqualTo("Cut-off & Relay");
     }
 
     @Test

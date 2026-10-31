@@ -144,7 +144,10 @@ class MethodSecurityCoverageTest {
         "GameController#reopenGame",
         "GameController#addSubstitution",
         // Nur Superadmin (strenger als die Klassenregel): Rollenvergabe
-        "UserAccountController#setRole"
+        "UserAccountController#setRole",
+        // Und das Loeschen eines Plays: die Start-Plays kommen aus einer Migration, ein
+        // versehentlich geloeschtes ist nur ueber eine neue Migration wieder da.
+        "PlayController#delete"
     ));
 
     @Test
