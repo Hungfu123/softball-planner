@@ -8,8 +8,8 @@ import type { BuehnenProps } from './kapitel'
  * damit die Seite fuer sich geprueft werden kann: getestet wird das Blaettern und der
  * Umgang mit einer Adresse, die es nicht gibt, nicht der Inhalt der Karten.
  */
-function Attrappe({ lauf }: BuehnenProps) {
-  return <div data-testid="buehne" data-lauf={String(lauf)} />
+function Attrappe({ lauf, ruhig }: BuehnenProps) {
+  return <div data-testid="buehne" data-lauf={String(lauf)} data-ruhig={String(ruhig)} />
 }
 
 const karte = (id: string, pointe: string) => ({ id, stichwort: pointe.split(' ')[0], pointe, Buehne: Attrappe })
@@ -18,7 +18,7 @@ vi.mock('./kapitel', async (echt) => {
   const modul = await echt<typeof import('./kapitel')>()
   const KAPITEL = [
     { id: 'box', titel: 'In der Box', frage: 'Was zählt als Strike?', karten: [karte('zone', 'Die Zone bist du'), karte('drin', 'Drin ist Strike')] },
-    { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich out?', karten: [karte('lauf', 'Lauf. Sofort.')] },
+    { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich out?', karten: [{ ...karte('lauf', 'Lauf. Sofort.'), selbstgesteuert: true }] },
     { id: 'base', titel: 'Auf der Base', frage: 'Wann darf ich weiter?', karten: [karte('sicher', 'Die Base ist sicher')] },
   ]
   return { ...modul, KAPITEL, findeKapitel: (id: string | undefined) => KAPITEL.find(k => k.id === id) }
@@ -39,6 +39,7 @@ function zeige(pfad: string) {
 }
 
 const weiter = () => fireEvent.click(screen.getByRole('button', { name: 'Nächste Karte' }))
+const abspielen = () => fireEvent.click(screen.getByRole('button', { name: 'Abspielen' }))
 
 describe('Kapitelseite', () => {
   it('zeigt Titel, Frage und die erste Karte', () => {
@@ -87,14 +88,58 @@ describe('Kapitelseite', () => {
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Die Zone bist du')
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '0')
 
+    abspielen()
     fireEvent.click(screen.getByRole('button', { name: 'Nochmal' }))
 
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
   })
 
+  /*
+   * **Die Karte wartet, wie ein Play wartet.** Sie lief frueher los, sobald die Seite
+   * stand: wer gerade noch die Ueberschrift las, sah nur das Ende und daneben ein
+   * „nochmal", das scheinbar nichts tat — es holte eine Bewegung zurueck, die man nie
+   * hatte anfangen sehen.
+   *
+   * Jetzt steht erst das Standbild (derselbe Endzustand, den auch reduzierte Bewegung
+   * zeigt — die Auskunft steckt darin), daneben Amber auf ▶. Erst nach dem Abspielen
+   * gibt es etwas zu wiederholen, und erst dann steht dort „nochmal".
+   */
+  it('wartet mit der Bewegung, bis man abspielt', () => {
+    zeige('/spielwissen/box')
+
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
+    expect(screen.queryByRole('button', { name: 'Nochmal' })).not.toBeInTheDocument()
+
+    abspielen()
+
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'false')
+    expect(screen.queryByRole('button', { name: 'Abspielen' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nochmal' })).toBeInTheDocument()
+  })
+
+  it('wartet auch auf der nächsten Karte wieder', async () => {
+    zeige('/spielwissen/box')
+    abspielen()
+
+    weiter()
+
+    await waitFor(() => expect(screen.getByText('Drin ist Strike')).toBeInTheDocument())
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
+    expect(screen.getByRole('button', { name: 'Abspielen' })).toBeInTheDocument()
+  })
+
+  /* Wer eigene Knoepfe mitbringt, bedient sich selbst: kein ▶ und kein ↻ daneben. */
+  it('lässt eine selbstgesteuerte Karte ohne Abspielen und ohne „nochmal"', () => {
+    zeige('/spielwissen/getroffen')
+
+    expect(screen.queryByRole('button', { name: 'Abspielen' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nochmal' })).not.toBeInTheDocument()
+  })
+
   /* Beim Blaettern faengt der Zaehler bei null an: die neue Karte laeuft ohnehin los. */
   it('setzt den Zähler beim Blättern zurück', async () => {
     zeige('/spielwissen/box')
+    abspielen()
     fireEvent.click(screen.getByRole('button', { name: 'Nochmal' }))
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
 
