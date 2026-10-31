@@ -36,7 +36,13 @@ export function PlaybackBar({
           {playing ? '❚❚' : '▶'}
         </Knopf>
         <span className="flex-1" />
-        <Knopf onClick={onNochmal} disabled={!canPlay} primary wide aria-label="Nochmal">
+        {/*
+          Ruhig, nicht amber. Amber gibt es auf der Seite genau einmal, und das ist
+          „Naechstes Play" in der Zeile darueber — der Weg vorwaerts, wie das „Weiter"
+          am Ende einer Karte im Spielwissen. Zwei gleich laute Knoepfe uebereinander
+          sahen aus wie zwei Wege, von denen einer rueckwaerts fuehrt.
+        */}
+        <Knopf onClick={onNochmal} disabled={!canPlay} wide aria-label="Nochmal">
           <span className="flex items-center gap-1.5">
             <RefreshIcon size={14} />
             nochmal

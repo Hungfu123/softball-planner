@@ -16,6 +16,13 @@ import { useRolle } from '@/hooks/useRolle'
 export default function PlayViewerPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  /*
+   * Die Liste liegt ohnehin im Speicher — sie traegt das Blaettern von Play zu Play.
+   * Also wird daraus auch das Play selbst genommen, solange der Einzelabruf laeuft:
+   * sonst steht zwischen zwei Plays „Play wird geladen", und ein Tipp auf „Naechstes
+   * Play" sah aus wie ein Neuladen der Seite.
+   */
+  const { plays } = usePlays()
   const [play, setPlay] = useState<Play | null>(null)
   const [gegenstueck, setGegenstueck] = useState<Play | null>(null)
   // Mit id: ein Fehler von Play 3 darf nach dem Wechsel auf 7 nicht stehen bleiben, und
@@ -55,27 +62,35 @@ export default function PlayViewerPage() {
     }
   }, [id])
 
-  if (fehler?.id === Number(id)) return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">{fehler.text}</p>
-  if (!play || play.id !== Number(id)) {
+  const gezeigt = play?.id === Number(id) ? play : (plays.find(p => p.id === Number(id)) ?? null)
+
+  if (!gezeigt && fehler?.id === Number(id)) {
+    return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">{fehler.text}</p>
+  }
+  if (!gezeigt) {
     return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">Play wird geladen …</p>
   }
 
   return (
     <Viewer
-      key={play.id}
-      play={play}
-      gegenstueck={gegenstueck?.id === play.counterpartPlayId ? gegenstueck : null}
-      onEdit={() => navigate(`/orga/playmaker/${play.id}/bearbeiten`)}
+      key={gezeigt.id}
+      play={gezeigt}
+      plays={plays}
+      gegenstueck={gegenstueck?.id === gezeigt.counterpartPlayId ? gegenstueck : null}
+      onEdit={() => navigate(`/orga/playmaker/${gezeigt.id}/bearbeiten`)}
     />
   )
 }
 
 function Viewer({
   play,
+  plays,
   gegenstueck,
   onEdit,
 }: {
   play: Play
+  /** Die ganze Liste — fuer das Blaettern innerhalb der Kategorie. */
+  plays: Play[]
   gegenstueck: Play | null
   onEdit: () => void
 }) {
@@ -97,7 +112,6 @@ function Viewer({
    * Die Liste kommt aus demselben Abruf wie die Uebersicht — sie liegt im Cache, und
    * ohne sie blaettert hier eben nichts.
    */
-  const { plays } = usePlays()
   const blaettern = useMemo(() => nachbarn(plays, play), [plays, play])
 
   useEffect(() => {

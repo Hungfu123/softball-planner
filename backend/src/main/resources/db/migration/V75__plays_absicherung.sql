@@ -459,12 +459,28 @@ UPDATE play_step SET
     markers = '{"defenders":[{"position":"P","x":161.61,"y":236.88},{"position":"C","x":155,"y":218},{"position":"1B","x":191.43,"y":185.57},{"position":"2B","x":175,"y":158},{"position":"SS","x":141,"y":178},{"position":"3B","x":118.57,"y":185.57},{"position":"LF","x":65,"y":62},{"position":"CF","x":155,"y":33},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r3","x":129.54,"y":192.54,"status":"OUT"},{"id":"rb","x":171.8,"y":201.2,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Infield In, Runner auf 3');
 
+-- Ball am Zaun — Relay-Kette – Stand 3
+UPDATE play_step SET
+    duration_ms = 2600,
+    note = '2B deckt die 2 — dorthin geht der Wurf, und der P sichert ab.',
+    outs = 1,
+    markers = '{"defenders":[{"position":"P","x":155,"y":182},{"position":"C","x":155,"y":226},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":129.54,"y":158.6,"status":"ACTIVE"},{"id":"rb","x":197.43,"y":175.57,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"SS","x":169.75,"y":70.6,"trajectory":"AIR"}}'::jsonb
+WHERE ordinal = 3 AND play_id = (SELECT id FROM play WHERE title = 'Ball am Zaun — Relay-Kette');
+
+-- Ball am Zaun — Relay-Kette – Stand 4
+UPDATE play_step SET
+    duration_ms = 3000,
+    note = 'SS wirft zum 2B, nicht quer übers halbe Feld — und der P geht hinter die Platte.',
+    outs = 1,
+    markers = '{"defenders":[{"position":"P","x":161,"y":244},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"ACTIVE"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"2B","x":155,"y":133.1471862576143,"trajectory":"AIR"}}'::jsonb
+WHERE ordinal = 4 AND play_id = (SELECT id FROM play WHERE title = 'Ball am Zaun — Relay-Kette');
+
 -- Ball am Zaun — Relay-Kette – Stand 5
 UPDATE play_step SET
     duration_ms = 1200,
     note = 'Von dort nach Home. Der Run fällt — wichtig ist, dass der Batter auf der 2 bleibt.',
     outs = 1,
-    markers = '{"defenders":[{"position":"P","x":153.49,"y":237.94},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":164.44,"y":93.12},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"SCORED"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
+    markers = '{"defenders":[{"position":"P","x":155,"y":238},{"position":"C","x":155,"y":218},{"position":"1B","x":191,"y":166},{"position":"2B","x":155,"y":133.15},{"position":"SS","x":169.75,"y":70.6},{"position":"3B","x":119,"y":166},{"position":"LF","x":65,"y":62},{"position":"CF","x":184.5,"y":8.06},{"position":"RF","x":245,"y":62}],"runners":[{"id":"r1","x":133.79,"y":196.79,"status":"SCORED"},{"id":"rb","x":155,"y":133.15,"status":"ACTIVE"}],"ball":{"state":"IN_HAND","holder":"C","x":155,"y":218,"trajectory":"AIR"}}'::jsonb
 WHERE ordinal = 5 AND play_id = (SELECT id FROM play WHERE title = 'Ball am Zaun — Relay-Kette');
 
 -- Runner auf 2 und 3 — anschauen, dann werfen – Stand 4
