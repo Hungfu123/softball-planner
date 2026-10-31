@@ -401,8 +401,16 @@ test('blaettert am Rechner mit den Pfeiltasten', async ({ page }) => {
   await expect.poll(() => leiste.textContent(), { timeout: 5000 }).not.toBe(stand)
   expect(page.url()).not.toBe(erstes)
 
+  /*
+   * Zurueck fuehrt dorthin, was die Seite SELBST als vorheriges Play anbietet — nicht
+   * zwangslaeufig zum Ausgangspunkt. Der Test lief parallel zu dem, der ein Play kopiert
+   * und wieder loescht; eine Kopie landet in derselben Kategorie und schiebt sich zwischen
+   * die Nachbarn. Gegen `erstes` zu pruefen hiess, gegen eine Liste zu pruefen, die ein
+   * anderer Test im selben Moment umbaut.
+   */
+  const vorheriges = await page.getByLabel('Vorheriges Play').getAttribute('href')
   await page.keyboard.press('ArrowLeft')
-  await expect.poll(() => page.url(), { timeout: 5000 }).toBe(erstes)
+  await expect.poll(() => new URL(page.url()).pathname, { timeout: 5000 }).toBe(vorheriges)
 })
 
 test('wechselt ueber das Gegenstueck auf ein anderes Play', async ({ page }) => {
