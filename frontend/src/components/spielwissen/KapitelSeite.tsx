@@ -99,10 +99,11 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
   const naechstesKapitel = KAPITEL[KAPITEL.findIndex(k => k.id === kapitel.id) + 1]
   /*
    * Eine Karte mit eigenen Knoepfen laeuft nicht ab, sie wird bedient — ▶ und ↻ waeren
-   * dort ein zweiter Weg zum selben Ziel. Und bei reduzierter Bewegung gibt es nichts
-   * abzuspielen: die Buehne steht ohnehin auf ihrem Endzustand.
+   * dort ein zweiter Weg zum selben Ziel. Ein Standbild hat nichts abzuspielen (eine
+   * Liste, keine Szene). Und bei reduzierter Bewegung steht die Buehne ohnehin auf ihrem
+   * Endzustand.
    */
-  const mitWiedergabe = !ruhig && !karte.selbstgesteuert
+  const mitWiedergabe = !ruhig && !karte.selbstgesteuert && !karte.standbild
 
   /*
    * Dasselbe Raster wie der Play-Viewer, bis auf die Zeilenhoehen: Kopf, Buehne, Aussage,

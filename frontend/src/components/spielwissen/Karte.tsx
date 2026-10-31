@@ -58,7 +58,8 @@ export function Karte({ karte, aktiv, lauf = 0 }: { karte: KartenDaten; aktiv: b
    * Bei reduzierter Bewegung gibt es nichts zu warten: dort traegt der Endzustand die
    * ganze Auskunft, und ein eingefrorener Anfang waere die halbe.
    */
-  const wartet = !aktiv && !ruhig
+  const steht = ruhig || Boolean(karte.standbild)
+  const wartet = !aktiv && !steht
 
   return (
     /*
@@ -88,7 +89,7 @@ export function Karte({ karte, aktiv, lauf = 0 }: { karte: KartenDaten; aktiv: b
       */}
       <PresenceContext.Provider value={null}>
         <MotionConfig key={String(wartet)} isStatic={wartet}>
-          <Buehne key={`${wartet}-${lauf}`} lauf={lauf} ruhig={ruhig} />
+          <Buehne key={`${wartet}-${lauf}`} lauf={lauf} ruhig={steht} />
         </MotionConfig>
       </PresenceContext.Provider>
     </div>

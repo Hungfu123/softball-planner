@@ -45,6 +45,33 @@ describe('Text in den Bühnen', () => {
    * Die Regel prueft sich selbst, statt in einer Liste gepflegt zu werden: gerendert wird
    * jede Buehne, gesucht wird nach Knoepfen.
    */
+  /**
+   * **Ein Standbild ist eine Karte, bei der dasselbe herauskommt, ob sie laeuft oder
+   * nicht.** „Auch Strike" war so eine: drei Zeilen Text, die nacheinander heller werden.
+   * Seit die Karte auf ▶ wartet, stand sie beim Ankommen als lesbare, aber graue Liste da
+   * — und ▶ machte sie nur hell. Ein Knopf fuer eine Helligkeit ist keiner.
+   *
+   * Statt das je Karte zu entscheiden, prueft es sich: gerendert wird jede Buehne zweimal,
+   * mit und ohne Bewegung. Kommt beide Male dasselbe heraus, ist es ein Standbild und
+   * gehoert so bezeichnet — dann faellt ▶ weg.
+   *
+   * Selbstgesteuerte Karten sind ausgenommen: die haengen an ihrem eigenen Zustand, nicht
+   * am Takt.
+   */
+  it.each(karten.filter(x => !x.karte.selbstgesteuert))(
+    'Karte $kapitel/$karte.id: gleiches Bild mit und ohne Bewegung heißt Standbild',
+    ({ karte }) => {
+      const mit = render(<karte.Buehne lauf={0} ruhig={false} />)
+      const bewegt = mit.container.innerHTML
+      mit.unmount()
+      const ohne = render(<karte.Buehne lauf={0} ruhig />)
+      const still = ohne.container.innerHTML
+      ohne.unmount()
+
+      expect(bewegt === still).toBe(Boolean(karte.standbild))
+    },
+  )
+
   it.each(karten)('Karte $kapitel/$karte.id: eigene Knöpfe heißen selbstgesteuert', ({ karte }) => {
     const { container, unmount } = render(<karte.Buehne lauf={0} ruhig />)
     const eigene = container.querySelectorAll('button').length
