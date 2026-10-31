@@ -10,13 +10,13 @@
  */
 export const KATEGORIE_SATZ: Record<string, string> = {
   Spielsituationen: 'Der Ball geht irgendwohin. Was tust du?',
-  Outfield: 'Zwei Bases weiter werfen. Außer es steht einer auf der 3.',
+  Outfield: 'Der Ball kommt zu dir raus. Wohin wirfst du?',
   'Base-Coverage': 'Wer covert welche Base, wenn es losgeht?',
   'Pop-up-Priorities': 'Hoher Ball zwischen zweien. Wer ruft?',
   'Bunt-Defense': 'Der Bunt liegt da. Wer holt ihn, wohin geht der Wurf?',
   'Steal-Defense & Pickoff': 'Der Runner geht. Wer covert, wer wirft?',
   Rundown: 'Zwischen zwei Bases gefangen. Wie macht man den Out?',
-  'First-and-Third': 'Runner auf 1 und 3, und beide laufen.',
+  'Runner auf 1 und 3': 'Beide laufen. Wen nimmst du?',
   'Cut-off & Relay': 'Der Ball ist weit weg. Die Kette nach innen.',
 }
 

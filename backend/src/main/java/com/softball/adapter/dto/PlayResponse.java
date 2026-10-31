@@ -14,13 +14,14 @@ import java.util.List;
  * niemand geoeffnet hat.
  */
 public record PlayResponse(Long id, String title, Long categoryId, GameState gameState,
-                           String gameStateNote, Long counterpartPlayId,
+                           String gameStateNote, Long counterpartPlayId, Integer sortOrder,
                            List<PlayStepResponse> steps,
                            LocalDateTime createdAt, LocalDateTime updatedAt) {
 
     public static PlayResponse from(final Play play) {
         return new PlayResponse(play.getId(), play.getTitle(), play.getCategoryId(),
                 play.getGameState(), play.getGameStateNote(), play.getCounterpartPlayId(),
+                play.getSortOrder(),
                 play.getSteps().stream().map(PlayStepResponse::from).toList(),
                 play.getCreatedAt(), play.getUpdatedAt());
     }

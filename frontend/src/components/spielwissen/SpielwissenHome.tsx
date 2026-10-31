@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
 import { KAPITEL } from './kapitel'
-import { getPlayCategories } from '@/api/plays'
+import { getPlayCategories, getPlays } from '@/api/plays'
+import { PositionWahl } from '@/components/playmaker/position'
+import { lesePosition, schreibePosition } from '@/components/playmaker/positionSpeicher'
+import { mitwirkende } from '@/components/playmaker/board/beteiligte'
+import type { Play } from '@/components/playmaker/board/types'
+import type { PositionCode } from '@/components/playmaker/board/types'
 import { StufeLegende } from '@/components/shared/StufePunkte'
 import { LernZeile } from '@/components/shared/LernZeile'
 import { kategorieSatz, kategorieStufe } from '@/components/playmaker/kategorieTexte'
@@ -36,6 +41,7 @@ function Eintrag({
   worte = [],
   stufe,
   bild,
+  marke,
 }: {
   to: string
   titel: string
@@ -45,6 +51,8 @@ function Eintrag({
   worte?: string[]
   stufe: 1 | 2 | 3
   bild?: boolean
+  /** „4 für CF": wie viele Plays der Kategorie die gewählte Position betreffen. */
+  marke?: string
 }) {
   return (
     <LernZeile
@@ -53,6 +61,7 @@ function Eintrag({
       satz={frage}
       worte={worte}
       stufe={stufe}
+      marke={marke}
       /* Dieselbe Geometrie wie die Plays dahinter. Das Bild ist die Ankuendigung. */
       bild={bild ? <FeldMiniatur className="h-full w-full" /> : undefined}
     />
@@ -71,13 +80,20 @@ function Eintrag({
  * Am breiten Schirm liegen die Haelften nebeneinander — dort ist die senkrechte Teilung
  * genau das, was sie sein soll, und kostet nichts.
  */
-function Haelfte({ titel }: { titel: string }) {
+function Haelfte({ titel, zusatz }: { titel: string; zusatz?: string }) {
   return (
     <div className="flex items-center gap-3 pt-1">
       <span className="h-6 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
       <h2 className="font-headline text-lg font-extrabold uppercase leading-none tracking-wide text-ink-strong">
         {titel}
       </h2>
+      {/* Rechts in dieselbe Zeile statt als eigene darunter: die Seite soll aufs Handy
+          passen, ohne dass man scrollt. */}
+      {zusatz && (
+        <span className="font-display ml-auto text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+          {zusatz}
+        </span>
+      )}
     </div>
   )
 }
@@ -94,6 +110,12 @@ const DEFENSE_STICHWORTE = ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff', 'We
 
 export default function SpielwissenHome() {
   const [kategorien, setKategorien] = useState<PlayCategory[] | null>(null)
+  /*
+   * Die Plays nur fuer die Zaehlung je Kategorie. Kommen sie nicht (kein Netz, kein
+   * Konto), steht da eben keine Zahl — die Seite funktioniert ohne sie weiter.
+   */
+  const [plays, setPlays] = useState<Play[]>([])
+  const [position, setPosition] = useState<PositionCode | null>(lesePosition)
   /* Die schwereren Kategorien liegen einen Tipp entfernt, nicht hinter einer Seite. */
   const [mehr, setMehr] = useState(false)
 
@@ -106,13 +128,29 @@ export default function SpielwissenHome() {
       .catch(() => {
         /* Ohne Netz bleibt es bei der einen Tuer. Kein Fehler, nur weniger. */
       })
+    getPlays()
+      .then(p => {
+        if (!abgebrochen) setPlays(p)
+      })
+      .catch(() => {
+        /* Dann eben ohne Zahlen. */
+      })
     return () => {
       abgebrochen = true
     }
   }, [])
 
+  const waehlePosition = (pos: PositionCode | null) => {
+    setPosition(pos)
+    schreibePosition(pos)
+  }
+
+  /** Wie viele Plays einer Kategorie die gewaehlte Position betreffen. */
+  const fuerMich = (kategorieId: number) =>
+    plays.filter(p => p.categoryId === kategorieId && position && mitwirkende(p.steps).includes(position)).length
+
   return (
-    <div className="mx-auto max-w-5xl space-y-4 pb-6">
+    <div className="mx-auto max-w-5xl space-y-3 pb-2">
       <div>
         <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong sm:text-3xl">
           Spielwissen
@@ -139,7 +177,18 @@ export default function SpielwissenHome() {
         </section>
 
         <section className="space-y-2">
-          <Haelfte titel="Defense" />
+          <Haelfte titel="Defense" zusatz={kategorien && kategorien.length > 0 ? 'Deine Position' : undefined} />
+          {/*
+            Die Position waehlt man HIER, nicht erst im Kapitel.
+
+            Vorher stand der Filter eine Seite tiefer: man sah erst drinnen, ob fuer die
+            eigene Position etwas dabei ist, und er versteckte stillschweigend Plays, weil
+            er sich die Wahl auf dem Geraet merkt. Jetzt steht die Zahl an der Tuer.
+            Gewaehlt wird in denselben Speicher, die Wahl gilt im Kapitel weiter.
+          */}
+          {kategorien && kategorien.length > 0 && (
+            <PositionWahl position={position} onWahl={waehlePosition} titel={false} />
+          )}
           {kategorien && kategorien.length > 0 ? (
             <>
               {/*
@@ -158,6 +207,7 @@ export default function SpielwissenHome() {
                   titel={k.name}
                   frage={kategorieSatz(k.name)}
                   stufe={kategorieStufe(k.sortOrder)}
+                  marke={position ? `${fuerMich(k.id)} für ${position}` : undefined}
                 />
               ))}
 
@@ -170,6 +220,7 @@ export default function SpielwissenHome() {
                       titel={k.name}
                       frage={kategorieSatz(k.name)}
                       stufe={kategorieStufe(k.sortOrder)}
+                      marke={position ? `${fuerMich(k.id)} für ${position}` : undefined}
                     />
                   ))}
                   {/* Auch wieder zu. Ein Knopf, der nur aufmacht, ist eine Einbahnstraße —

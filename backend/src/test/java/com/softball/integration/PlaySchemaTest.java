@@ -32,9 +32,12 @@ class PlaySchemaTest {
     private JdbcTemplate jdbc;
 
     @Test
-    void legtDieAchtStartkategorienAn() {
+    void legtDieNeunStartkategorienAn() {
         Integer anzahl = jdbc.queryForObject("SELECT count(*) FROM play_category", Integer.class);
-        assertThat(anzahl).isEqualTo(8);
+        // Neun seit V80: das Outfield hat eine eigene bekommen. Die Antworten darauf, wohin
+        // ein Outfielder wirft, lagen vorher in drei Kategorien verteilt, von denen keine
+        // nach ihm hiess.
+        assertThat(anzahl).isEqualTo(9);
 
         // Seit V76 stehen die Kategorien vom Einfachen zum Schweren: wer die Seite zum
         // Lernen aufmacht, faengt oben an. Vorher stand Cut-off & Relay zuerst — die
@@ -43,9 +46,11 @@ class PlaySchemaTest {
                 "SELECT name FROM play_category ORDER BY sort_order LIMIT 1", String.class);
         assertThat(erste).isEqualTo("Spielsituationen");
 
+        // Und hinten steht seit V81 die Bunt-Defense. Einschaetzung des Trainers, der die
+        // Mannschaft trainiert: Rundown ist nicht schwer, ein Bunt zu verteidigen schon.
         String letzte = jdbc.queryForObject(
                 "SELECT name FROM play_category ORDER BY sort_order DESC LIMIT 1", String.class);
-        assertThat(letzte).isEqualTo("Cut-off & Relay");
+        assertThat(letzte).isEqualTo("Bunt-Defense");
     }
 
     @Test

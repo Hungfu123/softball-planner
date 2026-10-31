@@ -4,6 +4,7 @@ import { usePlays } from '@/hooks/usePlays'
 import { PlayBoard } from './PlayBoard'
 import { PlayRow } from './PlayRow'
 import { LAGE_TEXT as LAGE_MARKE } from './lage'
+import { kapitelFolge } from './nachbarn'
 import { beschreibung } from './beschreibung'
 import { LernZeile } from '@/components/shared/LernZeile'
 import type { Play } from './board/types'
@@ -221,7 +222,7 @@ export default function PlaymakerOverview() {
    * Stufe. Die Werkbank bleibt, sie liegt eine Zeile weiter unten („Alle Kategorien").
    */
   if (kapitel) {
-    const alleImKapitel = plays.filter(p => p.categoryId === kapitel.id).sort((a, b) => a.id - b.id)
+    const alleImKapitel = plays.filter(p => p.categoryId === kapitel.id).sort(kapitelFolge)
     /*
      * „Zeig mir die Plays, in denen MEIN Platz etwas tut."
      *

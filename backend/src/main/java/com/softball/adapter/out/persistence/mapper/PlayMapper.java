@@ -32,6 +32,7 @@ public class PlayMapper {
         play.setGameState(GameState.valueOf(entity.getGameState()));
         play.setGameStateNote(entity.getGameStateNote());
         play.setCounterpartPlayId(entity.getCounterpartPlayId());
+        play.setSortOrder(entity.getSortOrder());
         play.setCreatedAt(entity.getCreatedAt());
         play.setUpdatedAt(entity.getUpdatedAt());
         final List<PlayStep> steps = new ArrayList<>();
@@ -50,6 +51,14 @@ public class PlayMapper {
         entity.setGameState(play.getGameState().name());
         entity.setGameStateNote(play.getGameStateNote());
         entity.setCounterpartPlayId(play.getCounterpartPlayId());
+        /*
+         * `sortOrder` steht hier ABSICHTLICH nicht.
+         *
+         * Es ist Redaktion, keine Eingabe: der Platz im Kapitel kommt aus der Migration,
+         * und kein Formular setzt ihn. Stuende er hier, wuerde jedes Speichern im Editor
+         * ihn auf NULL ziehen, weil die Anfrage ihn nicht mitbringt — und das Play
+         * ruckelte stillschweigend ans Kapitelende.
+         */
     }
 
     /**

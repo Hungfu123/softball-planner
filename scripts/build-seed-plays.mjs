@@ -1415,7 +1415,7 @@ const KATALOG = [
   }),
 
   // ============================================================ First-and-Third
-  play('Wurf auf die 2, Runner auf 3 startet', 'First-and-Third', {
+  play('Wurf auf die 2, Runner auf 3 startet', 'Runner auf 1 und 3', {
     outs: 1,
     startRunners: { r1: B1, r3: B3 },
     keinSchlag: true,
@@ -1441,7 +1441,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Catcher wirft an den Pitcher — Abfangen in der Mitte', 'First-and-Third', {
+  play('Catcher wirft an den Pitcher — Abfangen in der Mitte', 'Runner auf 1 und 3', {
     outs: 1,
     startRunners: { r1: B1, r3: B3 },
     gameState: 'CLOSE_LATE',
@@ -1468,7 +1468,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Angetäuschter Wurf auf die 2', 'First-and-Third', {
+  play('Angetäuschter Wurf auf die 2', 'Runner auf 1 und 3', {
     outs: 0,
     startRunners: { r1: B1, r3: B3 },
     keinSchlag: true,
@@ -1492,7 +1492,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Direkter Wurf auf die 3', 'First-and-Third', {
+  play('Direkter Wurf auf die 3', 'Runner auf 1 und 3', {
     outs: 2,
     startRunners: { r1: B1, r3: B3 },
     keinSchlag: true,
@@ -1693,26 +1693,6 @@ const KATALOG = [
         outs: 1,
         ms: 600,
       }),
-    ],
-  }),
-
-  play('Foul-Pop hinter Home', 'Pop-up-Priorities', {
-    outs: 1,
-    startRunners: {},
-    steps: [
-      s('Foul-Pop hinter der Platte. Der Catcher dreht sich — mit dem Rücken zum Feld.'),
-      s('C sucht den Ball, 1B und 3B kommen zur Hilfe.', {
-        d: {
-          C: { x: HOME.x + 6, y: HOME.y + 16 },
-          '1B': { x: HOME.x + 26, y: HOME.y + 6 },
-          '3B': { x: HOME.x - 26, y: HOME.y + 6 },
-        },
-        ball: { at: { x: HOME.x + 10, y: HOME.y + 20 } },
-      }),
-      s('C hat ihn. Der Ball dreht zurück Richtung Feld — deshalb mit dem Rücken dorthin stehen.', {
-        ball: { hold: 'C' },
-      }),
-      s('Out.', { outs: 2, ms: 600, r: { rb: 'OUT' } }),
     ],
   }),
 
