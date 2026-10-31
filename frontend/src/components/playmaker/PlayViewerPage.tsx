@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { ladePlayMitRueckfall } from './ladePlay'
+import { ladePlayMitRueckfall, PlayNichtGefunden } from './ladePlay'
 import { usePlayback } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
 import { beteiligte } from './board/beteiligte'
@@ -49,13 +49,15 @@ export default function PlayViewerPage() {
             })
         }
       })
-      .catch(() => {
+      .catch((grund: unknown) => {
         if (abgebrochen) return
         setFehler({
           id: Number(id),
           text:
-            'Dieses Play liegt nicht im Zwischenspeicher. Ohne Netz zeigt der Playmaker nur, ' +
-            'was schon einmal geladen wurde.',
+            grund instanceof PlayNichtGefunden
+              ? 'Dieses Play gibt es nicht mehr. Vielleicht wurde es umbenannt oder gelöscht.'
+              : 'Dieses Play liegt nicht im Zwischenspeicher. Ohne Netz zeigt der Playmaker nur, ' +
+                'was schon einmal geladen wurde.',
         })
       })
     return () => {
@@ -66,7 +68,20 @@ export default function PlayViewerPage() {
   const gezeigt = play?.id === Number(id) ? play : (plays.find(p => p.id === Number(id)) ?? null)
 
   if (!gezeigt && fehler?.id === Number(id)) {
-    return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">{fehler.text}</p>
+    // Kein Sackgassen-Text: die Seite laeuft ausserhalb des Layouts, es gibt hier keine
+    // Navigation und keinen Reiter. Ohne den Weg zurueck bleibt nur der Browserknopf —
+    // und in der installierten App hat man den nicht.
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-navy-900 p-6 text-center">
+        <p className="max-w-sm text-sm text-cream-50/70">{fehler.text}</p>
+        <Link
+          to="/spielwissen"
+          className="font-display flex h-12 items-center rounded-xl border border-cream-50/25 px-5 text-[11px] font-bold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
+        >
+          Zum Spielwissen
+        </Link>
+      </div>
+    )
   }
   if (!gezeigt) {
     return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">Play wird geladen …</p>
