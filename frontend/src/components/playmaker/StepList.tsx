@@ -25,6 +25,10 @@ export function StepList({
             <button
               type="button"
               onClick={() => onSelect(index)}
+              /* Sagt vor, wo die Wiedergabe steht — fuer Screenreader und zugleich der
+                 einzige Haken, an dem man das von aussen ablesen kann, seit die Zeile
+                 „Stand 2 von 4" weg ist. */
+              aria-current={aktiv ? 'step' : undefined}
               className={`flex w-full items-start gap-3 border-b border-cream-50/12 px-4 py-2.5 text-left ${
                 aktiv ? 'bg-cream-50/10' : 'hover:bg-cream-50/5'
               }`}

@@ -24,29 +24,37 @@ test.beforeEach(async ({ context, page }) => {
   await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
 })
 
-/** Den Ball um einen Bildschirm-Versatz ziehen. */
+/**
+ * Den Ball um einen Bildschirm-Versatz ziehen.
+ *
+ * `circle:first-of-type`, nicht `circle`: der Ball traegt seit der Umfaerbung ZWEI
+ * Kreise — die cremefarbene Kugel und die rote Naht darauf. Ohne die Einschraenkung
+ * faellt jeder Zugriff in Playwrights strict mode.
+ */
 async function ziehe(page: Page, dx: number, dy: number) {
-  const b = (await page.locator('[data-marker="ball"] circle').boundingBox())!
+  const b = (await page.locator('[data-marker="ball"] circle:first-of-type').boundingBox())!
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
   await page.mouse.down()
   await page.mouse.move(b.x + dx, b.y + dy, { steps: 12 })
   await page.mouse.up()
 }
 
+/*
+ * Gezaehlt wird am Merkmal, nicht an der Farbe: `data-spur` ist der Haken, den das Board
+ * dafuer traegt, und er bleibt, wenn die Buehne umgefaerbt wird. Vorher stand hier das
+ * Neongelb der alten Palette — mit der Umfaerbung auf Cream fand der Test seine eigenen
+ * Bahnen nicht mehr und meldete 0, obwohl sie dastanden. `^="ball"` fasst beide:
+ * die laufende Bahn und die blasse davor (bei einer Kette sind das zwei).
+ */
 const ballbahnen = (page: Page) =>
-  page.evaluate(
-    () =>
-      [...document.querySelectorAll('path')].filter(
-        p => (p.getAttribute('stroke') || '').toUpperCase() === '#E6F03C',
-      ).length,
-  )
+  page.evaluate(() => document.querySelectorAll('[data-spur^="ball"]').length)
 
 test('startet mit Standardaufstellung, Ball an Home und ohne Runner', async ({ page }) => {
   await expect(page.locator('[data-marker="runner"]')).toHaveCount(0)
   expect(await ballbahnen(page)).toBe(0)
 
   const ball = await page.evaluate(() => {
-    const c = document.querySelector('[data-marker="ball"] circle')!
+    const c = document.querySelector('[data-marker="ball"] circle:first-of-type')!
     return { x: Math.round(Number(c.getAttribute('cx'))), y: Math.round(Number(c.getAttribute('cy'))) }
   })
   // Home liegt bei (155, 218) — nicht beim Pitcher wie in einem Play.
@@ -69,11 +77,9 @@ test('zieht den Ball und zeichnet die Bahn dorthin', async ({ page }) => {
 
   // Die Bahn endet am Ball, nicht irgendwo.
   const passt = await page.evaluate(() => {
-    const bahn = [...document.querySelectorAll('path')].find(
-      p => (p.getAttribute('stroke') || '').toUpperCase() === '#E6F03C',
-    )!
+    const bahn = document.querySelector('[data-spur="ball"]')!
     const m = bahn.getAttribute('d')!.match(/Q[-\d.]+,[-\d.]+ ([-\d.]+),([-\d.]+)/)!
-    const c = document.querySelector('[data-marker="ball"] circle')!
+    const c = document.querySelector('[data-marker="ball"] circle:first-of-type')!
     return (
       Math.hypot(Number(m[1]) - Number(c.getAttribute('cx')), Number(m[2]) - Number(c.getAttribute('cy'))) < 1
     )
