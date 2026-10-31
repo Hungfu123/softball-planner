@@ -110,12 +110,19 @@ describe('Kapitelseite', () => {
     expect(screen.getByRole('button', { name: 'Vorherige Karte' })).toBeDisabled()
   })
 
-  /* Die Kapitel folgen dem zeitlichen Ablauf eines At-Bats. Wer durch ist, geht weiter. */
+  /*
+   * Die Kapitel folgen dem zeitlichen Ablauf eines At-Bats. Wer durch ist, geht weiter.
+   *
+   * Der Knopf heisst auch hier „Weiter" und nicht mehr wie das Kapitel dahinter: derselbe
+   * Weg vorwaerts wie unter einem Play, also dasselbe Wort und dieselbe Breite. Wohin es
+   * geht, sagt die Kopfzeile der naechsten Seite — ein Knopf, der seinen Zielnamen traegt,
+   * wird so lang wie dieser Name und schiebt den Stand in der Mitte ab.
+   */
   it('führt nach der letzten Karte ins nächste Kapitel', async () => {
     zeige('/spielwissen/box')
     weiter()
 
-    await waitFor(() => expect(screen.getByRole('link', { name: /Du hast getroffen/ }))
+    await waitFor(() => expect(screen.getByRole('link', { name: /^Weiter/ }))
       .toHaveAttribute('href', '/spielwissen/getroffen'))
   })
 

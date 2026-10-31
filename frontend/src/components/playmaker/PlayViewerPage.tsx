@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ladePlayMitRueckfall, PlayNichtGefunden } from './ladePlay'
 import { usePlayback } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
@@ -10,6 +9,7 @@ import { usePlays } from '@/hooks/usePlays'
 import { PlaybackBar } from './PlaybackBar'
 import { LegendSheet } from './LegendSheet'
 import { StepList } from './StepList'
+import { BlaetterLeiste } from '@/components/shared/BlaetterLeiste'
 import type { Play } from './board/types'
 import { useRolle } from '@/hooks/useRolle'
 
@@ -310,51 +310,22 @@ function Viewer({
             </div>
           </Link>
         )}
+        {/*
+          Dieselbe Zeile wie unter einer Karte im Spielwissen, und zwar buchstaeblich
+          dasselbe Bauteil. Zweimal gebaut lief sie auseinander: hier hiess der Weg
+          vorwaerts „Naechstes Play", drueben „Weiter" und am Kapitelende gleich der Name
+          des naechsten Kapitels. Der abgeschaltete Zurueck-Knopf kam aus der Offense — er
+          zeigt die Richtung UND dass sie hier zu Ende ist; der leere Platzhalter davor
+          zeigte nur eine Luecke.
+        */}
         {blaettern.anzahl > 1 && (
-          <div className="flex items-center gap-2 border-t border-cream-50/12 px-4 py-2">
-            {/*
-              Am ersten Play stand hier ein leerer Platzhalter. Er hielt die Breite und
-              sagte sonst nichts — man sah nicht, dass es ueberhaupt einen Weg zurueck
-              gibt, sondern nur eine Luecke. Drueben in der Offense steht an derselben
-              Stelle der abgeschaltete Knopf, und das ist die bessere Antwort: er zeigt
-              die Richtung UND dass sie hier zu Ende ist.
-            */}
-            {blaettern.vorheriges ? (
-              <Link
-                to={`/orga/playmaker/${blaettern.vorheriges.id}`}
-                aria-label="Vorheriges Play"
-                className="font-display flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-cream-50 active:bg-cream-50/10"
-              >
-                <ChevronLeft size={20} aria-hidden="true" />
-              </Link>
-            ) : (
-              <span
-                aria-hidden="true"
-                className="flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-cream-50 opacity-35"
-              >
-                <ChevronLeft size={20} />
-              </span>
-            )}
-            <span className="font-display flex-1 truncate text-center text-[11px] font-bold uppercase tracking-widest text-cream-50/55">
-              Play {blaettern.nummer} von {blaettern.anzahl}
-            </span>
-            {blaettern.naechstes ? (
-              <Link
-                to={`/orga/playmaker/${blaettern.naechstes.id}`}
-                className="font-display flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
-              >
-                Nächstes Play
-                <ChevronRight size={18} aria-hidden="true" />
-              </Link>
-            ) : (
-              <Link
-                to="/orga/playmaker"
-                className="font-display flex h-12 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
-              >
-                Fertig
-              </Link>
-            )}
-          </div>
+          <BlaetterLeiste
+            zurueck={blaettern.vorheriges ? { to: `/orga/playmaker/${blaettern.vorheriges.id}` } : null}
+            zurueckLabel="Vorheriges Play"
+            stand={`Play ${blaettern.nummer} von ${blaettern.anzahl}`}
+            weiter={blaettern.naechstes ? { to: `/orga/playmaker/${blaettern.naechstes.id}` } : null}
+            fertig={{ to: '/orga/playmaker' }}
+          />
         )}
 
         {/*

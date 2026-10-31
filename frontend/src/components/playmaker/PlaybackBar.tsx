@@ -37,8 +37,8 @@ export function PlaybackBar({
         </Knopf>
         {/*
           Ruhig, nicht amber. Amber gibt es auf der Seite genau einmal, und das ist
-          „Naechstes Play" in der Zeile darueber — der Weg vorwaerts, wie das „Weiter"
-          am Ende einer Karte im Spielwissen. Zwei gleich laute Knoepfe uebereinander
+          „Weiter" in der Zeile darueber — derselbe Knopf wie unter einer Karte im
+          Spielwissen, dieselbe Blaetterleiste. Zwei gleich laute Knoepfe uebereinander
           sahen aus wie zwei Wege, von denen einer rueckwaerts fuehrt.
         */}
         <Knopf onClick={onNochmal} disabled={!canPlay} breit aria-label="Nochmal">

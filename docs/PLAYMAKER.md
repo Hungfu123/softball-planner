@@ -73,6 +73,16 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   ihren Gegenstand zentriert sind). Aus 27 % der Bildschirmhoehe wurden 60 %. Die
   Zeichnung wird dadurch nicht groesser — die Breite deckelt sie ohnehin —, aber was um
   sie herum liegt, ist Feld statt Leere. Genau darin bestand der Unterschied.
+  **Die Blaetterzeile steht nur noch einmal da** (`components/shared/BlaetterLeiste.tsx`,
+  seit dem 31.10.2026): zweimal gebaut lief sie auseinander — der Weg vorwaerts hiess hier
+  „Naechstes Play", drueben „Weiter" und auf der letzten Karte gleich der Name des
+  naechsten Kapitels, also drei Beschriftungen fuer eine Handlung und drei Knopfbreiten,
+  von denen die laengste den Stand in der Mitte abschob. Geblieben ist **„Weiter"**, am
+  Ende **„Fertig"**; **was** weiter kommt, sagt der Stand daneben („Play 6 von 9", „Karte
+  4 von 6") und gleich darauf die Kopfzeile der neuen Seite. Das Bauteil traegt Links
+  (Defense blaettert per Adresse) und Knoepfe (Offense blaettert im Zustand derselben
+  Seite) gleich; der Zurueck-Knopf bleibt sichtbar und wird abgeschaltet, statt zu
+  verschwinden.
   Die festen Deckel (`max-h-56` und Geschwister) sind weg; wer eine neue Buehne baut,
   setzt keine zurueck.
 - **Loeschen darf nur der Superadmin** (`PlayController.delete`, `@PreAuthorize`), nicht
