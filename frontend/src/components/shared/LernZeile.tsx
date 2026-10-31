@@ -42,7 +42,7 @@ export function LernZeile({
   return (
     <Link
       to={to}
-      className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-3 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
+      className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-2.5 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
     >
       {/*
         Die Vorschau bekommt eine Kante, und beim Ueberfahren eine hellere: das Bild ist
