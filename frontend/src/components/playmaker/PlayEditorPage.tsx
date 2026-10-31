@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useBlocker, useNavigate, useParams } from 'react-router-dom'
+import { Link, useBlocker, useNavigate, useParams } from 'react-router-dom'
 import * as api from '@/api/plays'
-import { ladePlayMitRueckfall } from './ladePlay'
+import { ladePlayMitRueckfall, PlayNichtGefunden } from './ladePlay'
 import { usePlayEditor } from '@/hooks/usePlayEditor'
 import { PlayBoard } from './PlayBoard'
 import { useBoardGesten } from './useBoardGesten'
@@ -30,9 +30,19 @@ export default function PlayEditorPage() {
       .then(geladen => {
         if (!abgebrochen) setPlay(geladen)
       })
-      .catch(e => {
+      .catch((grund: unknown) => {
         if (!abgebrochen) {
-          setLadefehler({ id: Number(id), text: e instanceof Error ? e.message : 'Play nicht gefunden.' })
+          // Kein roher Fehlertext mehr: „Fehler 404" sagt dem Trainer nichts, und die
+          // Meldung ueber den Zwischenspeicher gab bei einem toten Link dem Netz die
+          // Schuld. Die beiden Faelle unterscheidet `PlayNichtGefunden`.
+          setLadefehler({
+            id: Number(id),
+            text:
+              grund instanceof PlayNichtGefunden
+                ? 'Dieses Play gibt es nicht mehr. Vielleicht wurde es gelöscht.'
+                : 'Dieses Play lässt sich gerade nicht laden. Ohne Netz zeigt der Playmaker nur, '
+                  + 'was schon einmal geladen wurde.',
+          })
         }
       })
     return () => {
@@ -41,7 +51,19 @@ export default function PlayEditorPage() {
   }, [id])
 
   if (ladefehler?.id === Number(id)) {
-    return <p className="min-h-dvh bg-navy-900 p-6 text-sm text-cream-50/70">{ladefehler.text}</p>
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-navy-900 p-6 text-center">
+        <p className="max-w-sm text-sm text-cream-50/70">{ladefehler.text}</p>
+        {/* Der Editor laeuft ausserhalb des Layouts: ohne diesen Weg bleibt nur der
+            Browserknopf, und den hat die installierte App nicht. */}
+        <Link
+          to="/orga/playmaker"
+          className="font-display flex h-12 items-center rounded-xl border border-cream-50/25 px-5 text-[11px] font-bold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
+        >
+          Zur Übersicht
+        </Link>
+      </div>
+    )
   }
   // Nicht nur "schon geladen", sondern "das RICHTIGE geladen": nach einem Wechsel der id
   // liegt noch das alte Play im Zustand.
