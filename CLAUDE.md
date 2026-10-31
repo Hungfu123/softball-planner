@@ -166,7 +166,10 @@ Architecture diagram: `docs/architecture.svg` (rendered) + `docs/architecture.ex
   dahinter, nachher bei **46**. Zwei Grenzen stecken darin, beide aus dem Bild gelernt: ein
   Outfielder sichert nur ab, was VOR ihm liegt (sonst lief der CF beim Relay quer durchs
   Infield), und wo schon jemand steht, kommt keiner dazu. Der Katalog behält das letzte
-  Wort. Das **freie Feld**
+  Wort. **Das Team sagt „covern", nicht „decken"** (V77, seit dem 31.10.2026): die
+  Migration hat Titel und Notizen der Start-Plays umgeschrieben, `build-seed-plays.mjs`
+  schreibt es seitdem so. Beim abgetrennten „ab" faellt die Vorsilbe weg — „abcovern"
+  gibt es nicht, aus „deckt dort ab" wird „covert dort". Das **freie Feld**
   (`/orga/playmaker/frei`) ist bewusst kein Play: nichts im Katalog, Stand im `localStorage`,
   **kein eigener `/api`-Aufruf** (Offline-Versprechen, per E2E geprüft). Seit den Accounts
   läuft dort wie überall der `/api/me`-Abruf des `AuthProvider`; der E2E-Test lässt genau

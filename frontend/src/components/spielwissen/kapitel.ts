@@ -160,15 +160,15 @@ export const KAPITEL: Kapitel[] = [
       {
         id: 'lauf',
         stichwort: 'Laufen',
-        pointe: 'Lauf sofort los',
-        satz: 'Nicht erst hinsehen, wo der Ball landet.',
+        pointe: 'Lauf. Sofort.',
+        satz: 'Nicht hinsehen, nicht abwarten.',
         Buehne: LaufSofort,
       },
       {
         id: 'foul',
         stichwort: 'Foul',
         pointe: 'Foul siehst du nicht',
-        satz: 'Zwei Bälle, gleicher Abflug. Einer ist fair, einer ist foul. Das entscheidet der Ump.',
+        satz: 'Zwei Bälle, gleicher Abflug. Einer ist fair, einer ist foul. Nicht dein Call.',
         Buehne: FoulSiehstDuNicht,
       },
       {
@@ -226,7 +226,7 @@ export const KAPITEL: Kapitel[] = [
         id: 'wild-pitch',
         stichwort: 'Wild Pitch',
         pointe: 'Wild Pitch',
-        satz: 'Der Ball rutscht am Catcher vorbei. Dann darfst du zur nächsten Base und bleibst dort stehen.',
+        satz: 'Der Ball rutscht am Catcher vorbei. Das ist dein Moment. Auf der nächsten Base bleibst du dann stehen.',
         Buehne: WildPitch,
       },
       {

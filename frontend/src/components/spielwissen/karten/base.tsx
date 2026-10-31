@@ -242,7 +242,7 @@ export function Steal({ lauf, ruhig }: BuehnenProps) {
 const TAGUP = [
   { text: 'Der Ball fliegt. Du bleibst mit einem Fuß auf der Base.', ball: 0.1, laeufer: 0 },
   { text: 'Gefangen. Erst jetzt darfst du los.', ball: 0.55, laeufer: 0 },
-  { text: 'Jetzt bist du unterwegs.', ball: 1, laeufer: 1 },
+  { text: 'Weg. Und zwar legal.', ball: 1, laeufer: 1 },
 ]
 
 /**

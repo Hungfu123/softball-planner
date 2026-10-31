@@ -9,7 +9,7 @@ import { HOME, FIRST_BASE } from '@/components/playmaker/board/geometry'
 describe('Kapitel Du hast getroffen', () => {
   it('liefert sechs Karten mit genau diesen Pointen', () => {
     expect(GETROFFEN_KARTEN.map(k => k.pointe)).toEqual([
-      'Lauf sofort los',
+      'Lauf. Sofort.',
       'Foul siehst du nicht',
       'Out: gefangen',
       'Out: Wurf zur 1',

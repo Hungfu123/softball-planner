@@ -476,7 +476,7 @@ function laufweg(von, nach) {
 
 const KATALOG = [
   // ============================================================ Base-Coverage
-  play('Grounder zum SS — wer deckt die 2', 'Base-Coverage', {
+  play('Grounder zum SS — wer covert die 2', 'Base-Coverage', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
@@ -501,11 +501,11 @@ const KATALOG = [
     ],
   }),
 
-  play('Grounder zum 2B — wer deckt die 2', 'Base-Coverage', {
+  play('Grounder zum 2B — wer covert die 2', 'Base-Coverage', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
-      s('Grounder nach rechts. Der 2B hat den Ball, also deckt der SS ab.'),
+      s('Grounder nach rechts. Der 2B hat den Ball, also covert der SS.'),
       s('SS zur Base, 2B fängt.', {
         d: { '2B': { x: HOME.x + 26, y: HOME.y - 74 }, SS: B2 },
         ball: { at: { x: HOME.x + 26, y: HOME.y - 74 }, ground: true },
@@ -538,7 +538,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Grounder zum 1B — wer deckt die 1', 'Base-Coverage', {
+  play('Grounder zum 1B — wer covert die 1', 'Base-Coverage', {
     outs: 0,
     startRunners: {},
     steps: [
@@ -569,7 +569,7 @@ const KATALOG = [
       s('Comebacker — der P fängt ihn selbst.', {
         ball: { at: { x: DEFAULT_DEFENSE.P.x, y: DEFAULT_DEFENSE.P.y }, ground: true },
       }),
-      s('P dreht sich zur 2. Wer dort deckt, ist abgesprochen — hier der 2B.', {
+      s('P dreht sich zur 2. Wer dort covert, ist abgesprochen — hier der 2B.', {
         ball: { hold: 'P' },
         d: { '2B': B2 },
         r: { r1: between(B1, B2, 0.55) },
@@ -621,7 +621,7 @@ const KATALOG = [
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
-      s('Runner auf 1, Grounder zum 2B. Jetzt deckt der SS die 2.'),
+      s('Runner auf 1, Grounder zum 2B. Jetzt covert der SS die 2.'),
       s('2B fängt, der SS ist schon auf dem Weg zur Base.', {
         d: { '2B': { x: HOME.x + 30, y: HOME.y - 72 }, SS: toward(DEFAULT_DEFENSE.SS, B2, 16) },
         ball: { at: { x: HOME.x + 30, y: HOME.y - 72 }, ground: true },
@@ -677,12 +677,12 @@ const KATALOG = [
    * meisten laeuft: bei einem Ball in die Mitte deckt der 2B die 2, der SS geht als
    * Cut heraus, der P sichert hinter der 2 ab.
    */
-  play('Single ins CF — wer deckt die 2', 'Base-Coverage', {
+  play('Single ins CF — wer covert die 2', 'Base-Coverage', {
     outs: 1,
     startRunners: { r1: B1 },
     steps: [
       s('Ball fällt in die Mitte. Der Runner von der 1 will die 3 sehen.'),
-      s('CF läuft an, SS geht als Cut heraus, der 2B deckt die 2.', {
+      s('CF läuft an, SS geht als Cut heraus, der 2B covert die 2.', {
         d: { CF: UP_MIDDLE, SS: between(UP_MIDDLE, B2, 0.45), '2B': B2 },
         ball: { at: UP_MIDDLE, ground: true },
         r: { r1: between(B1, B2, 0.7), rb: between(HOME, B1, 0.5) },
@@ -854,7 +854,7 @@ const KATALOG = [
         ball: { at: UP_MIDDLE, ground: true },
         r: { r1: between(B1, B2, 0.55), rb: between(HOME, B1, 0.3) },
       }),
-      s('SS stellt sich zwischen CF und 3B, der 2B deckt die 2, der P sichert hinter der 3 ab.', {
+      s('SS stellt sich zwischen CF und 3B, der 2B covert die 2, der P sichert hinter der 3 ab.', {
         d: { SS: between(UP_MIDDLE, B3, 0.5), '3B': B3, '2B': B2, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { at: between(UP_MIDDLE, B3, 0.5) },
         r: { r1: between(B2, B3, 0.5), rb: B1 },
@@ -873,7 +873,7 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r1: between(B1, B2, 0.6), rb: between(HOME, B1, 0.3) },
       }),
-      s('Ball rechts, also zieht der 2B als Cut heraus. Der SS deckt die 2, der 3B stellt ihn, der P sichert hinter der 3 ab.', {
+      s('Ball rechts, also zieht der 2B als Cut heraus. Der SS covert die 2, der 3B stellt ihn, der P sichert hinter der 3 ab.', {
         d: { '2B': between(SHORT_RIGHT, B3, 0.45), '3B': B3, SS: B2, P: { x: B3.x - 16, y: B3.y + 14 } },
         ball: { at: between(SHORT_RIGHT, B3, 0.45) },
         r: { r1: between(B2, B3, 0.45), rb: B1 },
@@ -898,7 +898,7 @@ const KATALOG = [
         ball: { at: SHORT_LEFT, ground: true },
         r: { r2: between(B2, B3, 0.8), rb: between(HOME, B1, 0.3) },
       }),
-      s('Der C stellt den SS auf die Linie LF–Home — Ball links, also er. Der 3B bleibt an der 3, der 2B deckt die 2, der P geht hinter die Platte.', {
+      s('Der C stellt den SS auf die Linie LF–Home — Ball links, also er. Der 3B bleibt an der 3, der 2B covert die 2, der P geht hinter die Platte.', {
         d: {
           SS: between(SHORT_LEFT, HOME, 0.4),
           C: HOME,
@@ -923,7 +923,7 @@ const KATALOG = [
         ball: { at: SHORT_RIGHT, ground: true },
         r: { r2: between(B2, B3, 0.85), rb: between(HOME, B1, 0.3) },
       }),
-      s('Der C stellt den 2B auf die Linie RF–Home. Der 1B bleibt an der 1, der SS deckt die 2, der P geht hinter die Platte.', {
+      s('Der C stellt den 2B auf die Linie RF–Home. Der 1B bleibt an der 1, der SS covert die 2, der P geht hinter die Platte.', {
         d: {
           '2B': between(SHORT_RIGHT, HOME, 0.45),
           C: HOME,
@@ -979,7 +979,7 @@ const KATALOG = [
         ball: { at: between(DEEP_RIGHT, B2, 0.5) },
         r: { rb: between(B1, B2, 0.7) },
       }),
-      s('Wurf auf die 2 — SS deckt ab, weil der 2B draußen ist.', {
+      s('Wurf auf die 2 — SS covert, weil der 2B draußen ist.', {
         d: { SS: B2 },
         ball: { hold: 'SS' },
         r: { rb: between(B1, B2, 0.95) },
@@ -1006,7 +1006,7 @@ const KATALOG = [
        * Also Ball rechts → der 2B ist Cut, der SS deckt die 2, der 1B bleibt an seiner
        * Base, und abgesichert wird von hinten vom Pitcher.
        */
-      s('2B geht als Relay raus — der SS deckt die 2, da will der Batter hin.', {
+      s('2B geht als Relay raus — der SS covert die 2, da will der Batter hin.', {
         d: { '2B': between(fromHome(40, 200), HOME, 0.45), SS: B2 },
         ball: { at: between(fromHome(40, 200), HOME, 0.45) },
         r: { r1: between(B2, B3, 0.6), rb: B1 },
@@ -1046,7 +1046,7 @@ const KATALOG = [
         ball: { hold: 'P' },
         r: { r1: between(B1, B2, 0.6) },
       }),
-      s('Sicherer Wurf auf die 1 — der 2B deckt dort ab, weil der 1B vorne ist.', {
+      s('Sicherer Wurf auf die 1 — der 2B covert dort, weil der 1B vorne ist.', {
         ball: { hold: '2B' },
         r: { r1: B2, rb: { p: B1, status: 'OUT' } },
         outs: 1,
@@ -1094,7 +1094,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Bunt Richtung 3B, Runner auf 2 — SS deckt die 3', 'Bunt-Defense', {
+  play('Bunt Richtung 3B, Runner auf 2 — SS covert die 3', 'Bunt-Defense', {
     outs: 0,
     startRunners: { r2: B2 },
     steps: [
@@ -1161,7 +1161,7 @@ const KATALOG = [
         ball: { hold: '3B' },
         r: { r2: B3, r1: between(B1, B2, 0.7) },
       }),
-      s('Also der sichere Out an der 1 — der 2B deckt, weil der 1B vorne ist.', {
+      s('Also der sichere Out an der 1 — der 2B covert, weil der 1B vorne ist.', {
         ball: { hold: '2B' },
         r: { r1: B2, rb: { p: B1, status: 'OUT' } },
         outs: 1,
@@ -1179,7 +1179,7 @@ const KATALOG = [
         ball: { loose: { x: HOME.x + 6, y: HOME.y - 10 } },
         r: { r3: between(B3, HOME, 0.5) },
       }),
-      s('Der P nimmt den Ball — der C bleibt an der Platte, sonst deckt sie niemand.', {
+      s('Der P nimmt den Ball — der C bleibt an der Platte, sonst covert sie niemand.', {
         d: { P: { x: HOME.x + 6, y: HOME.y - 10 } },
         ball: { hold: 'P' },
         r: { r3: between(B3, HOME, 0.8) },
@@ -1512,13 +1512,13 @@ const KATALOG = [
   }),
 
   // ============================================================ Steal-Defense & Pickoff
-  play('Steal auf die 2 — Wurf und Abdeckung', 'Steal-Defense & Pickoff', {
+  play('Steal auf die 2 — Wurf und Coverage', 'Steal-Defense & Pickoff', {
     outs: 0,
     startRunners: { r1: B1 },
     keinSchlag: true,
     steps: [
       s('Runner auf 1 startet mit dem Wurf.'),
-      s('C steht auf, SS geht zur Base. Wer deckt, ist vorher abgesprochen.', {
+      s('C steht auf, SS geht zur Base. Wer covert, ist vorher abgesprochen.', {
         d: { C: HOME, SS: B2 },
         ball: { hold: 'C' },
         r: { r1: between(B1, B2, 0.4) },
@@ -1528,7 +1528,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Steal auf die 3 — Wurf und Abdeckung', 'Steal-Defense & Pickoff', {
+  play('Steal auf die 3 — Wurf und Coverage', 'Steal-Defense & Pickoff', {
     outs: 1,
     startRunners: { r2: B2 },
     keinSchlag: true,
@@ -1595,7 +1595,7 @@ const KATALOG = [
     startRunners: { r2: toward(B2, B3, 11) },
     keinSchlag: true,
     steps: [
-      s('An der 2 braucht es ein Zeichen — der Runner sieht den Deckenden nicht.'),
+      s('An der 2 braucht es ein Zeichen — der Runner sieht nicht, wer covert.'),
       s('SS schleicht hinter dem Runner zur Base.', {
         d: { C: HOME, SS: { x: B2.x - 10, y: B2.y - 4 } },
         ball: { hold: 'C' },
@@ -1645,7 +1645,7 @@ const KATALOG = [
         ball: { hold: 'P' },
         r: { r1: between(B1, B2, 0.3) },
       }),
-      s('P sieht es und wirft zur 2, der 2B deckt.', {
+      s('P sieht es und wirft zur 2, der 2B covert.', {
         d: { '2B': B2 },
         ball: { hold: '2B' },
         r: { r1: between(B1, B2, 0.8) },
@@ -1736,7 +1736,7 @@ const KATALOG = [
        * Baseball-Doppelrelay — dann lag die 2 frei, und der Batter haette sie geschenkt
        * bekommen. Abgesichert wird der Wurf stattdessen vom Pitcher.
        */
-      s('2B deckt die 2 — dorthin geht der Wurf, und der P sichert ab.', {
+      s('2B covert die 2 — dorthin geht der Wurf, und der P sichert ab.', {
         d: { '2B': B2 },
         ball: { hold: 'SS' },
         r: { r1: between(B2, B3, 0.6), rb: B1 },
@@ -1788,7 +1788,7 @@ const KATALOG = [
         ball: { loose: { x: HOME.x - 14, y: HOME.y + 26 } },
         r: { r3: between(B3, HOME, 0.45) },
       }),
-      s('P deckt die Platte ab — das ist seine Aufgabe, nicht die des 1B.', {
+      s('P covert die Platte — das ist seine Aufgabe, nicht die des 1B.', {
         d: { P: HOME },
         ball: { hold: 'C' },
         r: { r3: between(B3, HOME, 0.75) },
