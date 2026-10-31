@@ -188,23 +188,24 @@ const GRUENDE = [
   'Foul, solange du unter 2 Strikes bist',
 ]
 
-/** Drei Wege zum selben Ergebnis. Sie leuchten nacheinander auf, damit man sie zaehlt. */
-export function AuchStrike({ lauf, ruhig }: BuehnenProps) {
+/**
+ * Drei Wege zum selben Ergebnis — **eine Liste, keine Szene** (`standbild`).
+ *
+ * Die Zeilen leuchteten frueher nacheinander auf. Das war ein Einzug, solange die Karte
+ * von selbst lief; seit sie auf ▶ wartet, stand sie als lesbare, aber graue Liste da, und
+ * ▶ machte sie nur hell. Hier bewegt sich deshalb nichts mehr, und die Leiste bietet auch
+ * nichts an. Die Reihenfolge zaehlt man mit den Augen, dafuer braucht es keinen Takt.
+ */
+export function AuchStrike() {
   return (
     <div className="flex h-full min-h-0 flex-col justify-center space-y-2 px-4 py-5">
-      {GRUENDE.map((grund, i) => (
-        <motion.div
-          key={`${i}-${lauf}`}
-          initial={ruhig ? false : { opacity: 0.2, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={takt(ruhig, { delay: i * 0.45, duration: 0.3, ease: AUS })}
-          className="flex items-center gap-2.5"
-        >
+      {GRUENDE.map(grund => (
+        <div key={grund} className="flex items-center gap-2.5">
           <span className="font-display shrink-0 rounded bg-softball-red-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-white">
             Strike
           </span>
           <span className="text-[13px] leading-snug text-cream-50/85">{grund}</span>
-        </motion.div>
+        </div>
       ))}
     </div>
   )

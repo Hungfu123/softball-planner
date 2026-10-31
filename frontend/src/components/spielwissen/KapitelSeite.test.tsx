@@ -19,7 +19,7 @@ vi.mock('./kapitel', async (echt) => {
   const KAPITEL = [
     { id: 'box', titel: 'In der Box', frage: 'Was zählt als Strike?', karten: [karte('zone', 'Die Zone bist du'), karte('drin', 'Drin ist Strike')] },
     { id: 'getroffen', titel: 'Du hast getroffen', frage: 'Wohin laufe ich, wann bin ich out?', karten: [{ ...karte('lauf', 'Lauf. Sofort.'), selbstgesteuert: true }] },
-    { id: 'base', titel: 'Auf der Base', frage: 'Wann darf ich weiter?', karten: [karte('sicher', 'Die Base ist sicher')] },
+    { id: 'base', titel: 'Auf der Base', frage: 'Wann darf ich weiter?', karten: [{ ...karte('sicher', 'Die Base ist sicher'), standbild: true }] },
   ]
   return { ...modul, KAPITEL, findeKapitel: (id: string | undefined) => KAPITEL.find(k => k.id === id) }
 })
@@ -135,6 +135,18 @@ describe('Kapitelseite', () => {
 
     expect(screen.queryByRole('button', { name: 'Abspielen' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Nochmal' })).not.toBeInTheDocument()
+  })
+
+  /*
+   * Ein Standbild ist eine Liste und keine Szene: es gibt nichts abzuspielen, also steht
+   * auch kein ▶ daneben — und die Buehne zeigt sich sofort ganz, statt grau zu warten.
+   */
+  it('lässt ein Standbild ohne Abspielen und zeigt es fertig', () => {
+    zeige('/spielwissen/base')
+
+    expect(screen.queryByRole('button', { name: 'Abspielen' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Nochmal' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
   })
 
   /* Beim Blaettern faengt der Zaehler bei null an: die neue Karte laeuft ohnehin los. */

@@ -52,6 +52,19 @@ export interface KartenDaten {
    * zwei Knoepfe fuer dieselbe Sache sind eine Frage mehr als noetig.
    */
   selbstgesteuert?: boolean
+  /**
+   * Die Buehne zeigt eine **Liste und keine Szene**: es gibt nichts abzuspielen.
+   *
+   * „Auch Strike" sind drei Zeilen Text. Sie wurden frueher nacheinander heller — solange
+   * die Karte von selbst lief, war das ein Einzug; seit sie auf ▶ wartet, stand sie als
+   * lesbare, aber graue Liste da, und ▶ machte sie nur hell. Ein Knopf fuer eine
+   * Helligkeit ist keiner.
+   *
+   * Dann lieber ganz still: alles sofort lesbar, keine Wiedergabeknoepfe. `kartenText`
+   * haelt beides zusammen — wer das hier setzt, dessen Buehne muss mit und ohne Bewegung
+   * dasselbe zeigen.
+   */
+  standbild?: boolean
   Buehne: ComponentType<BuehnenProps>
 }
 
@@ -110,6 +123,7 @@ export const KAPITEL: Kapitel[] = [
         stichwort: 'Strike',
         pointe: 'Auch Strike',
         satz: 'Drei Wege, und alle zählen gleich.',
+        standbild: true,
         Buehne: AuchStrike,
       },
       {
