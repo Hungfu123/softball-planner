@@ -124,6 +124,34 @@ describe('Play-Übersicht', () => {
     expect(zumPlay[0]).toHaveTextContent('Grounder zum 3B')
   })
 
+  /*
+   * Der Positionsfilter liegt im localStorage und ueberlebt den Besuch. Wer ihn vor
+   * Wochen auf CF gestellt hat, sieht Wochen spaeter ein Kapitel, in dem Plays fehlen —
+   * und nichts sagt ihm, warum. Neue Plays bleiben so unsichtbar. Also sagt es die Seite.
+   */
+  it('sagt, wenn der Positionsfilter etwas wegnimmt', () => {
+    // Zwei Staende, in denen der CF laeuft — nur so zaehlt er als mitwirkend.
+    const stand2 = (x: number) => ({
+      ordinal: x, durationMs: 600, note: '', outs: 0,
+      markers: {
+        defenders: [{ position: 'CF' as const, x: 100 + x * 40, y: 60 }],
+        runners: [],
+        ball: { state: 'AT_BAT' as const, holder: null, x: 155, y: 216, trajectory: 'AIR' as const },
+      },
+    })
+    stand.plays = [
+      { ...PLAY, steps: [stand2(1), stand2(2)] },
+      { ...PLAY, id: 8, title: 'Anderes Play', steps: [] },
+    ]
+    stand.categories = [{ id: 1, name: 'Base-Coverage', sortOrder: 10 }]
+    localStorage.setItem('playmaker-position', 'CF')
+
+    zeige('/orga/playmaker?kategorie=1')
+
+    expect(screen.getByText(/1 von 2 Plays, gefiltert nach CF/)).toBeInTheDocument()
+    localStorage.removeItem('playmaker-position')
+  })
+
   it('zeigt bei einer unbekannten Kategorie die volle Liste', () => {
     stand.istAdmin = true
     stand.plays = [PLAY]
