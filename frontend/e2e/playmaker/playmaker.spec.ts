@@ -265,6 +265,10 @@ test('legt den Ball frei hin, wenn kein Fielder in der Naehe ist', async ({ page
   const titel = `${TITEL_PREFIX} ball frei`
   await neuesPlay(page, titel)
 
+  // Erst wenn alle neun stehen, hat sich das Board selbst gemessen — vorher liegt der
+  // Ball beim Lesen der Box noch woanders als beim Zugriff, und unter Last war genau das
+  // der Grund, aus dem dieser Test gelegentlich allein rot wurde.
+  await expect(page.locator('[data-marker="defender"]')).toHaveCount(9)
   const ball = (await page.locator('[data-marker="ball"] circle:first-of-type').boundingBox())!
   await page.mouse.move(ball.x + ball.width / 2, ball.y + ball.height / 2)
   await page.mouse.down()
