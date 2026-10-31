@@ -36,7 +36,20 @@ export default function PlaymakerOverview() {
    */
   const [params, setParams] = useSearchParams()
   const ausAdresse = Number(params.get('kategorie'))
-  const categoryId: number | 'alle' = Number.isFinite(ausAdresse) && ausAdresse > 0 ? ausAdresse : 'alle'
+  const gewuenscht: number | 'alle' = Number.isFinite(ausAdresse) && ausAdresse > 0 ? ausAdresse : 'alle'
+  /*
+   * Eine Kategorie, die es nicht gibt, ist die volle Liste — nicht eine leere Seite.
+   *
+   * Die Adresse steht jedem offen: ein Tippfehler, ein alter Link, eine geloeschte
+   * Kategorie. Vorher zeigte `?kategorie=999` einen einzelnen Auswahlkasten mit der
+   * Aufschrift „Alle Kategorien · 54" ueber einer leeren Flaeche — eine Sackgasse, die
+   * sich selbst widersprach. Erst pruefen, wenn die Kategorien da sind, sonst kippte der
+   * Link waehrend des Ladens auf die volle Liste.
+   */
+  const categoryId: number | 'alle' =
+    gewuenscht !== 'alle' && categories.length > 0 && !categories.some(c => c.id === gewuenscht)
+      ? 'alle'
+      : gewuenscht
   const setCategoryId = (wert: number | 'alle') => {
     const neu = new URLSearchParams(params)
     if (wert === 'alle') neu.delete('kategorie')
