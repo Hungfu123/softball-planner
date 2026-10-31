@@ -12,7 +12,7 @@ import { LAGE_TEXT } from './lage'
 /** Woher der Treffer kommt — ein Wort, damit die Zeile einzeilig bleibt. */
 const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
   kategorie: 'Kategorie:',
-  lage: 'Lage:',
+  lage: 'Situation:',
   notiz: 'Notiz:',
 }
 
