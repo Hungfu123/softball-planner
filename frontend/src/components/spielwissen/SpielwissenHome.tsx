@@ -150,9 +150,9 @@ export default function SpielwissenHome() {
     plays.filter(p => p.categoryId === kategorieId && position && mitwirkende(p.steps).includes(position)).length
 
   return (
-    <div className="mx-auto max-w-5xl space-y-3 pb-2">
+    <div className="mx-auto max-w-5xl space-y-2.5 pb-2">
       <div>
-        <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong sm:text-3xl">
+        <h1 className="font-headline text-xl font-extrabold uppercase tracking-wide text-ink-strong sm:text-3xl">
           Spielwissen
         </h1>
         {/* Die Legende sagt die Reihenfolge schon mit: oben leicht, unten schwer. Ein
@@ -160,8 +160,17 @@ export default function SpielwissenHome() {
         <StufeLegende className="mt-1.5" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-        <section className="space-y-2">
+      {/*
+        `grid-cols-1` steht da, obwohl eine Spalte die Vorgabe waere.
+
+        Ohne Angabe ist die Spalte `auto`, und die waechst auf die MINDESTBREITE ihres
+        Inhalts. Die ist hier gross, weil die Satzzeile einer Lernzeile einzeilig ist
+        (`truncate` heisst auch „nicht umbrechen"). Gemessen bei 360 px: die Spalte wurde
+        357 statt 321 breit, und die Seite liess sich quer schieben. `grid-cols-1` ist
+        `minmax(0, 1fr)` und darf schrumpfen.
+      */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <section className="space-y-1.5">
           <Haelfte titel="Offense" />
           {[...KAPITEL]
             .sort((a, b) => a.stufe - b.stufe)
@@ -176,7 +185,7 @@ export default function SpielwissenHome() {
             ))}
         </section>
 
-        <section className="space-y-2">
+        <section className="space-y-1.5">
           <Haelfte titel="Defense" zusatz={kategorien && kategorien.length > 0 ? 'Deine Position' : undefined} />
           {/*
             Die Position waehlt man HIER, nicht erst im Kapitel.
@@ -238,7 +247,7 @@ export default function SpielwissenHome() {
                 <button
                   type="button"
                   onClick={() => setMehr(true)}
-                  className="font-display min-h-11 w-full rounded-xl border border-dashed border-line px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-ink-muted hover:bg-surface-raised active:bg-surface-raised"
+                  className="font-display min-h-10 w-full rounded-xl border border-dashed border-line px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-ink-muted hover:bg-surface-raised active:bg-surface-raised"
                 >
                   Mehr zeigen ({kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).length})
                 </button>

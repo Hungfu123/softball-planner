@@ -714,7 +714,7 @@ const KATALOG = [
    * SS als Cut und 2B an der Base, Ball nach rechts genau andersherum. Und es ist ein
    * TAG, kein Force: niemand laeuft hinter ihm her, er muss beruehrt werden.
    */
-  play('Single ins CF — Batter will die 2', 'Outfield', {
+  play('Single ins CF — Batter will die 2', 'Outfield-Basics', {
     outs: 0,
     steps: [
       s('Keine Runner. Ball fällt in die Mitte, der Batter rundet die 1 weit.'),
@@ -735,7 +735,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF — Batter will die 2', 'Outfield', {
+  play('Single ins RF — Batter will die 2', 'Outfield-Basics', {
     outs: 0,
     steps: [
       s('Dasselbe von rechts, und damit dreht sich das Paar.'),
@@ -756,7 +756,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF — Backup hinter der 2', 'Outfield', {
+  play('Single ins LF — Backup hinter der 2', 'Outfield-Basics', {
     outs: 1,
     startRunners: {},
     steps: [
@@ -774,7 +774,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF — Backup hinter der 1', 'Outfield', {
+  play('Single ins RF — Backup hinter der 1', 'Outfield-Basics', {
     outs: 0,
     startRunners: {},
     steps: [
@@ -888,7 +888,7 @@ const KATALOG = [
    * spaeter. Drei Staende, drei Faelle, dann die Ausnahme — kein Ablauf, sondern eine
    * Tabelle, die man durchblaettert.
    */
-  play('Wohin der Wurf geht', 'Outfield', {
+  play('Wohin der Wurf geht', 'Outfield-Basics', {
     outs: 0,
     steps: [
       s('Keiner drauf: zwei Bases weiter heisst die 2. Dorthin, wo der Batter hinwill.', {
@@ -914,7 +914,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF, Runner auf 1 — Wurf auf die 3', 'Outfield', {
+  play('Single ins LF, Runner auf 1 — Wurf auf die 3', 'Outfield-Basics', {
     outs: 0,
     startRunners: { r1: B1 },
     steps: [
@@ -936,7 +936,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins CF, Runner auf 1 — Wurf auf die 3', 'Outfield', {
+  play('Single ins CF, Runner auf 1 — Wurf auf die 3', 'Outfield-Basics', {
     outs: 1,
     startRunners: { r1: B1 },
     steps: [
@@ -955,7 +955,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF, Runner auf 1 — Wurf auf die 3', 'Outfield', {
+  play('Single ins RF, Runner auf 1 — Wurf auf die 3', 'Outfield-Basics', {
     outs: 1,
     startRunners: { r1: B1 },
     steps: [
@@ -978,7 +978,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF, Runner auf 2 — Wurf nach Home', 'Outfield', {
+  play('Single ins LF, Runner auf 2 — Wurf nach Home', 'Outfield-Basics', {
     outs: 1,
     startRunners: { r2: B2 },
     gameState: 'CLOSE_LATE',
@@ -1005,7 +1005,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF, Runner auf 2 — Wurf nach Home', 'Outfield', {
+  play('Single ins RF, Runner auf 2 — Wurf nach Home', 'Outfield-Basics', {
     outs: 1,
     startRunners: { r2: B2 },
     steps: [
@@ -1040,7 +1040,7 @@ const KATALOG = [
    * SS, rechts der 2B), der andere covert die 2, der Mann an der Zielbase stellt ihn,
    * die Corner bleiben an ihren Bases.
    */
-  play('Single ins CF, Runner auf 2 — Wurf nach Home', 'Outfield', {
+  play('Single ins CF, Runner auf 2 — Wurf nach Home', 'Outfield-Basics', {
     outs: 1,
     startRunners: { r2: B2 },
     steps: [
@@ -1065,7 +1065,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins RF, Runner auf 1 und 3 — Wurf auf die 3', 'Outfield', {
+  play('Single ins RF, Runner auf 1 und 3 — Wurf auf die 3', 'Outfield-Basics', {
     outs: 1,
     startRunners: { r1: B1, r3: B3 },
     gameStateNote: 'Der Run von der 3 faellt. Zu holen ist der Runner, der von der 1 kommt.',
@@ -1095,7 +1095,7 @@ const KATALOG = [
     ],
   }),
 
-  play('Single ins LF, Runner auf 1 und 2 — Wurf auf die 3', 'Outfield', {
+  play('Single ins LF, Runner auf 1 und 2 — Wurf auf die 3', 'Outfield-Basics', {
     outs: 0,
     startRunners: { r1: B1, r2: B2 },
     gameStateNote: 'Der von der 2 kommt nach Home durch. Der von der 1 ist der, den man kriegt.',
@@ -1622,7 +1622,7 @@ const KATALOG = [
    * vor LF und RF, und **gerufen wird dreimal**. Beim ersten Mal hoert es keiner, beim
    * zweiten dreht der andere den Kopf, beim dritten laeuft er ab.
    */
-  play('Fly in die linke Gasse — wer ruft', 'Outfield', {
+  play('Fly in die linke Gasse — wer ruft', 'Outfield-Basics', {
     outs: 0,
     startRunners: {},
     steps: [
