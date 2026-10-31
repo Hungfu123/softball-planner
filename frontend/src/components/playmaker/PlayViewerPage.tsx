@@ -111,6 +111,7 @@ function Viewer({
   onEdit: () => void
 }) {
   const { istAdmin, spielermodus } = useRolle()
+  const blaetternPer = useNavigate()
   const [legende, setLegende] = useState(false)
   const [groesse, setGroesse] = useState({ w: 390, h: 500 })
   const flaeche = useRef<HTMLDivElement>(null)
@@ -129,6 +130,25 @@ function Viewer({
    * ohne sie blaettert hier eben nichts.
    */
   const blaettern = useMemo(() => nachbarn(plays, play), [plays, play])
+
+  /*
+   * Am Rechner blaettert man mit den Pfeiltasten, nicht mit der Maus zum Knopf — genau
+   * wie in den Karten des Spielwissens. Dort stand es schon, hier fehlte es.
+   *
+   * Die Pfeile blaettern PLAYS, nicht Staende: dieselbe Bedeutung wie die Knoepfe
+   * darunter. Einzelne Staende waehlt man in der Liste daneben. Bei offener Legende
+   * passiert nichts — dort liegt ein Blatt ueber der Seite, und was darunter weiterspringt,
+   * sieht man nicht.
+   */
+  useEffect(() => {
+    if (legende) return
+    const taste = (e: KeyboardEvent) => {
+      const ziel = e.key === 'ArrowRight' ? blaettern.naechstes : e.key === 'ArrowLeft' ? blaettern.vorheriges : null
+      if (ziel) blaetternPer(`/orga/playmaker/${ziel.id}`)
+    }
+    window.addEventListener('keydown', taste)
+    return () => window.removeEventListener('keydown', taste)
+  }, [blaettern, legende, blaetternPer])
 
   useEffect(() => {
     const messen = () => {

@@ -379,6 +379,32 @@ async function gespeicherteNotiz(page: Page) {
   })
 }
 
+test('blaettert am Rechner mit den Pfeiltasten', async ({ page }) => {
+  // Dieselbe Taste tut in den Karten des Spielwissens dasselbe. Sie blaettert PLAYS,
+  // nicht Staende — einzelne Staende waehlt man in der Liste daneben.
+  await page.goto('/orga/playmaker')
+  await expect(page.getByLabel('Kategorie')).toContainText('Cut-off & Relay', { timeout: 15_000 })
+
+  await page.locator('a[href^="/orga/playmaker/"]').filter({ hasNotText: 'Freies Feld' }).first().click()
+  await page.waitForURL(/\/orga\/playmaker\/\d+$/)
+  // Erst wenn die Leiste steht, kennt die Seite ihre Nachbarn — die Liste kommt aus einem
+  // zweiten Abruf. Vorher gedrueckt, passiert zu Recht nichts.
+  const leiste = page.getByText(/Play \d+ von \d+/)
+  await expect(leiste).toBeVisible({ timeout: 15_000 })
+  const erstes = page.url()
+  const stand = await leiste.textContent()
+
+  await page.keyboard.press('ArrowRight')
+  // Auf die LEISTE warten, nicht auf die Adresse: die Adresse steht einen Wimpernschlag
+  // frueher als die Seite, und wer in diesem Moment zurueckdrueckt, drueckt noch gegen
+  // die Nachbarn des alten Plays. Ein Mensch sieht erst das neue Play.
+  await expect.poll(() => leiste.textContent(), { timeout: 5000 }).not.toBe(stand)
+  expect(page.url()).not.toBe(erstes)
+
+  await page.keyboard.press('ArrowLeft')
+  await expect.poll(() => page.url(), { timeout: 5000 }).toBe(erstes)
+})
+
 test('wechselt ueber das Gegenstueck auf ein anderes Play', async ({ page }) => {
   // Derselbe Route, nur eine andere id: die Seite wird NICHT neu aufgebaut. Ohne
   // Abbruchmarke und eigenen Baum je Play blieb das alte Play stehen — und der Editor
