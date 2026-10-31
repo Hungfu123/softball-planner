@@ -264,3 +264,48 @@ es so nennt.
 `frontend/src/components/howto/SpikeHowTo.tsx` und die Route `/spike-howto` in
 `frontend/src/routes.tsx` sind ein Wegwerf-Spike aus der Entwurfsphase. **Beide fliegen
 raus**, bevor das Echte steht.
+
+## Nachtrag vom 31.10.2026: eine Haelfte sieht aus wie die andere
+
+Der Entwurf oben sagt: **„Der bestehende Playmaker wird nicht umgefaerbt."** Das gilt nicht
+mehr. Der Betreiber hat die fertigen Offense-Karten neben die Play-Uebersicht gehalten und
+entschieden, dass beides gleich aussehen soll — nicht als Neuanstrich aus Geschmack,
+sondern weil zwei Bildsprachen fuer dasselbe Feld dieselben Farben verschieden benutzten.
+
+Was daraus folgte, in der Reihenfolge, in der es gebaut wurde:
+
+**Eine Palette, ein Platz.** `board/farben.ts` haelt die Werte, Spielwissen holt sie dort
+ab. Platz navy, Menschen und Linien cream, Amber ist, worauf man achtet, Rot heisst Out.
+Der Mini-Ausschnitt der Karten hat dieselben Deckkraefte wie das Board, Zaun inklusive.
+Dabei fiel auf, dass die Karten den Ball rot und den Laeufer cream malten — also genau
+andersherum als die Plays.
+
+**Zwei Luecken im Inhalt** wurden erst dadurch sichtbar: „Out: Wurf zur 1" hatte keinen
+Faenger (out ist man nicht, weil der Ball frueher da ist, sondern weil ihn jemand auf der
+Base haelt), und beim Ticken schwebte der Ball ohne Traeger auf die Laeuferin zu.
+
+**Die Wiedergabe ist kein Videospieler mehr.** Tempo, Schleife, Zeitleiste und „Stand 2 von
+4" sind weg; geblieben sind anhalten und „nochmal" — dasselbe Wort und dasselbe Zeichen wie
+unter einer Karte. Ein Play laeuft beim Oeffnen von selbst an, wie eine Karte beim
+Ankommen. Die Dauer kommt aus der Bewegung (`board/tempo.ts`), nicht aus `durationMs`, und
+der Ball hat seine eigene Uhr: er ist frueher da und wartet, statt neben dem Laeufer
+herzuschweben.
+
+**Eine Kategorie ist ein Kapitel.** `?kategorie=` zeigt Kopf, Satz, Stufe und die Plays —
+ohne grosses Feld, ohne Suche, ohne freies Feld, ohne Werkzeuge an den Zeilen. Die Werkbank
+mit Suche, freiem Feld und „Neues Play" bleibt dem Trainer und liegt eine Zeile weiter.
+
+**Stufen als Punkte.** Drei Punkte je Kapitel, abgeleitet aus der Sortierung, die der
+Trainer setzt; dazu eine Legende. Punkte je einzelnem Play gab es kurz und sind wieder
+weg: Base-Coverage trug einen Punkt und fast jedes Play darin drei — zwei Massstaebe mit
+demselben Zeichen sind schlechter als einer.
+
+**Die Startseite zeigt beide Haelften gleich** (dieselbe Karte, dieselbe Zeile, dieselben
+Punkte) und von Defense zunaechst nur die zwei Kapitel mit einem Punkt. Acht Kategorien mit
+vierundfuenfzig Plays sind eine Bibliothek, keine Lektion.
+
+**Absicherung ist eine Regel, kein Katalogeintrag** (siehe `docs/PLAYMAKER.md`). Vorher
+stand bei 8 von 48 Wuerfen auf eine Base jemand dahinter, jetzt bei 46.
+
+**Loeschen darf nur der Superadmin**, in der Oberflaeche und im Backend: die Start-Plays
+kommen aus einer Migration.
