@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { HOME, FIRST_BASE, SKIN_PATH, FOUL_LINES_PATH, BASES } from '@/components/playmaker/board/geometry'
+import { HOME, FIRST_BASE, SKIN_PATH, FOUL_LINES_PATH, FENCE_PATH, BASES } from '@/components/playmaker/board/geometry'
 
 /**
  * Die Zeichenteile, die sich alle Karten teilen.
@@ -113,13 +113,20 @@ export function MiniFeld({ ausschnitt, className = '', children }: {
   const a = AUSSCHNITTE[ausschnitt]
   return (
     <svg viewBox={`${a.x} ${a.y} ${a.w} ${a.h}`} className={`w-full ${className}`} aria-hidden focusable="false">
+      {/*
+        Dieselben Werte wie das Board im Playmaker (`PlayBoard`, Feld): Sand als Ahnung,
+        Linien halb, Zaun schwaecher, Bases fast voll. Die beiden Haelften der App zeigen
+        denselben Platz — dann soll er auch gleich aussehen, egal ob eine Karte ihn im
+        Ausschnitt zeigt oder ein Play ihn ganz.
+      */}
       <path d={SKIN_PATH} fill={FARBE.hell} opacity="0.08" />
-      <path d={FOUL_LINES_PATH} fill="none" stroke={FARBE.hell} strokeWidth="1.2" opacity="0.55" />
+      <path d={FOUL_LINES_PATH} fill="none" stroke={FARBE.hell} strokeWidth="1.4" strokeLinecap="round" opacity="0.5" />
+      <path d={FENCE_PATH} fill="none" stroke={FARBE.hell} strokeWidth="1.4" strokeLinecap="round" opacity="0.4" />
       {BASES.map((b, i) => (
         <rect
           key={i}
           x={b.x - 2.6} y={b.y - 2.6} width="5.2" height="5.2"
-          fill={FARBE.hell} opacity="0.75"
+          fill={FARBE.hell} opacity="0.8"
           transform={`rotate(45 ${b.x} ${b.y})`}
         />
       ))}

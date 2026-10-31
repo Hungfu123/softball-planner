@@ -19,13 +19,24 @@ describe('OrgaHome', () => {
     ['Trainerabrechnung', '/orga/trainerabrechnung'],
     ['Kalender', '/kalender'],
     ['Einladungen', '/orga/einladungen'],
-    ['Playmaker', '/orga/playmaker'],
     ['Accounts', '/orga/accounts'],
     ['Spielbogen', '/spielbogen'],
     ['Historie', '/orga/historie'],
+    ['Spielwissen', '/spielwissen'],
   ])('Kachel %s zeigt auf %s', (name, ziel) => {
     render(<MemoryRouter><OrgaHome /></MemoryRouter>)
     expect(screen.getByRole('link', { name: new RegExp(name) })).toHaveAttribute('href', ziel)
+  })
+
+  /*
+   * EINE Tür zum Spielwissen, nicht zwei. Der Playmaker stand hier als eigene Kachel und
+   * führte auf dieselbe Hälfte, die drinnen „Defense" heißt — wer die Kachel nahm, sah
+   * die andere Hälfte nie.
+   */
+  it('zeigt keine eigene Playmaker-Kachel mehr', () => {
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
+
+    expect(screen.queryByRole('link', { name: /Playmaker/ })).toBeNull()
   })
 
   it('zeigt die drei Blöcke in der Reihenfolge oben, Weiteres, Selten', () => {

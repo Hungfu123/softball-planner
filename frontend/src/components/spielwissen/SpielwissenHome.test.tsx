@@ -60,8 +60,11 @@ describe('Spielwissen-Uebersicht', () => {
     expect(container.textContent).not.toContain('—')
   })
 
-  /* Offense muss ohne Netz gehen. Ein einziger Abruf hier braeche das Versprechen. */
-  it('ruft nichts unter /api ab', () => {
+  /*
+   * Die Seite holt genau EINEN Abruf: die Kategorien, damit Defense dieselben Zeilen
+   * zeigen kann wie Offense. Mehr nicht — und vor allem darf Offense nicht daran haengen.
+   */
+  it('ruft nur die Kategorien ab, sonst nichts unter /api', () => {
     const rufe: string[] = []
     const alt = globalThis.fetch
     globalThis.fetch = ((eingabe: RequestInfo | URL) => {
@@ -75,6 +78,21 @@ describe('Spielwissen-Uebersicht', () => {
       globalThis.fetch = alt
     }
 
-    expect(rufe.filter(u => u.includes('/api'))).toEqual([])
+    expect(rufe.filter(u => u.includes('/api'))).toEqual(['/api/play-categories'])
+  })
+
+  /* Und wenn der Abruf scheitert, steht Offense trotzdem da — das ist das Versprechen. */
+  it('zeigt Offense auch ohne Netz, und Defense als eine Tür', () => {
+    const alt = globalThis.fetch
+    globalThis.fetch = (() => Promise.reject(new Error('kein Netz im Test'))) as typeof fetch
+
+    try {
+      zeige()
+    } finally {
+      globalThis.fetch = alt
+    }
+
+    expect(screen.getByRole('link', { name: /In der Box/ })).toHaveAttribute('href', '/spielwissen/box')
+    expect(screen.getByRole('link', { name: /Defense/ })).toHaveAttribute('href', '/orga/playmaker')
   })
 })

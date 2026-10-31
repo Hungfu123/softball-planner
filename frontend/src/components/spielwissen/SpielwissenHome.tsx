@@ -1,96 +1,269 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
 import { KAPITEL, stichworte } from './kapitel'
+import { getPlayCategories } from '@/api/plays'
+import type { PlayCategory } from '@/components/playmaker/board/types'
 
 /**
  * Der Einstieg ins Spielwissen.
  *
  * Die oberste Ebene ist der Schnitt, in dem ein Softballer denkt: **Offense gegen
- * Defense**. Sie ordnet die beiden Haelften ohne ein erklaerendes Wort, und sie sagt dem
- * Neuen nebenbei, dass es ueberhaupt zwei gibt.
+ * Defense**. Beide Haelften sehen gleich aus — dieselbe Karte, dieselbe Zeile, dieselben
+ * Punkte fuer die Schwierigkeit —, weil sie dasselbe sind: etwas, das man lernen kann.
+ * Vorher war Offense eine Liste aus drei Kapiteln und Defense eine einzige Tuer.
  *
- * Die Kapitel tragen **keine Nummern, sondern ihre Frage**. Wer vor dem Spiel etwas
- * nachschlaegt, sucht eine Frage, keine Ordnungszahl.
+ * **Die Reihenfolge ist einfach nach schwer.** Wer die Seite zum Lernen aufmacht, faengt
+ * oben an und arbeitet sich nach unten; die Punkte sagen vorher, worauf man sich
+ * einlaesst.
  *
- * Defense fuehrt **ohne Zwischenseite** in die bestehende Play-Uebersicht. Eine Seite,
- * auf der nur „hier geht es weiter" steht, ist ein Tipp, der nichts bringt.
+ * Auf dem Handy stehen beide Haelften untereinander, am breiten Schirm nebeneinander:
+ * links die Wahl, rechts die Eintraege. Kein Reiter, der etwas versteckt — am Handy ist
+ * die Seite kurz genug, dass beides hinpasst.
  */
+
+/** Die Kapitel tragen ihre Stufe selbst; fuer Defense kommt sie aus der Sortierung. */
+function stufeAusSortierung(sortOrder: number): 1 | 2 | 3 {
+  if (sortOrder <= 20) return 1
+  if (sortOrder <= 50) return 2
+  return 3
+}
 
 /**
- * Was hinter Defense liegt, in Stichworten.
+ * Drei Punkte. Gefuellt heisst schwerer.
  *
- * **Geschriebene Worte, keine geladenen Kategorien.** Die Kategorien stehen in der
- * Datenbank, und ein Abruf dafuer wuerde das Versprechen dieser Seite brechen: Offense
- * laeuft ohne Netz, und ein Test haelt fest, dass hier nichts unter `/api` gerufen wird.
- * Der Preis ist, dass die Zeile von den Kategorien abweichen kann; sie nennt deshalb die
- * Lagen, nicht die Liste — stimmen muss sie im Sinn, nicht im Wortlaut.
+ * Punkte statt Woertern wie „leicht/mittel/schwer": man liest sie in einem Blick, sie
+ * brauchen keine Uebersetzung, und sie stehen in jeder Zeile an derselben Stelle.
  */
-const DEFENSE_STICHWORTE = ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff', 'Wer deckt was']
-
-function Ueberschrift({ children }: { children: React.ReactNode }) {
+function Stufe({ stufe }: { stufe: 1 | 2 | 3 }) {
   return (
-    <div className="flex items-center gap-3">
-      <h2 className="font-display text-xs font-bold uppercase tracking-widest text-ink-muted">{children}</h2>
-      <span className="h-px flex-1 bg-line" aria-hidden="true" />
+    <span className="flex shrink-0 items-center gap-1" title={`Stufe ${stufe} von 3`}>
+      {/* EINMAL vorlesen. Zwei Fassungen für hell und dunkel standen beide im Text, und
+          eine Vorlesestimme sagte „Stufe 1 von 3, Stufe 1 von 3". Die Farbe macht jetzt
+          das CSS über die Gruppe, nicht ein zweites Element. */}
+      <span className="sr-only">Stufe {stufe} von 3</span>
+      {[1, 2, 3].map(i => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className={`h-1.5 w-1.5 rounded-full ${
+            i <= stufe
+              ? 'bg-ink-strong group-hover:bg-accent-ink'
+              : 'bg-line-strong group-hover:bg-accent-ink/30'
+          }`}
+        />
+      ))}
+    </span>
+  )
+}
+
+/** Eine Zeile, und zwar dieselbe fuer Offense wie fuer Defense. */
+function Eintrag({
+  to,
+  titel,
+  frage,
+  worte,
+  stufe,
+  bild,
+}: {
+  to: string
+  titel: string
+  frage: string
+  worte: string[]
+  stufe: 1 | 2 | 3
+  bild?: boolean
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-3 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
+    >
+      {/* Dieselbe Geometrie wie die Plays dahinter. Das Bild ist die Ankuendigung. */}
+      {bild && <FeldMiniatur className="h-12 w-14 shrink-0 text-ink-faint group-hover:text-accent-ink/70" />}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-display truncate text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base">
+            {titel}
+          </span>
+          <Stufe stufe={stufe} />
+        </div>
+        <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
+          {frage}
+        </div>
+        {worte.length > 0 && (
+          /* Was drinsteht, in Stichworten: ein Kapitel ist rund drei Bildschirme, und wer
+             eine Sache sucht, soll nicht drei davon durchwischen muessen. */
+          <div className="font-display mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint group-hover:text-accent-ink/70">
+            {worte.join(' · ')}
+          </div>
+        )}
+      </div>
+      <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />
+    </Link>
+  )
+}
+
+/**
+ * Die Ueberschrift einer Haelfte, und zwar als Block statt als duenner Strich.
+ *
+ * **Am Handy bleibt es ein Scrollen, kein Nebeneinander.** Zwei Spalten geben auf 393 px
+ * je 180 px her — zu wenig fuer Titel, Frage und Stichworte, und abgeschnittene Zeilen
+ * erklaeren nichts. Ein Reiter oder ein Tipp, der erst zeigt „das ist Defense", kostet
+ * einen Schritt und verbirgt dabei die eine Haelfte. Also steht beides untereinander,
+ * und WAS die Haelfte ist, sagt der Kopf: ein Wort, ein Satz, ein farbiger Balken.
+ *
+ * Am breiten Schirm liegen die Haelften nebeneinander — dort ist die senkrechte Teilung
+ * genau das, was sie sein soll, und kostet nichts.
+ */
+function Haelfte({ titel, satz }: { titel: string; satz: string }) {
+  return (
+    <div className="flex items-start gap-3 pt-1">
+      <span className="mt-1 h-8 w-1 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+      <div className="min-w-0">
+        <h2 className="font-headline text-lg font-extrabold uppercase leading-none tracking-wide text-ink-strong">
+          {titel}
+        </h2>
+        <p className="mt-1 text-[13px] leading-snug text-ink-muted">{satz}</p>
+      </div>
     </div>
   )
 }
 
-export default function SpielwissenHome() {
-  return (
-    <div className="mx-auto max-w-2xl space-y-3 pb-6 sm:space-y-4">
-      <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong sm:text-3xl">
-        Spielwissen
-      </h1>
+/**
+ * Was hinter Defense liegt, falls die Kategorien nicht kommen.
+ *
+ * Die Seite laedt sie (ein kleiner Abruf, `/play-categories`), **braucht sie aber
+ * nicht**: ohne Netz steht hier eine Tuer mit denselben Worten wie vorher. Offense
+ * haengt an gar keinem Abruf — das ist das Versprechen dieser Seite, und ein Test
+ * haelt es fest.
+ */
+const DEFENSE_STICHWORTE = ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff', 'Wer deckt was']
 
-      <Ueberschrift>Offense</Ueberschrift>
-      <div className="space-y-2">
-        {KAPITEL.map(k => (
-          <Link
-            key={k.id}
-            to={`/spielwissen/${k.id}`}
-            className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-3 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="font-display text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base">
-                {k.titel}
-              </div>
-              <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
-                {k.frage}
-              </div>
-              {/* Was drinsteht, in Stichworten. Ein Kapitel ist rund drei Bildschirme;
-                  wer eine Sache sucht, soll nicht drei davon durchwischen muessen, um zu
-                  merken, dass sie im naechsten Kapitel liegt. */}
-              <div className="font-display mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint group-hover:text-accent-ink/70">
-                {stichworte(k).join(' · ')}
-              </div>
-            </div>
-            <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />
-          </Link>
-        ))}
+export default function SpielwissenHome() {
+  const [kategorien, setKategorien] = useState<PlayCategory[] | null>(null)
+  /* Die schwereren Kategorien liegen einen Tipp entfernt, nicht hinter einer Seite. */
+  const [mehr, setMehr] = useState(false)
+
+  useEffect(() => {
+    let abgebrochen = false
+    getPlayCategories()
+      .then(k => {
+        if (!abgebrochen) setKategorien(k)
+      })
+      .catch(() => {
+        /* Ohne Netz bleibt es bei der einen Tuer. Kein Fehler, nur weniger. */
+      })
+    return () => {
+      abgebrochen = true
+    }
+  }, [])
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-4 pb-6">
+      <div>
+        <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong sm:text-3xl">
+          Spielwissen
+        </h1>
+        <p className="mt-0.5 text-sm text-ink-muted">
+          Von oben nach unten: erst das, was am ersten Tag reicht.
+        </p>
       </div>
 
-      <Ueberschrift>Defense</Ueberschrift>
-      <Link
-        to="/orga/playmaker"
-        className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-3 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
-      >
-        {/* Dieselbe Geometrie wie die Plays dahinter. Das Bild ist die Ankuendigung. */}
-        <FeldMiniatur className="h-12 w-14 shrink-0 text-ink-faint group-hover:text-accent-ink/70" />
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base">
-            Defense
-          </div>
-          <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
-            Wer steht wo, und wohin geht der Ball?
-          </div>
-          <div className="font-display mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint group-hover:text-accent-ink/70">
-            {DEFENSE_STICHWORTE.join(' · ')}
-          </div>
-        </div>
-        <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />
-      </Link>
+      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+        <section className="space-y-2">
+          <Haelfte titel="Offense" satz="Du bist am Schlag oder auf der Base. Was darfst du, was kostet dich den Out?" />
+          {[...KAPITEL]
+            .sort((a, b) => a.stufe - b.stufe)
+            .map(k => (
+              <Eintrag
+                key={k.id}
+                to={`/spielwissen/${k.id}`}
+                titel={k.titel}
+                frage={k.frage}
+                worte={stichworte(k)}
+                stufe={k.stufe}
+              />
+            ))}
+        </section>
+
+        <section className="space-y-2">
+          <Haelfte titel="Defense" satz="Der Ball ist im Spiel, du stehst im Feld. Wohin gehörst du, wohin der Ball?" />
+          {kategorien && kategorien.length > 0 ? (
+            <>
+              {/*
+                Nicht alles auf einmal.
+
+                Acht Kategorien mit einundfuenfzig Plays sind eine Bibliothek, keine
+                Lektion: wer zum ersten Mal herkommt, soll nicht zwischen Rundown und
+                First-and-Third waehlen muessen, sondern wissen, wo er hingehoert, wenn
+                der Ball irgendwo hinfliegt. Das sind die beiden mit einem Punkt. Der
+                Rest liegt einen Tipp entfernt und laeuft nicht weg.
+              */}
+              {kategorien.filter(k => stufeAusSortierung(k.sortOrder) === 1).map(k => (
+                <Eintrag
+                  key={k.id}
+                  to={`/orga/playmaker?kategorie=${k.id}`}
+                  titel={k.name}
+                  frage={DEFENSE_FRAGE[k.name] ?? 'Wer steht wo, und wohin geht der Ball?'}
+                  worte={[]}
+                  stufe={stufeAusSortierung(k.sortOrder)}
+                />
+              ))}
+
+              {mehr ? (
+                kategorien.filter(k => stufeAusSortierung(k.sortOrder) > 1).map(k => (
+                  <Eintrag
+                    key={k.id}
+                    to={`/orga/playmaker?kategorie=${k.id}`}
+                    titel={k.name}
+                    frage={DEFENSE_FRAGE[k.name] ?? 'Wer steht wo, und wohin geht der Ball?'}
+                    worte={[]}
+                    stufe={stufeAusSortierung(k.sortOrder)}
+                  />
+                ))
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setMehr(true)}
+                  className="font-display min-h-11 w-full rounded-xl border border-dashed border-line px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-ink-muted hover:bg-surface-raised active:bg-surface-raised"
+                >
+                  Für den Anfang reichen die zwei. Mehr zeigen (
+                  {kategorien.filter(k => stufeAusSortierung(k.sortOrder) > 1).length})
+                </button>
+              )}
+            </>
+          ) : (
+            <Eintrag
+              to="/orga/playmaker"
+              titel="Defense"
+              frage="Wer steht wo, und wohin geht der Ball?"
+              worte={DEFENSE_STICHWORTE}
+              stufe={1}
+              bild
+            />
+          )}
+        </section>
+      </div>
     </div>
   )
+}
+
+/**
+ * Ein Satz je Kategorie — dieselbe Zeile, die ein Offense-Kapitel als Frage traegt.
+ *
+ * Steht hier und nicht in der Datenbank: es ist Text fuer diese Seite, kein Feld, das
+ * jemand pflegen muss. Faellt eine Kategorie heraus oder kommt eine dazu, steht da der
+ * allgemeine Satz — falsch wird nichts.
+ */
+const DEFENSE_FRAGE: Record<string, string> = {
+  Spielsituationen: 'Der Ball geht irgendwohin. Was tust du?',
+  'Base-Coverage': 'Wer deckt welche Base, wenn es losgeht?',
+  'Pop-up-Priorities': 'Hoher Ball zwischen zweien. Wer ruft?',
+  'Bunt-Defense': 'Der Bunt liegt da. Wer holt ihn, wohin geht der Wurf?',
+  'Steal-Defense & Pickoff': 'Der Runner geht. Wer deckt, wer wirft?',
+  Rundown: 'Zwischen zwei Bases gefangen. Wie macht man den Out?',
+  /* Kein Gedankenstrich: Vorgabe des Betreibers für sichtbaren Text. */
+  'First-and-Third': 'Runner auf 1 und 3, und beide laufen.',
+  'Cut-off & Relay': 'Der Ball ist weit weg. Die Kette nach innen.',
 }

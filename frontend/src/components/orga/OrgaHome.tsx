@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Card, Abschnittsmarke } from '@/components/shared'
-import { SendIcon, CounterIcon, CalendarIcon, CrossBones, ClipboardListIcon } from '@/icons'
+import { SendIcon, CounterIcon, CalendarIcon, ClipboardListIcon } from '@/icons'
 import { BookOpen, Mail, Receipt, ChevronRight, Users, History } from 'lucide-react'
 import { useRolle } from '@/hooks/useRolle'
 
@@ -106,10 +106,14 @@ export function OrgaHome() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
         <Kachel to="/kalender" icon={<CalendarIcon size={20} />} titel="Kalender" untertitel="Termine, ICS-Export" />
         <Kachel to="/orga/einladungen" icon={<Mail size={20} />} titel="Einladungen" untertitel="Für Heimspieltage" />
-        <Kachel to="/orga/playmaker" icon={<CrossBones size={20} />} titel="Playmaker" untertitel="Spielzüge zeigen" />
-        {/* Spielwissen hat in der Spielerleiste einen eigenen Reiter. Beim Trainer liegt
-            es hier: er schlaegt die Regeln selten nach, ein Neuer dauernd. */}
-        <Kachel to="/spielwissen" icon={<BookOpen size={20} />} titel="Spielwissen" untertitel="Regeln und Plays" />
+        {/*
+          EINE Kachel, nicht zwei. Der Playmaker stand hier bis zum 31.10.2026 daneben und
+          fuehrte auf dieselbe Haelfte, die im Spielwissen „Defense" heisst — zwei Namen
+          fuer eine Sache, und wer die eine Kachel nahm, sah die andere Haelfte nie.
+          Spielwissen hat in der Spielerleiste ohnehin einen eigenen Reiter; beim Trainer
+          liegt es hier, weil er die Regeln selten nachschlaegt und ein Neuer dauernd.
+        */}
+        <Kachel to="/spielwissen" icon={<BookOpen size={20} />} titel="Spielwissen" untertitel="Offense und Defense" />
       </div>
 
       <Ueberschrift>Selten</Ueberschrift>
