@@ -1,6 +1,3 @@
-import type { Play } from './board/types'
-import { beteiligte } from './board/beteiligte'
-
 /**
  * Ein Satz je Kategorie, und die Stufe dazu.
  *
@@ -35,28 +32,5 @@ export const kategorieSatz = (name: string) =>
 export function kategorieStufe(sortOrder: number): 1 | 2 | 3 {
   if (sortOrder <= 20) return 1
   if (sortOrder <= 50) return 2
-  return 3
-}
-
-/**
- * Wie schwer ein einzelnes Play ist — gerechnet, nicht gepflegt.
- *
- * Zwei Dinge machen ein Play schwer: **wie viele Leute den Ball anfassen** (eine Kette
- * ueber drei Stationen muss man sich merken) und **wie viele Runner unterwegs sind**
- * (jeder zwingt zu einer Entscheidung). Beides steht in den Staenden.
- *
- * Bewusst grob: drei Stufen sollen sortieren, nicht benoten. Ein Feld dafuer muesste
- * jemand bei jeder Aenderung nachziehen, und ein vergessenes Feld sagt etwas Falsches.
- */
-export function playStufe(play: Play): 1 | 2 | 3 {
-  const kette = beteiligte(play.steps).length
-  const runner = Math.max(
-    0,
-    ...play.steps.map(s => s.markers.runners.filter(r => r.status === 'ACTIVE').length),
-  )
-
-  const punkte = kette + runner
-  if (punkte <= 2) return 1
-  if (punkte <= 4) return 2
   return 3
 }

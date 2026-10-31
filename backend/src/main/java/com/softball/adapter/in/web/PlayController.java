@@ -50,7 +50,18 @@ public class PlayController {
         return PlayResponse.from(playService.duplicate(id));
     }
 
+    /**
+     * Loeschen darf nur der Superadmin.
+     *
+     * Ein Play ist Lernstoff, kein Arbeitsstand: die einundfuenfzig Start-Plays kommen aus
+     * einer Migration, und ein versehentlich geloeschtes ist nur ueber eine neue Migration
+     * wieder da. Trainer bauen und aendern, weggeraeumt wird eine Stufe hoeher.
+     *
+     * **Nicht nur in der Oberflaeche:** dort verschwindet der Papierkorb zwar, aber ein
+     * ausgeblendeter Knopf ist kein Verbot — die Regel steht hier.
+     */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable final Long id) {
         playService.delete(id);

@@ -7,7 +7,6 @@ import type { Treffer } from './suche'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CopyIcon, TrashBin } from '@/icons'
 import { useRolle } from '@/hooks/useRolle'
-import { StufePunkte } from '@/components/shared/StufePunkte'
 
 /** Woher der Treffer kommt — ein Wort, damit die Zeile einzeilig bleibt. */
 const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
@@ -33,19 +32,25 @@ const LAGE_TEXT: Record<Play['gameState'], string | null> = {
 export function PlayRow({
   play,
   treffer = null,
-  stufe,
+  werkzeuge = true,
   onDuplicate,
   onDelete,
 }: {
   play: Play
   /** Fundstelle der Suche — steht statt der Ausgangslage, wenn sie woanders liegt. */
   treffer?: Treffer | null
-  /** Im Kapitel: wie schwer dieses Play ist. In der langen Liste ohne Angabe. */
-  stufe?: 1 | 2 | 3
+  /**
+   * Kopieren und Loeschen daneben.
+   *
+   * Im Kapitel stehen sie NICHT: dort liest man. Zwei Werkzeugknoepfe je Zeile nahmen
+   * dem Titel die Breite („Grounder zum SS — wer…"), und der Trainer verwaltet seine
+   * Plays in der vollen Liste, wo auch Suche und „Neues Play" sind.
+   */
+  werkzeuge?: boolean
   onDuplicate: () => void
   onDelete: () => void
 }) {
-  const { istAdmin } = useRolle()
+  const { istAdmin, istSuperadmin } = useRolle()
   const [loeschen, setLoeschen] = useState(false)
   const lage = LAGE_TEXT[play.gameState]
 
@@ -68,12 +73,13 @@ export function PlayRow({
             {treffer.text}
           </div>
         ) : (
-          <div className="mt-0.5 flex items-center gap-2 text-xs tabular-nums text-gray-500">
-            <span className="truncate">{beschreibung(play)}</span>
-            {/* Die Punkte stehen in der zweiten Zeile: neben dem Titel nahmen sie ihm die
-                Breite, und in einer Liste aus Titeln ist der Titel das Wichtigste. */}
-            {stufe && <StufePunkte stufe={stufe} />}
-          </div>
+          /*
+           * Keine Punkte je Play: sie standen hier kurz und widersprachen dem Kapitel.
+           * Base-Coverage trägt einen Punkt, und fast jedes Play darin zeigte drei. Zwei
+           * Maßstäbe mit demselben Zeichen sind schlechter als einer — die Stufe gehört
+           * dem Kapitel, drinnen sind alle Plays von derselben Art.
+           */
+          <div className="mt-0.5 truncate text-xs tabular-nums text-gray-500">{beschreibung(play)}</div>
         )}
       </Link>
       {lage && (
@@ -81,7 +87,7 @@ export function PlayRow({
           {lage}
         </span>
       )}
-      {istAdmin && <div className="actions-reveal flex shrink-0 items-center gap-1">
+      {istAdmin && werkzeuge && <div className="actions-reveal flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={onDuplicate}
@@ -90,14 +96,17 @@ export function PlayRow({
         >
           <CopyIcon size={16} />
         </button>
-        <button
+        {/* Loeschen nur fuer den Superadmin: ein Play ist Lernstoff, kein Arbeitsstand,
+            und die Start-Plays kommen aus einer Migration. Das Backend haelt dieselbe
+            Regel (`PlayController.delete`) — der versteckte Knopf allein waere keine. */}
+        {istSuperadmin && <button
           type="button"
           onClick={() => setLoeschen(true)}
           className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-400 hover:bg-softball-red-600 hover:text-white"
           aria-label="Play löschen"
         >
           <TrashBin size={16} />
-        </button>
+        </button>}
       </div>}
 
       {loeschen && (
