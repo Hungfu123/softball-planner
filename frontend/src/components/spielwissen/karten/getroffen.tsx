@@ -231,7 +231,7 @@ export function RausGefangen({ lauf, ruhig }: BuehnenProps) {
 export function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="relative flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         {/*
           Der 1B steht an der Base und fängt.
 
