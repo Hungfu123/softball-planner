@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useReducedMotionConfig } from 'motion/react'
 import type { KartenDaten } from './kapitel'
-import { RefreshIcon } from '@/icons'
 
 /**
- * Die Huelle um eine Karte: Buehne oben, Aussage unten, „nochmal" darunter.
+ * Die Buehne einer Karte, formatfuellend — **das Gegenstueck zum Feld im Play**.
+ *
+ * Vorher war die Karte ein Gegenstand: gerundeter Kasten mit Rand, Pointe und „nochmal"
+ * darin, mitten auf einer cremefarbenen Seite mit Navigation darueber. Nebeneinander
+ * gehalten zeigte sich der Bruch sofort — die Defense nimmt den ganzen Bildschirm, die
+ * Offense zeigte einen Ausschnitt in der Mitte. Dieselbe Sache, zwei Ansichten.
+ *
+ * Jetzt traegt die Seite, was die Karte trug: Pointe und Satz stehen unter der Buehne wie
+ * die Notiz unter dem Feld, „nochmal" sitzt unten am Rand wie die Wiedergabeleiste. Hier
+ * bleibt die Buehne und die Frage, **ob sie laeuft**.
  *
  * **Navy in beiden Themes.** Wie die Analyse-Seiten ist das Gestaltung der Seite und
  * nicht das Theme: auf dunklem Grund stehen die Zeichnungen, und die Pointe in Amber
- * liegt darauf, wo sie im Hellen verschwaende. Der helle Rand ist dafuer der Preis: im
- * Dunkeln liegt die Karte sonst auf einer fast gleich dunklen Seite und hoert auf, ein
- * Gegenstand zu sein. Im Hellen faellt er nicht auf.
+ * liegt darauf, wo sie im Hellen verschwaende.
  *
  * **Nichts laeuft in Schleife.** Eine Dauerbewegung neben einem Satz, den man liest, ist
  * Laerm. Wer sie noch einmal sehen will, tippt „nochmal".
@@ -19,38 +25,30 @@ import { RefreshIcon } from '@/icons'
  * darin. Das ist der Unterschied zwischen „laeuft neu ab" und „faengt neu an": ein key
  * weiter innen haengt nur das DOM neu, die Komponente bleibt stehen und mit ihr ihr
  * `useState`. Die Count-Karte blieb so nach drei Strikes fuer immer auf OUT, mit einem
- * Knopf daneben, der nichts tat.
+ * Knopf daneben, der nichts tat. Er kommt von aussen, weil der Knopf dazu unten am
+ * Bildschirmrand steht und nicht mehr in der Karte.
  *
  * **Reduzierte Bewegung traegt die Karte selbst.** Die Regel in `styles/index.css` ist
  * reines CSS und fasst `motion/react` nicht an, weil das aus JavaScript animiert. Ohne
  * `ruhig` liefen die Sequenzen bei abgeschalteter Bewegung weiter, und zwar in voller
- * Laenge. Dann faellt auch „nochmal" weg: es gibt nichts abzuspielen.
- *
- * Dasselbe gilt fuer `selbstgesteuert`: eine Karte mit eigenen Knoepfen laeuft nicht ab,
- * sie wird bedient. „nochmal" waere dort ein zweiter Weg zum selben Ziel.
+ * Laenge.
  *
  * Gelesen wird `useReducedMotionConfig`, nicht `useReducedMotion`: nur das erste achtet
  * auf das `<MotionConfig reducedMotion>` der App (main.tsx setzt dort „user", faellt also
  * auf die Systemeinstellung durch). Das zweite liest `matchMedia` einmal in einen
  * Modulzustand und ist danach fuer den ganzen Prozess festgenagelt.
  */
-export function Karte({ karte, aktiv }: { karte: KartenDaten; aktiv: boolean }) {
-  const [lauf, setLauf] = useState(0)
+export function Karte({ karte, aktiv, lauf = 0 }: { karte: KartenDaten; aktiv: boolean; lauf?: number }) {
   const [gespielt, setGespielt] = useState(false)
   const ruhig = Boolean(useReducedMotionConfig())
   const { Buehne } = karte
 
   /*
    * Die Sequenz beginnt, wenn die Karte die aktive ist, nicht beim Aufbau der Seite.
+   * Welche dran ist, entscheidet die Kapitelseite — sie sieht alle.
    *
-   * Gemessen: ein Kapitel ist rund drei Bildschirme hoch, beim Laden ist genau EINE Karte
-   * zur Haelfte zu sehen, und bis zu DREI stehen gleichzeitig weit genug im Bild, um eine
-   * Schwelle zu reissen. Starteten alle beim Aufbau, waeren fuenf von sechs vorbei, bevor
-   * jemand hinsieht; startete jede fuer sich, liefen drei nebeneinander. Welche dran ist,
-   * entscheidet deshalb die Kapitelseite — sie sieht alle.
-   *
-   * Einmal gespielt bleibt gespielt: beim Zurueckscrollen faengt nichts von selbst wieder
-   * an. Dafuer gibt es „nochmal".
+   * Einmal gespielt bleibt gespielt: beim Zurueckblaettern faengt nichts von selbst
+   * wieder an. Dafuer gibt es „nochmal".
    */
   useEffect(() => {
     if (aktiv && !ruhig) setGespielt(true)
@@ -59,38 +57,18 @@ export function Karte({ karte, aktiv }: { karte: KartenDaten; aktiv: boolean }) 
   const steht = ruhig || !gespielt
 
   return (
-    <article id={`karte-${karte.id}`} className="overflow-hidden rounded-2xl border border-cream-50/35 bg-navy-900 text-cream-50">
-      <div className="relative">
-        <Buehne key={`${gespielt}-${lauf}`} lauf={lauf} ruhig={steht} />
-      </div>
-
-      <div className="px-4 pb-3 pt-1">
-        <h3 className="font-display text-base font-extrabold uppercase leading-tight tracking-wide text-amber-400 sm:text-lg">
-          {karte.pointe}
-        </h3>
-        {karte.satz && (
-          <p className="mt-1 text-[13px] leading-snug text-cream-50/75">{karte.satz}</p>
-        )}
-      </div>
-
-      {!ruhig && !karte.selbstgesteuert && (
-        /*
-         * Derselbe Knopf wie unten in der Defense: gleiche Hoehe, gleiches Zeichen,
-         * gleiches Wort, ruhige Kante statt Farbe. Er steht IN der Karte, weil er zu ihr
-         * gehoert — drueben ist die Buehne die ganze Seite, deshalb sitzt er dort am
-         * Bildschirmrand. Dieselbe Sache, dieselbe Form.
-         */
-        <div className="px-4 pb-3">
-          <button
-            type="button"
-            onClick={() => setLauf(x => x + 1)}
-            className="font-display flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-cream-50/25 text-sm font-bold text-cream-50 active:bg-cream-50/10"
-          >
-            <RefreshIcon size={16} />
-            nochmal
-          </button>
-        </div>
-      )}
-    </article>
+    /*
+     * `justify-center`: eine Buehne, die breiter als hoch ist, kann am Handy nie den
+     * ganzen Platz fuellen — das Seitenverhaeltnis steckt im viewBox. Sie steht dann in
+     * der Mitte des freien Platzes und teilt den Rest oben und unten, statt oben zu
+     * kleben und unten eine Luecke zu lassen.
+     */
+    <div
+      id={`karte-${karte.id}`}
+      data-buehne
+      className="flex h-full min-h-0 flex-col justify-center overflow-hidden"
+    >
+      <Buehne key={`${gespielt}-${lauf}`} lauf={lauf} ruhig={steht} />
+    </div>
   )
 }

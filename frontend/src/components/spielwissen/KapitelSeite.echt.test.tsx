@@ -29,7 +29,7 @@ describe('Kapitelseite mit den echten Daten', () => {
 
         for (const [i, karte] of kapitel.karten.entries()) {
           await waitFor(() =>
-            expect(screen.getByRole('heading', { level: 3, name: karte.pointe })).toBeInTheDocument())
+            expect(screen.getByRole('heading', { level: 2, name: karte.pointe })).toBeInTheDocument())
           if (i < kapitel.karten.length - 1) {
             fireEvent.click(screen.getByRole('button', { name: /^Weiter/ }))
           }

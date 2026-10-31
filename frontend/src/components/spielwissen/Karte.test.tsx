@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MotionConfig } from 'motion/react'
 import { describe, expect, it } from 'vitest'
 import { Karte } from './Karte'
@@ -20,33 +20,40 @@ const KARTE: KartenDaten = {
  * Die App haengt unter `<MotionConfig reducedMotion="user">` (main.tsx), wo motion die
  * Systemeinstellung aufloest. Im Test wird sie gestellt: motion liest `matchMedia` einmal
  * beim ersten Gebrauch, ein spaeter gesetzter Stub kaeme zu spaet.
+ *
+ * **Pointe, Satz und „nochmal" stehen nicht mehr hier**, sondern auf der Kapitelseite —
+ * sie fuellt den Bildschirm wie ein Play, und der Knopf sitzt unten am Rand. Geprueft
+ * werden sie in `KapitelSeite.test.tsx`.
  */
-function zeige(karte: KartenDaten, bewegung: 'always' | 'never', aktiv = true) {
+function zeige(karte: KartenDaten, bewegung: 'always' | 'never', aktiv = true, lauf = 0) {
   return render(
     <MotionConfig reducedMotion={bewegung}>
-      <Karte karte={karte} aktiv={aktiv} />
+      <Karte karte={karte} aktiv={aktiv} lauf={lauf} />
     </MotionConfig>,
   )
 }
 
 describe('Karte', () => {
-  it('zeigt Pointe und Satz und haelt die Buehne', () => {
+  it('haelt die Buehne', () => {
     zeige(KARTE, 'never')
 
-    expect(screen.getByText('Lauf. Sofort.')).toBeInTheDocument()
-    expect(screen.getByText('Nicht hinsehen, nicht abwarten.')).toBeInTheDocument()
     expect(screen.getByTestId('buehne')).toBeInTheDocument()
   })
 
   /*
    * Nichts laeuft in Schleife. Wer die Bewegung verpasst hat, muss sie zurueckholen
-   * koennen, ohne die Seite neu zu laden — der Zaehler ist das Signal an die Buehne.
+   * koennen, ohne die Seite neu zu laden — der Zaehler ist das Signal an die Buehne, und
+   * er kommt von aussen, weil „nochmal" unten am Bildschirmrand steht.
    */
-  it('startet die Buehne neu, wenn man nochmal tippt', () => {
-    zeige(KARTE, 'never')
+  it('reicht den Zaehler an die Buehne durch', () => {
+    const { rerender } = zeige(KARTE, 'never')
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '0')
 
-    fireEvent.click(screen.getByRole('button', { name: 'nochmal' }))
+    rerender(
+      <MotionConfig reducedMotion="never">
+        <Karte karte={KARTE} aktiv lauf={1} />
+      </MotionConfig>,
+    )
 
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
   })
@@ -61,25 +68,13 @@ describe('Karte', () => {
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
   })
 
-  it('bietet bei reduzierter Bewegung kein nochmal an', () => {
-    zeige(KARTE, 'always')
-
-    expect(screen.queryByRole('button', { name: 'nochmal' })).not.toBeInTheDocument()
-  })
-
   /*
-   * Welche Karte laeuft, entscheidet die Kapitelseite: bei 393x760 stehen bis zu drei
-   * gleichzeitig weit genug im Bild. Eine nicht aktive Karte zeigt ihren Endzustand.
+   * Welche Karte laeuft, entscheidet die Kapitelseite. Eine nicht aktive Karte zeigt
+   * ihren Endzustand.
    */
   it('laeuft nicht, solange sie nicht an der Reihe ist', () => {
     zeige(KARTE, 'never', false)
 
     expect(screen.getByTestId('buehne')).toHaveAttribute('data-ruhig', 'true')
-  })
-
-  it('kommt ohne Satz aus', () => {
-    zeige({ ...KARTE, satz: undefined }, 'never')
-
-    expect(screen.getByText('Lauf. Sofort.')).toBeInTheDocument()
   })
 })

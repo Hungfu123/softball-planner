@@ -58,6 +58,23 @@ play_category     id, name            (V66/V67, Start-Plays in V68)
   zurueck (am ersten Eintrag abgeschaltet, nicht weggelassen — eine Luecke sagt nichts),
   in der Mitte „Play 1 von 14" bzw. „Karte 1 von 8", rechts der gefuellte Weg vorwaerts.
   Dieselben Pfeile (lucide), dieselbe Hoehe (48 px). Wer eine davon aendert, aendert beide.
+- **Und es ist dieselbe ANSICHT** (seit dem 31.10.2026): ein Kapitel des Spielwissens
+  laeuft wie ein Play **ausserhalb des Layouts** (`routes.tsx`), `h-dvh`, navy, in
+  denselben vier Zeilen — Kopfleiste (52 px, Zurueck · Titel in Amber · rechts die Stufe
+  bzw. die Outs), die Buehne im `1fr`, darunter die Aussage wie die Notiz zum Stand, dann
+  Blaetterleiste und zuunterst „nochmal" bzw. die Wiedergabeleiste. Quer und am Rechner
+  wandert die Buehne in eine eigene Spalte. **Gefunden hat das keine Messung, sondern
+  zwei Screenshots nebeneinander:** das Play nahm den ganzen Bildschirm, die Karte war ein
+  Kasten in der Mitte einer cremefarbenen Seite mit App-Navigation darueber. Gemessen
+  danach: die Zeichnung nahm am Handy 229 von 852 px, der Rest war Nichts.
+  **Die Ausschnitte des Feldes fuellen jetzt ihre Flaeche** (`MiniFeld` misst sich selbst
+  und zieht den Ausschnitt auf das Seitenverhaeltnis auf — dieselbe Regel wie `fitViewBox`,
+  nur waechst der Rand nach beiden Seiten statt nur nach oben, weil die Ausschnitte auf
+  ihren Gegenstand zentriert sind). Aus 27 % der Bildschirmhoehe wurden 60 %. Die
+  Zeichnung wird dadurch nicht groesser — die Breite deckelt sie ohnehin —, aber was um
+  sie herum liegt, ist Feld statt Leere. Genau darin bestand der Unterschied.
+  Die festen Deckel (`max-h-56` und Geschwister) sind weg; wer eine neue Buehne baut,
+  setzt keine zurueck.
 - **Loeschen darf nur der Superadmin** (`PlayController.delete`, `@PreAuthorize`), nicht
   nur in der Oberflaeche: die Start-Plays kommen aus einer Migration, ein versehentlich
   geloeschtes ist nur ueber eine neue Migration wieder da.

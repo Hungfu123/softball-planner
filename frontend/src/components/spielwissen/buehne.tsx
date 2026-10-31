@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { HOME, FIRST_BASE, SECOND_BASE, SKIN_PATH, FOUL_LINES_PATH, FENCE_PATH, BASES } from '@/components/playmaker/board/geometry'
 
@@ -159,14 +159,75 @@ const AUSSCHNITTE = {
   },
 } as const
 
+/**
+ * Zieht einen Ausschnitt auf das Seitenverhaeltnis der Flaeche **auf** — nie zu.
+ *
+ * Dieselbe Regel wie `fitViewBox` im Playmaker, mit einem Unterschied: dort bleibt Home
+ * unten verankert, weil ein Play unten anfaengt und oben das Outfield liegt. Hier sind
+ * die Ausschnitte von Hand auf ihren Gegenstand zentriert — die erste Base, der Weg
+ * zwischen 1 und 2 —, also waechst der Rand nach beiden Seiten gleich. Waechse er nur
+ * nach oben, rutschte die Base an den unteren Bildrand.
+ *
+ * Beschnitten wird nicht: der Zuwachs ist mehr Platz, und Platz ist hier Gras.
+ */
+function fuelle(a: { x: number; y: number; w: number; h: number }, breite: number, hoehe: number) {
+  if (breite <= 0 || hoehe <= 0) return a
+  const flaeche = breite / hoehe
+  if (a.w / a.h < flaeche) {
+    const w = a.h * flaeche
+    return { ...a, x: a.x - (w - a.w) / 2, w }
+  }
+  const h = a.w / flaeche
+  return { ...a, y: a.y - (h - a.h) / 2, h }
+}
+
+/**
+ * Ein Ausschnitt des Feldes, der **seine Flaeche fuellt**.
+ *
+ * Vorher hatte jede Karte einen Deckel (`max-h-56` und Geschwister) und das Bild stand
+ * als Streifen in der Mitte einer leeren Flaeche. Gemessen am Handy: von 852 px nahm die
+ * Zeichnung 229, der Rest war Nichts. Drueben fuellt das Feld den Bildschirm — deshalb
+ * misst sich die Buehne jetzt selbst und zieht ihren Ausschnitt auf die Flaeche auf.
+ *
+ * Die Zeichnung wird dadurch nicht groesser (die Breite deckelt sie ohnehin), aber was um
+ * sie herum liegt, ist Feld statt Leere. Genau das unterscheidet die beiden Haelften:
+ * nicht die Groesse des Diamanten, sondern ob um ihn herum ein Platz ist.
+ */
 export function MiniFeld({ ausschnitt, className = '', children }: {
   ausschnitt: keyof typeof AUSSCHNITTE
   className?: string
   children?: ReactNode
 }) {
-  const a = AUSSCHNITTE[ausschnitt]
+  const huelle = useRef<HTMLDivElement>(null)
+  const [kasten, setKasten] = useState<{ w: number; h: number } | null>(null)
+
+  useLayoutEffect(() => {
+    const element = huelle.current
+    if (!element) return
+    const messen = () => {
+      const rect = element.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) return
+      // Nur setzen, wenn sich wirklich etwas geaendert hat: ein neues Objekt mit
+      // denselben Zahlen rendert trotzdem, der Beobachter feuert erneut, und die Seite
+      // laeuft in eine Schleife. Dieselbe Falle steht im PlayBoard beschrieben.
+      setKasten(alt =>
+        alt && Math.abs(alt.w - rect.width) < 0.5 && Math.abs(alt.h - rect.height) < 0.5
+          ? alt
+          : { w: rect.width, h: rect.height },
+      )
+    }
+    messen()
+    // Ohne ResizeObserver (jsdom) bleibt es beim Ausschnitt, wie er gemeint war.
+    if (typeof ResizeObserver === 'undefined') return
+    const beobachter = new ResizeObserver(messen)
+    beobachter.observe(element)
+    return () => beobachter.disconnect()
+  }, [])
+
+  const a = kasten ? fuelle(AUSSCHNITTE[ausschnitt], kasten.w, kasten.h) : AUSSCHNITTE[ausschnitt]
   return (
-    <svg viewBox={`${a.x} ${a.y} ${a.w} ${a.h}`} className={`w-full ${className}`} aria-hidden focusable="false">
+    <div ref={huelle} className={`min-h-0 flex-1 ${className}`}>
+    <svg viewBox={`${a.x} ${a.y} ${a.w} ${a.h}`} className="block h-full w-full" aria-hidden focusable="false">
       {/*
         Dieselben Werte wie das Board im Playmaker (`PlayBoard`, Feld): Sand als Ahnung,
         Linien halb, Zaun schwaecher, Bases fast voll. Die beiden Haelften der App zeigen
@@ -186,5 +247,6 @@ export function MiniFeld({ ausschnitt, className = '', children }: {
       ))}
       {children}
     </svg>
+    </div>
   )
 }
