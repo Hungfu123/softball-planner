@@ -4,7 +4,7 @@ import * as api from '@/api/plays'
 import type { GameState, Play, PlayCategory } from './board/types'
 
 const LAGEN: { value: GameState; label: string }[] = [
-  { value: 'ANY', label: 'Jede Lage' },
+  { value: 'ANY', label: 'Jede Situation' },
   { value: 'CLOSE_LATE', label: 'Knapp, spätes Inning' },
   { value: 'AHEAD', label: 'Klar vorn' },
   { value: 'BEHIND', label: 'Hinten' },

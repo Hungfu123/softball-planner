@@ -9,7 +9,7 @@ import { Button } from '@/components/shared/Button'
 import { TextPromptModal } from './TextPromptModal'
 
 const LAGEN: { value: GameState; label: string }[] = [
-  { value: 'ANY', label: 'Jede Lage' },
+  { value: 'ANY', label: 'Jede Situation' },
   { value: 'CLOSE_LATE', label: 'Knapp, spätes Inning' },
   { value: 'AHEAD', label: 'Klar vorn' },
   { value: 'BEHIND', label: 'Hinten' },
@@ -185,7 +185,7 @@ export default function PlaySetupPage() {
               onChange={e => setGameStateNote(e.target.value)}
               placeholder="Warum? In einem Satz"
               className="w-full rounded-xl border border-cream-300 bg-white px-4 py-3 text-sm text-navy-900"
-              aria-label="Grund für die Spiellage"
+              aria-label="Grund für die Situation"
             />
             {/* Das Gegenstueck gehoert hierher und nirgendwo sonst: es ergibt nur Sinn,
                 wenn dieses Play fuer eine bestimmte Lage gilt — dieselbe Situation,

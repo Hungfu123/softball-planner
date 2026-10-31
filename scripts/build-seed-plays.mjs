@@ -941,6 +941,98 @@ const KATALOG = [
     ],
   }),
 
+  /*
+   * Die drei Situationen, die im Katalog fehlten und die ein Outfielder zuerst braucht:
+   * Ball in die Mitte mit Runner auf 2, und die beiden Faelle mit zwei Runnern. Dieselbe
+   * Teamkonvention wie ueberall: Cut-Mann ist ein Mittelinfielder (links und Mitte der
+   * SS, rechts der 2B), der andere covert die 2, der Mann an der Zielbase stellt ihn,
+   * die Corner bleiben an ihren Bases.
+   */
+  play('Single ins CF, Runner auf 2 — Wurf nach Home', 'Cut-off & Relay', {
+    outs: 1,
+    startRunners: { r2: B2 },
+    steps: [
+      s('Runner auf 2, Ball in die Mitte. Fuer den CF der haeufigste Wurf ueberhaupt.'),
+      s('CF laeuft an und nimmt auf.', {
+        d: { CF: UP_MIDDLE },
+        ball: { at: UP_MIDDLE, ground: true },
+        r: { r2: between(B2, B3, 0.8), rb: between(HOME, B1, 0.3) },
+      }),
+      s('Ball in der Mitte, also stellt der C den SS. Der 3B bleibt an der 3, der 2B covert die 2, der P geht hinter die Platte.', {
+        d: {
+          SS: between(UP_MIDDLE, HOME, 0.42),
+          C: HOME,
+          '3B': B3,
+          '2B': B2,
+          P: { x: HOME.x + 6, y: HOME.y + 26 },
+        },
+        ball: { at: between(UP_MIDDLE, HOME, 0.42) },
+        r: { r2: between(B3, HOME, 0.5), rb: B1 },
+      }),
+      s('Durchlassen, Wurf nach Home.', { ball: { hold: 'C' }, r: { r2: between(B3, HOME, 0.9) } }),
+    ],
+  }),
+
+  play('Single ins RF, Runner auf 1 und 3 — Wurf auf die 3', 'Cut-off & Relay', {
+    outs: 1,
+    startRunners: { r1: B1, r3: B3 },
+    gameStateNote: 'Der Run von der 3 faellt. Zu holen ist der Runner, der von der 1 kommt.',
+    steps: [
+      s('Runner auf 1 und 3. Der Ball geht nach rechts, der Run von der 3 ist weg.'),
+      s('RF nimmt auf, der Runner von der 1 rundet die 2.', {
+        d: { RF: SHORT_RIGHT },
+        ball: { at: SHORT_RIGHT, ground: true },
+        r: { r3: between(B3, HOME, 0.6), r1: between(B1, B2, 0.8), rb: between(HOME, B1, 0.3) },
+      }),
+      s('Ball rechts, also zieht der 2B als Cut heraus. Der 3B stellt ihn, der SS covert die 2, der P geht hinter die 3.', {
+        d: {
+          '2B': between(SHORT_RIGHT, B3, 0.45),
+          '3B': B3,
+          SS: B2,
+          '1B': B1,
+          P: { x: B3.x - 10, y: B3.y - 10 },
+        },
+        ball: { at: between(SHORT_RIGHT, B3, 0.45) },
+        r: { r3: 'SCORED', r1: between(B2, B3, 0.5), rb: B1 },
+      }),
+      s('Wurf auf die 3, der Runner ist zu weit raus.', {
+        ball: { hold: '3B' },
+        r: { r1: 'OUT', rb: B1 },
+        outs: 2,
+      }),
+    ],
+  }),
+
+  play('Single ins LF, Runner auf 1 und 2 — Wurf auf die 3', 'Cut-off & Relay', {
+    outs: 0,
+    startRunners: { r1: B1, r2: B2 },
+    gameStateNote: 'Der von der 2 kommt nach Home durch. Der von der 1 ist der, den man kriegt.',
+    steps: [
+      s('Runner auf 1 und 2, Ball ins linke Feld.'),
+      s('LF nimmt auf. Vorne laeuft einer nach Home, hinten einer auf die 3.', {
+        d: { LF: SHORT_LEFT },
+        ball: { at: SHORT_LEFT, ground: true },
+        r: { r2: between(B3, HOME, 0.4), r1: between(B1, B2, 0.9), rb: between(HOME, B1, 0.3) },
+      }),
+      s('Der SS zieht als Cut heraus, der 3B stellt ihn und bleibt an der 3. Der 2B covert die 2, der P geht hinter die 3.', {
+        d: {
+          SS: between(SHORT_LEFT, B3, 0.45),
+          '3B': B3,
+          '2B': B2,
+          '1B': B1,
+          P: { x: B3.x - 10, y: B3.y - 10 },
+        },
+        ball: { at: between(SHORT_LEFT, B3, 0.45) },
+        r: { r2: 'SCORED', r1: between(B2, B3, 0.55), rb: B1 },
+      }),
+      s('Wurf auf die 3. Der Run zaehlt, den zweiten Runner hat man.', {
+        ball: { hold: '3B' },
+        r: { r1: 'OUT', rb: B1 },
+        outs: 1,
+      }),
+    ],
+  }),
+
   play('Double in die linke Gasse — Relay über SS', 'Cut-off & Relay', {
     outs: 0,
     startRunners: {},

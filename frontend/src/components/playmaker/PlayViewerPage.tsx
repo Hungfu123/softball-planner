@@ -322,7 +322,7 @@ function Viewer({
               <div className="truncate font-display text-xs font-extrabold text-cream-50">
                 Gegenstück: {gegenstueck.title}
               </div>
-              <div className="truncate text-[11px] text-cream-50/60">{gegenstueck.gameStateNote ?? 'Andere Lage'}</div>
+              <div className="truncate text-[11px] text-cream-50/60">{gegenstueck.gameStateNote ?? 'Andere Situation'}</div>
             </div>
           </Link>
         )}
