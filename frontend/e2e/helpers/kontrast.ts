@@ -16,7 +16,7 @@ export type Messung = { aa: Befund[]; unsichtbar: Befund[] }
  *
  * Grenzen, die man kennen muss:
  *   - In SVG malt `fill`, nicht `color`. Das wird beruecksichtigt; die Flaeche darunter
- *     wird aber nur GESCHAETZT (erste Form im Dokument, deren Rahmen den Textmittelpunkt
+ *     wird aber nur GESCHAETZT (oberste gefuellte Form, deren Rahmen den Textmittelpunkt
  *     enthaelt) — bei gestapelten Formen kann das danebenliegen.
  *   - Elemente ohne eigenen Textknoten werden uebersprungen, sonst zaehlte jede
  *     Verschachtelung mehrfach.
@@ -49,23 +49,28 @@ export async function messeKontrast(page: Page, wurzel?: string): Promise<Messun
       return +((Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)).toFixed(2)
     }
 
-    // Welche SVG-Form liegt unter diesem Text? Erste im Dokument, deren Rahmen die Mitte
-    // des Textes enthaelt — eine Schaetzung, keine Treffermessung.
+    // Welche SVG-Form liegt unter diesem Text? SVG malt in Dokumentreihenfolge, also die
+    // LETZTE Form, deren Rahmen die Mitte des Textes enthaelt — das ist die oberste und
+    // damit die, die ein Mensch sieht. Die erste zu nehmen hiess, das Spielfeld selbst
+    // zu messen und die Scheibe des Verteidigers darauf zu uebersehen: navy auf navy,
+    // 1:1, waehrend auf dem Schirm navy auf cream steht. Formen ohne Fuellung (eine
+    // Laufspur ist nur Strich) zaehlen nicht — eine Schaetzung bleibt es trotzdem.
     const svgGrund = (el: Element): number[] | null => {
       const svg = (el as SVGElement).ownerSVGElement
       if (!svg) return null
       const r = el.getBoundingClientRect()
       const mx = r.left + r.width / 2, my = r.top + r.height / 2
+      let treffer: number[] | null = null
       for (const kand of svg.querySelectorAll('rect,circle,ellipse,path,polygon')) {
         const kr = kand.getBoundingClientRect()
         if (mx < kr.left || mx > kr.right || my < kr.top || my > kr.bottom) continue
         const f = getComputedStyle(kand).fill
         if (f && f !== 'none') {
           const c = rgba(f)
-          if (c[3] > 0) return c
+          if (c[3] > 0) treffer = c
         }
       }
-      return null
+      return treffer
     }
 
     const grund = (el: Element): number[] => {

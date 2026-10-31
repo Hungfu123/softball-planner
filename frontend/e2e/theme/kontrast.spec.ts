@@ -6,8 +6,7 @@ import { messeKontrast, bericht, helleFlaechenOhneDunkleTinte, bloeckeOhneRand }
  * Haelt der Dunkelmodus, was das helle Theme kann?
  *
  * Absolute Zahlen taugen hier nicht als Grenze: wie viel Text eine Seite zeigt, haengt
- * am Datenstand, und beide Themes tragen Altlasten (die Positionsbuchstaben auf dem
- * gruenen Feld im Playmaker stehen bei 2,21:1 — in HELL genauso). Gemessen wird deshalb
+ * am Datenstand, und beide Themes tragen Altlasten. Gemessen wird deshalb
  * dieselbe Seite zweimal, und verglichen werden die beiden Ergebnisse:
  *
  *   1. Im Dunkeln darf nichts unsichtbar sein (< 1,6:1). Harte Grenze.
@@ -53,6 +52,11 @@ const SEITEN = [
   '/konto',
   '/spielbogen',
   '/orga/playmaker',
+  // Das Play selbst, nicht nur der Katalog: hier liegen Buehne, Titel, "Achte auf" und
+  // die Knopfleiste uebereinander, und hier faellt auf, wenn eine davon im Dunkeln die
+  // Farbe des Grundes traegt. Setzt voraus, dass Play 1 in der Datenbank steht — ohne
+  // das zeigt die Seite ihren Leerzustand und die Messung geht ins Leere statt rot.
+  '/orga/playmaker/1',
   '/orga/playmaker/frei',
   // Die Spielwissen-Buehnen sind in BEIDEN Themes navy. Genau deshalb gehoeren sie hier
   // hinein: was auf ihnen eine Paletten-Klasse traegt, deutet der Shim im Dunkeln um und
