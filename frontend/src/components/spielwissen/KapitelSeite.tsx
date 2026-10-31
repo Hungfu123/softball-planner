@@ -53,6 +53,19 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
    */
   const [lauf, setLauf] = useState(0)
   /*
+   * **Die Karte wartet, wie ein Play wartet.** Sie lief frueher los, sobald die Seite
+   * stand — und das war fast immer, bevor jemand hinsah: man las noch die Ueberschrift,
+   * unten lief die Sequenz durch, und daneben stand ein „nochmal", das eine Bewegung
+   * zurueckholte, die man nie hatte anfangen sehen. Genau das sah aus wie ein Knopf, der
+   * nichts tut.
+   *
+   * Solange steht das Standbild — derselbe Endzustand, den auch reduzierte Bewegung
+   * bekommt. Er traegt die Auskunft, die Bewegung erklaert sie nur; ein leeres Feld waere
+   * der schlechtere Tausch. Die Buehnen bleiben dafuer unangetastet: die Karte kennt den
+   * Unterschied schon (`aktiv`).
+   */
+  const [gestartet, setGestartet] = useState(false)
+  /*
    * Direkt aus dem localStorage, nicht ueber `useRolle`: das haengt an `useAuth` und damit
    * am Provider. Das Spielwissen ist die Haelfte der App, die ohne Netz und ohne Konto
    * funktionieren soll — eine Seite, die beim Fehlen des Providers in den Fehlerrand
@@ -68,6 +81,7 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
     setRichtung(schritt)
     setNr(n => Math.min(Math.max(n + schritt, 0), anzahl - 1))
     setLauf(0)
+    setGestartet(false)
   }, [anzahl])
 
   /* Am Rechner blaettert man mit den Pfeiltasten, nicht mit der Maus zum Knopf. */
@@ -83,9 +97,12 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
   const karte = kapitel.karten[nr]
   const letzte = nr === anzahl - 1
   const naechstesKapitel = KAPITEL[KAPITEL.findIndex(k => k.id === kapitel.id) + 1]
-  /* Eine Karte mit eigenen Knoepfen laeuft nicht ab, sie wird bedient — „nochmal" waere
-     dort ein zweiter Weg zum selben Ziel. */
-  const mitNochmal = !ruhig && !karte.selbstgesteuert
+  /*
+   * Eine Karte mit eigenen Knoepfen laeuft nicht ab, sie wird bedient — ▶ und ↻ waeren
+   * dort ein zweiter Weg zum selben Ziel. Und bei reduzierter Bewegung gibt es nichts
+   * abzuspielen: die Buehne steht ohnehin auf ihrem Endzustand.
+   */
+  const mitWiedergabe = !ruhig && !karte.selbstgesteuert
 
   /*
    * Dasselbe Raster wie der Play-Viewer, bis auf die Zeilenhoehen: Kopf, Buehne, Aussage,
@@ -158,7 +175,7 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
             exit={ruhig ? { opacity: 0 } : { opacity: 0, x: richtung * -40 }}
             transition={{ duration: ruhig ? 0 : 0.22, ease: [0.23, 1, 0.32, 1] }}
           >
-            <Karte karte={karte} aktiv lauf={lauf} />
+            <Karte karte={karte} aktiv={gestartet || !mitWiedergabe} lauf={lauf} />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -220,7 +237,17 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
             }
             weiterLabel={letzte && naechstesKapitel ? naechstesKapitel.titel : 'Nächste Karte'}
             fertig={{ to: '/spielwissen' }}
-            nochmal={mitNochmal ? { onNochmal: () => setLauf(x => x + 1) } : undefined}
+            /*
+             * Vor dem ersten Mal ▶, danach ↻ — nie beides. Pause gibt es nicht: eine
+             * Buehne ist eine Sequenz, kein Film mit Spulwerk, und ein Knopf, der mitten
+             * in einer halben Sekunde anhaelt, waere Zierat.
+             */
+            abspielen={
+              mitWiedergabe && !gestartet
+                ? { laeuft: false, kann: true, onToggle: () => setGestartet(true) }
+                : undefined
+            }
+            nochmal={mitWiedergabe && gestartet ? { onNochmal: () => setLauf(x => x + 1) } : undefined}
           />
         </div>
       </div>
