@@ -61,4 +61,26 @@ describe('OrgaHome', () => {
     expect(screen.queryByRole('link', { name: /Historie/ })).toBeNull()
     expect(screen.getByRole('link', { name: /Accounts/ })).toHaveAttribute('href', '/orga/accounts')
   })
+
+  /*
+   * Die Trainerabrechnung ist der Bogen EINER Person fuer den Hochschulsport, und der
+   * Spielbogen ist die Arbeit des Scorers am Spieltag. Beides steht im Werkzeugkasten
+   * aller Trainer, gehoert aber keinem von ihnen. Entscheidung des Betreibers.
+   */
+  it('zeigt Trainerabrechnung und Spielbogen nur dem Superadmin', () => {
+    auth.me = ADMIN
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
+
+    expect(screen.queryByRole('link', { name: /Trainerabrechnung/ })).toBeNull()
+    expect(screen.queryByRole('link', { name: /Spielbogen/ })).toBeNull()
+  })
+
+  /* „Selten" stuende sonst als Ueberschrift ueber einer leeren Flaeche: beide Zeilen
+     darunter gehoeren dem Superadmin. */
+  it('lässt dem Admin den leeren Block „Selten" ganz weg', () => {
+    auth.me = ADMIN
+    render(<MemoryRouter><OrgaHome /></MemoryRouter>)
+
+    expect(screen.getAllByRole('heading', { level: 2 }).map(h => h.textContent)).toEqual(['Weiteres'])
+  })
 })
