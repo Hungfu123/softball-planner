@@ -137,6 +137,16 @@ export function SicherRing({ ort, ruhig, delay = 0 }: {
 const AUSSCHNITTE = {
   /** Der Diamant mit beiden Foul-Linien. Fuer alles, was auf dem Feld passiert. */
   infield: { x: HOME.x - 104, y: HOME.y - 112, w: 208, h: 132 },
+  /**
+   * Nur der Diamant.
+   *
+   * Der weite Infield-Ausschnitt nimmt beide Foul-Linien bis weit ins Aus mit — das
+   * braucht die Karte mit dem Foul-Ball, und sonst keine. Wer bloss von einer Base zur
+   * naechsten laeuft, bekam den Diamanten auf 41 Prozent der Breite und ringsum Gras.
+   * Hier sind es gut zwei Drittel, und die Linien laufen trotzdem aus dem Bild heraus,
+   * weil sie an Home anfangen.
+   */
+  diamant: { x: HOME.x - 62, y: HOME.y - 100, w: 124, h: 124 },
   /** Nur die Gegend um die Platte. Fuer alles, was am Schlag passiert. */
   home: { x: HOME.x - 70, y: HOME.y - 78, w: 140, h: 92 },
   /**

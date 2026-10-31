@@ -108,9 +108,6 @@ export function LaufSofort({ lauf, ruhig }: BuehnenProps) {
           <Ball r={6} />
         </motion.g>
       </svg>
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Wo er landet, ist nicht deine Aufgabe.
-      </p>
     </div>
   )
 }
@@ -153,9 +150,6 @@ export function FoulSiehstDuNicht({ lauf, ruhig }: BuehnenProps) {
           <text x={foul.x + 6} y={foul.y + 6} fontSize="7" fontWeight="800" fill={FARBE.raus} className="font-display">FOUL</text>
         </motion.g>
       </MiniFeld>
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Acht Grad Unterschied. Von der Platte aus siehst du keinen.
-      </p>
     </div>
   )
 }
@@ -227,9 +221,6 @@ export function RausGefangen({ lauf, ruhig }: BuehnenProps) {
         </motion.g>
       </svg>
       <OutStempel lauf={lauf} ruhig={ruhig} delay={1.2} />
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Der Ball hat den Boden nie berührt.
-      </p>
     </div>
   )
 }
@@ -269,9 +260,6 @@ export function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
         />
       </MiniFeld>
       <OutStempel lauf={lauf} ruhig={ruhig} delay={0.9} />
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Er fliegt, du läufst. Fangen muss ihn einer, mit dem Fuß auf der Base.
-      </p>
     </div>
   )
 }
@@ -311,9 +299,6 @@ export function RausGetickt({ lauf, ruhig }: BuehnenProps) {
         </motion.g>
       </MiniFeld>
       <OutStempel lauf={lauf} ruhig={ruhig} delay={1} />
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Zwischen zwei Bases gehört dir nichts.
-      </p>
     </div>
   )
 }
@@ -366,6 +351,15 @@ export function DurchlaufenAnDerEins({ lauf, ruhig }: BuehnenProps) {
             farbigen Base-Haelfte, und zwei amberfarbene Punkte waeren eine Frage. */}
         <circle data-testid="ueberlauf" cx={ueber.x} cy={ueber.y} r="1.8" fill={FARBE.hell} opacity="0.45" />
 
+        {/* Die farbige Haelfte ist bei einem Wurf deine. Das Wort steht AN ihr und nicht
+            unter dem Bild: dort war es ein Satz, den man erst dem Fleck zuordnen musste. */}
+        <text
+          x={farbig.x + 5} y={farbig.y + 7}
+          fontSize="6" fontWeight="800" fill={FARBE.gut} className="font-display"
+        >
+          deine
+        </text>
+
         {/* Welche Base das ist, sieht man in dieser Vergroesserung sonst nicht. */}
         <text
           x={FIRST_BASE.x + 9} y={FIRST_BASE.y - 6}
@@ -387,9 +381,6 @@ export function DurchlaufenAnDerEins({ lauf, ruhig }: BuehnenProps) {
           transition={takt(ruhig, { duration: 1.9, times: [0, 0.45, 0.72, 1], ease: 'easeOut' })}
         />
       </MiniFeld>
-      <p className="px-1 pb-1 text-center text-[12px] leading-snug text-cream-50/70">
-        Liegt dort eine zweite, farbige Hälfte? Bei einem Wurf ist die deine.
-      </p>
     </div>
   )
 }

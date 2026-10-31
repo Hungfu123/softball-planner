@@ -176,9 +176,6 @@ export function DrinIstStrike({ lauf, ruhig }: BuehnenProps) {
           </motion.text>
         ))}
       </svg>
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Berührt der Ball die Zone, zählt er. Auch mit dem Rand.
-      </p>
     </div>
   )
 }
@@ -361,7 +358,7 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
             x1={CATCHER.x - 3} y1={CATCHER.y + 2} x2={CATCHER.x - 15} y2={CATCHER.y + 6}
             stroke={FARBE.hell} strokeWidth="1" strokeDasharray="2 2" opacity="0.35"
           />
-          <circle cx={CATCHER.x - 18} cy={CATCHER.y + 5} r="3.4" fill={FARBE.gut} />
+          <circle cx={CATCHER.x - 18} cy={CATCHER.y + 5} r="3.4" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.15" />
 
           {/* Wer schon auf der 1 steht, nimmt dir das Recht zu laufen. Umrandet, damit er
               sich von der Schlagfrau unterscheidet, ohne eine zweite Farbe zu brauchen. */}
@@ -391,10 +388,6 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
           />
         </div>
       </div>
-
-      <p className="px-1 pt-1 text-center text-[12px] leading-snug text-cream-50/70">
-        Bei zwei Outs darfst du immer los.
-      </p>
 
       <div className="mt-1 flex gap-2">
         {([['Die 1 ist frei', true], ['Die 1 ist besetzt', false]] as const).map(([label, wert]) => (
@@ -582,7 +575,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
         {/* Der Ball tropft kurz vor die Platte. */}
         <motion.circle
           key={`ball-${lauf}`}
-          r="3.2" fill={FARBE.gut}
+          r="3.2" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.1"
           initial={ruhig ? false : { cx: HOME.x, cy: HOME.y }}
           animate={{ cx: HOME.x + 9, cy: HOME.y - 15 }}
           transition={takt(ruhig, { duration: 0.5, ease: 'easeOut' })}
@@ -607,9 +600,6 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
           transition={takt(ruhig, { delay: 0.2, duration: 0.95, ease: 'easeOut' })}
         />
       </MiniFeld>
-      <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Der vor dir kommt eine Base weiter. Dafür lohnt es sich auch, selbst out zu gehen.
-      </p>
     </div>
   )
 }
