@@ -102,12 +102,21 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
         Geblieben sind Weiter, Zurueck und die Pfeiltasten. Die sind durchgemessen: alle
         sechzehn Karten, drei Bildschirmgroessen, beide Richtungen.
       */}
+      {/*
+        `items-center`: die Karte steht in der Mitte des freien Platzes, nicht oben.
+
+        Eine kurze Karte (acht Zeilen statt vierzehn) liess sonst 180 px Leere zwischen
+        sich und der Blaetterleiste stehen — es sah aus, als fehle unten etwas. In der
+        Mitte teilt sich derselbe Platz oben und unten und liest sich als Rahmen. Drueben
+        im Play steht das Feld aus demselben Grund im `1fr` und nicht oben angeheftet.
+      */}
       <div
-        className="flex-1 overflow-x-hidden"
+        className="flex flex-1 items-center overflow-x-hidden"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={karte.id}
+            className="w-full"
             initial={ruhig ? false : { opacity: 0, x: richtung * 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={ruhig ? { opacity: 0 } : { opacity: 0, x: richtung * -40 }}

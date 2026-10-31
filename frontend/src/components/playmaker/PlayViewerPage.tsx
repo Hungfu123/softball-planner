@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ladePlayMitRueckfall } from './ladePlay'
 import { usePlayback } from '@/hooks/usePlayback'
 import { PlayBoard } from './PlayBoard'
@@ -169,20 +170,42 @@ function Viewer({
             Ändern
           </button>
         )}
-        <div className="flex gap-1.5" role="group" aria-label="Outs">
-          {[0, 1, 2].map(i => (
-            <span
-              key={i}
-              /*
-               * Rot, nicht amber. Auf dieser Buehne heisst rot Out — der ausgemachte
-               * Runner ist rot, und die Punkte zaehlen genau diese Outs. Amber gehoert
-               * dem, worauf man achtet: der Ballkette und dem Weg zum naechsten Play.
-               * Der hellere Ton (statt softball-red) misst auf Navy 4,3:1 statt 2,7:1.
-               */
-              className={`h-2.5 w-2.5 rounded-full ${i < (wiedergabe.step?.outs ?? 0) ? 'bg-[#EE5A68]' : 'bg-cream-50/20'}`}
-            />
-          ))}
-        </div>
+        {/*
+          Die Outs stehen nur da, wenn es welche GIBT.
+
+          Drei graue Punkte oben rechts sahen aus wie die Schwierigkeitspunkte aus dem
+          Spielwissen — dieselbe Groesse, dieselbe Form, zwei Tipps voneinander entfernt
+          und etwas voellig anderes gemeint. Bei null Outs sagten sie ohnehin nichts, was
+          die Notiz nicht schon sagt („keine Outs"). Sobald einer rot ist, ist die Sache
+          eindeutig, und das Wort daneben macht sie es auch fuer den, der die Punkte zum
+          ersten Mal sieht. Nebenbei bekommt der Titel in den meisten Staenden die Breite
+          zurueck, die er zum Ausschreiben braucht.
+        */}
+        {(wiedergabe.step?.outs ?? 0) > 0 && (
+          <div
+            className="flex shrink-0 items-center gap-1.5"
+            role="group"
+            aria-label={`${wiedergabe.step?.outs} Outs`}
+          >
+            <span className="font-display text-[10px] font-bold uppercase tracking-widest text-cream-50/50">
+              {wiedergabe.step?.outs === 1 ? 'Out' : 'Outs'}
+            </span>
+            <div className="flex gap-1.5">
+              {[0, 1, 2].map(i => (
+                <span
+                  key={i}
+                  /*
+                   * Rot, nicht amber. Auf dieser Buehne heisst rot Out — der ausgemachte
+                   * Runner ist rot, und die Punkte zaehlen genau diese Outs. Amber gehoert
+                   * dem, worauf man achtet: der Ballkette und dem Weg zum naechsten Play.
+                   * Der hellere Ton (statt softball-red) misst auf Navy 4,3:1 statt 2,7:1.
+                   */
+                  className={`h-2.5 w-2.5 rounded-full ${i < (wiedergabe.step?.outs ?? 0) ? 'bg-[#EE5A68]' : 'bg-cream-50/20'}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
       <div
@@ -254,16 +277,28 @@ function Viewer({
         )}
         {blaettern.anzahl > 1 && (
           <div className="flex items-center gap-2 border-t border-cream-50/12 px-4 py-2">
+            {/*
+              Am ersten Play stand hier ein leerer Platzhalter. Er hielt die Breite und
+              sagte sonst nichts — man sah nicht, dass es ueberhaupt einen Weg zurueck
+              gibt, sondern nur eine Luecke. Drueben in der Offense steht an derselben
+              Stelle der abgeschaltete Knopf, und das ist die bessere Antwort: er zeigt
+              die Richtung UND dass sie hier zu Ende ist.
+            */}
             {blaettern.vorheriges ? (
               <Link
                 to={`/orga/playmaker/${blaettern.vorheriges.id}`}
                 aria-label="Vorheriges Play"
-                className="font-display flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-base font-bold text-cream-50 active:bg-cream-50/10"
+                className="font-display flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-cream-50 active:bg-cream-50/10"
               >
-                ‹
+                <ChevronLeft size={20} aria-hidden="true" />
               </Link>
             ) : (
-              <span className="h-12 w-14 shrink-0" />
+              <span
+                aria-hidden="true"
+                className="flex h-12 w-14 shrink-0 items-center justify-center rounded-xl border border-cream-50/25 text-cream-50 opacity-35"
+              >
+                <ChevronLeft size={20} />
+              </span>
             )}
             <span className="font-display flex-1 truncate text-center text-[11px] font-bold uppercase tracking-widest text-cream-50/55">
               Play {blaettern.nummer} von {blaettern.anzahl}
@@ -271,9 +306,10 @@ function Viewer({
             {blaettern.naechstes ? (
               <Link
                 to={`/orga/playmaker/${blaettern.naechstes.id}`}
-                className="font-display flex h-12 shrink-0 items-center gap-1 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
+                className="font-display flex h-12 shrink-0 items-center gap-1.5 rounded-xl bg-amber-400 px-5 text-[11px] font-extrabold uppercase tracking-widest text-navy-900 active:brightness-110"
               >
-                Nächstes Play ›
+                Nächstes Play
+                <ChevronRight size={18} aria-hidden="true" />
               </Link>
             ) : (
               <Link
