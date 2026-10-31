@@ -217,7 +217,7 @@ function Ausgang({ art, ruhig, runde }: { art: 'Walk' | 'Out'; ruhig: boolean; r
   const walk = art === 'Walk'
   return (
     <div className="relative flex h-full min-h-0 flex-col justify-center">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         <motion.circle
           key={`laeufer-${runde}`}
           r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
@@ -348,7 +348,7 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <MiniFeld ausschnitt="infield" className="min-h-0">
+        <MiniFeld ausschnitt="diamant" className="min-h-0">
           <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
           {/* Der Ball ist ihm durchgerutscht und liegt hinter ihm. Die gestrichelte Spur
               sagt, dass er dort nicht hingelegt wurde, sondern hingerollt ist. */}
@@ -566,7 +566,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
-      <MiniFeld ausschnitt="infield" className="min-h-0">
+      <MiniFeld ausschnitt="diamant" className="min-h-0">
         {/* Die Verteidigung: hohle Ringe. Gefuellt ist, wer laeuft. */}
         {tief.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r="4" fill="none" stroke={FARBE.hell} strokeWidth="1.4" opacity="0.6" />

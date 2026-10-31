@@ -134,7 +134,7 @@ export function SicherRing({ ort, ruhig, delay = 0 }: {
  * Die Ausschnitte des Feldes. Gerechnet aus `HOME`, nicht gegriffen — wer in
  * `board/geometry` eine Entfernung aendert, aendert diese Bilder mit.
  */
-const AUSSCHNITTE = {
+export const AUSSCHNITTE = {
   /** Der Diamant mit beiden Foul-Linien. Fuer alles, was auf dem Feld passiert. */
   infield: { x: HOME.x - 104, y: HOME.y - 112, w: 208, h: 132 },
   /**
