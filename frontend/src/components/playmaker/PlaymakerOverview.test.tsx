@@ -71,21 +71,25 @@ describe('Play-Übersicht', () => {
   })
 
   /*
-   * „Zuletzt bearbeitet" ist eine Auskunft über die eigene Arbeit. Ein Spieler bearbeitet
-   * nichts; für ihn ist das Feld oben einfach das erste Play.
+   * Das große Feld oben ist weg, bei beiden Rollen.
+   *
+   * Es zeigte das zuletzt bearbeitete Play in Großaufnahme vor der Liste. Als die Seite
+   * eine Werkbank war, war das der Einstieg; seit sie ein Inhaltsverzeichnis aus
+   * Kapiteln ist, steht es vor dem, was man sucht — und „zuletzt bearbeitet" ist eine
+   * Auskunft über die Arbeit des Trainers, nicht über Softball.
    */
-  it('sagt einem Spieler nichts von zuletzt bearbeitet', () => {
+  it.each([true, false])('zeigt kein großes Feld mehr (Admin: %s)', admin => {
+    stand.istAdmin = admin
     stand.plays = [PLAY]
     zeige()
 
     expect(screen.queryByText(/zuletzt bearbeitet/)).toBeNull()
   })
 
-  it('sagt es dem Trainer, der es bearbeitet hat', () => {
-    stand.istAdmin = true
+  /* Die Suche gehört dem Trainer: ein Spieler liest ein Kapitel aus fünf bis elf Zeilen. */
+  it('zeigt die Suche nur dem Trainer', () => {
     stand.plays = [PLAY]
     zeige()
-
-    expect(screen.getByText(/zuletzt bearbeitet/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Plays durchsuchen')).toBeNull()
   })
 })

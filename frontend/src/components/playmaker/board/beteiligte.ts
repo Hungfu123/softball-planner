@@ -58,3 +58,31 @@ export function beteiligte(steps: PlayStep[]): PositionCode[] {
 
   return gesehen
 }
+
+/** Weniger ist Standhalten, nicht Laufen. Zwei Fuss sind etwa eine Schrittlaenge. */
+const SCHRITT = 2
+
+/**
+ * Wer in diesem Play ueberhaupt etwas tut — Ballkette UND alle, die laufen.
+ *
+ * Das ist die weitere Frage als {@link beteiligte}: dort geht es um die drei Namen, auf
+ * die man beim Zuschauen achtet, hier darum, ob ein Play fuer **meine Position** etwas
+ * enthaelt. Wer hinter die Base laeuft, steht nicht in der Kette, lernt aber genau hier
+ * seinen Weg.
+ */
+export function mitwirkende(steps: PlayStep[]): PositionCode[] {
+  const gesehen = new Set<PositionCode>(beteiligte(steps))
+
+  steps.forEach((step, i) => {
+    if (i === 0) return
+    const vorher = steps[i - 1].markers
+    for (const jetzt of step.markers.defenders) {
+      const davor = vorher.defenders.find(d => d.position === jetzt.position)
+      if (davor && Math.hypot(jetzt.x - davor.x, jetzt.y - davor.y) >= SCHRITT) {
+        gesehen.add(jetzt.position)
+      }
+    }
+  })
+
+  return [...gesehen]
+}

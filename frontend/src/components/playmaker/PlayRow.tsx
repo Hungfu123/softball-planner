@@ -7,6 +7,7 @@ import type { Treffer } from './suche'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CopyIcon, TrashBin } from '@/icons'
 import { useRolle } from '@/hooks/useRolle'
+import { StufePunkte } from '@/components/shared/StufePunkte'
 
 /** Woher der Treffer kommt — ein Wort, damit die Zeile einzeilig bleibt. */
 const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
@@ -32,12 +33,15 @@ const LAGE_TEXT: Record<Play['gameState'], string | null> = {
 export function PlayRow({
   play,
   treffer = null,
+  stufe,
   onDuplicate,
   onDelete,
 }: {
   play: Play
   /** Fundstelle der Suche — steht statt der Ausgangslage, wenn sie woanders liegt. */
   treffer?: Treffer | null
+  /** Im Kapitel: wie schwer dieses Play ist. In der langen Liste ohne Angabe. */
+  stufe?: 1 | 2 | 3
   onDuplicate: () => void
   onDelete: () => void
 }) {
@@ -64,7 +68,12 @@ export function PlayRow({
             {treffer.text}
           </div>
         ) : (
-          <div className="mt-0.5 truncate text-xs tabular-nums text-gray-500">{beschreibung(play)}</div>
+          <div className="mt-0.5 flex items-center gap-2 text-xs tabular-nums text-gray-500">
+            <span className="truncate">{beschreibung(play)}</span>
+            {/* Die Punkte stehen in der zweiten Zeile: neben dem Titel nahmen sie ihm die
+                Breite, und in einer Liste aus Titeln ist der Titel das Wichtigste. */}
+            {stufe && <StufePunkte stufe={stufe} />}
+          </div>
         )}
       </Link>
       {lage && (

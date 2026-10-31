@@ -4,14 +4,17 @@ import { usePlays } from '@/hooks/usePlays'
 import { PlayBoard } from './PlayBoard'
 import { PlayRow } from './PlayRow'
 import type { Play } from './board/types'
-import { beschreibung } from './beschreibung'
 import { trefferIn, type Treffer } from './suche'
 import { standardfeld } from '@/hooks/useFreiesFeld'
-import { ChevronDown, ChevronLeft, CopyIcon, CrossBones, TrashBin } from '@/icons'
+import { ChevronDown, ChevronLeft, CrossBones } from '@/icons'
 import { Button } from '@/components/shared/Button'
-import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { useToastContext } from '@/components/layout/Layout'
 import { useRolle } from '@/hooks/useRolle'
+import { StufeLegende, StufePunkte } from '@/components/shared/StufePunkte'
+import { kategorieSatz, kategorieStufe, playStufe } from './kategorieTexte'
+import { mitwirkende } from './board/beteiligte'
+import { POSITIONS } from './board/geometry'
+import type { PositionCode } from './board/types'
 
 /**
  * Einstieg in den Playmaker.
@@ -41,6 +44,22 @@ export default function PlaymakerOverview() {
     setParams(neu, { replace: true })
   }
   const [suche, setSuche] = useState('')
+  /*
+   * Die eigene Position. Wer sie einmal gewaehlt hat, hat sie naechste Woche noch —
+   * ein Shortstop bleibt einer, und ihn bei jedem Besuch wieder zu fragen waere eine
+   * Frage ohne neue Antwort. Im localStorage, weil es eine Bequemlichkeit je Geraet ist
+   * und keine Auskunft, die jemand anderes braucht.
+   */
+  const [position, setPosition] = useState<PositionCode | null>(lesePosition)
+  const merkePosition = (pos: PositionCode | null) => {
+    setPosition(pos)
+    try {
+      if (pos) localStorage.setItem(POSITION_SPEICHER, pos)
+      else localStorage.removeItem(POSITION_SPEICHER)
+    } catch {
+      /* Privates Fenster: dann merkt es sich eben nichts. */
+    }
+  }
   const [zugeklappt, setZugeklappt] = useState<Set<number>>(leseZugeklappt)
   /**
    * Die Liste haengt an der NACHLAUFENDEN Eingabe, das Eingabefeld an der sofortigen.
@@ -114,23 +133,13 @@ export default function PlaymakerOverview() {
       .filter((x): x is { play: Play; treffer: Treffer } => x !== null)
   }, [nachKategorie, categories, gesucht, sucht])
 
-  /**
-   * Der beste Treffer uebernimmt das Hero-Feld, statt dass es verschwindet.
-   *
-   * Das ist kein Schmuck, sondern gegen einen Ruckler: das Hero ist 256 px hoch und
-   * steht UEBER dem Suchfeld. Liess man es beim ersten Buchstaben weg, sprang das
-   * Eingabefeld um genau diese 256 px nach oben — gemessen — und am Handy passiert das
-   * in dem Moment, in dem die Tastatur hochkommt und der sichtbare Bereich ohnehin nur
-   * noch halb so hoch ist. Man tippt dann auf eine Zeile, die nicht mehr dort ist.
-   *
-   * Nebenbei ist es die bessere Antwort: man sieht die Situation als Bild, statt sie aus
-   * einem Titel zu erraten.
+  /*
+   * Kein Hero mehr, also auch kein „alles ausser dem ersten": die Liste zeigt, was da
+   * ist. Frueher nahm das grosse Feld oben das erste Play heraus und `rest` war der
+   * Rest; seit es weg ist, waere das ein stillschweigend verschlucktes Play.
    */
-  const hero = sucht ? gefunden[0]?.play : nachKategorie[0]
-  const heroTreffer = sucht ? (gefunden[0]?.treffer ?? null) : null
-  // Eigenes useMemo, damit die Gruppierung darunter eine stabile Abhaengigkeit hat.
-  const rest = useMemo(() => (sucht ? [] : nachKategorie.slice(1)), [sucht, nachKategorie])
-  const restTreffer = sucht ? gefunden.slice(1) : []
+  const rest = useMemo(() => (sucht ? [] : nachKategorie), [sucht, nachKategorie])
+  const restTreffer = sucht ? gefunden : []
 
   /**
    * Ohne Filter wird die Liste nach Kategorie gegliedert.
@@ -165,6 +174,8 @@ export default function PlaymakerOverview() {
   const allesZu = Boolean(gruppen && gruppen.length > 0 && gruppen.every(g => zugeklappt.has(g.kategorie.id)))
   const kategorieName =
     categoryId === 'alle' ? 'Alle Kategorien' : (categories.find(c => c.id === categoryId)?.name ?? '')
+  /* Steht eine Kategorie in der Adresse, ist die Seite ein Kapitel (siehe unten). */
+  const kapitel = categoryId === 'alle' ? null : (categories.find(c => c.id === categoryId) ?? null)
 
   if (loading) {
     return <div className="p-4 text-sm text-gray-500">Plays werden geladen …</div>
@@ -177,6 +188,113 @@ export default function PlaymakerOverview() {
         <p className="mt-2 text-xs text-gray-400">
           Ohne Netz zeigt der Playmaker nur Plays, die schon einmal geladen wurden.
         </p>
+      </div>
+    )
+  }
+
+  /*
+   * Eine gewaehlte Kategorie ist ein KAPITEL, kein Werkzeugkasten.
+   *
+   * Wer aus dem Spielwissen auf „Spielsituationen" tippt, bekam bisher die ganze
+   * Werkbank: grosses Feld vom zuletzt bearbeiteten Play, die Zeile „Freies Feld", ein
+   * Auswahlfeld fuer die Kategorie, in der er schon ist, und ein Suchfeld. Alles davon
+   * hilft beim Bauen und nichts beim Lernen.
+   *
+   * Hier steht deshalb nur: wo bin ich, worum geht es, und die Plays — jedes mit seiner
+   * Stufe. Die Werkbank bleibt, sie liegt eine Zeile weiter unten („Alle Kategorien").
+   */
+  if (kapitel) {
+    const alleImKapitel = plays.filter(p => p.categoryId === kapitel.id).sort((a, b) => a.id - b.id)
+    /*
+     * „Zeig mir die Plays, in denen MEIN Platz etwas tut."
+     *
+     * Mitwirken heisst hier mehr als den Ball anfassen: wer hinter die Base laeuft, lernt
+     * genau dort seinen Weg. Die Wahl liegt im localStorage, weil eine Position nichts
+     * ist, was man je Besuch neu entscheidet — und sie steht in der Adresse nicht drin,
+     * damit ein geteilter Link allen dasselbe zeigt.
+     */
+    const imKapitel = position
+      ? alleImKapitel.filter(p => mitwirkende(p.steps).includes(position))
+      : alleImKapitel
+    return (
+      <div className="pb-8">
+        <div className="px-4 pb-3 pt-4">
+          <Link
+            to="/spielwissen"
+            className="font-display inline-flex min-h-11 items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-ink-muted active:text-ink-strong"
+          >
+            ‹ Spielwissen
+          </Link>
+          <div className="flex items-center gap-3">
+            <h1 className="font-headline text-2xl font-extrabold uppercase tracking-wide text-ink-strong">
+              {kapitel.name}
+            </h1>
+            <StufePunkte stufe={kategorieStufe(kapitel.sortOrder)} />
+          </div>
+          <p className="mt-0.5 text-sm text-ink-muted">{kategorieSatz(kapitel.name)}</p>
+          {/* Auch hier, denn man kann direkt in einem Kapitel landen. */}
+          <StufeLegende className="mt-2" />
+
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className="font-display mr-1 text-[11px] font-bold uppercase tracking-widest text-ink-faint">
+              Deine Position
+            </span>
+            {([null, ...POSITIONS] as (PositionCode | null)[]).map(pos => {
+              const aktiv = position === pos
+              return (
+                <button
+                  key={pos ?? 'alle'}
+                  type="button"
+                  onClick={() => merkePosition(pos)}
+                  aria-pressed={aktiv}
+                  className={`font-display min-h-11 rounded-lg px-3 text-[11px] font-bold uppercase tracking-widest ${
+                    aktiv
+                      ? 'bg-accent text-accent-ink'
+                      : 'border border-line text-ink-muted active:bg-surface-raised'
+                  }`}
+                >
+                  {pos ?? 'Alle'}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="border-t border-line">
+          {imKapitel.map(play => (
+            <PlayRow
+              key={play.id}
+              play={play}
+              stufe={playStufe(play)}
+              onDuplicate={() => kopieren(play)}
+              onDelete={() => loeschen(play)}
+            />
+          ))}
+          {/* Ein leeres Kapitel ist keine Sackgasse: es sagt, warum, und bietet den Weg
+              zurück zu allen an. */}
+          {imKapitel.length === 0 && (
+            <p className="px-4 py-8 text-center text-sm text-ink-muted">
+              In diesem Kapitel tut der {position} nichts.{' '}
+              <button
+                type="button"
+                onClick={() => merkePosition(null)}
+                className="font-display font-bold text-ink-strong underline"
+              >
+                Alle zeigen
+              </button>
+            </p>
+          )}
+        </div>
+
+        <div className="px-4 pt-4">
+          <button
+            type="button"
+            onClick={() => setCategoryId('alle')}
+            className="font-display min-h-11 w-full rounded-xl border border-dashed border-line px-4 text-[11px] font-bold uppercase tracking-widest text-ink-muted active:bg-surface-raised"
+          >
+            Alle Kategorien
+          </button>
+        </div>
       </div>
     )
   }
@@ -217,10 +335,14 @@ export default function PlaymakerOverview() {
         {istAdmin && <Button onClick={() => navigate('/orga/playmaker/neu')}>Neues Play</Button>}
       </div>
 
-      {/* Das freie Feld steht ueber allem anderen: in der Pause will man es mit einem
-          Tipp haben, nicht nach dem Scrollen durch einundfuenfzig Plays. Es legt nichts
-          an — deshalb keine Kachel neben den Plays, sondern eine Zeile mit eigener Kante. */}
-      <Link
+      {/*
+        Das freie Feld steht über allem anderen: in der Pause will man es mit einem Tipp
+        haben, nicht nach dem Scrollen durch einundfünfzig Plays. Es legt nichts an —
+        deshalb keine Kachel neben den Plays, sondern eine Zeile mit eigener Kante.
+        **Nur für Trainer:** es ist eine Tafel zum Zeigen, kein Lernstoff. Wer die Seite
+        aufmacht, um etwas nachzusehen, braucht sie nicht als erste Zeile.
+      */}
+      {istAdmin && <Link
         to="/orga/playmaker/frei"
         className="mx-4 mb-3 flex items-center gap-3 rounded-xl border border-dashed border-cream-400 bg-white p-3 hover:bg-navy-800 hover:text-white"
       >
@@ -233,7 +355,7 @@ export default function PlaymakerOverview() {
               vorher auf „wird nicht gespei…". */}
           <div className="truncate text-xs opacity-70">Zum Zeigen. Wird nicht gespeichert.</div>
         </div>
-      </Link>
+      </Link>}
 
       {plays.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-16 text-center">
@@ -243,19 +365,17 @@ export default function PlaymakerOverview() {
         </div>
       ) : (
         <>
-          {/* Dieselbe Flaeche, was immer darin steht: Hero, bester Treffer oder die
-              Auskunft, dass es nichts gibt. Sie liegt UEBER dem Suchfeld — bliebe sie
-              mal leer, spraenge das Feld unter dem Finger weg. */}
-          {hero ? (
-            <HeroPlay
-              play={hero}
-              treffer={heroTreffer}
-              kompakt={allesZu}
-              onDuplicate={() => kopieren(hero)}
-              onDelete={() => loeschen(hero)}
-            />
-          ) : (
-            <div className="flex h-64 flex-col items-center justify-center gap-3 px-6 text-center sm:h-80">
+          {/*
+            Das grosse Feld ist weg.
+
+            Es zeigte das zuletzt bearbeitete Play, 256 px hoch, vor der eigentlichen
+            Liste. Als die Seite eine Werkbank war, war das der Einstieg; seit sie ein
+            Inhaltsverzeichnis mit Kapiteln ist, steht es vor dem, was man sucht — und
+            „zuletzt bearbeitet" ist ohnehin eine Auskunft ueber die Arbeit des Trainers,
+            nicht ueber Softball. Wer sucht, sieht die Treffer jetzt direkt als Zeilen.
+          */}
+          {sucht && gefunden.length === 0 && (
+            <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
               <CrossBones size={40} className="text-gray-300" />
               <p className="text-sm text-gray-500">
                 Nichts zu „{gesucht.trim()}" — auch nicht in den Notizen.
@@ -315,7 +435,7 @@ export default function PlaymakerOverview() {
             unter der Navigation — die Kategorie-Auswahl darf dafuer wegscrollen, denn die
             Suche findet Kategorien ueber ihren Namen ohnehin mit.
           */}
-          <div className="sticky top-14 z-20 bg-cream-100/95 px-4 pb-2 pt-2 backdrop-blur">
+          {istAdmin && <div className="sticky top-14 z-20 bg-cream-100/95 px-4 pb-2 pt-2 backdrop-blur">
             {/* type="text" statt "search": das eingebaute Kreuz des Browsers sitzt genau
                 dort, wo die Trefferzahl steht, und laesst sich nicht verschieben. Das
                 eigene Kreuz hat ausserdem die volle Fingerflaeche. */}
@@ -345,7 +465,7 @@ export default function PlaymakerOverview() {
                 </div>
               )}
             </div>
-          </div>
+          </div>}
 
           <div className="mt-2">
             {sucht ? (
@@ -411,6 +531,18 @@ export default function PlaymakerOverview() {
   )
 }
 
+const POSITION_SPEICHER = 'playmaker-position'
+
+/** Die gemerkte Position, falls es eine gibt und der Speicher sie hergibt. */
+function lesePosition(): PositionCode | null {
+  try {
+    const wert = localStorage.getItem(POSITION_SPEICHER)
+    return wert && (POSITIONS as readonly string[]).includes(wert) ? (wert as PositionCode) : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Welche Kategorien zugeklappt sind, bleibt auf DIESEM Geraet gemerkt.
  *
@@ -440,101 +572,3 @@ function schreibeZugeklappt(ids: Set<number>) {
   }
 }
 
-/** Das zuletzt bearbeitete Play, gross, mit Verlauf und Meta-Zeile darueber. */
-function HeroPlay({
-  play,
-  treffer,
-  kompakt,
-  onDuplicate,
-  onDelete,
-}: {
-  play: Play
-  treffer: Treffer | null
-  /** Alles zugeklappt: dann schrumpft das Feld, damit die Uebersicht auf einen Blick passt. */
-  kompakt: boolean
-  onDuplicate: () => void
-  onDelete: () => void
-}) {
-  const { istAdmin } = useRolle()
-  const [loeschenOffen, setLoeschenOffen] = useState(false)
-
-  return (
-    <div className="relative">
-      {/* EIN Link ueber Feld und Beschriftung. Vorher waren es zwei, und der zweite
-          enthielt nur den absolut gesetzten Titel — ein Anker ohne eigene Hoehe, den
-          kein Browser als Flaeche anbietet. */}
-      <Link to={`/orga/playmaker/${play.id}`} className="block">
-        {/*
-          Zugeklappt kein Feld, sondern eine Zeile.
-
-          Ein flach gedruecktes Feld waere hier nutzlos: das Board zieht den Ausschnitt auf
-          das Seitenverhaeltnis der Flaeche, und bei 112 px Hoehe auf 390 px Breite liegt
-          die Raute als Streifen in der Mitte — man erkennt nichts. Wenn die Seite ein
-          Inhaltsverzeichnis ist, gehoert das zuletzt bearbeitete Play auch nur als Zeile
-          hinein.
-        */}
-        <div className={kompakt ? 'h-0 overflow-hidden' : 'h-64 sm:h-80'}>
-          {play.steps[0] ? (
-            <PlayBoard markers={play.steps[0].markers} steps={play.steps} />
-          ) : (
-            <div className="h-full w-full bg-cream-200" />
-          )}
-        </div>
-        <div
-          className={
-            kompakt
-              ? 'bg-navy-900 px-4 py-2.5 pr-28'
-              : 'absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy-900/90 via-navy-900/40 to-transparent px-4 pb-3 pt-6'
-          }
-        >
-          <div
-            className={`truncate font-headline font-extrabold uppercase tracking-wide text-cream-50 ${
-              kompakt ? 'text-base' : 'text-xl'
-            }`}
-          >
-            {play.title}
-          </div>
-          <div className="truncate font-display text-xs font-bold text-cream-200">
-            {treffer && treffer.feld !== 'titel'
-              ? treffer.text
-              : `${beschreibung(play)}${treffer || !istAdmin ? '' : ' · zuletzt bearbeitet'}`}
-          </div>
-        </div>
-      </Link>
-
-      {/* Kopieren und Loeschen gibt es auch hier. Vorher war ausgerechnet das zuletzt
-          bearbeitete Play das einzige, das man aus der Uebersicht weder kopieren noch
-          loeschen konnte — man musste es erst wegfiltern. */}
-      {istAdmin && <div className={`absolute right-2 z-10 flex gap-1 ${kompakt ? 'inset-y-0 items-center' : 'top-2'}`}>
-        <button
-          type="button"
-          onClick={onDuplicate}
-          aria-label="Play duplizieren"
-          className="flex h-11 w-11 items-center justify-center rounded-lg bg-navy-900/55 text-cream-50 backdrop-blur hover:bg-navy-800"
-        >
-          <CopyIcon size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setLoeschenOffen(true)}
-          aria-label="Play löschen"
-          className="flex h-11 w-11 items-center justify-center rounded-lg bg-navy-900/55 text-cream-50 backdrop-blur hover:bg-softball-red-600"
-        >
-          <TrashBin size={16} />
-        </button>
-      </div>}
-
-      {loeschenOffen && (
-        <ConfirmModal
-          title="Play löschen?"
-          message={`„${play.title}" wird mit allen Ständen entfernt.`}
-          onConfirm={() => {
-            setLoeschenOffen(false)
-            onDelete()
-          }}
-          onCancel={() => setLoeschenOffen(false)}
-        />
-      )}
-    </div>
-  )
-}
