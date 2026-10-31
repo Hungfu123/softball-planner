@@ -9,18 +9,18 @@
  * beide dasselbe sagen.
  */
 export const KATEGORIE_SATZ: Record<string, string> = {
-  Spielsituationen: 'Lagen, die im Spiel immer wieder vorkommen.',
-  'Base-Coverage': 'Wer welche Base deckt, wenn es losgeht.',
-  'Pop-up-Priorities': 'Wer den hohen Ball zwischen zweien nimmt.',
-  'Bunt-Defense': 'Wer den Bunt holt und wohin der Wurf geht.',
-  'Steal-Defense & Pickoff': 'Deckung und Wurf, wenn der Runner geht.',
-  Rundown: 'Den Runner zwischen zwei Bases auslaufen.',
-  'First-and-Third': 'Runner auf 1 und 3, beide laufen.',
-  'Cut-off & Relay': 'Die Kette vom Outfield nach innen.',
+  Spielsituationen: 'Der Ball geht irgendwohin. Was tust du?',
+  'Base-Coverage': 'Wer covert welche Base, wenn es losgeht?',
+  'Pop-up-Priorities': 'Hoher Ball zwischen zweien. Wer ruft?',
+  'Bunt-Defense': 'Der Bunt liegt da. Wer holt ihn, wohin geht der Wurf?',
+  'Steal-Defense & Pickoff': 'Der Runner geht. Wer covert, wer wirft?',
+  Rundown: 'Zwischen zwei Bases gefangen. Wie macht man den Out?',
+  'First-and-Third': 'Runner auf 1 und 3, und beide laufen.',
+  'Cut-off & Relay': 'Der Ball ist weit weg. Die Kette nach innen.',
 }
 
 export const kategorieSatz = (name: string) =>
-  KATEGORIE_SATZ[name] ?? 'Wer wo steht und wohin der Ball geht.'
+  KATEGORIE_SATZ[name] ?? 'Wer steht wo, und wohin geht der Ball?'
 
 /**
  * Wie schwer eine Kategorie ist, aus ihrer Sortierung.

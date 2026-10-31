@@ -90,7 +90,7 @@ function Haelfte({ titel }: { titel: string }) {
  * haengt an gar keinem Abruf — das ist das Versprechen dieser Seite, und ein Test
  * haelt es fest.
  */
-const DEFENSE_STICHWORTE = ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff', 'Wer deckt was']
+const DEFENSE_STICHWORTE = ['Cut-off', 'Bunt-Defense', 'Rundown', 'Pickoff', 'Wer covert was']
 
 export default function SpielwissenHome() {
   const [kategorien, setKategorien] = useState<PlayCategory[] | null>(null)
