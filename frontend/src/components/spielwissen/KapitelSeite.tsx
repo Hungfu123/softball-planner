@@ -125,20 +125,21 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
           onClick={() => blaettern(-1)}
           disabled={nr === 0}
           aria-label="Vorherige Karte"
-          className="flex min-h-11 w-11 items-center justify-center rounded-xl border border-line bg-surface-raised text-ink-strong transition-colors disabled:opacity-35 hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
+          className="flex h-12 w-14 items-center justify-center rounded-xl border border-line bg-surface-raised text-ink-strong transition-colors disabled:opacity-35 hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
         >
           <ChevronLeft size={20} aria-hidden="true" />
         </button>
 
         <span className="font-display flex-1 text-center text-[11px] font-bold uppercase tracking-widest text-ink-muted">
-          {`${nr + 1} von ${kapitel.karten.length}`}
+          {/* „Karte 4 von 6" wie drueben „Play 6 von 9": dieselbe Zeile, dasselbe Muster. */}
+          {`Karte ${nr + 1} von ${kapitel.karten.length}`}
         </span>
 
         {letzte ? (
           naechstesKapitel ? (
             <Link
               to={`/spielwissen/${naechstesKapitel.id}`}
-              className="font-display flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
+              className="font-display flex h-12 items-center gap-1.5 rounded-xl bg-accent px-5 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
             >
               {naechstesKapitel.titel}
               <ChevronRight size={18} aria-hidden="true" />
@@ -146,7 +147,7 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
           ) : (
             <Link
               to="/spielwissen"
-              className="font-display flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
+              className="font-display flex h-12 items-center gap-1.5 rounded-xl bg-accent px-5 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
             >
               Fertig
             </Link>
@@ -155,7 +156,7 @@ function Blaetterer({ kapitel }: { kapitel: Kapitel }) {
           <button
             type="button"
             onClick={() => blaettern(1)}
-            className="font-display flex min-h-11 items-center gap-1.5 rounded-xl bg-accent px-4 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
+            className="font-display flex h-12 items-center gap-1.5 rounded-xl bg-accent px-5 text-[11px] font-extrabold uppercase tracking-widest text-accent-ink active:brightness-110"
           >
             Weiter
             <ChevronRight size={18} aria-hidden="true" />

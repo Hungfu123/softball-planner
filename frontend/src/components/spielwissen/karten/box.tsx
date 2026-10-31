@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import type { BuehnenProps } from '../kapitel'
-import { takt, Ball, FARBE, Figur, MiniFeld, SicherRing } from '../buehne'
+import { takt, Ball, FARBE, Figur, MiniFeld, SicherRing, Verteidiger } from '../buehne'
 import { HOME, FIRST_BASE, SECOND_BASE } from '@/components/playmaker/board/geometry'
 
 /**
@@ -114,9 +114,9 @@ export function ZoneAmKoerper({ ruhig }: BuehnenProps) {
                gewaehlte Knopf der hellere, also sagte das Bild das Gegenteil von
                `aria-pressed`. */
             style={gross === wert
-              ? { backgroundColor: FARBE.hell, color: FARBE.grund }
-              : { backgroundColor: 'rgb(255 255 255 / 0.12)', color: 'rgb(251 246 236 / 0.75)' }}
-            className="font-display min-h-11 flex-1 rounded-lg px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest transition-colors active:brightness-125"
+              ? { backgroundColor: FARBE.hell, borderColor: FARBE.hell, color: FARBE.grund }
+              : { borderColor: 'rgb(251 246 236 / 0.25)', color: FARBE.hell }}
+            className="font-display h-12 flex-1 rounded-xl border px-3 text-[11px] font-extrabold uppercase tracking-widest transition-colors active:brightness-125"
           >
             {label}
           </button>
@@ -223,7 +223,7 @@ function Ausgang({ art, ruhig, runde }: { art: 'Walk' | 'Out'; ruhig: boolean; r
       <MiniFeld ausschnitt="infield" className="max-h-40">
         <motion.circle
           key={`laeufer-${runde}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: HOME.x, cy: HOME.y }}
           animate={walk ? { cx: FIRST_BASE.x, cy: FIRST_BASE.y } : { cx: HOME.x, cy: HOME.y }}
           transition={takt(ruhig, { duration: 0.8, ease: 'easeOut' })}
@@ -297,7 +297,7 @@ export function CountWettlauf({ ruhig }: BuehnenProps) {
           <button
             type="button"
             onClick={zuruecksetzen}
-            className="font-display min-h-11 flex-1 rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+            className="font-display h-12 flex-1 rounded-xl border border-cream-50/25 px-3 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
           >
             Von vorn
           </button>
@@ -306,14 +306,14 @@ export function CountWettlauf({ ruhig }: BuehnenProps) {
             <button
               type="button"
               onClick={() => setB(x => x + 1)}
-              className="font-display min-h-11 flex-1 rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+              className="font-display h-12 flex-1 rounded-xl border border-cream-50/25 px-3 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
             >
               + Ball
             </button>
             <button
               type="button"
               onClick={() => setS(x => x + 1)}
-              className="font-display min-h-11 flex-1 rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+              className="font-display h-12 flex-1 rounded-xl border border-cream-50/25 px-3 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
             >
               + Strike
             </button>
@@ -352,7 +352,7 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
     <div className="px-4 pt-4">
       <div className="relative">
         <MiniFeld ausschnitt="infield" className="max-h-52">
-          <circle cx={CATCHER.x} cy={CATCHER.y} r="4" fill={FARBE.hell} opacity="0.45" />
+          <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
           {/* Der Ball ist ihm durchgerutscht und liegt hinter ihm. Die gestrichelte Spur
               sagt, dass er dort nicht hingelegt wurde, sondern hingerollt ist. */}
           {/* Seitlich nach hinten und nicht geradeaus: der Ausschnitt endet 20 Einheiten
@@ -378,7 +378,7 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
             initial={{ cx: ziel.x, cy: ziel.y }}
             animate={{ cx: ziel.x, cy: ziel.y }}
             transition={takt(ruhig, { duration: 0.7, ease: 'easeOut' })}
-            r="4.5" fill={FARBE.hell}
+            r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           />
         </MiniFeld>
         <div className="absolute right-2 top-1">
@@ -404,9 +404,9 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
             onClick={() => setFrei(wert)}
             aria-pressed={frei === wert}
             style={frei === wert
-              ? { backgroundColor: FARBE.hell, color: FARBE.grund }
-              : { backgroundColor: 'rgb(255 255 255 / 0.12)', color: 'rgb(251 246 236 / 0.75)' }}
-            className="font-display min-h-11 flex-1 rounded-lg px-2 py-2 text-[11px] font-extrabold uppercase tracking-widest transition-colors active:brightness-125"
+              ? { backgroundColor: FARBE.hell, borderColor: FARBE.hell, color: FARBE.grund }
+              : { borderColor: 'rgb(251 246 236 / 0.25)', color: FARBE.hell }}
+            className="font-display h-12 flex-1 rounded-xl border px-2 text-[11px] font-extrabold uppercase tracking-widest transition-colors active:brightness-125"
           >
             {label}
           </button>
@@ -544,7 +544,7 @@ export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
       <button
         type="button"
         onClick={() => setSchritt(s => (s + 1) % FUSS.length)}
-        className="font-display mb-1 min-h-11 w-full rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+        className="font-display mb-1 flex h-12 w-full items-center justify-center rounded-xl border border-cream-50/25 px-3 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
       >
         {schritt === FUSS.length - 1 ? 'Von vorn' : 'Nächster Schritt'}
       </button>
@@ -591,7 +591,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
         {/* Der Laeufer, der schon auf der 1 stand, zieht auf die 2. Das ist der Zweck. */}
         <motion.circle
           key={`vorne-${lauf}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
           animate={{ cx: SECOND_BASE.x, cy: SECOND_BASE.y }}
           transition={takt(ruhig, { delay: 0.2, duration: 0.9, ease: 'easeOut' })}
@@ -601,7 +601,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
         {/* Und die Schlagfrau selbst. */}
         <motion.circle
           key={`schlag-${lauf}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: HOME.x, cy: HOME.y }}
           animate={{ cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
           transition={takt(ruhig, { delay: 0.2, duration: 0.95, ease: 'easeOut' })}

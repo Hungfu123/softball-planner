@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import type { BuehnenProps } from '../kapitel'
-import { takt, Ball, FARBE, Figur, MiniFeld } from '../buehne'
+import { takt, Ball, FARBE, Figur, MiniFeld, Verteidiger } from '../buehne'
 import { HOME, FIRST_BASE, SECOND_BASE } from '@/components/playmaker/board/geometry'
 
 /**
@@ -241,26 +241,36 @@ export function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="relative px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
-        {/* Der Wurf von der Mitte des Infields. */}
+        {/*
+          Der 1B steht an der Base und fängt.
+
+          Er fehlte, und damit fehlte die halbe Regel: out ist man nicht, weil der Ball
+          früher da ist, sondern weil ihn jemand **auf der Base** hält. Nebenbei sieht die
+          Karte jetzt aus wie ein Play im Playmaker — helle Scheibe mit Kürzel, amberner
+          Läufer, cremefarbener Ball.
+        */}
+        <Verteidiger x={FIRST_BASE.x + 7} y={FIRST_BASE.y - 6} kuerzel="1B" />
+
+        {/* Der Wurf von der Mitte des Infields, direkt in seinen Handschuh. */}
         <motion.circle
           key={`ball-${lauf}`}
-          r="3.4" fill={FARBE.raus}
+          r="3.4" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.15"
           initial={ruhig ? false : { cx: SECOND_BASE.x - 12, cy: SECOND_BASE.y + 16 }}
-          animate={{ cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
+          animate={{ cx: FIRST_BASE.x + 4, cy: FIRST_BASE.y - 3 }}
           transition={takt(ruhig, { delay: 0.3, duration: 0.5, ease: 'linear' })}
         />
         {/* Die Laeuferin ist frueher los und trotzdem spaeter da. */}
         <motion.circle
           key={`laeufer-${lauf}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: HOME.x, cy: HOME.y }}
-          animate={{ cx: FIRST_BASE.x - 7, cy: FIRST_BASE.y + 7 }}
+          animate={{ cx: FIRST_BASE.x - 9, cy: FIRST_BASE.y + 8 }}
           transition={takt(ruhig, { duration: 1.1, ease: 'linear' })}
         />
       </MiniFeld>
       <OutStempel lauf={lauf} ruhig={ruhig} delay={0.9} />
       <p className="pb-1 text-center text-[12px] text-cream-50/70">
-        Er fliegt, du läufst.
+        Er fliegt, du läufst. Fangen muss ihn einer, mit dem Fuß auf der Base.
       </p>
     </div>
   )
@@ -274,21 +284,31 @@ export function RausGetickt({ lauf, ruhig }: BuehnenProps) {
 
   return (
     <div className="relative px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+      {/* Nah heran: auf dem ganzen Infield lagen Laeuferin, 2B und Ball als ein Fleck. */}
+      <MiniFeld ausschnitt="einsTeilZwei" className="max-h-56">
         <motion.circle
           key={`laeufer-${lauf}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
           animate={{ cx: mitte.x, cy: mitte.y }}
           transition={takt(ruhig, { duration: 0.6, ease: 'easeOut' })}
         />
-        <motion.circle
-          key={`ball-${lauf}`}
-          r="3.4" fill={FARBE.raus}
-          initial={ruhig ? false : { cx: SECOND_BASE.x, cy: SECOND_BASE.y }}
-          animate={{ cx: mitte.x + 5, cy: mitte.y }}
-          transition={takt(ruhig, { delay: 0.45, duration: 0.45, ease: 'easeOut' })}
-        />
+        {/*
+          Der Ball kommt nicht allein: einer traegt ihn.
+
+          Vorher schwebte er auf die Laeuferin zu, und das Ticken sah aus wie ein Treffer
+          durch den Ball. Der 2B kommt von der 2 mit, der Ball sitzt bei ihm — dieselbe
+          Bildsprache wie im Playmaker, wo ein Tag immer zwei Scheiben sind.
+        */}
+        <motion.g
+          key={`feld-${lauf}`}
+          initial={ruhig ? false : { x: SECOND_BASE.x, y: SECOND_BASE.y }}
+          animate={{ x: mitte.x + 11, y: mitte.y - 4 }}
+          transition={takt(ruhig, { delay: 0.35, duration: 0.5, ease: 'easeOut' })}
+        >
+          <Verteidiger x={0} y={0} kuerzel="2B" />
+          <circle cx={-5} cy={4} r="3.4" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.15" />
+        </motion.g>
       </MiniFeld>
       <OutStempel lauf={lauf} ruhig={ruhig} delay={1} />
       <p className="pb-1 text-center text-[12px] text-cream-50/70">
@@ -359,7 +379,7 @@ export function DurchlaufenAnDerEins({ lauf, ruhig }: BuehnenProps) {
           data-testid="durchlauf-laeufer"
           /* Dunkel umrandet: sie endet auf der weissen Haelfte, und ohne Rand werden die
              beiden in dieser Vergroesserung ein einziger heller Fleck. */
-          r="3" fill={FARBE.hell} stroke={FARBE.grund} strokeWidth="0.9"
+          r="3" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.9"
           initial={ruhig ? false : { cx: start.x, cy: start.y }}
           animate={ruhig
             ? { cx: FIRST_BASE.x, cy: FIRST_BASE.y }

@@ -63,13 +63,13 @@ describe('Kapitelseite', () => {
 
   it('blättert vor und zurück und sagt, wo man ist', async () => {
     zeige('/spielwissen/box')
-    expect(screen.getByText('1 von 2')).toBeInTheDocument()
+    expect(screen.getByText('Karte 1 von 2')).toBeInTheDocument()
 
     weiter()
 
     // AnimatePresence laesst die alte Karte erst abtreten (mode="wait").
     await waitFor(() => expect(screen.getByText('Drin ist Strike')).toBeInTheDocument())
-    expect(screen.getByText('2 von 2')).toBeInTheDocument()
+    expect(screen.getByText('Karte 2 von 2')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Vorherige Karte' }))
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import type { BuehnenProps } from '../kapitel'
-import { takt, FARBE, MiniFeld, SicherRing } from '../buehne'
+import { takt, FARBE, MiniFeld, SicherRing, Verteidiger } from '../buehne'
 import { HOME, FIRST_BASE, SECOND_BASE, PITCHING_PLATE } from '@/components/playmaker/board/geometry'
 
 /**
@@ -39,12 +39,12 @@ export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
           animate={{ r: 11, opacity: 0.75 }}
           transition={takt(ruhig, { duration: 0.5, ease: 'easeOut' })}
         />
-        <circle cx={FIRST_BASE.x} cy={FIRST_BASE.y} r="4.5" fill={FARBE.hell} />
+        <circle cx={FIRST_BASE.x} cy={FIRST_BASE.y} r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8" />
 
         {/* Der Ball kommt vorbei und richtet nichts aus. */}
         <motion.circle
           key={`ball-${lauf}`}
-          r="3.4" fill={FARBE.raus}
+          r="3.4" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.15"
           initial={ruhig ? false : { cx: SECOND_BASE.x, cy: SECOND_BASE.y }}
           animate={ruhig
             ? { cx: HOME.x + 30, cy: HOME.y - 20 }
@@ -101,8 +101,8 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
-        <circle cx={PITCHING_PLATE.x} cy={PITCHING_PLATE.y} r="5" fill={FARBE.hell} opacity="0.35" />
-        <circle cx={CATCHER.x} cy={CATCHER.y} r="4" fill={FARBE.hell} opacity="0.35" />
+        <Verteidiger x={PITCHING_PLATE.x} y={PITCHING_PLATE.y} kuerzel="P" r={5} />
+        <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         {/*
           Der Abdruck des Schrittfusses: der Moment, auf den es ankommt. Er steht schraeg
@@ -155,7 +155,7 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
             cy: start.y + (ziel.y - start.y) * jetzt.laeufer,
           }}
           transition={takt(ruhig, { duration: 0.6, ease: 'easeOut' })}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
         />
       </MiniFeld>
 
@@ -169,7 +169,7 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
       <button
         type="button"
         onClick={() => setSchritt(s => (s + 1) % RELEASE.length)}
-        className="font-display mb-1 min-h-11 w-full rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+        className="font-display mb-1 flex h-12 w-full items-center justify-center rounded-xl border border-cream-50/25 px-3 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
       >
         {schritt === RELEASE.length - 1 ? 'Von vorn' : 'Nächster Schritt'}
       </button>
@@ -186,7 +186,7 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
-        <circle cx={CATCHER.x} cy={CATCHER.y} r="4" fill={FARBE.hell} opacity="0.45" />
+        <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         <motion.circle
           key={`ball-${lauf}`}
@@ -199,7 +199,7 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
 
         <motion.circle
           key={`laeufer-${lauf}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
           animate={{ cx: SECOND_BASE.x, cy: SECOND_BASE.y }}
           transition={takt(ruhig, { delay: 0.5, duration: 0.9, ease: 'easeOut' })}
@@ -221,7 +221,7 @@ export function Steal({ lauf, ruhig }: BuehnenProps) {
   return (
     <div className="px-4 pt-4">
       <MiniFeld ausschnitt="infield" className="max-h-56">
-        <circle cx={CATCHER.x} cy={CATCHER.y} r="4" fill={FARBE.hell} opacity="0.45" />
+        <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         <motion.circle
           key={`ball-${lauf}`}
@@ -234,7 +234,7 @@ export function Steal({ lauf, ruhig }: BuehnenProps) {
         {/* Sie startet mit dem Abwurf, nicht mit dem Fehler. */}
         <motion.circle
           key={`laeufer-${lauf}`}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
           initial={ruhig ? false : { cx: FIRST_BASE.x, cy: FIRST_BASE.y }}
           animate={{ cx: SECOND_BASE.x, cy: SECOND_BASE.y }}
           transition={takt(ruhig, { duration: 1, ease: 'easeOut' })}
@@ -242,7 +242,7 @@ export function Steal({ lauf, ruhig }: BuehnenProps) {
         {/* Der Wurf des Catchers hinterher. */}
         <motion.circle
           key={`wurf-${lauf}`}
-          r="3.2" fill={FARBE.raus}
+          r="3.2" fill={FARBE.ball} stroke={FARBE.naht} strokeWidth="1.1"
           initial={ruhig ? false : { cx: CATCHER.x, cy: CATCHER.y, opacity: 0 }}
           animate={{ cx: SECOND_BASE.x + 6, cy: SECOND_BASE.y + 6, opacity: 1 }}
           transition={takt(ruhig, { delay: 0.55, duration: 0.5, ease: 'linear' })}
@@ -300,7 +300,7 @@ export function TagUp({ ruhig }: BuehnenProps) {
             cy: start.y + (ziel.y - start.y) * jetzt.laeufer,
           }}
           transition={takt(ruhig, { duration: 0.6, ease: 'easeOut' })}
-          r="4.5" fill={FARBE.hell}
+          r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
         />
       </MiniFeld>
 
@@ -312,7 +312,7 @@ export function TagUp({ ruhig }: BuehnenProps) {
       <button
         type="button"
         onClick={() => setSchritt(s => (s + 1) % TAGUP.length)}
-        className="font-display mb-1 min-h-11 w-full rounded-lg bg-navy-800 px-3 py-2 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-navy-700"
+        className="font-display mb-1 flex h-12 w-full items-center justify-center rounded-xl border border-cream-50/25 px-3 text-[11px] font-extrabold uppercase tracking-widest text-cream-50 active:bg-cream-50/10"
       >
         {schritt === TAGUP.length - 1 ? 'Von vorn' : 'Nächster Schritt'}
       </button>
