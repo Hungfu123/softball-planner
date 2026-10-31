@@ -29,8 +29,8 @@ function DraufBleiben() {
 /** Solange du draufstehst, kann dir niemand etwas. Die ruhigste Karte des Kapitels. */
 export function BaseIstSicher({ lauf, ruhig }: BuehnenProps) {
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         <motion.circle
           key={`ring-${lauf}`}
           cx={FIRST_BASE.x} cy={FIRST_BASE.y}
@@ -99,8 +99,8 @@ export function LosBeimRelease({ ruhig }: BuehnenProps) {
   }
 
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         <Verteidiger x={PITCHING_PLATE.x} y={PITCHING_PLATE.y} kuerzel="P" r={5} />
         <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
@@ -184,8 +184,8 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
   const vorbei = { x: HOME.x - 30, y: HOME.y + 16 }
 
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         <motion.circle
@@ -219,8 +219,8 @@ export function WildPitch({ lauf, ruhig }: BuehnenProps) {
 /** Derselbe Weg wie beim Wild Pitch, nur ohne Fehler der Gegenseite. */
 export function Steal({ lauf, ruhig }: BuehnenProps) {
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
 
         <motion.circle
@@ -284,8 +284,8 @@ export function TagUp({ ruhig }: BuehnenProps) {
   }
 
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         <motion.circle
           initial={{ cx: ballOrt.x, cy: ballOrt.y }}
           animate={{ cx: ballOrt.x, cy: ballOrt.y }}

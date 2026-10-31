@@ -76,6 +76,34 @@ describe('Kapitelseite', () => {
     await waitFor(() => expect(screen.getByText('Die Zone bist du')).toBeInTheDocument())
   })
 
+  /*
+   * Pointe, Satz und „nochmal" standen frueher IN der Karte. Sie stehen jetzt auf der
+   * Seite — unter der Buehne und unten am Rand, wie die Notiz und die Wiedergabeleiste
+   * unter einem Play.
+   */
+  it('zeigt die Aussage unter der Bühne und startet sie mit „nochmal" neu', () => {
+    zeige('/spielwissen/box')
+
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Die Zone bist du')
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '0')
+
+    fireEvent.click(screen.getByRole('button', { name: 'nochmal' }))
+
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
+  })
+
+  /* Beim Blaettern faengt der Zaehler bei null an: die neue Karte laeuft ohnehin los. */
+  it('setzt den Zähler beim Blättern zurück', async () => {
+    zeige('/spielwissen/box')
+    fireEvent.click(screen.getByRole('button', { name: 'nochmal' }))
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '1')
+
+    weiter()
+
+    await waitFor(() => expect(screen.getByText('Drin ist Strike')).toBeInTheDocument())
+    expect(screen.getByTestId('buehne')).toHaveAttribute('data-lauf', '0')
+  })
+
   it('kommt auf der ersten Karte nicht weiter zurück', () => {
     zeige('/spielwissen/box')
 

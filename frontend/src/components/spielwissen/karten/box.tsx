@@ -62,8 +62,8 @@ export function ZoneAmKoerper({ ruhig }: BuehnenProps) {
   const knie = hoehe(112)
 
   return (
-    <div className="px-4 pt-4">
-      <svg viewBox="0 0 150 165" className="max-h-60 w-full" aria-hidden focusable="false">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <svg viewBox="0 0 150 165" className="min-h-0 w-full" aria-hidden focusable="false">
         <line x1="4" y1={boden} x2="146" y2={boden} stroke={FARBE.matt} strokeWidth="1.5" />
         <path d="M92 152 l26 0 l0 -5 l-13 -6 l-13 6 z" fill={FARBE.hell} opacity="0.4" />
 
@@ -147,8 +147,8 @@ export function DrinIstStrike({ lauf, ruhig }: BuehnenProps) {
   ]
 
   return (
-    <div className="px-4 pt-4">
-      <svg viewBox="0 0 152 128" className="max-h-60 w-full" aria-hidden focusable="false">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <svg viewBox="0 0 152 128" className="min-h-0 w-full" aria-hidden focusable="false">
         <rect x={ZONE.x} y={ZONE.y} width={ZONE.w} height={ZONE.h} rx="2" fill={FARBE.gut} opacity="0.14" />
         <rect x={ZONE.x} y={ZONE.y} width={ZONE.w} height={ZONE.h} rx="2" fill="none" stroke={FARBE.gut} strokeWidth="2" />
 
@@ -194,7 +194,7 @@ const GRUENDE = [
 /** Drei Wege zum selben Ergebnis. Sie leuchten nacheinander auf, damit man sie zaehlt. */
 export function AuchStrike({ lauf, ruhig }: BuehnenProps) {
   return (
-    <div className="space-y-2 px-4 py-5">
+    <div className="flex h-full min-h-0 flex-col justify-center space-y-2 px-4 py-5">
       {GRUENDE.map((grund, i) => (
         <motion.div
           key={`${i}-${lauf}`}
@@ -219,8 +219,8 @@ export function AuchStrike({ lauf, ruhig }: BuehnenProps) {
 function Ausgang({ art, ruhig, runde }: { art: 'Walk' | 'Out'; ruhig: boolean; runde: number }) {
   const walk = art === 'Walk'
   return (
-    <div className="relative">
-      <MiniFeld ausschnitt="infield" className="max-h-40">
+    <div className="relative flex h-full min-h-0 flex-col justify-center">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         <motion.circle
           key={`laeufer-${runde}`}
           r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
@@ -276,7 +276,7 @@ export function CountWettlauf({ ruhig }: BuehnenProps) {
   const zuruecksetzen = () => { setB(0); setS(0); setRunde(r => r + 1) }
 
   return (
-    <div className="px-4 py-4">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-4">
       {/* Fuer wen nichts zu sehen ist: der Stand in Worten. */}
       <span className="sr-only">{`${b} Balls, ${s} Strikes`}</span>
       {reihe('Balls', 4, b, 'bg-cream-50')}
@@ -349,9 +349,9 @@ export function DritterStrikeAmBoden({ ruhig }: BuehnenProps) {
   const ziel = frei ? FIRST_BASE : box
 
   return (
-    <div className="px-4 pt-4">
-      <div className="relative">
-        <MiniFeld ausschnitt="infield" className="max-h-52">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <MiniFeld ausschnitt="infield" className="min-h-0">
           <Verteidiger x={CATCHER.x} y={CATCHER.y} kuerzel="C" r={4.5} />
           {/* Der Ball ist ihm durchgerutscht und liegt hinter ihm. Die gestrichelte Spur
               sagt, dass er dort nicht hingelegt wurde, sondern hingerollt ist. */}
@@ -506,9 +506,9 @@ export function EinFussBleibtDrin({ ruhig }: BuehnenProps) {
   )
 
   return (
-    <div className="px-4 pt-4">
-      <div className="relative">
-        <svg viewBox="56 6 118 108" className="max-h-48 w-full" aria-hidden focusable="false">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <svg viewBox="56 6 118 108" className="min-h-0 w-full" aria-hidden focusable="false">
           <defs>
             <g id="schuh"><Sohle /></g>
             <g id="schuh-gespiegelt"><Sohle spiegel /></g>
@@ -572,8 +572,8 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
   ]
 
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         {/* Die Verteidigung: hohle Ringe. Gefuellt ist, wer laeuft. */}
         {tief.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r="4" fill="none" stroke={FARBE.hell} strokeWidth="1.4" opacity="0.6" />
@@ -619,7 +619,7 @@ export function BuntWofuer({ lauf, ruhig }: BuehnenProps) {
 /** Dieselbe Bewegung, zwei Strikes auf dem Zaehler, und sie kostet den At-Bat. */
 export function BuntFalle({ lauf, ruhig }: BuehnenProps) {
   return (
-    <div className="px-4 pt-4">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
       <div className="mb-2 flex justify-center gap-1.5">
         {[0, 1].map(i => (
           <span key={i} className="font-display rounded bg-softball-red-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-white">
@@ -628,7 +628,7 @@ export function BuntFalle({ lauf, ruhig }: BuehnenProps) {
         ))}
       </div>
 
-      <div className="relative">
+      <div className="relative flex min-h-0 flex-1 flex-col">
         <svg viewBox="0 0 160 118" className="w-full" aria-hidden focusable="false">
           <line x1="22" y1="104" x2="150" y2="32" stroke={FARBE.hell} strokeWidth="1.2" opacity="0.4" strokeDasharray="4 3" />
           <text x="112" y="112" fontSize="8" fontWeight="800" fill={FARBE.hell} opacity="0.5" className="font-display">FOUL</text>

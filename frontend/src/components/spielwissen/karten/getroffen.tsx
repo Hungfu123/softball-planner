@@ -51,8 +51,8 @@ export function LaufSofort({ lauf, ruhig }: BuehnenProps) {
   const treffer = 0.3
 
   return (
-    <div className="px-4 pt-4">
-      <svg viewBox="0 0 220 165" className="max-h-52 w-full" aria-hidden focusable="false">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <svg viewBox="0 0 220 165" className="min-h-0 w-full" aria-hidden focusable="false">
         <line x1="4" y1={boden} x2="216" y2={boden} stroke={FARBE.matt} strokeWidth="1.5" />
 
         {/* Die Spur: sie zeichnet sich hinter ihr ein, damit der Endzustand den Weg zeigt
@@ -139,8 +139,8 @@ export function FoulSiehstDuNicht({ lauf, ruhig }: BuehnenProps) {
   )
 
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         {weg(fair, FARBE.gut, 'ball-fair')}
         {weg(foul, FARBE.raus, 'ball-foul')}
         <motion.g
@@ -176,8 +176,8 @@ export function RausGefangen({ lauf, ruhig }: BuehnenProps) {
   const fang = { x: 166, y: 42 }
 
   return (
-    <div className="relative px-4 pt-4">
-      <svg viewBox="0 0 200 128" className="max-h-44 w-full" aria-hidden focusable="false">
+    <div className="relative flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <svg viewBox="0 0 200 128" className="min-h-0 w-full" aria-hidden focusable="false">
         <line x1="4" y1={boden} x2="196" y2={boden} stroke={FARBE.matt} strokeWidth="1.5" />
 
         {/* Der Fielder: Kopf, Rumpf, Beine. */}
@@ -239,8 +239,8 @@ export function RausGefangen({ lauf, ruhig }: BuehnenProps) {
 /** Ein Wettlauf, den der Ball gewinnt. Er fliegt, du läufst. */
 export function RausWurfZurEins({ lauf, ruhig }: BuehnenProps) {
   return (
-    <div className="relative px-4 pt-4">
-      <MiniFeld ausschnitt="infield" className="max-h-56">
+    <div className="relative flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="infield" className="min-h-0">
         {/*
           Der 1B steht an der Base und fängt.
 
@@ -283,9 +283,9 @@ export function RausGetickt({ lauf, ruhig }: BuehnenProps) {
   const mitte = { x: (FIRST_BASE.x + SECOND_BASE.x) / 2, y: (FIRST_BASE.y + SECOND_BASE.y) / 2 }
 
   return (
-    <div className="relative px-4 pt-4">
+    <div className="relative flex h-full min-h-0 flex-col justify-center px-4 py-3">
       {/* Nah heran: auf dem ganzen Infield lagen Laeuferin, 2B und Ball als ein Fleck. */}
-      <MiniFeld ausschnitt="einsTeilZwei" className="max-h-56">
+      <MiniFeld ausschnitt="einsTeilZwei" className="min-h-0">
         <motion.circle
           key={`laeufer-${lauf}`}
           r="4.5" fill={FARBE.gut} stroke={FARBE.grund} strokeWidth="0.8"
@@ -348,8 +348,8 @@ export function DurchlaufenAnDerEins({ lauf, ruhig }: BuehnenProps) {
   const ueber = entlang(farbig, 14)
 
   return (
-    <div className="px-4 pt-4">
-      <MiniFeld ausschnitt="erste" className="max-h-52">
+    <div className="flex h-full min-h-0 flex-col justify-center px-4 py-3">
+      <MiniFeld ausschnitt="erste" className="min-h-0">
         {/* Die farbige Haelfte im Foul-Territory. Die weisse zeichnet MiniFeld selbst. */}
         <rect
           x={farbig.x - 2.6} y={farbig.y - 2.6} width="5.2" height="5.2"

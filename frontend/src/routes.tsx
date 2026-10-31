@@ -74,7 +74,6 @@ export const routes: RouteObject[] = [
       { path: '/konto', element: <KontoPage />, errorElement: <ChunkErrorBoundary /> },
       // Spielwissen gehoert jeder Rolle: es bewertet niemanden.
       { path: '/spielwissen', element: <LazySpielwissen />, errorElement: <ChunkErrorBoundary /> },
-      { path: '/spielwissen/:kapitel', element: <LazySpielwissenKapitel />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams', element: <TeamDirectoryPage />, errorElement: <ChunkErrorBoundary /> },
       { path: '/teams/spiele', element: <GameLogPage />, errorElement: <ChunkErrorBoundary /> },
     ],
@@ -88,6 +87,9 @@ export const routes: RouteObject[] = [
   // innerhalb der Navigation waere der Rest zwangslaeufig ueberlang und die Seite wuerde
   // scrollen — genau das soll sie nicht.
   { path: '/orga/playmaker/:id', element: <RequireAuth><LazyPlayViewer /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
+  // Dasselbe fuer die Offense: ein Kapitel ist die Entsprechung eines Plays und fuellt
+  // genauso den Bildschirm. Die Uebersicht darueber bleibt im Layout — sie ist eine Liste.
+  { path: '/spielwissen/:kapitel', element: <RequireAuth><LazySpielwissenKapitel /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   // Vor der :id-Route, sonst wird "frei" als id gelesen.
   { path: '/orga/playmaker/frei', element: <RequireAuth><LazyFreiesFeld /></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
   { path: '/orga/playmaker/:id/bearbeiten', element: <RequireAuth><RequireRole mind="ADMIN"><LazyPlayEditor /></RequireRole></RequireAuth>, errorElement: <ChunkErrorBoundary /> },
