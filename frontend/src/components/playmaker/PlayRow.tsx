@@ -56,7 +56,17 @@ export function PlayRow({
 
   return (
     <div className="group flex items-center gap-3 border-b border-cream-200 px-4 py-2.5">
-      <Link to={`/orga/playmaker/${play.id}`} className="h-12 w-16 shrink-0 overflow-hidden rounded-lg">
+      {/*
+        Die Vorschau bekommt eine Kante.
+
+        Sie ist navy, und im Dunkelmodus ist die Seite das auch — ohne Rand schwebten die
+        Punkte frei in der Zeile, und das Bild hoerte auf, ein Bild zu sein. Im Hellen
+        aendert der Hauch nichts, dort trennt schon die Farbe.
+      */}
+      <Link
+        to={`/orga/playmaker/${play.id}`}
+        className="h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-line"
+      >
         {play.steps[0] ? (
           <PlayBoard markers={play.steps[0].markers} steps={play.steps} width={64} height={48} interactive={false} />
         ) : (

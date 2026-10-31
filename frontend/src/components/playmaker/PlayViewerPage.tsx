@@ -260,7 +260,7 @@ function Viewer({
             to={`/orga/playmaker/${gegenstueck.id}`}
             className="mx-4 mb-2 flex items-center gap-3 rounded-xl border border-dashed border-cream-50/25 bg-cream-50/5 p-2.5 active:bg-cream-50/10"
           >
-            <div className="h-10 w-12 shrink-0 overflow-hidden rounded-lg">
+            <div className="h-10 w-12 shrink-0 overflow-hidden rounded-lg border border-cream-50/20">
               {gegenstueck.steps[0] ? (
                 <PlayBoard markers={gegenstueck.steps[0].markers} steps={gegenstueck.steps} width={48} height={40} interactive={false} />
               ) : (
