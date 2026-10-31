@@ -1533,8 +1533,16 @@ const KATALOG = [
         ball: { at: fromHome(8, 212), ground: true },
         r: { r1: between(B1, B2, 0.9), rb: between(HOME, B1, 0.8) },
       }),
-      s('2B stellt sich hinter den SS — falls der Wurf daneben geht.', {
-        d: { '2B': between(fromHome(8, 212), B2, 0.68) },
+      /*
+       * Der 2B deckt die 2 und stellt sich NICHT als zweiter Relay hinter den SS.
+       *
+       * Das ist die Teamkonvention, die auch sonst gilt: der Cut-Mann ist der eine
+       * Mittelinfielder, der andere deckt die Base. Hinter dem SS stand er hier als
+       * Baseball-Doppelrelay — dann lag die 2 frei, und der Batter haette sie geschenkt
+       * bekommen. Abgesichert wird der Wurf stattdessen vom Pitcher.
+       */
+      s('2B deckt die 2 — dorthin geht der Wurf, und der P sichert ab.', {
+        d: { '2B': B2 },
         ball: { hold: 'SS' },
         r: { r1: between(B2, B3, 0.6), rb: B1 },
       }),

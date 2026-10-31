@@ -34,6 +34,47 @@ let rafCallbacks: FrameRequestCallback[] = [];
  * Spielwissen seine Karten: man kommt an und es bewegt sich, statt dass man erst einen
  * Knopf suchen muss. Wer weniger Bewegung bestellt hat, bekommt sie nicht.
  */
+/*
+ * Pause heisst: das Bild bleibt stehen, wo es steht. Vorher warf sie das Zwischenbild
+ * weg — der Ball sprang auf den letzten Stand zurueck —, und Weiterspielen fing den
+ * ganzen Uebergang von vorn an. Man konnte eine Stelle also nicht anhalten, nur den
+ * Stand davor sehen.
+ */
+describe('Pause haelt an, wo sie anhaelt', () => {
+  const steps = [stand(1, 1200, 0), stand(2, 1200, 100)];
+
+  test('behaelt das Zwischenbild', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.play());
+    act(() => frame(0));
+    act(() => frame(650));
+    const unterwegs = result.current.markers!.ball.x;
+    expect(unterwegs).toBeGreaterThan(0);
+    expect(unterwegs).toBeLessThan(100);
+
+    act(() => result.current.pause());
+
+    expect(result.current.playing).toBe(false);
+    expect(result.current.markers!.ball.x).toBeCloseTo(unterwegs, 5);
+  });
+
+  test('laeuft von dort weiter, statt den Uebergang neu zu beginnen', () => {
+    const { result } = renderHook(() => usePlayback(steps));
+
+    act(() => result.current.play());
+    act(() => frame(0));
+    act(() => frame(650));
+    act(() => result.current.pause());
+    const beiPause = result.current.markers!.ball.x;
+
+    act(() => result.current.play());
+    act(() => frame(0));
+
+    expect(result.current.markers!.ball.x).toBeGreaterThanOrEqual(beiPause);
+  });
+});
+
 describe('Nochmal', () => {
   test('setzt auf den ersten Stand zurueck und laeuft wieder', () => {
     const { result } = renderHook(() => usePlayback([stand(1, 600, 10), stand(2, 600, 90)]));

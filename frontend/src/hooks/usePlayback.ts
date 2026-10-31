@@ -49,6 +49,18 @@ export function usePlayback(steps: PlayStep[], { autostart = false }: Options = 
   const [spur, setSpur] = useState<{ von: number; t: number } | null>(null);
   const raf = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * Wo der laufende Uebergang stand, als angehalten wurde (0..1).
+   *
+   * Pause heisst: das Bild bleibt stehen, wo es steht, und Weiterspielen geht dort
+   * weiter. Vorher warf die Pause das Zwischenbild weg — der Ball sprang auf den letzten
+   * Stand zurueck — und das Weiterspielen begann den ganzen Uebergang von vorn. Eine
+   * Stelle liess sich so gar nicht anhalten.
+   *
+   * Ein Ref und kein Zustand: der Wert wird im Bildtakt geschrieben und darf kein
+   * Neuzeichnen ausloesen.
+   */
+  const angehalten = useRef(0);
 
   const reduziert =
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -63,13 +75,13 @@ export function usePlayback(steps: PlayStep[], { autostart = false }: Options = 
   const pause = useCallback(() => {
     abbrechen();
     setPlaying(false);
-    setFrame(null);
-    setSpur(null);
+    // Frame und Spur bleiben stehen: das Bild friert ein, statt zurueckzuspringen.
   }, [abbrechen]);
 
   const seek = useCallback(
     (ziel: number) => {
       abbrechen();
+      angehalten.current = 0;
       setPlaying(false);
       setFrame(null);
       setSpur(null);
@@ -112,9 +124,11 @@ export function usePlayback(steps: PlayStep[], { autostart = false }: Options = 
       return () => abbrechen();
     }
 
-    const start = performance.now();
+    // Dort weitermachen, wo die Pause war — bei 0 ist das der normale Anfang.
+    const start = performance.now() - angehalten.current * dauer;
     const tick = (jetzt: number) => {
       const t = Math.min(1, (jetzt - start) / dauer);
+      angehalten.current = t < 1 ? t : 0;
       setFrame(frameAt(steps, von, nach, t));
       setSpur({ von, t });
       if (t < 1) {
