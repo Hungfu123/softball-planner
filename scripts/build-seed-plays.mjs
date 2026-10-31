@@ -205,6 +205,41 @@ function absichern(defense, vorherDefense, step, ball, vorherBall) {
   }
 }
 
+/**
+ * Wer eine Base deckt, steht NEBEN der Base, nicht darauf.
+ *
+ * Im Katalog steht an zwei Dutzend Stellen schlicht `B2` — gemeint ist „deckt die 2",
+ * gezeichnet wurde aber eine Scheibe genau auf dem Sack. Sobald ein Runner dort ankommt,
+ * liegt er darueber und der Verteidiger verschwindet: im Bild fehlte plötzlich der 2B,
+ * obwohl er die Base deckte. Auf dem Platz steht ohnehin niemand auf der Base, man
+ * stellt sich an die Aussenseite und nimmt den Wurf.
+ *
+ * Also ruecken wir ihn nach aussen, weg von Home — die Base bleibt frei fuer den, der
+ * sie erreichen will. **Zehn Fuss**, und das ist gemessen, nicht geschaetzt: die Scheibe
+ * des Verteidigers misst 4,5 Fuss im Radius, die des Runners 3,7 — unter 8,2 Fuss
+ * ueberlappen sie, und erst mit etwas Luft darueber liest man zwei Leute statt einem
+ * Fleck. Die Scheiben sind groesser als Menschen; der Abstand ist eine Frage des
+ * Bildes, nicht des Platzes.
+ */
+const NEBEN_DER_BASE = 10;
+
+function nebenDieBase(defense) {
+  for (const [pos, p] of Object.entries(defense)) {
+    // Home hat kein Aussen vom Mittelpunkt aus — dort ist aussen hinter der Platte.
+    if (Math.hypot(p.x - HOME.x, p.y - HOME.y) < 1.5) {
+      defense[pos] = { x: r2(HOME.x), y: r2(HOME.y + NEBEN_DER_BASE) };
+      continue;
+    }
+    const base = [B1, B2, B3].find((b) => Math.hypot(p.x - b.x, p.y - b.y) < 1.5);
+    if (!base) continue;
+    const weg = Math.hypot(base.x - HOME.x, base.y - HOME.y) || 1;
+    defense[pos] = {
+      x: r2(base.x + ((base.x - HOME.x) / weg) * NEBEN_DER_BASE),
+      y: r2(base.y + ((base.y - HOME.y) / weg) * NEBEN_DER_BASE),
+    };
+  }
+}
+
 function buildSteps(spec, startRunners) {
   const defense = { ...DEFAULT_DEFENSE };
   const runners = {};
@@ -321,6 +356,7 @@ function buildSteps(spec, startRunners) {
      * Fussnote.
      */
     absichern(defense, vorher.defense, step, ball, vorherBall);
+    nebenDieBase(defense);
 
     // Lange Wege brauchen laenger. Alles im selben Takt zu bewegen ist Absicht — aber
     // 80 ft in 1,2 s sehen nicht nach Laufen aus, sondern nach einem Sprung: ein Runner
@@ -845,13 +881,22 @@ const KATALOG = [
         ball: { at: fromHome(40, 200), ground: true },
         r: { r1: between(B1, B2, 0.9), rb: between(HOME, B1, 0.7) },
       }),
-      s('2B als erster Relay, 1B als zweiter dahinter.', {
-        d: { '2B': between(fromHome(40, 200), HOME, 0.45), '1B': between(fromHome(40, 200), HOME, 0.7) },
+      /*
+       * Kein zweiter Relay hinter dem ersten.
+       *
+       * Hier stand der 1B als zweiter Mann hinter dem 2B — die Baseball-Variante, die
+       * im Team ausdruecklich nicht gilt. Der Preis war dieselbe Luecke wie beim Ball
+       * am Zaun: **die 2 deckte niemand**, und der Batter-Runner laeuft genau dorthin.
+       * Also Ball rechts → der 2B ist Cut, der SS deckt die 2, der 1B bleibt an seiner
+       * Base, und abgesichert wird von hinten vom Pitcher.
+       */
+      s('2B geht als Relay raus — der SS deckt die 2, da will der Batter hin.', {
+        d: { '2B': between(fromHome(40, 200), HOME, 0.45), SS: B2 },
         ball: { at: between(fromHome(40, 200), HOME, 0.45) },
         r: { r1: between(B2, B3, 0.6), rb: B1 },
       }),
-      s('Erster Relay wirft zum zweiten, P geht hinter die Platte.', {
-        ball: { hold: '1B' },
+      s('Der Relay wirft nach Home, der P geht hinter die Platte.', {
+        ball: { at: between(between(fromHome(40, 200), HOME, 0.45), HOME, 0.6) },
         d: { P: { x: HOME.x + 6, y: HOME.y + 26 } },
         r: { r1: between(B3, HOME, 0.5), rb: B2 },
       }),

@@ -35,7 +35,6 @@ export function PlaybackBar({
         <Knopf onClick={onToggle} disabled={!canPlay} aria-label={playing ? 'Pause' : 'Abspielen'}>
           {playing ? '❚❚' : '▶'}
         </Knopf>
-        <span className="flex-1" />
         {/*
           Ruhig, nicht amber. Amber gibt es auf der Seite genau einmal, und das ist
           „Naechstes Play" in der Zeile darueber — der Weg vorwaerts, wie das „Weiter"
