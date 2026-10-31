@@ -7,6 +7,7 @@ import type { Treffer } from './suche'
 import { ConfirmModal } from '@/components/shared/ConfirmModal'
 import { CopyIcon, TrashBin } from '@/icons'
 import { useRolle } from '@/hooks/useRolle'
+import { LAGE_TEXT } from './lage'
 
 /** Woher der Treffer kommt — ein Wort, damit die Zeile einzeilig bleibt. */
 const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
@@ -15,12 +16,6 @@ const FELD_TEXT: Record<Exclude<Treffer['feld'], 'titel'>, string> = {
   notiz: 'Notiz:',
 }
 
-const LAGE_TEXT: Record<Play['gameState'], string | null> = {
-  ANY: null,
-  CLOSE_LATE: 'Knapp',
-  AHEAD: 'Vorn',
-  BEHIND: 'Hinten',
-}
 
 /**
  * Eine Zeile der Uebersicht.

@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
 import { KAPITEL, stichworte } from './kapitel'
 import { getPlayCategories } from '@/api/plays'
-import { StufeLegende, StufePunkte } from '@/components/shared/StufePunkte'
+import { StufeLegende } from '@/components/shared/StufePunkte'
+import { LernZeile } from '@/components/shared/LernZeile'
 import { kategorieSatz, kategorieStufe } from '@/components/playmaker/kategorieTexte'
 import type { PlayCategory } from '@/components/playmaker/board/types'
 
@@ -25,7 +24,11 @@ import type { PlayCategory } from '@/components/playmaker/board/types'
  * die Seite kurz genug, dass beides hinpasst.
  */
 
-/** Eine Zeile, und zwar dieselbe fuer Offense wie fuer Defense. */
+/**
+ * Eine Zeile, und zwar dieselbe fuer Offense wie fuer Defense — und seit dem 31.10.2026
+ * auch dieselbe wie im Kapitel eine Seite spaeter (`shared/LernZeile`). Hier steht nur
+ * noch, womit sie gefuellt wird.
+ */
 function Eintrag({
   to,
   titel,
@@ -42,32 +45,15 @@ function Eintrag({
   bild?: boolean
 }) {
   return (
-    <Link
+    <LernZeile
       to={to}
-      className="group flex min-h-11 items-center gap-3 rounded-xl border border-line bg-surface-raised px-4 py-3 text-ink-strong transition-colors hover:bg-accent hover:text-accent-ink active:bg-accent active:text-accent-ink"
-    >
-      {/* Dieselbe Geometrie wie die Plays dahinter. Das Bild ist die Ankuendigung. */}
-      {bild && <FeldMiniatur className="h-12 w-14 shrink-0 text-ink-faint group-hover:text-accent-ink/70" />}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-display truncate text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base">
-            {titel}
-          </span>
-          <StufePunkte stufe={stufe} />
-        </div>
-        <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
-          {frage}
-        </div>
-        {worte.length > 0 && (
-          /* Was drinsteht, in Stichworten: ein Kapitel ist rund drei Bildschirme, und wer
-             eine Sache sucht, soll nicht drei davon durchwischen muessen. */
-          <div className="font-display mt-1 text-[10px] font-bold uppercase tracking-widest text-ink-faint group-hover:text-accent-ink/70">
-            {worte.join(' · ')}
-          </div>
-        )}
-      </div>
-      <ChevronRight size={18} className="shrink-0 text-ink-faint group-hover:text-accent-ink/75" aria-hidden="true" />
-    </Link>
+      titel={titel}
+      satz={frage}
+      worte={worte}
+      stufe={stufe}
+      /* Dieselbe Geometrie wie die Plays dahinter. Das Bild ist die Ankuendigung. */
+      bild={bild ? <FeldMiniatur className="h-full w-full" /> : undefined}
+    />
   )
 }
 
