@@ -59,7 +59,7 @@ export function Karte({ karte, aktiv }: { karte: KartenDaten; aktiv: boolean }) 
   const steht = ruhig || !gespielt
 
   return (
-    <article id={`karte-${karte.id}`} className="overflow-hidden rounded-2xl border border-cream-50/12 bg-navy-900 text-cream-50">
+    <article id={`karte-${karte.id}`} className="overflow-hidden rounded-2xl border border-cream-50/35 bg-navy-900 text-cream-50">
       <div className="relative">
         <Buehne key={`${gespielt}-${lauf}`} lauf={lauf} ruhig={steht} />
       </div>

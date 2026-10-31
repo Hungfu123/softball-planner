@@ -504,6 +504,18 @@ p {
   [data-theme="dark"] .border-softball-red-300 { border-color: #8E3B4A; }
   [data-theme="dark"] .border-amber-200,
   [data-theme="dark"] .border-amber-300 { border-color: #8A6B30; }
+
+  /* Amber DECKEND (bg-amber-400/500) ist keine Toenung, sondern der gefuellte Akzent:
+     der laufende Runner, der gewaehlte Schritt, der Knopf, der weitergeht. Er bleibt
+     in BEIDEN Themes derselbe helle Fleck — und genau deshalb muss die Schrift darauf
+     dunkel bleiben. `text-navy-900` deutet der Shim sonst nach oben um (weiss auf
+     Amber, 1,8:1) und macht aus dem auffaelligsten Element der Seite das unlesbarste.
+     Die hoehere Spezifitaet gewinnt gegen die Tinten-Regel oben, egal in welcher
+     Reihenfolge beide stehen. */
+  [data-theme="dark"] :is(.bg-amber-300, .bg-amber-400, .bg-amber-500):is(.text-navy-900, .text-navy-800, .text-gray-900),
+  [data-theme="dark"] :is(.bg-amber-300, .bg-amber-400, .bg-amber-500) :is(.text-navy-900, .text-navy-800, .text-gray-900) {
+    color: #142B49;
+  }
   [data-theme="dark"] .border-emerald-200,
   [data-theme="dark"] .border-emerald-300 { border-color: #2C7F5C; }
 
