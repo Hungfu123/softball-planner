@@ -75,16 +75,26 @@ function KontoZeile({ eintrag, istSuperadmin, onAnlegen, onRolle, onScorer, onSp
           ) : (
             <span className="text-sm text-gray-600">{ROLLEN[konto.role]}</span>
           )}
-          <label className="flex items-center gap-2 min-h-11 text-sm text-navy-900 cursor-pointer">
-            <input
-              type="checkbox"
-              aria-label="Darf scoren"
-              checked={konto.mayScore}
-              onChange={e => onScorer(konto, e.target.checked)}
-              className="accent-navy-700 w-5 h-5 cursor-pointer"
-            />
-            Scorer
-          </label>
+          {/*
+            Der Haken nur bei Spielern. Ein Trainer scort ohnehin: die Endpunkte stehen auf
+            `hasRole('ADMIN') or @scoring.darfSchreiben`, die Rolle genuegt. An seinem Konto
+            sass ein Kaestchen, das nichts bewirkte und bei leerem Haken das Gegenteil
+            behauptete — es sah aus, als duerfe der Trainer nicht scoren.
+          */}
+          {konto.role === 'PLAYER' ? (
+            <label className="flex items-center gap-2 min-h-11 text-sm text-navy-900 cursor-pointer">
+              <input
+                type="checkbox"
+                aria-label="Darf scoren"
+                checked={konto.mayScore}
+                onChange={e => onScorer(konto, e.target.checked)}
+                className="accent-navy-700 w-5 h-5 cursor-pointer"
+              />
+              Scorer
+            </label>
+          ) : (
+            <span className="flex items-center min-h-11 text-sm text-gray-600">Scort immer</span>
+          )}
           <div className={REVEAL}>
             <button type="button" className={KLEIN} onClick={() => onDialog({ art: 'zuruecksetzen', konto })}>
               Passwort zurücksetzen

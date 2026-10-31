@@ -119,6 +119,21 @@ describe('AccountsPage', () => {
     await waitFor(() => expect(within(zeile('Bert')).getByRole('checkbox', { name: 'Darf scoren' })).toBeChecked())
   })
 
+  /*
+   * Ein Trainer scort ohnehin: die Endpunkte stehen auf `hasRole('ADMIN') or
+   * @scoring.darfSchreiben`. Der Haken an seinem Konto aenderte nichts und behauptete das
+   * Gegenteil — bei einem ungesetzten Haken sieht es aus, als duerfe er nicht.
+   */
+  it('zeigt den Scorer-Haken nur bei Spielern', async () => {
+    h.getUsers.mockResolvedValue([konto(10, 1, 'Anna', { role: 'ADMIN' }), konto(11, 2, 'Bert')])
+    zeige()
+    await screen.findByRole('listitem', { name: 'Bert' })
+
+    expect(within(zeile('Bert')).getByRole('checkbox', { name: 'Darf scoren' })).toBeInTheDocument()
+    expect(within(zeile('Anna')).queryByRole('checkbox', { name: 'Darf scoren' })).toBeNull()
+    expect(zeile('Anna')).toHaveTextContent('Scort immer')
+  })
+
   it('sperrt und entsperrt', async () => {
     h.setUserLocked.mockResolvedValue(konto(11, 2, 'Bert', { locked: true }))
     zeige()
