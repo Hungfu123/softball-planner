@@ -74,15 +74,19 @@ export function Karte({ karte, aktiv }: { karte: KartenDaten; aktiv: boolean }) 
       </div>
 
       {!ruhig && !karte.selbstgesteuert && (
+        /*
+         * Derselbe Knopf wie unten in der Defense: gleiche Hoehe, gleiches Zeichen,
+         * gleiches Wort, ruhige Kante statt Farbe. Er steht IN der Karte, weil er zu ihr
+         * gehoert — drueben ist die Buehne die ganze Seite, deshalb sitzt er dort am
+         * Bildschirmrand. Dieselbe Sache, dieselbe Form.
+         */
         <div className="px-4 pb-3">
           <button
             type="button"
             onClick={() => setLauf(x => x + 1)}
-            className="font-display flex min-h-11 items-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold uppercase tracking-widest text-cream-50/70 hover:bg-navy-800 hover:text-cream-50 active:bg-navy-700 active:text-cream-50"
+            className="font-display flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-cream-50/25 text-sm font-bold text-cream-50 active:bg-cream-50/10"
           >
-            {/* Dasselbe Zeichen wie in der Wiedergabeleiste des Playmakers: ein Knopf,
-                der in beiden Haelften gleich aussieht, ist einer und nicht zwei. */}
-            <RefreshIcon size={14} />
+            <RefreshIcon size={16} />
             nochmal
           </button>
         </div>

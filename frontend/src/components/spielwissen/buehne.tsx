@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { HOME, FIRST_BASE, SKIN_PATH, FOUL_LINES_PATH, FENCE_PATH, BASES } from '@/components/playmaker/board/geometry'
+import { HOME, FIRST_BASE, SECOND_BASE, SKIN_PATH, FOUL_LINES_PATH, FENCE_PATH, BASES } from '@/components/playmaker/board/geometry'
 
 /**
  * Die Zeichenteile, die sich alle Karten teilen.
@@ -56,6 +56,47 @@ export function Figur({ k = 1, boden = 152, ohneSchlaeger = false }: {
   )
 }
 
+/**
+ * Ein Verteidiger von oben: helle Scheibe mit dunklem Kuerzel — **dieselbe wie im
+ * Playmaker**.
+ *
+ * Damit heisst eine helle Scheibe mit Buchstaben in beiden Haelften dasselbe: da steht
+ * jemand, und zwar der. Auf den Offense-Karten standen Verteidiger vorher als blasse
+ * Flecken ohne Namen da, wenn ueberhaupt.
+ */
+export function Verteidiger({ x, y, kuerzel, r = 4.5 }: {
+  x: number
+  y: number
+  kuerzel: string
+  r?: number
+}) {
+  return (
+    <g>
+      <circle cx={x} cy={y} r={r} fill={FARBE.hell} />
+      <text
+        x={x} y={y + r * 0.34} textAnchor="middle"
+        fontSize={r * 0.62} fontWeight="700" fill={FARBE.grund}
+        style={{ pointerEvents: 'none' }}
+      >
+        {kuerzel}
+      </text>
+    </g>
+  )
+}
+
+/**
+ * Ein Laeufer von oben: amber mit dunklem Ring — **dieselbe Scheibe wie im Playmaker**.
+ *
+ * Dort ist Amber die Farbe dessen, worauf man achtet, und der dunkle Ring trennt ihn von
+ * den hellen Scheiben der Verteidiger (amber auf cream misst 1,55:1). Auf den Karten gibt
+ * es meist keine Verteidiger, aber die Farbe muss dieselbe sein: wer im Spielwissen einen
+ * cremefarbenen Laeufer lernt und im Playmaker einen amberfarbenen sieht, haelt sie fuer
+ * zwei verschiedene Dinge.
+ */
+export function Laeufer({ r = 4.5 }: { r?: number }) {
+  return <circle r={r} fill={FARBE.gut} stroke={FARBE.grund} strokeWidth={r * 0.18} />
+}
+
 /** Der Ball: cream mit rotem Nahtring, damit er auf jeder Karte derselbe ist. */
 export function Ball({ r = 6 }: { r?: number }) {
   return (
@@ -103,6 +144,19 @@ const AUSSCHNITTE = {
    * Vergroesserung sind die beiden Haelften des Doppel-Base ueberhaupt zwei Dinge.
    */
   erste: { x: FIRST_BASE.x - 34, y: FIRST_BASE.y - 22, w: 62, h: 54 },
+  /**
+   * Der Weg zwischen 1 und 2, nah herangeholt.
+   *
+   * Auf dem ganzen Infield-Ausschnitt lagen Laeufer, Verteidiger und Ball beim Tag als
+   * ein Fleck uebereinander: drei Scheiben von je neun Fuss Durchmesser auf einem Weg
+   * von sechzig. Hier ist jede einzeln zu sehen.
+   */
+  einsTeilZwei: {
+    x: (FIRST_BASE.x + SECOND_BASE.x) / 2 - 44,
+    y: (FIRST_BASE.y + SECOND_BASE.y) / 2 - 31,
+    w: 88,
+    h: 62,
+  },
 } as const
 
 export function MiniFeld({ ausschnitt, className = '', children }: {
