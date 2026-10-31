@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { beteiligte } from './beteiligte'
+import { beteiligte, mitwirkende } from './beteiligte'
 import { DEFAULT_DEFENSE, POSITIONS } from './geometry'
 import type { PlayStep } from './types'
 
@@ -92,5 +92,34 @@ describe('beteiligte', () => {
     })
 
     expect(beteiligte([stand(1), zweiter, dritter])).toEqual(['P', '3B', '2B'])
+  })
+})
+
+/*
+ * Fuer den Filter „zeig mir Plays, in denen mein Platz etwas tut" ist Mitlaufen genug:
+ * wer hinter die Base geht, steht nicht in der Ballkette, lernt aber genau dort seinen
+ * Weg. Deshalb eine zweite, weitere Frage neben `beteiligte`.
+ */
+describe('mitwirkende', () => {
+  test('nimmt die Ballkette UND alle, die laufen', () => {
+    const zweiter = stand(2, {
+      defenders: POSITIONS.map(position =>
+        position === 'RF'
+          ? { position, x: DEFAULT_DEFENSE.RF.x - 30, y: DEFAULT_DEFENSE.RF.y + 40 }
+          : { position, ...DEFAULT_DEFENSE[position] },
+      ),
+      ball: { state: 'IN_HAND', holder: '1B', x: DEFAULT_DEFENSE['1B'].x, y: DEFAULT_DEFENSE['1B'].y, trajectory: 'AIR' },
+    })
+
+    const kette = beteiligte([stand(1), zweiter])
+    const alle = mitwirkende([stand(1), zweiter])
+
+    expect(kette).not.toContain('RF')
+    expect(alle).toContain('RF')
+    expect(alle).toContain('1B')
+  })
+
+  test('nennt niemanden, wenn niemand etwas tut', () => {
+    expect(mitwirkende([stand(1), stand(2)])).toEqual([])
   })
 })

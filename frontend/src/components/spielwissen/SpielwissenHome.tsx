@@ -4,6 +4,8 @@ import { ChevronRight } from 'lucide-react'
 import { FeldMiniatur } from '@/components/start/FeldMiniatur'
 import { KAPITEL, stichworte } from './kapitel'
 import { getPlayCategories } from '@/api/plays'
+import { StufeLegende, StufePunkte } from '@/components/shared/StufePunkte'
+import { kategorieSatz, kategorieStufe } from '@/components/playmaker/kategorieTexte'
 import type { PlayCategory } from '@/components/playmaker/board/types'
 
 /**
@@ -22,41 +24,6 @@ import type { PlayCategory } from '@/components/playmaker/board/types'
  * links die Wahl, rechts die Eintraege. Kein Reiter, der etwas versteckt — am Handy ist
  * die Seite kurz genug, dass beides hinpasst.
  */
-
-/** Die Kapitel tragen ihre Stufe selbst; fuer Defense kommt sie aus der Sortierung. */
-function stufeAusSortierung(sortOrder: number): 1 | 2 | 3 {
-  if (sortOrder <= 20) return 1
-  if (sortOrder <= 50) return 2
-  return 3
-}
-
-/**
- * Drei Punkte. Gefuellt heisst schwerer.
- *
- * Punkte statt Woertern wie „leicht/mittel/schwer": man liest sie in einem Blick, sie
- * brauchen keine Uebersetzung, und sie stehen in jeder Zeile an derselben Stelle.
- */
-function Stufe({ stufe }: { stufe: 1 | 2 | 3 }) {
-  return (
-    <span className="flex shrink-0 items-center gap-1" title={`Stufe ${stufe} von 3`}>
-      {/* EINMAL vorlesen. Zwei Fassungen für hell und dunkel standen beide im Text, und
-          eine Vorlesestimme sagte „Stufe 1 von 3, Stufe 1 von 3". Die Farbe macht jetzt
-          das CSS über die Gruppe, nicht ein zweites Element. */}
-      <span className="sr-only">Stufe {stufe} von 3</span>
-      {[1, 2, 3].map(i => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className={`h-1.5 w-1.5 rounded-full ${
-            i <= stufe
-              ? 'bg-ink-strong group-hover:bg-accent-ink'
-              : 'bg-line-strong group-hover:bg-accent-ink/30'
-          }`}
-        />
-      ))}
-    </span>
-  )
-}
 
 /** Eine Zeile, und zwar dieselbe fuer Offense wie fuer Defense. */
 function Eintrag({
@@ -86,7 +53,7 @@ function Eintrag({
           <span className="font-display truncate text-sm font-extrabold uppercase leading-tight tracking-wide sm:text-base">
             {titel}
           </span>
-          <Stufe stufe={stufe} />
+          <StufePunkte stufe={stufe} />
         </div>
         <div className="mt-0.5 text-[12px] leading-tight text-ink-muted group-hover:text-accent-ink sm:text-sm">
           {frage}
@@ -168,6 +135,7 @@ export default function SpielwissenHome() {
         <p className="mt-0.5 text-sm text-ink-muted">
           Von oben nach unten: erst das, was am ersten Tag reicht.
         </p>
+        <StufeLegende className="mt-2" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
@@ -200,26 +168,26 @@ export default function SpielwissenHome() {
                 der Ball irgendwo hinfliegt. Das sind die beiden mit einem Punkt. Der
                 Rest liegt einen Tipp entfernt und laeuft nicht weg.
               */}
-              {kategorien.filter(k => stufeAusSortierung(k.sortOrder) === 1).map(k => (
+              {kategorien.filter(k => kategorieStufe(k.sortOrder) === 1).map(k => (
                 <Eintrag
                   key={k.id}
                   to={`/orga/playmaker?kategorie=${k.id}`}
                   titel={k.name}
-                  frage={DEFENSE_FRAGE[k.name] ?? 'Wer steht wo, und wohin geht der Ball?'}
+                  frage={kategorieSatz(k.name)}
                   worte={[]}
-                  stufe={stufeAusSortierung(k.sortOrder)}
+                  stufe={kategorieStufe(k.sortOrder)}
                 />
               ))}
 
               {mehr ? (
-                kategorien.filter(k => stufeAusSortierung(k.sortOrder) > 1).map(k => (
+                kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).map(k => (
                   <Eintrag
                     key={k.id}
                     to={`/orga/playmaker?kategorie=${k.id}`}
                     titel={k.name}
-                    frage={DEFENSE_FRAGE[k.name] ?? 'Wer steht wo, und wohin geht der Ball?'}
+                    frage={kategorieSatz(k.name)}
                     worte={[]}
-                    stufe={stufeAusSortierung(k.sortOrder)}
+                    stufe={kategorieStufe(k.sortOrder)}
                   />
                 ))
               ) : (
@@ -229,7 +197,7 @@ export default function SpielwissenHome() {
                   className="font-display min-h-11 w-full rounded-xl border border-dashed border-line px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-ink-muted hover:bg-surface-raised active:bg-surface-raised"
                 >
                   Für den Anfang reichen die zwei. Mehr zeigen (
-                  {kategorien.filter(k => stufeAusSortierung(k.sortOrder) > 1).length})
+                  {kategorien.filter(k => kategorieStufe(k.sortOrder) > 1).length})
                 </button>
               )}
             </>
@@ -247,23 +215,4 @@ export default function SpielwissenHome() {
       </div>
     </div>
   )
-}
-
-/**
- * Ein Satz je Kategorie — dieselbe Zeile, die ein Offense-Kapitel als Frage traegt.
- *
- * Steht hier und nicht in der Datenbank: es ist Text fuer diese Seite, kein Feld, das
- * jemand pflegen muss. Faellt eine Kategorie heraus oder kommt eine dazu, steht da der
- * allgemeine Satz — falsch wird nichts.
- */
-const DEFENSE_FRAGE: Record<string, string> = {
-  Spielsituationen: 'Der Ball geht irgendwohin. Was tust du?',
-  'Base-Coverage': 'Wer deckt welche Base, wenn es losgeht?',
-  'Pop-up-Priorities': 'Hoher Ball zwischen zweien. Wer ruft?',
-  'Bunt-Defense': 'Der Bunt liegt da. Wer holt ihn, wohin geht der Wurf?',
-  'Steal-Defense & Pickoff': 'Der Runner geht. Wer deckt, wer wirft?',
-  Rundown: 'Zwischen zwei Bases gefangen. Wie macht man den Out?',
-  /* Kein Gedankenstrich: Vorgabe des Betreibers für sichtbaren Text. */
-  'First-and-Third': 'Runner auf 1 und 3, und beide laufen.',
-  'Cut-off & Relay': 'Der Ball ist weit weg. Die Kette nach innen.',
 }
