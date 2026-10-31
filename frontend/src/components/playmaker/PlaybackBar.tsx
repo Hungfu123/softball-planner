@@ -13,37 +13,27 @@ import { RefreshIcon } from '@/icons'
  * und dasselbe Zeichen wie unter einer Karte im Spielwissen.
  */
 export function PlaybackBar({
-  count,
-  index,
   playing,
   canPlay,
-  onPrev,
-  onNext,
   onToggle,
   onNochmal,
 }: {
-  count: number
-  index: number
   playing: boolean
   canPlay: boolean
-  onPrev: () => void
-  onNext: () => void
   onToggle: () => void
   onNochmal: () => void
 }) {
   return (
     <div className="border-t border-cream-50/12 px-4 pb-3 pt-2 safe-bottom">
       <div className="flex items-center gap-2">
-        <Knopf onClick={onPrev} disabled={index === 0} aria-label="Vorheriger Stand">
-          ◀
-        </Knopf>
-        {/* Anhalten bleibt als Knopf: ein Tipp aufs Feld tut dasselbe, aber das sieht
-            man der Flaeche nicht an. */}
+        {/*
+          Zwei Knoepfe, mehr nicht. Die Pfeile fuer einen Stand vor und zurueck standen
+          neben dem Dreieck zum Abspielen und sahen aus wie „vorheriges Play" — drei
+          Dreiecke nebeneinander, von denen eines etwas anderes tut. Wer einen einzelnen
+          Stand braucht, hat quer und am Rechner die Liste daneben.
+        */}
         <Knopf onClick={onToggle} disabled={!canPlay} aria-label={playing ? 'Pause' : 'Abspielen'}>
           {playing ? '❚❚' : '▶'}
-        </Knopf>
-        <Knopf onClick={onNext} disabled={index >= count - 1} aria-label="Nächster Stand">
-          ▶
         </Knopf>
         <span className="flex-1" />
         <Knopf onClick={onNochmal} disabled={!canPlay} primary wide aria-label="Nochmal">
