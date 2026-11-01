@@ -145,11 +145,16 @@ test.describe('Scoring — Edge Features', () => {
     await page.getByRole('button', { name: 'Aus?', exact: true }).first().click()
     await page.waitForTimeout(200)
     await page.getByRole('button', { name: '✓ Passt', exact: true }).click()
-    await page.waitForTimeout(700)
 
     // Backend persistiert den Runner-Out korrekt → 3 Outs.
-    sb = await getScoreboard(scoringPage.gameId)
-    expect(sb.outsInCurrentInning).toBe(3)
+    //
+    // Gewartet wird auf den Stand, nicht auf die Uhr: ein festes `waitForTimeout` nach dem
+    // Klick setzt voraus, dass der Schreibvorgang in dieser Zeit durch ist. Auf einem
+    // ausgelasteten CI-Runner ist er das nicht, und der Test wurde rot, ohne dass am Scoren
+    // etwas falsch war (Lauf vom 31.10.2026, dreimal dieselbe Stelle, lokal nie).
+    await expect
+      .poll(async () => (await getScoreboard(scoringPage.gameId)).outsInCurrentInning)
+      .toBe(3)
 
     // UI muss den 3. Out sehen → Inning-Wechsel-Pille sichtbar.
     // Bug: deferred-Path lud scoreboard nach dem Runner-Out nicht neu → Pille blieb aus.
