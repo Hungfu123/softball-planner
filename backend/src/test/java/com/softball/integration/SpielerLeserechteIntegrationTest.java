@@ -712,6 +712,28 @@ class SpielerLeserechteIntegrationTest {
             .andExpect(jsonPath("$.battingOrderCounts.1").value(1));
     }
 
+    /**
+     * „Heute" ist das Berliner Heute, nicht das des Servers.
+     *
+     * Das Einsatz-Profil zaehlt nur Vergangenes. Zwischen 23 Uhr UTC und Mitternacht ist in
+     * Berlin laengst der naechste Tag — rechnet der Dienst in der Zone des Containers (UTC,
+     * die bewusst nicht gestellt wird), faellt der Spieltag von gestern in genau dieser Stunde
+     * aus dem Histogramm. Gefunden hat das die CI: derselbe Test, der sonst gruen ist, wurde
+     * um 23:56 UTC rot.
+     *
+     * Die Uhr steht hier auf einem Sommerabend WEIT in der Zukunft, damit der Test nicht
+     * zufaellig gruen wird, nur weil der Rechner, auf dem er laeuft, in Berlin steht.
+     */
+    @Test
+    void zaehltDenSchlagplatzNachBerlinerDatum() throws Exception {
+        uhr.setzeAuf("2027-06-15T23:30:00Z");
+        spieltagMitAufstellung(LocalDate.of(2027, 6, 15));
+
+        mockMvc.perform(get("/api/players/" + player.getId() + "/usage").with(SPIELER))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.battingOrderCounts.1").value(1));
+    }
+
     private void legeScorerAn() {
         final PlayerEntity sam = playerRepository.save(new PlayerEntity("Sam"));
         final AppUserEntity konto = new AppUserEntity();

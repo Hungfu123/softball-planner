@@ -24,7 +24,9 @@ import com.softball.shared.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +51,17 @@ public class PlayerProfileService {
     private static final BattingTimelineCalculator CALCULATOR = new BattingTimelineCalculator();
     private static final PlayerUsageCalculator USAGE_CALCULATOR = new PlayerUsageCalculator();
 
+    /**
+     * „Heute" ist das Berliner Heute — wie bei der Aufstellungs-Lage und aus demselben Grund.
+     *
+     * Die Zone des Containers wird bewusst nicht gestellt, sie ist UTC. Zwischen 23 Uhr UTC
+     * (22 im Sommer) und Mitternacht ist in Berlin schon der naechste Tag; wer das Profil in
+     * dieser Stunde aufmacht, saehe den Spieltag von gestern nicht gezaehlt, weil er dem
+     * Server noch als „heute" gilt. Das ist keine Theorie: an dieser Stunde ist die naechtliche
+     * CI gescheitert.
+     */
+    private static final ZoneId BERLIN = ZoneId.of("Europe/Berlin");
+
     private final PlayerRepository playerRepository;
     private final AtBatRepository atBatRepository;
     private final GameRepository gameRepository;
@@ -57,6 +70,7 @@ public class PlayerProfileService {
     private final LineupEntryRepository lineupEntryRepository;
     private final TrainingRepository trainingRepository;
     private final TrainingAttendanceRepository attendanceRepository;
+    private final Clock clock;
 
     public PlayerProfileService(final PlayerRepository playerRepository,
                                 final AtBatRepository atBatRepository,
@@ -65,7 +79,8 @@ public class PlayerProfileService {
                                 final GameDayRepository gameDayRepository,
                                 final LineupEntryRepository lineupEntryRepository,
                                 final TrainingRepository trainingRepository,
-                                final TrainingAttendanceRepository attendanceRepository) {
+                                final TrainingAttendanceRepository attendanceRepository,
+                                final Clock clock) {
         this.playerRepository = playerRepository;
         this.atBatRepository = atBatRepository;
         this.gameRepository = gameRepository;
@@ -74,6 +89,12 @@ public class PlayerProfileService {
         this.lineupEntryRepository = lineupEntryRepository;
         this.trainingRepository = trainingRepository;
         this.attendanceRepository = attendanceRepository;
+        this.clock = clock;
+    }
+
+    /** Der Tag, der in Berlin gerade laeuft. */
+    private LocalDate heute() {
+        return LocalDate.now(clock.withZone(BERLIN));
     }
 
     /** Form-Kurve: ein Punkt je Spiel mit Plate Appearance, ältestes zuerst. */
@@ -137,7 +158,7 @@ public class PlayerProfileService {
             // Ohne Trainings-Bezug gar nicht erst laden — eine Saison kennt keine.
             scope.coversTrainings() ? trainingRepository.findAllByOrderByDateDesc() : List.of(),
             attendedTrainingIds,
-            LocalDate.now(),
+            heute(),
             scope
         );
     }
@@ -189,7 +210,7 @@ public class PlayerProfileService {
      * gegen einen.
      */
     private int verpasstSeit(final LocalDate zuletzt) {
-        final LocalDate heute = LocalDate.now();
+        final LocalDate heute = heute();
         return (int) trainingRepository.findAllByOrderByDateDesc().stream()
             .filter(t -> t.getDate() != null && t.isOpenToAll() && !t.isCancelled())
             .filter(t -> t.getDate().isAfter(zuletzt) && !t.getDate().isAfter(heute))
@@ -198,12 +219,13 @@ public class PlayerProfileService {
 
 
     private List<Integer> battingOrders(final Long playerId, final UsageScope scope) {
+        final LocalDate heute = heute();
         if (scope.seasonId() != null) {
-            return lineupEntryRepository.findBattingOrdersByPlayerIdAndSeason(playerId, scope.seasonId());
+            return lineupEntryRepository.findBattingOrdersByPlayerIdAndSeason(playerId, scope.seasonId(), heute);
         }
         if (scope.year() != null) {
-            return lineupEntryRepository.findBattingOrdersByPlayerIdAndYear(playerId, scope.year());
+            return lineupEntryRepository.findBattingOrdersByPlayerIdAndYear(playerId, scope.year(), heute);
         }
-        return lineupEntryRepository.findBattingOrdersByPlayerId(playerId);
+        return lineupEntryRepository.findBattingOrdersByPlayerId(playerId, heute);
     }
 }
