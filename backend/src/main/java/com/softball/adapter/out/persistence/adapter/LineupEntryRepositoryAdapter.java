@@ -11,6 +11,7 @@ import com.softball.domain.port.out.LineupEntryRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
@@ -49,18 +50,20 @@ public class LineupEntryRepositoryAdapter implements LineupEntryRepository {
     }
 
     @Override
-    public List<Integer> findBattingOrdersByPlayerId(final Long playerId) {
-        return repo.findBattingOrdersByPlayerId(playerId);
+    public List<Integer> findBattingOrdersByPlayerId(final Long playerId, final LocalDate heute) {
+        return repo.findBattingOrdersByPlayerId(playerId, heute);
     }
 
     @Override
-    public List<Integer> findBattingOrdersByPlayerIdAndYear(final Long playerId, final int year) {
-        return repo.findBattingOrdersByPlayerIdAndYear(playerId, year);
+    public List<Integer> findBattingOrdersByPlayerIdAndYear(final Long playerId, final int year,
+                                                           final LocalDate heute) {
+        return repo.findBattingOrdersByPlayerIdAndYear(playerId, year, heute);
     }
 
     @Override
-    public List<Integer> findBattingOrdersByPlayerIdAndSeason(final Long playerId, final long seasonId) {
-        return repo.findBattingOrdersByPlayerIdAndSeason(playerId, seasonId);
+    public List<Integer> findBattingOrdersByPlayerIdAndSeason(final Long playerId, final long seasonId,
+                                                             final LocalDate heute) {
+        return repo.findBattingOrdersByPlayerIdAndSeason(playerId, seasonId, heute);
     }
 
     @Override
