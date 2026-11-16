@@ -24,55 +24,90 @@ Jeder Account hängt an genau einem Spieler im Kader — Spieler sehen nur, was 
 
 ## Was kann die App?
 
+<table>
+<tr>
+<td width="60%" valign="top">
+
 ### Start — alles auf einen Blick
 
 Eigene Form (AVG/OBP/OPS), nächster Spieltag, nächstes Training, das Trainingsjahr als Balken, Umpire-Zähler und Playmaker griffbereit — sofort nach dem Einloggen.
 
-![Startseite mit Form-Kurve, nächsten Terminen und Trainingsjahr](docs/screenshots/01-start.png)
+</td>
+<td width="40%"><img src="docs/screenshots/01-start.png" width="260" alt="Startseite mit Form-Kurve, nächsten Terminen und Trainingsjahr"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Spieltage & Liga
 
 Spieltage mit Datum und Ort, mehrere Spiele pro Tag (Doubleheader), Ergebnisse, Liga-Tabelle und Season-Kennzahlen (Bilanz, Top-Hitter, Run-Differenz) auf einen Blick.
 
-![Spieltag-Übersicht mit Ergebnissen und Liga-Tabelle](docs/screenshots/02-spiele.png)
-
 **Lineup-Editor** (nicht im Bild, Admin-only): Spieler per Klick ins Lineup, Positionen zuweisen, Batting Order per Drag & Drop, Designated Hitter (DH) als Annotation auf einem Feldspieler, Base Coaches, Auto-Aufstellung nach Trainingsbeteiligung und Frauen-Quote, Lineup vom letzten Spiel kopieren oder zwischen zwei Spielen tauschen.
+
+</td>
+<td width="40%"><img src="docs/screenshots/02-spiele.png" width="260" alt="Spieltag-Übersicht mit Ergebnissen und Liga-Tabelle"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Training
 
 Anwesenheit pro Training erfassen, sortiert nach Trainingshäufigkeit, Trainings-Zeiträume mit Wochentag-Uhrzeiten, automatische Unterscheidung Basic/Pitcher-Catcher.
 
-![Trainings-Anwesenheit, sortiert nach Häufigkeit](docs/screenshots/03-training.png)
+</td>
+<td width="40%"><img src="docs/screenshots/03-training.png" width="260" alt="Trainings-Anwesenheit, sortiert nach Häufigkeit"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Kader
 
 Spieler-Pool mit Positionsprofil (Primär/Sekundär/Tertiär), Spielanzahl, Geschlecht (für die Frauen-Quote in der Auto-Aufstellung), Sortierung nach Einsätzen — wer am wenigsten gespielt hat, steht oben.
 
-![Kader-Liste mit Positions-Chips und Einsatzzahlen](docs/screenshots/04-kader.png)
+</td>
+<td width="40%"><img src="docs/screenshots/04-kader.png" width="260" alt="Kader-Liste mit Positions-Chips und Einsatzzahlen"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Spielerprofil
 
 Form-Kurve als gleitender Schnitt (AVG/OBP/SLG/OPS), Hits, At-Bats, Positionen, Spielervergleich.
 
-![Spielerprofil mit Form-Kurve über die Saison](docs/screenshots/05-spielerprofil.png)
+</td>
+<td width="40%"><img src="docs/screenshots/05-spielerprofil.png" width="260" alt="Spielerprofil mit Form-Kurve über die Saison"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Analyse
 
 Statistiken über Zeiträume hinweg: Bilanz, Hits pro Spiel, Hits pro Inning, Auf-Base-Gestrandete pro Spieler — filterbar nach Saison, Jahr oder einzelnen Spielen.
 
-![Analyse-Dashboard mit Hits pro Inning und gestrandeten Läufern](docs/screenshots/06-analyse.png)
+</td>
+<td width="40%"><img src="docs/screenshots/06-analyse.png" width="260" alt="Analyse-Dashboard mit Hits pro Inning und gestrandeten Läufern"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Orga — WhatsApp-Umfragen
 
 Automatischer Versand von Trainings-Umfragen per WhatsApp ("Wer kommt morgen zum Training?"), Antworten laufen direkt in die Anwesenheit ein — kein manuelles Abtippen mehr. Die Trainingsbeteiligung daraus fließt wiederum in die Auto-Aufstellung fürs Spiel ein: wer seltener da war, wird bevorzugt aufgestellt.
 
-![WhatsApp-Umfragen für Trainingstermine](docs/screenshots/07-orga-whatsapp.png)
+</td>
+<td width="40%"><img src="docs/screenshots/07-orga-whatsapp.png" width="260" alt="WhatsApp-Umfragen für Trainingstermine"></td>
+</tr>
+<tr>
+<td width="60%" valign="top">
 
 ### Live-Scoring
 
 Pitch-by-Pitch-Scoring während des Spiels: Treffer, Strikeout, Aus, Walk, HBP, Error, Overthrow, Stealing, Undo für alle Eingabetypen, automatischer Innings-Wechsel.
 
-![Live-Scoring-Oberfläche mit Diamond-Ansicht](docs/screenshots/08-live-scoring.png)
+</td>
+<td width="40%"><img src="docs/screenshots/08-live-scoring.png" width="260" alt="Live-Scoring-Oberfläche mit Diamond-Ansicht"></td>
+</tr>
+</table>
 
 ### Weitere Funktionen
 - **Export:** Druckoptimiertes Lineup- & Scoring-Sheet (PDF), Datenbank als JSON exportieren/importieren
